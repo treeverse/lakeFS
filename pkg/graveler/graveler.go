@@ -194,6 +194,11 @@ type SetOptions struct {
 	Force bool
 	// AllowEmpty set to true will allow committing an empty commit.
 	AllowEmpty bool
+	// Hidden Will create the branch with the hidden property
+	Hidden bool
+	// SquashMerge causes merge commits to be "squashed", losing parent
+	// information about the merged-from branch.
+	SquashMerge bool
 }
 
 type SetOptionsFunc func(opts *SetOptions)
@@ -221,6 +226,40 @@ func WithForce(v bool) SetOptionsFunc {
 func WithAllowEmpty(v bool) SetOptionsFunc {
 	return func(opts *SetOptions) {
 		opts.AllowEmpty = v
+	}
+}
+
+func WithHidden(v bool) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.Hidden = v
+	}
+}
+
+func WithSquashMerge(v bool) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.SquashMerge = v
+	}
+}
+
+// ListOptions controls list request defaults
+type ListOptions struct {
+	// Shows entities marked as hidden
+	ShowHidden bool
+}
+
+type ListOptionsFunc func(opts *ListOptions)
+
+func NewListOptions(opts []ListOptionsFunc) *ListOptions {
+	options := &ListOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	return options
+}
+
+func WithShowHidden(v bool) ListOptionsFunc {
+	return func(opts *ListOptions) {
+		opts.ShowHidden = v
 	}
 }
 
@@ -398,9 +437,9 @@ func (cp CommitParents) AsStringSlice() []string {
 const FirstCommitMsg = "Repository created"
 
 // CommitVersion used to track changes in Commit schema. Each version is change that a constant describes.
-type CommitVersion int
+type CommitVersion int32
 
-type CommitGeneration int64
+type CommitGeneration int32
 
 const (
 	CommitVersionInitial CommitVersion = iota
@@ -456,6 +495,7 @@ type Branch struct {
 	SealedTokens []StagingToken
 	// CompactedBaseMetaRangeID - the MetaRangeID of the last compaction's
 	CompactedBaseMetaRangeID MetaRangeID
+	Hidden                   bool
 }
 
 // BranchRecord holds BranchID with the associated Branch data
@@ -602,7 +642,7 @@ type VersionController interface {
 	Log(ctx context.Context, repository *RepositoryRecord, commitID CommitID, firstParent bool, since *time.Time) (CommitIterator, error)
 
 	// ListBranches lists branches on repositories
-	ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
+	ListBranches(ctx context.Context, repository *RepositoryRecord, opts ...ListOptionsFunc) (BranchIterator, error)
 
 	// DeleteBranch deletes branch from repository
 	DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, opts ...SetOptionsFunc) error
@@ -896,7 +936,7 @@ type RefManager interface {
 	DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID) error
 
 	// ListBranches lists branches
-	ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error)
+	ListBranches(ctx context.Context, repository *RepositoryRecord, opts ListOptions) (BranchIterator, error)
 
 	// GCBranchIterator TODO (niro): Remove when DB implementation is deleted
 	// GCBranchIterator temporary WA to support both DB and KV GC BranchIterator, which iterates over branches by order of commit ID
@@ -1251,6 +1291,7 @@ func (g *Graveler) CreateBranch(ctx context.Context, repository *RepositoryRecor
 		CommitID:     reference.CommitID,
 		StagingToken: GenerateStagingToken(repository.RepositoryID, branchID),
 		SealedTokens: make([]StagingToken, 0),
+		Hidden:       options.Hidden,
 	}
 	storageNamespace := repository.StorageNamespace
 	var preRunID string
@@ -1527,8 +1568,9 @@ func (g *Graveler) Log(ctx context.Context, repository *RepositoryRecord, commit
 	return g.RefManager.Log(ctx, repository, commitID, firstParent, since)
 }
 
-func (g *Graveler) ListBranches(ctx context.Context, repository *RepositoryRecord) (BranchIterator, error) {
-	return g.RefManager.ListBranches(ctx, repository)
+func (g *Graveler) ListBranches(ctx context.Context, repository *RepositoryRecord, opts ...ListOptionsFunc) (BranchIterator, error) {
+	options := NewListOptions(opts)
+	return g.RefManager.ListBranches(ctx, repository, *options)
 }
 
 func (g *Graveler) DeleteBranch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, opts ...SetOptionsFunc) error {
@@ -2128,14 +2170,14 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		}
 
 		var branchMetaRangeID MetaRangeID
-		var parentGeneration int
+		var parentGeneration int32
 		if branch.CommitID != "" {
 			branchCommit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 			if err != nil {
 				return nil, fmt.Errorf("get commit: %w", err)
 			}
 			branchMetaRangeID = branchCommit.MetaRangeID
-			parentGeneration = int(branchCommit.Generation)
+			parentGeneration = int32(branchCommit.Generation)
 		}
 		commit.Generation = CommitGeneration(parentGeneration + 1)
 		if params.SourceMetaRange != nil {
@@ -2494,7 +2536,7 @@ func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, b
 		return g.StagingManager.Set(ctx, st, key, committed, false)
 		// entry not committed and changed in staging area => override with tombstone
 		// If not committed and staging == tombstone => ignore
-	} else if !isCommitted && uncommittedValue != nil {
+	} else if uncommittedValue != nil {
 		return g.deleteAndNotify(ctx, repository.RepositoryID, BranchRecord{branchID, branch}, key, false)
 	}
 
@@ -2893,7 +2935,11 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID
-		commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
+		if options.SquashMerge {
+			commit.Parents = []CommitID{toCommit.CommitID}
+		} else {
+			commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
+		}
 		if toCommit.Generation > fromCommit.Generation {
 			commit.Generation = toCommit.Generation + 1
 		} else {
@@ -3392,7 +3438,7 @@ func (g *Graveler) DumpCommits(ctx context.Context, repository *RepositoryRecord
 }
 
 func (g *Graveler) DumpBranches(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {
-	iter, err := g.RefManager.ListBranches(ctx, repository)
+	iter, err := g.RefManager.ListBranches(ctx, repository, ListOptions{ShowHidden: true})
 	if err != nil {
 		return nil, err
 	}
@@ -3642,7 +3688,7 @@ func (c *commitValueIterator) setValue() bool {
 	}
 	commit := c.src.Value()
 	data, err := proto.Marshal(&CommitData{
-		Version:      int32(commit.Version),
+		Version:      int32(commit.Version), //nolint:gosec
 		Id:           string(commit.CommitID),
 		Committer:    commit.Committer,
 		Message:      commit.Message,

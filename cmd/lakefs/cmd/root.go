@@ -38,6 +38,10 @@ func Execute() {
 	}
 }
 
+func GetRoot() *cobra.Command {
+	return rootCmd
+}
+
 var initOnce sync.Once
 
 //nolint:gochecknoinits

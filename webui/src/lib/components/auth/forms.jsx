@@ -9,15 +9,8 @@ import {SearchIcon} from "@primer/octicons-react";
 import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
 
-const resolveEntityDisplayName = (ent) => {
-    // for users
-    if (ent?.email?.length) return ent.email;
-    // for groups
-    if (ent?.name?.length) return ent.name;
-    return ent.id;
-}
 
-export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
+export const AttachModal = ({ show, searchFn, resolveEntityFn = (ent => ent.id), onAttach, onHide , addText = "Add",
                           emptyState = 'No matches', modalTitle = 'Add', headers = ['Select', 'ID'],
                      filterPlaceholder = 'Filter...'}) => {
     const search = useRef(null);
@@ -49,7 +42,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                             onAdd={() => setSelected([...selected, ent])}
                             onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
                             name={'selected'}/>,
-                        <strong>{resolveEntityDisplayName(ent)}</strong>
+                        <strong>{resolveEntityFn(ent)}</strong>
                     ]}/>
 
                 <div className="mt-3">
@@ -58,7 +51,7 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
                         <strong>Selected: </strong>
                         {(selected.map(item => (
                             <Badge key={item.id} pill variant="primary" className="me-1">
-                                {resolveEntityDisplayName(item)}
+                                {resolveEntityFn(item)}
                             </Badge>
                         )))}
                     </p>
@@ -98,13 +91,26 @@ export const AttachModal = ({ show, searchFn, onAttach, onHide, addText = "Add",
     );
 };
 
-export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, actionName, validationFunction = null }) => {
+export const EntityActionModal = ({
+                                      show,
+                                      onHide,
+                                      onAction,
+                                      title,
+                                      placeholder,
+                                      actionName,
+                                      validationFunction = null,
+                                      showExtraField = false,
+                                      extraPlaceholder = "",
+                                      extraValidationFunction = null
+                                  }) => {
     const [error, setError] = useState(null);
     const idField = useRef(null);
+    const extraField = useRef(null);
 
     useEffect(() => {
-        if (!!idField.current && idField.current.value === "")
+        if (!!idField.current && idField.current.value === "") {
             idField.current.focus();
+        }
     });
 
     const onSubmit = () => {
@@ -115,7 +121,14 @@ export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, 
                 return;
             }
         }
-        onAction(idField.current.value).catch(err => setError(err));
+        if (showExtraField && extraValidationFunction) {
+            const validationResult = extraValidationFunction(extraField.current.value);
+            if (!validationResult.isValid) {
+                setError(validationResult.errorMessage);
+                return;
+            }
+        }
+        onAction(idField.current.value, extraField.current.value).catch(err => setError(err));
     };
 
     return (
@@ -130,6 +143,9 @@ export const EntityActionModal = ({ show, onHide, onAction, title, placeholder, 
                     onSubmit()
                 }}>
                     <FormControl ref={idField} autoFocus placeholder={placeholder} type="text"/>
+                    {showExtraField &&
+                        <FormControl ref={extraField} placeholder={extraPlaceholder} type="text" className="mt-3"/>
+                    }
                 </Form>
 
                 {(!!error) && <AlertError className="mt-3" error={error}/>}

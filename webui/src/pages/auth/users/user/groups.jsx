@@ -21,6 +21,12 @@ import { ConfirmationButton } from "../../../../lib/components/modals";
 import { useRouter } from "../../../../lib/hooks/router";
 import { Link } from "../../../../lib/components/nav";
 
+const resolveGroupDisplayName = (group) => {
+    if(!group) return "";
+    if (group?.name?.length) return group.name;
+    return group.id;
+}
+
 const UserGroupsList = ({ userId, after, onPaginate }) => {
   const [refresh, setRefresh] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -97,6 +103,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
             searchFn={(prefix) =>
               auth.listGroups(prefix, "", 5).then((res) => res.results)
             }
+            resolveEntityFn={resolveGroupDisplayName}
             onHide={() => setShowAddModal(false)}
             onAttach={(selected) => {
               Promise.all(
@@ -112,7 +119,8 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                 .finally(() => {
                   setShowAddModal(false);
                 });
-            }}
+            }
+          }
           />
         )}
       </>

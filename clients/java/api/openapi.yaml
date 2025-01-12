@@ -1965,6 +1965,14 @@ paths:
           minimum: -1
           type: integer
         style: form
+      - description: string for searching relevant entries
+        explode: true
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+        style: form
       responses:
         "200":
           content:
@@ -3114,6 +3122,15 @@ paths:
           maximum: 1000
           minimum: -1
           type: integer
+        style: form
+      - explode: true
+        in: query
+        name: show_hidden
+        required: false
+        schema:
+          default: false
+          description: When set - list all branches including hidden branches. *EXPERIMENTAL*
+          type: boolean
         style: form
       responses:
         "200":
@@ -7378,6 +7395,15 @@ components:
       schema:
         type: string
       style: form
+    SearchString:
+      description: string for searching relevant entries
+      explode: true
+      in: query
+      name: search
+      required: false
+      schema:
+        type: string
+      style: form
     IfNoneMatch:
       description: Set to "*" to atomically allow the upload only if the key has no
         object yet. Other values are not supported.
@@ -8193,6 +8219,7 @@ components:
       example:
         metadata:
           key: metadata
+        squash_merge: false
         force: false
         message: message
         strategy: strategy
@@ -8219,9 +8246,19 @@ components:
           default: false
           description: Allow merge when the branches have the same content
           type: boolean
+        squash_merge:
+          default: false
+          description: |
+            If set, set only the destination branch as a parent, which "squashes" the merge to
+            appear as a single commit on the destination branch.  The source commit is no longer
+            a part of the merge commit; consider adding it to the 'metadata' or 'message'
+            fields.  This behaves like a GitHub or GitLab "squash merge", or in Git terms 'git
+            merge --squash; git commit ...'.
+          type: boolean
       type: object
     BranchCreation:
       example:
+        hidden: false
         name: name
         force: false
         source: source
@@ -8232,6 +8269,11 @@ components:
           type: string
         force:
           default: false
+          type: boolean
+        hidden:
+          default: false
+          description: "When set, branch will not show up when listing branches by\
+            \ default. *EXPERIMENTAL*"
           type: boolean
       required:
       - name
@@ -8665,12 +8707,15 @@ components:
     Group:
       example:
         name: name
+        description: description
         id: id
         creation_date: 0
       properties:
         id:
           type: string
         name:
+          type: string
+        description:
           type: string
         creation_date:
           description: Unix Epoch in seconds
@@ -8689,9 +8734,11 @@ components:
           results: 0
         results:
         - name: name
+          description: description
           id: id
           creation_date: 0
         - name: name
+          description: description
           id: id
           creation_date: 0
       properties:
@@ -8808,9 +8855,12 @@ components:
       type: object
     GroupCreation:
       example:
+        description: description
         id: id
       properties:
         id:
+          type: string
+        description:
           type: string
       required:
       - id

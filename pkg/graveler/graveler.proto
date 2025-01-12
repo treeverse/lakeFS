@@ -25,6 +25,7 @@ message BranchData {
   string commit_id = 2;
   string staging_token = 3;
   repeated string sealed_tokens = 4;
+  bool hidden = 5;
 }
 
 message TagData {

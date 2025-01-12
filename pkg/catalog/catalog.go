@@ -584,8 +584,9 @@ func (c *Catalog) DeleteRepositoryMetadata(ctx context.Context, repository strin
 }
 
 // ListRepositories list repository information, the bool returned is true when more repositories can be listed.
-// In this case, pass the last repository name as 'after' on the next call to ListRepositories
-func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after string) ([]*Repository, bool, error) {
+// In this case, pass the last repository name as 'after' on the next call to ListRepositories. Results can be
+// filtered by specifying a prefix or, more generally, a searchString.
+func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searchString, after string) ([]*Repository, bool, error) {
 	// normalize limit
 	if limit < 0 || limit > ListRepositoriesLimitMax {
 		limit = ListRepositoriesLimitMax
@@ -614,7 +615,9 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, after
 		if !strings.HasPrefix(string(record.RepositoryID), prefix) {
 			break
 		}
-
+		if !strings.Contains(string(record.RepositoryID), searchString) {
+			continue
+		}
 		if record.RepositoryID == afterRepositoryID {
 			continue
 		}
@@ -729,7 +732,7 @@ func (c *Catalog) DeleteBranch(ctx context.Context, repositoryID string, branch 
 	return c.Store.DeleteBranch(ctx, repository, branchID, opts...)
 }
 
-func (c *Catalog) ListBranches(ctx context.Context, repositoryID string, prefix string, limit int, after string) ([]*Branch, bool, error) {
+func (c *Catalog) ListBranches(ctx context.Context, repositoryID string, prefix string, limit int, after string, opts ...graveler.ListOptionsFunc) ([]*Branch, bool, error) {
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
 	}); err != nil {
@@ -744,7 +747,7 @@ func (c *Catalog) ListBranches(ctx context.Context, repositoryID string, prefix 
 	if limit < 0 || limit > ListBranchesLimitMax {
 		limit = ListBranchesLimitMax
 	}
-	it, err := c.Store.ListBranches(ctx, repository)
+	it, err := c.Store.ListBranches(ctx, repository, opts...)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1294,7 +1297,7 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	return catalogCommitLog, nil
 }
 
-func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, commitID string, version int, committer string, message string, metaRangeID string, creationDate int64, parents []string, metadata map[string]string, generation int, opts ...graveler.SetOptionsFunc) error {
+func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, commitID string, version int, committer string, message string, metaRangeID string, creationDate int64, parents []string, metadata map[string]string, generation int32, opts ...graveler.SetOptionsFunc) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
@@ -1304,14 +1307,14 @@ func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, c
 		commitParents[i] = graveler.CommitID(parent)
 	}
 	commit := graveler.Commit{
-		Version:      graveler.CommitVersion(version),
+		Version:      graveler.CommitVersion(version), //nolint:gosec
 		Committer:    committer,
 		Message:      message,
 		MetaRangeID:  graveler.MetaRangeID(metaRangeID),
 		CreationDate: time.Unix(creationDate, 0).UTC(),
 		Parents:      commitParents,
 		Metadata:     metadata,
-		Generation:   graveler.CommitGeneration(generation),
+		Generation:   graveler.CommitGeneration(generation), //nolint:gosec
 	}
 	return c.Store.CreateCommitRecord(ctx, repository, graveler.CommitID(commitID), commit, opts...)
 }

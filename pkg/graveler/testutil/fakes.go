@@ -366,7 +366,7 @@ func (m *RefsFake) DeleteBranch(context.Context, *graveler.RepositoryRecord, gra
 	return nil
 }
 
-func (m *RefsFake) ListBranches(context.Context, *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
+func (m *RefsFake) ListBranches(context.Context, *graveler.RepositoryRecord, graveler.ListOptions) (graveler.BranchIterator, error) {
 	return m.ListBranchesRes, nil
 }
 

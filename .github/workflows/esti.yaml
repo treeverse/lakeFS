@@ -53,7 +53,7 @@ jobs:
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v4
         with:
-          go-version: "1.22.6"
+          go-version: "1.23"
         id: go
 
       - name: Setup NodeJS
@@ -73,7 +73,7 @@ jobs:
 
         # must upload artifact in order to download generated later
       - name: Store generated code
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: generated-code
           path: /tmp/generated.tar.gz
@@ -90,7 +90,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -201,7 +201,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.22.6"
+          go-version: "1.23"
         id: go
 
       - name: Generate uniquifying value
@@ -209,7 +209,7 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -281,7 +281,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -328,7 +328,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
 
     steps:
       - name: Check-out code
@@ -398,7 +398,7 @@ jobs:
         working-directory: clients/hadoopfs
         run: mvn -Passembly -DfinalName=client --batch-mode --update-snapshots package -DskipTests
       - name: Store lakeFS HadoopFS
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: lakefs-hadoopfs
           path: clients/hadoopfs/target/client.jar
@@ -420,7 +420,7 @@ jobs:
         working-directory: test/spark/app
         run: sbt package
       - name: Store Spark App
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: spark-apps
           path: test/spark/app/target/
@@ -438,20 +438,20 @@ jobs:
             sonnet_jar: sonnets-311/target/sonnets-311/scala-2.12/sonnets-311_2.12-0.1.0.jar
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       SPARK_TAG: ${{ matrix.spark.tag }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
 
       - name: Download lakeFS HadoopFS
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: lakefs-hadoopfs
           path: clients/hadoopfs/target
 
       - name: Download Spark App
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: spark-apps
           path: test/spark/app/target/
@@ -547,7 +547,7 @@ jobs:
     env:
       LAKEFS_TAG: ${{ needs.deploy-image.outputs.tag }}
       EXPORT_TAG: ${{ needs.deploy-rclone-export-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
 
     steps:
       - name: Check-out code
@@ -596,7 +596,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -654,7 +654,7 @@ jobs:
     needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -694,7 +694,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       SPARK_TAG: 3.2.1
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
       - name: Check-out code
@@ -753,7 +753,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       LAKEFS_DATABASE_CONNECTION_STRING: "" # Override lakeFS docker compose settings
@@ -767,7 +767,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -830,7 +830,7 @@ jobs:
         branch_ownership: [false, true]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
@@ -843,7 +843,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -904,7 +904,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
@@ -917,7 +917,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -958,7 +958,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -974,7 +974,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -1019,7 +1019,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -1038,7 +1038,7 @@ jobs:
 
       # Retrieve ACL server binary from cache
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -1098,7 +1098,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       LAKEFS_INSTALLATION_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
       LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
@@ -1218,7 +1218,7 @@ jobs:
           BASE_URL: http://localhost:8000
         working-directory: webui
         run: npx playwright test --project=common
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: (success() || failure())
         with:
           name: playwright-report
@@ -1337,7 +1337,7 @@ jobs:
           BASE_URL: http://localhost:8000
         working-directory: webui
         run: npx playwright test --project=quickstart
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: (success() || failure())
         with:
           name: playwright-report
@@ -1398,7 +1398,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      REPO: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:

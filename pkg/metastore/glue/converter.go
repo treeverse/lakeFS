@@ -139,7 +139,7 @@ func sortColumnsLocalToGlue(columns []*metastore.Order) []types.Order {
 	for _, column := range columns {
 		res = append(res, types.Order{
 			Column:    aws.String(column.Col),
-			SortOrder: int32(column.Order),
+			SortOrder: int32(column.Order), //nolint:gosec
 		})
 	}
 	return res
@@ -190,14 +190,15 @@ func TableLocalToGlue(table *metastore.Table) *types.TableInput {
 	sd := SDLocalToGlue(table.Sd)
 	targetTable, _ := table.AWSTargetTable.(*types.TableIdentifier)
 	ht := &types.TableInput{
-		Description:       table.AWSDescription,
-		LastAccessTime:    localToAWSTime(table.LastAccessTime), // TODO(Guys): check if this OK
-		LastAnalyzedTime:  table.AWSLastAnalyzedTime,
-		Name:              aws.String(table.TableName),
-		Owner:             aws.String(table.Owner),
-		Parameters:        table.Parameters,
-		PartitionKeys:     columnsLocalToGlue(table.PartitionKeys),
-		Retention:         int32(table.Retention), // TODO(Guys): check if this OK
+		Description:      table.AWSDescription,
+		LastAccessTime:   localToAWSTime(table.LastAccessTime), // TODO(Guys): check if this OK
+		LastAnalyzedTime: table.AWSLastAnalyzedTime,
+		Name:             aws.String(table.TableName),
+		Owner:            aws.String(table.Owner),
+		Parameters:       table.Parameters,
+		PartitionKeys:    columnsLocalToGlue(table.PartitionKeys),
+		//  TODO(Guys): check if this OK
+		Retention:         int32(table.Retention), ////nolint:gosec
 		StorageDescriptor: sd,
 		TableType:         aws.String(table.TableType),
 		TargetTable:       targetTable,
@@ -210,8 +211,8 @@ func TableLocalToGlue(table *metastore.Table) *types.TableInput {
 func PartitionLocalToGlue(partition *metastore.Partition) *types.PartitionInput {
 	sd := SDLocalToGlue(partition.Sd)
 	ht := &types.PartitionInput{
-		// IsRegisteredWithLakeFormation: partition.AWSIsRegisteredWithLakeFormation,
-		LastAccessTime:    localToAWSTime(int64(partition.LastAccessTime)), // TODO(Guys): check if this OK
+		// TODO(Guys): check if this OK
+		LastAccessTime:    localToAWSTime(int64(partition.LastAccessTime)), //nolint:gosec
 		LastAnalyzedTime:  partition.AWSLastAnalyzedTime,
 		Parameters:        partition.Parameters,
 		StorageDescriptor: sd,
@@ -239,7 +240,7 @@ func SDLocalToGlue(sd *metastore.StorageDescriptor) *types.StorageDescriptor {
 		Compressed:             sd.Compressed,
 		InputFormat:            aws.String(sd.InputFormat),
 		Location:               aws.String(sd.Location),
-		NumberOfBuckets:        int32(sd.NumBuckets),
+		NumberOfBuckets:        int32(sd.NumBuckets), //nolint:gosec
 		OutputFormat:           aws.String(sd.OutputFormat),
 		Parameters:             sd.Parameters,
 		SchemaReference:        schemaRef,

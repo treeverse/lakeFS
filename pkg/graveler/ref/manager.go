@@ -51,6 +51,7 @@ func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
 		CommitID:     graveler.CommitID(pb.CommitId),
 		StagingToken: graveler.StagingToken(pb.StagingToken),
 		SealedTokens: sealedTokens,
+		Hidden:       pb.Hidden,
 	}
 	return branch
 }
@@ -65,6 +66,7 @@ func protoFromBranch(branchID graveler.BranchID, b *graveler.Branch) *graveler.B
 		CommitId:     b.CommitID.String(),
 		StagingToken: b.StagingToken.String(),
 		SealedTokens: sealedTokens,
+		Hidden:       b.Hidden,
 	}
 	return branch
 }
@@ -239,7 +241,7 @@ func (m *Manager) updateRepoState(ctx context.Context, repo *graveler.Repository
 }
 
 func (m *Manager) deleteRepositoryBranches(ctx context.Context, repository *graveler.RepositoryRecord) error {
-	itr, err := m.ListBranches(ctx, repository)
+	itr, err := m.ListBranches(ctx, repository, graveler.ListOptions{ShowHidden: true})
 	if err != nil {
 		return err
 	}
@@ -475,12 +477,12 @@ func (m *Manager) DeleteBranch(ctx context.Context, repository *graveler.Reposit
 	return m.kvStore.Delete(ctx, []byte(graveler.RepoPartition(repository)), []byte(graveler.BranchPath(branchID)))
 }
 
-func (m *Manager) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
-	return NewBranchSimpleIterator(ctx, m.kvStore, repository)
+func (m *Manager) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord, opts graveler.ListOptions) (graveler.BranchIterator, error) {
+	return NewBranchSimpleIterator(ctx, m.kvStore, repository, opts)
 }
 
 func (m *Manager) GCBranchIterator(ctx context.Context, repository *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
-	return NewBranchByCommitIterator(ctx, m.kvStore, repository)
+	return NewBranchByCommitIterator(ctx, m.kvStore, repository, graveler.ListOptions{ShowHidden: true})
 }
 
 func (m *Manager) GetTag(ctx context.Context, repository *graveler.RepositoryRecord, tagID graveler.TagID) (*graveler.CommitID, error) {

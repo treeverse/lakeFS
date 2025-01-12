@@ -1,5 +1,0 @@
-files:
-  client.mustache:
-    templateType: SupportingFiles
-    folder: lakefs_client
-    destinationFilename: client.py

@@ -214,7 +214,7 @@ func (g *FakeGraveler) Log(ctx context.Context, repository *graveler.RepositoryR
 	panic("implement me")
 }
 
-func (g *FakeGraveler) ListBranches(_ context.Context, _ *graveler.RepositoryRecord) (graveler.BranchIterator, error) {
+func (g *FakeGraveler) ListBranches(ctx context.Context, repository *graveler.RepositoryRecord, opts ...graveler.ListOptionsFunc) (graveler.BranchIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err
 	}

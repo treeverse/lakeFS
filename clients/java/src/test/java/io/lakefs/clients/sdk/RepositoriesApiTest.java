@@ -170,10 +170,12 @@ public class RepositoriesApiTest {
         String prefix = null;
         String after = null;
         Integer amount = null;
+        String search = null;
         RepositoryList response = api.listRepositories()
                 .prefix(prefix)
                 .after(after)
                 .amount(amount)
+                .search(search)
                 .execute();
         // TODO: test validations
     }

@@ -195,7 +195,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 
 	// check valid number of parts
 	if params.Parts != nil {
-		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts {
+		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts { //nolint:gosec
 			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("parts can be between 0 and %d", manager.MaxUploadParts))
 			return
 		}
@@ -873,6 +873,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params a
 		response.Results = append(response.Results, apigen.Group{
 			Id:           g.ID,
 			Name:         swag.String(g.DisplayName),
+			Description:  g.Description,
 			CreationDate: g.CreatedAt.Unix(),
 		})
 	}
@@ -899,6 +900,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 	}
 
 	g := &model.Group{
+		Description: body.Description,
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 	}
@@ -910,6 +912,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 		CreationDate: createdGroup.CreatedAt.Unix(),
 		Name:         swag.String(createdGroup.DisplayName),
 		Id:           createdGroup.ID,
+		Description:  createdGroup.Description,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -959,6 +962,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 
 	response := apigen.Group{
 		Id:           g.DisplayName,
+		Description:  g.Description,
 		CreationDate: g.CreatedAt.Unix(),
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1112,6 +1116,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 			Id:           u.Username,
 			Email:        u.Email,
 			CreationDate: u.CreatedAt.Unix(),
+			FriendlyName: u.FriendlyName,
 		})
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1893,7 +1898,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 	ctx := r.Context()
 	c.LogAction(ctx, "list_repos", r, "", "", "")
 
-	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), paginationAfter(params.After))
+	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), search(params.Search), paginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2333,11 +2338,11 @@ func (c *Controller) SetGCRules(w http.ResponseWriter, r *http.Request, body api
 	}
 	ctx := r.Context()
 	rules := &graveler.GarbageCollectionRules{
-		DefaultRetentionDays: int32(body.DefaultRetentionDays),
+		DefaultRetentionDays: int32(body.DefaultRetentionDays), //nolint:gosec
 		BranchRetentionDays:  make(map[string]int32),
 	}
 	for _, rule := range body.Branches {
-		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays)
+		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays) //nolint:gosec
 	}
 	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -2578,8 +2583,13 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "list_branches", r, repository, "", "")
-
-	res, hasMore, err := c.Catalog.ListBranches(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
+	res, hasMore, err := c.Catalog.ListBranches(
+		ctx,
+		repository,
+		paginationPrefix(params.Prefix),
+		paginationAmount(params.Amount),
+		paginationAfter(params.After),
+		graveler.WithShowHidden(swag.BoolValue(params.ShowHidden)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -2610,7 +2620,14 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body a
 	ctx := r.Context()
 	c.LogAction(ctx, "create_branch", r, repository, body.Name, "")
 
-	commitLog, err := c.Catalog.CreateBranch(ctx, repository, body.Name, body.Source, graveler.WithForce(swag.BoolValue(body.Force)))
+	commitLog, err := c.Catalog.CreateBranch(
+		ctx,
+		repository,
+		body.Name,
+		body.Source,
+		graveler.WithForce(swag.BoolValue(body.Force)),
+		graveler.WithHidden(swag.BoolValue(body.Hidden)),
+	)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3021,7 +3038,7 @@ func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, 
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
-	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, body.Version, body.Committer, body.Message, body.MetarangeId, body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
+	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, body.Version, body.Committer, body.Message, body.MetarangeId, body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int32(body.Generation), graveler.WithForce(swag.BoolValue(body.Force))) //nolint:gosec
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -4791,6 +4808,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		swag.StringValue(body.Strategy),
 		graveler.WithForce(swag.BoolValue(body.Force)),
 		graveler.WithAllowEmpty(swag.BoolValue(body.AllowEmpty)),
+		graveler.WithSquashMerge(swag.BoolValue(body.SquashMerge)),
 	)
 
 	if errors.Is(err, graveler.ErrConflictFound) {
@@ -5200,7 +5218,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 			UserID: user.Username,
 			Client: client,
 		}
-		c.Collector.CollectEvents(ev, uint64(statsEv.Count))
+		c.Collector.CollectEvents(ev, uint64(statsEv.Count)) //nolint:gosec
 
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{
 			"class":   ev.Class,
@@ -5451,6 +5469,13 @@ func paginationPrefix(v *apigen.PaginationPrefix) string {
 }
 
 func paginationDelimiter(v *apigen.PaginationDelimiter) string {
+	if v == nil {
+		return ""
+	}
+	return string(*v)
+}
+
+func search(v *apigen.SearchString) string {
 	if v == nil {
 		return ""
 	}

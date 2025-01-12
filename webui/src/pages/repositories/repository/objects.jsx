@@ -19,7 +19,7 @@ import Alert from "react-bootstrap/Alert";
 import { BsCloudArrowUp } from "react-icons/bs";
 
 import {humanSize, Tree} from "../../../lib/components/repository/tree";
-import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress} from "../../../lib/api";
+import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -226,42 +226,40 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
   );
 };
 
-function extractChecksumFromResponse(response) {
-  if (response.contentMD5) {
-    // convert base64 to hex
-    const raw = atob(response.contentMD5)
-    let result = '';
-    for (let i = 0; i < raw.length; i++) {
-      const hex = raw.charCodeAt(i).toString(16);
-      result += (hex.length === 2 ? hex : '0' + hex);
-    }
-    return result;
-  }
 
-  if (response.etag) {
+
+function extractChecksumFromResponse(parsedHeaders) {
+  if (parsedHeaders['content-md5']) {
     // drop any quote and space
-    return response.etag.replace(/[" ]+/g, "");
+    return parsedHeaders['content-md5'];
   }
-  return ""
+  // fallback to ETag
+  if (parsedHeaders['etag']) {
+    // drop any quote and space
+    return parsedHeaders['etag'].replace(/[" ]+/g, "");
+  }
+  return null;
 }
 
-const uploadFile = async (config, repo, reference, path, file, onProgress) => {
-  const fpath = destinationPath(path, file);
+const uploadFile = async (config, repo, reference, path, file, onProgress) => {  
+  const fpath = destinationPath(path, file);  
   if (config.pre_sign_support_ui) {
-      let additionalHeaders;
-      if (config.blockstore_type === "azure") {
-          additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
-      }
-    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
-    const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders)
-    if (uploadResponse.status >= 400) {
-      throw new Error(`Error uploading file: HTTP ${status}`)
+    let additionalHeaders;
+    if (config.blockstore_type === "azure") {
+      additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
     }
-    const checksum = extractChecksumFromResponse(uploadResponse)
-    await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
+    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
+    try {
+      const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
+      const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
+      const checksum = extractChecksumFromResponse(parsedHeaders);
+      await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
+    } catch(error) {
+       throw new Error(`Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ''}`);
+    }
   } else {
     await objects.upload(repo.id, reference.id, fpath, file, onProgress);
-  }
+    }
 };
 
 const destinationPath = (path, file) => {

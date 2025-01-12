@@ -1,6 +1,6 @@
 x-lakefs-common:
   &lakefs-common
-  image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
+  image: "${REGISTRY:-treeverse}/lakefs:${TAG:-latest}"
   environment:
     - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.docker.lakefs.io,s3.local.lakefs.io
     - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string

@@ -70,6 +70,13 @@ components:
       description: delimiter used to group common prefixes by
       schema:
         type: string
+
+    SearchString:
+      in: query
+      name: search
+      description: string for searching relevant entries
+      schema:
+        type: string
     
     IfNoneMatch:
       in: header
@@ -679,7 +686,15 @@ components:
           type: boolean
           default: false
           description: Allow merge when the branches have the same content
-
+        squash_merge:
+          type: boolean
+          default: false
+          description: |
+            If set, set only the destination branch as a parent, which "squashes" the merge to
+            appear as a single commit on the destination branch.  The source commit is no longer
+            a part of the merge commit; consider adding it to the 'metadata' or 'message'
+            fields.  This behaves like a GitHub or GitLab "squash merge", or in Git terms 'git
+            merge --squash; git commit ...'.
     BranchCreation:
       type: object
       required:
@@ -692,6 +707,10 @@ components:
           type: string
         force:
           type: boolean
+          default: false
+        hidden:
+          type: boolean
+          description: When set, branch will not show up when listing branches by default. *EXPERIMENTAL*
           default: false
 
     TagCreation:
@@ -738,7 +757,7 @@ components:
         error:
           type: string
         refs:
-            $ref: "#/components/schemas/RefsDump"
+          $ref: "#/components/schemas/RefsDump"
 
     RepositoryRestoreStatus:
       type: object
@@ -1035,6 +1054,8 @@ components:
           type: string
         name:
           type: string
+        description:
+          type: string
         creation_date:
           type: integer
           format: int64
@@ -1133,6 +1154,8 @@ components:
         - id
       properties:
         id:
+          type: string
+        description:
           type: string
 
     Statement:
@@ -1468,7 +1491,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ common_prefix, object ]
+          enum: [common_prefix, object]
           description: Path type, can either be 'common_prefix' or 'object'
         path:
           type: string
@@ -1701,7 +1724,7 @@ components:
         - installation_id
         - reports
 
-    ExternalPrincipalList: 
+    ExternalPrincipalList:
       type: object
       required:
         - pagination
@@ -1748,7 +1771,7 @@ components:
       properties:
         status:
           type: string
-          enum: [ open, closed, merged ]
+          enum: [open, closed, merged]
         title:
           type: string
         description:
@@ -1756,36 +1779,36 @@ components:
     
     PullRequest:
       allOf:
-          - $ref: '#/components/schemas/PullRequestBasic'
-          - required:
+        - $ref: '#/components/schemas/PullRequestBasic'
+        - required:
             - status
             - title
             - description
-          - type: object
-            required:
-              - id
-              - creation_date
-              - author
-              - source_branch
-              - destination_branch
-            properties:
-              id:
-                type: string
-              creation_date:
-                type: string
-                format: date-time
-              author:
-                type: string
-              source_branch:
-                type: string
-              destination_branch:
-                type: string
-              merged_commit_id:
-                type: string
-                description: the commit id of merged PRs
-              closed_date:
-                type: string
-                format: date-time
+        - type: object
+          required:
+            - id
+            - creation_date
+            - author
+            - source_branch
+            - destination_branch
+          properties:
+            id:
+              type: string
+            creation_date:
+              type: string
+              format: date-time
+            author:
+              type: string
+            source_branch:
+              type: string
+            destination_branch:
+              type: string
+            merged_commit_id:
+              type: string
+              description: the commit id of merged PRs
+            closed_date:
+              type: string
+              format: date-time
 
     PullRequestsList:
       type: object
@@ -2664,11 +2687,11 @@ paths:
         - experimental
       operationId: createUserExternalPrincipal
       summary: attach external principal to user
-      requestBody: 
+      requestBody:
         required: false
-        content: 
-          application/json: 
-            schema: 
+        content:
+          application/json:
+            schema:
               $ref: "#/components/schemas/ExternalPrincipalCreation"
       responses:
         201:
@@ -2749,7 +2772,7 @@ paths:
         - external
         - experimental
       operationId: getExternalPrincipal
-      summary: describe external principal by id 
+      summary: describe external principal by id
       responses:
         200:
           description: external principal
@@ -2895,7 +2918,7 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-        
+
   /repositories:
     get:
       tags:
@@ -2904,6 +2927,7 @@ paths:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - $ref: "#/components/parameters/SearchString"
       operationId: listRepositories
       summary: list repositories
       responses:
@@ -3544,6 +3568,12 @@ paths:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
+        - in: query
+          name: show_hidden
+          schema:
+            type: boolean
+            default: false
+            description: When set - list all branches including hidden branches. *EXPERIMENTAL*
       responses:
         200:
           description: branch list
@@ -4554,10 +4584,10 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/StagingMetadata"
-              
+
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
-          
+
       responses:
         200:
           # This actually violates HTTP, which requires returning 201 if a new object was
@@ -5745,7 +5775,7 @@ paths:
           name: status
           schema:
             type: string
-            enum: [ open, closed, all ]
+            enum: [open, closed, all]
             default: all
             description: filter pull requests by status
       responses:

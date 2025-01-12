@@ -592,7 +592,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **list_branches**
-> RefList list_branches(repository, prefix=prefix, after=after, amount=amount)
+> RefList list_branches(repository, prefix=prefix, after=after, amount=amount, show_hidden=show_hidden)
 
 list branches
 
@@ -660,10 +660,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     prefix = 'prefix_example' # str | return items prefixed with this value (optional)
     after = 'after_example' # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) (default to 100)
+    show_hidden = False # bool |  (optional) (default to False)
 
     try:
         # list branches
-        api_response = api_instance.list_branches(repository, prefix=prefix, after=after, amount=amount)
+        api_response = api_instance.list_branches(repository, prefix=prefix, after=after, amount=amount, show_hidden=show_hidden)
         print("The response of BranchesApi->list_branches:\n")
         pprint(api_response)
     except Exception as e:
@@ -681,6 +682,7 @@ Name | Type | Description  | Notes
  **prefix** | **str**| return items prefixed with this value | [optional] 
  **after** | **str**| return items after this value | [optional] 
  **amount** | **int**| how many items to return | [optional] [default to 100]
+ **show_hidden** | **bool**|  | [optional] [default to False]
 
 ### Return type
 
