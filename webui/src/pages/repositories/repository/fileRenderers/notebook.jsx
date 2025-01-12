@@ -28,7 +28,7 @@ import { PyodideContext } from "../../../../lib/hooks/pyodideContext";
 import { guessType } from ".";
 import { DuckDBRenderer } from "./data";
 const snippetStatObjectLabel = "Stat current object";
-const snippetReadObjectLabel = "Read current object";
+const snippetReadObjectLabel = "Read current (Text) object";
 const snippetNumpyMatplotlibLabel = "Numpy + Matplotlib";
 const snippetMicropipListLabel = "pip list";
 const snippetReadCurrentParquetLabel = ".parquet Read (pandas)";
@@ -201,7 +201,7 @@ const readCurrentImageSnippetTpl = (repoId, refId, path, fileExtension) => {
 
 import base64
 
-ref = lakefs.repository("test").branch("main")
+ref = lakefs.repository("${repoId}").branch("${refId}")
 obj = ref.object(path="images/axolotl.png")
 img = obj.reader(mode='rb')
 data = img.read()
@@ -252,7 +252,10 @@ const magicLoadLocalScriptSnippet = () => {
 # %% load_local file1.py file2.py file3.py
 %%load_local hello_world.py
 # assuming function say_hello is defined in hello_world.py
-say_hello("axolotl")`;
+say_hello("axolotl")
+# assuming calculate_sum(a,b) is defined in hello_world.py
+result = calculate_sum(1,2)
+print("Sum" ,result)`;
 }
 const numpyMatplotlibSnippet = () => {
     return `
