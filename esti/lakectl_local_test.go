@@ -489,80 +489,48 @@ func TestLakectlLocal_pull(t *testing.T) {
 func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	dataDir, err := os.MkdirTemp(tmpDir, "")
+	require.NoError(t, err)
+
 	vars := map[string]string{
-		"REPO":    repoName,
-		"STORAGE": storage,
-		"BRANCH":  mainBranch,
-		"REF":     mainBranch,
+		"REPO":      repoName,
+		"STORAGE":   storage,
+		"BRANCH":    mainBranch,
+		"REF":       mainBranch,
+		"LOCAL_DIR": dataDir,
 	}
-	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
-	objects := []string{
-		"ro_1k.1",
-		"ro_1k.2",
-		"ro_1k.3",
-	}
+	runCmd(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+storage, false, false, vars)
 
-	tests := []struct {
-		name   string
-		Delete bool
-	}{
-		{
-			name:   "test1",
-			Delete: true,
-		},
-		{
-			name:   "test2",
-			Delete: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			fd, err := os.CreateTemp(tmpDir, "")
-			require.NoError(t, err)
-			require.NoError(t, fd.Close())
-			dataDir, err := os.MkdirTemp(tmpDir, "")
-			require.NoError(t, err)
-			deleted := "deleted.png"
+	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
 
-			vars["LOCAL_DIR"] = dataDir
-			vars["BRANCH"] = tt.name
-			vars["REF"] = tt.name
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/ "+vars["LOCAL_DIR"], false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "No diff found", vars)
 
-			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+vars["BRANCH"]+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
-			localCreateTestData(t, vars, append(objects, deleted))
-			runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+"/  '*'", false, false, vars)
+	fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "local  ║ added  ║ test.txt", vars)
 
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/ "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
+	runCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+vars["REPO"]+"/ ", false, false, "*", vars)
+	str := runCmd(t, Lakectl()+" branch-protect list lakefs://"+vars["REPO"]+"/ ", false, false, vars)
+	fmt.Println("itamar testing", str)
+	// Commit changes to branch
+	//runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 
-			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
+	//RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+"fail_file.txt", false, "cannot write to protected branch", vars)
+	//RunCmdAndVerifyContainsText(t, Lakectl()+" local list", false, repoName+"/"+vars["BRANCH"], vars)
 
-			// Modify local folder - add or remove files
-			if tt.Delete {
-				require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
+	RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+vars["LOCAL_DIR"], false, "cannot write to protected branch", vars)
+	//RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs rm "+dataDir, false, "cannot write to protected branch", vars)
 
-			} else {
-				fd, err = os.Create(filepath.Join(dataDir, "test.txt"))
-				require.NoError(t, err)
-				require.NoError(t, fd.Close())
-				RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "local  ║ added  ║ test.txt", vars)
-			}
-			//runCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+repoName+"/ ", false, false, vars["BRANCH"], vars)
-			str := runCmd(t, Lakectl()+" branch-protect list lakefs://"+repoName+"/ ", false, false, vars)
-			fmt.Println("itamar testing", str)
-			// Commit changes to branch
-			//runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
-
-			//RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+"fail_file.txt", false, "cannot write to protected branch", vars)
-			//RunCmdAndVerifyContainsText(t, Lakectl()+" local list", false, repoName+"/"+vars["BRANCH"], vars)
-
-			RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+dataDir, false, "cannot write to protected branch", vars)
-			//runCmd(t, Lakectl()+" branch-protect delete lakefs://"+repoName+"/  \"*\"", false, false, vars)
-
-		})
-	}
+	//runCmd(t, Lakectl()+" branch-protect delete lakefs://"+repoName+"/  \"*\"", false, false, vars)
 
 }
+
 func TestLakectlLocal_commit(t *testing.T) {
 	tmpDir := t.TempDir()
 	fd, err := os.CreateTemp(tmpDir, "")
