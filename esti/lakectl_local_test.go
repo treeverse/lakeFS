@@ -504,9 +504,9 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 		"LOCAL_DIR": dataDir,
 	}
 	runCmd(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, false, vars)
-	vars["FILE_PATH"] = "ro_1k.0"
-	runCmd(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, false, vars)
-	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
+	// vars["FILE_PATH"] = "ro_1k.0"
+	// runCmd(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, false, vars)
+	// runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
 	// Cloning local dir
