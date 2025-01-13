@@ -504,6 +504,8 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 		"LOCAL_DIR": dataDir,
 	}
 	runCmd(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, false, vars)
+	vars["FILE_PATH"] = "ro_1k.0"
+	runCmd(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, false, vars)
 
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
 	// Cloning local dir
@@ -516,6 +518,10 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "local  ║ added  ║ test.txt", vars)
 
 	// Try to commit local dir, expect failure
+	RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+vars["LOCAL_DIR"], false, "cannot write to protected branch", vars)
+
+	// Try delete file from local dir and then commit
+	require.NoError(t, os.Remove(filepath.Join(dataDir, vars["FILE_PATH"])))
 	RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+vars["LOCAL_DIR"], false, "cannot write to protected branch", vars)
 }
 
