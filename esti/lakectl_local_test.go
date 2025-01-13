@@ -526,7 +526,7 @@ func TestLakectlLocal_RmcommitProtetedBranch(t *testing.T) {
 	require.NoError(t, fd.Close())
 	dataDir, err := os.MkdirTemp(tmpDir, "")
 	require.NoError(t, err)
-	file := "ro_1k.0"
+	file := "data/ro/ro_1k.0"
 
 	vars := map[string]string{
 		"REPO":      repoName,
@@ -545,8 +545,6 @@ func TestLakectlLocal_RmcommitProtetedBranch(t *testing.T) {
 	// Cloning local dir
 	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/ "+vars["LOCAL_DIR"], false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
 	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "No diff found", vars)
-
-	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "local  ║ added  ║ test.txt", vars)
 
 	// Try delete file from local dir and then commit
 	require.NoError(t, os.Remove(filepath.Join(dataDir, vars["FILE_PATH"])))

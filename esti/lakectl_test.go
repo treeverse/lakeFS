@@ -744,7 +744,7 @@ func TestLakectlFsUpload_protectedBranch(t *testing.T) {
 func TestLakectlFsRm_protectedBranch(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
-	file := "ro_1k.0"
+	file := "data/ro_1k.0"
 	vars := map[string]string{
 		"REPO":      repoName,
 		"STORAGE":   storage,
