@@ -744,13 +744,15 @@ func TestLakectlFsUpload_protectedBranch(t *testing.T) {
 func TestLakectlFsRm_protectedBranch(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
+	file := "ro_1k.0"
 	vars := map[string]string{
-		"REPO":    repoName,
-		"STORAGE": storage,
-		"BRANCH":  mainBranch,
+		"REPO":      repoName,
+		"STORAGE":   storage,
+		"BRANCH":    mainBranch,
+		"FILE_PATH": file,
 	}
+
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, "lakectl_repo_create", vars)
-	vars["FILE_PATH"] = "ro_1k.0"
 	runCmd(t, Lakectl()+" fs upload lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, false, vars)
 	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)

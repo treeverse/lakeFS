@@ -495,6 +495,7 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 	require.NoError(t, fd.Close())
 	dataDir, err := os.MkdirTemp(tmpDir, "")
 	require.NoError(t, err)
+	file := "ro_1k.0"
 
 	vars := map[string]string{
 		"REPO":      repoName,
@@ -502,11 +503,12 @@ func TestLakectlLocal_commitProtetedBranch(t *testing.T) {
 		"BRANCH":    mainBranch,
 		"REF":       mainBranch,
 		"LOCAL_DIR": dataDir,
+		"FILE_PATH": file,
 	}
 	runCmd(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, false, vars)
-	// vars["FILE_PATH"] = "ro_1k.0"
-	// runCmd(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, false, vars)
-	// runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
+
+	runCmd(t, Lakectl()+" fs upload lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, false, vars)
+	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
 	// Cloning local dir
