@@ -25,9 +25,9 @@ Existing lakeFS installations that have a single user and a single set of creden
 Installations that have more than one user / credentials will require to run a command and choose which set of user + credentials to migrate 
 (more details [here](#migration-of-existing-user))
 
-### Replacing credentials
+### Credentials Replacement
 
-In non-ACL setup (single user), replacing credentials can be done as follows:
+In a single user setup, replacing credentials can be done as follows:
 1. Delete the existing user:
     ```shell
     lakectl auth users delete --id <user-id>
