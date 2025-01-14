@@ -27,7 +27,7 @@ Installations that have more than one user / credentials will require to run a c
 
 ### Replacing credentials
 
-To replace the credentials of the (single) user in a lakefs installation:
+In non-ACL setup (single user), replacing credentials can be done as follows:
 1. Delete the existing user:
     ```shell
     lakectl auth users delete --id <user-id>
@@ -46,12 +46,12 @@ To replace the credentials of the (single) user in a lakefs installation:
 4. Re-run lakeFS server
 
 {: .note .warning}
-> Calling the `superuser` command with `--access-key-id` and without `--secret-access-key` will make lakefs try to 
-> import an existing user (see [Migration of existing user](#migration-of-existing-user)).
+> Calling the `superuser` command with pre-defined `--access-key-id` and `--secret-access-key` is possible,
+> but should be done with caution. Make sure that `--secret-access-key` is **not empty**,
+> as providing an access key without a secret key will trigger an ACL import flow
+> (see [Migration of existing user](#migration-of-existing-user)).
 > In case you already deleted the user by following step (1), this import operation will **fail** and result in an 
-> **unrecoverable** state, and a clean installation is the only way out.
-> 
-> In general, replacing credentials is a risky operation. Proceed with caution.
+> **unrecoverable** state, from which a clean installation is the only way out.
 
 ## ACLs
 
