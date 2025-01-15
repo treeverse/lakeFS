@@ -746,21 +746,19 @@ func TestLakectlFsUpload_protectedBranch(t *testing.T) {
 func TestLakectlFsRm_protectedBranch(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
-	file := "data/ro_1k.0"
-	file2 := "data/ro_2k.0"
 	vars := map[string]string{
-		"REPO":       repoName,
-		"STORAGE":    storage,
-		"BRANCH":     mainBranch,
-		"FILE_PATH":  file,
-		"FILE_PATH2": file2,
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
 	}
 
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, "lakectl_repo_create", vars)
+	vars["FILE_PATH"] = "ro_1k.0"
 	runCmd(t, Lakectl()+" fs upload lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, false, vars)
 	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
 	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+vars["REPO"]+"/ ", false, "*", vars)
+	vars["FILE_PATH2"] = "ro_2k.0"
 	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH2"]+" -s files/ro_1k", false, "cannot write to protected branch\n403 Forbidden\n", vars)
 	RunCmdAndVerifyFailure(t, Lakectl()+" fs rm lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"], false, "cannot write to protected branch\n403 Forbidden\n", vars)
 }
