@@ -7501,6 +7501,7 @@ components:
     Repository:
       example:
         read_only: true
+        storage_id: storage_id
         default_branch: default_branch
         id: id
         creation_date: 0
@@ -7513,6 +7514,9 @@ components:
           format: int64
           type: integer
         default_branch:
+          type: string
+        storage_id:
+          description: Unique identifier of the underlying data store
           type: string
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
@@ -7566,11 +7570,13 @@ components:
           results: 0
         results:
         - read_only: true
+          storage_id: storage_id
           default_branch: default_branch
           id: id
           creation_date: 0
           storage_namespace: storage_namespace
         - read_only: true
+          storage_id: storage_id
           default_branch: default_branch
           id: id
           creation_date: 0
