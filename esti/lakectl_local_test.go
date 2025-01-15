@@ -508,8 +508,8 @@ func TestLakectlLocal_commitProtectedBranch(t *testing.T) {
 	}
 	runCmd(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, false, vars)
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
-	// sleep in order to overcome branch-protect caching problem
-	time.Sleep(10 * time.Second)
+	// BranchUpdateMaxInterval - sleep in order to overcome branch update caching
+	time.Sleep(6 * time.Second)
 	// Cloning local dir
 	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/ "+vars["LOCAL_DIR"], false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
 	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "No diff found", vars)
@@ -553,8 +553,8 @@ func TestLakectlLocal_RmCommitProtectedBranch(t *testing.T) {
 	require.NoError(t, fd.Close())
 	RunCmdAndVerifyContainsText(t, Lakectl()+" local commit "+vars["LOCAL_DIR"]+" -m test", false, "Commit for branch \""+vars["BRANCH"]+"\" completed.", vars)
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
-	// sleep in order to overcome branch-protect caching problem
-	time.Sleep(10 * time.Second)
+	// BranchUpdateMaxInterval - sleep in order to overcome branch update caching
+	time.Sleep(6 * time.Second)
 
 	// Try delete file from local dir and then commit
 	require.NoError(t, os.Remove(filepath.Join(vars["LOCAL_DIR"], vars["FILE_PATH"])))
