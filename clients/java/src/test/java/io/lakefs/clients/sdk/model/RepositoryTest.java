@@ -62,14 +62,6 @@ public class RepositoryTest {
     }
 
     /**
-     * Test the property 'storageId'
-     */
-    @Test
-    public void storageIdTest() {
-        // TODO: test storageId
-    }
-
-    /**
      * Test the property 'storageNamespace'
      */
     @Test
