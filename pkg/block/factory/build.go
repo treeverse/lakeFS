@@ -39,7 +39,7 @@ func buildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c pa
 	blockstore := strings.ToLower(c.BlockstoreType())
 	logging.FromContext(ctx).
 		WithField("type", blockstore).
-		Info("initialize blockstore adapter")
+		Info("initialize blockstore adapters")
 	switch blockstore {
 	case block.BlockstoreTypeLocal:
 		p, err := c.BlockstoreLocalParams()
