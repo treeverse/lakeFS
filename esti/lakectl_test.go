@@ -15,6 +15,8 @@ import (
 
 var emptyVars = make(map[string]string)
 
+const branchProtectTimeout = graveler.BranchUpdateMaxInterval + 1
+
 func TestLakectlHelp(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl(), false, "lakectl_help", emptyVars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" --help", false, "lakectl_help", emptyVars)
@@ -740,7 +742,7 @@ func TestLakectlFsUpload_protectedBranch(t *testing.T) {
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
 	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+vars["REPO"]+"/ ", false, "*", vars)
 	// BranchUpdateMaxInterval - sleep in order to overcome branch update caching
-	time.Sleep(graveler.BranchUpdateMaxInterval * time.Second)
+	time.Sleep(branchProtectTimeout * time.Second)
 	vars["FILE_PATH"] = "ro_1k.0"
 	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "cannot write to protected branch\n403 Forbidden\n", vars)
 }
@@ -760,7 +762,7 @@ func TestLakectlFsRm_protectedBranch(t *testing.T) {
 	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
 	// BranchUpdateMaxInterval - sleep in order to overcome branch update caching
-	time.Sleep(graveler.BranchUpdateMaxInterval * time.Second)
+	time.Sleep(branchProtectTimeout * time.Second)
 	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+vars["REPO"]+"/ ", false, "*", vars)
 	RunCmdAndVerifyFailure(t, Lakectl()+" fs rm lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"], false, "cannot write to protected branch\n403 Forbidden\n", vars)
 }
