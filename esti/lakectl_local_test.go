@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -507,6 +508,8 @@ func TestLakectlLocal_commitProtectedBranch(t *testing.T) {
 	}
 	runCmd(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, false, vars)
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
+	// sleep in order to overcome branch-protect caching problem
+	time.Sleep(10 * time.Second)
 	// Cloning local dir
 	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/ "+vars["LOCAL_DIR"], false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
 	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "No diff found", vars)
@@ -515,7 +518,6 @@ func TestLakectlLocal_commitProtectedBranch(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
 	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "local  ║ added  ║ test.txt", vars)
-
 	// Try to commit local dir, expect failure
 	RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+vars["LOCAL_DIR"], false, "cannot write to protected branch", vars)
 }
@@ -531,7 +533,7 @@ func TestLakectlLocal_RmCommitProtectedBranch(t *testing.T) {
 	require.NoError(t, err)
 	file := "ro_1k.0"
 
-	variables := map[string]string{
+	vars := map[string]string{
 		"REPO":      repoName,
 		"STORAGE":   storage,
 		"BRANCH":    mainBranch,
@@ -539,23 +541,25 @@ func TestLakectlLocal_RmCommitProtectedBranch(t *testing.T) {
 		"LOCAL_DIR": dataDir,
 		"FILE_PATH": file,
 	}
-	runCmd(t, Lakectl()+" repo create lakefs://"+variables["REPO"]+" "+variables["STORAGE"], false, false, variables)
+	runCmd(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, false, vars)
 
 	// Cloning local dir
-	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+variables["REPO"]+"/"+variables["BRANCH"]+"/ "+variables["LOCAL_DIR"], false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", variables)
-	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+variables["LOCAL_DIR"], false, "No diff found", variables)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/ "+vars["LOCAL_DIR"], false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "No diff found", vars)
 
 	// locally add a file and commit
-	fd, err = os.Create(filepath.Join(variables["LOCAL_DIR"], variables["FILE_PATH"]))
+	fd, err = os.Create(filepath.Join(vars["LOCAL_DIR"], vars["FILE_PATH"]))
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
-	RunCmdAndVerifyContainsText(t, Lakectl()+" local commit "+variables["LOCAL_DIR"]+" -m test", false, "Commit for branch \""+variables["BRANCH"]+"\" completed.", variables)
-	runCmd(t, Lakectl()+" branch-protect add lakefs://"+variables["REPO"]+"/  '*'", false, false, variables)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local commit "+vars["LOCAL_DIR"]+" -m test", false, "Commit for branch \""+vars["BRANCH"]+"\" completed.", vars)
+	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
+	// sleep in order to overcome branch-protect caching problem
+	time.Sleep(10 * time.Second)
 
 	// Try delete file from local dir and then commit
-	require.NoError(t, os.Remove(filepath.Join(variables["LOCAL_DIR"], variables["FILE_PATH"])))
-	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+variables["LOCAL_DIR"], false, "local  ║ removed ║ "+variables["FILE_PATH"], variables)
-	RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+variables["LOCAL_DIR"], false, "cannot write to protected branch", variables)
+	require.NoError(t, os.Remove(filepath.Join(vars["LOCAL_DIR"], vars["FILE_PATH"])))
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "local  ║ removed ║ "+vars["FILE_PATH"], vars)
+	RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+vars["LOCAL_DIR"], false, "cannot write to protected branch", vars)
 }
 
 func TestLakectlLocal_commit(t *testing.T) {

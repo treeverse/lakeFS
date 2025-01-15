@@ -738,7 +738,8 @@ func TestLakectlFsUpload_protectedBranch(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, "lakectl_repo_create", vars)
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
 	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+vars["REPO"]+"/ ", false, "*", vars)
-
+	// sleep in order to overcome branch-protect caching problem
+	time.Sleep(10 * time.Second)
 	vars["FILE_PATH"] = "ro_1k.0"
 	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "cannot write to protected branch\n403 Forbidden\n", vars)
 }
@@ -746,21 +747,21 @@ func TestLakectlFsUpload_protectedBranch(t *testing.T) {
 func TestLakectlFsRm_protectedBranch(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
-	variables := map[string]string{
+	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
 	}
 
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+variables["REPO"]+" "+variables["STORAGE"], false, "lakectl_repo_create", variables)
-	variables["FILE_PATH"] = "ro_1k.0"
-	runCmd(t, Lakectl()+" fs upload lakefs://"+variables["REPO"]+"/"+variables["BRANCH"]+"/"+variables["FILE_PATH"]+" -s files/ro_1k", false, false, variables)
-	runCmd(t, Lakectl()+" commit lakefs://"+variables["REPO"]+"/"+variables["BRANCH"]+" --allow-empty-message -m \" \"", false, false, variables)
-	runCmd(t, Lakectl()+" branch-protect add lakefs://"+variables["REPO"]+"/  '*'", false, false, variables)
-	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+variables["REPO"]+"/ ", false, "*", variables)
-	variables["FILE_PATH2"] = "ro_2k.0"
-	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+variables["REPO"]+"/"+variables["BRANCH"]+"/"+variables["FILE_PATH2"]+" -s files/ro_1k", false, "cannot write to protected branch\n403 Forbidden\n", variables)
-	RunCmdAndVerifyFailure(t, Lakectl()+" fs rm lakefs://"+variables["REPO"]+"/"+variables["BRANCH"]+"/"+variables["FILE_PATH"], false, "cannot write to protected branch\n403 Forbidden\n", variables)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, "lakectl_repo_create", vars)
+	vars["FILE_PATH"] = "ro_1k.0"
+	runCmd(t, Lakectl()+" fs upload lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, false, vars)
+	runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
+	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
+	// sleep in order to overcome branch-protect caching problem
+	time.Sleep(10 * time.Second)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+vars["REPO"]+"/ ", false, "*", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" fs rm lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"], false, "cannot write to protected branch\n403 Forbidden\n", vars)
 }
 
 func TestLakectlFsPresign(t *testing.T) {
