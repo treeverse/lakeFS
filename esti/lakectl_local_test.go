@@ -547,7 +547,7 @@ func TestLakectlLocal_RmCommitProtectedBranch(t *testing.T) {
 	fd, err = os.Create(filepath.Join(dataDir, file))
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
-	RunCmdAndVerifyContainsText(t, Lakectl()+" local commit "+vars["LOCAL_DIR"], false, "Commit for branch \""+vars["BRANCH"]+"\" completed.", vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local commit "+vars["LOCAL_DIR"]+" -m test", false, "Commit for branch \""+vars["BRANCH"]+"\" completed.", vars)
 	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
 
 	// Try delete file from local dir and then commit
