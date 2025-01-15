@@ -1907,7 +1907,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 		creationDate := repo.CreationDate.Unix()
 		r := apigen.Repository{
 			Id:               repo.Name,
-			StorageId:        swag.String(repo.StorageNamespace),
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
@@ -2021,7 +2021,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			CreationDate:     repo.CreationDate.Unix(),
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
-			StorageId:        swag.String(repo.StorageNamespace),
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 		}
 		writeResponse(w, r, http.StatusCreated, response)
@@ -2169,7 +2169,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			CreationDate:     repo.CreationDate.Unix(),
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
-			StorageId:        swag.String(repo.StorageNamespace),
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
