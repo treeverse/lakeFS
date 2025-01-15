@@ -7619,16 +7619,12 @@ components:
       example:
         sample_data: true
         read_only: true
-        storage_id: storage_id
         name: name
         default_branch: main
         storage_namespace: s3://example-bucket/
       properties:
         name:
           pattern: "^[a-z0-9][a-z0-9-]{2,62}$"
-          type: string
-        storage_id:
-          description: Unique identifier of the underlying data store
           type: string
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
