@@ -30,12 +30,11 @@ class RepositoryCreation(BaseModel):
     RepositoryCreation
     """
     name: constr(strict=True) = Field(...)
-    storage_id: Optional[StrictStr] = Field(None, description="Unique identifier of the underlying data store")
     storage_namespace: constr(strict=True) = Field(..., description="Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")")
     default_branch: Optional[StrictStr] = None
     sample_data: Optional[StrictBool] = False
     read_only: Optional[StrictBool] = False
-    __properties = ["name", "storage_id", "storage_namespace", "default_branch", "sample_data", "read_only"]
+    __properties = ["name", "storage_namespace", "default_branch", "sample_data", "read_only"]
 
     @validator('name')
     def name_validate_regular_expression(cls, value):
@@ -88,7 +87,6 @@ class RepositoryCreation(BaseModel):
 
         _obj = RepositoryCreation.parse_obj({
             "name": obj.get("name"),
-            "storage_id": obj.get("storage_id"),
             "storage_namespace": obj.get("storage_namespace"),
             "default_branch": obj.get("default_branch"),
             "sample_data": obj.get("sample_data") if obj.get("sample_data") is not None else False,

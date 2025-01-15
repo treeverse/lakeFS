@@ -56,10 +56,6 @@ public class RepositoryCreation {
   @SerializedName(SERIALIZED_NAME_NAME)
   private String name;
 
-  public static final String SERIALIZED_NAME_STORAGE_ID = "storage_id";
-  @SerializedName(SERIALIZED_NAME_STORAGE_ID)
-  private String storageId;
-
   public static final String SERIALIZED_NAME_STORAGE_NAMESPACE = "storage_namespace";
   @SerializedName(SERIALIZED_NAME_STORAGE_NAMESPACE)
   private String storageNamespace;
@@ -97,27 +93,6 @@ public class RepositoryCreation {
 
   public void setName(String name) {
     this.name = name;
-  }
-
-
-  public RepositoryCreation storageId(String storageId) {
-    
-    this.storageId = storageId;
-    return this;
-  }
-
-   /**
-   * Unique identifier of the underlying data store
-   * @return storageId
-  **/
-  @javax.annotation.Nullable
-  public String getStorageId() {
-    return storageId;
-  }
-
-
-  public void setStorageId(String storageId) {
-    this.storageId = storageId;
   }
 
 
@@ -260,7 +235,6 @@ public class RepositoryCreation {
     }
     RepositoryCreation repositoryCreation = (RepositoryCreation) o;
     return Objects.equals(this.name, repositoryCreation.name) &&
-        Objects.equals(this.storageId, repositoryCreation.storageId) &&
         Objects.equals(this.storageNamespace, repositoryCreation.storageNamespace) &&
         Objects.equals(this.defaultBranch, repositoryCreation.defaultBranch) &&
         Objects.equals(this.sampleData, repositoryCreation.sampleData) &&
@@ -270,7 +244,7 @@ public class RepositoryCreation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, storageId, storageNamespace, defaultBranch, sampleData, readOnly, additionalProperties);
+    return Objects.hash(name, storageNamespace, defaultBranch, sampleData, readOnly, additionalProperties);
   }
 
   @Override
@@ -278,7 +252,6 @@ public class RepositoryCreation {
     StringBuilder sb = new StringBuilder();
     sb.append("class RepositoryCreation {\n");
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
-    sb.append("    storageId: ").append(toIndentedString(storageId)).append("\n");
     sb.append("    storageNamespace: ").append(toIndentedString(storageNamespace)).append("\n");
     sb.append("    defaultBranch: ").append(toIndentedString(defaultBranch)).append("\n");
     sb.append("    sampleData: ").append(toIndentedString(sampleData)).append("\n");
@@ -307,7 +280,6 @@ public class RepositoryCreation {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("name");
-    openapiFields.add("storage_id");
     openapiFields.add("storage_namespace");
     openapiFields.add("default_branch");
     openapiFields.add("sample_data");
@@ -341,9 +313,6 @@ public class RepositoryCreation {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if (!jsonObj.get("name").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
-      }
-      if ((jsonObj.get("storage_id") != null && !jsonObj.get("storage_id").isJsonNull()) && !jsonObj.get("storage_id").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `storage_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("storage_id").toString()));
       }
       if (!jsonObj.get("storage_namespace").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `storage_namespace` to be a primitive type in the JSON string but got `%s`", jsonObj.get("storage_namespace").toString()));
