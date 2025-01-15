@@ -23,7 +23,7 @@ var setupCmd = &cobra.Command{
 	Aliases: []string{"init"},
 	Short:   "Setup a new lakeFS instance with initial credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := loadConfig()
+		cfg := loadConfig().BaseConfig()
 
 		ctx := cmd.Context()
 		kvParams, err := kvparams.NewConfig(&cfg.Database)

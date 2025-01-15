@@ -12,6 +12,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/block/gs"
@@ -28,21 +29,22 @@ func newConfigFromFile(fn string) (*config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := config.NewConfig("")
+	cfg, err := configfactory.BuildConfig("")
 	if err != nil {
 		return nil, err
 	}
 	err = cfg.Validate()
-	return cfg, err
+	return cfg.BaseConfig(), err
 }
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	c, err := config.NewConfig("")
+	cfg := &config.Config{}
+	cfg, err := config.NewConfig("", cfg)
 	testutil.Must(t, err)
 	// Don't validate, some tested configs don't have all required fields.
-	if c.ListenAddress != config.DefaultListenAddress {
-		t.Fatalf("expected listen addr '%s', got '%s'", config.DefaultListenAddress, c.ListenAddress)
+	if cfg.ListenAddress != config.DefaultListenAddress {
+		t.Fatalf("expected listen addr '%s', got '%s'", config.DefaultListenAddress, cfg.ListenAddress)
 	}
 }
 

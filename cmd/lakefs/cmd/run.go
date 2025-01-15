@@ -137,7 +137,7 @@ var runCmd = &cobra.Command{
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.ContextUnavailable()
-		cfg := loadConfig()
+		cfg := loadConfig().BaseConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
 			var c config.Config

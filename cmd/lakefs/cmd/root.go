@@ -11,6 +11,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv/local"
@@ -52,6 +53,8 @@ func init() {
 	rootCmd.PersistentFlags().Bool(config.QuickstartConfiguration, false, "Use lakeFS quickstart configuration")
 }
 
+// TODO (niro): All this validation logic should be in the OSS config package
+
 func validateQuickstartEnv(cfg *config.Config) {
 	if (cfg.Database.Type != local.DriverName && cfg.Database.Type != mem.DriverName) || cfg.Blockstore.Type != block.BlockstoreTypeLocal {
 		_, _ = fmt.Fprint(os.Stderr, "\nFATAL: quickstart mode can only run with local settings\n")
@@ -78,25 +81,25 @@ func useConfig(flagName string) bool {
 	return res
 }
 
-func newConfig() (*config.Config, error) {
+func newConfig() (config.Interface, error) {
 	name := ""
 	configurations := []string{config.QuickstartConfiguration, config.UseLocalConfiguration}
 	if idx := slices.IndexFunc(configurations, useConfig); idx != -1 {
 		name = configurations[idx]
 	}
 
-	cfg, err := config.NewConfig(name)
+	cfg, err := configfactory.BuildConfig(name)
 	if err != nil {
 		return nil, err
 	}
 
 	if name == config.QuickstartConfiguration {
-		validateQuickstartEnv(cfg)
+		validateQuickstartEnv(cfg.BaseConfig())
 	}
-	return cfg, nil
+	return cfg.BaseConfig(), nil
 }
 
-func loadConfig() *config.Config {
+func loadConfig() config.Interface {
 	initOnce.Do(initConfig)
 	cfg, err := newConfig()
 	if err != nil {
