@@ -60,7 +60,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 		storageNamespace = "replay"
 	}
 
-	// TODO (gilo): test storageID here?
+	// TODO (gilo): test the storageID here?
 	_, err = c.CreateRepository(ctx, repoName, "", storageNamespace, "main", false)
 	testutil.Must(t, err)
 
