@@ -198,23 +198,21 @@ func TestController_GetRepoHandler(t *testing.T) {
 		}
 	})
 
-	for _, isBareRepo := range []bool{false, true} {
-		t.Run(fmt.Sprintf("use same storage namespace twice, isBareRepo=%v", isBareRepo), func(t *testing.T) {
-			name := testUniqueRepoName()
-			resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-				Name:             name,
-				StorageNamespace: onBlock(deps, name),
-			})
-			verifyResponseOK(t, resp, err)
-
-			resp, err = clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{Bare: &isBareRepo}, apigen.CreateRepositoryJSONRequestBody{
-				Name:             name + "_2",
-				StorageNamespace: onBlock(deps, name),
-			})
-			require.NoError(t, err)
-			require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+	t.Run("use same storage namespace twice", func(t *testing.T) {
+		name := testUniqueRepoName()
+		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			Name:             name,
+			StorageNamespace: onBlock(deps, name),
 		})
-	}
+		verifyResponseOK(t, resp, err)
+
+		resp, err = clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			Name:             name + "_2",
+			StorageNamespace: onBlock(deps, name),
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+	})
 }
 
 func testCommitEntries(t *testing.T, ctx context.Context, cat *catalog.Catalog, deps *dependencies, params commitEntriesParams) string {
@@ -1037,7 +1035,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 			}, apigen.CreateRepositoryJSONRequestBody{
 				DefaultBranch:    apiutil.Ptr("main"),
 				Name:             repoName,
-				StorageNamespace: onBlock(deps, "foo-bucket-2"),
+				StorageNamespace: onBlock(deps, "foo-bucket-1"),
 			})
 		verifyResponseOK(t, resp, err)
 
