@@ -2059,7 +2059,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		CreationDate:     newRepo.CreationDate.Unix(),
 		DefaultBranch:    newRepo.DefaultBranch,
 		Id:               newRepo.Name,
-		StorageId:        swag.String(newRepo.StorageNamespace),
+		StorageId:        swag.String(newRepo.StorageID),
 		StorageNamespace: newRepo.StorageNamespace,
 		ReadOnly:         swag.Bool(newRepo.ReadOnly),
 	}
