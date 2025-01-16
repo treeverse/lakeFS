@@ -101,7 +101,7 @@ func TestController_ListRepositoriesHandler(t *testing.T) {
 	t.Run("list some repos", func(t *testing.T) {
 		// write some repos
 		ctx := context.Background()
-		_, err := deps.catalog.CreateRepository(ctx, "foo1", "storage", onBlock(deps, "foo1"), "main", false)
+		_, err := deps.catalog.CreateRepository(ctx, "foo1", "", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
 		_, err = deps.catalog.CreateRepository(ctx, "foo2", "storage", onBlock(deps, "foo1"), "main", false)
 		testutil.Must(t, err)
