@@ -453,7 +453,6 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	branchID := graveler.BranchID(branch)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
-		{Name: "storageID", Value: storageIdentifier, Fn: graveler.ValidateStorageID},
 		{Name: "storageNamespace", Value: storageNS, Fn: graveler.ValidateStorageNamespace},
 	}); err != nil {
 		return nil, err
@@ -482,7 +481,6 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 	branchID := graveler.BranchID(defaultBranchID)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
-		{Name: "storageID", Value: storageIdentifier, Fn: graveler.ValidateStorageID},
 		{Name: "storageNamespace", Value: storageNS, Fn: graveler.ValidateStorageNamespace},
 	}); err != nil {
 		return nil, err
