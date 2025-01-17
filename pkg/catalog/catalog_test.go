@@ -871,7 +871,6 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 	repository := &graveler.RepositoryRecord{
 		RepositoryID: graveler.RepositoryID(repositoryID),
 		Repository: &graveler.Repository{
-			StorageID:        "",
 			StorageNamespace: graveler.StorageNamespace("mem://" + repositoryID),
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
