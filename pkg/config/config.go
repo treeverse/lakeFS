@@ -211,7 +211,7 @@ type Blockstore struct {
 	} `mapstructure:"gs"`
 }
 
-type Interface interface {
+type Config interface {
 	GetBaseConfig() *BaseConfig
 	StorageConfig() interface{}
 	Validate() error
@@ -302,7 +302,7 @@ type BaseConfig struct {
 			LogoutURL          string   `mapstructure:"logout_url"`
 		} `mapstructure:"ui_config"`
 	} `mapstructure:"auth"`
-	Blockstore Blockstore `mapstructure:"blockstore"`
+	Blockstore *Blockstore `mapstructure:"blockstore"`
 	Committed  struct {
 		LocalCache struct {
 			SizeBytes             int64   `mapstructure:"size_bytes"`
@@ -399,7 +399,7 @@ type BaseConfig struct {
 }
 
 // NewConfig - General (common) configuration
-func NewConfig(cfgType string, c Interface) (*BaseConfig, error) {
+func NewConfig(cfgType string, c Config) (*BaseConfig, error) {
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
 	// environment.
 	SetDefaults(cfgType, c)
@@ -419,15 +419,15 @@ func NewConfig(cfgType string, c Interface) (*BaseConfig, error) {
 	return cfg, nil
 }
 
-func SetDefaults(cfgType string, c interface{}) {
+func SetDefaults(cfgType string, c Config) {
 	keys := GetStructKeys(reflect.TypeOf(c), "mapstructure", "squash")
 	for _, key := range keys {
 		viper.SetDefault(key, nil)
 	}
-	setDefaults(cfgType)
+	setBaseDefaults(cfgType, c.GetBaseConfig())
 }
 
-func Unmarshal(c Interface) error {
+func Unmarshal(c Config) error {
 	return viper.UnmarshalExact(&c,
 		viper.DecodeHook(
 			mapstructure.ComposeDecodeHookFunc(

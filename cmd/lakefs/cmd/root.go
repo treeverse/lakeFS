@@ -81,7 +81,7 @@ func useConfig(flagName string) bool {
 	return res
 }
 
-func newConfig() (config.Interface, error) {
+func newConfig() (config.Config, error) {
 	name := ""
 	configurations := []string{config.QuickstartConfiguration, config.UseLocalConfiguration}
 	if idx := slices.IndexFunc(configurations, useConfig); idx != -1 {
@@ -99,7 +99,7 @@ func newConfig() (config.Interface, error) {
 	return cfg.GetBaseConfig(), nil
 }
 
-func loadConfig() config.Interface {
+func loadConfig() config.Config {
 	initOnce.Do(initConfig)
 	cfg, err := newConfig()
 	if err != nil {
@@ -156,11 +156,6 @@ func initConfig() {
 		logger.WithError(err).Fatal("Load config")
 	} else {
 		logger.Info("Config loaded")
-	}
-
-	err = cfg.Validate()
-	if err != nil {
-		logger.WithError(err).Fatal("Invalid config")
 	}
 
 	logger.WithFields(config.MapLoggingFields(cfg)).Info("Config")
