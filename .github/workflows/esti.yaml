@@ -82,7 +82,7 @@ jobs:
     name: Build and push Docker image
     needs: [ check-secrets, gen-code ]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
-    runs-on: ubuntu-latest-16-cores
+    runs-on: ubuntu-22.04-16-cores
     outputs:
       tag: ${{ needs.gen-code.outputs.tag }}
     steps:
@@ -124,7 +124,7 @@ jobs:
             type=s3,region=us-east-1,bucket=lakefs-docker-cache,name=lakefs,mode=max
 
   login-to-amazon-ecr:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [ check-secrets ]
     if: needs.check-secrets.outputs.secretsavailable == 'true'
     steps:
@@ -147,7 +147,7 @@ jobs:
   unified-gc-test:
     name: Test unified gc
     needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-22.04-8-cores
     services:
       lakefs:
         image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
@@ -650,7 +650,7 @@ jobs:
 
   build-spark3-metadata-client:
     name: Build metadata client for Spark 3.x
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-22.04-8-cores
     needs: [check-secrets, deploy-image, login-to-amazon-ecr]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -1159,7 +1159,7 @@ jobs:
     needs: 
       - deploy-image
       - login-to-amazon-ecr
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-22.04-8-cores
     timeout-minutes: 20
     services:
       dynamodb:
@@ -1278,7 +1278,7 @@ jobs:
     needs: 
       - deploy-image
       - login-to-amazon-ecr
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-22.04-8-cores
     timeout-minutes: 20
     services:
       dynamodb:
