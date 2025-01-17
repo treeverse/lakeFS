@@ -112,7 +112,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
 
 	collector := &memCollector{}
-	cfg := &config.Config{}
+	cfg := &config.BaseConfig{}
 	cfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 	kvStore := kvtest.GetStore(ctx, t)

@@ -5,7 +5,7 @@ import (
 )
 
 func BuildConfig(cfgType string) (config.Interface, error) {
-	c := &config.Config{}
+	c := &config.BaseConfig{}
 	c, err := config.NewConfig(cfgType, c)
 	if err != nil {
 		return nil, err

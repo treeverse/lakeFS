@@ -62,7 +62,7 @@ var (
 	errInvalidAuth    = errors.New("invalid auth configuration")
 )
 
-func checkAuthModeSupport(cfg *config.Config) error {
+func checkAuthModeSupport(cfg *config.BaseConfig) error {
 	if cfg.IsAuthBasic() { // Basic mode
 		return nil
 	}
@@ -75,7 +75,7 @@ func checkAuthModeSupport(cfg *config.Config) error {
 	return nil
 }
 
-func NewAuthService(ctx context.Context, cfg *config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) auth.Service {
+func NewAuthService(ctx context.Context, cfg *config.BaseConfig, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) auth.Service {
 	if err := checkAuthModeSupport(cfg); err != nil {
 		logger.WithError(err).Fatal("Unsupported auth mode")
 	}
@@ -137,10 +137,10 @@ var runCmd = &cobra.Command{
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.ContextUnavailable()
-		cfg := loadConfig().BaseConfig()
+		cfg := loadConfig().GetBaseConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
-			var c config.Config
+			var c config.BaseConfig
 			if err := config.Unmarshal(&c); err != nil {
 				logger.WithError(err).Error("Failed to unmarshal config while reload")
 				return

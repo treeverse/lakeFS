@@ -53,9 +53,9 @@ func init() {
 	rootCmd.PersistentFlags().Bool(config.QuickstartConfiguration, false, "Use lakeFS quickstart configuration")
 }
 
-// TODO (niro): All this validation logic should be in the OSS config package
+// TODO (niro): All this validation logic should be in the config package
 
-func validateQuickstartEnv(cfg *config.Config) {
+func validateQuickstartEnv(cfg *config.BaseConfig) {
 	if (cfg.Database.Type != local.DriverName && cfg.Database.Type != mem.DriverName) || cfg.Blockstore.Type != block.BlockstoreTypeLocal {
 		_, _ = fmt.Fprint(os.Stderr, "\nFATAL: quickstart mode can only run with local settings\n")
 		os.Exit(1)
@@ -94,9 +94,9 @@ func newConfig() (config.Interface, error) {
 	}
 
 	if name == config.QuickstartConfiguration {
-		validateQuickstartEnv(cfg.BaseConfig())
+		validateQuickstartEnv(cfg.GetBaseConfig())
 	}
-	return cfg.BaseConfig(), nil
+	return cfg.GetBaseConfig(), nil
 }
 
 func loadConfig() config.Interface {

@@ -212,15 +212,15 @@ type Blockstore struct {
 }
 
 type Interface interface {
-	BaseConfig() *Config
+	GetBaseConfig() *BaseConfig
 	StorageConfig() interface{}
 	Validate() error
 }
 
-// Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
+// BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
-type Config struct {
+type BaseConfig struct {
 	ListenAddress string `mapstructure:"listen_address"`
 	TLS           struct {
 		Enabled  bool   `mapstructure:"enabled"`
@@ -399,7 +399,7 @@ type Config struct {
 }
 
 // NewConfig - General (common) configuration
-func NewConfig(cfgType string, c Interface) (*Config, error) {
+func NewConfig(cfgType string, c Interface) (*BaseConfig, error) {
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
 	// environment.
 	SetDefaults(cfgType, c)
@@ -408,7 +408,7 @@ func NewConfig(cfgType string, c Interface) (*Config, error) {
 		return nil, err
 	}
 
-	cfg := c.BaseConfig()
+	cfg := c.GetBaseConfig()
 	// setup logging package
 	logging.SetOutputFormat(cfg.Logging.Format)
 	err = logging.SetOutputs(cfg.Logging.Output, cfg.Logging.FileMaxSizeMB, cfg.Logging.FilesKeep)
@@ -443,7 +443,7 @@ func stringReverse(s string) string {
 	return string(chars)
 }
 
-func (c *Config) ValidateDomainNames() error {
+func (c *BaseConfig) ValidateDomainNames() error {
 	domainStrings := c.Gateways.S3.DomainNames
 	domainNames := make([]string, len(domainStrings))
 	copy(domainNames, domainStrings)
@@ -462,7 +462,7 @@ func (c *Config) ValidateDomainNames() error {
 	return nil
 }
 
-func (c *Config) Validate() error {
+func (c *BaseConfig) Validate() error {
 	missingKeys := ValidateMissingRequiredKeys(c, "mapstructure", "squash")
 	if len(missingKeys) > 0 {
 		return fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
@@ -470,11 +470,11 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) BlockstoreType() string {
+func (c *BaseConfig) BlockstoreType() string {
 	return c.Blockstore.Type
 }
 
-func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
+func (c *BaseConfig) BlockstoreS3Params() (blockparams.S3, error) {
 	var webIdentity *blockparams.S3WebIdentity
 	if c.Blockstore.S3.WebIdentity != nil {
 		webIdentity = &blockparams.S3WebIdentity{
@@ -513,7 +513,7 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 	}, nil
 }
 
-func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
+func (c *BaseConfig) BlockstoreLocalParams() (blockparams.Local, error) {
 	localPath := c.Blockstore.Local.Path
 	path, err := homedir.Expand(localPath)
 	if err != nil {
@@ -529,7 +529,7 @@ const (
 	gcpAESKeyLength = 32
 )
 
-func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
+func (c *BaseConfig) BlockstoreGSParams() (blockparams.GS, error) {
 	var customerSuppliedKey []byte = nil
 	if c.Blockstore.GS.ServerSideEncryptionCustomerSupplied != "" {
 		v, err := hex.DecodeString(c.Blockstore.GS.ServerSideEncryptionCustomerSupplied)
@@ -560,7 +560,7 @@ func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 	}, nil
 }
 
-func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
+func (c *BaseConfig) BlockstoreAzureParams() (blockparams.Azure, error) {
 	if c.Blockstore.Azure.AuthMethod != "" {
 		logging.ContextUnavailable().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
 	}
@@ -587,33 +587,33 @@ const (
 	AuthRBACInternal   = "internal"
 )
 
-func (c *Config) IsAuthBasic() bool {
+func (c *BaseConfig) IsAuthBasic() bool {
 	return c.Auth.UIConfig.RBAC == AuthRBACNone
 }
 
-func (c *Config) IsAuthUISimplified() bool {
+func (c *BaseConfig) IsAuthUISimplified() bool {
 	return c.Auth.UIConfig.RBAC == AuthRBACSimplified
 }
 
-func (c *Config) IsAuthenticationTypeAPI() bool {
+func (c *BaseConfig) IsAuthenticationTypeAPI() bool {
 	return c.Auth.AuthenticationAPI.Endpoint != ""
 }
 
-func (c *Config) IsAuthTypeAPI() bool {
+func (c *BaseConfig) IsAuthTypeAPI() bool {
 	return c.Auth.API.Endpoint != ""
 }
 
-func (c *Config) IsExternalPrincipalsEnabled() bool {
+func (c *BaseConfig) IsExternalPrincipalsEnabled() bool {
 	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
 	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
 	return c.IsAuthTypeAPI() && c.Auth.AuthenticationAPI.ExternalPrincipalsEnabled
 }
 
-func (c *Config) IsAdvancedAuth() bool {
+func (c *BaseConfig) IsAdvancedAuth() bool {
 	return c.IsAuthTypeAPI() && (c.Auth.UIConfig.RBAC == AuthRBACExternal || c.Auth.UIConfig.RBAC == AuthRBACInternal)
 }
 
-func (c *Config) UISnippets() []apiparams.CodeSnippet {
+func (c *BaseConfig) UISnippets() []apiparams.CodeSnippet {
 	snippets := make([]apiparams.CodeSnippet, 0, len(c.UI.Snippets))
 	for _, item := range c.UI.Snippets {
 		snippets = append(snippets, apiparams.CodeSnippet{
@@ -624,10 +624,10 @@ func (c *Config) UISnippets() []apiparams.CodeSnippet {
 	return snippets
 }
 
-func (c *Config) BaseConfig() *Config {
+func (c *BaseConfig) GetBaseConfig() *BaseConfig {
 	return c
 }
 
-func (c *Config) StorageConfig() interface{} {
+func (c *BaseConfig) StorageConfig() interface{} {
 	return c.Blockstore
 }

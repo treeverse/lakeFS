@@ -39,7 +39,7 @@ func TestLocalLoad(t *testing.T) {
 	ctx := context.Background()
 	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
 
-	cfg := &config.Config{}
+	cfg := &config.BaseConfig{}
 	cfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 

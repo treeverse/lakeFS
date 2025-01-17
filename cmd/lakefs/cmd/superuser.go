@@ -31,7 +31,7 @@ To do that provide the user name as well as the access key ID to import.
 If the wrong user or credentials were chosen it is possible to delete the user and perform the action again.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := loadConfig().BaseConfig()
+		cfg := loadConfig().GetBaseConfig()
 		if cfg.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
 			os.Exit(1)

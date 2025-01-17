@@ -88,7 +88,7 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config                *config.Config
+	Config                *config.BaseConfig
 	Catalog               *catalog.Catalog
 	Authenticator         auth.Authenticator
 	Auth                  auth.Service
@@ -108,7 +108,7 @@ type Controller struct {
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg *config.BaseConfig, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -4942,7 +4942,7 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func newLoginConfig(c *config.Config) *apigen.LoginConfig {
+func newLoginConfig(c *config.BaseConfig) *apigen.LoginConfig {
 	return &apigen.LoginConfig{
 		RBAC:               &c.Auth.UIConfig.RBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,

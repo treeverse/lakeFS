@@ -23,7 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func newConfigFromFile(fn string) (*config.Config, error) {
+func newConfigFromFile(fn string) (*config.BaseConfig, error) {
 	viper.SetConfigFile(fn)
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -34,12 +34,12 @@ func newConfigFromFile(fn string) (*config.Config, error) {
 		return nil, err
 	}
 	err = cfg.Validate()
-	return cfg.BaseConfig(), err
+	return cfg.GetBaseConfig(), err
 }
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	cfg := &config.Config{}
+	cfg := &config.BaseConfig{}
 	cfg, err := config.NewConfig("", cfg)
 	testutil.Must(t, err)
 	// Don't validate, some tested configs don't have all required fields.

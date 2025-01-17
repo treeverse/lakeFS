@@ -13,7 +13,7 @@ import (
 
 func TestGetAuthService(t *testing.T) {
 	t.Run("maintain_inviter", func(t *testing.T) {
-		cfg := &config.Config{}
+		cfg := &config.BaseConfig{}
 		cfg.Auth.UIConfig.RBAC = config.AuthRBACInternal
 		cfg.Auth.API.Endpoint = "http://localhost:8000"
 		cfg.Auth.API.SkipHealthCheck = true
@@ -24,7 +24,7 @@ func TestGetAuthService(t *testing.T) {
 		}
 	})
 	t.Run("maintain_service", func(t *testing.T) {
-		cfg := &config.Config{}
+		cfg := &config.BaseConfig{}
 		kvStore := kvtest.GetStore(context.Background(), t)
 		meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		cfg.Auth.UIConfig.RBAC = config.AuthRBACNone

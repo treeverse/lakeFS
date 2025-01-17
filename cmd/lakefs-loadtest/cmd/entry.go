@@ -54,7 +54,7 @@ var entryCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("config: %s\n", err)
 		}
-		conf := confInterface.BaseConfig()
+		conf := confInterface.GetBaseConfig()
 
 		err = conf.Validate()
 		if err != nil {
