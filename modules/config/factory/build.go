@@ -5,17 +5,13 @@ import (
 )
 
 func BuildConfig(cfgType string) (config.Interface, error) {
-	return newConfig(cfgType)
-}
-
-func newConfig(cfgType string) (*config.Config, error) {
 	c := &config.Config{}
 	c, err := config.NewConfig(cfgType, c)
 	if err != nil {
 		return nil, err
 	}
 
-	// OSS specific validation
+	// Perform required validations
 	err = c.ValidateDomainNames()
 	if err != nil {
 		return nil, err
