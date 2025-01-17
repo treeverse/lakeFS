@@ -1,5 +1,10 @@
 # Changelog
 
+# v1.48.2
+
+:bug: Bugs fixed:
+- added storage namespace validation on non-readonly bare repo creation (#8364)
+
 # v1.48.1
 
 :bug: Bugs fixed:

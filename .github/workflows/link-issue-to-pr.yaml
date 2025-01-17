@@ -6,7 +6,7 @@ on:
 
 jobs:
   check_pull_requests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     name: Check linked issues
     steps:
       - uses: nearform/github-action-check-linked-issues@v1.4.28
