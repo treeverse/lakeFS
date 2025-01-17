@@ -77,7 +77,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 		{RepositoryID: "repo2", Repository: &graveler.Repository{StorageID: "storage1", StorageNamespace: "storageNS3", CreationDate: now, DefaultBranchID: "main3"}},
 		{RepositoryID: "repo22", Repository: &graveler.Repository{StorageID: "storage1", StorageNamespace: "storageNS4", CreationDate: now, DefaultBranchID: "main4"}},
 		{RepositoryID: "repo23", Repository: &graveler.Repository{StorageID: "storage1", StorageNamespace: "storageNS5", CreationDate: now, DefaultBranchID: "main5"}},
-		{RepositoryID: "repo3", Repository: &graveler.Repository{StorageID: "storage2", StorageNamespace: "storageNS6", CreationDate: now, DefaultBranchID: "main6"}},
+		{RepositoryID: "repo3", Repository: &graveler.Repository{StorageID: "", StorageNamespace: "storageNS6", CreationDate: now, DefaultBranchID: "main6"}},
 	}
 	type args struct {
 		limit        int
@@ -106,7 +106,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 				{Name: "repo2", StorageID: "storage1", StorageNamespace: "storageNS3", DefaultBranch: "main3", CreationDate: now},
 				{Name: "repo22", StorageID: "storage1", StorageNamespace: "storageNS4", DefaultBranch: "main4", CreationDate: now},
 				{Name: "repo23", StorageID: "storage1", StorageNamespace: "storageNS5", DefaultBranch: "main5", CreationDate: now},
-				{Name: "repo3", StorageID: "storage2", StorageNamespace: "storageNS6", DefaultBranch: "main6", CreationDate: now},
+				{Name: "repo3", StorageID: "", StorageNamespace: "storageNS6", DefaultBranch: "main6", CreationDate: now},
 			},
 			wantHasMore: false,
 			wantErr:     false,
@@ -178,7 +178,7 @@ func TestCatalog_ListRepositories(t *testing.T) {
 			},
 			want: []*catalog.Repository{
 				{Name: "repo23", StorageID: "storage1", StorageNamespace: "storageNS5", DefaultBranch: "main5", CreationDate: now},
-				{Name: "repo3", StorageID: "storage2", StorageNamespace: "storageNS6", DefaultBranch: "main6", CreationDate: now},
+				{Name: "repo3", StorageID: "", StorageNamespace: "storageNS6", DefaultBranch: "main6", CreationDate: now},
 			},
 			wantHasMore: false,
 			wantErr:     false,
