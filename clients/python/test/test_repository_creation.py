@@ -40,6 +40,7 @@ class TestRepositoryCreation(unittest.TestCase):
         if include_optional :
             return RepositoryCreation(
                 name = 'wr1c2v7s6djuy1zmeto', 
+                storage_id = '', 
                 storage_namespace = 's3://example-bucket/', 
                 default_branch = 'main', 
                 sample_data = True, 

@@ -1907,6 +1907,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 		creationDate := repo.CreationDate.Unix()
 		r := apigen.Repository{
 			Id:               repo.Name,
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
@@ -1976,6 +1977,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		defaultBranch = "main"
 	}
 
+	storageID := swag.StringValue(body.StorageId)
+
 	if !swag.BoolValue(body.ReadOnly) {
 		if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
 			var (
@@ -2010,7 +2013,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	if swag.BoolValue(params.Bare) {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
-		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, "", body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, storageID, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -2018,13 +2021,14 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			CreationDate:     repo.CreationDate.Unix(),
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 		}
 		writeResponse(w, r, http.StatusCreated, response)
 		return
 	}
 
-	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, "", body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, storageID, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
 	if err != nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
@@ -2055,6 +2059,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		CreationDate:     newRepo.CreationDate.Unix(),
 		DefaultBranch:    newRepo.DefaultBranch,
 		Id:               newRepo.Name,
+		StorageId:        swag.String(newRepo.StorageID),
 		StorageNamespace: newRepo.StorageNamespace,
 		ReadOnly:         swag.Bool(newRepo.ReadOnly),
 	}
@@ -2164,6 +2169,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			CreationDate:     repo.CreationDate.Unix(),
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
