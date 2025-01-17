@@ -7,19 +7,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/validator"
 )
 
-func ValidateStorageID(v interface{}) error {
-	s, ok := v.(StorageID)
-	if !ok {
-		panic(ErrInvalidType)
-	}
-
-	// TODO (gilo): this should somehow be validated in the context of the block storage
-	if len(s) != 0 {
-		return ErrInvalidStorageID
-	}
-	return nil
-}
-
 func ValidateStorageNamespace(v interface{}) error {
 	s, ok := v.(StorageNamespace)
 	if !ok {

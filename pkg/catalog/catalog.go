@@ -453,10 +453,13 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	branchID := graveler.BranchID(branch)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
-		{Name: "storageID", Value: storageIdentifier, Fn: graveler.ValidateStorageID},
 		{Name: "storageNamespace", Value: storageNS, Fn: graveler.ValidateStorageNamespace},
 	}); err != nil {
 		return nil, err
+	}
+	// TODO: this is a temporary validation. we should probably move this to the store level
+	if storageIdentifier != "" {
+		return nil, graveler.ErrInvalidStorageID
 	}
 	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
@@ -482,10 +485,13 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 	branchID := graveler.BranchID(defaultBranchID)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "name", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
-		{Name: "storageID", Value: storageIdentifier, Fn: graveler.ValidateStorageID},
 		{Name: "storageNamespace", Value: storageNS, Fn: graveler.ValidateStorageNamespace},
 	}); err != nil {
 		return nil, err
+	}
+	// TODO: this is a temporary validation. we should probably move this to the store level
+	if storageIdentifier != "" {
+		return nil, graveler.ErrInvalidStorageID
 	}
 	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
