@@ -1015,7 +1015,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    apiutil.Ptr("main"),
 			Name:             repoName,
-			StorageId:        swag.String("storage"),
+			StorageId:        swag.String(""),
 			StorageNamespace: onBlock(deps, "foo-bucket-1"),
 		})
 		verifyResponseOK(t, resp, err)
@@ -3631,6 +3631,7 @@ func TestController_ListRepositoryRuns(t *testing.T) {
 	resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr("main"),
 		Name:             repo,
+		StorageId:        swag.String(""),
 		StorageNamespace: "mem://repo9",
 	})
 	verifyResponseOK(t, resp, err)
