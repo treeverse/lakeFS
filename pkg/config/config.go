@@ -151,9 +151,9 @@ type ApproximatelyCorrectOwnership struct {
 
 type Blockstore struct {
 	Signing struct {
-		SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
+		SecretKey SecureString `mapstructure:"secret_key"`
 	} `mapstructure:"signing"`
-	Type                   string  `mapstructure:"type" validate:"required"`
+	Type                   string  `mapstructure:"type"`
 	DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
 	Local                  *struct {
 		Path                    string   `mapstructure:"path"`
@@ -302,7 +302,7 @@ type BaseConfig struct {
 			LogoutURL          string   `mapstructure:"logout_url"`
 		} `mapstructure:"ui_config"`
 	} `mapstructure:"auth"`
-	Blockstore *Blockstore `mapstructure:"blockstore"`
+	Blockstore Blockstore `mapstructure:"blockstore"`
 	Committed  struct {
 		LocalCache struct {
 			SizeBytes             int64   `mapstructure:"size_bytes"`
@@ -398,6 +398,16 @@ type BaseConfig struct {
 	} `mapstructure:"usage_report"`
 }
 
+func ValidateBlockstore(c *Blockstore) error {
+	if c.Signing.SecretKey == "" {
+		return fmt.Errorf("'blockstore.signing.secret_key: %w", ErrMissingRequiredKeys)
+	}
+	if c.Type == "" {
+		return fmt.Errorf("'blockstore.type: %w", ErrMissingRequiredKeys)
+	}
+	return nil
+}
+
 // NewConfig - General (common) configuration
 func NewConfig(cfgType string, c Config) (*BaseConfig, error) {
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
@@ -467,7 +477,7 @@ func (c *BaseConfig) Validate() error {
 	if len(missingKeys) > 0 {
 		return fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
 	}
-	return nil
+	return ValidateBlockstore(&c.Blockstore)
 }
 
 func (c *BaseConfig) BlockstoreType() string {

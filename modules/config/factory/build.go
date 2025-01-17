@@ -5,9 +5,7 @@ import (
 )
 
 func BuildConfig(cfgType string) (config.Config, error) {
-	c := &config.BaseConfig{
-		Blockstore: &config.Blockstore{},
-	}
+	c := &config.BaseConfig{}
 	c, err := config.NewConfig(cfgType, c)
 	if err != nil {
 		return nil, err
