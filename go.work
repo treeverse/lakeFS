@@ -2,5 +2,6 @@ go 1.23
 
 use (
 	.
+	./modules/block/factory
 	./webui
 )
