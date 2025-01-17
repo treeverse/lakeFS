@@ -457,6 +457,10 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	}); err != nil {
 		return nil, err
 	}
+	// TODO: this is a temporary validation. we should probably move this to the store level
+	if storageIdentifier != "" {
+		return nil, graveler.ErrInvalidStorageID
+	}
 	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
@@ -484,6 +488,10 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 		{Name: "storageNamespace", Value: storageNS, Fn: graveler.ValidateStorageNamespace},
 	}); err != nil {
 		return nil, err
+	}
+	// TODO: this is a temporary validation. we should probably move this to the store level
+	if storageIdentifier != "" {
+		return nil, graveler.ErrInvalidStorageID
 	}
 	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
