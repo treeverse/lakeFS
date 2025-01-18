@@ -434,7 +434,7 @@ func SetDefaults(cfgType string, c Config) {
 	for _, key := range keys {
 		viper.SetDefault(key, nil)
 	}
-	setBaseDefaults(cfgType, c.GetBaseConfig())
+	setBaseDefaults(cfgType)
 }
 
 func Unmarshal(c Config) error {

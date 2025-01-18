@@ -20,7 +20,7 @@ const (
 )
 
 //nolint:mnd
-func setBaseDefaults(cfgType string, c *BaseConfig) {
+func setBaseDefaults(cfgType string) {
 	switch cfgType {
 	case QuickstartConfiguration:
 		viper.SetDefault("installation.user_name", DefaultQuickstartUsername)
