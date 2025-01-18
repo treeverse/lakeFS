@@ -42,6 +42,7 @@ class TestRepository(unittest.TestCase):
                 id = '', 
                 creation_date = 56, 
                 default_branch = '', 
+                storage_id = '', 
                 storage_namespace = '', 
                 read_only = True
             )

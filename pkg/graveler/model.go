@@ -118,6 +118,7 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 	return &RepositoryRecord{
 		RepositoryID: RepositoryID(pb.Id),
 		Repository: &Repository{
+			StorageID:        StorageID(pb.StorageId),
 			StorageNamespace: StorageNamespace(pb.StorageNamespace),
 			DefaultBranchID:  BranchID(pb.DefaultBranchId),
 			CreationDate:     pb.CreationDate.AsTime(),
@@ -131,6 +132,7 @@ func RepoFromProto(pb *RepositoryData) *RepositoryRecord {
 func ProtoFromRepo(repo *RepositoryRecord) *RepositoryData {
 	return &RepositoryData{
 		Id:               repo.RepositoryID.String(),
+		StorageId:        repo.Repository.StorageID.String(),
 		StorageNamespace: repo.Repository.StorageNamespace.String(),
 		DefaultBranchId:  repo.Repository.DefaultBranchID.String(),
 		CreationDate:     timestamppb.New(repo.Repository.CreationDate),
