@@ -265,6 +265,9 @@ func WithShowHidden(v bool) ListOptionsFunc {
 
 // function/methods receiving the following basic types could assume they passed validation
 
+// StorageID is the storage location identifier
+type StorageID string
+
 // StorageNamespace is the URI to the storage location
 type StorageNamespace string
 
@@ -355,6 +358,7 @@ type Metadata map[string]string
 
 // Repository represents repository metadata
 type Repository struct {
+	StorageID        StorageID
 	StorageNamespace StorageNamespace
 	CreationDate     time.Time
 	DefaultBranchID  BranchID
@@ -374,8 +378,9 @@ type RepositoryMetadata map[string]string
 
 const MetadataKeyLastImportTimeStamp = ".lakefs.last.import.timestamp"
 
-func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) Repository {
+func NewRepository(storageID StorageID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) Repository {
 	return Repository{
+		StorageID:        storageID,
 		StorageNamespace: storageNamespace,
 		CreationDate:     time.Now().UTC(),
 		DefaultBranchID:  defaultBranchID,
@@ -600,10 +605,10 @@ type VersionController interface {
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error)
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageID StorageID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error)
 
 	// CreateBareRepository stores a new Repository under RepositoryID with no initial branch or commit
-	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) (*RepositoryRecord, error)
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageID StorageID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) (*RepositoryRecord, error)
 
 	// ListRepositories returns iterator to scan repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -1095,6 +1100,10 @@ func (id RepositoryID) String() string {
 	return string(id)
 }
 
+func (id StorageID) String() string {
+	return string(id)
+}
+
 func (ns StorageNamespace) String() string {
 	return string(ns)
 }
@@ -1185,13 +1194,13 @@ func (g *Graveler) GetRepository(ctx context.Context, repositoryID RepositoryID)
 	return g.RefManager.GetRepository(ctx, repositoryID)
 }
 
-func (g *Graveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error) {
+func (g *Graveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageID StorageID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error) {
 	_, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil && !errors.Is(err, ErrRepositoryNotFound) {
 		return nil, err
 	}
 
-	repo := NewRepository(storageNamespace, branchID, readOnly)
+	repo := NewRepository(storageID, storageNamespace, branchID, readOnly)
 	repository, err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
@@ -1199,13 +1208,13 @@ func (g *Graveler) CreateRepository(ctx context.Context, repositoryID Repository
 	return repository, nil
 }
 
-func (g *Graveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) (*RepositoryRecord, error) {
+func (g *Graveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageID StorageID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) (*RepositoryRecord, error) {
 	_, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil && !errors.Is(err, ErrRepositoryNotFound) {
 		return nil, err
 	}
 
-	repo := NewRepository(storageNamespace, defaultBranchID, readOnly)
+	repo := NewRepository(storageID, storageNamespace, defaultBranchID, readOnly)
 	repository, err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err

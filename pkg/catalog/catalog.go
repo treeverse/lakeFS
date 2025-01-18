@@ -446,8 +446,9 @@ func (c *Catalog) log(ctx context.Context) logging.Logger {
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
-func (c *Catalog) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string, readOnly bool) (*Repository, error) {
+func (c *Catalog) CreateRepository(ctx context.Context, repository string, storageID string, storageNamespace string, branch string, readOnly bool) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
+	storageIdentifier := graveler.StorageID(storageID)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(branch)
 	if err := validator.Validate([]validator.ValidateArg{
@@ -456,12 +457,17 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	}); err != nil {
 		return nil, err
 	}
-	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageNS, branchID, readOnly)
+	// TODO: this is a temporary validation. we should probably move this to the store level
+	if storageIdentifier != "" {
+		return nil, graveler.ErrInvalidStorageID
+	}
+	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
 	}
 	catalogRepo := &Repository{
 		Name:             repositoryID.String(),
+		StorageID:        storageIdentifier.String(),
 		StorageNamespace: storageNS.String(),
 		DefaultBranch:    branchID.String(),
 		CreationDate:     repo.CreationDate,
@@ -472,8 +478,9 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 
 // CreateBareRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
 // defaultBranchID will point to a non-existent branch on creation, it is up to the caller to eventually create it.
-func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string, readOnly bool) (*Repository, error) {
+func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, storageID string, storageNamespace string, defaultBranchID string, readOnly bool) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
+	storageIdentifier := graveler.StorageID(storageID)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(defaultBranchID)
 	if err := validator.Validate([]validator.ValidateArg{
@@ -482,12 +489,17 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 	}); err != nil {
 		return nil, err
 	}
-	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageNS, branchID, readOnly)
+	// TODO: this is a temporary validation. we should probably move this to the store level
+	if storageIdentifier != "" {
+		return nil, graveler.ErrInvalidStorageID
+	}
+	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
 	}
 	catalogRepo := &Repository{
 		Name:             repositoryID.String(),
+		StorageID:        storageIdentifier.String(),
 		StorageNamespace: storageNS.String(),
 		DefaultBranch:    branchID.String(),
 		CreationDate:     repo.CreationDate,
@@ -516,6 +528,7 @@ func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Reposi
 
 	catalogRepository := &Repository{
 		Name:             repositoryID.String(),
+		StorageID:        repo.StorageID.String(),
 		StorageNamespace: repo.StorageNamespace.String(),
 		DefaultBranch:    repo.DefaultBranchID.String(),
 		CreationDate:     repo.CreationDate,
@@ -623,6 +636,7 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searc
 		}
 		repos = append(repos, &Repository{
 			Name:             record.RepositoryID.String(),
+			StorageID:        record.StorageID.String(),
 			StorageNamespace: record.StorageNamespace.String(),
 			DefaultBranch:    record.DefaultBranchID.String(),
 			CreationDate:     record.CreationDate,

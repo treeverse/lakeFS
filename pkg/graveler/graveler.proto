@@ -18,6 +18,7 @@ message RepositoryData {
   RepositoryState state = 5;
   string instance_uid = 6;
   bool read_only = 7;
+  string storage_id = 8;
 }
 
 message BranchData {
