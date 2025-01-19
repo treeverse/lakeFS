@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   lakefs:
-    image: "${REPO:-treeverse}/lakefs:${TAG:-latest}"
+    image: "${REGISTRY:-treeverse}/${REPO:-lakefs}:${TAG:-latest}"
     container_name: lakefs
     ports:
       - "8000:8000"

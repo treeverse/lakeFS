@@ -191,7 +191,6 @@ func (u *presignUpload) uploadMultipart(ctx context.Context) (*apigen.ObjectStat
 	g.SetLimit(u.uploader.Concurrency)
 
 	for i := 0; i < u.numParts; i++ {
-		i := i // pinning
 		g.Go(func() error {
 			etag, err := u.uploadPart(grpCtx, parts[i].Reader, parts[i].URL)
 			if err != nil {
@@ -389,7 +388,7 @@ func (u *presignUpload) uploadObject(ctx context.Context) (*apigen.ObjectStats, 
 	if linkResp.JSON409 != nil {
 		return nil, ErrConflict
 	}
-	return nil, fmt.Errorf("link object to backing store: %w (%s)", ErrRequestFailed, linkResp.Status())
+	return nil, fmt.Errorf("link object to backing store: %w (%s)", ResponseAsError(linkResp), linkResp.Status())
 }
 
 func (u *presignUpload) Upload(ctx context.Context) (*apigen.ObjectStats, error) {

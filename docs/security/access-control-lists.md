@@ -25,6 +25,34 @@ Existing lakeFS installations that have a single user and a single set of creden
 Installations that have more than one user / credentials will require to run a command and choose which set of user + credentials to migrate 
 (more details [here](#migration-of-existing-user))
 
+### Credentials Replacement
+
+In a single user setup, replacing credentials can be done as follows:
+1. Delete the existing user:
+    ```shell
+    lakectl auth users delete --id <user-id>
+    ```
+2. Shut down the lakeFS server - Required for invalidating the old credentials on the server
+3. Create a new user, with the same name and new credentials:
+    ```shell
+    lakefs superuser --user-name <user-id>
+    ```
+    This will generate a new set of credentials, and will print it out to the screen:
+    ```
+    credentials:
+      access_key_id: *** (omitted)
+      secret_access_key: *** (omitted)
+    ```
+4. Re-run lakeFS server
+
+{: .note .warning}
+> Calling the `superuser` command with pre-defined `--access-key-id` and `--secret-access-key` is possible,
+> but should be done with caution. Make sure that `--secret-access-key` is **not empty**,
+> as providing an access key without a secret key will trigger an ACL import flow
+> (see [Migration of existing user](#migration-of-existing-user)).
+> In case you already deleted the user by following step (1), this import operation will **fail** and result in an 
+> **unrecoverable** state, from which a clean installation is the only way out.
+
 ## ACLs
 
 ACL server was moved out of core lakeFS and into a new package under `contrib/auth/acl`.

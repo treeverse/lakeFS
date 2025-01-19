@@ -51,7 +51,7 @@ func (g *FakeGraveler) SetGarbageCollectionRules(_ context.Context, _ *graveler.
 	panic("implement me")
 }
 
-func (g *FakeGraveler) CreateBareRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.StorageNamespace, _ graveler.BranchID, _ bool) (*graveler.RepositoryRecord, error) {
+func (g *FakeGraveler) CreateBareRepository(_ context.Context, _ graveler.RepositoryID, _ graveler.StorageID, _ graveler.StorageNamespace, _ graveler.BranchID, _ bool) (*graveler.RepositoryRecord, error) {
 	panic("implement me")
 }
 
@@ -148,7 +148,7 @@ func (g *FakeGraveler) GetRepository(ctx context.Context, repositoryID graveler.
 	return &graveler.RepositoryRecord{RepositoryID: repositoryID}, nil
 }
 
-func (g *FakeGraveler) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID, readOnly bool) (*graveler.RepositoryRecord, error) {
+func (g *FakeGraveler) CreateRepository(ctx context.Context, repositoryID graveler.RepositoryID, storageID graveler.StorageID, storageNamespace graveler.StorageNamespace, branchID graveler.BranchID, readOnly bool) (*graveler.RepositoryRecord, error) {
 	panic("implement me")
 }
 

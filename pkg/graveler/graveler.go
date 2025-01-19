@@ -196,6 +196,9 @@ type SetOptions struct {
 	AllowEmpty bool
 	// Hidden Will create the branch with the hidden property
 	Hidden bool
+	// SquashMerge causes merge commits to be "squashed", losing parent
+	// information about the merged-from branch.
+	SquashMerge bool
 }
 
 type SetOptionsFunc func(opts *SetOptions)
@@ -232,6 +235,12 @@ func WithHidden(v bool) SetOptionsFunc {
 	}
 }
 
+func WithSquashMerge(v bool) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.SquashMerge = v
+	}
+}
+
 // ListOptions controls list request defaults
 type ListOptions struct {
 	// Shows entities marked as hidden
@@ -255,6 +264,9 @@ func WithShowHidden(v bool) ListOptionsFunc {
 }
 
 // function/methods receiving the following basic types could assume they passed validation
+
+// StorageID is the storage location identifier
+type StorageID string
 
 // StorageNamespace is the URI to the storage location
 type StorageNamespace string
@@ -346,6 +358,7 @@ type Metadata map[string]string
 
 // Repository represents repository metadata
 type Repository struct {
+	StorageID        StorageID
 	StorageNamespace StorageNamespace
 	CreationDate     time.Time
 	DefaultBranchID  BranchID
@@ -365,8 +378,9 @@ type RepositoryMetadata map[string]string
 
 const MetadataKeyLastImportTimeStamp = ".lakefs.last.import.timestamp"
 
-func NewRepository(storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) Repository {
+func NewRepository(storageID StorageID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) Repository {
 	return Repository{
+		StorageID:        storageID,
 		StorageNamespace: storageNamespace,
 		CreationDate:     time.Now().UTC(),
 		DefaultBranchID:  defaultBranchID,
@@ -428,9 +442,9 @@ func (cp CommitParents) AsStringSlice() []string {
 const FirstCommitMsg = "Repository created"
 
 // CommitVersion used to track changes in Commit schema. Each version is change that a constant describes.
-type CommitVersion int
+type CommitVersion int32
 
-type CommitGeneration int64
+type CommitGeneration int32
 
 const (
 	CommitVersionInitial CommitVersion = iota
@@ -591,10 +605,10 @@ type VersionController interface {
 	GetRepository(ctx context.Context, repositoryID RepositoryID) (*RepositoryRecord, error)
 
 	// CreateRepository stores a new Repository under RepositoryID with the given Branch as default branch
-	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error)
+	CreateRepository(ctx context.Context, repositoryID RepositoryID, storageID StorageID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error)
 
 	// CreateBareRepository stores a new Repository under RepositoryID with no initial branch or commit
-	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) (*RepositoryRecord, error)
+	CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageID StorageID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) (*RepositoryRecord, error)
 
 	// ListRepositories returns iterator to scan repositories
 	ListRepositories(ctx context.Context) (RepositoryIterator, error)
@@ -1086,6 +1100,10 @@ func (id RepositoryID) String() string {
 	return string(id)
 }
 
+func (id StorageID) String() string {
+	return string(id)
+}
+
 func (ns StorageNamespace) String() string {
 	return string(ns)
 }
@@ -1176,13 +1194,13 @@ func (g *Graveler) GetRepository(ctx context.Context, repositoryID RepositoryID)
 	return g.RefManager.GetRepository(ctx, repositoryID)
 }
 
-func (g *Graveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error) {
+func (g *Graveler) CreateRepository(ctx context.Context, repositoryID RepositoryID, storageID StorageID, storageNamespace StorageNamespace, branchID BranchID, readOnly bool) (*RepositoryRecord, error) {
 	_, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil && !errors.Is(err, ErrRepositoryNotFound) {
 		return nil, err
 	}
 
-	repo := NewRepository(storageNamespace, branchID, readOnly)
+	repo := NewRepository(storageID, storageNamespace, branchID, readOnly)
 	repository, err := g.RefManager.CreateRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
@@ -1190,13 +1208,13 @@ func (g *Graveler) CreateRepository(ctx context.Context, repositoryID Repository
 	return repository, nil
 }
 
-func (g *Graveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) (*RepositoryRecord, error) {
+func (g *Graveler) CreateBareRepository(ctx context.Context, repositoryID RepositoryID, storageID StorageID, storageNamespace StorageNamespace, defaultBranchID BranchID, readOnly bool) (*RepositoryRecord, error) {
 	_, err := g.RefManager.GetRepository(ctx, repositoryID)
 	if err != nil && !errors.Is(err, ErrRepositoryNotFound) {
 		return nil, err
 	}
 
-	repo := NewRepository(storageNamespace, defaultBranchID, readOnly)
+	repo := NewRepository(storageID, storageNamespace, defaultBranchID, readOnly)
 	repository, err := g.RefManager.CreateBareRepository(ctx, repositoryID, repo)
 	if err != nil {
 		return nil, err
@@ -2161,14 +2179,14 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		}
 
 		var branchMetaRangeID MetaRangeID
-		var parentGeneration int
+		var parentGeneration int32
 		if branch.CommitID != "" {
 			branchCommit, err := g.RefManager.GetCommit(ctx, repository, branch.CommitID)
 			if err != nil {
 				return nil, fmt.Errorf("get commit: %w", err)
 			}
 			branchMetaRangeID = branchCommit.MetaRangeID
-			parentGeneration = int(branchCommit.Generation)
+			parentGeneration = int32(branchCommit.Generation)
 		}
 		commit.Generation = CommitGeneration(parentGeneration + 1)
 		if params.SourceMetaRange != nil {
@@ -2527,7 +2545,7 @@ func (g *Graveler) resetKey(ctx context.Context, repository *RepositoryRecord, b
 		return g.StagingManager.Set(ctx, st, key, committed, false)
 		// entry not committed and changed in staging area => override with tombstone
 		// If not committed and staging == tombstone => ignore
-	} else if !isCommitted && uncommittedValue != nil {
+	} else if uncommittedValue != nil {
 		return g.deleteAndNotify(ctx, repository.RepositoryID, BranchRecord{branchID, branch}, key, false)
 	}
 
@@ -2926,7 +2944,11 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID
-		commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
+		if options.SquashMerge {
+			commit.Parents = []CommitID{toCommit.CommitID}
+		} else {
+			commit.Parents = []CommitID{toCommit.CommitID, fromCommit.CommitID}
+		}
 		if toCommit.Generation > fromCommit.Generation {
 			commit.Generation = toCommit.Generation + 1
 		} else {
@@ -3675,7 +3697,7 @@ func (c *commitValueIterator) setValue() bool {
 	}
 	commit := c.src.Value()
 	data, err := proto.Marshal(&CommitData{
-		Version:      int32(commit.Version),
+		Version:      int32(commit.Version), //nolint:gosec
 		Id:           string(commit.CommitID),
 		Committer:    commit.Committer,
 		Message:      commit.Message,

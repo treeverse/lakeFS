@@ -236,7 +236,7 @@ For read-only local data access. lakeFS Mount offers several benefits over lakec
 * **Reduced initial latency**: Start working on your data immediately without waiting for downloads.
 
 **Note**
-Note: Write support for lakeFS Mount is on our roadmap.
+Write support for lakeFS Mount is on our roadmap.
 {: .note }
 
 <!-- END EXCLUDE FROM TOC -->

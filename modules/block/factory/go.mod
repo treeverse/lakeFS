@@ -1,4 +1,4 @@
-module github.com/treeverse/lakefs/webui
+module github.com/treeverse/lakefs/modules/block/factory
 
 go 1.23
 

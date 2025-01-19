@@ -31,10 +31,11 @@ def test_revert(setup_repo):
         assert fd.read() == initial_content
 
 
-def test_cherry_pick(setup_repo):
+@pytest.mark.parametrize("hidden", (True, False))
+def test_cherry_pick(setup_repo, hidden):
     _, repo = setup_repo
     main_branch = repo.branch("main")
-    test_branch = repo.branch("testest").create("main")
+    test_branch = repo.branch("testest").create("main", hidden=hidden)
 
     initial_content = "test_content"
     test_branch.object("test_object").upload(initial_content)
@@ -119,6 +120,10 @@ def test_transaction(setup_repo):
 
     with test_branch.transact(commit_message="my transaction", commit_metadata={"foo": "bar"}) as tx:
         assert tx.get_commit().id == test_branch.head.id
+        # Verify tx-branch not listed
+        branches = list(repo.branches())
+        assert len(branches) == 1
+        assert tx.id not in branches
         upload_data(tx, path_and_data1)
         upload_data(tx, path_and_data2)
         tx.reset_changes(path_type="common_prefix", path="foo")

@@ -2384,6 +2384,7 @@ lakectl merge <source ref> <destination ref> [flags]
   -h, --help                  help for merge
   -m, --message string        commit message
       --meta strings          key value pair in the form of key=value
+      --squash                Squash all changes from source into a single commit on destination
       --strategy string       In case of a merge conflict, this option will force the merge process to automatically favor changes from the dest branch ("dest-wins") or from the source branch("source-wins"). In case no selection is made, the merge process will fail in case of a conflict
 ```
 

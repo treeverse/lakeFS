@@ -22,7 +22,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.22.6"
+          go-version: "1.23"
         id: go
 
       - uses: actions/setup-node@v4
@@ -43,7 +43,7 @@ jobs:
           tar -czf /tmp/generated.tar.gz .
 
       - name: Store generated code
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
             name: generated-code
             path: /tmp/generated.tar.gz
@@ -54,7 +54,7 @@ jobs:
           mvn -Passembly -DfinalName=client -DskipTests --batch-mode --update-snapshots package
 
       - name: Store client assembly
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: client-assembly
           path: clients/hadoopfs/target/client.jar
@@ -78,11 +78,11 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.22.6"
+          go-version: "1.23"
         id: go
 
       - name: Retrieve generated code
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: generated-code
           path: /tmp/
@@ -108,7 +108,7 @@ jobs:
           outputs: type=docker,dest=/tmp/lakefs.tar
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: lakefs-image
           path: /tmp/lakefs.tar
@@ -171,10 +171,14 @@ jobs:
           - 1.44.0
           - 1.45.0
           - 1.46.0
+          - 1.47.0
+          # Do *not* test 1.48.0, we withdrew it.
+          - 1.48.1
+          - 1.48.2
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}
-      REPO: treeverse
+      REGISTRY: treeverse
       SPARK_TAG: 3
     steps:
       - name: Check-out code
@@ -207,7 +211,7 @@ jobs:
         with:
           compose-directory: test/spark
         env:
-          REPO: treeverse
+          REGISTRY: treeverse
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: postgres
@@ -216,7 +220,7 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
       - name: Retrieve client
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: client-assembly
           path: clients/hadoopfs/target
@@ -252,7 +256,7 @@ jobs:
       CLIENT_VERSION: ${{ matrix.client_version }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
       IMAGE_ID: ${{ needs.deploy-image.outputs.image_id }}
-      REPO: treeverse
+      REGISTRY: treeverse
       SPARK_TAG: 3
     steps:
       - name: Check-out code
@@ -262,7 +266,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4.1.8
         with:
           name: lakefs-image
           path: /tmp
@@ -297,7 +301,7 @@ jobs:
         with:
           compose-directory: test/spark
         env:
-          REPO: treeverse
+          REGISTRY: treeverse
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           LAKEFS_DATABASE_TYPE: postgres

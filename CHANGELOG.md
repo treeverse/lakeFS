@@ -1,5 +1,33 @@
 # Changelog
 
+# v1.48.2
+
+:bug: Bugs fixed:
+- added storage namespace validation on non-readonly bare repo creation (#8364)
+
+# v1.48.1
+
+:bug: Bugs fixed:
+-  Squash merges is ON by default #8482 (switched to OFF)
+
+   This bug **breaks** backwards compatibility by causing all merged to be
+   squashed by default.
+
+# v1.48.0
+
+## :warning: Do **NOT** use version 1.48.0 :warning:
+
+It squashes merges by default, which is incorrect and a breaking change (#8482)
+
+:new: What's new:
+- Upgrade to Golang 1.23 (#8452)
+- Add "squash merge" support to merge API (#8464)
+
+# v1.47.0
+
+:new: What's new:
+- S3 GW: Support PutIfAbsent (#8428)
+
 # v1.46.0
 
 :new: What's new:

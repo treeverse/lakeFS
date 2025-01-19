@@ -30,6 +30,7 @@ var (
 	ErrInvalidTagID                 = fmt.Errorf("tag id: %w", ErrInvalidValue)
 	ErrInvalid                      = errors.New("validation error")
 	ErrInvalidType                  = fmt.Errorf("invalid type: %w", ErrInvalid)
+	ErrInvalidStorageID             = fmt.Errorf("storage id: %w", ErrInvalidValue)
 	ErrInvalidRepositoryID          = fmt.Errorf("repository id: %w", ErrInvalidValue)
 	ErrRequiredValue                = fmt.Errorf("required value: %w", ErrInvalid)
 	ErrCommitNotFound               = fmt.Errorf("commit %w", ErrNotFound)

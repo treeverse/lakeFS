@@ -18,6 +18,7 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -26,7 +27,6 @@ import (
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/gateway"
@@ -201,7 +201,7 @@ var runCmd = &cobra.Command{
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
 		// init block store
-		blockStore, err := factory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
+		blockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}

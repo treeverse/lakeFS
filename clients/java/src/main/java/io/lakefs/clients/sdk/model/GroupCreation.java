@@ -56,6 +56,10 @@ public class GroupCreation {
   @SerializedName(SERIALIZED_NAME_ID)
   private String id;
 
+  public static final String SERIALIZED_NAME_DESCRIPTION = "description";
+  @SerializedName(SERIALIZED_NAME_DESCRIPTION)
+  private String description;
+
   public GroupCreation() {
   }
 
@@ -77,6 +81,27 @@ public class GroupCreation {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+
+  public GroupCreation description(String description) {
+    
+    this.description = description;
+    return this;
+  }
+
+   /**
+   * Get description
+   * @return description
+  **/
+  @javax.annotation.Nullable
+  public String getDescription() {
+    return description;
+  }
+
+
+  public void setDescription(String description) {
+    this.description = description;
   }
 
   /**
@@ -134,13 +159,14 @@ public class GroupCreation {
       return false;
     }
     GroupCreation groupCreation = (GroupCreation) o;
-    return Objects.equals(this.id, groupCreation.id)&&
+    return Objects.equals(this.id, groupCreation.id) &&
+        Objects.equals(this.description, groupCreation.description)&&
         Objects.equals(this.additionalProperties, groupCreation.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, additionalProperties);
+    return Objects.hash(id, description, additionalProperties);
   }
 
   @Override
@@ -148,6 +174,7 @@ public class GroupCreation {
     StringBuilder sb = new StringBuilder();
     sb.append("class GroupCreation {\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    description: ").append(toIndentedString(description)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -172,6 +199,7 @@ public class GroupCreation {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("id");
+    openapiFields.add("description");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -200,6 +228,9 @@ public class GroupCreation {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if (!jsonObj.get("id").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      if ((jsonObj.get("description") != null && !jsonObj.get("description").isJsonNull()) && !jsonObj.get("description").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `description` to be a primitive type in the JSON string but got `%s`", jsonObj.get("description").toString()));
       }
   }
 

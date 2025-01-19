@@ -195,7 +195,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 
 	// check valid number of parts
 	if params.Parts != nil {
-		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts {
+		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts { //nolint:gosec
 			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("parts can be between 0 and %d", manager.MaxUploadParts))
 			return
 		}
@@ -873,6 +873,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params a
 		response.Results = append(response.Results, apigen.Group{
 			Id:           g.ID,
 			Name:         swag.String(g.DisplayName),
+			Description:  g.Description,
 			CreationDate: g.CreatedAt.Unix(),
 		})
 	}
@@ -899,6 +900,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 	}
 
 	g := &model.Group{
+		Description: body.Description,
 		CreatedAt:   time.Now().UTC(),
 		DisplayName: body.Id,
 	}
@@ -910,6 +912,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 		CreationDate: createdGroup.CreatedAt.Unix(),
 		Name:         swag.String(createdGroup.DisplayName),
 		Id:           createdGroup.ID,
+		Description:  createdGroup.Description,
 	}
 	writeResponse(w, r, http.StatusCreated, response)
 }
@@ -959,6 +962,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 
 	response := apigen.Group{
 		Id:           g.DisplayName,
+		Description:  g.Description,
 		CreationDate: g.CreatedAt.Unix(),
 	}
 	writeResponse(w, r, http.StatusOK, response)
@@ -1903,6 +1907,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 		creationDate := repo.CreationDate.Unix()
 		r := apigen.Repository{
 			Id:               repo.Name,
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
@@ -1972,24 +1977,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		defaultBranch = "main"
 	}
 
-	if swag.BoolValue(params.Bare) {
-		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
-		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
-		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
-		if c.handleAPIError(ctx, w, r, err) {
-			return
-		}
-		response := apigen.Repository{
-			CreationDate:     repo.CreationDate.Unix(),
-			DefaultBranch:    repo.DefaultBranch,
-			Id:               repo.Name,
-			StorageNamespace: repo.StorageNamespace,
-		}
-		writeResponse(w, r, http.StatusCreated, response)
-		return
-	}
-	// Since this is a read-only repository, there is no harm in case the storage namespace we use is already used by
-	// another repository or if we don't have write permissions for this namespace.
+	storageID := swag.StringValue(body.StorageId)
+
 	if !swag.BoolValue(body.ReadOnly) {
 		if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
 			var (
@@ -2021,7 +2010,25 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		}
 	}
 
-	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+	if swag.BoolValue(params.Bare) {
+		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
+		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
+		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, storageID, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		response := apigen.Repository{
+			CreationDate:     repo.CreationDate.Unix(),
+			DefaultBranch:    repo.DefaultBranch,
+			Id:               repo.Name,
+			StorageId:        swag.String(repo.StorageID),
+			StorageNamespace: repo.StorageNamespace,
+		}
+		writeResponse(w, r, http.StatusCreated, response)
+		return
+	}
+
+	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, storageID, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
 	if err != nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
@@ -2052,6 +2059,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		CreationDate:     newRepo.CreationDate.Unix(),
 		DefaultBranch:    newRepo.DefaultBranch,
 		Id:               newRepo.Name,
+		StorageId:        swag.String(newRepo.StorageID),
 		StorageNamespace: newRepo.StorageNamespace,
 		ReadOnly:         swag.Bool(newRepo.ReadOnly),
 	}
@@ -2161,6 +2169,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			CreationDate:     repo.CreationDate.Unix(),
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
@@ -2335,11 +2344,11 @@ func (c *Controller) SetGCRules(w http.ResponseWriter, r *http.Request, body api
 	}
 	ctx := r.Context()
 	rules := &graveler.GarbageCollectionRules{
-		DefaultRetentionDays: int32(body.DefaultRetentionDays),
+		DefaultRetentionDays: int32(body.DefaultRetentionDays), //nolint:gosec
 		BranchRetentionDays:  make(map[string]int32),
 	}
 	for _, rule := range body.Branches {
-		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays)
+		rules.BranchRetentionDays[rule.BranchId] = int32(rule.RetentionDays) //nolint:gosec
 	}
 	err := c.Catalog.SetGarbageCollectionRules(ctx, repository, rules)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -3035,7 +3044,7 @@ func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, 
 		writeError(w, r, http.StatusUnauthorized, "missing user")
 		return
 	}
-	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, body.Version, body.Committer, body.Message, body.MetarangeId, body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int(body.Generation), graveler.WithForce(swag.BoolValue(body.Force)))
+	err = c.Catalog.CreateCommitRecord(ctx, repository, body.CommitId, body.Version, body.Committer, body.Message, body.MetarangeId, body.CreationDate, body.Parents, body.Metadata.AdditionalProperties, int32(body.Generation), graveler.WithForce(swag.BoolValue(body.Force))) //nolint:gosec
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -4805,6 +4814,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		swag.StringValue(body.Strategy),
 		graveler.WithForce(swag.BoolValue(body.Force)),
 		graveler.WithAllowEmpty(swag.BoolValue(body.AllowEmpty)),
+		graveler.WithSquashMerge(swag.BoolValue(body.SquashMerge)),
 	)
 
 	if errors.Is(err, graveler.ErrConflictFound) {
@@ -5214,7 +5224,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 			UserID: user.Username,
 			Client: client,
 		}
-		c.Collector.CollectEvents(ev, uint64(statsEv.Count))
+		c.Collector.CollectEvents(ev, uint64(statsEv.Count)) //nolint:gosec
 
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{
 			"class":   ev.Class,

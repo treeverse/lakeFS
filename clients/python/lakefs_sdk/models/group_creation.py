@@ -19,7 +19,7 @@ import re  # noqa: F401
 import json
 
 
-
+from typing import Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictStr
 except ImportError:
@@ -30,7 +30,8 @@ class GroupCreation(BaseModel):
     GroupCreation
     """
     id: StrictStr = Field(...)
-    __properties = ["id"]
+    description: Optional[StrictStr] = None
+    __properties = ["id", "description"]
 
     class Config:
         """Pydantic configuration"""
@@ -68,7 +69,8 @@ class GroupCreation(BaseModel):
             return GroupCreation.parse_obj(obj)
 
         _obj = GroupCreation.parse_obj({
-            "id": obj.get("id")
+            "id": obj.get("id"),
+            "description": obj.get("description")
         })
         return _obj
 

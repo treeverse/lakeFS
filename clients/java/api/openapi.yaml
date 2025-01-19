@@ -7501,6 +7501,7 @@ components:
     Repository:
       example:
         read_only: true
+        storage_id: storage_id
         default_branch: default_branch
         id: id
         creation_date: 0
@@ -7513,6 +7514,9 @@ components:
           format: int64
           type: integer
         default_branch:
+          type: string
+        storage_id:
+          description: Unique identifier of the underlying data store
           type: string
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
@@ -7566,11 +7570,13 @@ components:
           results: 0
         results:
         - read_only: true
+          storage_id: storage_id
           default_branch: default_branch
           id: id
           creation_date: 0
           storage_namespace: storage_namespace
         - read_only: true
+          storage_id: storage_id
           default_branch: default_branch
           id: id
           creation_date: 0
@@ -7619,12 +7625,16 @@ components:
       example:
         sample_data: true
         read_only: true
+        storage_id: storage_id
         name: name
         default_branch: main
         storage_namespace: s3://example-bucket/
       properties:
         name:
           pattern: "^[a-z0-9][a-z0-9-]{2,62}$"
+          type: string
+        storage_id:
+          description: Unique identifier of the underlying data store
           type: string
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
@@ -8219,6 +8229,7 @@ components:
       example:
         metadata:
           key: metadata
+        squash_merge: false
         force: false
         message: message
         strategy: strategy
@@ -8244,6 +8255,15 @@ components:
         allow_empty:
           default: false
           description: Allow merge when the branches have the same content
+          type: boolean
+        squash_merge:
+          default: false
+          description: |
+            If set, set only the destination branch as a parent, which "squashes" the merge to
+            appear as a single commit on the destination branch.  The source commit is no longer
+            a part of the merge commit; consider adding it to the 'metadata' or 'message'
+            fields.  This behaves like a GitHub or GitLab "squash merge", or in Git terms 'git
+            merge --squash; git commit ...'.
           type: boolean
       type: object
     BranchCreation:
@@ -8697,12 +8717,15 @@ components:
     Group:
       example:
         name: name
+        description: description
         id: id
         creation_date: 0
       properties:
         id:
           type: string
         name:
+          type: string
+        description:
           type: string
         creation_date:
           description: Unix Epoch in seconds
@@ -8721,9 +8744,11 @@ components:
           results: 0
         results:
         - name: name
+          description: description
           id: id
           creation_date: 0
         - name: name
+          description: description
           id: id
           creation_date: 0
       properties:
@@ -8840,9 +8865,12 @@ components:
       type: object
     GroupCreation:
       example:
+        description: description
         id: id
       properties:
         id:
+          type: string
+        description:
           type: string
       required:
       - id

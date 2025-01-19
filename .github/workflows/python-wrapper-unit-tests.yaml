@@ -7,7 +7,7 @@ on:
 
 jobs:
   paths-filter:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       client-change: ${{ steps.filter.outputs.client == 'true' }}
     steps:

@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 NAME = "lakefs"
-VERSION = "0.7.1"
+VERSION = "0.8.0"
 # To install the library, run the following
 #
 # python setup.py install
@@ -11,7 +11,7 @@ VERSION = "0.7.1"
 
 PYTHON_REQUIRES = ">=3.9"
 REQUIRES = [
-    "lakefs-sdk >= 1.25, < 2",
+    "lakefs-sdk >= 1.47, < 2",
     "pyyaml ~= 6.0.1",
 ]
 TEST_REQUIRES = [
@@ -19,7 +19,7 @@ TEST_REQUIRES = [
     "pytest-datafiles ~= 3.0.0",
     "pandas ~= 2.1.4",
     "pyarrow ~= 14.0.1",
-    "pillow ~= 10.2.0"
+    "pillow ~= 10.3.0"
 ]
 
 with open('README.md') as f:

@@ -25,7 +25,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/block/factory"
+	blockfactory "github.com/treeverse/lakefs/pkg/block/factory"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/branch"
@@ -307,7 +307,7 @@ func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnersh
 
 func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	ctx, cancelFn := context.WithCancel(ctx)
-	adapter, err := factory.BuildBlockAdapter(ctx, nil, cfg.Config)
+	adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, cfg.Config)
 	if err != nil {
 		cancelFn()
 		return nil, fmt.Errorf("build block adapter: %w", err)
@@ -446,8 +446,9 @@ func (c *Catalog) log(ctx context.Context) logging.Logger {
 }
 
 // CreateRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with default branch name 'branch'
-func (c *Catalog) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string, readOnly bool) (*Repository, error) {
+func (c *Catalog) CreateRepository(ctx context.Context, repository string, storageID string, storageNamespace string, branch string, readOnly bool) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
+	storageIdentifier := graveler.StorageID(storageID)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(branch)
 	if err := validator.Validate([]validator.ValidateArg{
@@ -456,12 +457,17 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	}); err != nil {
 		return nil, err
 	}
-	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageNS, branchID, readOnly)
+	// TODO: this is a temporary validation. we should probably move this to the store level
+	if storageIdentifier != "" {
+		return nil, graveler.ErrInvalidStorageID
+	}
+	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
 	}
 	catalogRepo := &Repository{
 		Name:             repositoryID.String(),
+		StorageID:        storageIdentifier.String(),
 		StorageNamespace: storageNS.String(),
 		DefaultBranch:    branchID.String(),
 		CreationDate:     repo.CreationDate,
@@ -472,8 +478,9 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 
 // CreateBareRepository create a new repository pointing to 'storageNamespace' (ex: s3://bucket1/repo) with no initial branch or commit
 // defaultBranchID will point to a non-existent branch on creation, it is up to the caller to eventually create it.
-func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, storageNamespace string, defaultBranchID string, readOnly bool) (*Repository, error) {
+func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, storageID string, storageNamespace string, defaultBranchID string, readOnly bool) (*Repository, error) {
 	repositoryID := graveler.RepositoryID(repository)
+	storageIdentifier := graveler.StorageID(storageID)
 	storageNS := graveler.StorageNamespace(storageNamespace)
 	branchID := graveler.BranchID(defaultBranchID)
 	if err := validator.Validate([]validator.ValidateArg{
@@ -482,12 +489,17 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 	}); err != nil {
 		return nil, err
 	}
-	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageNS, branchID, readOnly)
+	// TODO: this is a temporary validation. we should probably move this to the store level
+	if storageIdentifier != "" {
+		return nil, graveler.ErrInvalidStorageID
+	}
+	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
 	}
 	catalogRepo := &Repository{
 		Name:             repositoryID.String(),
+		StorageID:        storageIdentifier.String(),
 		StorageNamespace: storageNS.String(),
 		DefaultBranch:    branchID.String(),
 		CreationDate:     repo.CreationDate,
@@ -516,6 +528,7 @@ func (c *Catalog) GetRepository(ctx context.Context, repository string) (*Reposi
 
 	catalogRepository := &Repository{
 		Name:             repositoryID.String(),
+		StorageID:        repo.StorageID.String(),
 		StorageNamespace: repo.StorageNamespace.String(),
 		DefaultBranch:    repo.DefaultBranchID.String(),
 		CreationDate:     repo.CreationDate,
@@ -623,6 +636,7 @@ func (c *Catalog) ListRepositories(ctx context.Context, limit int, prefix, searc
 		}
 		repos = append(repos, &Repository{
 			Name:             record.RepositoryID.String(),
+			StorageID:        record.StorageID.String(),
 			StorageNamespace: record.StorageNamespace.String(),
 			DefaultBranch:    record.DefaultBranchID.String(),
 			CreationDate:     record.CreationDate,
@@ -1297,7 +1311,7 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 	return catalogCommitLog, nil
 }
 
-func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, commitID string, version int, committer string, message string, metaRangeID string, creationDate int64, parents []string, metadata map[string]string, generation int, opts ...graveler.SetOptionsFunc) error {
+func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, commitID string, version int, committer string, message string, metaRangeID string, creationDate int64, parents []string, metadata map[string]string, generation int32, opts ...graveler.SetOptionsFunc) error {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
 		return err
@@ -1307,14 +1321,14 @@ func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, c
 		commitParents[i] = graveler.CommitID(parent)
 	}
 	commit := graveler.Commit{
-		Version:      graveler.CommitVersion(version),
+		Version:      graveler.CommitVersion(version), //nolint:gosec
 		Committer:    committer,
 		Message:      message,
 		MetaRangeID:  graveler.MetaRangeID(metaRangeID),
 		CreationDate: time.Unix(creationDate, 0).UTC(),
 		Parents:      commitParents,
 		Metadata:     metadata,
-		Generation:   graveler.CommitGeneration(generation),
+		Generation:   graveler.CommitGeneration(generation), //nolint:gosec
 	}
 	return c.Store.CreateCommitRecord(ctx, repository, graveler.CommitID(commitID), commit, opts...)
 }
