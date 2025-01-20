@@ -116,8 +116,8 @@ func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler
 }
 
 func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
+	// TODO (gilo): ObjectPointer init - add StorageID here?
 	objectPointer := block.ObjectPointer{
-		// TODO (gilo): ObjectPointer init - add StorageID here?
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -153,8 +153,8 @@ func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageNamespa
 	if err != nil {
 		return err
 	}
+	// TODO (gilo): ObjectPointer init - add StorageID here?
 	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		// TODO (gilo): ObjectPointer init - add StorageID here?
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,

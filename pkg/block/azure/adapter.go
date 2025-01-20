@@ -139,6 +139,7 @@ func ResolveBlobURLInfoFromURL(pathURL *url.URL) (BlobURLInfo, error) {
 
 func resolveBlobURLInfo(obj block.ObjectPointer) (BlobURLInfo, error) {
 	key := obj.Identifier
+	// TODO (gilo): verify there's no need for StorageID here
 	defaultNamespace := obj.StorageNamespace
 	var qk BlobURLInfo
 	// check if the key is fully qualified
