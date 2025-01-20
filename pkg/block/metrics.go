@@ -123,9 +123,9 @@ func (m *MetricsAdapter) ResolveNamespace(storageNamespace, key string, identifi
 	return m.adapter.ResolveNamespace(storageNamespace, key, identifierType)
 }
 
-func (m *MetricsAdapter) GetRegion(ctx context.Context, storageNamespace string) (string, error) {
+func (m *MetricsAdapter) GetRegion(ctx context.Context, storageID, storageNamespace string) (string, error) {
 	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
-	return m.adapter.GetRegion(ctx, storageNamespace)
+	return m.adapter.GetRegion(ctx, storageID, storageNamespace)
 }
 
 func (m *MetricsAdapter) RuntimeStats() map[string]string {

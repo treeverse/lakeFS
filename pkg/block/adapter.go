@@ -198,7 +198,8 @@ type Adapter interface {
 	GetStorageNamespaceInfo() StorageNamespaceInfo
 	ResolveNamespace(storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error)
 
-	GetRegion(ctx context.Context, storageNamespace string) (string, error)
+	// GetRegion storageID is not actively used, and it's here mainly for completeness
+	GetRegion(ctx context.Context, storageID, storageNamespace string) (string, error)
 
 	RuntimeStats() map[string]string
 }

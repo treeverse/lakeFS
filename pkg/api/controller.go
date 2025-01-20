@@ -1923,6 +1923,9 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateRepositoryJSONRequestBody, params apigen.CreateRepositoryParams) {
+	storageID := swag.StringValue(body.StorageId)
+	storageNamespace := body.StorageNamespace
+
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -1935,7 +1938,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.AttachStorageNamespaceAction,
-					Resource: permissions.StorageNamespace(body.StorageNamespace),
+					Resource: permissions.StorageNamespace(storageNamespace),
 				},
 			},
 		},
@@ -1960,13 +1963,13 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
 	}
 
-	if err := c.validateStorageNamespace(body.StorageNamespace); err != nil {
+	if err := c.validateStorageNamespace(storageNamespace); err != nil {
 		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
 	if !c.Config.Installation.AllowInterRegionStorage {
-		if err := block.ValidateInterRegionStorage(r.Context(), c.BlockAdapter, body.StorageNamespace); err != nil {
+		if err := block.ValidateInterRegionStorage(r.Context(), c.BlockAdapter, storageID, storageNamespace); err != nil {
 			writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
@@ -1977,10 +1980,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		defaultBranch = "main"
 	}
 
-	storageID := swag.StringValue(body.StorageId)
-
 	if !swag.BoolValue(body.ReadOnly) {
-		if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
+		if err := c.ensureStorageNamespace(ctx, storageNamespace); err != nil {
 			var (
 				reason string
 				retErr error
@@ -2002,7 +2003,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			}
 			c.Logger.
 				WithError(err).
-				WithField("storage_namespace", body.StorageNamespace).
+				WithField("storage_namespace", storageNamespace).
 				WithField("reason", reason).
 				Warn("Could not access storage namespace")
 			writeError(w, r, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
@@ -2013,7 +2014,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	if swag.BoolValue(params.Bare) {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
-		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, storageID, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, storageID, storageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -2028,7 +2029,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, storageID, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, storageID, storageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
 	if err != nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return

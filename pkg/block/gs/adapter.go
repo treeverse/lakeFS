@@ -693,7 +693,7 @@ func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 	return qualifiedKey, nil
 }
 
-func (a *Adapter) GetRegion(_ context.Context, _ string) (string, error) {
+func (a *Adapter) GetRegion(_ context.Context, _, _ string) (string, error) {
 	return "", block.ErrOperationNotSupported
 }
 
