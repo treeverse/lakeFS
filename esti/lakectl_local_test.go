@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -484,6 +485,80 @@ func TestLakectlLocal_pull(t *testing.T) {
 			localVerifyDirContents(t, dataDir, expected)
 		})
 	}
+}
+
+func TestLakectlLocal_commitProtectedBranch(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	dataDir, err := os.MkdirTemp(tmpDir, "")
+	require.NoError(t, err)
+	file := "test.txt"
+
+	vars := map[string]string{
+		"REPO":      repoName,
+		"STORAGE":   storage,
+		"BRANCH":    mainBranch,
+		"REF":       mainBranch,
+		"LOCAL_DIR": dataDir,
+		"FILE":      file,
+	}
+	runCmd(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, false, vars)
+	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
+	// BranchUpdateMaxInterval - sleep in order to overcome branch update caching
+	time.Sleep(branchProtectTimeout)
+	// Cloning local dir
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/ "+vars["LOCAL_DIR"], false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "No diff found", vars)
+	// Adding file to local dir
+	fd, err = os.Create(filepath.Join(vars["LOCAL_DIR"], vars["FILE"]))
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "local  ║ added  ║ test.txt", vars)
+	// Try to commit local dir, expect failure
+	RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+vars["LOCAL_DIR"], false, "cannot write to protected branch", vars)
+}
+
+func TestLakectlLocal_RmCommitProtectedBranch(t *testing.T) {
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	dataDir, err := os.MkdirTemp(tmpDir, "")
+	require.NoError(t, err)
+	file := "ro_1k.0"
+
+	vars := map[string]string{
+		"REPO":      repoName,
+		"STORAGE":   storage,
+		"BRANCH":    mainBranch,
+		"REF":       mainBranch,
+		"LOCAL_DIR": dataDir,
+		"FILE_PATH": file,
+	}
+	runCmd(t, Lakectl()+" repo create lakefs://"+vars["REPO"]+" "+vars["STORAGE"], false, false, vars)
+
+	// Cloning local dir
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/ "+vars["LOCAL_DIR"], false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "No diff found", vars)
+
+	// locally add a file and commit
+	fd, err = os.Create(filepath.Join(vars["LOCAL_DIR"], vars["FILE_PATH"]))
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local commit "+vars["LOCAL_DIR"]+" -m test", false, "Commit for branch \""+vars["BRANCH"]+"\" completed.", vars)
+	runCmd(t, Lakectl()+" branch-protect add lakefs://"+vars["REPO"]+"/  '*'", false, false, vars)
+	// BranchUpdateMaxInterval - sleep in order to overcome branch update caching
+	time.Sleep(branchProtectTimeout)
+	// Try delete file from local dir and then commit
+	require.NoError(t, os.Remove(filepath.Join(vars["LOCAL_DIR"], vars["FILE_PATH"])))
+	RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+vars["LOCAL_DIR"], false, "local  ║ removed ║ "+vars["FILE_PATH"], vars)
+	RunCmdAndVerifyFailureContainsText(t, Lakectl()+" local commit -m test "+vars["LOCAL_DIR"], false, "cannot write to protected branch", vars)
 }
 
 func TestLakectlLocal_commit(t *testing.T) {
