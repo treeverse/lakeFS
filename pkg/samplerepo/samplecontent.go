@@ -81,7 +81,16 @@ func PopulateSampleRepo(ctx context.Context, repo *catalog.Repository, cat *cata
 
 		// write file to storage
 		address := pathProvider.NewPath()
-		blob, err := upload.WriteBlob(ctx, blockAdapter, repo.StorageNamespace, address, contentReader, contentSize, block.PutOpts{})
+		blob, err := upload.WriteBlob(
+			ctx,
+			blockAdapter,
+			repo.StorageID,
+			repo.StorageNamespace,
+			address,
+			contentReader,
+			contentSize,
+			block.PutOpts{},
+		)
 		if err != nil {
 			return err
 		}

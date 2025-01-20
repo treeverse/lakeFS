@@ -12,10 +12,10 @@ import (
 )
 
 type MockAdapter struct {
-	TotalSize        int64
-	Count            int
-	LastBucket       string
-	LastStorageClass *string
+	TotalSize            int64
+	Count                int
+	LastStorageNamespace string
+	LastStorageClass     *string
 
 	blockstoreMetadata *block.BlockstoreMetadata
 	namespaceRegion    *string
@@ -68,7 +68,7 @@ func (a *MockAdapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, r
 	}
 	a.TotalSize += int64(len(data))
 	a.Count++
-	a.LastBucket = obj.StorageNamespace
+	a.LastStorageNamespace = obj.StorageNamespace
 	a.LastStorageClass = opts.StorageClass
 	return &block.PutResponse{}, nil
 }
