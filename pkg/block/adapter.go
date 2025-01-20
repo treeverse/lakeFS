@@ -15,6 +15,10 @@ type MultipartPart struct {
 	LastModified time.Time
 	Size         int64
 }
+type Upload struct {
+	Key      string
+	UploadID string
+}
 
 // MultipartUploadCompletion parts described as part of complete multipart upload. Each part holds the part number and ETag received while calling part upload.
 // NOTE that S3 implementation and our S3 gateway accept and returns ETag value surrounded with double-quotes ("), while
@@ -121,6 +125,10 @@ type ListPartsResponse struct {
 	IsTruncated          bool
 }
 
+type ListMultipartUploadsResponse struct {
+	Uploads []Upload
+}
+
 // CreateMultiPartUploadOpts contains optional arguments for
 // CreateMultiPartUpload.  These should be analogous to options on
 // some underlying storage layer.  Missing arguments are mapped to the
@@ -187,8 +195,9 @@ type Adapter interface {
 
 	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (*CreateMultiPartUploadResponse, error)
 	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*UploadPartResponse, error)
-	ListParts(ctx context.Context, obj ObjectPointer, uploadID string, opts ListPartsOpts) (*ListPartsResponse, error)
 	UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int) (*UploadPartResponse, error)
+	ListParts(ctx context.Context, obj ObjectPointer, uploadID string, opts ListPartsOpts) (*ListPartsResponse, error)
+	ListMultipartUploads(ctx context.Context, obj ObjectPointer) (*ListMultipartUploadsResponse, error)
 	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*UploadPartResponse, error)
 	AbortMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string) error
 	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*CompleteMultiPartUploadResponse, error)

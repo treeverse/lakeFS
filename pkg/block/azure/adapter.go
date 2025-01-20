@@ -644,6 +644,9 @@ func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPoint
 func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
 	return nil, block.ErrOperationNotSupported
 }
+func (a *Adapter) ListMultipartUploads(_ context.Context, _ block.ObjectPointer) (*block.ListMultipartUploadsResponse, error) {
+	return nil, block.ErrOperationNotSupported
+}
 
 // ParseURL - parses url and extracts account name and domain. If either are not found returns an error
 func ParseURL(uri *url.URL) (accountName string, domain string, err error) {

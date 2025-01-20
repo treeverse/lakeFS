@@ -65,6 +65,11 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 		handleListParts(w, req, o)
 		return
 	}
+	// check if this is a list multipart uploads call
+	if query.Has(QueryParamListMultipart) {
+		handleListMultipartUploads(w, req, o)
+		return
+	}
 
 	beforeMeta := time.Now()
 	entry, err := o.Catalog.GetEntry(ctx, o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
@@ -240,6 +245,43 @@ func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation)
 		}
 		resp.NextPartNumberMarker = int32(marker)
 	}
+
+	o.EncodeResponse(w, req, resp, http.StatusOK)
+}
+
+func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *PathOperation) {
+	o.Incr("list_multipart_uploads", o.Principal, o.Repository.Name, o.Reference)
+	// query := req.URL.Query()
+
+	resp := &serde.ListMultipartUploadsOutput{
+		Bucket: o.Repository.Name,
+	}
+
+	partsResp, err := o.BlockStore.ListMultipartUploads(req.Context(), block.ObjectPointer{
+		StorageNamespace: o.Repository.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		//Identifier:       multiPart.PhysicalAddress,
+	})
+	if err != nil {
+		o.Log(req).WithError(err).Error("list multipart uploads failed")
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
+	}
+	uploads := make([]serde.Upload, len(partsResp.Uploads))
+	for i, upload := range partsResp.Uploads {
+
+		multiPart, err := o.MultipartTracker.Get(req.Context(), upload.UploadID)
+		if err != nil {
+			o.Log(req).WithError(err).Error("could not read multipart record")
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
+		uploads[i] = serde.Upload{
+			Key:      multiPart.Path,
+			UploadID: upload.UploadID,
+		}
+	}
+	resp.Uploads = uploads
 
 	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

@@ -717,3 +717,6 @@ func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPoint
 func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
 	return nil, block.ErrOperationNotSupported
 }
+func (a *Adapter) ListMultipartUploads(_ context.Context, _ block.ObjectPointer) (*block.ListMultipartUploadsResponse, error) {
+	return nil, block.ErrOperationNotSupported
+}

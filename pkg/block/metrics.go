@@ -85,6 +85,10 @@ func (m *MetricsAdapter) ListParts(ctx context.Context, obj ObjectPointer, uploa
 	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
 	return m.adapter.ListParts(ctx, obj, uploadID, opts)
 }
+func (m *MetricsAdapter) ListMultipartUploads(ctx context.Context, obj ObjectPointer) (*ListMultipartUploadsResponse, error) {
+	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
+	return m.adapter.ListMultipartUploads(ctx, obj)
+}
 
 func (m *MetricsAdapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int) (*UploadPartResponse, error) {
 	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
