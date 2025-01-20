@@ -216,6 +216,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 
 	// create a new multipart upload
 	mpuResp, err := c.BlockAdapter.CreateMultiPartUpload(ctx, block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
@@ -229,6 +230,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	for i := 0; i < swag.IntValue(params.Parts); i++ {
 		// generate a pre-signed PUT url for the given request
 		preSignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, block.ObjectPointer{
+			StorageID:        repo.StorageID,
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       address,
 			IdentifierType:   block.IdentifierTypeRelative,
@@ -300,6 +302,7 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 	}
 
 	if err := c.BlockAdapter.AbortMultiPartUpload(ctx, block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       physicalAddress,
@@ -372,6 +375,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	}
 
 	mpuResp, err := c.BlockAdapter.CompleteMultiPartUpload(ctx, block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       physicalAddress,
@@ -702,6 +706,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 	if swag.BoolValue(params.Presign) {
 		// generate a pre-signed PUT url for the given request
 		preSignedURL, expiry, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+			StorageID:        repo.StorageID,
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       address,
 			IdentifierType:   block.IdentifierTypeRelative,
@@ -2091,6 +2096,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	// this serves two purposes, first, we maintain safety check for older lakeFS version.
 	// second, in scenarios where lakeFS shouldn't have access to the root namespace (i.e pre-sign URL only).
 	if c.Config.Graveler.EnsureReadableRootNamespace {
+		// TODO (gilo): ObjectPointer init - add StorageID here
 		rootObj := block.ObjectPointer{
 			StorageNamespace: storageNamespace,
 			IdentifierType:   block.IdentifierTypeRelative,
@@ -2108,6 +2114,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 
 	// check if the dummy file exists
 	obj := block.ObjectPointer{
+		// TODO (gilo): ObjectPointer init - add StorageID here
 		StorageNamespace: storageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       dummyKey,
@@ -2558,6 +2565,7 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 
 	logPath := taskResult.LogPath()
 	reader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       logPath,
@@ -3625,6 +3633,7 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	// TODO (gilo): ObjectPointer init - add StorageID here
 	presignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
 		Identifier:     gcRunMetadata.CommitsCSVLocation,
 		IdentifierType: block.IdentifierTypeFull,
@@ -3855,6 +3864,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 		return
 	}
 	_, err = c.BlockAdapter.Put(ctx, block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.Committed.BlockStoragePrefix),
@@ -4195,6 +4205,7 @@ func writeSymlink(ctx context.Context, repo *catalog.Repository, branch, path st
 	address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, branch, path)
 	data := strings.Join(addresses, "\n")
 	_, err := adapter.Put(ctx, block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
@@ -4402,6 +4413,7 @@ func (c *Controller) GetMetadataObject(w http.ResponseWriter, r *http.Request, r
 
 	// if pre-sign, return a redirect
 	pointer := block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       objPath,
@@ -4481,6 +4493,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 
 	// if pre-sign, return a redirect
 	pointer := block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   entry.AddressType.ToIdentifierType(),
 		Identifier:       entry.PhysicalAddress,
@@ -4627,6 +4640,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				if authResponse.Allowed {
 					var expiry time.Time
 					objStat.PhysicalAddress, expiry, err = c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+						StorageID:        repo.StorageID,
 						StorageNamespace: repo.StorageNamespace,
 						IdentifierType:   entry.AddressType.ToIdentifierType(),
 						Identifier:       entry.PhysicalAddress,
@@ -4709,6 +4723,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 	} else if swag.BoolValue(params.Presign) {
 		// need to pre-sign the physical address
 		preSignedURL, expiry, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+			StorageID:        repo.StorageID,
 			StorageNamespace: repo.StorageNamespace,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),
 			Identifier:       entry.PhysicalAddress,
@@ -4770,6 +4785,7 @@ func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Requ
 
 	// read object properties from underlying storage
 	properties, err := c.BlockAdapter.GetProperties(ctx, block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   entry.AddressType.ToIdentifierType(),
 		Identifier:       entry.PhysicalAddress,

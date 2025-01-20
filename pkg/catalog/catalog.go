@@ -2642,6 +2642,7 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 		return "", err
 	}
 	obj := block.ObjectPointer{
+		// TODO (gilo): ObjectPointer init - add StorageID here
 		StorageNamespace: ns.String(),
 		Identifier:       identifier,
 		IdentifierType:   block.IdentifierTypeFull,
@@ -2757,11 +2758,13 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	}
 
 	srcObject := block.ObjectPointer{
+		StorageID:        srcRepo.StorageID,
 		StorageNamespace: srcRepo.StorageNamespace,
 		IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
 		Identifier:       srcEntry.PhysicalAddress,
 	}
 	destObj := block.ObjectPointer{
+		StorageID:        destRepo.StorageID,
 		StorageNamespace: destRepo.StorageNamespace,
 		IdentifierType:   dstEntry.AddressType.ToIdentifierType(),
 		Identifier:       dstEntry.PhysicalAddress,

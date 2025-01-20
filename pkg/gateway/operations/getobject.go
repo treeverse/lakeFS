@@ -110,6 +110,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	contentLength := entry.Size
 	contentRange := ""
 	objectPointer := block.ObjectPointer{
+		StorageID:        o.Repository.StorageID,
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   entry.AddressType.ToIdentifierType(),
 		Identifier:       entry.PhysicalAddress,
@@ -208,6 +209,7 @@ func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation)
 	}
 
 	partsResp, err := o.BlockStore.ListParts(req.Context(), block.ObjectPointer{
+		StorageID:        o.Repository.StorageID,
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       multiPart.PhysicalAddress,

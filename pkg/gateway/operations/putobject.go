@@ -178,12 +178,14 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		}
 
 		src := block.ObjectPointer{
+			StorageID:        srcRepo.StorageID,
 			StorageNamespace: srcRepo.StorageNamespace,
 			IdentifierType:   ent.AddressType.ToIdentifierType(),
 			Identifier:       ent.PhysicalAddress,
 		}
 
 		dst := block.ObjectPointer{
+			StorageID:        o.Repository.StorageID,
 			StorageNamespace: o.Repository.StorageNamespace,
 			IdentifierType:   block.IdentifierTypeRelative,
 			Identifier:       multiPart.PhysicalAddress,
@@ -225,6 +227,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 
 	byteSize := req.ContentLength
 	resp, err := o.BlockStore.UploadPart(req.Context(), block.ObjectPointer{
+		StorageID:        o.Repository.StorageID,
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       multiPart.PhysicalAddress,

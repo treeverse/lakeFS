@@ -41,6 +41,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 		t.Run(c.name, func(t *testing.T) {
 			blockstoreType := adapter.BlockstoreType()
 			obj := block.ObjectPointer{
+				StorageID:        "",
 				StorageNamespace: storageNamespace,
 				Identifier:       c.path,
 				IdentifierType:   block.IdentifierTypeRelative,
@@ -296,12 +297,14 @@ func requireEqualBigByteSlice(t *testing.T, exp, actual []byte) {
 
 func objPointers(storageNamespace string) (block.ObjectPointer, block.ObjectPointer) {
 	var obj = block.ObjectPointer{
+		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "abc",
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
 
 	var objCopy = block.ObjectPointer{
+		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "abcCopy",
 		IdentifierType:   block.IdentifierTypeRelative,
