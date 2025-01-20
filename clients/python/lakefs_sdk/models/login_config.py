@@ -30,13 +30,15 @@ class LoginConfig(BaseModel):
     LoginConfig
     """
     rbac: Optional[StrictStr] = Field(None, alias="RBAC", description="RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. ")
+    username_placeholder: Optional[StrictStr] = Field(None, description="Placeholder text to display in the username field of the login form. ")
+    password_placeholder: Optional[StrictStr] = Field(None, description="Placeholder text to display in the password field of the login form. ")
     login_url: StrictStr = Field(..., description="primary URL to use for login.")
     login_failed_message: Optional[StrictStr] = Field(None, description="message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method ")
     fallback_login_url: Optional[StrictStr] = Field(None, description="secondary URL to offer users to use for login.")
     fallback_login_label: Optional[StrictStr] = Field(None, description="label to place on fallback_login_url.")
     login_cookie_names: conlist(StrictStr) = Field(..., description="cookie names used to store JWT")
     logout_url: StrictStr = Field(..., description="URL to use for logging out.")
-    __properties = ["RBAC", "login_url", "login_failed_message", "fallback_login_url", "fallback_login_label", "login_cookie_names", "logout_url"]
+    __properties = ["RBAC", "username_placeholder", "password_placeholder", "login_url", "login_failed_message", "fallback_login_url", "fallback_login_label", "login_cookie_names", "logout_url"]
 
     @validator('rbac')
     def rbac_validate_enum(cls, value):
@@ -85,6 +87,8 @@ class LoginConfig(BaseModel):
 
         _obj = LoginConfig.parse_obj({
             "rbac": obj.get("RBAC"),
+            "username_placeholder": obj.get("username_placeholder"),
+            "password_placeholder": obj.get("password_placeholder"),
             "login_url": obj.get("login_url"),
             "login_failed_message": obj.get("login_failed_message"),
             "fallback_login_url": obj.get("fallback_login_url"),

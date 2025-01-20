@@ -74,6 +74,9 @@ const (
 
 	pullRequestClosed = "CLOSED"
 	pullRequestOpen   = "OPEN"
+
+	usernamePlaceholder = "Username"
+	passwordPlaceholder = "Password"
 )
 
 type actionsHandler interface {
@@ -4959,6 +4962,11 @@ func newLoginConfig(c *config.BaseConfig) *apigen.LoginConfig {
 		LoginCookieNames:   c.Auth.UIConfig.LoginCookieNames,
 		LogoutUrl:          c.Auth.UIConfig.LogoutURL,
 	}
+	if c.UseUILoginPlaceholders() {
+		loginConfig.UsernamePlaceholder = swag.String(usernamePlaceholder)
+		loginConfig.PasswordPlaceholder = swag.String(passwordPlaceholder)
+	}
+	return loginConfig
 }
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {

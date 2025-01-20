@@ -48,6 +48,22 @@ public class LoginConfigTest {
     }
 
     /**
+     * Test the property 'usernamePlaceholder'
+     */
+    @Test
+    public void usernamePlaceholderTest() {
+        // TODO: test usernamePlaceholder
+    }
+
+    /**
+     * Test the property 'passwordPlaceholder'
+     */
+    @Test
+    public void passwordPlaceholderTest() {
+        // TODO: test passwordPlaceholder
+    }
+
+    /**
      * Test the property 'loginUrl'
      */
     @Test

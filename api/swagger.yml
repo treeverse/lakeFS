@@ -923,6 +923,14 @@ components:
             with an external auth service.
           type: string
           enum: [none, simplified, external]
+        username_placeholder:
+          description: |
+            Placeholder text to display in the username field of the login form.
+          type: string
+        password_placeholder:
+            description: |
+                Placeholder text to display in the password field of the login form.
+            type: string
         login_url:
           description: primary URL to use for login.
           type: string

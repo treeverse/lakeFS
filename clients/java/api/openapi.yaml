@@ -8535,6 +8535,8 @@ components:
         login_failed_message: login_failed_message
         logout_url: logout_url
         login_url: login_url
+        username_placeholder: username_placeholder
+        password_placeholder: password_placeholder
         RBAC: none
         fallback_login_url: fallback_login_url
         login_cookie_names:
@@ -8550,6 +8552,14 @@ components:
           - none
           - simplified
           - external
+          type: string
+        username_placeholder:
+          description: |
+            Placeholder text to display in the username field of the login form.
+          type: string
+        password_placeholder:
+          description: |
+            Placeholder text to display in the password field of the login form.
           type: string
         login_url:
           description: primary URL to use for login.
@@ -8584,6 +8594,8 @@ components:
           login_failed_message: login_failed_message
           logout_url: logout_url
           login_url: login_url
+          username_placeholder: username_placeholder
+          password_placeholder: password_placeholder
           RBAC: none
           fallback_login_url: fallback_login_url
           login_cookie_names:

@@ -107,6 +107,14 @@ public class LoginConfig {
   @SerializedName(SERIALIZED_NAME_R_B_A_C)
   private RBACEnum RBAC;
 
+  public static final String SERIALIZED_NAME_USERNAME_PLACEHOLDER = "username_placeholder";
+  @SerializedName(SERIALIZED_NAME_USERNAME_PLACEHOLDER)
+  private String usernamePlaceholder;
+
+  public static final String SERIALIZED_NAME_PASSWORD_PLACEHOLDER = "password_placeholder";
+  @SerializedName(SERIALIZED_NAME_PASSWORD_PLACEHOLDER)
+  private String passwordPlaceholder;
+
   public static final String SERIALIZED_NAME_LOGIN_URL = "login_url";
   @SerializedName(SERIALIZED_NAME_LOGIN_URL)
   private String loginUrl;
@@ -152,6 +160,48 @@ public class LoginConfig {
 
   public void setRBAC(RBACEnum RBAC) {
     this.RBAC = RBAC;
+  }
+
+
+  public LoginConfig usernamePlaceholder(String usernamePlaceholder) {
+    
+    this.usernamePlaceholder = usernamePlaceholder;
+    return this;
+  }
+
+   /**
+   * Placeholder text to display in the username field of the login form. 
+   * @return usernamePlaceholder
+  **/
+  @javax.annotation.Nullable
+  public String getUsernamePlaceholder() {
+    return usernamePlaceholder;
+  }
+
+
+  public void setUsernamePlaceholder(String usernamePlaceholder) {
+    this.usernamePlaceholder = usernamePlaceholder;
+  }
+
+
+  public LoginConfig passwordPlaceholder(String passwordPlaceholder) {
+    
+    this.passwordPlaceholder = passwordPlaceholder;
+    return this;
+  }
+
+   /**
+   * Placeholder text to display in the password field of the login form. 
+   * @return passwordPlaceholder
+  **/
+  @javax.annotation.Nullable
+  public String getPasswordPlaceholder() {
+    return passwordPlaceholder;
+  }
+
+
+  public void setPasswordPlaceholder(String passwordPlaceholder) {
+    this.passwordPlaceholder = passwordPlaceholder;
   }
 
 
@@ -344,6 +394,8 @@ public class LoginConfig {
     }
     LoginConfig loginConfig = (LoginConfig) o;
     return Objects.equals(this.RBAC, loginConfig.RBAC) &&
+        Objects.equals(this.usernamePlaceholder, loginConfig.usernamePlaceholder) &&
+        Objects.equals(this.passwordPlaceholder, loginConfig.passwordPlaceholder) &&
         Objects.equals(this.loginUrl, loginConfig.loginUrl) &&
         Objects.equals(this.loginFailedMessage, loginConfig.loginFailedMessage) &&
         Objects.equals(this.fallbackLoginUrl, loginConfig.fallbackLoginUrl) &&
@@ -355,7 +407,7 @@ public class LoginConfig {
 
   @Override
   public int hashCode() {
-    return Objects.hash(RBAC, loginUrl, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, additionalProperties);
+    return Objects.hash(RBAC, usernamePlaceholder, passwordPlaceholder, loginUrl, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, additionalProperties);
   }
 
   @Override
@@ -363,6 +415,8 @@ public class LoginConfig {
     StringBuilder sb = new StringBuilder();
     sb.append("class LoginConfig {\n");
     sb.append("    RBAC: ").append(toIndentedString(RBAC)).append("\n");
+    sb.append("    usernamePlaceholder: ").append(toIndentedString(usernamePlaceholder)).append("\n");
+    sb.append("    passwordPlaceholder: ").append(toIndentedString(passwordPlaceholder)).append("\n");
     sb.append("    loginUrl: ").append(toIndentedString(loginUrl)).append("\n");
     sb.append("    loginFailedMessage: ").append(toIndentedString(loginFailedMessage)).append("\n");
     sb.append("    fallbackLoginUrl: ").append(toIndentedString(fallbackLoginUrl)).append("\n");
@@ -393,6 +447,8 @@ public class LoginConfig {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("RBAC");
+    openapiFields.add("username_placeholder");
+    openapiFields.add("password_placeholder");
     openapiFields.add("login_url");
     openapiFields.add("login_failed_message");
     openapiFields.add("fallback_login_url");
@@ -429,6 +485,12 @@ public class LoginConfig {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if ((jsonObj.get("RBAC") != null && !jsonObj.get("RBAC").isJsonNull()) && !jsonObj.get("RBAC").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `RBAC` to be a primitive type in the JSON string but got `%s`", jsonObj.get("RBAC").toString()));
+      }
+      if ((jsonObj.get("username_placeholder") != null && !jsonObj.get("username_placeholder").isJsonNull()) && !jsonObj.get("username_placeholder").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `username_placeholder` to be a primitive type in the JSON string but got `%s`", jsonObj.get("username_placeholder").toString()));
+      }
+      if ((jsonObj.get("password_placeholder") != null && !jsonObj.get("password_placeholder").isJsonNull()) && !jsonObj.get("password_placeholder").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `password_placeholder` to be a primitive type in the JSON string but got `%s`", jsonObj.get("password_placeholder").toString()));
       }
       if (!jsonObj.get("login_url").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `login_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_url").toString()));

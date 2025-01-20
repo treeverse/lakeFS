@@ -11,6 +11,8 @@ import {useAPI} from "../../lib/hooks/api";
 
 interface LoginConfig {
     login_url: string;
+    username_placeholder: string;
+    password_placeholder: string;
     login_failed_message?: string;
     fallback_login_url?: string;
     fallback_login_label?: string;
@@ -22,7 +24,8 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const [loginError, setLoginError] = useState(null);
     const { next } = router.query;
-
+    const usernamePlaceholder = loginConfig.username_placeholder ? "Username" : "Access Key ID";
+    const passwordPlaceholder = loginConfig.password_placeholder ? "Password" : "Secret Access Key";
     return (
         <Row>
             <Col md={{offset: 4, span: 4}}>
@@ -44,11 +47,11 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             }
                         }}>
                             <Form.Group controlId="username" className="mb-3">
-                                <Form.Control type="text" placeholder={"Access Key ID"} autoFocus/>
+                                <Form.Control type="text" placeholder={usernamePlaceholder} autoFocus/>
                             </Form.Group>
 
                             <Form.Group controlId="password" className="mb-3">
-                                <Form.Control type="password" placeholder={"Secret Access Key"}/>
+                                <Form.Control type="password" placeholder={passwordPlaceholder}/>
                             </Form.Group>
 
                             {(!!loginError) && <AlertError error={loginError}/>}

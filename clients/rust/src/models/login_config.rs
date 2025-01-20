@@ -15,6 +15,12 @@ pub struct LoginConfig {
     /// RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. 
     #[serde(rename = "RBAC", skip_serializing_if = "Option::is_none")]
     pub rbac: Option<Rbac>,
+    /// Placeholder text to display in the username field of the login form. 
+    #[serde(rename = "username_placeholder", skip_serializing_if = "Option::is_none")]
+    pub username_placeholder: Option<String>,
+    /// Placeholder text to display in the password field of the login form. 
+    #[serde(rename = "password_placeholder", skip_serializing_if = "Option::is_none")]
+    pub password_placeholder: Option<String>,
     /// primary URL to use for login.
     #[serde(rename = "login_url")]
     pub login_url: String,
@@ -39,6 +45,8 @@ impl LoginConfig {
     pub fn new(login_url: String, login_cookie_names: Vec<String>, logout_url: String) -> LoginConfig {
         LoginConfig {
             rbac: None,
+            username_placeholder: None,
+            password_placeholder: None,
             login_url,
             login_failed_message: None,
             fallback_login_url: None,
