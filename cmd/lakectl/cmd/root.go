@@ -69,6 +69,11 @@ type Configuration struct {
 		AccessKeyID     lakefsconfig.OnlyString `mapstructure:"access_key_id"`
 		SecretAccessKey lakefsconfig.OnlyString `mapstructure:"secret_access_key"`
 	} `mapstructure:"credentials"`
+	Network struct {
+		HTTP2 struct {
+			Enabled bool `mapstructure:"enabled"`
+		} `mapstructure:"http2"`
+	} `mapstructure:"network"`
 	Server struct {
 		EndpointURL lakefsconfig.OnlyString `mapstructure:"endpoint_url"`
 		Retries     RetriesCfg              `mapstructure:"retries"`
@@ -172,6 +177,7 @@ const (
 	fmtErrEmptyMsg        = `commit with no message without specifying the "--allow-empty-message" flag`
 	metaFlagName          = "meta"
 
+	defaultHTTP2Enabled     = true
 	defaultMaxAttempts      = 4
 	defaultMaxRetryInterval = 30 * time.Second
 	defaultMinRetryInterval = 200 * time.Millisecond
@@ -474,6 +480,10 @@ func getHTTPClient() *http.Client {
 	// only to be immediately reopened.
 	// see: https://stackoverflow.com/a/39834253
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if !cfg.Network.HTTP2.Enabled {
+		transport.ForceAttemptHTTP2 = false
+		transport.TLSClientConfig.NextProtos = []string{}
+	}
 	transport.MaxIdleConnsPerHost = DefaultMaxIdleConnsPerHost
 	if !cfg.Server.Retries.Enabled {
 		return &http.Client{Transport: transport}
@@ -578,6 +588,7 @@ func initConfig() {
 	viper.SetDefault("server.endpoint_url", "http://127.0.0.1:8000")
 	viper.SetDefault("server.retries.enabled", true)
 	viper.SetDefault("server.retries.max_attempts", defaultMaxAttempts)
+	viper.SetDefault("network.http2.enabled", defaultHTTP2Enabled)
 	viper.SetDefault("server.retries.max_wait_interval", defaultMaxRetryInterval)
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
