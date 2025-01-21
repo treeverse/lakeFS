@@ -7516,7 +7516,7 @@ components:
         default_branch:
           type: string
         storage_id:
-          description: Unique identifier of the underlying data store
+          description: Unique identifier of the underlying data store. *EXPERIMENTAL*
           type: string
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
@@ -7634,7 +7634,7 @@ components:
           pattern: "^[a-z0-9][a-z0-9-]{2,62}$"
           type: string
         storage_id:
-          description: Unique identifier of the underlying data store
+          description: Unique identifier of the underlying data store. *EXPERIMENTAL*
           type: string
         storage_namespace:
           description: Filesystem URI to store the underlying data in (e.g. "s3://my-bucket/some/path/")
