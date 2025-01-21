@@ -851,7 +851,7 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 
 func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPointer) (*block.ListMultipartUploadsResponse, error) {
 	var err error
-	defer reportMetrics("ListParts", time.Now(), nil, &err)
+	defer reportMetrics("ListMultipartUploads", time.Now(), nil, &err)
 	bucket, _, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -859,7 +859,6 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 
 	input := &s3.ListMultipartUploadsInput{
 		Bucket: aws.String(bucket),
-		Prefix: aws.String(""),
 	}
 
 	lg := a.log(ctx).WithFields(logging.Fields{
@@ -875,19 +874,13 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 	}
 
 	partsResp := block.ListMultipartUploadsResponse{
-		Uploads: make([]block.Upload, len(resp.Uploads)),
+		Uploads: make([]types.MultipartUpload, len(resp.Uploads)),
 	}
 	for _, upload := range resp.Uploads {
-		// multipart.tracker.get(f)
-		// partsResp.Parts[i] = block.MultipartPart{
-		// 	ETag:         strings.Trim(aws.ToString(upload.ETag), `"`),
-		// 	PartNumber:   int(aws.ToInt32(upload.PartNumber)),
-		// 	LastModified: aws.ToTime(upload.LastModified),
-		// 	Size:         aws.ToInt64(upload.Size),
+		partsResp.Uploads = append(partsResp.Uploads, upload)
+		fmt.Println("key ", *upload.Key)
+		fmt.Println("key ", *upload.UploadId)
 	}
-
-	// lg.WithField("num_parts", len(resp.Parts)).Debug("list multipart upload parts")
-
 	return &partsResp, nil
 }
 

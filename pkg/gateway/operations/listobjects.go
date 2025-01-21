@@ -2,10 +2,12 @@ package operations
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
@@ -355,7 +357,7 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 	if o.HandleUnsupported(w, req, "inventory", "metrics", "publicAccessBlock", "ownershipControls",
 		"intelligent-tiering", "analytics", "policy", "lifecycle", "encryption", "object-lock", "replication",
 		"notification", "events", "acl", "cors", "website", "accelerate",
-		"requestPayment", "logging", "tagging", "uploads", "versions", "policyStatus") {
+		"requestPayment", "logging", "tagging", "versions", "policyStatus") {
 		return
 	}
 	query := req.URL.Query()
@@ -370,7 +372,12 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 		o.EncodeResponse(w, req, response, http.StatusOK)
 		return
 	}
-
+	// check if request is list-multipart-uploads
+	if query.Has("uploads") {
+		fmt.Println("itamar, you are the king")
+		handleListMultipartUploads(w, req, o)
+		return
+	}
 	// getbucketversioing support
 	if query.Has("versioning") {
 		o.EncodeXMLBytes(w, req, []byte(serde.VersioningResponse), http.StatusOK)
@@ -392,4 +399,39 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 		o.Log(req).WithField("list-type", listType).Error("listObjects version not supported")
 		_ = o.EncodeError(w, req, nil, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 	}
+}
+
+func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
+	o.Incr("list_multipart_uploads", o.Principal, o.Repository.Name, "")
+	resp := &serde.ListMultipartUploadsOutput{
+		Bucket: o.Repository.Name,
+	}
+
+	partsResp, err := o.BlockStore.ListMultipartUploads(req.Context(), block.ObjectPointer{
+		StorageNamespace: o.Repository.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+	})
+	if err != nil {
+		o.Log(req).WithError(err).Error("list multipart uploads failed")
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
+	}
+	var uploads []serde.Upload
+	for _, upload := range partsResp.Uploads {
+		if upload.UploadId == nil {
+			continue
+		}
+		multiPart, err := o.MultipartTracker.Get(req.Context(), *upload.UploadId)
+		if err != nil {
+			o.Log(req).WithError(err).Error("could not read multipart record")
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
+		uploads = append(uploads, serde.Upload{
+			Key:      multiPart.Path,
+			UploadID: *upload.UploadId,
+		})
+	}
+	resp.Uploads = uploads
+	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

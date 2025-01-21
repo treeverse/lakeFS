@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 // MultipartPart single multipart information
@@ -126,7 +128,7 @@ type ListPartsResponse struct {
 }
 
 type ListMultipartUploadsResponse struct {
-	Uploads []Upload
+	Uploads []types.MultipartUpload
 }
 
 // CreateMultiPartUploadOpts contains optional arguments for

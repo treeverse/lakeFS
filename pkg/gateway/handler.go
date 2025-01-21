@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	gohttputil "net/http/httputil"
 	"net/url"
@@ -198,6 +199,7 @@ func RepoOperationHandler(sc *ServerContext, handler operations.RepoOperationHan
 }
 
 func PathOperationHandler(sc *ServerContext, handler operations.PathOperationHandler) http.Handler {
+	fmt.Println("got to path operation handler")
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		repo := ctx.Value(ContextKeyRepository).(*catalog.Repository)
@@ -319,6 +321,7 @@ func setDefaultContentType(w http.ResponseWriter, req *http.Request) {
 }
 
 func unsupportedOperationHandler() http.Handler {
+	fmt.Println("got to where u thought")
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		o := &operations.Operation{}
 		_ = o.EncodeError(w, req, nil, gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())

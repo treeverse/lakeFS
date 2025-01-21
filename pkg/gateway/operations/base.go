@@ -91,8 +91,14 @@ func (o *Operation) HandleUnsupported(w http.ResponseWriter, req *http.Request, 
 		return false
 	}
 	query := req.URL.Query()
+	fmt.Println(query)
+	fmt.Println(keys)
+	fmt.Println(o.OperationID)
+	// if query.Has("uploads") {
+	// 	return false
+	// }
 	if slices.ContainsFunc(keys, query.Has) {
-		_ = o.EncodeError(w, req, nil, gwerrors.ERRLakeFSNotSupported.ToAPIErr())
+		_ = o.EncodeError(w, req, nil, gwerrors.ErrAllAccessDisabled.ToAPIErr())
 		return true
 	}
 	return false
