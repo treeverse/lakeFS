@@ -1253,6 +1253,20 @@ components:
           type: string
         pre_sign_multipart_upload:
           type: boolean
+        blockstore_id:
+          type: string
+        blockstore_description:
+          type: string
+        blockstore_extras:
+          type: object
+          description: blockstore specific properties
+          additionalProperties:
+            type: string
+    
+    StorageConfigList:
+      type: array
+      items:
+        $ref: "#/components/schemas/StorageConfig"
 
     Config:
       type: object
@@ -1261,6 +1275,8 @@ components:
           $ref: "#/components/schemas/VersionConfig"
         storage_config:
           $ref: "#/components/schemas/StorageConfig"
+        storage_config_list:
+          $ref: "#/components/schemas/StorageConfigList"
     VersionConfig:
       type: object
       properties:

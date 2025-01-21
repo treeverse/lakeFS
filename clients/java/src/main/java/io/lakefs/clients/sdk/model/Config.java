@@ -22,7 +22,9 @@ import com.google.gson.stream.JsonWriter;
 import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.clients.sdk.model.VersionConfig;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -61,6 +63,10 @@ public class Config {
   public static final String SERIALIZED_NAME_STORAGE_CONFIG = "storage_config";
   @SerializedName(SERIALIZED_NAME_STORAGE_CONFIG)
   private StorageConfig storageConfig;
+
+  public static final String SERIALIZED_NAME_STORAGE_CONFIG_LIST = "storage_config_list";
+  @SerializedName(SERIALIZED_NAME_STORAGE_CONFIG_LIST)
+  private List<StorageConfig> storageConfigList;
 
   public Config() {
   }
@@ -104,6 +110,35 @@ public class Config {
 
   public void setStorageConfig(StorageConfig storageConfig) {
     this.storageConfig = storageConfig;
+  }
+
+
+  public Config storageConfigList(List<StorageConfig> storageConfigList) {
+    
+    this.storageConfigList = storageConfigList;
+    return this;
+  }
+
+  public Config addStorageConfigListItem(StorageConfig storageConfigListItem) {
+    if (this.storageConfigList == null) {
+      this.storageConfigList = new ArrayList<>();
+    }
+    this.storageConfigList.add(storageConfigListItem);
+    return this;
+  }
+
+   /**
+   * Get storageConfigList
+   * @return storageConfigList
+  **/
+  @javax.annotation.Nullable
+  public List<StorageConfig> getStorageConfigList() {
+    return storageConfigList;
+  }
+
+
+  public void setStorageConfigList(List<StorageConfig> storageConfigList) {
+    this.storageConfigList = storageConfigList;
   }
 
   /**
@@ -162,13 +197,14 @@ public class Config {
     }
     Config config = (Config) o;
     return Objects.equals(this.versionConfig, config.versionConfig) &&
-        Objects.equals(this.storageConfig, config.storageConfig)&&
+        Objects.equals(this.storageConfig, config.storageConfig) &&
+        Objects.equals(this.storageConfigList, config.storageConfigList)&&
         Objects.equals(this.additionalProperties, config.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(versionConfig, storageConfig, additionalProperties);
+    return Objects.hash(versionConfig, storageConfig, storageConfigList, additionalProperties);
   }
 
   @Override
@@ -177,6 +213,7 @@ public class Config {
     sb.append("class Config {\n");
     sb.append("    versionConfig: ").append(toIndentedString(versionConfig)).append("\n");
     sb.append("    storageConfig: ").append(toIndentedString(storageConfig)).append("\n");
+    sb.append("    storageConfigList: ").append(toIndentedString(storageConfigList)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -202,6 +239,7 @@ public class Config {
     openapiFields = new HashSet<String>();
     openapiFields.add("version_config");
     openapiFields.add("storage_config");
+    openapiFields.add("storage_config_list");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -227,6 +265,20 @@ public class Config {
       // validate the optional field `storage_config`
       if (jsonObj.get("storage_config") != null && !jsonObj.get("storage_config").isJsonNull()) {
         StorageConfig.validateJsonElement(jsonObj.get("storage_config"));
+      }
+      if (jsonObj.get("storage_config_list") != null && !jsonObj.get("storage_config_list").isJsonNull()) {
+        JsonArray jsonArraystorageConfigList = jsonObj.getAsJsonArray("storage_config_list");
+        if (jsonArraystorageConfigList != null) {
+          // ensure the json data is an array
+          if (!jsonObj.get("storage_config_list").isJsonArray()) {
+            throw new IllegalArgumentException(String.format("Expected the field `storage_config_list` to be an array in the JSON string but got `%s`", jsonObj.get("storage_config_list").toString()));
+          }
+
+          // validate the optional field `storage_config_list` (array)
+          for (int i = 0; i < jsonArraystorageConfigList.size(); i++) {
+            StorageConfig.validateJsonElement(jsonArraystorageConfigList.get(i));
+          };
+        }
       }
   }
 
