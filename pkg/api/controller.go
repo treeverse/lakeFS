@@ -1844,7 +1844,7 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	storageCfg := c.getStorageConfig()
-	//TODO (niro): Needs to be populated
+	// TODO (niro): Needs to be populated
 	storageListCfg := apigen.StorageConfigList{}
 	versionConfig := c.getVersionConfig()
 	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: &storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageListCfg})
