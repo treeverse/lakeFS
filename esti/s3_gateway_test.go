@@ -193,6 +193,9 @@ func TestGWMultipartUploadIfNoneMatch(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
+	if !strings.HasPrefix(s3Endpoint, "http") {
+		s3Endpoint = "https://" + s3Endpoint
+	}
 	s3Client := createS3Client(s3Endpoint, t)
 	multipartNumberOfParts := 7
 	multipartPartSize := 5 * 1024 * 1024
@@ -261,6 +264,9 @@ func TestS3IfNoneMatch(t *testing.T) {
 	defer tearDownTest(repo)
 
 	s3Endpoint := viper.GetString("s3_endpoint")
+	if !strings.HasPrefix(s3Endpoint, "http") {
+		s3Endpoint = "https://" + s3Endpoint
+	}
 	s3Client := createS3Client(s3Endpoint, t)
 
 	type TestCase struct {

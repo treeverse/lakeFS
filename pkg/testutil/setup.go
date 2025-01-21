@@ -141,7 +141,7 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 
 func SetupTestS3Client(endpoint, key, secret string, forcePathStyle bool) (*s3.Client, error) {
 	if !strings.HasPrefix(endpoint, "http") {
-		endpoint = "https://" + endpoint
+		endpoint = "http://" + endpoint
 	}
 	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion("us-east-1"),
