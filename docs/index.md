@@ -47,12 +47,6 @@ It integrates seamlessly with popular data frameworks such as [Spark](./integrat
 {: .note}
 For more details and a full list see [the integrations pages](./integrations/).
 
-<p class="center">
-    <img src="{{ site.baseurl }}/assets/img/lakeFSArchitecture.png"/>
-</p>
-
-{: .pb-5 }
-
 With lakeFS, you can use any of the tools and libraries you are used to work with to read and write data directly from a repository, e.g.
 
 ```python
@@ -61,11 +55,19 @@ With lakeFS, you can use any of the tools and libraries you are used to work wit
 >>> df = pd.read_csv('lakefs://example-repository/main-branch/path/to.csv')
 ```
 
+Using this method, lakeFS acts as a metadata layer: it figures out which objects need to be fetched from the underlying storage for that version of the data and then lets the client read or write these files directly from the storage using [pre-signed URLs](./security/presigned-url.md). This allows lakeFS to be both very efficient but also highly secure:
+
+<p class="center">
+    <img src="{{ site.baseurl }}/assets/img/lakeFSArchitecture.png"/>
+</p>
+
+{: .pb-5 }
+
 Additionally, lakeFS maintains compatibility with the S3 API to minimize adoption
 friction. You can use it as a drop-in replacement for S3 from the perspective of
 any tool interacting with a data lake.
 
-For example, take the common operation of reading a collection of data from an object storage into a Spark DataFrame. For data outside a lakeFS repo, the code will look like this:
+For example, take the common operation of reading unstructured data from the object store using [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html){: target="_blank" } (Python):
 
 ```py
 >>> import boto3
