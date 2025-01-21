@@ -53,7 +53,7 @@ For more details and a full list see [the integrations pages](./integrations/).
 
 {: .pb-5 }
 
-With lakeFS, you can use any of the native integrations to read and write data directly from a repository, e.g.
+With lakeFS, you can use any of the tools and libraries you are used to work with to read and write data directly from a repository, e.g.
 
 ```python
 >>> import pandas as pd
