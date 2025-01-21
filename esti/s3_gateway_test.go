@@ -238,6 +238,70 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 		}
 	}
 }
+func TestListMultipartUploads(t *testing.T) {
+	ctx, logger, repo := setupTest(t)
+	defer tearDownTest(repo)
+	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Client := createS3Client(s3Endpoint, t)
+	multipartNumberOfParts := 7
+	multipartPartSize := 5 * 1024 * 1024
+
+	obj1 := "main/object1"
+	obj2 := "main/object2"
+
+	input1 := &s3.CreateMultipartUploadInput{
+		Bucket: aws.String(repo),
+		Key:    aws.String(obj1),
+	}
+	input2 := &s3.CreateMultipartUploadInput{
+		Bucket: aws.String(repo),
+		Key:    aws.String(obj2),
+	}
+
+	resp1, err := s3Client.CreateMultipartUpload(ctx, input1)
+	require.NoError(t, err, "failed to create multipart upload")
+
+	parts := make([][]byte, multipartNumberOfParts)
+	for i := 0; i < multipartNumberOfParts; i++ {
+		parts[i] = randstr.Bytes(multipartPartSize + i)
+	}
+
+	completedParts1 := uploadMultipartParts(t, ctx, s3Client, logger, resp1, parts, 0)
+
+	completeInput1 := &s3.CompleteMultipartUploadInput{
+		Bucket:   resp1.Bucket,
+		Key:      resp1.Key,
+		UploadId: resp1.UploadId,
+		MultipartUpload: &types.CompletedMultipartUpload{
+			Parts: completedParts1,
+		},
+	}
+	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	require.Contains(t, output.Uploads, obj1)
+
+	resp2, err := s3Client.CreateMultipartUpload(ctx, input2)
+	require.NoError(t, err, "failed to create multipart upload")
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	require.Contains(t, output.Uploads, obj1)
+	require.Contains(t, output.Uploads, obj2)
+
+	_, err = s3Client.CompleteMultipartUpload(ctx, completeInput1)
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	require.NotContains(t, output.Uploads, obj1)
+	require.Contains(t, output.Uploads, obj2)
+
+	abortInput2 := &s3.AbortMultipartUploadInput{
+		Bucket:   resp2.Bucket,
+		Key:      resp2.Key,
+		UploadId: resp2.UploadId,
+	}
+	_, err = s3Client.AbortMultipartUpload(ctx, abortInput2)
+
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	require.NotContains(t, output.Uploads, obj1)
+	require.NotContains(t, output.Uploads, obj2)
+
+}
 
 func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 	return func(stack *middleware.Stack) error {
