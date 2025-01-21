@@ -85,7 +85,7 @@ Git became ubiquitous when it comes to code because it had best supported engine
 * Collaborate during development.
 * Reproduce and troubleshoot issues with a given version of the code
 * Develop and Test in isolation
-* Revert code to a sable version in case of an error
+* Revert code to a stable version in case of an error
 * Continuously integrate and deploy new code (CI/CD)
 
 lakeFS provides these exact benefits, that data practitioners are missing today, and enables them a clear intuitive Git-like interface to easily manage data like they manage code. 
