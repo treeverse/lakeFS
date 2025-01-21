@@ -30,7 +30,7 @@ class RepositoryCreation(BaseModel):
     RepositoryCreation
     """
     name: constr(strict=True) = Field(...)
-    storage_id: Optional[StrictStr] = Field(None, description="Unique identifier of the underlying data store (experimental)")
+    storage_id: Optional[StrictStr] = Field(None, description="Unique identifier of the underlying data store. *EXPERIMENTAL*")
     storage_namespace: constr(strict=True) = Field(..., description="Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")")
     default_branch: Optional[StrictStr] = None
     sample_data: Optional[StrictBool] = False

@@ -107,7 +107,7 @@ public class RepositoryCreation {
   }
 
    /**
-   * Unique identifier of the underlying data store (experimental)
+   * Unique identifier of the underlying data store. *EXPERIMENTAL*
    * @return storageId
   **/
   @javax.annotation.Nullable

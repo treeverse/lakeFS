@@ -32,7 +32,7 @@ class Repository(BaseModel):
     id: StrictStr = Field(...)
     creation_date: StrictInt = Field(..., description="Unix Epoch in seconds")
     default_branch: StrictStr = Field(...)
-    storage_id: Optional[StrictStr] = Field(None, description="Unique identifier of the underlying data store (experimental)")
+    storage_id: Optional[StrictStr] = Field(None, description="Unique identifier of the underlying data store. *EXPERIMENTAL*")
     storage_namespace: StrictStr = Field(..., description="Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")")
     read_only: Optional[StrictBool] = Field(None, description="Whether the repository is a read-only repository- not relevant for bare repositories")
     __properties = ["id", "creation_date", "default_branch", "storage_id", "storage_namespace", "read_only"]

@@ -19,7 +19,7 @@ pub struct Repository {
     pub creation_date: i64,
     #[serde(rename = "default_branch")]
     pub default_branch: String,
-    /// Unique identifier of the underlying data store (experimental)
+    /// Unique identifier of the underlying data store. *EXPERIMENTAL*
     #[serde(rename = "storage_id", skip_serializing_if = "Option::is_none")]
     pub storage_id: Option<String>,
     /// Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")
