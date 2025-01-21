@@ -4963,8 +4963,8 @@ func newLoginConfig(c *config.BaseConfig) *apigen.LoginConfig {
 		LogoutUrl:          c.Auth.UIConfig.LogoutURL,
 	}
 	if c.UseUILoginPlaceholders() {
-		loginConfig.UsernamePlaceholder = swag.String(usernamePlaceholder)
-		loginConfig.PasswordPlaceholder = swag.String(passwordPlaceholder)
+		loginConfig.UsernameUiPlaceholder = swag.String(usernamePlaceholder)
+		loginConfig.PasswordUiPlaceholder = swag.String(passwordPlaceholder)
 	}
 	return loginConfig
 }

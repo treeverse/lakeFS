@@ -40,8 +40,8 @@ class TestLoginConfig(unittest.TestCase):
         if include_optional :
             return LoginConfig(
                 rbac = 'none', 
-                username_placeholder = '', 
-                password_placeholder = '', 
+                username_ui_placeholder = '', 
+                password_ui_placeholder = '', 
                 login_url = '', 
                 login_failed_message = '', 
                 fallback_login_url = '', 
