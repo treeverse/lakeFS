@@ -12,7 +12,7 @@ This section explains how to backup and restore lakeFS repository for different 
 
 {% include toc.html %}
 
-Refer to [Python Sample Notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/01_standalone_examples/migrate-or-clone-repo) to backup, migrate or clone a lakeFS repository
+Refer to [Python Sample Notebooks](https://github.com/treeverse/lakeFS-samples/tree/main/01_standalone_examples/backup-migrate-or-clone-repo) to backup, migrate or clone a lakeFS repository
 {: .note}
 
 ## Commit Changes
