@@ -866,6 +866,7 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 		"qualified_key": qualifiedKey.GetKey(),
 		"key":           obj.Identifier,
 	})
+
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.ListMultipartUploads(ctx, input)
 	if err != nil {
@@ -876,9 +877,7 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 	partsResp := block.ListMultipartUploadsResponse{
 		Uploads: make([]types.MultipartUpload, len(resp.Uploads)),
 	}
-	for _, upload := range resp.Uploads {
-		partsResp.Uploads = append(partsResp.Uploads, upload)
-	}
+	partsResp.Uploads = append(partsResp.Uploads, resp.Uploads...)
 	return &partsResp, nil
 }
 
