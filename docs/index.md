@@ -143,7 +143,7 @@ With lakeFS you can even open [pull requests](./howto/pull-requests.md), allowin
 
 ### Isolated Dev/Test Environments with zero-copy branching
 
-lakeFS makes creating isolated dev/test environments for transformations, model development and ETL processes- achieved through the use of zero-copy branches.
+lakeFS makes creating isolated dev/test environments for transformations, model development, parallel experiments, and ETL processes- achieved through the use of zero-copy branches.
 This enables you to test and validate code changes on production data without impacting it, as well as run analysis and experiments on production data in an isolated clone. 
 
 👉🏻 [Read more](./understand/use_cases/etl_testing.html)
