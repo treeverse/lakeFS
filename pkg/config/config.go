@@ -142,17 +142,85 @@ type Database struct {
 	} `mapstructure:"cosmosdb"`
 }
 
-// ApproximateOwnership configures an approximate ("mostly correct") ownership.
+// ApproximatelyCorrectOwnership configures an approximate ("mostly correct") ownership.
 type ApproximatelyCorrectOwnership struct {
 	Enabled bool          `mapstructure:"enabled"`
 	Refresh time.Duration `mapstructure:"refresh"`
 	Acquire time.Duration `mapstructure:"acquire"`
 }
 
-// Config - Output struct of configuration, used to validate.  If you read a key using a viper accessor
+type Blockstore struct {
+	Signing struct {
+		SecretKey SecureString `mapstructure:"secret_key"`
+	} `mapstructure:"signing"`
+	Type                   string  `mapstructure:"type"`
+	DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
+	Local                  *struct {
+		Path                    string   `mapstructure:"path"`
+		ImportEnabled           bool     `mapstructure:"import_enabled"`
+		ImportHidden            bool     `mapstructure:"import_hidden"`
+		AllowedExternalPrefixes []string `mapstructure:"allowed_external_prefixes"`
+	} `mapstructure:"local"`
+	S3 *struct {
+		S3AuthInfo                    `mapstructure:",squash"`
+		Region                        string        `mapstructure:"region"`
+		Endpoint                      string        `mapstructure:"endpoint"`
+		MaxRetries                    int           `mapstructure:"max_retries"`
+		ForcePathStyle                bool          `mapstructure:"force_path_style"`
+		DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
+		SkipVerifyCertificateTestOnly bool          `mapstructure:"skip_verify_certificate_test_only"`
+		ServerSideEncryption          string        `mapstructure:"server_side_encryption"`
+		ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
+		PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
+		// Endpoint for pre-signed URLs, if set, will override the default pre-signed URL S3 endpoint (only for pre-sign URL generation)
+		PreSignedEndpoint         string `mapstructure:"pre_signed_endpoint"`
+		DisablePreSigned          bool   `mapstructure:"disable_pre_signed"`
+		DisablePreSignedUI        bool   `mapstructure:"disable_pre_signed_ui"`
+		DisablePreSignedMultipart bool   `mapstructure:"disable_pre_signed_multipart"`
+		ClientLogRetries          bool   `mapstructure:"client_log_retries"`
+		ClientLogRequest          bool   `mapstructure:"client_log_request"`
+		WebIdentity               *struct {
+			SessionDuration     time.Duration `mapstructure:"session_duration"`
+			SessionExpiryWindow time.Duration `mapstructure:"session_expiry_window"`
+		} `mapstructure:"web_identity"`
+	} `mapstructure:"s3"`
+	Azure *struct {
+		TryTimeout       time.Duration `mapstructure:"try_timeout"`
+		StorageAccount   string        `mapstructure:"storage_account"`
+		StorageAccessKey string        `mapstructure:"storage_access_key"`
+		// Deprecated: Value ignored
+		AuthMethod         string        `mapstructure:"auth_method"`
+		PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
+		DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
+		DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
+		// Deprecated: Value ignored
+		ChinaCloudDeprecated bool   `mapstructure:"china_cloud"`
+		TestEndpointURL      string `mapstructure:"test_endpoint_url"`
+		// Domain by default points to Azure default domain blob.core.windows.net, can be set to other Azure domains (China/Gov)
+		Domain string `mapstructure:"domain"`
+	} `mapstructure:"azure"`
+	GS *struct {
+		S3Endpoint                           string        `mapstructure:"s3_endpoint"`
+		CredentialsFile                      string        `mapstructure:"credentials_file"`
+		CredentialsJSON                      string        `mapstructure:"credentials_json"`
+		PreSignedExpiry                      time.Duration `mapstructure:"pre_signed_expiry"`
+		DisablePreSigned                     bool          `mapstructure:"disable_pre_signed"`
+		DisablePreSignedUI                   bool          `mapstructure:"disable_pre_signed_ui"`
+		ServerSideEncryptionCustomerSupplied string        `mapstructure:"server_side_encryption_customer_supplied"`
+		ServerSideEncryptionKmsKeyID         string        `mapstructure:"server_side_encryption_kms_key_id"`
+	} `mapstructure:"gs"`
+}
+
+type Config interface {
+	GetBaseConfig() *BaseConfig
+	StorageConfig() interface{}
+	Validate() error
+}
+
+// BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
-type Config struct {
+type BaseConfig struct {
 	ListenAddress string `mapstructure:"listen_address"`
 	TLS           struct {
 		Enabled  bool   `mapstructure:"enabled"`
@@ -234,68 +302,8 @@ type Config struct {
 			LogoutURL          string   `mapstructure:"logout_url"`
 		} `mapstructure:"ui_config"`
 	} `mapstructure:"auth"`
-	Blockstore struct {
-		Signing struct {
-			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
-		} `mapstructure:"signing"`
-		Type                   string  `mapstructure:"type" validate:"required"`
-		DefaultNamespacePrefix *string `mapstructure:"default_namespace_prefix"`
-		Local                  *struct {
-			Path                    string   `mapstructure:"path"`
-			ImportEnabled           bool     `mapstructure:"import_enabled"`
-			ImportHidden            bool     `mapstructure:"import_hidden"`
-			AllowedExternalPrefixes []string `mapstructure:"allowed_external_prefixes"`
-		} `mapstructure:"local"`
-		S3 *struct {
-			S3AuthInfo                    `mapstructure:",squash"`
-			Region                        string        `mapstructure:"region"`
-			Endpoint                      string        `mapstructure:"endpoint"`
-			MaxRetries                    int           `mapstructure:"max_retries"`
-			ForcePathStyle                bool          `mapstructure:"force_path_style"`
-			DiscoverBucketRegion          bool          `mapstructure:"discover_bucket_region"`
-			SkipVerifyCertificateTestOnly bool          `mapstructure:"skip_verify_certificate_test_only"`
-			ServerSideEncryption          string        `mapstructure:"server_side_encryption"`
-			ServerSideEncryptionKmsKeyID  string        `mapstructure:"server_side_encryption_kms_key_id"`
-			PreSignedExpiry               time.Duration `mapstructure:"pre_signed_expiry"`
-			// Endpoint for pre-signed URLs, if set, will override the default pre-signed URL S3 endpoint (only for pre-sign URL generation)
-			PreSignedEndpoint         string `mapstructure:"pre_signed_endpoint"`
-			DisablePreSigned          bool   `mapstructure:"disable_pre_signed"`
-			DisablePreSignedUI        bool   `mapstructure:"disable_pre_signed_ui"`
-			DisablePreSignedMultipart bool   `mapstructure:"disable_pre_signed_multipart"`
-			ClientLogRetries          bool   `mapstructure:"client_log_retries"`
-			ClientLogRequest          bool   `mapstructure:"client_log_request"`
-			WebIdentity               *struct {
-				SessionDuration     time.Duration `mapstructure:"session_duration"`
-				SessionExpiryWindow time.Duration `mapstructure:"session_expiry_window"`
-			} `mapstructure:"web_identity"`
-		} `mapstructure:"s3"`
-		Azure *struct {
-			TryTimeout       time.Duration `mapstructure:"try_timeout"`
-			StorageAccount   string        `mapstructure:"storage_account"`
-			StorageAccessKey string        `mapstructure:"storage_access_key"`
-			// Deprecated: Value ignored
-			AuthMethod         string        `mapstructure:"auth_method"`
-			PreSignedExpiry    time.Duration `mapstructure:"pre_signed_expiry"`
-			DisablePreSigned   bool          `mapstructure:"disable_pre_signed"`
-			DisablePreSignedUI bool          `mapstructure:"disable_pre_signed_ui"`
-			// Deprecated: Value ignored
-			ChinaCloudDeprecated bool   `mapstructure:"china_cloud"`
-			TestEndpointURL      string `mapstructure:"test_endpoint_url"`
-			// Domain by default points to Azure default domain blob.core.windows.net, can be set to other Azure domains (China/Gov)
-			Domain string `mapstructure:"domain"`
-		} `mapstructure:"azure"`
-		GS *struct {
-			S3Endpoint                           string        `mapstructure:"s3_endpoint"`
-			CredentialsFile                      string        `mapstructure:"credentials_file"`
-			CredentialsJSON                      string        `mapstructure:"credentials_json"`
-			PreSignedExpiry                      time.Duration `mapstructure:"pre_signed_expiry"`
-			DisablePreSigned                     bool          `mapstructure:"disable_pre_signed"`
-			DisablePreSignedUI                   bool          `mapstructure:"disable_pre_signed_ui"`
-			ServerSideEncryptionCustomerSupplied string        `mapstructure:"server_side_encryption_customer_supplied"`
-			ServerSideEncryptionKmsKeyID         string        `mapstructure:"server_side_encryption_kms_key_id"`
-		} `mapstructure:"gs"`
-	} `mapstructure:"blockstore"`
-	Committed struct {
+	Blockstore Blockstore `mapstructure:"blockstore"`
+	Committed  struct {
 		LocalCache struct {
 			SizeBytes             int64   `mapstructure:"size_bytes"`
 			Dir                   string  `mapstructure:"dir"`
@@ -390,42 +398,46 @@ type Config struct {
 	} `mapstructure:"usage_report"`
 }
 
-func NewConfig(cfgType string) (*Config, error) {
-	return newConfig(cfgType)
+func ValidateBlockstore(c *Blockstore) error {
+	if c.Signing.SecretKey == "" {
+		return fmt.Errorf("'blockstore.signing.secret_key: %w", ErrMissingRequiredKeys)
+	}
+	if c.Type == "" {
+		return fmt.Errorf("'blockstore.type: %w", ErrMissingRequiredKeys)
+	}
+	return nil
 }
 
-func newConfig(cfgType string) (*Config, error) {
-	c := &Config{}
-
+// NewConfig - General (common) configuration
+func NewConfig(cfgType string, c Config) (*BaseConfig, error) {
 	// Inform viper of all expected fields.  Otherwise, it fails to deserialize from the
 	// environment.
-	keys := GetStructKeys(reflect.TypeOf(c), "mapstructure", "squash")
-	for _, key := range keys {
-		viper.SetDefault(key, nil)
-	}
-	setDefaults(cfgType)
-
+	SetDefaults(cfgType, c)
 	err := Unmarshal(c)
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.validateDomainNames()
-	if err != nil {
-		return nil, err
-	}
-
+	cfg := c.GetBaseConfig()
 	// setup logging package
-	logging.SetOutputFormat(c.Logging.Format)
-	err = logging.SetOutputs(c.Logging.Output, c.Logging.FileMaxSizeMB, c.Logging.FilesKeep)
+	logging.SetOutputFormat(cfg.Logging.Format)
+	err = logging.SetOutputs(cfg.Logging.Output, cfg.Logging.FileMaxSizeMB, cfg.Logging.FilesKeep)
 	if err != nil {
 		return nil, err
 	}
-	logging.SetLevel(c.Logging.Level)
-	return c, nil
+	logging.SetLevel(cfg.Logging.Level)
+	return cfg, nil
 }
 
-func Unmarshal(c *Config) error {
+func SetDefaults(cfgType string, c Config) {
+	keys := GetStructKeys(reflect.TypeOf(c), "mapstructure", "squash")
+	for _, key := range keys {
+		viper.SetDefault(key, nil)
+	}
+	setBaseDefaults(cfgType)
+}
+
+func Unmarshal(c Config) error {
 	return viper.UnmarshalExact(&c,
 		viper.DecodeHook(
 			mapstructure.ComposeDecodeHookFunc(
@@ -441,7 +453,7 @@ func stringReverse(s string) string {
 	return string(chars)
 }
 
-func (c *Config) validateDomainNames() error {
+func (c *BaseConfig) ValidateDomainNames() error {
 	domainStrings := c.Gateways.S3.DomainNames
 	domainNames := make([]string, len(domainStrings))
 	copy(domainNames, domainStrings)
@@ -460,19 +472,19 @@ func (c *Config) validateDomainNames() error {
 	return nil
 }
 
-func (c *Config) Validate() error {
+func (c *BaseConfig) Validate() error {
 	missingKeys := ValidateMissingRequiredKeys(c, "mapstructure", "squash")
 	if len(missingKeys) > 0 {
 		return fmt.Errorf("%w: %v", ErrMissingRequiredKeys, missingKeys)
 	}
-	return nil
+	return ValidateBlockstore(&c.Blockstore)
 }
 
-func (c *Config) BlockstoreType() string {
+func (c *BaseConfig) BlockstoreType() string {
 	return c.Blockstore.Type
 }
 
-func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
+func (c *BaseConfig) BlockstoreS3Params() (blockparams.S3, error) {
 	var webIdentity *blockparams.S3WebIdentity
 	if c.Blockstore.S3.WebIdentity != nil {
 		webIdentity = &blockparams.S3WebIdentity{
@@ -511,7 +523,7 @@ func (c *Config) BlockstoreS3Params() (blockparams.S3, error) {
 	}, nil
 }
 
-func (c *Config) BlockstoreLocalParams() (blockparams.Local, error) {
+func (c *BaseConfig) BlockstoreLocalParams() (blockparams.Local, error) {
 	localPath := c.Blockstore.Local.Path
 	path, err := homedir.Expand(localPath)
 	if err != nil {
@@ -527,7 +539,7 @@ const (
 	gcpAESKeyLength = 32
 )
 
-func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
+func (c *BaseConfig) BlockstoreGSParams() (blockparams.GS, error) {
 	var customerSuppliedKey []byte = nil
 	if c.Blockstore.GS.ServerSideEncryptionCustomerSupplied != "" {
 		v, err := hex.DecodeString(c.Blockstore.GS.ServerSideEncryptionCustomerSupplied)
@@ -558,7 +570,7 @@ func (c *Config) BlockstoreGSParams() (blockparams.GS, error) {
 	}, nil
 }
 
-func (c *Config) BlockstoreAzureParams() (blockparams.Azure, error) {
+func (c *BaseConfig) BlockstoreAzureParams() (blockparams.Azure, error) {
 	if c.Blockstore.Azure.AuthMethod != "" {
 		logging.ContextUnavailable().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
 	}
@@ -585,33 +597,33 @@ const (
 	AuthRBACInternal   = "internal"
 )
 
-func (c *Config) IsAuthBasic() bool {
+func (c *BaseConfig) IsAuthBasic() bool {
 	return c.Auth.UIConfig.RBAC == AuthRBACNone
 }
 
-func (c *Config) IsAuthUISimplified() bool {
+func (c *BaseConfig) IsAuthUISimplified() bool {
 	return c.Auth.UIConfig.RBAC == AuthRBACSimplified
 }
 
-func (c *Config) IsAuthenticationTypeAPI() bool {
+func (c *BaseConfig) IsAuthenticationTypeAPI() bool {
 	return c.Auth.AuthenticationAPI.Endpoint != ""
 }
 
-func (c *Config) IsAuthTypeAPI() bool {
+func (c *BaseConfig) IsAuthTypeAPI() bool {
 	return c.Auth.API.Endpoint != ""
 }
 
-func (c *Config) IsExternalPrincipalsEnabled() bool {
+func (c *BaseConfig) IsExternalPrincipalsEnabled() bool {
 	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
 	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
 	return c.IsAuthTypeAPI() && c.Auth.AuthenticationAPI.ExternalPrincipalsEnabled
 }
 
-func (c *Config) IsAdvancedAuth() bool {
+func (c *BaseConfig) IsAdvancedAuth() bool {
 	return c.IsAuthTypeAPI() && (c.Auth.UIConfig.RBAC == AuthRBACExternal || c.Auth.UIConfig.RBAC == AuthRBACInternal)
 }
 
-func (c *Config) UISnippets() []apiparams.CodeSnippet {
+func (c *BaseConfig) UISnippets() []apiparams.CodeSnippet {
 	snippets := make([]apiparams.CodeSnippet, 0, len(c.UI.Snippets))
 	for _, item := range c.UI.Snippets {
 		snippets = append(snippets, apiparams.CodeSnippet{
@@ -620,4 +632,12 @@ func (c *Config) UISnippets() []apiparams.CodeSnippet {
 		})
 	}
 	return snippets
+}
+
+func (c *BaseConfig) GetBaseConfig() *BaseConfig {
+	return c
+}
+
+func (c *BaseConfig) StorageConfig() interface{} {
+	return c.Blockstore
 }

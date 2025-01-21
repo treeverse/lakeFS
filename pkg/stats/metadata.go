@@ -55,7 +55,7 @@ func (n *noopMetadataProvider) GetMetadata() map[string]string {
 	return nil
 }
 
-func BuildMetadataProvider(logger logging.Logger, c *config.Config) cloud.MetadataProvider {
+func BuildMetadataProvider(logger logging.Logger, c *config.BaseConfig) cloud.MetadataProvider {
 	switch c.Blockstore.Type {
 	case block.BlockstoreTypeGS:
 		return gcp.NewMetadataProvider(logger)

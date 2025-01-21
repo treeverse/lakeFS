@@ -156,7 +156,7 @@ func CreateRBACBaseGroups(ctx context.Context, authService auth.Service, ts time
 }
 
 // CreateAdminUser setup base groups, policies and create admin user
-func CreateAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
+func CreateAdminUser(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	// Set up the basic groups and policies
 	now := time.Now()
 	err := CreateBaseGroups(ctx, authService, cfg, now)
@@ -204,11 +204,11 @@ func AddAdminUser(ctx context.Context, authService auth.Service, user *model.Sup
 	return creds, nil
 }
 
-func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataManager, username string) (*model.Credential, error) {
+func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, metadataManger auth.MetadataManager, username string) (*model.Credential, error) {
 	return CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManger, username, nil, nil)
 }
 
-func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.Config, metadataManger auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
+func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, metadataManger auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
 	adminUser := &model.SuperuserConfiguration{
 		User: model.User{
 			CreatedAt: time.Now(),
@@ -240,7 +240,7 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 	return cred, err
 }
 
-func CreateBaseGroups(ctx context.Context, authService auth.Service, cfg *config.Config, ts time.Time) error {
+func CreateBaseGroups(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, ts time.Time) error {
 	if !cfg.IsAdvancedAuth() {
 		return nil
 	}
