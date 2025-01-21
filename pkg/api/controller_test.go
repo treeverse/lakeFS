@@ -3410,6 +3410,7 @@ func TestController_ConfigHandlers(t *testing.T) {
 		verifyResponseOK(t, resp, err)
 		require.Empty(t, resp.JSON200.StorageConfigList)
 		require.Equal(t, expectedExample, resp.JSON200.StorageConfig.BlockstoreNamespaceExample)
+		require.Equal(t, "dev", swag.StringValue(resp.JSON200.VersionConfig.Version))
 	})
 
 	t.Run("Get storage config", func(t *testing.T) {
