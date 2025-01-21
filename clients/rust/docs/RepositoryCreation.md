@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **name** | **String** |  | 
-**storage_id** | Option<**String**> | Unique identifier of the underlying data store | [optional]
+**storage_id** | Option<**String**> | Unique identifier of the underlying data store (experimental) | [optional]
 **storage_namespace** | **String** | Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\") | 
 **default_branch** | Option<**String**> |  | [optional]
 **sample_data** | Option<**bool**> |  | [optional][default to false]

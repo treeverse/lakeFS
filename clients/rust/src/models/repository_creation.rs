@@ -14,7 +14,7 @@ use crate::models;
 pub struct RepositoryCreation {
     #[serde(rename = "name")]
     pub name: String,
-    /// Unique identifier of the underlying data store
+    /// Unique identifier of the underlying data store (experimental)
     #[serde(rename = "storage_id", skip_serializing_if = "Option::is_none")]
     pub storage_id: Option<String>,
     /// Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")

@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 **id** | **String** |  | 
 **creation_date** | **i64** | Unix Epoch in seconds | 
 **default_branch** | **String** |  | 
-**storage_id** | Option<**String**> | Unique identifier of the underlying data store | [optional]
+**storage_id** | Option<**String**> | Unique identifier of the underlying data store (experimental) | [optional]
 **storage_namespace** | **String** | Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\") | 
 **read_only** | Option<**bool**> | Whether the repository is a read-only repository- not relevant for bare repositories | [optional]
 
