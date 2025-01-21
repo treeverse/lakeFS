@@ -2,7 +2,7 @@ go 1.23
 
 use (
 	.
-	./modules/block/factory
 	./webui
+	./modules/block/factory
 	./modules/config/factory
 )
