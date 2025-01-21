@@ -277,21 +277,17 @@ func TestListMultipartUploads(t *testing.T) {
 		},
 	}
 	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
-	str := concatKeys(*output)
-	require.Contains(t, str, obj1)
+	require.Contains(t, output.Uploads[0].Key, obj1)
 
 	resp2, err := s3Client.CreateMultipartUpload(ctx, input2)
 	require.NoError(t, err, "failed to create multipart upload")
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
-	str = concatKeys(*output)
-	require.Contains(t, str, obj1)
-	require.Contains(t, str, obj2)
+	require.Contains(t, output.Uploads[0].Key, obj1)
+	require.Contains(t, output.Uploads[1].Key, obj2)
 
 	_, err = s3Client.CompleteMultipartUpload(ctx, completeInput1)
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
-	str = concatKeys(*output)
-	require.NotContains(t, str, obj1)
-	require.Contains(t, str, obj2)
+	require.Contains(t, output.Uploads[0].Key, obj2)
 
 	abortInput2 := &s3.AbortMultipartUploadInput{
 		Bucket:   resp2.Bucket,
@@ -301,20 +297,9 @@ func TestListMultipartUploads(t *testing.T) {
 	_, err = s3Client.AbortMultipartUpload(ctx, abortInput2)
 
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
-	str = concatKeys(*output)
-	require.NotContains(t, str, obj1)
-	require.NotContains(t, str, obj2)
+	require.True(t, len(output.Uploads) == 0)
+}
 
-}
-func concatKeys(output s3.ListMultipartUploadsOutput) string {
-	var allKeys string
-	for _, upload := range output.Uploads {
-		if upload.Key != nil {
-			allKeys += *upload.Key + " "
-		}
-	}
-	return allKeys
-}
 func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 	return func(stack *middleware.Stack) error {
 		return stack.Build.Add(middleware.BuildMiddlewareFunc("AddIfNoneMatchHeader", func(
