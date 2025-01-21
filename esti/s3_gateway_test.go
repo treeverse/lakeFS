@@ -188,7 +188,8 @@ func TestS3UploadAndDownload(t *testing.T) {
 		})
 	}
 }
-func TestMultipartUploadIfNoneMatch(t *testing.T) {
+
+func TestGWMultipartUploadIfNoneMatch(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -254,8 +255,8 @@ func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 		}), middleware.Before)
 	}
 }
-func TestS3IfNoneMatch(t *testing.T) {
 
+func TestS3IfNoneMatch(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -575,7 +576,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 		t.Errorf("Copied %d bytes when expecting %d", ui.Size, objectLength)
 	}
 
-	// Comparing 2 readers is too much work.  Instead just hash them.
+	// Comparing 2 readers is too much work.  Instead, just hash them.
 	// This will fail for malicious bad S3 gateways, but otherwise is
 	// fine.
 	uploadedReader, err := s3lakefsClient.GetObject(ctx, repo, srcPath, minio.GetObjectOptions{})
