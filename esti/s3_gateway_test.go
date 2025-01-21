@@ -308,7 +308,6 @@ func setIfNonMatchHeader(ifNoneMatch string) func(*middleware.Stack) error {
 			middleware.BuildOutput, middleware.Metadata, error,
 		) {
 			if req, ok := in.Request.(*smithyhttp.Request); ok {
-				// Add the If-None-Match header
 				req.Header.Set("If-None-Match", ifNoneMatch)
 			}
 			return next.HandleBuild(ctx, in)
