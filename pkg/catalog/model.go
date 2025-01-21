@@ -19,6 +19,7 @@ type CommitGeneration int64
 
 type Repository struct {
 	Name             string
+	StorageID        string
 	StorageNamespace string
 	DefaultBranch    string
 	CreationDate     time.Time

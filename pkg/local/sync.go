@@ -388,7 +388,7 @@ func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change 
 		return
 	}
 	if resp.StatusCode() != http.StatusNoContent {
-		return fmt.Errorf("could not delete object: HTTP %d: %w", resp.StatusCode(), helpers.ErrRequestFailed)
+		return fmt.Errorf("could not delete object: HTTP %d: %w", resp.StatusCode(), helpers.ResponseAsError(resp))
 	}
 	return
 }

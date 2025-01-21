@@ -61,7 +61,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 		storageNamespace = "replay"
 	}
 
-	_, err = c.CreateRepository(ctx, repoName, storageNamespace, "main", false)
+	_, err = c.CreateRepository(ctx, repoName, "", storageNamespace, "main", false)
 	testutil.Must(t, err)
 
 	handler := gateway.NewHandler(authService.Region, c, multipartTracker, blockAdapter, authService, []string{authService.BareDomain}, &stats.NullCollector{}, upload.DefaultPathProvider, nil, config.DefaultLoggingAuditLogLevel, true, false, false)
