@@ -625,7 +625,6 @@ func (c *BaseConfig) UseUILoginPlaceholders() bool {
 	return c.Auth.RemoteAuthenticator.Enabled
 }
 
-
 func (c *BaseConfig) IsAdvancedAuth() bool {
 	return c.IsAuthTypeAPI() && (c.Auth.UIConfig.RBAC == AuthRBACExternal || c.Auth.UIConfig.RBAC == AuthRBACInternal)
 }

@@ -71,7 +71,7 @@ That is also going away.  However we see much less usage of it.
 
 ### Where can I ask another question not covered here?
 
-As always, our Slack htttps://lakefs.io/slack is the best place to interact
+As always, our Slack https://lakefs.io/slack is the best place to interact
 with the lakeFS community!  Try asking on our `#dev` channel
 
 
