@@ -11,6 +11,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv/local"
@@ -52,7 +53,9 @@ func init() {
 	rootCmd.PersistentFlags().Bool(config.QuickstartConfiguration, false, "Use lakeFS quickstart configuration")
 }
 
-func validateQuickstartEnv(cfg *config.Config) {
+// TODO (niro): All this validation logic should be in the config package
+
+func validateQuickstartEnv(cfg *config.BaseConfig) {
 	if (cfg.Database.Type != local.DriverName && cfg.Database.Type != mem.DriverName) || cfg.Blockstore.Type != block.BlockstoreTypeLocal {
 		_, _ = fmt.Fprint(os.Stderr, "\nFATAL: quickstart mode can only run with local settings\n")
 		os.Exit(1)
@@ -78,27 +81,38 @@ func useConfig(flagName string) bool {
 	return res
 }
 
-func newConfig() (*config.Config, error) {
+func newConfig() (config.Config, error) {
 	name := ""
 	configurations := []string{config.QuickstartConfiguration, config.UseLocalConfiguration}
 	if idx := slices.IndexFunc(configurations, useConfig); idx != -1 {
 		name = configurations[idx]
 	}
 
-	cfg, err := config.NewConfig(name)
+	cfg, err := configfactory.BuildConfig(name)
 	if err != nil {
 		return nil, err
 	}
 
 	if name == config.QuickstartConfiguration {
-		validateQuickstartEnv(cfg)
+		validateQuickstartEnv(cfg.GetBaseConfig())
 	}
-	return cfg, nil
+	return cfg.GetBaseConfig(), nil
 }
 
-func loadConfig() *config.Config {
-	initOnce.Do(initConfig)
+func loadConfig() config.Config {
+	log := logging.ContextUnavailable().WithField("phase", "startup")
+	initOnce.Do(func() {
+		initConfig(log)
+	})
+	// setup config used by the executed command
 	cfg, err := newConfig()
+	if err != nil {
+		log.WithError(err).Fatal("Load config")
+	} else {
+		log.Info("Config loaded")
+	}
+
+	log.WithFields(config.MapLoggingFields(cfg)).Info("Config")
 	if err != nil {
 		fmt.Println("Failed to load config file", err)
 		os.Exit(1)
@@ -107,10 +121,9 @@ func loadConfig() *config.Config {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	logger := logging.ContextUnavailable().WithField("phase", "startup")
+func initConfig(log logging.Logger) {
 	if cfgFile != "" {
-		logger.WithField("file", cfgFile).Info("Configuration file")
+		log.WithField("file", cfgFile).Info("Configuration file")
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
@@ -128,10 +141,10 @@ func initConfig() {
 
 	// read the configuration file
 	err := viper.ReadInConfig()
-	logger = logger.WithField("file", viper.ConfigFileUsed()) // should be called after SetConfigFile
+	log = log.WithField("file", viper.ConfigFileUsed()) // should be called after SetConfigFile
 	var errFileNotFound viper.ConfigFileNotFoundError
 	if err != nil && !errors.As(err, &errFileNotFound) {
-		logger.WithError(err).Fatal("Failed to find a config file")
+		log.WithError(err).Fatal("Failed to find a config file")
 	}
 	// fallback - try to load the previous supported $HOME/.lakefs.yaml
 	//   if err is set it will be file-not-found based on the previous check
@@ -139,28 +152,13 @@ func initConfig() {
 		fallbackCfgFile := path.Join(getHomeDir(), ".lakefs.yaml")
 		if cfgFile != fallbackCfgFile {
 			viper.SetConfigFile(fallbackCfgFile)
-			logger = logger.WithField("file", viper.ConfigFileUsed()) // should be called after SetConfigFile
+			log = log.WithField("file", viper.ConfigFileUsed()) // should be called after SetConfigFile
 			err = viper.ReadInConfig()
 			if err != nil && !os.IsNotExist(err) {
-				logger.WithError(err).Fatal("Failed to read config file")
+				log.WithError(err).Fatal("Failed to read config file")
 			}
 		}
 	}
-
-	// setup config used by the executed command
-	cfg, err := newConfig()
-	if err != nil {
-		logger.WithError(err).Fatal("Load config")
-	} else {
-		logger.Info("Config loaded")
-	}
-
-	err = cfg.Validate()
-	if err != nil {
-		logger.WithError(err).Fatal("Invalid config")
-	}
-
-	logger.WithFields(config.MapLoggingFields(cfg)).Info("Config")
 }
 
 // getHomeDir find and return the home directory

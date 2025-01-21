@@ -94,7 +94,7 @@ func (p ExtParams) WithLogger(logger logging.Logger) ExtParams {
 
 // NewCommittedTierFSParams returns parameters for building a tierFS.
 // Caller must separately build and populate Adapter.
-func NewCommittedTierFSParams(c *config.Config, adapter block.Adapter) (*ExtParams, error) {
+func NewCommittedTierFSParams(c *config.BaseConfig, adapter block.Adapter) (*ExtParams, error) {
 	const floatSumTolerance = 1e-6
 	rangePro := c.Committed.LocalCache.RangeProportion
 	metaRangePro := c.Committed.LocalCache.MetaRangeProportion
