@@ -878,8 +878,6 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 	}
 	for _, upload := range resp.Uploads {
 		partsResp.Uploads = append(partsResp.Uploads, upload)
-		fmt.Println("key ", *upload.Key)
-		fmt.Println("key ", *upload.UploadId)
 	}
 	return &partsResp, nil
 }

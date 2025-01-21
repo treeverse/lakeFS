@@ -2,7 +2,6 @@ package operations
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -374,7 +373,6 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 	}
 	// check if request is list-multipart-uploads
 	if query.Has("uploads") {
-		fmt.Println("itamar, you are the king")
 		handleListMultipartUploads(w, req, o)
 		return
 	}
