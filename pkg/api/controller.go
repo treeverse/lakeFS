@@ -4953,7 +4953,7 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 }
 
 func newLoginConfig(c *config.BaseConfig) *apigen.LoginConfig {
-	return &apigen.LoginConfig{
+	loginConfig := &apigen.LoginConfig{
 		RBAC:               &c.Auth.UIConfig.RBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
 		LoginFailedMessage: &c.Auth.UIConfig.LoginFailedMessage,
