@@ -30,6 +30,13 @@ pub struct StorageConfig {
     pub import_validity_regex: String,
     #[serde(rename = "pre_sign_multipart_upload", skip_serializing_if = "Option::is_none")]
     pub pre_sign_multipart_upload: Option<bool>,
+    #[serde(rename = "blockstore_id", skip_serializing_if = "Option::is_none")]
+    pub blockstore_id: Option<String>,
+    #[serde(rename = "blockstore_description", skip_serializing_if = "Option::is_none")]
+    pub blockstore_description: Option<String>,
+    /// blockstore specific properties
+    #[serde(rename = "blockstore_extras", skip_serializing_if = "Option::is_none")]
+    pub blockstore_extras: Option<std::collections::HashMap<String, String>>,
 }
 
 impl StorageConfig {
@@ -44,6 +51,9 @@ impl StorageConfig {
             import_support,
             import_validity_regex,
             pre_sign_multipart_upload: None,
+            blockstore_id: None,
+            blockstore_description: None,
+            blockstore_extras: None,
         }
     }
 }

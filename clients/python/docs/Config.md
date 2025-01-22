@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **version_config** | [**VersionConfig**](VersionConfig.md) |  | [optional] 
 **storage_config** | [**StorageConfig**](StorageConfig.md) |  | [optional] 
+**storage_config_list** | [**List[StorageConfig]**](StorageConfig.md) |  | [optional] 
 
 ## Example
 

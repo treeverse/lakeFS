@@ -19,11 +19,11 @@ import re  # noqa: F401
 import json
 
 
-from typing import Optional
+from typing import List, Optional
 try:
-    from pydantic.v1 import BaseModel
+    from pydantic.v1 import BaseModel, conlist
 except ImportError:
-    from pydantic import BaseModel
+    from pydantic import BaseModel, conlist
 from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.version_config import VersionConfig
 
@@ -33,7 +33,8 @@ class Config(BaseModel):
     """
     version_config: Optional[VersionConfig] = None
     storage_config: Optional[StorageConfig] = None
-    __properties = ["version_config", "storage_config"]
+    storage_config_list: Optional[conlist(StorageConfig)] = None
+    __properties = ["version_config", "storage_config", "storage_config_list"]
 
     class Config:
         """Pydantic configuration"""
@@ -65,6 +66,13 @@ class Config(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of storage_config
         if self.storage_config:
             _dict['storage_config'] = self.storage_config.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of each item in storage_config_list (list)
+        _items = []
+        if self.storage_config_list:
+            for _item in self.storage_config_list:
+                if _item:
+                    _items.append(_item.to_dict())
+            _dict['storage_config_list'] = _items
         return _dict
 
     @classmethod
@@ -78,7 +86,8 @@ class Config(BaseModel):
 
         _obj = Config.parse_obj({
             "version_config": VersionConfig.from_dict(obj.get("version_config")) if obj.get("version_config") is not None else None,
-            "storage_config": StorageConfig.from_dict(obj.get("storage_config")) if obj.get("storage_config") is not None else None
+            "storage_config": StorageConfig.from_dict(obj.get("storage_config")) if obj.get("storage_config") is not None else None,
+            "storage_config_list": [StorageConfig.from_dict(_item) for _item in obj.get("storage_config_list")] if obj.get("storage_config_list") is not None else None
         })
         return _obj
 
