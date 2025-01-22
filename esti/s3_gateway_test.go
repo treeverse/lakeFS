@@ -278,7 +278,7 @@ func TestListMultipartUploads(t *testing.T) {
 		},
 	}
 	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
-	fmt.Println("output %+v/n: ", output)
+	require.NoError(t, err, "failed to create multipart upload")
 	spew.Dump(output)
 
 	require.Contains(t, output.Uploads[0].Key, obj1)
