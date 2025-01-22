@@ -70,6 +70,7 @@ func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T)
 	err = gc.SaveGarbageCollectionUncommitted(ctx, &repositoryRec, filename, runID)
 	require.NoError(t, err)
 	reader, err := blockAdapter.Get(ctx, block.ObjectPointer{
+		StorageID:        "",
 		StorageNamespace: "",
 		Identifier:       fmt.Sprintf("%s%s", location, filename),
 		IdentifierType:   block.IdentifierTypeFull,

@@ -54,6 +54,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(w http.ResponseWriter,
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.CreateMultiPartUploadOpts{StorageClass: storageClass}
 	resp, err := o.BlockStore.CreateMultiPartUpload(req.Context(), block.ObjectPointer{
+		StorageID:        o.Repository.StorageID,
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       address,
@@ -130,6 +131,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 	normalizeMultipartUploadCompletion(&multipartList)
 	resp, err := o.BlockStore.CompleteMultiPartUpload(req.Context(),
 		block.ObjectPointer{
+			StorageID:        o.Repository.StorageID,
 			StorageNamespace: o.Repository.StorageNamespace,
 			IdentifierType:   block.IdentifierTypeRelative,
 			Identifier:       objName,

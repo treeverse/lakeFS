@@ -2630,7 +2630,7 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, location string, fd *os.File, size int64) (string, error) {
+func (c *Catalog) uploadFile(ctx context.Context, repo *graveler.RepositoryRecord, location string, fd *os.File, size int64) (string, error) {
 	_, err := fd.Seek(0, 0)
 	if err != nil {
 		return "", err
@@ -2642,7 +2642,8 @@ func (c *Catalog) uploadFile(ctx context.Context, ns graveler.StorageNamespace, 
 		return "", err
 	}
 	obj := block.ObjectPointer{
-		StorageNamespace: ns.String(),
+		StorageID:        repo.StorageID.String(),
+		StorageNamespace: repo.StorageNamespace.String(),
 		Identifier:       identifier,
 		IdentifierType:   block.IdentifierTypeFull,
 	}
@@ -2705,7 +2706,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 			return nil, err
 		}
 
-		name, err = c.uploadFile(ctx, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
+		name, err = c.uploadFile(ctx, repository, uncommittedLocation, fd, uw.Size())
 		if err != nil {
 			return nil, err
 		}
@@ -2757,11 +2758,13 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	}
 
 	srcObject := block.ObjectPointer{
+		StorageID:        srcRepo.StorageID,
 		StorageNamespace: srcRepo.StorageNamespace,
 		IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
 		Identifier:       srcEntry.PhysicalAddress,
 	}
 	destObj := block.ObjectPointer{
+		StorageID:        destRepo.StorageID,
 		StorageNamespace: destRepo.StorageNamespace,
 		IdentifierType:   dstEntry.AddressType.ToIdentifierType(),
 		Identifier:       dstEntry.PhysicalAddress,

@@ -178,12 +178,14 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 		}
 
 		src := block.ObjectPointer{
+			StorageID:        srcRepo.StorageID,
 			StorageNamespace: srcRepo.StorageNamespace,
 			IdentifierType:   ent.AddressType.ToIdentifierType(),
 			Identifier:       ent.PhysicalAddress,
 		}
 
 		dst := block.ObjectPointer{
+			StorageID:        o.Repository.StorageID,
 			StorageNamespace: o.Repository.StorageNamespace,
 			IdentifierType:   block.IdentifierTypeRelative,
 			Identifier:       multiPart.PhysicalAddress,
@@ -225,6 +227,7 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 
 	byteSize := req.ContentLength
 	resp, err := o.BlockStore.UploadPart(req.Context(), block.ObjectPointer{
+		StorageID:        o.Repository.StorageID,
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       multiPart.PhysicalAddress,
@@ -315,8 +318,13 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 			return
 		}
 	}
-	address := o.PathProvider.NewPath()
-	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, o.Repository.StorageNamespace, address, req.Body, req.ContentLength, opts)
+	objectPointer := block.ObjectPointer{
+		StorageID:        o.Repository.StorageID,
+		StorageNamespace: o.Repository.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       o.PathProvider.NewPath(),
+	}
+	blob, err := upload.WriteBlob(req.Context(), o.BlockStore, objectPointer, req.Body, req.ContentLength, opts)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not write request body to block adapter")
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))

@@ -17,20 +17,16 @@ type Blob struct {
 	CreationDate    time.Time
 }
 
-func WriteBlob(ctx context.Context, adapter block.Adapter, bucketName, address string, body io.Reader, contentLength int64, opts block.PutOpts) (*Blob, error) {
+func WriteBlob(ctx context.Context, adapter block.Adapter, objectPointer block.ObjectPointer, body io.Reader, contentLength int64, opts block.PutOpts) (*Blob, error) {
 	// handle the upload itself
 	hashReader := block.NewHashingReader(body, block.HashFunctionMD5, block.HashFunctionSHA256)
-	res, err := adapter.Put(ctx, block.ObjectPointer{
-		StorageNamespace: bucketName,
-		IdentifierType:   block.IdentifierTypeRelative,
-		Identifier:       address,
-	}, contentLength, hashReader, opts)
+	res, err := adapter.Put(ctx, objectPointer, contentLength, hashReader, opts)
 	if err != nil {
 		return nil, err
 	}
 	checksum := hex.EncodeToString(hashReader.Md5.Sum(nil))
 	return &Blob{
-		PhysicalAddress: address,
+		PhysicalAddress: objectPointer.Identifier,
 		RelativePath:    true,
 		Checksum:        checksum,
 		Size:            hashReader.CopiedSize,

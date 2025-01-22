@@ -2549,8 +2549,13 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	address := upload.DefaultPathProvider.NewPath()
-	blob, err := upload.WriteBlob(context.Background(), deps.blocks, onBlock(deps, "ns1"), address, buf, 37, block.PutOpts{StorageClass: &expensiveString})
+	objectPointer := block.ObjectPointer{
+		StorageID:        "",
+		StorageNamespace: onBlock(deps, "ns1"),
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       upload.DefaultPathProvider.NewPath(),
+	}
+	blob, err := upload.WriteBlob(context.Background(), deps.blocks, objectPointer, buf, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2625,8 +2630,13 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	address := upload.DefaultPathProvider.NewPath()
-	blob, err := upload.WriteBlob(context.Background(), deps.blocks, onBlock(deps, "ns1"), address, buf, 37, block.PutOpts{StorageClass: &expensiveString})
+	objectPointer := block.ObjectPointer{
+		StorageID:        "",
+		StorageNamespace: onBlock(deps, "ns1"),
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       upload.DefaultPathProvider.NewPath(),
+	}
+	blob, err := upload.WriteBlob(context.Background(), deps.blocks, objectPointer, buf, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}
