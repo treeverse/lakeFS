@@ -411,7 +411,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 	log := a.log(ctx).WithFields(logging.Fields{
 		"operation":  "GetPreSignedURL",
-		"sid":        obj.StorageID, // TODO (gilo): is "sid" a good enough name?
+		"storage_id": obj.StorageID,
 		"namespace":  obj.StorageNamespace,
 		"identifier": obj.Identifier,
 		"ttl":        time.Until(expiry),
@@ -467,7 +467,7 @@ func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectP
 
 	log := a.log(ctx).WithFields(logging.Fields{
 		"operation":  "GetPresignUploadPartURL",
-		"sid":        obj.StorageID, // TODO (gilo): is "sid" a good enough name?
+		"storage_id": obj.StorageID,
 		"namespace":  obj.StorageNamespace,
 		"identifier": obj.Identifier,
 	})

@@ -907,11 +907,10 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 }
 
 func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, ctx context.Context, c *catalog.Catalog, obj string) []string {
-	// TODO (gilo): test StorageID here?
 	objReader, err := c.BlockAdapter.Get(ctx, block.ObjectPointer{
-		Identifier:       obj,
-		IdentifierType:   block.IdentifierTypeFull,
-		StorageID:        "",
+		Identifier:     obj,
+		IdentifierType: block.IdentifierTypeFull,
+		// in the context of an adapter here, so no need to specify StorageID.
 		StorageNamespace: "mem://" + repositoryID,
 	})
 	require.NoError(t, err)

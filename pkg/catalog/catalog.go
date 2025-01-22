@@ -2630,7 +2630,7 @@ type UncommittedParquetObject struct {
 	CreationDate    int64  `parquet:"name=creation_date, type=INT64, convertedtype=INT_64"`
 }
 
-func (c *Catalog) uploadFile(ctx context.Context, sid graveler.StorageID, ns graveler.StorageNamespace, location string, fd *os.File, size int64) (string, error) {
+func (c *Catalog) uploadFile(ctx context.Context, repo *graveler.RepositoryRecord, location string, fd *os.File, size int64) (string, error) {
 	_, err := fd.Seek(0, 0)
 	if err != nil {
 		return "", err
@@ -2642,8 +2642,8 @@ func (c *Catalog) uploadFile(ctx context.Context, sid graveler.StorageID, ns gra
 		return "", err
 	}
 	obj := block.ObjectPointer{
-		StorageID:        sid.String(),
-		StorageNamespace: ns.String(),
+		StorageID:        repo.StorageID.String(),
+		StorageNamespace: repo.StorageNamespace.String(),
 		Identifier:       identifier,
 		IdentifierType:   block.IdentifierTypeFull,
 	}
@@ -2706,7 +2706,7 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 			return nil, err
 		}
 
-		name, err = c.uploadFile(ctx, repository.StorageID, repository.StorageNamespace, uncommittedLocation, fd, uw.Size())
+		name, err = c.uploadFile(ctx, repository, uncommittedLocation, fd, uw.Size())
 		if err != nil {
 			return nil, err
 		}

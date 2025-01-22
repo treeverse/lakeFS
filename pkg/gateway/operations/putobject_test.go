@@ -45,9 +45,14 @@ func TestWriteBlob(t *testing.T) {
 			}
 			reader := bytes.NewReader(data)
 			adapter := testutil.NewMockAdapter()
+			objectPointer := block.ObjectPointer{
+				StorageID:        "",
+				StorageNamespace: storageNamespace,
+				IdentifierType:   block.IdentifierTypeRelative,
+				Identifier:       upload.DefaultPathProvider.NewPath(),
+			}
 			opts := block.PutOpts{StorageClass: tc.storageClass}
-			address := upload.DefaultPathProvider.NewPath()
-			blob, err := upload.WriteBlob(context.Background(), adapter, "", storageNamespace, address, reader, tc.size, opts)
+			blob, err := upload.WriteBlob(context.Background(), adapter, objectPointer, reader, tc.size, opts)
 			if err != nil {
 				t.Fatal(err)
 			}

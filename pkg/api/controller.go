@@ -3213,24 +3213,19 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-
-	storageNamespace := repo.StorageNamespace
-	storageID := repo.StorageID
+	opts := block.PutOpts{StorageClass: params.StorageClass}
 
 	var blob *upload.Blob
 	if mediaType != "multipart/form-data" {
 		// handle non-multipart, direct content upload
 		address := c.PathProvider.NewPath()
-		blob, err = upload.WriteBlob(
-			ctx,
-			c.BlockAdapter,
-			storageID,
-			storageNamespace,
-			address,
-			r.Body,
-			r.ContentLength,
-			block.PutOpts{StorageClass: params.StorageClass},
-		)
+		objectPointer := block.ObjectPointer{
+			StorageID:        repo.StorageID,
+			StorageNamespace: repo.StorageNamespace,
+			IdentifierType:   block.IdentifierTypeRelative,
+			Identifier:       address,
+		}
+		blob, err = upload.WriteBlob(ctx, c.BlockAdapter, objectPointer, r.Body, r.ContentLength, opts)
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
@@ -3258,17 +3253,13 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			partName := part.FormName()
 			if partName == "content" {
 				// upload the first "content" and exit the loop
-				address := c.PathProvider.NewPath()
-				blob, err = upload.WriteBlob(
-					ctx,
-					c.BlockAdapter,
-					storageID,
-					storageNamespace,
-					address,
-					part,
-					-1,
-					block.PutOpts{StorageClass: params.StorageClass},
-				)
+				objectPointer := block.ObjectPointer{
+					StorageID:        repo.StorageID,
+					StorageNamespace: repo.StorageNamespace,
+					IdentifierType:   block.IdentifierTypeRelative,
+					Identifier:       c.PathProvider.NewPath(),
+				}
+				blob, err = upload.WriteBlob(ctx, c.BlockAdapter, objectPointer, part, -1, opts)
 				if err != nil {
 					_ = part.Close()
 					writeError(w, r, http.StatusInternalServerError, err)
@@ -3317,7 +3308,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		identifierType = block.IdentifierTypeRelative
 	}
 
-	qk, err := c.BlockAdapter.ResolveNamespace(storageNamespace, blob.PhysicalAddress, identifierType)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, identifierType)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
