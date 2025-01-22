@@ -23,7 +23,7 @@ var setupCmd = &cobra.Command{
 	Aliases: []string{"init"},
 	Short:   "Setup a new lakeFS instance with initial credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := loadConfig()
+		cfg := loadConfig().GetBaseConfig()
 
 		ctx := cmd.Context()
 		kvParams, err := kvparams.NewConfig(&cfg.Database)
@@ -100,7 +100,7 @@ var setupCmd = &cobra.Command{
 	},
 }
 
-func setupLakeFS(ctx context.Context, cfg *config.Config, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string) (*model.Credential, error) {
+func setupLakeFS(ctx context.Context, cfg *config.BaseConfig, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string) (*model.Credential, error) {
 	initialized, err := metadataManager.IsInitialized(ctx)
 	if err != nil || initialized {
 		// return on error or if already initialized

@@ -576,7 +576,7 @@ func (l *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 	}, nil
 }
 
-func (l *Adapter) GetRegion(_ context.Context, _ string) (string, error) {
+func (l *Adapter) GetRegion(_ context.Context, _, _ string) (string, error) {
 	return "", block.ErrOperationNotSupported
 }
 

@@ -88,7 +88,7 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config                *config.Config
+	Config                config.Config
 	Catalog               *catalog.Catalog
 	Authenticator         auth.Authenticator
 	Auth                  auth.Service
@@ -108,7 +108,7 @@ type Controller struct {
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg *config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
 	return &Controller{
 		Config:                cfg,
 		Catalog:               catalog,
@@ -569,7 +569,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	}
 
 	loginTime := time.Now()
-	duration := c.Config.Auth.LoginDuration
+	duration := c.Config.GetBaseConfig().Auth.LoginDuration
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
@@ -613,13 +613,13 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	c.Logger.WithField("user_id", externalPrincipalIDInfo.UserID).Debug("got external principal ID info, generating a new JWT")
-	duration := c.Config.Auth.LoginDuration
+	duration := c.Config.GetBaseConfig().Auth.LoginDuration
 	if swag.IntValue(body.TokenExpirationDuration) > 0 {
 		duration = time.Second * time.Duration(*body.TokenExpirationDuration)
 	}
-	if duration > c.Config.Auth.LoginMaxDuration {
-		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.Auth.LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
-		duration = c.Config.Auth.LoginMaxDuration
+	if duration > c.Config.GetBaseConfig().Auth.LoginMaxDuration {
+		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.GetBaseConfig().Auth.LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
+		duration = c.Config.GetBaseConfig().Auth.LoginMaxDuration
 	}
 	loginTime := time.Now()
 	expires := loginTime.Add(duration)
@@ -1165,7 +1165,7 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params apigen.ListGroupPoliciesParams) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1222,7 +1222,7 @@ func serializePolicy(p *model.Policy) apigen.Policy {
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1244,7 +1244,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1267,7 +1267,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params apigen.ListPoliciesParams) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1306,7 +1306,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 }
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body apigen.CreatePolicyJSONRequestBody) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1352,7 +1352,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 }
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1378,7 +1378,7 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1406,7 +1406,7 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 }
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body apigen.UpdatePolicyJSONRequestBody, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1733,7 +1733,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserPoliciesParams) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1778,7 +1778,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 }
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1800,7 +1800,7 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.IsAuthUISimplified() {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1828,7 +1828,6 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
-	var storageCfg apigen.StorageConfig
 	internalError := false
 	if !c.authorizeCallback(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -1847,12 +1846,13 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 		if internalError {
 			return
 		}
-	} else {
-		storageCfg = c.getStorageConfig()
 	}
 
+	storageCfg := c.getStorageConfig()
+	// TODO (niro): Needs to be populated
+	storageListCfg := apigen.StorageConfigList{}
 	versionConfig := c.getVersionConfig()
-	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: &storageCfg, VersionConfig: &versionConfig})
+	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: &storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageListCfg})
 }
 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
@@ -1871,11 +1871,11 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) getStorageConfig() apigen.StorageConfig {
 	info := c.BlockAdapter.GetStorageNamespaceInfo()
 	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
-	if c.Config.Blockstore.DefaultNamespacePrefix != nil {
-		defaultNamespacePrefix = c.Config.Blockstore.DefaultNamespacePrefix
+	if c.Config.GetBaseConfig().Blockstore.DefaultNamespacePrefix != nil {
+		defaultNamespacePrefix = c.Config.GetBaseConfig().Blockstore.DefaultNamespacePrefix
 	}
 	return apigen.StorageConfig{
-		BlockstoreType:                   c.Config.Blockstore.Type,
+		BlockstoreType:                   c.Config.GetBaseConfig().Blockstore.Type,
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
 		DefaultNamespacePrefix:           defaultNamespacePrefix,
@@ -1928,6 +1928,9 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateRepositoryJSONRequestBody, params apigen.CreateRepositoryParams) {
+	storageID := swag.StringValue(body.StorageId)
+	storageNamespace := body.StorageNamespace
+
 	if !c.authorize(w, r, permissions.Node{
 		Type: permissions.NodeTypeAnd,
 		Nodes: []permissions.Node{
@@ -1940,7 +1943,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			{
 				Permission: permissions.Permission{
 					Action:   permissions.AttachStorageNamespaceAction,
-					Resource: permissions.StorageNamespace(body.StorageNamespace),
+					Resource: permissions.StorageNamespace(storageNamespace),
 				},
 			},
 		},
@@ -1965,13 +1968,13 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
 	}
 
-	if err := c.validateStorageNamespace(body.StorageNamespace); err != nil {
+	if err := c.validateStorageNamespace(storageNamespace); err != nil {
 		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
-	if !c.Config.Installation.AllowInterRegionStorage {
-		if err := block.ValidateInterRegionStorage(r.Context(), c.BlockAdapter, body.StorageNamespace); err != nil {
+	if !c.Config.GetBaseConfig().Installation.AllowInterRegionStorage {
+		if err := block.ValidateInterRegionStorage(r.Context(), c.BlockAdapter, storageID, storageNamespace); err != nil {
 			writeError(w, r, http.StatusBadRequest, err)
 			return
 		}
@@ -1982,10 +1985,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		defaultBranch = "main"
 	}
 
-	storageID := swag.StringValue(body.StorageId)
-
 	if !swag.BoolValue(body.ReadOnly) {
-		if err := c.ensureStorageNamespace(ctx, body.StorageNamespace); err != nil {
+		if err := c.ensureStorageNamespace(ctx, storageNamespace); err != nil {
 			var (
 				reason string
 				retErr error
@@ -2007,7 +2008,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			}
 			c.Logger.
 				WithError(err).
-				WithField("storage_namespace", body.StorageNamespace).
+				WithField("storage_namespace", storageNamespace).
 				WithField("reason", reason).
 				Warn("Could not access storage namespace")
 			writeError(w, r, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
@@ -2018,7 +2019,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	if swag.BoolValue(params.Bare) {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
-		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, storageID, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, storageID, storageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -2033,7 +2034,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		return
 	}
 
-	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, storageID, body.StorageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, storageID, storageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
 	if err != nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("error creating repository: %w", err))
 		return
@@ -2088,14 +2089,14 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 		dummyData    = "this is dummy data - created by lakeFS to check accessibility"
 		dummyObjName = "dummy"
 	)
-	dummyKey := fmt.Sprintf("%s/%s", c.Config.Committed.BlockStoragePrefix, dummyObjName)
+	dummyKey := fmt.Sprintf("%s/%s", c.Config.GetBaseConfig().Committed.BlockStoragePrefix, dummyObjName)
 
 	objLen := int64(len(dummyData))
 
 	// check if the dummy file exist in the root of the storage namespace
 	// this serves two purposes, first, we maintain safety check for older lakeFS version.
 	// second, in scenarios where lakeFS shouldn't have access to the root namespace (i.e pre-sign URL only).
-	if c.Config.Graveler.EnsureReadableRootNamespace {
+	if c.Config.GetBaseConfig().Graveler.EnsureReadableRootNamespace {
 		// TODO (gilo): ObjectPointer init - add StorageID here
 		rootObj := block.ObjectPointer{
 			StorageNamespace: storageNamespace,
@@ -3878,7 +3879,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
-		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.Committed.BlockStoragePrefix),
+		Identifier:       fmt.Sprintf("%s/refs_manifest.json", c.Config.GetBaseConfig().Committed.BlockStoragePrefix),
 	}, int64(len(manifestBytes)), bytes.NewReader(manifestBytes), block.PutOpts{})
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -4975,7 +4976,7 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func newLoginConfig(c *config.Config) *apigen.LoginConfig {
+func newLoginConfig(c *config.BaseConfig) *apigen.LoginConfig {
 	return &apigen.LoginConfig{
 		RBAC:               &c.Auth.UIConfig.RBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
@@ -4991,10 +4992,10 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// external auth reports as initialized to avoid triggering the setup wizard
-	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
+	if c.Config.GetBaseConfig().Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		response := apigen.SetupState{
 			State:            swag.String(string(auth.SetupStateInitialized)),
-			LoginConfig:      newLoginConfig(c.Config),
+			LoginConfig:      newLoginConfig(c.Config.GetBaseConfig()),
 			CommPrefsMissing: swag.Bool(false),
 		}
 		writeResponse(w, r, http.StatusOK, response)
@@ -5012,13 +5013,13 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 
 	response := apigen.SetupState{
 		State:       swag.String(string(savedState)),
-		LoginConfig: newLoginConfig(c.Config),
+		LoginConfig: newLoginConfig(c.Config.GetBaseConfig()),
 	}
 
 	// if email subscription is disabled in the config, set the missing flag to false.
 	// otherwise, check if the comm prefs are set.
 	// if they are, set the missing flag to false.
-	if !c.Config.EmailSubscription.Enabled {
+	if !c.Config.GetBaseConfig().EmailSubscription.Enabled {
 		response.CommPrefsMissing = swag.Bool(false)
 		writeResponse(w, r, http.StatusOK, response)
 		return
@@ -5065,7 +5066,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	if c.Config.Auth.UIConfig.RBAC == config.AuthRBACExternal {
+	if c.Config.GetBaseConfig().Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		// nothing to do - users are managed elsewhere
 		writeResponse(w, r, http.StatusOK, apigen.CredentialsWithSecret{})
 		return
@@ -5073,9 +5074,9 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 
 	var cred *model.Credential
 	if body.Key == nil {
-		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
+		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config.GetBaseConfig(), c.MetadataManager, body.Username)
 	} else {
-		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
+		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config.GetBaseConfig(), c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
@@ -5130,7 +5131,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		InstallationID:  installationID,
 		FeatureUpdates:  commPrefs.FeatureUpdates,
 		SecurityUpdates: commPrefs.SecurityUpdates,
-		BlockstoreType:  c.Config.BlockstoreType(),
+		BlockstoreType:  c.Config.GetBaseConfig().BlockstoreType(),
 	}
 	// collect comm prefs
 	go c.Collector.CollectCommPrefs(commPrefsED)
@@ -5183,7 +5184,7 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		}
 	}
 
-	if c.Config.Security.CheckLatestVersion {
+	if c.Config.GetBaseConfig().Security.CheckLatestVersion {
 		latest, err := c.AuditChecker.CheckLatestVersion()
 		// set upgrade recommended based on latest version
 		if err != nil {
@@ -5874,5 +5875,5 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 
 func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
 	// if IsAuthUISimplified true then it means the user not using RBAC model
-	return c.Config.IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
+	return c.Config.GetBaseConfig().IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
 }

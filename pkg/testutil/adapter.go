@@ -152,7 +152,7 @@ func (a *MockAdapter) ResolveNamespace(storageNamespace, key string, identifierT
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
-func (a *MockAdapter) GetRegion(_ context.Context, _ string) (string, error) {
+func (a *MockAdapter) GetRegion(_ context.Context, _, _ string) (string, error) {
 	if a.namespaceRegion != nil {
 		return *a.namespaceRegion, nil
 	} else {

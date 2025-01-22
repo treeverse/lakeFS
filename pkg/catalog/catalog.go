@@ -214,7 +214,7 @@ type WriteRangeRequest struct {
 }
 
 type Config struct {
-	Config                *config.Config
+	Config                *config.BaseConfig
 	KVStore               kv.Store
 	WalkerFactory         WalkerFactory
 	SettingsManagerOption settings.ManagerOption

@@ -36,12 +36,10 @@ import (
 type GetCredentials = func(id, secret, token string) *credentials.Credentials
 
 const (
-	numUploads              = 100
-	randomDataPathLength    = 1020
-	branch                  = "main"
-	gatewayTestPrefix       = branch + "/data/"
-	errorPreconditionFailed = "At least one of the pre-conditions you specified did not hold"
-	errorNotImplemented     = "A header you provided implies functionality that is not implemented"
+	numUploads           = 100
+	randomDataPathLength = 1020
+	branch               = "main"
+	gatewayTestPrefix    = branch + "/data/"
 )
 
 func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
@@ -188,58 +186,121 @@ func TestS3UploadAndDownload(t *testing.T) {
 		})
 	}
 }
+
 func TestMultipartUploadIfNoneMatch(t *testing.T) {
-	ctx, logger, repo := setupTest(t)
+	ctx, log, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
-	multipartNumberOfParts := 7
-	multipartPartSize := 5 * 1024 * 1024
-	type TestCase struct {
+	testCases := []struct {
+		Name          string
 		Path          string
 		IfNoneMatch   string
 		ExpectedError string
+	}{
+		{
+			Name: "sanity",
+			Path: "main/object1",
+		},
+		{
+			Name:          "object exists",
+			Path:          "main/object1",
+			IfNoneMatch:   "*",
+			ExpectedError: gtwerrors.ErrPreconditionFailed.Error(),
+		},
+		{
+			Name:        "object doesn't exist",
+			Path:        "main/object2",
+			IfNoneMatch: "*",
+		},
 	}
 
-	testCases := []TestCase{
-		{Path: "main/object1"},
-		{Path: "main/object1", IfNoneMatch: "*", ExpectedError: errorPreconditionFailed},
-		{Path: "main/object2", IfNoneMatch: "*"},
-	}
-	for _, tc := range testCases {
-		input := &s3.CreateMultipartUploadInput{
-			Bucket: aws.String(repo),
-			Key:    aws.String(tc.Path),
-		}
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			input := &s3.CreateMultipartUploadInput{
+				Bucket: aws.String(repo),
+				Key:    aws.String(tt.Path),
+			}
 
-		resp, err := s3Client.CreateMultipartUpload(ctx, input)
-		require.NoError(t, err, "failed to create multipart upload")
+			resp, err := s3Client.CreateMultipartUpload(ctx, input)
+			require.NoError(t, err, "failed to create multipart upload")
 
-		parts := make([][]byte, multipartNumberOfParts)
-		for i := 0; i < multipartNumberOfParts; i++ {
-			parts[i] = randstr.Bytes(multipartPartSize + i)
-		}
+			parts := make([][]byte, multipartNumberOfParts)
+			for i := 0; i < multipartNumberOfParts; i++ {
+				parts[i] = randstr.Bytes(multipartPartSize + i)
+			}
 
-		completedParts := uploadMultipartParts(t, ctx, s3Client, logger, resp, parts, 0)
-
-		completeInput := &s3.CompleteMultipartUploadInput{
-			Bucket:   resp.Bucket,
-			Key:      resp.Key,
-			UploadId: resp.UploadId,
-			MultipartUpload: &types.CompletedMultipartUpload{
-				Parts: completedParts,
-			},
-		}
-		_, err = s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
-		if tc.ExpectedError != "" {
-			require.ErrorContains(t, err, tc.ExpectedError)
-		} else {
-			require.NoError(t, err, "expected no error but got %w")
-		}
+			completedParts := uploadMultipartParts(t, ctx, s3Client, log, resp, parts, 0)
+			completeInput := &s3.CompleteMultipartUploadInput{
+				Bucket:   resp.Bucket,
+				Key:      resp.Key,
+				UploadId: resp.UploadId,
+				MultipartUpload: &types.CompletedMultipartUpload{
+					Parts: completedParts,
+				},
+			}
+			_, err = s3Client.CompleteMultipartUpload(ctx, completeInput, s3.WithAPIOptions(setIfNonMatchHeader(tt.IfNoneMatch)))
+			if tt.ExpectedError != "" {
+				require.ErrorContains(t, err, tt.ExpectedError)
+			} else {
+				require.NoError(t, err, "expected no error but got: %w", err)
+			}
+		})
 	}
 }
 
-func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
+func TestS3IfNoneMatch(t *testing.T) {
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Client := createS3Client(s3Endpoint, t)
+	testCases := []struct {
+		Name          string
+		Path          string
+		IfNoneMatch   string
+		ExpectedError string
+	}{
+		{
+			Name: "sanity",
+			Path: "main/object1",
+		},
+		{
+			Name:          "object exists",
+			Path:          "main/object1",
+			IfNoneMatch:   "*",
+			ExpectedError: gtwerrors.ErrPreconditionFailed.Error(),
+		},
+		{
+			Name:        "object doesn't exist",
+			Path:        "main/object2",
+			IfNoneMatch: "*",
+		},
+		{
+			Name:          "unsupported value",
+			Path:          "main/object3",
+			IfNoneMatch:   "unsupported string",
+			ExpectedError: gtwerrors.ErrNotImplemented.Error(),
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			input := &s3.PutObjectInput{
+				Bucket: aws.String(repo),
+				Key:    aws.String(tt.Path),
+			}
+			_, err := s3Client.PutObject(ctx, input, s3.WithAPIOptions(setIfNonMatchHeader(tt.IfNoneMatch)))
+			if tt.ExpectedError != "" {
+				require.ErrorContains(t, err, tt.ExpectedError)
+			} else {
+				require.NoError(t, err, "expected no error but got: %w", err)
+			}
+		})
+	}
+}
+
+func setIfNonMatchHeader(ifNoneMatch string) func(*middleware.Stack) error {
 	return func(stack *middleware.Stack) error {
 		return stack.Build.Add(middleware.BuildMiddlewareFunc("AddIfNoneMatchHeader", func(
 			ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler,
@@ -247,45 +308,10 @@ func setHTTPHeaders(ifNoneMatch string) func(*middleware.Stack) error {
 			middleware.BuildOutput, middleware.Metadata, error,
 		) {
 			if req, ok := in.Request.(*smithyhttp.Request); ok {
-				// Add the If-None-Match header
 				req.Header.Set("If-None-Match", ifNoneMatch)
 			}
 			return next.HandleBuild(ctx, in)
 		}), middleware.Before)
-	}
-}
-func TestS3IfNoneMatch(t *testing.T) {
-
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
-
-	s3Endpoint := viper.GetString("s3_endpoint")
-	s3Client := createS3Client(s3Endpoint, t)
-
-	type TestCase struct {
-		Path          string
-		IfNoneMatch   string
-		ExpectedError string
-	}
-
-	testCases := []TestCase{
-		{Path: "main/object1"},
-		{Path: "main/object1", IfNoneMatch: "*", ExpectedError: errorPreconditionFailed},
-		{Path: "main/object2", IfNoneMatch: "*"},
-		{Path: "main/object2"},
-		{Path: "main/object3", IfNoneMatch: "unsupported string", ExpectedError: errorNotImplemented},
-	}
-	for _, tc := range testCases {
-		input := &s3.PutObjectInput{
-			Bucket: aws.String(repo),
-			Key:    aws.String(tc.Path),
-		}
-		_, err := s3Client.PutObject(ctx, input, s3.WithAPIOptions(setHTTPHeaders(tc.IfNoneMatch)))
-		if tc.ExpectedError != "" {
-			require.ErrorContains(t, err, tc.ExpectedError)
-		} else {
-			require.NoError(t, err, "expected no error but got %w")
-		}
 	}
 }
 

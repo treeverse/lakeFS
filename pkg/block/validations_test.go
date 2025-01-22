@@ -20,7 +20,7 @@ func TestController_ValidateInterRegionStorage(t *testing.T) {
 		}
 		adapter := testutil.NewMockAdapter(opts...)
 
-		err := block.ValidateInterRegionStorage(ctx, adapter, "s3://us-west-2/bucket-1")
+		err := block.ValidateInterRegionStorage(ctx, adapter, "", "s3://us-west-2/bucket-1")
 		require.NoError(t, err)
 	})
 
@@ -31,7 +31,7 @@ func TestController_ValidateInterRegionStorage(t *testing.T) {
 		}
 		adapter := testutil.NewMockAdapter(opts...)
 
-		err := block.ValidateInterRegionStorage(ctx, adapter, "s3://us-west-2/bucket-1")
+		err := block.ValidateInterRegionStorage(ctx, adapter, "", "s3://us-west-2/bucket-1")
 		require.ErrorIs(t, err, block.ErrInvalidNamespace)
 	})
 }

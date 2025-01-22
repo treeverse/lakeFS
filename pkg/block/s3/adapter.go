@@ -892,7 +892,7 @@ func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
-func (a *Adapter) GetRegion(ctx context.Context, storageNamespace string) (string, error) {
+func (a *Adapter) GetRegion(ctx context.Context, _, storageNamespace string) (string, error) {
 	namespaceURL, err := url.Parse(storageNamespace)
 	if err != nil {
 		return "", fmt.Errorf(`%s isn't a valid url': %w`, storageNamespace, block.ErrInvalidNamespace)
