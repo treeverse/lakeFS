@@ -63,6 +63,7 @@ const DefaultPreSignExpiryDuration = 15 * time.Minute
 // ObjectPointer is a unique identifier of an object in the object
 // store: the store is a 1:1 mapping between pointers and objects.
 type ObjectPointer struct {
+	StorageID        string
 	StorageNamespace string
 	Identifier       string
 

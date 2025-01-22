@@ -246,7 +246,12 @@ func (l *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
-	_, err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	objectPointer := block.ObjectPointer{
+		StorageID:        destinationObj.StorageID,
+		StorageNamespace: destinationObj.StorageNamespace,
+		Identifier:       fName,
+	}
+	_, err = l.Put(ctx, objectPointer, -1, md5Read, block.PutOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("copy put: %w", err)
 	}
@@ -266,7 +271,12 @@ func (l *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 	}
 	md5Read := block.NewHashingReader(r, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
-	_, err = l.Put(ctx, block.ObjectPointer{StorageNamespace: destinationObj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	objectPointer := block.ObjectPointer{
+		StorageID:        destinationObj.StorageID,
+		StorageNamespace: destinationObj.StorageNamespace,
+		Identifier:       fName,
+	}
+	_, err = l.Put(ctx, objectPointer, -1, md5Read, block.PutOpts{})
 	if err != nil {
 		return nil, fmt.Errorf("copy range put: %w", err)
 	}
@@ -398,7 +408,12 @@ func (l *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 	}
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadID + fmt.Sprintf("-%05d", partNumber)
-	_, err := l.Put(ctx, block.ObjectPointer{StorageNamespace: obj.StorageNamespace, Identifier: fName}, -1, md5Read, block.PutOpts{})
+	objectPointer := block.ObjectPointer{
+		StorageID:        obj.StorageID,
+		StorageNamespace: obj.StorageNamespace,
+		Identifier:       fName,
+	}
+	_, err := l.Put(ctx, objectPointer, -1, md5Read, block.PutOpts{})
 	etag := hex.EncodeToString(md5Read.Md5.Sum(nil))
 	return &block.UploadPartResponse{
 		ETag: etag,
@@ -505,6 +520,7 @@ func (l *Adapter) removePartFiles(files []string) error {
 
 func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]string, error) {
 	newObj := block.ObjectPointer{
+		StorageID:        obj.StorageID,
 		StorageNamespace: obj.StorageNamespace,
 		Identifier:       uploadID,
 	}
@@ -544,6 +560,7 @@ func (l *Adapter) ResolveNamespace(storageNamespace, key string, identifierType 
 	}
 
 	// Check if path allowed and return error if path is not allowed
+	// TODO (gilo): ObjectPointer init - add StorageID here
 	_, err = l.extractParamsFromObj(block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		Identifier:       key,

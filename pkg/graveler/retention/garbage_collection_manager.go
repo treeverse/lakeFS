@@ -82,6 +82,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.
 	}
 	location += filename
 	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
+		// TODO (gilo): ObjectPointer init - add StorageID here?
 		Identifier:     location,
 		IdentifierType: block.IdentifierTypeFull,
 	}, stat.Size(), fd, block.PutOpts{})
@@ -115,6 +116,7 @@ func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler
 }
 
 func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
+	// TODO (gilo): ObjectPointer init - add StorageID here?
 	objectPointer := block.ObjectPointer{
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
@@ -151,6 +153,7 @@ func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageNamespa
 	if err != nil {
 		return err
 	}
+	// TODO (gilo): ObjectPointer init - add StorageID here?
 	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
@@ -206,6 +209,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 		return "", err
 	}
 	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
+		// TODO (gilo): ObjectPointer init - add StorageID here?
 		Identifier:     csvLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})
