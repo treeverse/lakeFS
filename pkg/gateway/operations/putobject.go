@@ -20,12 +20,11 @@ import (
 )
 
 const (
-	IfNoneMatchHeader       = "If-None-Match"
-	CopySourceHeader        = "x-amz-copy-source"
-	CopySourceRangeHeader   = "x-amz-copy-source-range"
-	QueryParamUploadID      = "uploadId"
-	QueryParamListMultipart = "uploads"
-	QueryParamPartNumber    = "partNumber"
+	IfNoneMatchHeader     = "If-None-Match"
+	CopySourceHeader      = "x-amz-copy-source"
+	CopySourceRangeHeader = "x-amz-copy-source-range"
+	QueryParamUploadID    = "uploadId"
+	QueryParamPartNumber  = "partNumber"
 )
 
 type PutObject struct{}

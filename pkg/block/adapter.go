@@ -17,10 +17,6 @@ type MultipartPart struct {
 	LastModified time.Time
 	Size         int64
 }
-type Upload struct {
-	Key      string
-	UploadID string
-}
 
 // MultipartUploadCompletion parts described as part of complete multipart upload. Each part holds the part number and ETag received while calling part upload.
 // NOTE that S3 implementation and our S3 gateway accept and returns ETag value surrounded with double-quotes ("), while

@@ -18,7 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/swag"
 	"github.com/thanhpk/randstr"
 
@@ -279,7 +278,6 @@ func TestListMultipartUploads(t *testing.T) {
 	}
 	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	require.NoError(t, err, "failed to create multipart upload")
-	spew.Dump(output)
 
 	require.Contains(t, output.Uploads[0].Key, obj1)
 
