@@ -2,10 +2,10 @@ package factory
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/pkg/config"
 
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/factory"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/stats"
 )
 
