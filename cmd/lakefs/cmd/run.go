@@ -202,7 +202,7 @@ var runCmd = &cobra.Command{
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
 		// init block store
-		blockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, baseCfg)
+		blockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
