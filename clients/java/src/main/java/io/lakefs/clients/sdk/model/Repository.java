@@ -149,7 +149,7 @@ public class Repository {
   }
 
    /**
-   * Unique identifier of the underlying data store
+   * Unique identifier of the underlying data store. *EXPERIMENTAL*
    * @return storageId
   **/
   @javax.annotation.Nullable
