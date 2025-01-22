@@ -21,6 +21,8 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -87,6 +89,18 @@ public class StorageConfig {
   public static final String SERIALIZED_NAME_PRE_SIGN_MULTIPART_UPLOAD = "pre_sign_multipart_upload";
   @SerializedName(SERIALIZED_NAME_PRE_SIGN_MULTIPART_UPLOAD)
   private Boolean preSignMultipartUpload;
+
+  public static final String SERIALIZED_NAME_BLOCKSTORE_ID = "blockstore_id";
+  @SerializedName(SERIALIZED_NAME_BLOCKSTORE_ID)
+  private String blockstoreId;
+
+  public static final String SERIALIZED_NAME_BLOCKSTORE_DESCRIPTION = "blockstore_description";
+  @SerializedName(SERIALIZED_NAME_BLOCKSTORE_DESCRIPTION)
+  private String blockstoreDescription;
+
+  public static final String SERIALIZED_NAME_BLOCKSTORE_EXTRAS = "blockstore_extras";
+  @SerializedName(SERIALIZED_NAME_BLOCKSTORE_EXTRAS)
+  private Map<String, String> blockstoreExtras = new HashMap<>();
 
   public StorageConfig() {
   }
@@ -279,6 +293,77 @@ public class StorageConfig {
     this.preSignMultipartUpload = preSignMultipartUpload;
   }
 
+
+  public StorageConfig blockstoreId(String blockstoreId) {
+    
+    this.blockstoreId = blockstoreId;
+    return this;
+  }
+
+   /**
+   * Get blockstoreId
+   * @return blockstoreId
+  **/
+  @javax.annotation.Nullable
+  public String getBlockstoreId() {
+    return blockstoreId;
+  }
+
+
+  public void setBlockstoreId(String blockstoreId) {
+    this.blockstoreId = blockstoreId;
+  }
+
+
+  public StorageConfig blockstoreDescription(String blockstoreDescription) {
+    
+    this.blockstoreDescription = blockstoreDescription;
+    return this;
+  }
+
+   /**
+   * Get blockstoreDescription
+   * @return blockstoreDescription
+  **/
+  @javax.annotation.Nullable
+  public String getBlockstoreDescription() {
+    return blockstoreDescription;
+  }
+
+
+  public void setBlockstoreDescription(String blockstoreDescription) {
+    this.blockstoreDescription = blockstoreDescription;
+  }
+
+
+  public StorageConfig blockstoreExtras(Map<String, String> blockstoreExtras) {
+    
+    this.blockstoreExtras = blockstoreExtras;
+    return this;
+  }
+
+  public StorageConfig putBlockstoreExtrasItem(String key, String blockstoreExtrasItem) {
+    if (this.blockstoreExtras == null) {
+      this.blockstoreExtras = new HashMap<>();
+    }
+    this.blockstoreExtras.put(key, blockstoreExtrasItem);
+    return this;
+  }
+
+   /**
+   * blockstore specific properties
+   * @return blockstoreExtras
+  **/
+  @javax.annotation.Nullable
+  public Map<String, String> getBlockstoreExtras() {
+    return blockstoreExtras;
+  }
+
+
+  public void setBlockstoreExtras(Map<String, String> blockstoreExtras) {
+    this.blockstoreExtras = blockstoreExtras;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -342,13 +427,16 @@ public class StorageConfig {
         Objects.equals(this.preSignSupportUi, storageConfig.preSignSupportUi) &&
         Objects.equals(this.importSupport, storageConfig.importSupport) &&
         Objects.equals(this.importValidityRegex, storageConfig.importValidityRegex) &&
-        Objects.equals(this.preSignMultipartUpload, storageConfig.preSignMultipartUpload)&&
+        Objects.equals(this.preSignMultipartUpload, storageConfig.preSignMultipartUpload) &&
+        Objects.equals(this.blockstoreId, storageConfig.blockstoreId) &&
+        Objects.equals(this.blockstoreDescription, storageConfig.blockstoreDescription) &&
+        Objects.equals(this.blockstoreExtras, storageConfig.blockstoreExtras)&&
         Objects.equals(this.additionalProperties, storageConfig.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, preSignMultipartUpload, additionalProperties);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, preSignMultipartUpload, blockstoreId, blockstoreDescription, blockstoreExtras, additionalProperties);
   }
 
   @Override
@@ -364,6 +452,9 @@ public class StorageConfig {
     sb.append("    importSupport: ").append(toIndentedString(importSupport)).append("\n");
     sb.append("    importValidityRegex: ").append(toIndentedString(importValidityRegex)).append("\n");
     sb.append("    preSignMultipartUpload: ").append(toIndentedString(preSignMultipartUpload)).append("\n");
+    sb.append("    blockstoreId: ").append(toIndentedString(blockstoreId)).append("\n");
+    sb.append("    blockstoreDescription: ").append(toIndentedString(blockstoreDescription)).append("\n");
+    sb.append("    blockstoreExtras: ").append(toIndentedString(blockstoreExtras)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -396,6 +487,9 @@ public class StorageConfig {
     openapiFields.add("import_support");
     openapiFields.add("import_validity_regex");
     openapiFields.add("pre_sign_multipart_upload");
+    openapiFields.add("blockstore_id");
+    openapiFields.add("blockstore_description");
+    openapiFields.add("blockstore_extras");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -442,6 +536,12 @@ public class StorageConfig {
       }
       if (!jsonObj.get("import_validity_regex").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `import_validity_regex` to be a primitive type in the JSON string but got `%s`", jsonObj.get("import_validity_regex").toString()));
+      }
+      if ((jsonObj.get("blockstore_id") != null && !jsonObj.get("blockstore_id").isJsonNull()) && !jsonObj.get("blockstore_id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `blockstore_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("blockstore_id").toString()));
+      }
+      if ((jsonObj.get("blockstore_description") != null && !jsonObj.get("blockstore_description").isJsonNull()) && !jsonObj.get("blockstore_description").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `blockstore_description` to be a primitive type in the JSON string but got `%s`", jsonObj.get("blockstore_description").toString()));
       }
   }
 

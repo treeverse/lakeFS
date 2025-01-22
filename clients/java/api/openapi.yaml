@@ -8990,9 +8990,13 @@ components:
       type: object
     StorageConfig:
       example:
+        blockstore_description: blockstore_description
         pre_sign_multipart_upload: true
+        blockstore_extras:
+          key: blockstore_extras
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+        blockstore_id: blockstore_id
         blockstore_type: blockstore_type
         pre_sign_support_ui: true
         import_support: true
@@ -9018,6 +9022,15 @@ components:
           type: string
         pre_sign_multipart_upload:
           type: boolean
+        blockstore_id:
+          type: string
+        blockstore_description:
+          type: string
+        blockstore_extras:
+          additionalProperties:
+            type: string
+          description: blockstore specific properties
+          type: object
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
@@ -9027,12 +9040,47 @@ components:
       - pre_sign_support
       - pre_sign_support_ui
       type: object
+    StorageConfigList:
+      items:
+        $ref: '#/components/schemas/StorageConfig'
+      type: array
     Config:
       example:
-        storage_config:
+        storage_config_list:
+        - blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
+          blockstore_extras:
+            key: blockstore_extras
           blockstore_namespace_example: blockstore_namespace_example
           blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_id: blockstore_id
+          blockstore_type: blockstore_type
+          pre_sign_support_ui: true
+          import_support: true
+          import_validity_regex: import_validity_regex
+          default_namespace_prefix: default_namespace_prefix
+          pre_sign_support: true
+        - blockstore_description: blockstore_description
+          pre_sign_multipart_upload: true
+          blockstore_extras:
+            key: blockstore_extras
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_id: blockstore_id
+          blockstore_type: blockstore_type
+          pre_sign_support_ui: true
+          import_support: true
+          import_validity_regex: import_validity_regex
+          default_namespace_prefix: default_namespace_prefix
+          pre_sign_support: true
+        storage_config:
+          blockstore_description: blockstore_description
+          pre_sign_multipart_upload: true
+          blockstore_extras:
+            key: blockstore_extras
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_id: blockstore_id
           blockstore_type: blockstore_type
           pre_sign_support_ui: true
           import_support: true
@@ -9049,6 +9097,10 @@ components:
           $ref: '#/components/schemas/VersionConfig'
         storage_config:
           $ref: '#/components/schemas/StorageConfig'
+        storage_config_list:
+          items:
+            $ref: '#/components/schemas/StorageConfig'
+          type: array
       type: object
     VersionConfig:
       example:

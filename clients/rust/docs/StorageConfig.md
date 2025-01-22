@@ -13,6 +13,9 @@ Name | Type | Description | Notes
 **import_support** | **bool** |  | 
 **import_validity_regex** | **String** |  | 
 **pre_sign_multipart_upload** | Option<**bool**> |  | [optional]
+**blockstore_id** | Option<**String**> |  | [optional]
+**blockstore_description** | Option<**String**> |  | [optional]
+**blockstore_extras** | Option<**std::collections::HashMap<String, String>**> | blockstore specific properties | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
