@@ -2,6 +2,7 @@ package operations
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -405,7 +406,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		Bucket: o.Repository.Name,
 	}
 
-	partsResp, err := o.BlockStore.ListMultipartUploads(req.Context(), block.ObjectPointer{
+	mpuResp, err := o.BlockStore.ListMultipartUploads(req.Context(), block.ObjectPointer{
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 	})
@@ -415,12 +416,13 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		return
 	}
 	var uploads []serde.Upload
-	for _, upload := range partsResp.Uploads {
+	for _, upload := range mpuResp.Uploads {
 		if upload.UploadId == nil {
 			continue
 		}
 		multiPart, err := o.MultipartTracker.Get(req.Context(), *upload.UploadId)
 		if err != nil {
+			fmt.Println("err: ", err)
 			o.Log(req).WithError(err).Error("could not read multipart record")
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
