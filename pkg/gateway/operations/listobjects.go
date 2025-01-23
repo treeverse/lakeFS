@@ -14,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -410,9 +411,6 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 	})
-	for _, up := range mpuResp.Uploads {
-		fmt.Println(*up.UploadId)
-	}
 	if err != nil {
 		o.Log(req).WithError(err).Error("list multipart uploads failed")
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
@@ -425,6 +423,9 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		}
 		multiPart, err := o.MultipartTracker.Get(req.Context(), *upload.UploadId)
 		if err != nil {
+			if errors.Is(err, kv.ErrNotFound) {
+				continue
+			}
 			fmt.Println("id: ", *upload.UploadId)
 			fmt.Println("err: ", err)
 			o.Log(req).WithError(err).Error("could not read multipart record")
