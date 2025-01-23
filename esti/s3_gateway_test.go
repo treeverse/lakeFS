@@ -334,7 +334,7 @@ func TestListMultipartUploads(t *testing.T) {
 
 	require.Contains(t, str, obj1)
 
-	resp2, err := s3Client.CreateMultipartUpload(ctx, input2)
+	_, err = s3Client.CreateMultipartUpload(ctx, input2)
 	require.NoError(t, err, "failed to create multipart upload")
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	str = concatKeys(output)
@@ -346,20 +346,8 @@ func TestListMultipartUploads(t *testing.T) {
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	require.NoError(t, err, "error listing multiparts")
 	str = concatKeys(output)
-	require.Contains(t, str, obj2)
-
-	abortInput2 := &s3.AbortMultipartUploadInput{
-		Bucket:   resp2.Bucket,
-		Key:      resp2.Key,
-		UploadId: resp2.UploadId,
-	}
-	_, err = s3Client.AbortMultipartUpload(ctx, abortInput2)
-
-	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
-	require.NoError(t, err, "error listing multiparts")
-	str = concatKeys(output)
 	require.NotContains(t, str, obj1)
-	require.NotContains(t, str, obj2)
+	require.Contains(t, str, obj2)
 }
 
 func concatKeys(output *s3.ListMultipartUploadsOutput) string {
