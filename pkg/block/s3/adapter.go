@@ -875,7 +875,7 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 	}
 
 	partsResp := block.ListMultipartUploadsResponse{
-		Uploads: make([]types.MultipartUpload, len(resp.Uploads)),
+		Uploads: []types.MultipartUpload{},
 	}
 	partsResp.Uploads = append(partsResp.Uploads, resp.Uploads...)
 	return &partsResp, nil
