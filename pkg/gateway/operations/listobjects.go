@@ -422,6 +422,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		}
 		multiPart, err := o.MultipartTracker.Get(req.Context(), *upload.UploadId)
 		if err != nil {
+			fmt.Println("id: ", *upload.UploadId)
 			fmt.Println("err: ", err)
 			o.Log(req).WithError(err).Error("could not read multipart record")
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
