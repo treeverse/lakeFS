@@ -297,6 +297,10 @@ func TestListMultipartUploads(t *testing.T) {
 	multipartNumberOfParts := 7
 	multipartPartSize := 5 * 1024 * 1024
 
+	blockStoreType := viper.GetString(ViperBlockstoreType)
+	if blockStoreType != "s3" {
+		t.Skip("Skipping test - blockstore type is not s3")
+	}
 	obj1 := "object1"
 	obj2 := "object2"
 	path1 := "main/" + obj1
