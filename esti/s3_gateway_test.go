@@ -316,7 +316,7 @@ func TestListMultipartUploads(t *testing.T) {
 
 	resp1, err := s3Client.CreateMultipartUpload(ctx, input1)
 	require.NoError(t, err, "failed to create multipart upload")
-
+	time.Sleep(10 * time.Second)
 	parts := make([][]byte, multipartNumberOfParts)
 	for i := 0; i < multipartNumberOfParts; i++ {
 		parts[i] = randstr.Bytes(multipartPartSize + i)
@@ -339,6 +339,7 @@ func TestListMultipartUploads(t *testing.T) {
 	require.Contains(t, str, obj1)
 
 	_, err = s3Client.CreateMultipartUpload(ctx, input2)
+	time.Sleep(10 * time.Second)
 	require.NoError(t, err, "failed to create multipart upload")
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	str = concatKeys(output)
