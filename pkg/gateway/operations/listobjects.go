@@ -426,9 +426,10 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		} else if err != nil {
 			fmt.Println("id: ", *upload.UploadId)
 			fmt.Println("err: ", err)
-			o.Log(req).WithError(err).Error("could not read multipart record")
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-			return
+			continue
+			// o.Log(req).WithError(err).Error("could not read multipart record")
+			// _ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			// return
 		}
 		uploads = append(uploads, serde.Upload{
 			Key:      multiPart.Path,
