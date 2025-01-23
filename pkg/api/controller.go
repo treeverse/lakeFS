@@ -74,6 +74,9 @@ const (
 
 	pullRequestClosed = "CLOSED"
 	pullRequestOpen   = "OPEN"
+
+	usernamePlaceholder = "Username"
+	passwordPlaceholder = "Password"
 )
 
 type actionsHandler interface {
@@ -4977,7 +4980,7 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 }
 
 func newLoginConfig(c *config.BaseConfig) *apigen.LoginConfig {
-	return &apigen.LoginConfig{
+	loginConfig := &apigen.LoginConfig{
 		RBAC:               &c.Auth.UIConfig.RBAC,
 		LoginUrl:           c.Auth.UIConfig.LoginURL,
 		LoginFailedMessage: &c.Auth.UIConfig.LoginFailedMessage,
@@ -4986,6 +4989,11 @@ func newLoginConfig(c *config.BaseConfig) *apigen.LoginConfig {
 		LoginCookieNames:   c.Auth.UIConfig.LoginCookieNames,
 		LogoutUrl:          c.Auth.UIConfig.LogoutURL,
 	}
+	if c.UseUILoginPlaceholders() {
+		loginConfig.UsernameUiPlaceholder = swag.String(usernamePlaceholder)
+		loginConfig.PasswordUiPlaceholder = swag.String(passwordPlaceholder)
+	}
+	return loginConfig
 }
 
 func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
