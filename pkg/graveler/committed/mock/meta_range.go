@@ -245,18 +245,18 @@ func (m *MockMetaRangeManager) EXPECT() *MockMetaRangeManagerMockRecorder {
 }
 
 // Exists mocks base method.
-func (m *MockMetaRangeManager) Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
+func (m *MockMetaRangeManager) Exists(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Exists", ctx, ns, id)
+	ret := m.ctrl.Call(m, "Exists", ctx, storageID, ns, id)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Exists indicates an expected call of Exists.
-func (mr *MockMetaRangeManagerMockRecorder) Exists(ctx, ns, id interface{}) *gomock.Call {
+func (mr *MockMetaRangeManagerMockRecorder) Exists(ctx, storageID, ns, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockMetaRangeManager)(nil).Exists), ctx, ns, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockMetaRangeManager)(nil).Exists), ctx, storageID, ns, id)
 }
 
 // GetMetaRangeURI mocks base method.
@@ -275,18 +275,18 @@ func (mr *MockMetaRangeManagerMockRecorder) GetMetaRangeURI(ctx, ns, metaRangeID
 }
 
 // GetRangeByKey mocks base method.
-func (m *MockMetaRangeManager) GetRangeByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*committed.Range, error) {
+func (m *MockMetaRangeManager) GetRangeByKey(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*committed.Range, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRangeByKey", ctx, ns, id, key)
+	ret := m.ctrl.Call(m, "GetRangeByKey", ctx, storageID, ns, id, key)
 	ret0, _ := ret[0].(*committed.Range)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRangeByKey indicates an expected call of GetRangeByKey.
-func (mr *MockMetaRangeManagerMockRecorder) GetRangeByKey(ctx, ns, id, key interface{}) *gomock.Call {
+func (mr *MockMetaRangeManagerMockRecorder) GetRangeByKey(ctx, storageID, ns, id, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeByKey", reflect.TypeOf((*MockMetaRangeManager)(nil).GetRangeByKey), ctx, ns, id, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeByKey", reflect.TypeOf((*MockMetaRangeManager)(nil).GetRangeByKey), ctx, storageID, ns, id, key)
 }
 
 // GetRangeURI mocks base method.
@@ -305,33 +305,33 @@ func (mr *MockMetaRangeManagerMockRecorder) GetRangeURI(ctx, ns, rangeID interfa
 }
 
 // GetValue mocks base method.
-func (m *MockMetaRangeManager) GetValue(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error) {
+func (m *MockMetaRangeManager) GetValue(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValue", ctx, ns, id, key)
+	ret := m.ctrl.Call(m, "GetValue", ctx, storageID, ns, id, key)
 	ret0, _ := ret[0].(*graveler.ValueRecord)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetValue indicates an expected call of GetValue.
-func (mr *MockMetaRangeManagerMockRecorder) GetValue(ctx, ns, id, key interface{}) *gomock.Call {
+func (mr *MockMetaRangeManagerMockRecorder) GetValue(ctx, storageID, ns, id, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValue", reflect.TypeOf((*MockMetaRangeManager)(nil).GetValue), ctx, ns, id, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValue", reflect.TypeOf((*MockMetaRangeManager)(nil).GetValue), ctx, storageID, ns, id, key)
 }
 
 // NewMetaRangeIterator mocks base method.
-func (m *MockMetaRangeManager) NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (committed.Iterator, error) {
+func (m *MockMetaRangeManager) NewMetaRangeIterator(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (committed.Iterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewMetaRangeIterator", ctx, ns, metaRangeID)
+	ret := m.ctrl.Call(m, "NewMetaRangeIterator", ctx, storageID, ns, metaRangeID)
 	ret0, _ := ret[0].(committed.Iterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewMetaRangeIterator indicates an expected call of NewMetaRangeIterator.
-func (mr *MockMetaRangeManagerMockRecorder) NewMetaRangeIterator(ctx, ns, metaRangeID interface{}) *gomock.Call {
+func (mr *MockMetaRangeManagerMockRecorder) NewMetaRangeIterator(ctx, storageID, ns, metaRangeID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewMetaRangeIterator", reflect.TypeOf((*MockMetaRangeManager)(nil).NewMetaRangeIterator), ctx, ns, metaRangeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewMetaRangeIterator", reflect.TypeOf((*MockMetaRangeManager)(nil).NewMetaRangeIterator), ctx, storageID, ns, metaRangeID)
 }
 
 // NewWriter mocks base method.
