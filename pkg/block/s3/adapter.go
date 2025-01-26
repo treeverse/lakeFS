@@ -852,13 +852,17 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPointer) (*block.ListMultipartUploadsResponse, error) {
 	var err error
 	defer reportMetrics("ListMultipartUploads", time.Now(), nil, &err)
-	bucket, _, qualifiedKey, err := a.extractParamsFromObj(obj)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println("key: ", key)
+	fmt.Println("bucket: ", qualifiedKey.GetStorageNamespace())
+	fmt.Println("bucket: ", qualifiedKey.GetKey())
+	fmt.Println("bucket: ", bucket)
 	input := &s3.ListMultipartUploadsInput{
 		Bucket: aws.String(bucket),
+		Prefix: aws.String(key),
 	}
 
 	lg := a.log(ctx).WithFields(logging.Fields{

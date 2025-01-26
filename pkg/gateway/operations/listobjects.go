@@ -411,6 +411,9 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 	})
+	fmt.Println("name ", o.Repository.Name)
+	fmt.Println("name space", o.Repository.StorageNamespace)
+	fmt.Println("storeagenid ", o.Repository.StorageID)
 	if err != nil {
 		o.Log(req).WithError(err).Error("list multipart uploads failed")
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
