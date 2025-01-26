@@ -56,7 +56,7 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeWriter := mock.NewMockRangeWriter(ctrl)
 
 			rangeWriter.EXPECT().Abort().Return(nil)
-			rangeManager.EXPECT().GetWriter(context.Background(), committed.StorageID(ns), committed.Namespace(ns), nil).Return(rangeWriter, nil)
+			rangeManager.EXPECT().GetWriter(context.Background(), committed.StorageID(""), committed.Namespace(ns), nil).Return(rangeWriter, nil)
 
 			sut := committed.NewCommittedManager(metarangeManager, rangeManager, params)
 

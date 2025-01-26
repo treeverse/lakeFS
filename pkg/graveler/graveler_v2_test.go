@@ -3,6 +3,7 @@ package graveler_test
 import (
 	"context"
 	"errors"
+	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"slices"
 	"testing"
 	"time"
@@ -113,7 +114,7 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, committed.StorageID(""), repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch1ID), key1)
 
@@ -143,7 +144,7 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken1, key1).Times(1).Return(value1, nil)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value2, nil)
+		test.CommittedManager.EXPECT().Get(ctx, graveler.StorageID(""), repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value2, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch1ID), key1, graveler.WithStageOnly(true))
 
@@ -159,7 +160,7 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken1, key1).Times(1).Return(value1, nil)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch1ID), key1, graveler.WithStageOnly(true))
 
@@ -176,7 +177,7 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken2, key1).Times(1).Return(nil, graveler.ErrNotFound)
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch3ID), key1)
 
@@ -194,10 +195,10 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken2, key1).Times(1).Return(nil, graveler.ErrNotFound)
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch3ID), key1, graveler.WithStageOnly(true))
 
@@ -214,10 +215,10 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken2, key1).Times(1).Return(nil, graveler.ErrNotFound)
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
 
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value2, nil)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value2, nil)
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch3ID), key1, graveler.WithStageOnly(true))
 
 		require.NoError(t, err)
@@ -234,10 +235,10 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken2, key1).Times(1).Return(nil, graveler.ErrNotFound)
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
 
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(nil, graveler.ErrNotFound)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(nil, graveler.ErrNotFound)
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch3ID), key1, graveler.WithStageOnly(true))
 
 		require.NoError(t, err)
@@ -267,7 +268,7 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken2, key1).Times(1).Return(nil, graveler.ErrNotFound)
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, mr2ID, key1).Times(1).Return(nil, graveler.ErrNotFound)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, mr2ID, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch3ID), key1)
 
@@ -284,7 +285,7 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(nil, graveler.ErrNotFound)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch1ID), key1)
 
@@ -297,7 +298,7 @@ func TestGravelerGet(t *testing.T) {
 		setupGetFromCommit(test)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(commit1ID), key1)
 
@@ -311,7 +312,7 @@ func TestGravelerGet(t *testing.T) {
 		setupGetFromCommit(test)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(nil, graveler.ErrNotFound)
+		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(commit1ID), key1)
 
@@ -351,7 +352,7 @@ func TestGravelerMerge(t *testing.T) {
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().List(ctx, "", repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch2ID)).Times(1).Return(rawRefCommit2, nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefCommit1, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
@@ -408,7 +409,7 @@ func TestGravelerMerge(t *testing.T) {
 			Value: value1,
 		}}))
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().List(ctx, "", repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
 
 		val, err := test.Sut.Merge(ctx, repository, branch1ID, graveler.Ref(branch2ID), graveler.CommitParams{Metadata: graveler.Metadata{}}, "")
 		require.Equal(t, graveler.ErrDirtyBranch, err)
@@ -427,8 +428,8 @@ func TestGravelerMerge(t *testing.T) {
 				return err
 			}).Times(1)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
-		test.CommittedManager.EXPECT().Diff(ctx, repository.StorageNamespace, mr1ID, mr2ID).Times(1).Return(testutil.NewDiffIter([]graveler.Diff{{Key: key1, Type: graveler.DiffTypeRemoved}}), nil)
+		test.CommittedManager.EXPECT().List(ctx, "", repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().Diff(ctx, "", repository.StorageNamespace, mr1ID, mr2ID).Times(1).Return(testutil.NewDiffIter([]graveler.Diff{{Key: key1, Type: graveler.DiffTypeRemoved}}), nil)
 
 		test.StagingManager.EXPECT().List(ctx, stagingToken1, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil))
 		test.StagingManager.EXPECT().List(ctx, stagingToken2, gomock.Any()).Times(1).Return(testutils.NewFakeValueIterator(nil))
@@ -450,7 +451,7 @@ func TestGravelerMerge(t *testing.T) {
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().List(ctx, "", repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch2ID)).Times(1).Return(rawRefCommit2, nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefCommit1, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
@@ -492,7 +493,7 @@ func TestGravelerMerge(t *testing.T) {
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 1)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().List(ctx, "", repository.StorageNamespace, mr1ID).Times(1).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			DoAndReturn(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				return kv.ErrPredicateFailed
@@ -542,7 +543,7 @@ func TestGravelerRevert(t *testing.T) {
 
 	setupSuccessfulRevertExpectations := func(test *testutil.GravelerTest) {
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().List(ctx, "", repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit1ID)).Times(1).Return(rawRefCommit1, nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit4ID)).Times(1).Return(rawRefCommit4, nil)
@@ -686,7 +687,7 @@ func TestGravelerRevert(t *testing.T) {
 		dirtyStagingTokenCombo(test)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(2).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().List(ctx, "", repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit2).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit2ID}}}, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
@@ -735,7 +736,7 @@ func TestGravelerCherryPick(t *testing.T) {
 
 	setupCherryPickExpectations := func(test *testutil.GravelerTest) {
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().List(ctx, "", repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit2ID)).Times(1).Return(rawRefCommit2, nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit1ID)).Times(1).Return(rawRefCommit1, nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(commit4ID)).Times(1).Return(rawRefCommit4, nil)
@@ -1011,7 +1012,7 @@ func TestGravelerImport(t *testing.T) {
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().List(ctx, repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
+		test.CommittedManager.EXPECT().List(ctx, "", repository.StorageNamespace, mr1ID).Times(2).Return(testutils.NewFakeValueIterator(nil), nil)
 		test.RefManager.EXPECT().ParseRef(graveler.Ref(branch1ID)).Times(1).Return(rawRefCommit1, nil)
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit1).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit1ID}}}, nil)
 		test.CommittedManager.EXPECT().Import(ctx, repository.StorageNamespace, mr1ID, mr2ID, nil, []graveler.SetOptionsFunc{}).Times(1).Return(mr4ID, nil)
