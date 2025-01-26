@@ -3,7 +3,6 @@ package graveler_test
 import (
 	"context"
 	"errors"
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"slices"
 	"testing"
 	"time"
@@ -114,7 +113,7 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, committed.StorageID(""), repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, graveler.StorageID(""), repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch1ID), key1)
 
@@ -160,7 +159,7 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken1, key1).Times(1).Return(value1, nil)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, graveler.StorageID(""), repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch1ID), key1, graveler.WithStageOnly(true))
 
@@ -177,7 +176,7 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken2, key1).Times(1).Return(nil, graveler.ErrNotFound)
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
-		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, graveler.StorageID(""), repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch3ID), key1)
 
@@ -195,10 +194,10 @@ func TestGravelerGet(t *testing.T) {
 		test.StagingManager.EXPECT().Get(ctx, stagingToken2, key1).Times(1).Return(nil, graveler.ErrNotFound)
 		test.StagingManager.EXPECT().Get(ctx, stagingToken3, key1).Times(1).Return(nil, graveler.ErrNotFound)
 
-		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, graveler.StorageID(""), repository.StorageNamespace, mr2ID, key1).Times(1).Return(value1, nil)
 
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
-		test.CommittedManager.EXPECT().Get(ctx, "", repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
+		test.CommittedManager.EXPECT().Get(ctx, graveler.StorageID(""), repository.StorageNamespace, commit1.MetaRangeID, key1).Times(1).Return(value1, nil)
 
 		val, err := test.Sut.Get(ctx, repository, graveler.Ref(branch3ID), key1, graveler.WithStageOnly(true))
 
