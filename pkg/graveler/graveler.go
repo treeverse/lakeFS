@@ -1018,7 +1018,7 @@ type CommittedManager interface {
 
 	// WriteRange creates a new Range from the iterator values.
 	// Keeps Range closing logic, so might not exhaust the iterator.
-	WriteRange(ctx context.Context, ns StorageNamespace, it ValueIterator) (*RangeInfo, error)
+	WriteRange(ctx context.Context, storageID StorageID, ns StorageNamespace, it ValueIterator) (*RangeInfo, error)
 
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
 	WriteMetaRange(ctx context.Context, ns StorageNamespace, ranges []*RangeInfo) (*MetaRangeInfo, error)
@@ -1243,7 +1243,7 @@ func (g *Graveler) WriteRange(ctx context.Context, repository *RepositoryRecord,
 	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
-	return g.CommittedManager.WriteRange(ctx, repository.StorageNamespace, it)
+	return g.CommittedManager.WriteRange(ctx, repository.StorageID, repository.StorageNamespace, it)
 }
 
 func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRecord, ranges []*RangeInfo, opts ...SetOptionsFunc) (*MetaRangeInfo, error) {

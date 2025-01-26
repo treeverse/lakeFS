@@ -60,7 +60,7 @@ type RangeManager interface {
 	NewRangeIterator(ctx context.Context, storageID StorageID, ns Namespace, pid ID) (ValueIterator, error)
 
 	// GetWriter returns a new Range writer instance
-	GetWriter(ctx context.Context, ns Namespace, metadata graveler.Metadata) (RangeWriter, error)
+	GetWriter(ctx context.Context, storageID StorageID, ns Namespace, metadata graveler.Metadata) (RangeWriter, error)
 
 	// GetURI returns a URI from which to read the contents of id.  If id does not exist
 	// it may return a URI that resolves nowhere rather than an error.

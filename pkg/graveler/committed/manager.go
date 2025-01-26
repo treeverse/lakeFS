@@ -61,8 +61,8 @@ func (c *committedManager) List(ctx context.Context, storageID graveler.StorageI
 	return NewValueIterator(it), nil
 }
 
-func (c *committedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
-	writer, err := c.RangeManager.GetWriter(ctx, Namespace(ns), nil)
+func (c *committedManager) WriteRange(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
+	writer, err := c.RangeManager.GetWriter(ctx, StorageID(storageID), Namespace(ns), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating range writer: %w", err)
 	}

@@ -362,9 +362,9 @@ func Test_import(t *testing.T) {
 				metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(writer)
 				sourceMetaRangeID := tst.sourceRange.GetMetaRangeID()
 				destMetaRangeID := tst.destRange.GetMetaRangeID()
-				metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), graveler.MetaRangeID("")).AnyTimes().Return(committed.NewEmptyIterator(), nil) // empty base
-				metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), sourceMetaRangeID).AnyTimes().Return(createIter(tst.sourceRange), nil)
-				metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), destMetaRangeID).AnyTimes().Return(createIter(tst.destRange), nil)
+				metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), gomock.Any(), graveler.MetaRangeID("")).AnyTimes().Return(committed.NewEmptyIterator(), nil) // empty base
+				metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), gomock.Any(), sourceMetaRangeID).AnyTimes().Return(createIter(tst.sourceRange), nil)
+				metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), gomock.Any(), destMetaRangeID).AnyTimes().Return(createIter(tst.destRange), nil)
 
 				rangeManager := mock.NewMockRangeManager(ctrl)
 
@@ -372,7 +372,7 @@ func Test_import(t *testing.T) {
 				metaRangeId := graveler.MetaRangeID("import")
 				writer.EXPECT().Close(gomock.Any()).Return(&metaRangeId, nil).AnyTimes()
 				committedManager := committed.NewCommittedManager(metaRangeManager, rangeManager, params)
-				_, err := committedManager.Import(ctx, "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
+				_, err := committedManager.Import(ctx, "", "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
 				if !errors.Is(err, expectedResult.expectedErr) {
 					t.Fatalf("Import error = '%v', expected '%v'", err, expectedResult.expectedErr)
 				}

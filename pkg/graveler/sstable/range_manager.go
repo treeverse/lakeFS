@@ -164,8 +164,8 @@ func (m *RangeManager) NewRangeIterator(ctx context.Context, storageID committed
 }
 
 // GetWriter returns a new SSTable writer instance
-func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
-	return NewDiskWriter(ctx, m.fs, ns, m.hash.New(), metadata)
+func (m *RangeManager) GetWriter(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
+	return NewDiskWriter(ctx, m.fs, storageID, ns, m.hash.New(), metadata)
 }
 
 func (m *RangeManager) GetURI(ctx context.Context, ns committed.Namespace, id committed.ID) (string, error) {

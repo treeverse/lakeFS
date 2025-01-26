@@ -186,18 +186,18 @@ func (mr *MockRangeManagerMockRecorder) GetValueGE(ctx, storageID, ns, id, key i
 }
 
 // GetWriter mocks base method.
-func (m *MockRangeManager) GetWriter(ctx context.Context, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
+func (m *MockRangeManager) GetWriter(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetWriter", ctx, ns, metadata)
+	ret := m.ctrl.Call(m, "GetWriter", ctx, storageID, ns, metadata)
 	ret0, _ := ret[0].(committed.RangeWriter)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetWriter indicates an expected call of GetWriter.
-func (mr *MockRangeManagerMockRecorder) GetWriter(ctx, ns, metadata interface{}) *gomock.Call {
+func (mr *MockRangeManagerMockRecorder) GetWriter(ctx, storageID, ns, metadata interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWriter", reflect.TypeOf((*MockRangeManager)(nil).GetWriter), ctx, ns, metadata)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWriter", reflect.TypeOf((*MockRangeManager)(nil).GetWriter), ctx, storageID, ns, metadata)
 }
 
 // NewRangeIterator mocks base method.
