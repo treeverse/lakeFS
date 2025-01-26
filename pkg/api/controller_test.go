@@ -77,7 +77,7 @@ func verifyResponseOK(t testing.TB, resp Statuser, err error) {
 }
 
 func onBlock(deps *dependencies, path string) string {
-	return fmt.Sprintf("%s://%s", deps.blocks.BlockstoreType(), path)
+	return fmt.Sprintf("%s://%s", deps.blocks.BlockstoreType(""), path)
 }
 
 func TestController_ListRepositoriesHandler(t *testing.T) {
