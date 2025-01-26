@@ -171,7 +171,7 @@ func TestIterator(t *testing.T) {
 					key = committed.Key(p.Keys[len(p.Keys)-1])
 				}
 				manager.EXPECT().
-					NewRangeIterator(gomock.Any(), gomock.Eq(namespace), committed.ID(key)).
+					NewRangeIterator(gomock.Any(), gomock.Any(), gomock.Eq(namespace), committed.ID(key)).
 					Return(makeRangeIterator(p.Keys), nil)
 				lastKey = key
 			}
@@ -195,7 +195,7 @@ func TestIterator(t *testing.T) {
 					key = committed.Key(p.Keys[len(p.Keys)-1])
 				}
 				manager.EXPECT().
-					NewRangeIterator(gomock.Any(), gomock.Eq(namespace), committed.ID(key)).
+					NewRangeIterator(gomock.Any(), gomock.Any(), gomock.Eq(namespace), committed.ID(key)).
 					Return(makeRangeIterator(p.Keys), nil).
 					AnyTimes()
 				lastKey = key

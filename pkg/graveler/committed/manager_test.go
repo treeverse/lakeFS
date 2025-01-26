@@ -56,7 +56,7 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeWriter := mock.NewMockRangeWriter(ctrl)
 
 			rangeWriter.EXPECT().Abort().Return(nil)
-			rangeManager.EXPECT().GetWriter(context.Background(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
+			rangeManager.EXPECT().GetWriter(context.Background(), committed.StorageID(ns), committed.Namespace(ns), nil).Return(rangeWriter, nil)
 
 			sut := committed.NewCommittedManager(metarangeManager, rangeManager, params)
 
@@ -69,7 +69,7 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeWriter.EXPECT().SetMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
 
 			it := testutils.NewFakeValueIterator(tt.records)
-			rangeInfo, err := sut.WriteRange(context.Background(), ns, it)
+			rangeInfo, err := sut.WriteRange(context.Background(), "", ns, it)
 			require.NoError(t, err)
 			require.Equal(t, &graveler.RangeInfo{
 				ID:                      graveler.RangeID(writeResult.RangeID),

@@ -39,7 +39,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 	fakeWriter := NewFakeRangeWriter(&writeResult, nil)
 
 	rangeManager := mock.NewMockRangeManager(ctrl)
-	rangeManager.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeWriter, nil)
+	rangeManager.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeWriter, nil)
 
 	metaWriteResult := committed.WriteResult{
 		RangeID: committed.ID("meta-range-id"),
@@ -51,7 +51,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 	fakeMetaWriter.ExpectAnyRecord()
 
 	rangeManagerMeta := mock.NewMockRangeManager(ctrl)
-	rangeManagerMeta.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeMetaWriter, nil)
+	rangeManagerMeta.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeMetaWriter, nil)
 	namespace := committed.Namespace("ns")
 	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, namespace, nil)
 
@@ -136,8 +136,8 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 	rng := committed.Range{ID: "rng2-id", MinKey: committed.Key("a"), MaxKey: committed.Key("g"), Count: 4}
 
 	// get writer - once for record writer, once for range writer
-	rangeManager.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeWriter, nil)
-	rangeManagerMeta.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeMetaWriter, nil)
+	rangeManager.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeWriter, nil)
+	rangeManagerMeta.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeMetaWriter, nil)
 
 	// Never attempt to split files: fake writers return size 0.
 
