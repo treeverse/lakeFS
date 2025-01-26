@@ -289,7 +289,7 @@ func TestS3IfNoneMatch(t *testing.T) {
 	}
 }
 
-func TestListMultipartUploads17(t *testing.T) {
+func TestListMultipartUploads(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
