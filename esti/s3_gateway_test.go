@@ -294,17 +294,20 @@ func TestListMultipartUploads17(t *testing.T) {
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
-	multipartNumberOfParts := 7
+	multipartNumberOfParts := 3
 	multipartPartSize := 5 * 1024 * 1024
 
 	blockStoreType := viper.GetString(ViperBlockstoreType)
 	if blockStoreType != "s3" {
 		t.Skip("Skipping test - blockstore type is not s3")
 	}
+
+	// create two objects for two mpus
 	obj1 := "object1"
 	obj2 := "object2"
 	path1 := "main/" + obj1
 	path2 := "main/" + obj2
+
 	input1 := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(repo),
 		Key:    aws.String(path1),
@@ -313,10 +316,9 @@ func TestListMultipartUploads17(t *testing.T) {
 		Bucket: aws.String(repo),
 		Key:    aws.String(path2),
 	}
-
+	// create first mpu
 	resp1, err := s3Client.CreateMultipartUpload(ctx, input1)
 	require.NoError(t, err, "failed to create multipart upload")
-	time.Sleep(10 * time.Second)
 	parts := make([][]byte, multipartNumberOfParts)
 	for i := 0; i < multipartNumberOfParts; i++ {
 		parts[i] = randstr.Bytes(multipartPartSize + i)
@@ -332,14 +334,14 @@ func TestListMultipartUploads17(t *testing.T) {
 			Parts: completedParts1,
 		},
 	}
+	// check first mpu appears
 	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	require.NoError(t, err, "error listing multiparts")
 	str := concatKeys(output)
-
 	require.Contains(t, str, obj1)
 
+	// create second mpu check both appear
 	_, err = s3Client.CreateMultipartUpload(ctx, input2)
-	time.Sleep(10 * time.Second)
 	require.NoError(t, err, "failed to create multipart upload")
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	str = concatKeys(output)
@@ -347,11 +349,12 @@ func TestListMultipartUploads17(t *testing.T) {
 	require.Contains(t, str, obj1)
 	require.Contains(t, str, obj2)
 
+	// finish first mpu check only second appear
 	_, err = s3Client.CompleteMultipartUpload(ctx, completeInput1)
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	require.NoError(t, err, "error listing multiparts")
 	str = concatKeys(output)
-	//require.NotContains(t, str, obj1)
+	require.NotContains(t, str, obj1)
 	require.Contains(t, str, obj2)
 }
 
@@ -363,8 +366,6 @@ func concatKeys(output *s3.ListMultipartUploadsOutput) string {
 	for _, upload := range output.Uploads {
 		if upload.Key != nil {
 			allKeys += *upload.Key + " "
-		} else {
-			fmt.Println("upload.Key is nil") // Debug logging
 		}
 	}
 	return allKeys + "\n"

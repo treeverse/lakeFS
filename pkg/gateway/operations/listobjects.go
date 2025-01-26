@@ -2,7 +2,6 @@ package operations
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -411,32 +410,29 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 	})
-	fmt.Println("name ", o.Repository.Name)
-	fmt.Println("name space", o.Repository.StorageNamespace)
-	fmt.Println("storeagenid ", o.Repository.StorageID)
+
 	if err != nil {
 		o.Log(req).WithError(err).Error("list multipart uploads failed")
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
+
 	var uploads []serde.Upload
 	for _, upload := range mpuResp.Uploads {
 		if upload.UploadId == nil {
 			continue
 		}
-		multiPart, err := o.MultipartTracker.Get(req.Context(), *upload.UploadId)
+		mpu, err := o.MultipartTracker.Get(req.Context(), *upload.UploadId)
 		if err != nil {
 			if errors.Is(err, kv.ErrNotFound) {
 				continue
 			}
-			fmt.Println("id: ", *upload.UploadId)
-			fmt.Println("err: ", err)
 			o.Log(req).WithError(err).Error("could not read multipart record")
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
 		uploads = append(uploads, serde.Upload{
-			Key:      multiPart.Path,
+			Key:      mpu.Path,
 			UploadID: *upload.UploadId,
 		})
 	}

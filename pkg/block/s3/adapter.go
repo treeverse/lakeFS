@@ -856,10 +856,6 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("key: ", key)
-	fmt.Println("bucket: ", qualifiedKey.GetStorageNamespace())
-	fmt.Println("bucket: ", qualifiedKey.GetKey())
-	fmt.Println("bucket: ", bucket)
 	input := &s3.ListMultipartUploadsInput{
 		Bucket: aws.String(bucket),
 		Prefix: aws.String(key),
@@ -874,15 +870,15 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.ListMultipartUploads(ctx, input)
 	if err != nil {
-		lg.WithError(err).Error("ListParts failed")
+		lg.WithError(err).Error("ListParts multipart uploads failed")
 		return nil, err
 	}
 
-	partsResp := block.ListMultipartUploadsResponse{
+	mpuResp := block.ListMultipartUploadsResponse{
 		Uploads: []types.MultipartUpload{},
 	}
-	partsResp.Uploads = append(partsResp.Uploads, resp.Uploads...)
-	return &partsResp, nil
+	mpuResp.Uploads = append(mpuResp.Uploads, resp.Uploads...)
+	return &mpuResp, nil
 }
 
 func (a *Adapter) BlockstoreType() string {
