@@ -143,15 +143,15 @@ func (a *Adapter) CompleteMultiPartUpload(context.Context, block.ObjectPointer, 
 	}, nil
 }
 
-func (a *Adapter) BlockstoreType() string {
+func (a *Adapter) BlockstoreType(_ string) string {
 	return block.BlockstoreTypeTransient
 }
 
-func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
+func (a *Adapter) BlockstoreMetadata(_ context.Context, _ string) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeTransient)
 	info.PreSignSupport = false
 	info.PreSignSupportUI = false
@@ -159,7 +159,7 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	return info
 }
 
-func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 

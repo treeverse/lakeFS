@@ -430,7 +430,8 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 		logger.Debug("lakeFS isn't initialized, skipping mismatched adapter checks")
 	} else {
 		logger.
-			WithField("adapter_type", blockStore.BlockstoreType()).
+			// TODO (gilo): uncomment this?
+			//WithField("adapter_type", blockStore.BlockstoreType()).
 			Debug("lakeFS is initialized, checking repositories for mismatched adapter")
 		hasMore := true
 		next := ""
@@ -443,8 +444,8 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 				logger.WithError(err).Fatal("Checking existing repositories failed")
 			}
 
-			adapterStorageType := blockStore.BlockstoreType()
 			for _, repo := range repos {
+				adapterStorageType := blockStore.BlockstoreType(repo.StorageID)
 				nsURL, err := url.Parse(repo.StorageNamespace)
 				if err != nil {
 					logger.WithError(err).Fatalf("Failed to parse repository %s namespace '%s'", repo.Name, repo.StorageNamespace)

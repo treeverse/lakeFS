@@ -129,11 +129,11 @@ func (a *MockAdapter) ListParts(_ context.Context, _ block.ObjectPointer, _ stri
 	panic("try to list parts in mock adapter")
 }
 
-func (a *MockAdapter) BlockstoreType() string {
+func (a *MockAdapter) BlockstoreType(_ string) string {
 	return "s3"
 }
 
-func (a *MockAdapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
+func (a *MockAdapter) BlockstoreMetadata(_ context.Context, _ string) (*block.BlockstoreMetadata, error) {
 	if a.blockstoreMetadata != nil {
 		return a.blockstoreMetadata, nil
 	} else {
@@ -141,14 +141,14 @@ func (a *MockAdapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMe
 	}
 }
 
-func (a *MockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+func (a *MockAdapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo("s3")
 	info.PreSignSupport = false
 	info.ImportSupport = false
 	return info
 }
 
-func (a *MockAdapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *MockAdapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
