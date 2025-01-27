@@ -2633,7 +2633,7 @@ Manage and explore repos
 Create a new repository
 
 ```
-lakectl repo create <repository URI> <storage namespace> [flags]
+lakectl repo create <repository URI> <storage namespace> [--storage-id <storage id>] [flags]
 ```
 
 #### Examples
@@ -2649,6 +2649,7 @@ lakectl repo create lakefs://my-repo s3://my-bucket
 ```
   -d, --default-branch string   the default branch of this repository (default "main")
   -h, --help                    help for create
+      --storage-id string       the storage of this repository
 ```
 
 
@@ -2731,7 +2732,7 @@ lakeFS plumbing command. Don't use unless you're _really_ sure you know what you
 Create a new repository with no initial branch or commit
 
 ```
-lakectl repo create-bare <repository URI> <storage namespace> [flags]
+lakectl repo create-bare <repository URI> <storage namespace> [--storage-id <storage id>] [flags]
 ```
 
 #### Examples
@@ -2747,6 +2748,7 @@ lakectl create-bare lakefs://my-repo s3://my-bucket
 ```
   -d, --default-branch string   the default branch name of this repository (will not be created) (default "main")
   -h, --help                    help for create-bare
+      --storage-id string       the storage of this repository
 ```
 
 

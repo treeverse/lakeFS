@@ -16,7 +16,7 @@ const (
 
 // repoCreateCmd represents the create repo command
 var repoCreateCmd = &cobra.Command{
-	Use:               "create <repository URI> <storage namespace>",
+	Use:               "create <repository URI> <storage namespace> [--storage-id <storage id>]",
 	Short:             "Create a new repository",
 	Example:           "lakectl repo create " + myRepoExample + " " + myBucketExample,
 	Args:              cobra.ExactArgs(repoCreateCmdArgs),
@@ -25,14 +25,18 @@ var repoCreateCmd = &cobra.Command{
 		clt := getClient()
 		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
+
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
 			DieErr(err)
 		}
+		storageID, _ := cmd.Flags().GetString("storage-id")
+
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&apigen.CreateRepositoryParams{},
 			apigen.CreateRepositoryJSONRequestBody{
 				Name:             u.Repository,
+				StorageId:        &storageID,
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
 			})
@@ -48,6 +52,7 @@ var repoCreateCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
+	repoCreateCmd.Flags().String("storage-id", "", "the storage of this repository")
 
 	repoCmd.AddCommand(repoCreateCmd)
 }

@@ -10,7 +10,7 @@ import (
 
 // repoCreateBareCmd represents the create repo command
 var repoCreateBareCmd = &cobra.Command{
-	Use:               "create-bare <repository URI> <storage namespace>",
+	Use:               "create-bare <repository URI> <storage namespace> [--storage-id <storage id>]",
 	Short:             "Create a new repository with no initial branch or commit",
 	Example:           "lakectl create-bare " + myRepoExample + " " + myBucketExample,
 	Hidden:            true,
@@ -20,16 +20,21 @@ var repoCreateBareCmd = &cobra.Command{
 		clt := getClient()
 		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
+
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
 			DieErr(err)
 		}
+		storageID, _ := cmd.Flags().GetString("storage-id")
+
 		bareRepo := true
+
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(), &apigen.CreateRepositoryParams{
 			Bare: &bareRepo,
 		}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    &defaultBranch,
 			Name:             u.Repository,
+			StorageId:        &storageID,
 			StorageNamespace: args[1],
 		})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
@@ -44,6 +49,7 @@ var repoCreateBareCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	repoCreateBareCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch name of this repository (will not be created)")
+	repoCreateBareCmd.Flags().String("storage-id", "", "the storage of this repository")
 
 	repoCmd.AddCommand(repoCreateBareCmd)
 }
