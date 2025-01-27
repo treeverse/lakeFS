@@ -221,8 +221,7 @@ The following Policies are created during initial setup:
                 "fs:CreateTag",
                 "fs:DeleteBranch",
                 "fs:DeleteTag",
-                "fs:CreateCommit",
-                "fs:CreateMetaRange"
+                "fs:CreateCommit"
             ],
             "effect": "allow",
             "resource": "*"

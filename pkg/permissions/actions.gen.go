@@ -16,7 +16,6 @@ var Actions = []string{
 	"fs:DeleteObject",
 	"fs:ListObjects",
 	"fs:CreateCommit",
-	"fs:CreateMetaRange",
 	"fs:ReadCommit",
 	"fs:ListCommits",
 	"fs:CreateBranch",
