@@ -124,7 +124,9 @@ type ListPartsResponse struct {
 }
 
 type ListMultipartUploadsResponse struct {
-	Uploads []types.MultipartUpload
+	Uploads            []types.MultipartUpload
+	NextUploadIdMarker *string
+	NextKeyMarker      *string
 }
 
 // CreateMultiPartUploadOpts contains optional arguments for
@@ -146,7 +148,9 @@ type ListPartsOpts struct {
 }
 
 type ListMultipartUploadsOpts struct {
-	MaxUploads *int32
+	MaxUploads     *int32
+	UploadIdMarker *string
+	KeyMarker      *string
 }
 
 // Properties of an object stored on the underlying block store.

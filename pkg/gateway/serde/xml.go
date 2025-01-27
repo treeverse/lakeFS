@@ -165,9 +165,11 @@ type ListPartsOutput struct {
 }
 
 type ListMultipartUploadsOutput struct {
-	XMLName xml.Name `xml:"ListMultipartUploadsResult"`
-	Bucket  string   `xml:"Bucket"`
-	Uploads []Upload `xml:"Upload"`
+	XMLName            xml.Name `xml:"ListMultipartUploadsResult"`
+	Bucket             string   `xml:"Bucket"`
+	Uploads            []Upload `xml:"Upload"`
+	NextKeyMarker      string   `xml:"NextKeyMarker"`
+	NextUploadIdMarker string   `xml:"NextUploadIdMarker"`
 }
 
 type VersioningConfiguration struct {

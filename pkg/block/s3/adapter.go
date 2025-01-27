@@ -857,9 +857,11 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 		return nil, err
 	}
 	input := &s3.ListMultipartUploadsInput{
-		Bucket:     aws.String(bucket),
-		Prefix:     aws.String(key),
-		MaxUploads: opts.MaxUploads,
+		Bucket:         aws.String(bucket),
+		Prefix:         aws.String(key),
+		MaxUploads:     opts.MaxUploads,
+		UploadIdMarker: opts.UploadIdMarker,
+		KeyMarker:      opts.KeyMarker,
 	}
 
 	lg := a.log(ctx).WithFields(logging.Fields{
@@ -876,7 +878,9 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 	}
 
 	mpuResp := block.ListMultipartUploadsResponse{
-		Uploads: resp.Uploads,
+		Uploads:            resp.Uploads,
+		NextUploadIdMarker: resp.NextUploadIdMarker,
+		NextKeyMarker:      resp.NextKeyMarker,
 	}
 	return &mpuResp, nil
 }

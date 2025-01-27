@@ -336,24 +336,25 @@ func TestListMultipartUploads(t *testing.T) {
 	// check first mpu appears
 	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	require.NoError(t, err, "error listing multiparts")
-	str := extractUploadKeys(output)
-	require.Contains(t, str, obj1)
+	keys := extractUploadKeys(output)
+	require.Contains(t, keys, obj1)
 
 	// create second mpu check both appear
 	_, err = s3Client.CreateMultipartUpload(ctx, input2)
 	require.NoError(t, err, "failed to create multipart upload")
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
-	str = extractUploadKeys(output)
-	require.Contains(t, str, obj1)
-	require.Contains(t, str, obj2)
+	keys = extractUploadKeys(output)
+	require.Contains(t, keys, obj1)
+	require.Contains(t, keys, obj2)
 
 	// finish first mpu check only second appear
 	_, err = s3Client.CompleteMultipartUpload(ctx, completeInput1)
+	require.NoError(t, err, "failed to complete multipart upload")
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	require.NoError(t, err, "error listing multiparts")
-	str = extractUploadKeys(output)
-	require.NotContains(t, str, obj1)
-	require.Contains(t, str, obj2)
+	keys = extractUploadKeys(output)
+	require.NotContains(t, keys, obj1)
+	require.Contains(t, keys, obj2)
 }
 
 func extractUploadKeys(output *s3.ListMultipartUploadsOutput) []string {

@@ -22,8 +22,10 @@ const (
 	ListObjectMaxKeys = 1000
 
 	// defaultBucketLocation used to identify if we need to specify the location constraint
-	defaultBucketLocation = "us-east-1"
-	QueryParamMaxUploads  = "max-uploads"
+	defaultBucketLocation    = "us-east-1"
+	QueryParamMaxUploads     = "max-uploads"
+	QueryParamUploadIdMarker = "upload-id-marker"
+	QueryParamKeyMarker      = "key-marker"
 )
 
 type ListObjects struct{}
@@ -402,21 +404,29 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 }
 
 func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
+	o.Incr("list_multipart_uploads", o.Principal, o.Repository.Name, "")
 	query := req.URL.Query()
 	maxUploadsStr := query.Get(QueryParamMaxUploads)
+	uploadIdMarker := query.Get(QueryParamUploadIdMarker)
+	keyMarker := query.Get(QueryParamKeyMarker)
 	opts := block.ListMultipartUploadsOpts{}
 	if maxUploadsStr != "" {
 		maxUploads, err := strconv.ParseInt(maxUploadsStr, 10, 32)
 		if err != nil {
 			o.Log(req).WithField("maxUploadsStr", maxUploadsStr).
 				WithError(err).Error("malformed query parameter 'maxUploadsStr'")
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidArgument))
 			return
 		}
 		maxUploads32 := int32(maxUploads)
 		opts.MaxUploads = &maxUploads32
 	}
-	// partNumberMarker := query.Get(QueryParamPartNumberMarker)
+	if uploadIdMarker != "" {
+		opts.UploadIdMarker = &uploadIdMarker
+	}
+	if keyMarker != "" {
+		opts.KeyMarker = &keyMarker
+	}
 	mpuResp, err := o.BlockStore.ListMultipartUploads(req.Context(), block.ObjectPointer{
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -447,10 +457,11 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 			UploadID: *upload.UploadId,
 		})
 	}
-	o.Incr("list_multipart_uploads", o.Principal, o.Repository.Name, "")
 	resp := &serde.ListMultipartUploadsOutput{
-		Bucket:  o.Repository.Name,
-		Uploads: uploads,
+		Bucket:             o.Repository.Name,
+		Uploads:            uploads,
+		NextKeyMarker:      *mpuResp.NextKeyMarker,
+		NextUploadIdMarker: *mpuResp.NextUploadIdMarker,
 	}
 	o.EncodeResponse(w, req, resp, http.StatusOK)
 }
