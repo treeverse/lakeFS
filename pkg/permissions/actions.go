@@ -27,7 +27,6 @@ const (
 	DeleteObjectAction                        = "fs:DeleteObject"
 	ListObjectsAction                         = "fs:ListObjects"
 	CreateCommitAction                        = "fs:CreateCommit"
-	CreateMetaRangeAction                     = "fs:CreateMetaRange"
 	ReadCommitAction                          = "fs:ReadCommit"
 	ListCommitsAction                         = "fs:ListCommits"
 	CreateBranchAction                        = "fs:CreateBranch"
