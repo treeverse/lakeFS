@@ -438,7 +438,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 			if errors.Is(err, kv.ErrNotFound) {
 				continue
 			}
-			o.Log(req).WithError(err).Error("could not read multipart record %s", *&upload.UploadId)
+			o.Log(req).WithError(err).Error("could not read multipart record %s", *upload.UploadId)
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
