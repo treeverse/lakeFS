@@ -849,7 +849,7 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 	return &partsResp, nil
 }
 
-func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPointer) (*block.ListMultipartUploadsResponse, error) {
+func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPointer, opts block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {
 	var err error
 	defer reportMetrics("ListMultipartUploads", time.Now(), nil, &err)
 	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
@@ -857,8 +857,9 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 		return nil, err
 	}
 	input := &s3.ListMultipartUploadsInput{
-		Bucket: aws.String(bucket),
-		Prefix: aws.String(key),
+		Bucket:     aws.String(bucket),
+		Prefix:     aws.String(key),
+		MaxUploads: opts.MaxUploads,
 	}
 
 	lg := a.log(ctx).WithFields(logging.Fields{
@@ -870,14 +871,13 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 	client := a.clients.Get(ctx, bucket)
 	resp, err := client.ListMultipartUploads(ctx, input)
 	if err != nil {
-		lg.WithError(err).Error("ListParts multipart uploads failed")
+		lg.WithError(err).Error("List multipart uploads failed")
 		return nil, err
 	}
 
 	mpuResp := block.ListMultipartUploadsResponse{
-		Uploads: []types.MultipartUpload{},
+		Uploads: resp.Uploads,
 	}
-	mpuResp.Uploads = append(mpuResp.Uploads, resp.Uploads...)
 	return &mpuResp, nil
 }
 

@@ -92,7 +92,7 @@ func (o *Operation) HandleUnsupported(w http.ResponseWriter, req *http.Request, 
 	}
 	query := req.URL.Query()
 	if slices.ContainsFunc(keys, query.Has) {
-		_ = o.EncodeError(w, req, nil, gwerrors.ErrAllAccessDisabled.ToAPIErr())
+		_ = o.EncodeError(w, req, nil, gwerrors.ERRLakeFSNotSupported.ToAPIErr())
 		return true
 	}
 	return false
