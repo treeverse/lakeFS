@@ -24,7 +24,7 @@ const (
 	// defaultBucketLocation used to identify if we need to specify the location constraint
 	defaultBucketLocation    = "us-east-1"
 	QueryParamMaxUploads     = "max-uploads"
-	QueryParamUploadIdMarker = "upload-id-marker"
+	QueryParamUploadIDMarker = "upload-id-marker"
 	QueryParamKeyMarker      = "key-marker"
 )
 
@@ -407,7 +407,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	o.Incr("list_multipart_uploads", o.Principal, o.Repository.Name, "")
 	query := req.URL.Query()
 	maxUploadsStr := query.Get(QueryParamMaxUploads)
-	uploadIdMarker := query.Get(QueryParamUploadIdMarker)
+	uploadIdMarker := query.Get(QueryParamUploadIDMarker)
 	keyMarker := query.Get(QueryParamKeyMarker)
 	opts := block.ListMultipartUploadsOpts{}
 	if maxUploadsStr != "" {
@@ -422,7 +422,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		opts.MaxUploads = &maxUploads32
 	}
 	if uploadIdMarker != "" {
-		opts.UploadIdMarker = &uploadIdMarker
+		opts.UploadIDMarker = &uploadIdMarker
 	}
 	if keyMarker != "" {
 		opts.KeyMarker = &keyMarker
@@ -461,7 +461,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		Bucket:             o.Repository.Name,
 		Uploads:            uploads,
 		NextKeyMarker:      *mpuResp.NextKeyMarker,
-		NextUploadIdMarker: *mpuResp.NextUploadIdMarker,
+		NextUploadIDMarker: *mpuResp.NextUploadIDMarker,
 	}
 	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

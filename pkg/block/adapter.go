@@ -125,7 +125,7 @@ type ListPartsResponse struct {
 
 type ListMultipartUploadsResponse struct {
 	Uploads            []types.MultipartUpload
-	NextUploadIdMarker *string
+	NextUploadIDMarker *string
 	NextKeyMarker      *string
 }
 
@@ -149,7 +149,7 @@ type ListPartsOpts struct {
 
 type ListMultipartUploadsOpts struct {
 	MaxUploads     *int32
-	UploadIdMarker *string
+	UploadIDMarker *string
 	KeyMarker      *string
 }
 

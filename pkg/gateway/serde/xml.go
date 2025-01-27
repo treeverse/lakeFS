@@ -169,7 +169,7 @@ type ListMultipartUploadsOutput struct {
 	Bucket             string   `xml:"Bucket"`
 	Uploads            []Upload `xml:"Upload"`
 	NextKeyMarker      string   `xml:"NextKeyMarker"`
-	NextUploadIdMarker string   `xml:"NextUploadIdMarker"`
+	NextUploadIDMarker string   `xml:"NextUploadIDMarker"`
 }
 
 type VersioningConfiguration struct {

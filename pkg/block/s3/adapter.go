@@ -860,7 +860,7 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 		Bucket:         aws.String(bucket),
 		Prefix:         aws.String(key),
 		MaxUploads:     opts.MaxUploads,
-		UploadIdMarker: opts.UploadIdMarker,
+		UploadIdMarker: opts.UploadIDMarker,
 		KeyMarker:      opts.KeyMarker,
 	}
 
@@ -879,7 +879,7 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 
 	mpuResp := block.ListMultipartUploadsResponse{
 		Uploads:            resp.Uploads,
-		NextUploadIdMarker: resp.NextUploadIdMarker,
+		NextUploadIDMarker: resp.NextUploadIdMarker,
 		NextKeyMarker:      resp.NextKeyMarker,
 	}
 	return &mpuResp, nil
