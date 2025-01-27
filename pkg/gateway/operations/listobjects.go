@@ -408,8 +408,8 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	if maxUploadsStr != "" {
 		maxUploads, err := strconv.ParseInt(maxUploadsStr, 10, 32)
 		if err != nil {
-			o.Log(req).WithField("MaxParts", maxUploadsStr).
-				WithError(err).Error("malformed query parameter 'MaxParts'")
+			o.Log(req).WithField("maxUploadsStr", maxUploadsStr).
+				WithError(err).Error("malformed query parameter 'maxUploadsStr'")
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
