@@ -23,6 +23,7 @@ const (
 
 	// defaultBucketLocation used to identify if we need to specify the location constraint
 	defaultBucketLocation = "us-east-1"
+	QueryParamMaxUploads  = "max-uploads"
 )
 
 type ListObjects struct{}
@@ -401,15 +402,25 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 }
 
 func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
-	o.Incr("list_multipart_uploads", o.Principal, o.Repository.Name, "")
-	resp := &serde.ListMultipartUploadsOutput{
-		Bucket: o.Repository.Name,
+	query := req.URL.Query()
+	maxUploadsStr := query.Get(QueryParamMaxUploads)
+	opts := block.ListMultipartUploadsOpts{}
+	if maxUploadsStr != "" {
+		maxUploads, err := strconv.ParseInt(maxUploadsStr, 10, 32)
+		if err != nil {
+			o.Log(req).WithField("MaxParts", maxUploadsStr).
+				WithError(err).Error("malformed query parameter 'MaxParts'")
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
+		maxUploads32 := int32(maxUploads)
+		opts.MaxUploads = &maxUploads32
 	}
-
+	// partNumberMarker := query.Get(QueryParamPartNumberMarker)
 	mpuResp, err := o.BlockStore.ListMultipartUploads(req.Context(), block.ObjectPointer{
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
-	})
+	}, opts)
 
 	if err != nil {
 		o.Log(req).WithError(err).Error("list multipart uploads failed")
@@ -417,7 +428,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		return
 	}
 
-	var uploads []serde.Upload
+	uploads := make([]serde.Upload, 0, len(mpuResp.Uploads))
 	for _, upload := range mpuResp.Uploads {
 		if upload.UploadId == nil {
 			continue
@@ -427,7 +438,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 			if errors.Is(err, kv.ErrNotFound) {
 				continue
 			}
-			o.Log(req).WithError(err).Error("could not read multipart record")
+			o.Log(req).WithError(err).Error("could not read multipart record %s", *&upload.UploadId)
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
@@ -436,6 +447,10 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 			UploadID: *upload.UploadId,
 		})
 	}
-	resp.Uploads = uploads
+	o.Incr("list_multipart_uploads", o.Principal, o.Repository.Name, "")
+	resp := &serde.ListMultipartUploadsOutput{
+		Bucket:  o.Repository.Name,
+		Uploads: uploads,
+	}
 	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

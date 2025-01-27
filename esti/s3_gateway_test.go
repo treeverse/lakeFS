@@ -290,17 +290,16 @@ func TestS3IfNoneMatch(t *testing.T) {
 }
 
 func TestListMultipartUploads(t *testing.T) {
+	blockStoreType := viper.GetString(ViperBlockstoreType)
+	if blockStoreType != "s3" {
+		t.Skip("Skipping test - blockstore type is not s3")
+	}
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
 	multipartNumberOfParts := 3
 	multipartPartSize := 5 * 1024 * 1024
-
-	blockStoreType := viper.GetString(ViperBlockstoreType)
-	if blockStoreType != "s3" {
-		t.Skip("Skipping test - blockstore type is not s3")
-	}
 
 	// create two objects for two mpus
 	obj1 := "object1"
@@ -337,15 +336,14 @@ func TestListMultipartUploads(t *testing.T) {
 	// check first mpu appears
 	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	require.NoError(t, err, "error listing multiparts")
-	str := concatKeys(output)
+	str := extractUploadKeys(output)
 	require.Contains(t, str, obj1)
 
 	// create second mpu check both appear
 	_, err = s3Client.CreateMultipartUpload(ctx, input2)
 	require.NoError(t, err, "failed to create multipart upload")
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
-	str = concatKeys(output)
-	fmt.Println(str)
+	str = extractUploadKeys(output)
 	require.Contains(t, str, obj1)
 	require.Contains(t, str, obj2)
 
@@ -353,22 +351,22 @@ func TestListMultipartUploads(t *testing.T) {
 	_, err = s3Client.CompleteMultipartUpload(ctx, completeInput1)
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
 	require.NoError(t, err, "error listing multiparts")
-	str = concatKeys(output)
+	str = extractUploadKeys(output)
 	require.NotContains(t, str, obj1)
 	require.Contains(t, str, obj2)
 }
 
-func concatKeys(output *s3.ListMultipartUploadsOutput) string {
+func extractUploadKeys(output *s3.ListMultipartUploadsOutput) []string {
 	if output == nil {
-		return ""
+		return nil
 	}
-	var allKeys string
+	keys := make([]string, 0, len(output.Uploads))
 	for _, upload := range output.Uploads {
 		if upload.Key != nil {
-			allKeys += *upload.Key + " "
+			keys = append(keys, *upload.Key)
 		}
 	}
-	return allKeys + "\n"
+	return keys
 }
 
 func verifyObjectInfo(t *testing.T, got minio.ObjectInfo, expectedSize int) {

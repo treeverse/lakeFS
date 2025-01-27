@@ -128,7 +128,7 @@ func (a *MockAdapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPo
 func (a *MockAdapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
 	panic("try to list parts in mock adapter")
 }
-func (a *MockAdapter) ListMultipartUploads(_ context.Context, _ block.ObjectPointer) (*block.ListMultipartUploadsResponse, error) {
+func (a *MockAdapter) ListMultipartUploads(_ context.Context, _ block.ObjectPointer, _ block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {
 	panic("try to list multipart uploads in mock adapter")
 }
 func (a *MockAdapter) BlockstoreType() string {
