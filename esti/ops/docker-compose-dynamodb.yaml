@@ -34,7 +34,7 @@ services:
 
   dynamodb:
     extends:
-      file: ./docker-compose-common.yaml
+      file: docker-compose-common.yaml
       service: dynamodb
 
   esti:
