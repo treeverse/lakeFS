@@ -196,6 +196,7 @@ func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamesp
 	obj, _ := objPointers(storageNamespace)
 
 	preSignedURL, exp, err := adapter.GetPreSignedURL(ctx, obj, block.PreSignModeRead)
+	require.NoError(t, err)
 
 	blockstoreType, err := adapter.BlockstoreType("")
 	require.NoError(t, err)
