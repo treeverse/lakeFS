@@ -36,7 +36,9 @@ func TestAdapterNamespace(t *testing.T) {
 		require.NoError(t, adapter.Close())
 	}()
 
-	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo("").ValidityRegex)
+	namespaceInfo, err := adapter.GetStorageNamespaceInfo("")
+	require.NoError(t, err)
+	expr, err := regexp.Compile(namespaceInfo.ValidityRegex)
 	require.NoError(t, err)
 
 	tests := []struct {

@@ -135,7 +135,8 @@ func TestAdapterNamespace(t *testing.T) {
 			}
 			require.NoError(t, err, "create new adapter")
 
-			namespaceInfo := adapter.GetStorageNamespaceInfo("")
+			namespaceInfo, err := adapter.GetStorageNamespaceInfo("")
+			require.NoError(t, err)
 			expr, err := regexp.Compile(namespaceInfo.ValidityRegex)
 			require.NoError(t, err)
 

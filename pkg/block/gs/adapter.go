@@ -650,15 +650,15 @@ func (a *Adapter) Close() error {
 	return a.client.Close()
 }
 
-func (a *Adapter) BlockstoreType(_ string) string {
-	return block.BlockstoreTypeGS
+func (a *Adapter) BlockstoreType(_ string) (string, error) {
+	return block.BlockstoreTypeGS, nil
 }
 
 func (a *Adapter) BlockstoreMetadata(_ context.Context, _ string) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -666,7 +666,7 @@ func (a *Adapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
 	if !(a.disablePreSignedUI || a.disablePreSigned) {
 		info.PreSignSupportUI = true
 	}
-	return info
+	return info, nil
 }
 
 func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string, error) {
