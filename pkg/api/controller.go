@@ -4480,6 +4480,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "get_object", r, repository, ref, "")
+	requestStart := time.Now()
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -4563,6 +4564,11 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		}()
 		w.Header().Set("Content-Length", fmt.Sprint(entry.Size))
 	}
+
+	// time to first byte - include out part of the processing without the actual data transfer
+	requestTTFBHistograms.
+		WithLabelValues("GetObject").
+		Observe(time.Since(requestStart).Seconds())
 
 	// copy the content
 	_, err = io.Copy(w, reader)
