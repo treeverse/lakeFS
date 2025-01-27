@@ -407,7 +407,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	o.Incr("list_multipart_uploads", o.Principal, o.Repository.Name, "")
 	query := req.URL.Query()
 	maxUploadsStr := query.Get(QueryParamMaxUploads)
-	uploadIdMarker := query.Get(QueryParamUploadIDMarker)
+	uploadIDMarker := query.Get(QueryParamUploadIDMarker)
 	keyMarker := query.Get(QueryParamKeyMarker)
 	opts := block.ListMultipartUploadsOpts{}
 	if maxUploadsStr != "" {
@@ -421,8 +421,8 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		maxUploads32 := int32(maxUploads)
 		opts.MaxUploads = &maxUploads32
 	}
-	if uploadIdMarker != "" {
-		opts.UploadIDMarker = &uploadIdMarker
+	if uploadIDMarker != "" {
+		opts.UploadIDMarker = &uploadIDMarker
 	}
 	if keyMarker != "" {
 		opts.KeyMarker = &keyMarker
