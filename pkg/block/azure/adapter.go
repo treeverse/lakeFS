@@ -583,11 +583,11 @@ func (a *Adapter) AbortMultiPartUpload(_ context.Context, _ block.ObjectPointer,
 	return nil
 }
 
-func (a *Adapter) BlockstoreType(_ string) string {
+func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeAzure
 }
 
-func (a *Adapter) BlockstoreMetadata(_ context.Context, _ string) (*block.BlockstoreMetadata, error) {
+func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 
@@ -606,7 +606,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	return completeMultipart(ctx, multipartList.Part, *containerURL, qualifiedKey.BlobURL)
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
 
 	info.ImportValidityRegex = fmt.Sprintf(`^https?://[a-z0-9_-]+\.%s`, a.clientCache.params.Domain)
@@ -622,7 +622,7 @@ func (a *Adapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
 	return info
 }
 
-func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
