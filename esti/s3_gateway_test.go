@@ -377,12 +377,18 @@ func TestListMultipartUploads(t *testing.T) {
 	delimiter := aws.String("/")
 	prefix := aws.String("prefix")
 	encodingType := types.EncodingTypeUrl
+
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, Delimiter: delimiter})
-	require.ErrorIs(t, err, gtwerrors.ErrNotImplemented)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "NotImplemented")
+
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, Prefix: prefix})
-	require.ErrorIs(t, err, gtwerrors.ErrNotImplemented)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "NotImplemented")
+
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, EncodingType: encodingType})
-	require.ErrorIs(t, err, gtwerrors.ErrNotImplemented)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "NotImplemented")
 }
 
 func extractUploadKeys(output *s3.ListMultipartUploadsOutput) []string {
