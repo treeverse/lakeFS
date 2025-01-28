@@ -174,6 +174,12 @@ func AddAdminUser(ctx context.Context, authService auth.Service, user *model.Sup
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
+	defer func() {
+		// delete admin on any error to avoid partial setup
+		if err != nil {
+			_ = authService.DeleteUser(ctx, user.Username)
+		}
+	}()
 
 	if addToAdmins {
 		// verify the admin group exists
