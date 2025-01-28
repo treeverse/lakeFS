@@ -372,6 +372,17 @@ func TestListMultipartUploads(t *testing.T) {
 	keys = extractUploadKeys(output)
 	require.NotContains(t, keys, obj1)
 	require.Contains(t, keys, obj2)
+
+	// unsupported headers, expect error
+	delimiter := aws.String("/")
+	prefix := aws.String("prefix")
+	encodingType := types.EncodingTypeUrl
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, Delimiter: delimiter})
+	require.ErrorIs(t, err, gtwerrors.ErrNotImplemented)
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, Prefix: prefix})
+	require.ErrorIs(t, err, gtwerrors.ErrNotImplemented)
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, EncodingType: encodingType})
+	require.ErrorIs(t, err, gtwerrors.ErrNotImplemented)
 }
 
 func extractUploadKeys(output *s3.ListMultipartUploadsOutput) []string {
