@@ -654,11 +654,11 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeGS
 }
 
-func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
+func (a *Adapter) BlockstoreMetadata(_ context.Context, _ string) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -666,11 +666,11 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	if !(a.disablePreSignedUI || a.disablePreSigned) {
 		info.PreSignSupportUI = true
 	}
-	return info
+	return info, nil
 }
 
 func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string, error) {
-	qk, err := a.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
+	qk, err := a.ResolveNamespace(obj.StorageID, obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
 	if err != nil {
 		return "", "", err
 	}
@@ -682,7 +682,7 @@ func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string,
 	return bucket, key, nil
 }
 
-func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 	if err != nil {
 		return qualifiedKey, err

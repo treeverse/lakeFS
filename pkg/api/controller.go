@@ -167,15 +167,19 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	ctx := r.Context()
 	c.LogAction(ctx, "create_presign_multipart_upload", r, repository, branch, "")
 
-	// check if api is supported
-	storageConfig := c.getStorageConfig()
-	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
-		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
-	repo, err := c.Catalog.GetRepository(ctx, repository)
+	storageConfig, err := c.getStorageConfig(repo.StorageID)
 	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// check if api is supported
+	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
+		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
 		return
 	}
 
@@ -211,7 +215,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 		return
 	}
 
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -267,8 +271,17 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 	ctx := r.Context()
 	c.LogAction(ctx, "abort_presign_multipart_upload", r, repository, branch, "")
 
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	storageConfig, err := c.getStorageConfig(repo.StorageID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
 	// check if api is supported
-	storageConfig := c.getStorageConfig()
 	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
 		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
 		return
@@ -285,11 +298,6 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 	}
 	if body.PhysicalAddress == "" {
 		writeError(w, r, http.StatusBadRequest, "physical_address is required")
-		return
-	}
-
-	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -327,8 +335,17 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	ctx := r.Context()
 	c.LogAction(ctx, "complete_presign_multipart_upload", r, repository, branch, "")
 
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	storageConfig, err := c.getStorageConfig(repo.StorageID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
 	// check if api is supported
-	storageConfig := c.getStorageConfig()
 	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
 		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
 		return
@@ -353,11 +370,6 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	}
 
 	// verify physical address
-	repo, err := c.Catalog.GetRepository(ctx, repository)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
 	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
 	if addressType != catalog.AddressTypeRelative {
 		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
@@ -696,7 +708,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, address, block.IdentifierTypeRelative)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, address, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -750,7 +762,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	// write metadata
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, params.Path, block.IdentifierTypeRelative)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, params.Path, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -1851,7 +1863,11 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	storageCfg := c.getStorageConfig()
+	// TODO (gilo): is StorageID relevant here?
+	storageCfg, err := c.getStorageConfig("")
+	if c.handleAPIError(r.Context(), w, r, err) {
+		return
+	}
 	// TODO (niro): Needs to be populated
 	storageListCfg := apigen.StorageConfigList{}
 	versionConfig := c.getVersionConfig()
@@ -1868,16 +1884,25 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeResponse(w, r, http.StatusOK, c.getStorageConfig())
+	// TODO (gilo): is StorageID relevant here?
+	storageConfig, err := c.getStorageConfig("")
+	if c.handleAPIError(r.Context(), w, r, err) {
+		return
+	}
+
+	writeResponse(w, r, http.StatusOK, storageConfig)
 }
 
-func (c *Controller) getStorageConfig() apigen.StorageConfig {
-	info := c.BlockAdapter.GetStorageNamespaceInfo()
+func (c *Controller) getStorageConfig(storageID string) (apigen.StorageConfig, error) {
+	info, err := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
+	if err != nil {
+		return apigen.StorageConfig{}, err
+	}
 	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
 	if c.Config.GetBaseConfig().Blockstore.DefaultNamespacePrefix != nil {
 		defaultNamespacePrefix = c.Config.GetBaseConfig().Blockstore.DefaultNamespacePrefix
 	}
-	return apigen.StorageConfig{
+	storageConfig := apigen.StorageConfig{
 		BlockstoreType:                   c.Config.GetBaseConfig().Blockstore.Type,
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
@@ -1888,6 +1913,7 @@ func (c *Controller) getStorageConfig() apigen.StorageConfig {
 		ImportValidityRegex:              info.ImportValidityRegex,
 		PreSignMultipartUpload:           swag.Bool(info.PreSignSupportMultipart),
 	}
+	return storageConfig, nil
 }
 
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
@@ -1971,7 +1997,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
 	}
 
-	if err := c.validateStorageNamespace(storageNamespace); err != nil {
+	if err := c.validateStorageNamespace(storageID, storageNamespace); err != nil {
 		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
@@ -2075,8 +2101,12 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
-func (c *Controller) validateStorageNamespace(storageNamespace string) error {
-	validRegex := c.BlockAdapter.GetStorageNamespaceInfo().ValidityRegex
+func (c *Controller) validateStorageNamespace(storageID, storageNamespace string) error {
+	namespaceInfo, err := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
+	if err != nil {
+		return fmt.Errorf("failed to get storage namespace info: %w", err)
+	}
+	validRegex := namespaceInfo.ValidityRegex
 	storagePrefixRegex, err := regexp.Compile(validRegex)
 	if err != nil {
 		return fmt.Errorf("failed to compile validity regex %s: %w", validRegex, block.ErrInvalidNamespace)
@@ -3312,7 +3342,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		identifierType = block.IdentifierTypeRelative
 	}
 
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, blob.PhysicalAddress, identifierType)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, blob.PhysicalAddress, identifierType)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -3348,13 +3378,17 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		return
 	}
 	// write metadata
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, body.PhysicalAddress, block.IdentifierTypeFull)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, body.PhysicalAddress, block.IdentifierTypeFull)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
 	// see what storage type this is and whether it fits our configuration
-	uriRegex := c.BlockAdapter.GetStorageNamespaceInfo().ValidityRegex
+	namespaceInfo, err := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageID)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	uriRegex := namespaceInfo.ValidityRegex
 	if match, err := regexp.MatchString(uriRegex, body.PhysicalAddress); err != nil || !match {
 		writeError(w, r, http.StatusBadRequest, fmt.Sprintf("physical address is not valid for block adapter: %s",
 			c.BlockAdapter.BlockstoreType(),
@@ -3453,7 +3487,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -4177,7 +4211,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 		}
 		// loop all entries enter to map[path] physicalAddress
 		for _, entry := range entries {
-			qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+			qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 			if err != nil {
 				writeError(w, r, http.StatusInternalServerError, fmt.Sprintf("error while resolving address: %s", err))
 				return
@@ -4610,7 +4644,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 
 	objList := make([]apigen.ObjectStats, 0, len(res))
 	for _, entry := range res {
-		qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+		qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
@@ -4708,7 +4742,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 
-	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

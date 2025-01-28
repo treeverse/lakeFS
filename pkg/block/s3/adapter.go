@@ -855,7 +855,7 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
 
-func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMetadata, error) {
+func (a *Adapter) BlockstoreMetadata(ctx context.Context, _ string) (*block.BlockstoreMetadata, error) {
 	region, err := a.clients.GetBucketRegionDefault(ctx, "")
 	if err != nil {
 		return nil, err
@@ -863,7 +863,7 @@ func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMeta
 	return &block.BlockstoreMetadata{Region: &region}, nil
 }
 
-func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -874,7 +874,7 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	if !a.disablePreSignedMultipart && info.PreSignSupport {
 		info.PreSignSupportMultipart = true
 	}
-	return info
+	return info, nil
 }
 
 func resolveNamespace(obj block.ObjectPointer) (block.CommonQualifiedKey, error) {
@@ -888,7 +888,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.CommonQualifiedKey, error)
 	return qualifiedKey, nil
 }
 
-func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
@@ -945,7 +945,7 @@ func (a *Adapter) managerUpload(ctx context.Context, obj block.ObjectPointer, re
 }
 
 func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string, block.QualifiedKey, error) {
-	qk, err := a.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
+	qk, err := a.ResolveNamespace(obj.StorageID, obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
 	if err != nil {
 		return "", "", nil, err
 	}
