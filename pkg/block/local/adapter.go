@@ -537,20 +537,20 @@ func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]stri
 	return names, nil
 }
 
-func (l *Adapter) BlockstoreType(_ string) (string, error) {
-	return block.BlockstoreTypeLocal, nil
+func (l *Adapter) BlockstoreType(_ string) string {
+	return block.BlockstoreTypeLocal
 }
 
 func (l *Adapter) BlockstoreMetadata(_ context.Context, _ string) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 
-func (l *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
+func (l *Adapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeLocal)
 	info.PreSignSupport = false
 	info.DefaultNamespacePrefix = DefaultNamespacePrefix
 	info.ImportSupport = l.importEnabled
-	return info, nil
+	return info
 }
 
 func (l *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {

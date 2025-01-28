@@ -335,19 +335,19 @@ func (a *Adapter) CompleteMultiPartUpload(_ context.Context, obj block.ObjectPoi
 	}, nil
 }
 
-func (a *Adapter) BlockstoreType(_ string) (string, error) {
-	return block.BlockstoreTypeMem, nil
+func (a *Adapter) BlockstoreType(_ string) string {
+	return block.BlockstoreTypeMem
 }
 
 func (a *Adapter) BlockstoreMetadata(_ context.Context, _ string) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
+func (a *Adapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeMem)
 	info.PreSignSupport = false
 	info.ImportSupport = false
-	return info, nil
+	return info
 }
 
 func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {

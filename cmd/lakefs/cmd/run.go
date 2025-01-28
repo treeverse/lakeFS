@@ -445,10 +445,7 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 			}
 
 			for _, repo := range repos {
-				adapterStorageType, err := blockStore.BlockstoreType(repo.StorageID)
-				if err != nil {
-					logger.WithError(err).Fatalf("Failed to get storage type for repository %s", repo.Name)
-				}
+				adapterStorageType := blockStore.BlockstoreType(repo.StorageID)
 				nsURL, err := url.Parse(repo.StorageNamespace)
 				if err != nil {
 					logger.WithError(err).Fatalf("Failed to parse repository %s namespace '%s'", repo.Name, repo.StorageNamespace)

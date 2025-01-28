@@ -172,12 +172,8 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 		return
 	}
 
-	storageConfig, err := c.getStorageConfig(repo.StorageID)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
 	// check if api is supported
+	storageConfig := c.getStorageConfig(repo.StorageID)
 	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
 		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
 		return
@@ -276,12 +272,8 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 
-	storageConfig, err := c.getStorageConfig(repo.StorageID)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
 	// check if api is supported
+	storageConfig := c.getStorageConfig(repo.StorageID)
 	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
 		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
 		return
@@ -341,12 +333,8 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 
-	storageConfig, err := c.getStorageConfig(repo.StorageID)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-
 	// check if api is supported
+	storageConfig := c.getStorageConfig(repo.StorageID)
 	if !swag.BoolValue(storageConfig.PreSignMultipartUpload) {
 		writeError(w, r, http.StatusNotImplemented, "presign multipart upload API is not supported")
 		return
@@ -777,10 +765,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		ifAbsent = true
 	}
 
-	blockStoreType, err := c.BlockAdapter.BlockstoreType(repo.StorageID)
-	if err != nil {
-		c.handleAPIError(ctx, w, r, err)
-	}
+	blockStoreType := c.BlockAdapter.BlockstoreType(repo.StorageID)
 	expectedType := qk.GetStorageType().BlockstoreType()
 	if expectedType != blockStoreType {
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{
@@ -1867,10 +1852,7 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO (gilo): is StorageID relevant here?
-	storageCfg, err := c.getStorageConfig("")
-	if c.handleAPIError(r.Context(), w, r, err) {
-		return
-	}
+	storageCfg := c.getStorageConfig("")
 	// TODO (niro): Needs to be populated
 	storageListCfg := apigen.StorageConfigList{}
 	versionConfig := c.getVersionConfig()
@@ -1888,24 +1870,16 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO (gilo): is StorageID relevant here?
-	storageConfig, err := c.getStorageConfig("")
-	if c.handleAPIError(r.Context(), w, r, err) {
-		return
-	}
-
-	writeResponse(w, r, http.StatusOK, storageConfig)
+	writeResponse(w, r, http.StatusOK, c.getStorageConfig(""))
 }
 
-func (c *Controller) getStorageConfig(storageID string) (apigen.StorageConfig, error) {
-	info, err := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
-	if err != nil {
-		return apigen.StorageConfig{}, err
-	}
+func (c *Controller) getStorageConfig(storageID string) apigen.StorageConfig {
+	info := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
 	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
 	if c.Config.GetBaseConfig().Blockstore.DefaultNamespacePrefix != nil {
 		defaultNamespacePrefix = c.Config.GetBaseConfig().Blockstore.DefaultNamespacePrefix
 	}
-	storageConfig := apigen.StorageConfig{
+	return apigen.StorageConfig{
 		BlockstoreType:                   c.Config.GetBaseConfig().Blockstore.Type,
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
@@ -1916,7 +1890,6 @@ func (c *Controller) getStorageConfig(storageID string) (apigen.StorageConfig, e
 		ImportValidityRegex:              info.ImportValidityRegex,
 		PreSignMultipartUpload:           swag.Bool(info.PreSignSupportMultipart),
 	}
-	return storageConfig, nil
 }
 
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
@@ -2029,8 +2002,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 				retErr = err
 				reason = "bad_url"
 			case errors.Is(err, block.ErrInvalidAddress):
-				blockstoreType, _ := c.BlockAdapter.BlockstoreType(storageID)
-				retErr = fmt.Errorf("%w, must match: %s", err, blockstoreType)
+				retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType(storageID))
 				reason = "invalid_namespace"
 			case errors.Is(err, ErrStorageNamespaceInUse):
 				retErr = err
@@ -2106,11 +2078,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 }
 
 func (c *Controller) validateStorageNamespace(storageID, storageNamespace string) error {
-	storageNamespaceInfo, err := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
-	if err != nil {
-		return fmt.Errorf("failed to get validity regex for storage ID %s: %w", storageID, block.ErrInvalidNamespace)
-	}
-	validRegex := storageNamespaceInfo.ValidityRegex
+	validRegex := c.BlockAdapter.GetStorageNamespaceInfo(storageID).ValidityRegex
 	storagePrefixRegex, err := regexp.Compile(validRegex)
 	if err != nil {
 		return fmt.Errorf("failed to compile validity regex %s: %w", validRegex, block.ErrInvalidNamespace)
@@ -3388,15 +3356,10 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 	}
 
 	// see what storage type this is and whether it fits our configuration
-	namespaceInfo, err := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageID)
-	if c.handleAPIError(ctx, w, r, err) {
-		return
-	}
-	uriRegex := namespaceInfo.ValidityRegex
+	uriRegex := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageID).ValidityRegex
 	if match, err := regexp.MatchString(uriRegex, body.PhysicalAddress); err != nil || !match {
-		blockstoreType, _ := c.BlockAdapter.BlockstoreType(repo.StorageID)
 		writeError(w, r, http.StatusBadRequest, fmt.Sprintf("physical address is not valid for block adapter: %s",
-			blockstoreType,
+			c.BlockAdapter.BlockstoreType(repo.StorageID),
 		))
 		return
 	}
@@ -5131,8 +5094,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	}
 
 	// TODO (gilo): which storageID should we use here?
-	blockstoreType, _ := c.BlockAdapter.BlockstoreType("")
-	meta := stats.NewMetadata(ctx, c.Logger, blockstoreType, c.MetadataManager, c.CloudMetadataProvider)
+	meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(""), c.MetadataManager, c.CloudMetadataProvider)
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})

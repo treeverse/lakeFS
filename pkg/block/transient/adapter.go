@@ -143,20 +143,20 @@ func (a *Adapter) CompleteMultiPartUpload(context.Context, block.ObjectPointer, 
 	}, nil
 }
 
-func (a *Adapter) BlockstoreType(_ string) (string, error) {
-	return block.BlockstoreTypeTransient, nil
+func (a *Adapter) BlockstoreType(_ string) string {
+	return block.BlockstoreTypeTransient
 }
 
 func (a *Adapter) BlockstoreMetadata(_ context.Context, _ string) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
+func (a *Adapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeTransient)
 	info.PreSignSupport = false
 	info.PreSignSupportUI = false
 	info.ImportSupport = false
-	return info, nil
+	return info
 }
 
 func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {

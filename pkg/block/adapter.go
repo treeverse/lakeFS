@@ -194,9 +194,9 @@ type Adapter interface {
 	AbortMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string) error
 	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*CompleteMultiPartUploadResponse, error)
 
-	BlockstoreType(storageID string) (string, error)
+	BlockstoreType(storageID string) string
 	BlockstoreMetadata(ctx context.Context, storageID string) (*BlockstoreMetadata, error)
-	GetStorageNamespaceInfo(storageID string) (StorageNamespaceInfo, error)
+	GetStorageNamespaceInfo(storageID string) StorageNamespaceInfo
 	ResolveNamespace(storageID, storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error)
 
 	// GetRegion storageID is not actively used, and it's here mainly for completeness

@@ -851,8 +851,8 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 	return &partsResp, nil
 }
 
-func (a *Adapter) BlockstoreType(_ string) (string, error) {
-	return block.BlockstoreTypeS3, nil
+func (a *Adapter) BlockstoreType(_ string) string {
+	return block.BlockstoreTypeS3
 }
 
 func (a *Adapter) BlockstoreMetadata(ctx context.Context, _ string) (*block.BlockstoreMetadata, error) {
@@ -863,7 +863,7 @@ func (a *Adapter) BlockstoreMetadata(ctx context.Context, _ string) (*block.Bloc
 	return &block.BlockstoreMetadata{Region: &region}, nil
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
+func (a *Adapter) GetStorageNamespaceInfo(_ string) block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -874,7 +874,7 @@ func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo,
 	if !a.disablePreSignedMultipart && info.PreSignSupport {
 		info.PreSignSupportMultipart = true
 	}
-	return info, nil
+	return info
 }
 
 func resolveNamespace(obj block.ObjectPointer) (block.CommonQualifiedKey, error) {
