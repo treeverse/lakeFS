@@ -343,14 +343,14 @@ func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetada
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
+func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeMem)
 	info.PreSignSupport = false
 	info.ImportSupport = false
-	return info, nil
+	return &info
 }
 
-func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 

@@ -141,11 +141,11 @@ func (a *MockAdapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMe
 	}
 }
 
-func (a *MockAdapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
+func (a *MockAdapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo("s3")
 	info.PreSignSupport = false
 	info.ImportSupport = false
-	return info, nil
+	return &info
 }
 
 func (a *MockAdapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {

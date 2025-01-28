@@ -66,8 +66,7 @@ func TestS3AdapterPresignedOverride(t *testing.T) {
 // TestAdapterNamespace tests the namespace validity regex with various paths
 func TestAdapterNamespace(t *testing.T) {
 	adapter := getS3BlockAdapter(t, nil)
-	namespaceInfo, _ := adapter.GetStorageNamespaceInfo("")
-	expr, err := regexp.Compile(namespaceInfo.ValidityRegex)
+	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo("").ValidityRegex)
 	require.NoError(t, err)
 
 	tests := []struct {

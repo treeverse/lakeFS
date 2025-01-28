@@ -777,7 +777,12 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		ifAbsent = true
 	}
 
-	blockStoreType := c.BlockAdapter.BlockstoreType()
+	storage := c.Config.StorageConfig().GetStorageByID(repo.StorageID)
+	if storage == nil {
+		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage namespace info found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
+		return
+	}
+	blockStoreType := storage.BlockstoreType()
 	expectedType := qk.GetStorageType().BlockstoreType()
 	if expectedType != blockStoreType {
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{
@@ -1863,15 +1868,10 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// TODO (gilo): is StorageID relevant here?
-	storageCfg, err := c.getStorageConfig("")
-	if c.handleAPIError(r.Context(), w, r, err) {
-		return
-	}
-	// TODO (niro): Needs to be populated
-	storageListCfg := apigen.StorageConfigList{}
+	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
+	storageListCfg := c.getStorageConfigList()
 	versionConfig := c.getVersionConfig()
-	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: &storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageListCfg})
+	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageListCfg})
 }
 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
@@ -1884,27 +1884,32 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO (gilo): is StorageID relevant here?
-	storageConfig, err := c.getStorageConfig("")
-	if c.handleAPIError(r.Context(), w, r, err) {
-		return
-	}
-
-	writeResponse(w, r, http.StatusOK, storageConfig)
+	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
+	writeResponse(w, r, http.StatusOK, storageCfg)
 }
 
-func (c *Controller) getStorageConfig(storageID string) (apigen.StorageConfig, error) {
-	info, err := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
-	if err != nil {
-		return apigen.StorageConfig{}, err
+func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, error) {
+	storage := c.Config.StorageConfig().GetStorageByID(storageID)
+	if storage == nil {
+		return nil, config.ErrNoStorageConfig
 	}
-	defaultNamespacePrefix := swag.String(info.DefaultNamespacePrefix)
-	if c.Config.GetBaseConfig().Blockstore.DefaultNamespacePrefix != nil {
-		defaultNamespacePrefix = c.Config.GetBaseConfig().Blockstore.DefaultNamespacePrefix
+	info := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
+	if info == nil {
+		c.Logger.Error("no storage namespace info found for id: %s", storageID)
+		return nil, config.ErrNoStorageConfig
 	}
-	storageConfig := apigen.StorageConfig{
-		BlockstoreType:                   c.Config.GetBaseConfig().Blockstore.Type,
-		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
+
+	defaultNamespacePrefix := storage.GetDefaultNamespacePrefix()
+	if defaultNamespacePrefix != nil {
+		info.DefaultNamespacePrefix = *defaultNamespacePrefix
+	}
+	return &apigen.StorageConfig{
+		BlockstoreDescription: swag.String(storage.BlockstoreDescription()),
+		BlockstoreExtras: &apigen.StorageConfig_BlockstoreExtras{
+			AdditionalProperties: storage.BlockstoreExtras(),
+		},
+		BlockstoreType:                   storage.BlockstoreType(),
+		BlockstoreNamespaceValidityRegex: info.DefaultNamespacePrefix,
 		BlockstoreNamespaceExample:       info.Example,
 		DefaultNamespacePrefix:           defaultNamespacePrefix,
 		PreSignSupport:                   info.PreSignSupport,
@@ -1912,8 +1917,21 @@ func (c *Controller) getStorageConfig(storageID string) (apigen.StorageConfig, e
 		ImportSupport:                    info.ImportSupport,
 		ImportValidityRegex:              info.ImportValidityRegex,
 		PreSignMultipartUpload:           swag.Bool(info.PreSignSupportMultipart),
+	}, nil
+}
+
+func (c *Controller) getStorageConfigList() apigen.StorageConfigList {
+	configList := apigen.StorageConfigList{}
+	for _, id := range c.Config.StorageConfig().GetStorageIDs() {
+		info, err := c.getStorageConfig(id)
+		if info == nil {
+			c.Logger.WithError(err).Error("no storage config found for id: %s", id)
+			continue
+		}
+
+		configList = append(configList, *info)
 	}
-	return storageConfig, nil
+	return configList
 }
 
 func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
@@ -2026,7 +2044,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 				retErr = err
 				reason = "bad_url"
 			case errors.Is(err, block.ErrInvalidAddress):
-				retErr = fmt.Errorf("%w, must match: %s", err, c.BlockAdapter.BlockstoreType())
+				retErr = fmt.Errorf("%w, must match: %s", err, c.Config.StorageConfig().GetStorageByID(storageID).BlockstoreType())
 				reason = "invalid_namespace"
 			case errors.Is(err, ErrStorageNamespaceInUse):
 				retErr = err
@@ -2102,11 +2120,11 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 }
 
 func (c *Controller) validateStorageNamespace(storageID, storageNamespace string) error {
-	namespaceInfo, err := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
-	if err != nil {
-		return fmt.Errorf("failed to get storage namespace info: %w", err)
+	info := c.BlockAdapter.GetStorageNamespaceInfo(storageID)
+	if info == nil {
+		return fmt.Errorf("no storage namespace info found for id %s: %w", storageID, config.ErrNoStorageConfig)
 	}
-	validRegex := namespaceInfo.ValidityRegex
+	validRegex := info.ValidityRegex
 	storagePrefixRegex, err := regexp.Compile(validRegex)
 	if err != nil {
 		return fmt.Errorf("failed to compile validity regex %s: %w", validRegex, block.ErrInvalidNamespace)
@@ -2754,7 +2772,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrNotFound),
 		errors.Is(err, actions.ErrNotFound),
 		errors.Is(err, auth.ErrNotFound),
-		errors.Is(err, kv.ErrNotFound):
+		errors.Is(err, kv.ErrNotFound),
+		errors.Is(err, config.ErrNoStorageConfig):
 		log.Debug("Not found")
 		cb(w, r, http.StatusNotFound, err)
 
@@ -3384,14 +3403,17 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 	}
 
 	// see what storage type this is and whether it fits our configuration
-	namespaceInfo, err := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageID)
-	if c.handleAPIError(ctx, w, r, err) {
+	info := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageID)
+	if info == nil {
+		writeError(w, r, http.StatusNotFound, fmt.Sprintf("no storage namespace info for storage id: %s",
+			repo.StorageID,
+		))
 		return
 	}
-	uriRegex := namespaceInfo.ValidityRegex
+	uriRegex := info.ValidityRegex
 	if match, err := regexp.MatchString(uriRegex, body.PhysicalAddress); err != nil || !match {
 		writeError(w, r, http.StatusBadRequest, fmt.Sprintf("physical address is not valid for block adapter: %s",
-			c.BlockAdapter.BlockstoreType(),
+			c.Config.StorageConfig().GetStorageByID(repo.StorageID).BlockstoreType(),
 		))
 		return
 	}
@@ -5179,7 +5201,7 @@ func (c *Controller) SetupCommPrefs(w http.ResponseWriter, r *http.Request, body
 		InstallationID:  installationID,
 		FeatureUpdates:  commPrefs.FeatureUpdates,
 		SecurityUpdates: commPrefs.SecurityUpdates,
-		BlockstoreType:  c.Config.GetBaseConfig().BlockstoreType(),
+		BlockstoreType:  c.BlockAdapter.BlockstoreType(),
 	}
 	// collect comm prefs
 	go c.Collector.CollectCommPrefs(commPrefsED)

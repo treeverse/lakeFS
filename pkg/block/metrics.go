@@ -115,7 +115,7 @@ func (m *MetricsAdapter) BlockstoreMetadata(ctx context.Context) (*BlockstoreMet
 	return m.adapter.BlockstoreMetadata(ctx)
 }
 
-func (m *MetricsAdapter) GetStorageNamespaceInfo(storageID string) (StorageNamespaceInfo, error) {
+func (m *MetricsAdapter) GetStorageNamespaceInfo(storageID string) *StorageNamespaceInfo {
 	return m.adapter.GetStorageNamespaceInfo(storageID)
 }
 

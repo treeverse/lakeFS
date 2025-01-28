@@ -606,7 +606,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	return completeMultipart(ctx, multipartList.Part, *containerURL, qualifiedKey.BlobURL)
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
+func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
 
 	info.ImportValidityRegex = fmt.Sprintf(`^https?://[a-z0-9_-]+\.%s`, a.clientCache.params.Domain)
@@ -619,7 +619,7 @@ func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo,
 	if !(a.disablePreSignedUI || a.disablePreSigned) {
 		info.PreSignSupportUI = true
 	}
-	return info, nil
+	return &info
 }
 
 func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
