@@ -177,7 +177,11 @@ func AddAdminUser(ctx context.Context, authService auth.Service, user *model.Sup
 	defer func() {
 		// delete admin on any error to avoid partial setup
 		if err != nil {
-			_ = authService.DeleteUser(ctx, user.Username)
+			logger := logging.ContextUnavailable()
+			logger.WithError(err).Warn("Failed to create admin user, deleting user")
+			if delUserErr := authService.DeleteUser(ctx, user.Username); delUserErr != nil {
+				logger.WithError(delUserErr).Error("Failed to delete user")
+			}
 		}
 	}()
 
