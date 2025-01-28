@@ -142,9 +142,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 			require.NoError(t, err)
 			var prefix string
 			if tt.prefix == "" {
-				blockstoreType, err := adapter.BlockstoreType("")
-				require.NoError(t, err)
-				if blockstoreType != block.BlockstoreTypeLocal {
+				if adapter.BlockstoreType("") != block.BlockstoreTypeLocal {
 					prefix = testPrefix
 				}
 
@@ -156,9 +154,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 					}
 				}
 			} else {
-				blockstoreType, err := adapter.BlockstoreType("")
-				require.NoError(t, err)
-				if blockstoreType != block.BlockstoreTypeLocal {
+				if adapter.BlockstoreType("") != block.BlockstoreTypeLocal {
 					prefix = tt.prefix
 				}
 				for j := 0; j < filesAndFolders; j++ {
@@ -173,7 +169,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace string) {
 	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
 	require.NotNil(t, exp)
-	expectedExpiry := expectedURLExp(t, adapter)
+	expectedExpiry := expectedURLExp(adapter)
 	require.Equal(t, expectedExpiry, *exp)
 	_, err := url.Parse(preSignedURL)
 	require.NoError(t, err)
@@ -183,7 +179,7 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 func testGetPreSignedURLEndpointOverride(t *testing.T, adapter block.Adapter, storageNamespace string, oe *url.URL) {
 	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
 	require.NotNil(t, exp)
-	expectedExpiry := expectedURLExp(t, adapter)
+	expectedExpiry := expectedURLExp(adapter)
 	require.Equal(t, expectedExpiry, *exp)
 	u, err := url.Parse(preSignedURL)
 	require.NoError(t, err)
@@ -197,12 +193,10 @@ func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamesp
 
 	preSignedURL, exp, err := adapter.GetPreSignedURL(ctx, obj, block.PreSignModeRead)
 
-	blockstoreType, err := adapter.BlockstoreType("")
-	require.NoError(t, err)
-	if blockstoreType == block.BlockstoreTypeGS {
+	if adapter.BlockstoreType("") == block.BlockstoreTypeGS {
 		require.ErrorContains(t, err, "no credentials found")
 		return "", nil
-	} else if blockstoreType == block.BlockstoreTypeLocal {
+	} else if adapter.BlockstoreType("") == block.BlockstoreTypeLocal {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 		return "", nil
 	}
@@ -210,10 +204,8 @@ func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamesp
 	return preSignedURL, &exp
 }
 
-func expectedURLExp(t *testing.T, adapter block.Adapter) time.Time {
-	blockstoreType, err := adapter.BlockstoreType("")
-	require.NoError(t, err)
-	if blockstoreType == block.BlockstoreTypeAzure {
+func expectedURLExp(adapter block.Adapter) time.Time {
+	if adapter.BlockstoreType("") == block.BlockstoreTypeAzure {
 		// we didn't implement expiry for Azure yet
 		return time.Time{}
 	} else {

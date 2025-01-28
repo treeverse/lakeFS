@@ -39,7 +39,8 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			blockstoreType, _ := adapter.BlockstoreType("")
+			blockstoreType, err := adapter.BlockstoreType("")
+			require.NoError(t, err)
 			obj := block.ObjectPointer{
 				StorageID:        "",
 				StorageNamespace: storageNamespace,
@@ -132,7 +133,8 @@ func testAdapterCopyPart(t *testing.T, adapter block.Adapter, storageNamespace s
 	resp, err := adapter.CreateMultiPartUpload(ctx, objCopy, nil, block.CreateMultiPartUploadOpts{})
 	require.NoError(t, err)
 	multiParts, err := copyPart(t, ctx, adapter, obj, objCopy, resp.UploadID)
-	blockstoreType, _ := adapter.BlockstoreType("")
+	blockstoreType, err := adapter.BlockstoreType("")
+	require.NoError(t, err)
 	if blockstoreType == block.BlockstoreTypeAzure {
 		require.ErrorContains(t, err, "not implemented") // azurite block store emulator did not yet implement this
 		return
@@ -156,7 +158,8 @@ func testAdapterCopyPartRange(t *testing.T, adapter block.Adapter, storageNamesp
 	resp, err := adapter.CreateMultiPartUpload(ctx, objCopy, nil, block.CreateMultiPartUploadOpts{})
 	require.NoError(t, err)
 	multiParts := copyPartRange(t, ctx, adapter, obj, objCopy, resp.UploadID)
-	blockstoreType, _ := adapter.BlockstoreType("")
+	blockstoreType, err := adapter.BlockstoreType("")
+	require.NoError(t, err)
 	if blockstoreType == block.BlockstoreTypeAzure {
 		// not implemented in Azure
 		require.Nil(t, multiParts) // azurite block store emulator did not yet implement this
@@ -202,7 +205,8 @@ func uploadMultiPart(t *testing.T, ctx context.Context, adapter block.Adapter, o
 func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer, uploadID string) {
 	t.Helper()
 	_, err := adapter.ListParts(ctx, obj, uploadID, block.ListPartsOpts{})
-	blockstoreType, _ := adapter.BlockstoreType("")
+	blockstoreType, err := adapter.BlockstoreType("")
+	require.NoError(t, err)
 	if blockstoreType != block.BlockstoreTypeS3 {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 	} else {
@@ -234,7 +238,7 @@ func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj
 		partNumber := i + 1
 		var endPosition = startPosition + multipartPartSize
 		partResp, err := adapter.UploadCopyPartRange(ctx, obj, objCopy, uploadID, partNumber, startPosition, endPosition)
-		blockstoreType, _ := adapter.BlockstoreType("")
+		blockstoreType, err := adapter.BlockstoreType("")
 		if blockstoreType == block.BlockstoreTypeAzure {
 			require.ErrorContains(t, err, "not implemented") // azurite block store emulator did not yet implement this
 			return nil
