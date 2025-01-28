@@ -145,7 +145,7 @@ func (a *MockAdapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceI
 	info := block.DefaultStorageNamespaceInfo("s3")
 	info.PreSignSupport = false
 	info.ImportSupport = false
-	return info
+	return info, nil
 }
 
 func (a *MockAdapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
