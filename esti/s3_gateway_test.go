@@ -347,6 +347,22 @@ func TestListMultipartUploads(t *testing.T) {
 	require.Contains(t, keys, obj1)
 	require.Contains(t, keys, obj2)
 
+	maxUploads := aws.Int32(1)
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, MaxUploads: maxUploads})
+	require.NoError(t, err, "failed to list multipart uploads")
+	keys = extractUploadKeys(output)
+	require.Contains(t, keys, obj1)
+	require.NotContains(t, keys, obj2)
+
+	keyMarker := output.KeyMarker
+	uploadIDMarker := output.UploadIdMarker
+
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, MaxUploads: maxUploads, KeyMarker: keyMarker, UploadIdMarker: uploadIDMarker})
+	require.NoError(t, err, "failed to list multipart uploads")
+	keys = extractUploadKeys(output)
+	require.NotContains(t, keys, obj1)
+	require.Contains(t, keys, obj2)
+
 	// finish first mpu check only second appear
 	_, err = s3Client.CompleteMultipartUpload(ctx, completeInput1)
 	require.NoError(t, err, "failed to complete multipart upload")
