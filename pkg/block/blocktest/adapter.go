@@ -126,7 +126,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 		},
 	}
 	for _, tt := range cases {
-		qk, err := adapter.ResolveNamespace("", storageNamespace, filepath.Join(testPrefix, tt.prefix), block.IdentifierTypeRelative)
+		qk, err := adapter.ResolveNamespace(storageNamespace, filepath.Join(testPrefix, tt.prefix), block.IdentifierTypeRelative)
 		require.NoError(t, err)
 		uri, err := url.Parse(qk.Format())
 		require.NoError(t, err)
@@ -142,7 +142,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 			require.NoError(t, err)
 			var prefix string
 			if tt.prefix == "" {
-				if adapter.BlockstoreType("") != block.BlockstoreTypeLocal {
+				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
 					prefix = testPrefix
 				}
 
@@ -154,7 +154,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 					}
 				}
 			} else {
-				if adapter.BlockstoreType("") != block.BlockstoreTypeLocal {
+				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
 					prefix = tt.prefix
 				}
 				for j := 0; j < filesAndFolders; j++ {
@@ -193,10 +193,10 @@ func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamesp
 
 	preSignedURL, exp, err := adapter.GetPreSignedURL(ctx, obj, block.PreSignModeRead)
 
-	if adapter.BlockstoreType("") == block.BlockstoreTypeGS {
+	if adapter.BlockstoreType() == block.BlockstoreTypeGS {
 		require.ErrorContains(t, err, "no credentials found")
 		return "", nil
-	} else if adapter.BlockstoreType("") == block.BlockstoreTypeLocal {
+	} else if adapter.BlockstoreType() == block.BlockstoreTypeLocal {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 		return "", nil
 	}
@@ -205,7 +205,7 @@ func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamesp
 }
 
 func expectedURLExp(adapter block.Adapter) time.Time {
-	if adapter.BlockstoreType("") == block.BlockstoreTypeAzure {
+	if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
 		// we didn't implement expiry for Azure yet
 		return time.Time{}
 	} else {

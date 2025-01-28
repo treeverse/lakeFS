@@ -431,7 +431,7 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 	} else {
 		logger.
 			// TODO (gilo): uncomment this?
-			// WithField("adapter_type", blockStore.BlockstoreType()).
+			//WithField("adapter_type", blockStore.BlockstoreType()).
 			Debug("lakeFS is initialized, checking repositories for mismatched adapter")
 		hasMore := true
 		next := ""
