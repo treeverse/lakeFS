@@ -347,6 +347,7 @@ func TestListMultipartUploads(t *testing.T) {
 	require.Contains(t, keys, obj1)
 	require.Contains(t, keys, obj2)
 
+	// testing maxuploads - only first upload should return
 	maxUploads := aws.Int32(1)
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, MaxUploads: maxUploads})
 	require.NoError(t, err, "failed to list multipart uploads")
@@ -354,9 +355,9 @@ func TestListMultipartUploads(t *testing.T) {
 	require.Contains(t, keys, obj1)
 	require.NotContains(t, keys, obj2)
 
-	keyMarker := output.KeyMarker
-	uploadIDMarker := output.UploadIdMarker
-
+	// testing key marker and upload id marker for pagination. only records after marker should return
+	keyMarker := output.NextKeyMarker
+	uploadIDMarker := output.NextUploadIdMarker
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, MaxUploads: maxUploads, KeyMarker: keyMarker, UploadIdMarker: uploadIDMarker})
 	require.NoError(t, err, "failed to list multipart uploads")
 	keys = extractUploadKeys(output)

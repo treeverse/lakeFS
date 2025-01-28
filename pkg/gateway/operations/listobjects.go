@@ -462,6 +462,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		Uploads:            uploads,
 		NextKeyMarker:      *mpuResp.NextKeyMarker,
 		NextUploadIDMarker: *mpuResp.NextUploadIDMarker,
+		IsTruncted:         mpuResp.IsTruncated,
 	}
 	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

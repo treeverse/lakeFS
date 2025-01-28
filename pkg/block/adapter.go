@@ -127,6 +127,7 @@ type ListMultipartUploadsResponse struct {
 	Uploads            []types.MultipartUpload
 	NextUploadIDMarker *string
 	NextKeyMarker      *string
+	IsTruncated        bool
 }
 
 // CreateMultiPartUploadOpts contains optional arguments for

@@ -170,6 +170,7 @@ type ListMultipartUploadsOutput struct {
 	Uploads            []Upload `xml:"Upload"`
 	NextKeyMarker      string   `xml:"NextKeyMarker"`
 	NextUploadIDMarker string   `xml:"NextUploadIDMarker"`
+	IsTruncted         bool     `xml:"IsTruncted"`
 }
 
 type VersioningConfiguration struct {
