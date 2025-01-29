@@ -11,11 +11,11 @@ import (
 // ID is an identifier for a Range
 type ID string
 
-// Namespace is namespace for ID ranges
-type Namespace string
-
 // StorageID is id for object storage
 type StorageID string
+
+// Namespace is namespace for ID ranges
+type Namespace string
 
 // Key and Value types for to be stored in any Range of the MetaRange
 type Key []byte
