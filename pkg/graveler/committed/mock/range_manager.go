@@ -141,18 +141,18 @@ func (mr *MockRangeManagerMockRecorder) Exists(ctx, storageID, ns, id interface{
 }
 
 // GetURI mocks base method.
-func (m *MockRangeManager) GetURI(ctx context.Context, ns committed.Namespace, id committed.ID) (string, error) {
+func (m *MockRangeManager) GetURI(ctx context.Context, id committed.ID) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetURI", ctx, ns, id)
+	ret := m.ctrl.Call(m, "GetURI", ctx, id)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetURI indicates an expected call of GetURI.
-func (mr *MockRangeManagerMockRecorder) GetURI(ctx, ns, id interface{}) *gomock.Call {
+func (mr *MockRangeManagerMockRecorder) GetURI(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURI", reflect.TypeOf((*MockRangeManager)(nil).GetURI), ctx, ns, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURI", reflect.TypeOf((*MockRangeManager)(nil).GetURI), ctx, id)
 }
 
 // GetValue mocks base method.

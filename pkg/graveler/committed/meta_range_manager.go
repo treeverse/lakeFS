@@ -111,10 +111,10 @@ func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, storageID g
 	return NewIterator(ctx, m.rangeManager, Namespace(ns), rangesIt), nil
 }
 
-func (m *metaRangeManager) GetMetaRangeURI(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (string, error) {
-	return m.metaManager.GetURI(ctx, Namespace(ns), ID(id))
+func (m *metaRangeManager) GetMetaRangeURI(ctx context.Context, id graveler.MetaRangeID) (string, error) {
+	return m.metaManager.GetURI(ctx, ID(id))
 }
 
-func (m *metaRangeManager) GetRangeURI(ctx context.Context, ns graveler.StorageNamespace, id graveler.RangeID) (string, error) {
-	return m.rangeManager.GetURI(ctx, Namespace(ns), ID(id))
+func (m *metaRangeManager) GetRangeURI(ctx context.Context, id graveler.RangeID) (string, error) {
+	return m.rangeManager.GetURI(ctx, ID(id))
 }
