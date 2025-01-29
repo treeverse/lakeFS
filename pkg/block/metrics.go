@@ -115,12 +115,12 @@ func (m *MetricsAdapter) BlockstoreMetadata(ctx context.Context) (*BlockstoreMet
 	return m.adapter.BlockstoreMetadata(ctx)
 }
 
-func (m *MetricsAdapter) GetStorageNamespaceInfo() StorageNamespaceInfo {
-	return m.adapter.GetStorageNamespaceInfo()
+func (m *MetricsAdapter) GetStorageNamespaceInfo(storageID string) (StorageNamespaceInfo, error) {
+	return m.adapter.GetStorageNamespaceInfo(storageID)
 }
 
-func (m *MetricsAdapter) ResolveNamespace(storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error) {
-	return m.adapter.ResolveNamespace(storageNamespace, key, identifierType)
+func (m *MetricsAdapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error) {
+	return m.adapter.ResolveNamespace(storageID, storageNamespace, key, identifierType)
 }
 
 func (m *MetricsAdapter) GetRegion(ctx context.Context, storageID, storageNamespace string) (string, error) {

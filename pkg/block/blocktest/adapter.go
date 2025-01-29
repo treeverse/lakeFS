@@ -126,7 +126,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 		},
 	}
 	for _, tt := range cases {
-		qk, err := adapter.ResolveNamespace(storageNamespace, filepath.Join(testPrefix, tt.prefix), block.IdentifierTypeRelative)
+		qk, err := adapter.ResolveNamespace("", storageNamespace, filepath.Join(testPrefix, tt.prefix), block.IdentifierTypeRelative)
 		require.NoError(t, err)
 		uri, err := url.Parse(qk.Format())
 		require.NoError(t, err)

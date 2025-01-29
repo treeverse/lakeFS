@@ -153,7 +153,7 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 				t.Errorf("Remove() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			qk, err := adapter.ResolveNamespace(storageNamespace, tt.name, block.IdentifierTypeRelative)
+			qk, err := adapter.ResolveNamespace("", storageNamespace, tt.name, block.IdentifierTypeRelative)
 			require.NoError(t, err)
 
 			tree := dumpPathTree(t, ctx, adapter, qk)
