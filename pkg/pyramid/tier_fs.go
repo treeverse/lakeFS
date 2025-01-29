@@ -140,7 +140,7 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 	}()
 }
 
-func (tfs *TierFS) store(ctx context.Context, storageID string, namespace, originalPath, nsPath, filename string) error {
+func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath, nsPath, filename string) error {
 	if tfs.logger.IsTracing() {
 		tfs.log(ctx).WithFields(logging.Fields{
 			"storageID":     storageID,
@@ -185,7 +185,7 @@ func (tfs *TierFS) GetRemoteURI(_ context.Context, _, filename string) (string, 
 // Create creates a new file in TierFS.  File isn't stored in TierFS until a successful close
 // operation.  Open(namespace, filename) calls will return an error before the close was
 // called.  Create only performs local operations so it ignores the context.
-func (tfs *TierFS) Create(_ context.Context, storageID string, namespace string) (StoredFile, error) {
+func (tfs *TierFS) Create(_ context.Context, storageID, namespace string) (StoredFile, error) {
 	nsPath, err := parseNamespacePath(namespace)
 	if err != nil {
 		return nil, err
