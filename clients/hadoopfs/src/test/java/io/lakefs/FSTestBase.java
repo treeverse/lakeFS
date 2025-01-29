@@ -1,15 +1,7 @@
 package io.lakefs;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.S3ClientOptions;
-import com.amazonaws.services.s3.model.*;
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -20,27 +12,20 @@ import io.lakefs.clients.sdk.model.ObjectStats.PathTypeEnum;
 import io.lakefs.utils.ObjectLocation;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileAlreadyExistsException;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpStatus;
 
 import org.immutables.value.Value;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 import org.junit.rules.TestName;
 
 import org.mockserver.client.MockServerClient;
 import org.mockserver.junit.MockServerRule;
-import org.mockserver.matchers.MatchType;
 import org.mockserver.matchers.TimeToLive;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.Cookie;
 import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
-import org.mockserver.model.Parameter;
 
 import static org.apache.commons.lang3.StringUtils.removeStart;
 
@@ -51,7 +36,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Base for all LakeFSFilesystem tests.  Helps set common components up but
@@ -85,10 +69,10 @@ public abstract class FSTestBase {
         .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
         .create();
 
-    @Value.Immutable static public interface Pagination {
-        @Value.Parameter Optional<Integer> amount();
-        @Value.Parameter Optional<String> after();
-        @Value.Parameter Optional<String> prefix();
+    static public interface Pagination {
+        Optional<Integer> amount();
+        Optional<String> after();
+        Optional<String> prefix();
     }
 
     @Rule

@@ -5,40 +5,22 @@ import org.slf4j.LoggerFactory;
 
 import io.lakefs.clients.sdk.*;
 import io.lakefs.clients.sdk.model.*;
-import io.lakefs.clients.sdk.model.ObjectStats.PathTypeEnum;
 import io.lakefs.utils.ObjectLocation;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.http.HttpStatus;
 import org.junit.Assert;
 import org.junit.Test;
 
 import org.hamcrest.core.StringContains;
-
-import org.mockserver.client.MockServerClient;
-import org.mockserver.matchers.TimeToLive;
-import org.mockserver.matchers.Times;
-import org.mockserver.model.Cookie;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
-import org.mockserver.model.Parameter;
 
 import static org.mockserver.model.HttpResponse.response;
 import static org.mockserver.model.JsonBody.json;
 
 import java.io.*;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class LakeFSFileSystemServerTest extends FSTestBase {
