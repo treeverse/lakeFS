@@ -1014,14 +1014,14 @@ type CommittedManager interface {
 	Exists(ctx context.Context, storageID StorageID, ns StorageNamespace, id MetaRangeID) (bool, error)
 
 	// WriteMetaRangeByIterator flushes the iterator to a new MetaRange and returns the created ID.
-	WriteMetaRangeByIterator(ctx context.Context, ns StorageNamespace, it ValueIterator, metadata Metadata) (*MetaRangeID, error)
+	WriteMetaRangeByIterator(ctx context.Context, storageID StorageID, ns StorageNamespace, it ValueIterator, metadata Metadata) (*MetaRangeID, error)
 
 	// WriteRange creates a new Range from the iterator values.
 	// Keeps Range closing logic, so might not exhaust the iterator.
 	WriteRange(ctx context.Context, storageID StorageID, ns StorageNamespace, it ValueIterator) (*RangeInfo, error)
 
 	// WriteMetaRange creates a new MetaRange from the given Ranges.
-	WriteMetaRange(ctx context.Context, ns StorageNamespace, ranges []*RangeInfo) (*MetaRangeInfo, error)
+	WriteMetaRange(ctx context.Context, storageID StorageID, ns StorageNamespace, ranges []*RangeInfo) (*MetaRangeInfo, error)
 
 	// List takes a given tree and returns an ValueIterator
 	List(ctx context.Context, storageID StorageID, ns StorageNamespace, rangeID MetaRangeID) (ValueIterator, error)
@@ -1251,7 +1251,7 @@ func (g *Graveler) WriteMetaRange(ctx context.Context, repository *RepositoryRec
 	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
-	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageNamespace, ranges)
+	return g.CommittedManager.WriteMetaRange(ctx, repository.StorageID, repository.StorageNamespace, ranges)
 }
 
 func (g *Graveler) StageObject(ctx context.Context, stagingToken string, object ValueRecord) error {
@@ -1263,7 +1263,7 @@ func (g *Graveler) WriteMetaRangeByIterator(ctx context.Context, repository *Rep
 	if repository.ReadOnly && !options.Force {
 		return nil, ErrReadOnlyRepository
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace, it, nil)
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageID, repository.StorageNamespace, it, nil)
 }
 
 func (g *Graveler) GetCommit(ctx context.Context, repository *RepositoryRecord, commitID CommitID) (*Commit, error) {
@@ -3436,7 +3436,7 @@ func (g *Graveler) DumpCommits(ctx context.Context, repository *RepositoryRecord
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageID, repository.StorageNamespace,
 		commitsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeCommit,
@@ -3456,7 +3456,7 @@ func (g *Graveler) DumpBranches(ctx context.Context, repository *RepositoryRecor
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageID, repository.StorageNamespace,
 		branchesToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeBranch,
@@ -3476,7 +3476,7 @@ func (g *Graveler) DumpTags(ctx context.Context, repository *RepositoryRecord) (
 	if err != nil {
 		return nil, err
 	}
-	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageNamespace,
+	return g.CommittedManager.WriteMetaRangeByIterator(ctx, repository.StorageID, repository.StorageNamespace,
 		tagsToValueIterator(iter),
 		Metadata{
 			EntityTypeKey:             EntityTypeTag,

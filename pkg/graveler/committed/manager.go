@@ -110,8 +110,8 @@ func (c *committedManager) WriteRange(ctx context.Context, storageID graveler.St
 	}, nil
 }
 
-func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
-	writer := c.metaRangeManager.NewWriter(ctx, ns, nil)
+func (c *committedManager) WriteMetaRange(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
+	writer := c.metaRangeManager.NewWriter(ctx, storageID, ns, nil)
 	defer func() {
 		if err := writer.Abort(); err != nil {
 			logging.FromContext(ctx).WithError(err).Error("Aborting write to meta range")
@@ -146,8 +146,8 @@ func (c *committedManager) WriteMetaRange(ctx context.Context, ns graveler.Stora
 	}, nil
 }
 
-func (c *committedManager) WriteMetaRangeByIterator(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
-	writer := c.metaRangeManager.NewWriter(ctx, ns, metadata)
+func (c *committedManager) WriteMetaRangeByIterator(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
+	writer := c.metaRangeManager.NewWriter(ctx, storageID, ns, metadata)
 	defer func() {
 		if err := writer.Abort(); err != nil {
 			logging.FromContext(ctx).WithError(err).Error("Aborting write to meta range")
@@ -264,7 +264,7 @@ func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (gravel
 		defer srcIt.Close()
 	}
 
-	mwWriter := c.metaRangeManager.NewWriter(ctx, mctx.ns, nil)
+	mwWriter := c.metaRangeManager.NewWriter(ctx, mctx.storageID, mctx.ns, nil)
 	defer func() {
 		err = mwWriter.Abort()
 		if err != nil {
@@ -287,7 +287,7 @@ func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (gravel
 }
 
 func (c *committedManager) Commit(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, allowEmpty bool, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
-	mwWriter := c.metaRangeManager.NewWriter(ctx, ns, nil)
+	mwWriter := c.metaRangeManager.NewWriter(ctx, storageID, ns, nil)
 	defer func() {
 		err := mwWriter.Abort()
 		if err != nil {

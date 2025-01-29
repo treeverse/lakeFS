@@ -36,7 +36,7 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
+func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, storageID StorageID, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
 	return &GeneralMetaRangeWriter{
 		ctx:              ctx,
 		metadata:         md,
@@ -44,6 +44,7 @@ func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManag
 		metaRangeManager: metaRangeManager,
 		batchWriteCloser: NewBatchCloser(params.MaxUploaders),
 		params:           params,
+		storageID:        storageID,
 		namespace:        namespace,
 	}
 }

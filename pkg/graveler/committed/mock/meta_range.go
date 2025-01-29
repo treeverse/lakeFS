@@ -335,17 +335,17 @@ func (mr *MockMetaRangeManagerMockRecorder) NewMetaRangeIterator(ctx, storageID,
 }
 
 // NewWriter mocks base method.
-func (m *MockMetaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) committed.MetaRangeWriter {
+func (m *MockMetaRangeManager) NewWriter(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, metadata graveler.Metadata) committed.MetaRangeWriter {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewWriter", ctx, ns, metadata)
+	ret := m.ctrl.Call(m, "NewWriter", ctx, storageID, ns, metadata)
 	ret0, _ := ret[0].(committed.MetaRangeWriter)
 	return ret0
 }
 
 // NewWriter indicates an expected call of NewWriter.
-func (mr *MockMetaRangeManagerMockRecorder) NewWriter(ctx, ns, metadata interface{}) *gomock.Call {
+func (mr *MockMetaRangeManagerMockRecorder) NewWriter(ctx, storageID, ns, metadata interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewWriter", reflect.TypeOf((*MockMetaRangeManager)(nil).NewWriter), ctx, ns, metadata)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewWriter", reflect.TypeOf((*MockMetaRangeManager)(nil).NewWriter), ctx, storageID, ns, metadata)
 }
 
 // MockMetaRangeWriter is a mock of MetaRangeWriter interface.

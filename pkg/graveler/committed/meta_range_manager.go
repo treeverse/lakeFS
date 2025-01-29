@@ -96,8 +96,8 @@ func (m *metaRangeManager) GetRangeByKey(ctx context.Context, storageID graveler
 	return &rng, nil
 }
 
-func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter {
-	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, &m.params, Namespace(ns), metadata)
+func (m *metaRangeManager) NewWriter(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter {
+	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, &m.params, StorageID(storageID), Namespace(ns), metadata)
 }
 
 func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID) (Iterator, error) {
