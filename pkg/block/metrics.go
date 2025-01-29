@@ -110,9 +110,9 @@ func (m *MetricsAdapter) BlockstoreType() string {
 	return m.adapter.BlockstoreType()
 }
 
-func (m *MetricsAdapter) BlockstoreMetadata(ctx context.Context, storageID string) (*BlockstoreMetadata, error) {
+func (m *MetricsAdapter) BlockstoreMetadata(ctx context.Context) (*BlockstoreMetadata, error) {
 	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
-	return m.adapter.BlockstoreMetadata(ctx, storageID)
+	return m.adapter.BlockstoreMetadata(ctx)
 }
 
 func (m *MetricsAdapter) GetStorageNamespaceInfo(storageID string) (StorageNamespaceInfo, error) {

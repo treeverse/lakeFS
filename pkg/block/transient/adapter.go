@@ -147,7 +147,7 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeTransient
 }
 
-func (a *Adapter) BlockstoreMetadata(_ context.Context, _ string) (*block.BlockstoreMetadata, error) {
+func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetadata, error) {
 	return nil, block.ErrOperationNotSupported
 }
 

@@ -7,7 +7,7 @@ import (
 )
 
 func ValidateInterRegionStorage(ctx context.Context, adapter Adapter, storageID, storageNamespace string) error {
-	blockstoreMetadata, err := adapter.BlockstoreMetadata(ctx, storageID)
+	blockstoreMetadata, err := adapter.BlockstoreMetadata(ctx)
 	if errors.Is(err, ErrOperationNotSupported) {
 		// region detection not supported for the server's blockstore, skip validation
 		return nil

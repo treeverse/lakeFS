@@ -855,7 +855,7 @@ func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
 
-func (a *Adapter) BlockstoreMetadata(ctx context.Context, _ string) (*block.BlockstoreMetadata, error) {
+func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMetadata, error) {
 	region, err := a.clients.GetBucketRegionDefault(ctx, "")
 	if err != nil {
 		return nil, err
