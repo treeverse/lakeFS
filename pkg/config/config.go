@@ -163,6 +163,7 @@ type AdapterConfig interface {
 	BlockstoreAzureParams() (blockparams.Azure, error)
 	BlockstoreExtras() map[string]string
 	GetDefaultNamespacePrefix() *string
+	SigningKey() string
 }
 
 type Blockstore struct {
@@ -355,6 +356,10 @@ func (b *Blockstore) BlockstoreExtras() map[string]string {
 
 func (b *Blockstore) GetDefaultNamespacePrefix() *string {
 	return b.DefaultNamespacePrefix
+}
+
+func (b *Blockstore) SigningKey() string {
+	return b.Signing.SecretKey.SecureValue()
 }
 
 type Config interface {

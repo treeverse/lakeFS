@@ -209,7 +209,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	}
 
 	// generate a new address for the object we like to upload
-	address, err := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
+	address, err := c.Catalog.GetAddressWithSignature(repo, branch, params.Path)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -308,7 +308,7 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := c.Catalog.VerifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+	if err := c.Catalog.VerifyLinkAddress(repo, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -377,7 +377,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 	}
 
 	//  verify it has been saved for linking
-	if err := c.Catalog.VerifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+	if err := c.Catalog.VerifyLinkAddress(repo, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -702,7 +702,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	address, err := c.Catalog.GetAddressWithSignature(repository, branch, params.Path)
+	address, err := c.Catalog.GetAddressWithSignature(repo, branch, params.Path)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
@@ -779,7 +779,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	storage := c.Config.StorageConfig().GetStorageByID(repo.StorageID)
 	if storage == nil {
-		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage namespace info found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
+		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage config found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
 		return
 	}
 	blockStoreType := storage.BlockstoreType()
@@ -802,7 +802,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	if addressType == catalog.AddressTypeRelative {
 		// if the address is in the storage namespace, verify it has been produced by lakeFS
-		if err = c.Catalog.VerifyLinkAddress(repository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		if err = c.Catalog.VerifyLinkAddress(repo, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
 			return
 		}
 

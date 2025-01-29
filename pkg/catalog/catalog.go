@@ -222,6 +222,7 @@ type Config struct {
 }
 
 type Catalog struct {
+	Cfg                   Config
 	BlockAdapter          block.Adapter
 	Store                 Store
 	walkerFactory         WalkerFactory
@@ -235,7 +236,6 @@ type Catalog struct {
 	deleteSensor          *graveler.DeleteSensor
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
-	signingKey            config.SecureString
 }
 
 const (
@@ -412,6 +412,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
 
 	return &Catalog{
+		Cfg:                   cfg,
 		BlockAdapter:          tierFSParams.Adapter,
 		Store:                 gStore,
 		UGCPrepareMaxFileSize: baseCfg.UGC.PrepareMaxFileSize,
@@ -425,8 +426,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
-		// TODO(niro): This should be removed - we need to return the signing key dynamically from the blockAdapter
-		signingKey: baseCfg.Blockstore.Signing.SecretKey,
 	}, nil
 }
 
@@ -2845,7 +2844,7 @@ func getHashSum(value, signingKey []byte) []byte {
 	return h.Sum(nil)
 }
 
-func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress string) error {
+func (c *Catalog) VerifyLinkAddress(repo *Repository, branch, path, physicalAddress string) error {
 	idx := strings.LastIndex(physicalAddress, LinkAddressSigningDelimiter)
 	if idx < 0 {
 		return fmt.Errorf("address is not signed: %w", graveler.ErrLinkAddressInvalid)
@@ -2853,7 +2852,7 @@ func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress st
 	address := physicalAddress[:idx]
 	signature := physicalAddress[idx+1:]
 
-	stringToVerify, err := getAddressJSON(repository, branch, path, address)
+	stringToVerify, err := getAddressJSON(repo.Name, branch, path, address)
 	if err != nil {
 		return fmt.Errorf("failed json encoding: %w", graveler.ErrLinkAddressInvalid)
 	}
@@ -2862,7 +2861,12 @@ func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress st
 		return fmt.Errorf("malformed address signature: %s: %w", stringToVerify, graveler.ErrLinkAddressInvalid)
 	}
 
-	calculated := getHashSum(stringToVerify, []byte(c.signingKey))
+	storage := c.Cfg.Config.StorageConfig().GetStorageByID(repo.StorageID)
+	if storage == nil {
+		return fmt.Errorf("no storage config for id %s :%w", repo.StorageID, config.ErrNoStorageConfig)
+	}
+
+	calculated := getHashSum(stringToVerify, []byte(storage.SigningKey()))
 	if !hmac.Equal(calculated, decodedSig) {
 		return fmt.Errorf("invalid address signature: %w", block.ErrInvalidAddress)
 	}
@@ -2877,8 +2881,8 @@ func (c *Catalog) VerifyLinkAddress(repository, branch, path, physicalAddress st
 	return nil
 }
 
-func (c *Catalog) signAddress(logicalAddress []byte) string {
-	dataHmac := getHashSum(logicalAddress, []byte(c.signingKey))
+func (c *Catalog) signAddress(logicalAddress []byte, signingKey string) string {
+	dataHmac := getHashSum(logicalAddress, []byte(signingKey))
 	return base64.RawURLEncoding.EncodeToString(dataHmac) // Using url encoding to avoid "/"
 }
 
@@ -2896,13 +2900,17 @@ func getAddressJSON(repository, branch, path, physicalAddress string) ([]byte, e
 	})
 }
 
-func (c *Catalog) GetAddressWithSignature(repository, branch, path string) (string, error) {
+func (c *Catalog) GetAddressWithSignature(repo *Repository, branch, path string) (string, error) {
 	physicalPath := c.PathProvider.NewPath()
-	data, err := getAddressJSON(repository, branch, path, physicalPath)
+	data, err := getAddressJSON(repo.Name, branch, path, physicalPath)
 	if err != nil {
 		return "", err
 	}
-	return physicalPath + LinkAddressSigningDelimiter + c.signAddress(data), nil
+	storage := c.Cfg.Config.StorageConfig().GetStorageByID(repo.StorageID)
+	if storage == nil {
+		return "", fmt.Errorf("no storage config for id %s :%w", repo.StorageID, config.ErrNoStorageConfig)
+	}
+	return physicalPath + LinkAddressSigningDelimiter + c.signAddress(data, storage.SigningKey()), nil
 }
 
 func (c *Catalog) Close() error {
