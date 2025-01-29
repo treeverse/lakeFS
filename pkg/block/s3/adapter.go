@@ -881,7 +881,7 @@ func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPoin
 		Uploads:            resp.Uploads,
 		NextUploadIDMarker: resp.NextUploadIdMarker,
 		NextKeyMarker:      resp.NextKeyMarker,
-		IsTruncated:        *resp.IsTruncated,
+		IsTruncated:        aws.ToBool(resp.IsTruncated),
 	}
 	return &mpuResp, nil
 }

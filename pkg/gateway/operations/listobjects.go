@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -426,7 +427,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		if err != nil {
 			o.Log(req).WithField("maxUploadsStr", maxUploadsStr).
 				WithError(err).Error("malformed query parameter 'maxUploadsStr'")
-			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidArgument))
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidMaxUploads))
 			return
 		}
 		maxUploads32 := int32(maxUploads)
@@ -445,7 +446,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 
 	if err != nil {
 		o.Log(req).WithError(err).Error("list multipart uploads failed")
-		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))
 		return
 	}
 
@@ -471,8 +472,8 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	resp := &serde.ListMultipartUploadsOutput{
 		Bucket:             o.Repository.Name,
 		Uploads:            uploads,
-		NextKeyMarker:      *mpuResp.NextKeyMarker,
-		NextUploadIDMarker: *mpuResp.NextUploadIDMarker,
+		NextKeyMarker:      aws.StringValue(mpuResp.NextKeyMarker),
+		NextUploadIDMarker: aws.StringValue(mpuResp.NextUploadIDMarker),
 		IsTruncated:        mpuResp.IsTruncated,
 	}
 	o.EncodeResponse(w, req, resp, http.StatusOK)

@@ -205,11 +205,6 @@ func (a APIErrorCode) ToAPIErr() APIError {
 // Codes - error code to APIError structure, these fields carry respective
 // descriptions for all the error responses.
 var Codes = errorCodeMap{
-	ErrInvalidArgument: {
-		Code:           "InvalidArgument",
-		Description:    "Argument max-uploads must be an integer between 0 and 2147483647",
-		HTTPStatusCode: http.StatusBadRequest,
-	},
 	ErrInvalidCopyDest: {
 		Code:           "InvalidRequest",
 		Description:    "This copy request is illegal because it is trying to copy an object to itself without changing the object's metadata, storage class, website redirect location or encryption attributes.",
