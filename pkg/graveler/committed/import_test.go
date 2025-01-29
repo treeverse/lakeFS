@@ -359,7 +359,7 @@ func Test_import(t *testing.T) {
 					}
 				}
 				metaRangeManager := mock.NewMockMetaRangeManager(ctrl)
-				metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(writer)
+				metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(writer)
 				sourceMetaRangeID := tst.sourceRange.GetMetaRangeID()
 				destMetaRangeID := tst.destRange.GetMetaRangeID()
 				metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), gomock.Any(), graveler.MetaRangeID("")).AnyTimes().Return(committed.NewEmptyIterator(), nil) // empty base

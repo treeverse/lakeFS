@@ -1715,7 +1715,7 @@ func runMergeTests(tests testCases, t *testing.T) {
 						}
 					}
 					metaRangeManager := mock.NewMockMetaRangeManager(ctrl)
-					metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(writer)
+					metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(writer)
 					sourceMetaRangeID := tst.sourceRange.GetMetaRangeID()
 					destMetaRangeID := tst.destRange.GetMetaRangeID()
 					baseMetaRangeID := tst.baseRange.GetMetaRangeID()

@@ -114,7 +114,7 @@ func (c *CommittedFake) WriteRange(context.Context, graveler.StorageID, graveler
 	return &c.RangeInfo, nil
 }
 
-func (c *CommittedFake) WriteMetaRange(context.Context, graveler.StorageNamespace, []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
+func (c *CommittedFake) WriteMetaRange(context.Context, graveler.StorageID, graveler.StorageNamespace, []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
 	return &graveler.MetaRangeInfo{ID: c.MetaRangeID}, nil
 }
 
