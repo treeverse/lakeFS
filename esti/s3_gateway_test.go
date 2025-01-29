@@ -291,9 +291,6 @@ func TestS3IfNoneMatch(t *testing.T) {
 
 func TestListMultipartUploads(t *testing.T) {
 	blockStoreType := viper.GetString(ViperBlockstoreType)
-	if blockStoreType != "s3" {
-		t.Skip("Skipping test - blockstore type is not s3")
-	}
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -304,16 +301,17 @@ func TestListMultipartUploads(t *testing.T) {
 	// create two objects for two mpus
 	obj1 := "object1"
 	obj2 := "object2"
-	path1 := "main/" + obj1
-	path2 := "main/" + obj2
+	keysPrefix := "main/"
+	key1 := keysPrefix + obj1
+	key2 := keysPrefix + obj2
 
 	input1 := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(repo),
-		Key:    aws.String(path1),
+		Key:    aws.String(key1),
 	}
 	input2 := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(repo),
-		Key:    aws.String(path2),
+		Key:    aws.String(key2),
 	}
 	// create first mpu
 	resp1, err := s3Client.CreateMultipartUpload(ctx, input1)
@@ -335,6 +333,10 @@ func TestListMultipartUploads(t *testing.T) {
 	}
 	// check first mpu appears
 	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	if blockStoreType != "s3" {
+		require.Contains(t, err.Error(), "NotImplemented")
+		t.Skip("Skipping test - blockstore type is not s3")
+	}
 	require.NoError(t, err, "error listing multiparts")
 	keys := extractUploadKeys(output)
 	require.Contains(t, keys, obj1)
