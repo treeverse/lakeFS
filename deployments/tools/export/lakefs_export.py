@@ -13,8 +13,10 @@ from string import Template
 LAKEFS_ACCESS_KEY = os.getenv('LAKEFS_ACCESS_KEY_ID')
 LAKEFS_SECRET_KEY = os.getenv('LAKEFS_SECRET_ACCESS_KEY')
 LAKEFS_ENDPOINT = os.getenv('LAKEFS_ENDPOINT')
-S3_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY_ID')
-S3_SECRET_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+S3_PROVIDER = os.getenv('S3_PROVIDER', default="AWS")
+S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY_ID')
+S3_SECRET_KEY = os.getenv('S3_SECRET_ACCESS_KEY')
+S3_ENDPOINT = os.getenv('S3_ENDPOINT_URL', default="")
 
 SUCCESS_MSG = "Export completed successfully!"
 
@@ -26,8 +28,10 @@ def create_rclone_conf_file():
             'lakefs_access_key': LAKEFS_ACCESS_KEY,
             'lakefs_secret_key': LAKEFS_SECRET_KEY,
             'lakefs_endpoint': LAKEFS_ENDPOINT,
+            's3_provider': S3_PROVIDER,
             's3_access_key': S3_ACCESS_KEY,
             's3_secret_key': S3_SECRET_KEY,
+            's3_endpoint': S3_ENDPOINT
         }
         res = src.substitute(vars)
     with open('rclone.conf', 'w+') as f:
