@@ -10,12 +10,12 @@ force_path_style = true
 
 [s3]
 type = s3
-provider = AWS
+provider = $s3_provider
 env_auth = false
 access_key_id = $s3_access_key
 secret_access_key = $s3_secret_key
 region =
-endpoint =
+endpoint = $s3_endpoint
 location_constraint =
 acl = private
 server_side_encryption =
