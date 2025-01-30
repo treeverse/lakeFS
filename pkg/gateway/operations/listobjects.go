@@ -21,8 +21,7 @@ import (
 
 const (
 	ListObjectMaxKeys = 1000
-	maxUploadsListMPU = 2147483647
-	minUploadsListMPU = 0
+	maxUploadsListMPU = 1000
 
 	// defaultBucketLocation used to identify if we need to specify the location constraint
 	defaultBucketLocation    = "us-east-1"
@@ -427,9 +426,12 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	if maxUploadsStr != "" {
 		maxUploads, err := strconv.ParseInt(maxUploadsStr, 10, 32)
 		maxUploads32 := int32(maxUploads)
-		if err != nil || maxUploads < minUploadsListMPU || maxUploads > maxUploadsListMPU {
+		if err != nil || maxUploads < 0 {
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidMaxUploads))
 			return
+		}
+		if maxUploads > maxUploadsListMPU {
+			maxUploads = maxUploadsListMPU
 		}
 		opts.MaxUploads = &maxUploads32
 	}
