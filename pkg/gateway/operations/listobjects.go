@@ -23,6 +23,7 @@ const (
 	ListObjectMaxKeys = 1000
 	maxUploadsRange   = 2147483647
 	minUploadsRange   = 0
+
 	// defaultBucketLocation used to identify if we need to specify the location constraint
 	defaultBucketLocation    = "us-east-1"
 	QueryParamMaxUploads     = "max-uploads"
@@ -425,13 +426,11 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	opts := block.ListMultipartUploadsOpts{}
 	if maxUploadsStr != "" {
 		maxUploads, err := strconv.ParseInt(maxUploadsStr, 10, 32)
+		maxUploads32 := int32(maxUploads)
 		if err != nil || maxUploads < minUploadsRange || maxUploads > maxUploadsRange {
-			o.Log(req).WithField("maxUploadsStr", maxUploadsStr).
-				WithError(err).Error("malformed query parameter 'maxUploadsStr'")
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidMaxUploads))
 			return
 		}
-		maxUploads32 := int32(maxUploads)
 		opts.MaxUploads = &maxUploads32
 	}
 	if uploadIDMarker != "" {

@@ -60,7 +60,6 @@ const (
 	ErrInternalError
 	ErrInvalidAccessKeyID
 	ErrInvalidBucketName
-	ErrInvalidArgument
 	ErrInvalidDigest
 	ErrInvalidRange
 	ErrInvalidCopyPartRange

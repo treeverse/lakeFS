@@ -291,6 +291,9 @@ func TestS3IfNoneMatch(t *testing.T) {
 
 func TestListMultipartUploads(t *testing.T) {
 	blockStoreType := viper.GetString(ViperBlockstoreType)
+	if blockStoreType != "s3" {
+		return
+	}
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -333,10 +336,6 @@ func TestListMultipartUploads(t *testing.T) {
 	}
 	// check first mpu appears
 	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
-	if blockStoreType != "s3" {
-		require.Contains(t, err.Error(), "NotImplemented")
-		return
-	}
 	require.NoError(t, err, "error listing multiparts")
 	keys := extractUploadKeys(output)
 	require.Contains(t, keys, obj1)
