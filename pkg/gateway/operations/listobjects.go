@@ -431,7 +431,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 			return
 		}
 		if maxUploads > maxUploadsListMPU {
-			maxUploads = maxUploadsListMPU
+			maxUploads32 = maxUploadsListMPU
 		}
 		opts.MaxUploads = &maxUploads32
 	}
