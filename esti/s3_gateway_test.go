@@ -376,6 +376,7 @@ func TestListMultipartUploads(t *testing.T) {
 	require.Contains(t, keys, obj2)
 
 }
+
 func TestListMultipartUploadsUnsupported(t *testing.T) {
 	blockStoreType := viper.GetString(ViperBlockstoreType)
 	if blockStoreType != "s3" {
@@ -391,17 +392,23 @@ func TestListMultipartUploadsUnsupported(t *testing.T) {
 	prefix := aws.String("prefix")
 	encodingType := types.EncodingTypeUrl
 
-	_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, Delimiter: delimiter})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "NotImplemented")
+	t.Run("Delimiter", func(t *testing.T) {
+		_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, Delimiter: delimiter})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "NotImplemented")
+	})
 
-	_, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, Prefix: prefix})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "NotImplemented")
+	t.Run("Prefix", func(t *testing.T) {
+		_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, Prefix: prefix})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "NotImplemented")
+	})
 
-	_, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, EncodingType: encodingType})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "NotImplemented")
+	t.Run("EncodingType", func(t *testing.T) {
+		_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, EncodingType: encodingType})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "NotImplemented")
+	})
 }
 
 func extractUploadKeys(output *s3.ListMultipartUploadsOutput) []string {

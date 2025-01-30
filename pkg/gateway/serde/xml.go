@@ -168,9 +168,9 @@ type ListMultipartUploadsOutput struct {
 	XMLName            xml.Name `xml:"ListMultipartUploadsResult"`
 	Bucket             string   `xml:"Bucket"`
 	Uploads            []Upload `xml:"Upload"`
-	NextKeyMarker      string   `xml:"NextKeyMarker"`
-	NextUploadIDMarker string   `xml:"NextUploadIDMarker"`
-	IsTruncated        bool     `xml:"IsTruncated"`
+	NextKeyMarker      string   `xml:"NextKeyMarker,omitempty"`
+	NextUploadIDMarker string   `xml:"NextUploadIDMarker,omitempty"`
+	IsTruncated        bool     `xml:"IsTruncated,omitempty"`
 }
 
 type VersioningConfiguration struct {
