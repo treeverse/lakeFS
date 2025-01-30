@@ -171,6 +171,7 @@ type ListMultipartUploadsOutput struct {
 	NextKeyMarker      string   `xml:"NextKeyMarker,omitempty"`
 	NextUploadIDMarker string   `xml:"NextUploadIDMarker,omitempty"`
 	IsTruncated        bool     `xml:"IsTruncated,omitempty"`
+	MaxUploads         int32    `xml:"MaxUploads,omitempty"`
 }
 
 type VersioningConfiguration struct {
