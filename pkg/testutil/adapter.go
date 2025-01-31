@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/block"
@@ -81,7 +80,7 @@ func (a *MockAdapter) Get(_ context.Context, _ block.ObjectPointer) (io.ReadClos
 	return nil, nil
 }
 
-func (a *MockAdapter) GetWalker(_ *url.URL) (block.Walker, error) {
+func (a *MockAdapter) GetWalker(_ string, _ block.WalkerOptions) (block.Walker, error) {
 	return nil, nil
 }
 
@@ -150,7 +149,7 @@ func (a *MockAdapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceI
 	return info, nil
 }
 
-func (a *MockAdapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *MockAdapter) ResolveNamespace(_, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 

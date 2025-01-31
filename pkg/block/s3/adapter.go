@@ -382,8 +382,8 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadClos
 	return objectOutput.Body, nil
 }
 
-func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
-	if err := block.ValidateStorageType(uri, block.StorageTypeS3); err != nil {
+func (a *Adapter) GetWalker(_ string, opts block.WalkerOptions) (block.Walker, error) {
+	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeS3); err != nil {
 		return nil, err
 	}
 	return NewS3Walker(a.clients.GetDefault()), nil
@@ -926,7 +926,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.CommonQualifiedKey, error)
 	return qualifiedKey, nil
 }
 
-func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 

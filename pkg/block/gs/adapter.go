@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -194,8 +193,8 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadClos
 	return r, nil
 }
 
-func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
-	if err := block.ValidateStorageType(uri, block.StorageTypeGS); err != nil {
+func (a *Adapter) GetWalker(_ string, opts block.WalkerOptions) (block.Walker, error) {
+	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeGS); err != nil {
 		return nil, err
 	}
 	return NewGCSWalker(a.client), nil
@@ -682,7 +681,7 @@ func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string,
 	return bucket, key, nil
 }
 
-func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 	if err != nil {
 		return qualifiedKey, err

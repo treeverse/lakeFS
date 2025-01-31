@@ -221,12 +221,12 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadClos
 	return a.Download(ctx, obj, 0, blockblob.CountToEnd)
 }
 
-func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
-	if err := block.ValidateStorageType(uri, block.StorageTypeAzure); err != nil {
+func (a *Adapter) GetWalker(_ string, opts block.WalkerOptions) (block.Walker, error) {
+	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeAzure); err != nil {
 		return nil, err
 	}
 
-	storageAccount, domain, err := ParseURL(uri)
+	storageAccount, domain, err := ParseURL(opts.StorageURI)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (a *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
 		return nil, err
 	}
 
-	return NewAzureDataLakeWalker(client, false)
+	return NewAzureDataLakeWalker(client, opts.SkipOutOfOrder)
 }
 
 func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
@@ -622,7 +622,7 @@ func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo,
 	return info, nil
 }
 
-func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
