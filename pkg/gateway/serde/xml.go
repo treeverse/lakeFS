@@ -149,6 +149,11 @@ type MultipartUploadPart struct {
 	Size         int64  `xml:"Size"`
 }
 
+type Upload struct {
+	Key      string `xml:"Key"`
+	UploadID string `xml:"UploadId"`
+}
+
 type ListPartsOutput struct {
 	XMLName              xml.Name              `xml:"ListPartsResult"`
 	Bucket               string                `xml:"Bucket"`
@@ -157,6 +162,16 @@ type ListPartsOutput struct {
 	MaxParts             int32                 `xml:"MaxParts"`
 	NextPartNumberMarker int32                 `xml:"NextPartNumberMarker"`
 	Parts                []MultipartUploadPart `xml:"Part"`
+}
+
+type ListMultipartUploadsOutput struct {
+	XMLName            xml.Name `xml:"ListMultipartUploadsResult"`
+	Bucket             string   `xml:"Bucket"`
+	Uploads            []Upload `xml:"Upload"`
+	NextKeyMarker      string   `xml:"NextKeyMarker,omitempty"`
+	NextUploadIDMarker string   `xml:"NextUploadIDMarker,omitempty"`
+	IsTruncated        bool     `xml:"IsTruncated,omitempty"`
+	MaxUploads         int32    `xml:"MaxUploads,omitempty"`
 }
 
 type VersioningConfiguration struct {

@@ -315,6 +315,140 @@ func setIfNonMatchHeader(ifNoneMatch string) func(*middleware.Stack) error {
 	}
 }
 
+func TestListMultipartUploads(t *testing.T) {
+	blockStoreType := viper.GetString(ViperBlockstoreType)
+	if blockStoreType != "s3" {
+		return
+	}
+	ctx, logger, repo := setupTest(t)
+	defer tearDownTest(repo)
+	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Client := createS3Client(s3Endpoint, t)
+	multipartNumberOfParts := 3
+	multipartPartSize := 5 * 1024 * 1024
+
+	// create two objects for two mpus
+	obj1 := "object1"
+	obj2 := "object2"
+	keysPrefix := "main/"
+	key1 := keysPrefix + obj1
+	key2 := keysPrefix + obj2
+
+	input1 := &s3.CreateMultipartUploadInput{
+		Bucket: aws.String(repo),
+		Key:    aws.String(key1),
+	}
+	input2 := &s3.CreateMultipartUploadInput{
+		Bucket: aws.String(repo),
+		Key:    aws.String(key2),
+	}
+	// create first mpu
+	resp1, err := s3Client.CreateMultipartUpload(ctx, input1)
+	require.NoError(t, err, "failed to create multipart upload")
+	parts := make([][]byte, multipartNumberOfParts)
+	for i := 0; i < multipartNumberOfParts; i++ {
+		parts[i] = randstr.Bytes(multipartPartSize + i)
+	}
+
+	completedParts1 := uploadMultipartParts(t, ctx, s3Client, logger, resp1, parts, 0)
+
+	completeInput1 := &s3.CompleteMultipartUploadInput{
+		Bucket:   resp1.Bucket,
+		Key:      resp1.Key,
+		UploadId: resp1.UploadId,
+		MultipartUpload: &types.CompletedMultipartUpload{
+			Parts: completedParts1,
+		},
+	}
+	// check first mpu appears
+	output, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	require.NoError(t, err, "error listing multiparts")
+	keys := extractUploadKeys(output)
+	require.Contains(t, keys, obj1)
+
+	// create second mpu check both appear
+	_, err = s3Client.CreateMultipartUpload(ctx, input2)
+	require.NoError(t, err, "failed to create multipart upload")
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	keys = extractUploadKeys(output)
+	require.Contains(t, keys, obj1)
+	require.Contains(t, keys, obj2)
+
+	// testing maxuploads - only first upload should return
+	maxUploads := aws.Int32(1)
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, MaxUploads: maxUploads})
+	require.NoError(t, err, "failed to list multipart uploads")
+	keys = extractUploadKeys(output)
+	require.Contains(t, keys, obj1)
+	require.NotContains(t, keys, obj2)
+
+	// testing key marker and upload id marker for pagination. only records after marker should return
+	keyMarker := output.NextKeyMarker
+	uploadIDMarker := output.NextUploadIdMarker
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, MaxUploads: maxUploads, KeyMarker: keyMarker, UploadIdMarker: uploadIDMarker})
+	require.NoError(t, err, "failed to list multipart uploads")
+	keys = extractUploadKeys(output)
+	require.NotContains(t, keys, obj1)
+	require.Contains(t, keys, obj2)
+
+	// finish first mpu check only second appear
+	_, err = s3Client.CompleteMultipartUpload(ctx, completeInput1)
+	require.NoError(t, err, "failed to complete multipart upload")
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	require.NoError(t, err, "error listing multiparts")
+	keys = extractUploadKeys(output)
+	require.NotContains(t, keys, obj1)
+	require.Contains(t, keys, obj2)
+
+}
+
+func TestListMultipartUploadsUnsupported(t *testing.T) {
+	blockStoreType := viper.GetString(ViperBlockstoreType)
+	if blockStoreType != "s3" {
+		return
+	}
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+	s3Endpoint := viper.GetString("s3_endpoint")
+	s3Client := createS3Client(s3Endpoint, t)
+	Bucket := aws.String(repo)
+
+	delimiter := aws.String("/")
+	prefix := aws.String("prefix")
+	encodingType := types.EncodingTypeUrl
+
+	t.Run("Delimiter", func(t *testing.T) {
+		_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, Delimiter: delimiter})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "NotImplemented")
+	})
+
+	t.Run("Prefix", func(t *testing.T) {
+		_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, Prefix: prefix})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "NotImplemented")
+	})
+
+	t.Run("EncodingType", func(t *testing.T) {
+		_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, EncodingType: encodingType})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "NotImplemented")
+	})
+}
+
+func extractUploadKeys(output *s3.ListMultipartUploadsOutput) []string {
+	if output == nil {
+		return nil
+	}
+	keys := make([]string, 0, len(output.Uploads))
+	for _, upload := range output.Uploads {
+		if upload.Key != nil {
+			keys = append(keys, *upload.Key)
+		}
+	}
+	return keys
+}
+
 func verifyObjectInfo(t *testing.T, got minio.ObjectInfo, expectedSize int) {
 	if got.Err != nil {
 		t.Errorf("%s: %s", got.Key, got.Err)
