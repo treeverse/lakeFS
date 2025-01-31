@@ -6,21 +6,32 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
 
 const (
 	ListObjectMaxKeys = 1000
+	maxUploadsListMPU = 1000
 
 	// defaultBucketLocation used to identify if we need to specify the location constraint
-	defaultBucketLocation = "us-east-1"
+	defaultBucketLocation    = "us-east-1"
+	QueryParamMaxUploads     = "max-uploads"
+	QueryParamUploadIDMarker = "upload-id-marker"
+	QueryParamKeyMarker      = "key-marker"
+	// missing implementation - will return error
+	QueryParampPrefix       = "prefix"
+	QueryParampEncodingType = "encoding-type"
+	QueryParampDelimiter    = "delimiter"
 )
 
 type ListObjects struct{}
@@ -355,7 +366,7 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 	if o.HandleUnsupported(w, req, "inventory", "metrics", "publicAccessBlock", "ownershipControls",
 		"intelligent-tiering", "analytics", "policy", "lifecycle", "encryption", "object-lock", "replication",
 		"notification", "events", "acl", "cors", "website", "accelerate",
-		"requestPayment", "logging", "tagging", "uploads", "versions", "policyStatus") {
+		"requestPayment", "logging", "tagging", "versions", "policyStatus") {
 		return
 	}
 	query := req.URL.Query()
@@ -370,7 +381,11 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 		o.EncodeResponse(w, req, response, http.StatusOK)
 		return
 	}
-
+	// check if request is list-multipart-uploads
+	if query.Has("uploads") {
+		handleListMultipartUploads(w, req, o)
+		return
+	}
 	// getbucketversioing support
 	if query.Has("versioning") {
 		o.EncodeXMLBytes(w, req, []byte(serde.VersioningResponse), http.StatusOK)
@@ -392,4 +407,77 @@ func (controller *ListObjects) Handle(w http.ResponseWriter, req *http.Request, 
 		o.Log(req).WithField("list-type", listType).Error("listObjects version not supported")
 		_ = o.EncodeError(w, req, nil, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 	}
+}
+
+func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *RepoOperation) {
+	o.Incr("list_multipart_uploads", o.Principal, o.Repository.Name, "")
+	query := req.URL.Query()
+	maxUploadsStr := query.Get(QueryParamMaxUploads)
+	uploadIDMarker := query.Get(QueryParamUploadIDMarker)
+	keyMarker := query.Get(QueryParamKeyMarker)
+	prefix := query.Get(QueryParampPrefix)
+	delimiter := query.Get(QueryParampDelimiter)
+	encodingType := query.Get(QueryParampEncodingType)
+	if prefix != "" || delimiter != "" || encodingType != "" {
+		_ = o.EncodeError(w, req, gatewayerrors.ErrNotImplemented, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))
+		return
+	}
+	opts := block.ListMultipartUploadsOpts{}
+	if maxUploadsStr != "" {
+		maxUploads, err := strconv.ParseInt(maxUploadsStr, 10, 32)
+		maxUploads32 := int32(maxUploads)
+		if err != nil || maxUploads < 0 {
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInvalidMaxUploads))
+			return
+		}
+		if maxUploads > maxUploadsListMPU {
+			maxUploads32 = maxUploadsListMPU
+		}
+		opts.MaxUploads = &maxUploads32
+	}
+	if uploadIDMarker != "" {
+		opts.UploadIDMarker = &uploadIDMarker
+	}
+	if keyMarker != "" {
+		opts.KeyMarker = &keyMarker
+	}
+	mpuResp, err := o.BlockStore.ListMultipartUploads(req.Context(), block.ObjectPointer{
+		StorageNamespace: o.Repository.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+	}, opts)
+
+	if err != nil {
+		o.Log(req).WithError(err).Error("list multipart uploads failed")
+		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))
+		return
+	}
+
+	uploads := make([]serde.Upload, 0, len(mpuResp.Uploads))
+	for _, upload := range mpuResp.Uploads {
+		if upload.UploadId == nil {
+			continue
+		}
+		mpu, err := o.MultipartTracker.Get(req.Context(), *upload.UploadId)
+		if err != nil {
+			if errors.Is(err, kv.ErrNotFound) {
+				continue
+			}
+			o.Log(req).WithError(err).Error("could not read multipart record %s", *upload.UploadId)
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
+		uploads = append(uploads, serde.Upload{
+			Key:      mpu.Path,
+			UploadID: *upload.UploadId,
+		})
+	}
+	resp := &serde.ListMultipartUploadsOutput{
+		Bucket:             o.Repository.Name,
+		Uploads:            uploads,
+		NextKeyMarker:      aws.StringValue(mpuResp.NextKeyMarker),
+		NextUploadIDMarker: aws.StringValue(mpuResp.NextUploadIDMarker),
+		IsTruncated:        mpuResp.IsTruncated,
+		MaxUploads:         aws.Int32Value(mpuResp.MaxUploads),
+	}
+	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

@@ -851,6 +851,44 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 	return &partsResp, nil
 }
 
+func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPointer, opts block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {
+	var err error
+	defer reportMetrics("ListMultipartUploads", time.Now(), nil, &err)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	if err != nil {
+		return nil, err
+	}
+	input := &s3.ListMultipartUploadsInput{
+		Bucket:         aws.String(bucket),
+		Prefix:         aws.String(key),
+		MaxUploads:     opts.MaxUploads,
+		UploadIdMarker: opts.UploadIDMarker,
+		KeyMarker:      opts.KeyMarker,
+	}
+
+	lg := a.log(ctx).WithFields(logging.Fields{
+		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
+		"qualified_key": qualifiedKey.GetKey(),
+		"key":           obj.Identifier,
+	})
+
+	client := a.clients.Get(ctx, bucket)
+	resp, err := client.ListMultipartUploads(ctx, input)
+	if err != nil {
+		lg.WithError(err).Error("List multipart uploads failed")
+		return nil, err
+	}
+
+	mpuResp := block.ListMultipartUploadsResponse{
+		Uploads:            resp.Uploads,
+		NextUploadIDMarker: resp.NextUploadIdMarker,
+		NextKeyMarker:      resp.NextKeyMarker,
+		IsTruncated:        aws.ToBool(resp.IsTruncated),
+		MaxUploads:         resp.MaxUploads,
+	}
+	return &mpuResp, nil
+}
+
 func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
