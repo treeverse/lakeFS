@@ -1,6 +1,6 @@
 package io.lakefs;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 
 public final class ImmutablePagination implements FSTestBase.Pagination {
     private final Optional<Integer> amount;
@@ -30,22 +30,22 @@ public final class ImmutablePagination implements FSTestBase.Pagination {
     }
 
     public static class Builder {
-        private Optional<Integer> amount = Optional.absent();
-        private Optional<String> after = Optional.absent();
-        private Optional<String> prefix = Optional.absent();
+        private Optional<Integer> amount = Optional.empty();
+        private Optional<String> after = Optional.empty();
+        private Optional<String> prefix = Optional.empty();
 
         public Builder amount(Integer amount) {
-            this.amount = Optional.fromNullable(amount);
+            this.amount = Optional.of(amount);
             return this;
         }
 
         public Builder after(String after) {
-            this.after = Optional.fromNullable(after);
+            this.after = Optional.of(after);
             return this;
         }
 
         public Builder prefix(String prefix) {
-            this.prefix = Optional.fromNullable(prefix);
+            this.prefix = Optional.of(prefix);
             return this;
         }
 

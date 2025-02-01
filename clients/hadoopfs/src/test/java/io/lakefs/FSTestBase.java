@@ -1,7 +1,6 @@
 package io.lakefs;
 
 import com.aventrix.jnanoid.jnanoid.NanoIdUtils;
-import com.google.common.base.Optional;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -35,6 +34,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * Base for all LakeFSFilesystem tests.  Helps set common components up but
@@ -310,13 +310,13 @@ public abstract class FSTestBase {
             .withPath(String.format("/repositories/%s/refs/%s/objects/ls", repo, ref));
         // Validate elements of pagination only if present.
         if (pagination.after().isPresent()) {
-            req = req.withQueryStringParameter("after", pagination.after().or(""));
+            req = req.withQueryStringParameter("after", pagination.after().orElse(""));
         }
         if (pagination.amount().isPresent()) {
             req = req.withQueryStringParameter("amount", pagination.amount().get().toString());
         }
         if (pagination.prefix().isPresent()) {
-            req = req.withQueryStringParameter("prefix", pagination.prefix().or(""));
+            req = req.withQueryStringParameter("prefix", pagination.prefix().orElse(""));
         }
         ObjectStatsList resp = new ObjectStatsList()
             .results(Arrays.asList(stats))
