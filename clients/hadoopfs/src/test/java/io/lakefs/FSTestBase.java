@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.Optional;
 
 /**
  * Base for all LakeFSFilesystem tests.  Helps set common components up but
@@ -67,12 +66,6 @@ public abstract class FSTestBase {
     protected final Gson gson = new GsonBuilder()
         .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
         .create();
-
-    static public interface Pagination {
-        Optional<Integer> amount();
-        Optional<String> after();
-        Optional<String> prefix();
-    }
 
     @Rule
     public MockServerRule mockServerRule = new MockServerRule(this);
@@ -228,7 +221,7 @@ public abstract class FSTestBase {
 
         // Directory can be listed!
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix(dir + Constants.SEPARATOR).build(),
+                    Pagination.builder().prefix(dir + Constants.SEPARATOR).build(),
                     allStats);
     }
 
@@ -300,23 +293,23 @@ public abstract class FSTestBase {
     }
 
     // Mock this listing and return these stats.
-    protected void mockListing(String repo, String ref, ImmutablePagination pagination, ObjectStats... stats) {
+    protected void mockListing(String repo, String ref, Pagination pagination, ObjectStats... stats) {
         mockListingWithHasMore(repo, ref, pagination, false, stats);
     }
 
-    protected void mockListingWithHasMore(String repo, String ref, ImmutablePagination pagination, boolean hasMore, ObjectStats... stats) {
+    protected void mockListingWithHasMore(String repo, String ref, Pagination pagination, boolean hasMore, ObjectStats... stats) {
         HttpRequest req = request()
             .withMethod("GET")
             .withPath(String.format("/repositories/%s/refs/%s/objects/ls", repo, ref));
         // Validate elements of pagination only if present.
-        if (pagination.after().isPresent()) {
-            req = req.withQueryStringParameter("after", pagination.after().orElse(""));
+        if (pagination.after() != null) {
+            req = req.withQueryStringParameter("after", pagination.after());
         }
-        if (pagination.amount().isPresent()) {
-            req = req.withQueryStringParameter("amount", pagination.amount().get().toString());
+        if (pagination.amount() != null) {
+            req = req.withQueryStringParameter("amount", pagination.amount().toString());
         }
-        if (pagination.prefix().isPresent()) {
-            req = req.withQueryStringParameter("prefix", pagination.prefix().orElse(""));
+        if (pagination.prefix() != null) {
+            req = req.withQueryStringParameter("prefix", pagination.prefix());
         }
         ObjectStatsList resp = new ObjectStatsList()
             .results(Arrays.asList(stats))

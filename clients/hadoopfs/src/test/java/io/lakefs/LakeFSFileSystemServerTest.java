@@ -81,7 +81,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
         mockStatObjectNotFound("repo", "main", "no.file");
         mockStatObjectNotFound("repo", "main", "no.file/");
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("no.file/").amount(1).build());
+        mockListing("repo", "main", Pagination.builder().prefix("no.file/").amount(1).build());
         Assert.assertThrows(FileNotFoundException.class, () -> fs.getFileStatus(noFilePath));
     }
 
@@ -102,7 +102,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
     public void testExists_ExistsAsObject() throws IOException {
         Path path = new Path("lakefs://repo/main/exis.ts");
         ObjectStats stats = makeObjectStats("exis.ts");
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts").build(), stats);
+        mockListing("repo", "main", Pagination.builder().prefix("exis.ts").build(), stats);
         Assert.assertTrue(fs.exists(path));
     }
 
@@ -111,7 +111,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Path path = new Path("lakefs://repo/main/exis.ts");
         ObjectStats stats = makeObjectStats("exis.ts");
 
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts").build(),
+        mockListing("repo", "main", Pagination.builder().prefix("exis.ts").build(),
                     stats);
 
         Assert.assertTrue(fs.exists(path));
@@ -122,7 +122,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Path path = new Path("lakefs://repo/main/exis.ts");
         ObjectStats stats = makeObjectStats("exis.ts/object-inside-the-path");
 
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts").build(),
+        mockListing("repo", "main", Pagination.builder().prefix("exis.ts").build(),
                     stats);
         Assert.assertTrue(fs.exists(path));
     }
@@ -136,11 +136,11 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
         // First listing returns irrelevant objects, _before_ "exis.ts/"
         mockListingWithHasMore("repo", "main",
-                               ImmutablePagination.builder().prefix("exis.ts").build(),
+                               Pagination.builder().prefix("exis.ts").build(),
                                true,
                                beforeStats1, beforeStats2);
         // Second listing tries to find an object inside "exis.ts/".
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("exis.ts/").build(),
+        mockListing("repo", "main", Pagination.builder().prefix("exis.ts/").build(),
                     indirStats);
         Assert.assertTrue(fs.exists(path));
     }
@@ -148,7 +148,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
     @Test
     public void testExists_NotExistsNoPrefix() throws IOException {
         Path path = new Path("lakefs://repo/main/doesNotExi.st");
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("doesNotExi.st").build());
+        mockListing("repo", "main", Pagination.builder().prefix("doesNotExi.st").build());
 
         Assert.assertFalse(fs.exists(path));
     }
@@ -171,7 +171,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         for (String dir: arrDirs) {
             mockStatObjectNotFound("repo", "main", dir);
             mockStatObjectNotFound("repo", "main", dir + "/");
-            mockListing("repo", "main", ImmutablePagination.builder().build());
+            mockListing("repo", "main", Pagination.builder().build());
         }
         mockDeleteObject("repo", "main", "no/place/file.txt");
         mockUploadObject("repo", "main", "no/place/");
@@ -189,7 +189,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         mockStatObjectNotFound("repo", "main", "no/place/file.txt");
         mockStatObjectNotFound("repo", "main", "no/place/file.txt/");
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("no/place/file.txt/").build());
+                    Pagination.builder().prefix("no/place/file.txt/").build());
 
         // Should still create a directory marker!
         mockUploadObject("repo", "main", "no/place/");
@@ -208,11 +208,11 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
         // Just a directory marker delete/me/, so nothing to delete.
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("delete/me/").build(),
+                    Pagination.builder().prefix("delete/me/").build(),
                     srcStats);
 
         // Mock listing in createDirectoryMarkerIfNotExists to return listing
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("delete/").build());
+        mockListing("repo", "main", Pagination.builder().prefix("delete/").build());
         mockDirectoryMarker(dirObjLoc.getParent());
         mockStatObject(dirObjLoc.getRepository(), dirObjLoc.getRef(), dirObjLoc.getPath(), srcStats);
         mockDeleteObject("repo", "main", "delete/me/");
@@ -235,7 +235,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         // marker for delete/sample/.
         ObjectStats srcStats = makeObjectStats(existingPath);
         mockListing("repo", "main",
-                    ImmutablePagination.builder()
+                    Pagination.builder()
                     .prefix(directoryPath + Constants.SEPARATOR)
                     .build(),
                     srcStats);
@@ -264,7 +264,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             .respond(response().withStatusCode(404));
         // No objects to list, either -- in directory.
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("no/place/file.txt/").build());
+                    Pagination.builder().prefix("no/place/file.txt/").build());
         Assert.assertFalse(fs.delete(new Path("lakefs://repo/main/no/place/file.txt"), true));
     }
 
@@ -274,7 +274,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         mockStatObjectNotFound("repo", "main", "delete/sample/");
         ObjectStats stats = makeObjectStats("delete/sample/file.txt");
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("delete/sample/").build(),
+                    Pagination.builder().prefix("delete/sample/").build(),
                     stats);
 
         mockDeleteObjects("repo", "main", "delete/sample/file.txt");
@@ -284,7 +284,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
         // Mock listing in createDirectoryMarkerIfNotExists to return empty path
         mockListing("repo", "main",
-                ImmutablePagination.builder().prefix("delete/").build());
+                Pagination.builder().prefix("delete/").build());
         
         mockDirectoryMarker(ObjectLocation.pathToObjectLocation(null, path.getParent()));
         // Must create a parent directory marker: it wasn't deleted, and now
@@ -305,7 +305,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             objects[i] = makeObjectStats(String.format("delete/sample/file%04d.txt", i));
         }
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("delete/sample/").build(),
+                    Pagination.builder().prefix("delete/sample/").build(),
                     objects);
 
         // Set up multiple deleteObjects expectations of bulkSize deletes
@@ -319,7 +319,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         }
         // Mock listing in createDirectoryMarkerIfNotExists to return empty path
         mockListing("repo", "main",
-                ImmutablePagination.builder().prefix("delete/").build());
+                Pagination.builder().prefix("delete/").build());
         // Mock parent directory marker creation at end of fs.delete to show
         // the directory marker exists.
         mockUploadObject("repo", "main", "delete/");
@@ -376,7 +376,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         mockStatObjectNotFound("repo", "main", "status/file");
         mockStatObjectNotFound("repo", "main", "status/file/");
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("status/file/").build());
+                    Pagination.builder().prefix("status/file/").build());
         Path path = new Path("lakefs://repo/main/status/file");
         Assert.assertThrows(FileNotFoundException.class, () -> fs.listStatus(path));
     }
@@ -389,7 +389,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
             objects[i] = makeObjectStats("status/file" + i);
         }
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("status/").build(),
+                    Pagination.builder().prefix("status/").build(),
                     objects);
         mockStatObjectNotFound("repo", "main", "status");
 
@@ -429,11 +429,11 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Path dst = new Path("lakefs://repo/main/non-existing/new");
 
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("non-existing/").build());
+                    Pagination.builder().prefix("non-existing/").build());
         mockStatObjectNotFound("repo", "main", "non-existing/new");
         mockStatObjectNotFound("repo", "main", "non-existing/new/");
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("non-existing/new/").build());
+                    Pagination.builder().prefix("non-existing/new/").build());
         mockStatObjectNotFound("repo", "main", "non-existing");
         mockStatObjectNotFound("repo", "main", "non-existing/");
 
@@ -476,7 +476,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         mockStatObjectNotFound("repo", "main", "existing-dir");
         mockStatObjectNotFound("repo", "main", "existing-dir/");
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("existing-dir/").build(),
+                    Pagination.builder().prefix("existing-dir/").build(),
                     srcStats);
 
         Path dst = new Path("lakefs://repo/main/existingdst.file");
@@ -499,7 +499,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         mockFileDoesNotExist("repo", "main", "existing-dir2");
         mockFileDoesNotExist("repo", "main", "existing-dir2/");
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("existing-dir2/").build(),
+                    Pagination.builder().prefix("existing-dir2/").build(),
                     dstStats);
 
         Path dst = new Path("lakefs://repo/main/existing-dir2/");
@@ -520,7 +520,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
         // Mock listing in createDirectoryMarkerIfNotExists to return empty path
         mockListing("repo", "main",
-                ImmutablePagination.builder().prefix("existing-dir1/").build());
+                Pagination.builder().prefix("existing-dir1/").build());
         
         // Need a directory marker at the source because it's now empty!
         mockUploadObject("repo", "main", "existing-dir1/");
@@ -542,9 +542,9 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         mockFileDoesNotExist("repo", "main", "x/non-existing-dir/new");
         // Will also check if parent of destination is a directory (it isn't).
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("x/non-existing-dir/").build());
+                    Pagination.builder().prefix("x/non-existing-dir/").build());
         mockListing("repo", "main",
-                    ImmutablePagination.builder().prefix("x/non-existing-dir/new/").build());
+                    Pagination.builder().prefix("x/non-existing-dir/new/").build());
 
         // Keep a directory marker, or rename will try to create one because
         // it emptied the existing directory.
@@ -568,7 +568,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
         mockStatObjectNotFound("repo", "main", "existing-dir");
         mockStatObjectNotFound("repo", "main", "existing-dir/");
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir/").build(),
+        mockListing("repo", "main", Pagination.builder().prefix("existing-dir/").build(),
                     srcStats);
 
         mockStatObjectNotFound("repo", "main", "existing-dir2");
@@ -576,7 +576,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
         mockStatObjectNotFound("repo", "main", "existing-dir2/new");
         mockStatObjectNotFound("repo", "main", "existing-dir2/new/");
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir2/new/").build());
+        mockListing("repo", "main", Pagination.builder().prefix("existing-dir2/new/").build());
 
         ObjectStats dstStats = makeObjectStats("existing-dir2/new/existing.src");
 
@@ -612,7 +612,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
 
         mockStatObjectNotFound("repo", "main", "existing-dir1");
         mockStatObjectNotFound("repo", "main", "existing-dir1/");
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir1/").build(),
+        mockListing("repo", "main", Pagination.builder().prefix("existing-dir1/").build(),
                     firstSrcFileStats, secSrcFileStats);
 
         Path fileInDstDir = new Path("lakefs://repo/main/existing-dir2/file.dst");
@@ -620,7 +620,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Path dstDir = new Path("lakefs://repo/main/existing-dir2");
         mockStatObjectNotFound("repo", "main", "existing-dir2");
         mockStatObjectNotFound("repo", "main", "existing-dir2/");
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("existing-dir2/").build(),
+        mockListing("repo", "main", Pagination.builder().prefix("existing-dir2/").build(),
                     fileInDstDirStats);
 
         boolean renamed = fs.rename(srcDir, dstDir);
@@ -655,7 +655,7 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Path src = new Path("lakefs://repo/main/non-existing.src");
         mockStatObjectNotFound("repo", "main", "non-existing.src");
         mockStatObjectNotFound("repo", "main", "non-existing.src/");
-        mockListing("repo", "main", ImmutablePagination.builder().prefix("non-existing.src/").build());
+        mockListing("repo", "main", Pagination.builder().prefix("non-existing.src/").build());
 
         Path dst = new Path("lakefs://repo/main/existing.dst");
         mockStatObject("repo", "main", "existing.dst", makeObjectStats("existing.dst"));

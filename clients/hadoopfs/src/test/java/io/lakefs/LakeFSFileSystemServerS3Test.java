@@ -172,7 +172,7 @@ public class LakeFSFileSystemServerS3Test extends S3FSTestBase {
         for (Path p = new Path(path.toString()); p != null && !p.isRoot(); p = p.getParent()) {
             mockStatObjectNotFound("repo", "main", p.toString());
             mockStatObjectNotFound("repo", "main", p+"/");
-            mockListing("repo", "main", ImmutablePagination.builder().prefix(p+"/").build());
+            mockListing("repo", "main", Pagination.builder().prefix(p+"/").build());
         }
 
         // physical address to directory marker object
