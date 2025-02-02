@@ -32,10 +32,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  dynamodb:    
-    image: "amazon/dynamodb-local:2.5.2"
-    ports:
-      - "6432:8000"
+  dynamodb:
+    extends:
+      file: esti/ops/docker-compose-common.yaml
+      service: dynamodb
 
   esti:
     image: "golang:1.23-alpine"

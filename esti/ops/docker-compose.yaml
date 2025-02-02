@@ -34,12 +34,9 @@ services:
       - "host.docker.internal:host-gateway"
     
   postgres:
-    image: "postgres:11"
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_USER: lakefs
-      POSTGRES_PASSWORD: lakefs
+    extends:
+      file: esti/ops/docker-compose-common.yaml
+      service: postgres
 
   esti:
     image: "golang:1.23-alpine"
