@@ -43,7 +43,7 @@ public final class Pagination {
         }
 
         public Builder prefix(String prefix) {
-            this.prefix = after;
+            this.prefix = prefix;
             return this;
         }
 
