@@ -36,11 +36,16 @@ back the exact dataset used for a run to reproduce experiment results.
 We will use the [mlflow.data](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow-data) module that helps record 
 and retrieve dataset information into MLflow experiment runs. 
 
-### Creating an experiment run
+### The recommended lakeFS branching strategy   
 
+1. **Create a branch per experiment**: Before you start an experiment, create a dedicated lakeFS branch for it. This will allow you to make changes to your input dataset
+without copying it. You will load data from this branch to your MLflow runs. 
+2. **Commit dataset changes**: ML development is an iterative process that includes trial and error. If you reached a point in 
+which you made changes to your input dataset, commit them to lakeFS using a meaningful commit message. During an experiment 
+run we will load the dataset version that corresponds to the branch head commit and will make sure to keep track of this 
+reference so that we can later reproduce run results. 
 
-
-### Loading versioned datasets
+### Load versioned datasets
 
 mlflow.data provides APIs for constructing Datasets from a variety of Python data objects, Spark DataFrames, and more. 
 lakeFS seamless integration with both Spark and common Python libraries enables creating MLflow 
@@ -51,7 +56,6 @@ lakeFS.
 * s3 gateway only? 
 
 #### Python libraries integration
-
 
 
 #### Spark-based
@@ -86,7 +90,7 @@ dataset_lakefs_uri = "s3://repo/my-experiment/gold/train_v2/"
 dataset = mlflow.data.load_delta(path=dataset_lakefs_uri, name="boat-images")
 ```
 
-### Logging inputs
+### Log run input
 
 Once you created an MLflow dataset of the type of your choice, log it as input to your experiment run.  
 
@@ -128,7 +132,3 @@ Dataset name: boat-images
 Dataset digest: e88c85ce
 Dataset source URI: {"path": "s3://repo/experiment-branch/gold/train_v2/"}
 ```
-
-
-
-
