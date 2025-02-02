@@ -330,12 +330,12 @@ func (c *committedManager) Compare(ctx context.Context, storageID graveler.Stora
 }
 
 func (c *committedManager) GetMetaRange(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
-	uri, err := c.metaRangeManager.GetMetaRangeURI(ctx, id)
+	uri, err := c.metaRangeManager.GetMetaRangeURI(ctx, ns, id)
 	return graveler.MetaRangeAddress(uri), err
 }
 
 func (c *committedManager) GetRange(ctx context.Context, ns graveler.StorageNamespace, id graveler.RangeID) (graveler.RangeAddress, error) {
-	uri, err := c.metaRangeManager.GetRangeURI(ctx, id)
+	uri, err := c.metaRangeManager.GetRangeURI(ctx, ns, id)
 	return graveler.RangeAddress(uri), err
 }
 

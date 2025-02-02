@@ -168,8 +168,8 @@ func (m *RangeManager) GetWriter(ctx context.Context, storageID committed.Storag
 	return NewDiskWriter(ctx, m.fs, storageID, ns, m.hash.New(), metadata)
 }
 
-func (m *RangeManager) GetURI(ctx context.Context, id committed.ID) (string, error) {
-	return m.fs.GetRemoteURI(ctx, string(id))
+func (m *RangeManager) GetURI(ctx context.Context, ns committed.Namespace, id committed.ID) (string, error) {
+	return m.fs.GetRemoteURI(ctx, string(ns), string(id))
 }
 
 func (m *RangeManager) execAndLog(ctx context.Context, f func() error, msg string) {

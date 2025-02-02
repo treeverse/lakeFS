@@ -178,7 +178,7 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 	}
 }
 
-func (tfs *TierFS) GetRemoteURI(_ context.Context, filename string) (string, error) {
+func (tfs *TierFS) GetRemoteURI(_ context.Context, _, filename string) (string, error) {
 	return tfs.blockStoragePath(filename), nil
 }
 
