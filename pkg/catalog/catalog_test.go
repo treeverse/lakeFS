@@ -889,7 +889,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 			sort.Slice(diffs[i], func(ii, jj int) bool {
 				return bytes.Compare(diffs[i][ii].Key, diffs[i][jj].Key) < 0
 			})
-			test.CommittedManager.EXPECT().Diff(gomock.Any(), gomock.Any(), repository.StorageNamespace, gomock.Any(), branches[i].CompactedBaseMetaRangeID).MinTimes(1).Return(gUtils.NewDiffIter(diffs[i]), nil)
+			test.CommittedManager.EXPECT().Diff(gomock.Any(), graveler.StorageID(""), repository.StorageNamespace, gomock.Any(), branches[i].CompactedBaseMetaRangeID).MinTimes(1).Return(gUtils.NewDiffIter(diffs[i]), nil)
 		}
 	}
 
