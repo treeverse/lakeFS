@@ -419,6 +419,7 @@ func (tfs *TierFS) newLocalFileRef(namespace, nsPath, filename string) localFile
 }
 
 func (tfs *TierFS) objPointer(namespace, filename string) block.ObjectPointer {
+	// TODO (gilo): ObjectPointer init - add StorageID here
 	return block.ObjectPointer{
 		StorageNamespace: namespace,
 		IdentifierType:   block.IdentifierTypeRelative,

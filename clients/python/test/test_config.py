@@ -53,7 +53,29 @@ class TestConfig(unittest.TestCase):
                     pre_sign_support_ui = True, 
                     import_support = True, 
                     import_validity_regex = '', 
-                    pre_sign_multipart_upload = True, )
+                    pre_sign_multipart_upload = True, 
+                    blockstore_id = '', 
+                    blockstore_description = '', 
+                    blockstore_extras = {
+                        'key' : ''
+                        }, ), 
+                storage_config_list = [
+                    lakefs_sdk.models.storage_config.StorageConfig(
+                        blockstore_type = '', 
+                        blockstore_namespace_example = '', 
+                        blockstore_namespace_validity_regex = '', 
+                        default_namespace_prefix = '', 
+                        pre_sign_support = True, 
+                        pre_sign_support_ui = True, 
+                        import_support = True, 
+                        import_validity_regex = '', 
+                        pre_sign_multipart_upload = True, 
+                        blockstore_id = '', 
+                        blockstore_description = '', 
+                        blockstore_extras = {
+                            'key' : ''
+                            }, )
+                    ]
             )
         else :
             return Config(

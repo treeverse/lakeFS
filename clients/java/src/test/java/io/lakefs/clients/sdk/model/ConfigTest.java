@@ -21,7 +21,9 @@ import com.google.gson.stream.JsonWriter;
 import io.lakefs.clients.sdk.model.StorageConfig;
 import io.lakefs.clients.sdk.model.VersionConfig;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +55,14 @@ public class ConfigTest {
     @Test
     public void storageConfigTest() {
         // TODO: test storageConfig
+    }
+
+    /**
+     * Test the property 'storageConfigList'
+     */
+    @Test
+    public void storageConfigListTest() {
+        // TODO: test storageConfigList
     }
 
 }

@@ -39,6 +39,7 @@ func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace s
 	part1 := "this is the first part "
 	part2 := "this is the last part"
 	_, err := adapter.Put(ctx, block.ObjectPointer{
+		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "test_file",
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -63,6 +64,7 @@ func testAdapterGetRange(t *testing.T, adapter block.Adapter, storageNamespace s
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := adapter.GetRange(ctx, block.ObjectPointer{
+				StorageID:        "",
 				StorageNamespace: storageNamespace,
 				Identifier:       "test_file",
 				IdentifierType:   block.IdentifierTypeRelative,
@@ -89,6 +91,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 	for i := 0; i < filesAndFolders; i++ {
 		for j := 0; j < filesAndFolders; j++ {
 			_, err := adapter.Put(ctx, block.ObjectPointer{
+				StorageID:        "",
 				StorageNamespace: storageNamespace,
 				Identifier:       fmt.Sprintf("%s/folder_%d/test_file_%d", testPrefix, filesAndFolders-i-1, filesAndFolders-j-1),
 				IdentifierType:   block.IdentifierTypeRelative,
@@ -98,6 +101,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 	}
 
 	_, err := adapter.Put(ctx, block.ObjectPointer{
+		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       fmt.Sprintf("%s/folder_0.txt", testPrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -122,7 +126,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 		},
 	}
 	for _, tt := range cases {
-		qk, err := adapter.ResolveNamespace(storageNamespace, filepath.Join(testPrefix, tt.prefix), block.IdentifierTypeRelative)
+		qk, err := adapter.ResolveNamespace("", storageNamespace, filepath.Join(testPrefix, tt.prefix), block.IdentifierTypeRelative)
 		require.NoError(t, err)
 		uri, err := url.Parse(qk.Format())
 		require.NoError(t, err)

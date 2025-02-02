@@ -137,7 +137,8 @@ var runCmd = &cobra.Command{
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.ContextUnavailable()
-		cfg := loadConfig().GetBaseConfig()
+		cfg := loadConfig()
+		baseCfg := cfg.GetBaseConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
 			var c config.BaseConfig
@@ -156,7 +157,7 @@ var runCmd = &cobra.Command{
 
 		logger.WithField("version", version.Version).Info("lakeFS run")
 
-		kvParams, err := kvparams.NewConfig(&cfg.Database)
+		kvParams, err := kvparams.NewConfig(&baseCfg.Database)
 		if err != nil {
 			logger.WithError(err).Fatal("Get KV params")
 		}
@@ -174,14 +175,14 @@ var runCmd = &cobra.Command{
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
 		actionsStore := actions.NewActionsKVStore(kvStore)
-		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService := NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		authService := NewAuthService(ctx, baseCfg, logger, kvStore, authMetadataManager)
 		// initialize authentication service
 		var authenticationService authentication.Service
-		if cfg.IsAuthenticationTypeAPI() {
-			authenticationService, err = authentication.NewAPIService(cfg.Auth.AuthenticationAPI.Endpoint, cfg.Auth.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled)
+		if baseCfg.IsAuthenticationTypeAPI() {
+			authenticationService, err = authentication.NewAPIService(baseCfg.Auth.AuthenticationAPI.Endpoint, baseCfg.Auth.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), baseCfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
@@ -189,15 +190,15 @@ var runCmd = &cobra.Command{
 			authenticationService = authentication.NewDummyService()
 		}
 
-		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		blockstoreType := cfg.Blockstore.Type
+		cloudMetadataProvider := stats.BuildMetadataProvider(logger, baseCfg)
+		blockstoreType := baseCfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
 		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
-		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats),
+		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
 		// init block store
@@ -211,7 +212,7 @@ var runCmd = &cobra.Command{
 		bufferedCollector.CollectMetadata(metadata)
 
 		c, err := catalog.New(ctx, catalog.Config{
-			Config:       cfg,
+			Config:       baseCfg,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
 		})
@@ -222,9 +223,9 @@ var runCmd = &cobra.Command{
 
 		// usage report setup - default usage reporter is a no-op
 		usageReporter := stats.DefaultUsageReporter
-		if cfg.UsageReport.Enabled {
+		if baseCfg.UsageReport.Enabled {
 			ur := stats.NewUsageReporter(metadata.InstallationID, kvStore)
-			ur.Start(ctx, cfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
+			ur.Start(ctx, baseCfg.UsageReport.FlushInterval, logger.WithField("service", "usage_report"))
 			usageReporter = ur
 		}
 
@@ -238,14 +239,14 @@ var runCmd = &cobra.Command{
 		// initial setup - support only when a local database is configured.
 		// local database lock will make sure that only one instance will run the setup.
 		if (kvParams.Type == local.DriverName || kvParams.Type == mem.DriverName) &&
-			cfg.Installation.UserName != "" && cfg.Installation.AccessKeyID.SecureValue() != "" && cfg.Installation.SecretAccessKey.SecureValue() != "" {
-			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, cfg.Installation.UserName,
-				cfg.Installation.AccessKeyID.SecureValue(), cfg.Installation.SecretAccessKey.SecureValue())
+			baseCfg.Installation.UserName != "" && baseCfg.Installation.AccessKeyID.SecureValue() != "" && baseCfg.Installation.SecretAccessKey.SecureValue() != "" {
+			setupCreds, err := setupLakeFS(ctx, baseCfg, authMetadataManager, authService, baseCfg.Installation.UserName,
+				baseCfg.Installation.AccessKeyID.SecureValue(), baseCfg.Installation.SecretAccessKey.SecureValue())
 			if err != nil {
-				logger.WithError(err).WithField("admin", cfg.Installation.UserName).Fatal("Failed to initial setup environment")
+				logger.WithError(err).WithField("admin", baseCfg.Installation.UserName).Fatal("Failed to initial setup environment")
 			}
 			if setupCreds != nil {
-				logger.WithField("admin", cfg.Installation.UserName).Info("Initial setup completed successfully")
+				logger.WithField("admin", baseCfg.Installation.UserName).Info("Initial setup completed successfully")
 			}
 		}
 
@@ -256,8 +257,8 @@ var runCmd = &cobra.Command{
 			catalog.NewActionsOutputWriter(c.BlockAdapter),
 			idGen,
 			bufferedCollector,
-			actions.Config(cfg.Actions),
-			cfg.ListenAddress,
+			actions.Config(baseCfg.Actions),
+			baseCfg.ListenAddress,
 		)
 
 		// wire actions into entry catalog
@@ -269,8 +270,8 @@ var runCmd = &cobra.Command{
 		}
 
 		// remote authenticator setup
-		if cfg.Auth.RemoteAuthenticator.Enabled {
-			remoteAuthenticator, err := authremote.NewAuthenticator(authremote.AuthenticatorConfig(cfg.Auth.RemoteAuthenticator), authService, logger)
+		if baseCfg.Auth.RemoteAuthenticator.Enabled {
+			remoteAuthenticator, err := authremote.NewAuthenticator(authremote.AuthenticatorConfig(baseCfg.Auth.RemoteAuthenticator), authService, logger)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create remote authenticator")
 			}
@@ -278,10 +279,10 @@ var runCmd = &cobra.Command{
 			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
 
-		auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(cfg.Security.CheckLatestVersionCache))
+		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
 		defer auditChecker.Close()
 		if !version.IsVersionUnreleased() {
-			auditChecker.StartPeriodicCheck(ctx, cfg.Security.AuditCheckInterval, logger)
+			auditChecker.StartPeriodicCheck(ctx, baseCfg.Security.AuditCheckInterval, logger)
 		}
 
 		allowForeign, err := cmd.Flags().GetBool(mismatchedReposFlagName)
@@ -310,24 +311,24 @@ var runCmd = &cobra.Command{
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
-			cfg.Gateways.S3.DomainNames,
-			cfg.UISnippets(),
+			baseCfg.Gateways.S3.DomainNames,
+			baseCfg.UISnippets(),
 			upload.DefaultPathProvider,
 			usageReporter,
 		)
 
 		// init gateway server
 		var s3FallbackURL *url.URL
-		if cfg.Gateways.S3.FallbackURL != "" {
-			s3FallbackURL, err = url.Parse(cfg.Gateways.S3.FallbackURL)
+		if baseCfg.Gateways.S3.FallbackURL != "" {
+			s3FallbackURL, err = url.Parse(baseCfg.Gateways.S3.FallbackURL)
 			if err != nil {
 				logger.WithError(err).Fatal("Failed to parse s3 fallback URL")
 			}
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
-		oidcConfig := api.OIDCConfig(cfg.Auth.OIDC)
-		cookieAuthConfig := api.CookieAuthConfig(cfg.Auth.CookieAuthVerification)
+		oidcConfig := api.OIDCConfig(baseCfg.Auth.OIDC)
+		cookieAuthConfig := api.CookieAuthConfig(baseCfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
 			middlewareAuthenticator,
@@ -340,19 +341,19 @@ var runCmd = &cobra.Command{
 		}
 
 		s3gatewayHandler := gateway.NewHandler(
-			cfg.Gateways.S3.Region,
+			baseCfg.Gateways.S3.Region,
 			c,
 			multipartTracker,
 			blockStore,
 			authService,
-			cfg.Gateways.S3.DomainNames,
+			baseCfg.Gateways.S3.DomainNames,
 			bufferedCollector,
 			upload.DefaultPathProvider,
 			s3FallbackURL,
-			cfg.Logging.AuditLogLevel,
-			cfg.Logging.TraceRequestHeaders,
-			cfg.Gateways.S3.VerifyUnsupported,
-			cfg.IsAdvancedAuth(),
+			baseCfg.Logging.AuditLogLevel,
+			baseCfg.Logging.TraceRequestHeaders,
+			baseCfg.Gateways.S3.VerifyUnsupported,
+			baseCfg.IsAdvancedAuth(),
 		)
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
@@ -361,14 +362,14 @@ var runCmd = &cobra.Command{
 
 		bufferedCollector.CollectEvent(stats.Event{Class: "global", Name: "run"})
 
-		logger.WithField("listen_address", cfg.ListenAddress).Info("starting HTTP server")
+		logger.WithField("listen_address", baseCfg.ListenAddress).Info("starting HTTP server")
 		server := &http.Server{
-			Addr:              cfg.ListenAddress,
+			Addr:              baseCfg.ListenAddress,
 			ReadHeaderTimeout: time.Minute,
 			Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				// If the request has the S3 GW domain (exact or subdomain) - or carries an AWS sig, serve S3GW
-				if httputil.HostMatches(request, cfg.Gateways.S3.DomainNames) ||
-					httputil.HostSubdomainOf(request, cfg.Gateways.S3.DomainNames) ||
+				if httputil.HostMatches(request, baseCfg.Gateways.S3.DomainNames) ||
+					httputil.HostSubdomainOf(request, baseCfg.Gateways.S3.DomainNames) ||
 					sig.IsAWSSignedRequest(request) {
 					s3gatewayHandler.ServeHTTP(writer, request)
 					return
@@ -383,13 +384,13 @@ var runCmd = &cobra.Command{
 
 		go func() {
 			var err error
-			if cfg.TLS.Enabled {
-				err = server.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile)
+			if baseCfg.TLS.Enabled {
+				err = server.ListenAndServeTLS(baseCfg.TLS.CertFile, baseCfg.TLS.KeyFile)
 			} else {
 				err = server.ListenAndServe()
 			}
 			if err != nil && !errors.Is(err, http.ErrServerClosed) {
-				_, _ = fmt.Fprintf(os.Stderr, "Failed to listen on %s: %v\n", cfg.ListenAddress, err)
+				_, _ = fmt.Fprintf(os.Stderr, "Failed to listen on %s: %v\n", baseCfg.ListenAddress, err)
 				os.Exit(1)
 			}
 		}()

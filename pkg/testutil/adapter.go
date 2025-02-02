@@ -12,10 +12,10 @@ import (
 )
 
 type MockAdapter struct {
-	TotalSize        int64
-	Count            int
-	LastBucket       string
-	LastStorageClass *string
+	TotalSize            int64
+	Count                int
+	LastStorageNamespace string
+	LastStorageClass     *string
 
 	blockstoreMetadata *block.BlockstoreMetadata
 	namespaceRegion    *string
@@ -68,7 +68,7 @@ func (a *MockAdapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, r
 	}
 	a.TotalSize += int64(len(data))
 	a.Count++
-	a.LastBucket = obj.StorageNamespace
+	a.LastStorageNamespace = obj.StorageNamespace
 	a.LastStorageClass = opts.StorageClass
 	return &block.PutResponse{}, nil
 }
@@ -128,7 +128,9 @@ func (a *MockAdapter) UploadCopyPartRange(_ context.Context, _, _ block.ObjectPo
 func (a *MockAdapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
 	panic("try to list parts in mock adapter")
 }
-
+func (a *MockAdapter) ListMultipartUploads(_ context.Context, _ block.ObjectPointer, _ block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {
+	panic("try to list multipart uploads in mock adapter")
+}
 func (a *MockAdapter) BlockstoreType() string {
 	return "s3"
 }
@@ -141,14 +143,14 @@ func (a *MockAdapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMe
 	}
 }
 
-func (a *MockAdapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+func (a *MockAdapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
 	info := block.DefaultStorageNamespaceInfo("s3")
 	info.PreSignSupport = false
 	info.ImportSupport = false
-	return info
+	return info, nil
 }
 
-func (a *MockAdapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *MockAdapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 

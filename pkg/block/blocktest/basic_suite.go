@@ -39,6 +39,7 @@ func testAdapterPutGet(t *testing.T, adapter block.Adapter, storageNamespace, ex
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			obj := block.ObjectPointer{
+				StorageID:        "",
 				StorageNamespace: storageNamespace,
 				Identifier:       c.path,
 				IdentifierType:   c.identifierType,
@@ -64,11 +65,13 @@ func testAdapterCopy(t *testing.T, adapter block.Adapter, storageNamespace strin
 	ctx := context.Background()
 	contents := "foo bar baz quux"
 	src := block.ObjectPointer{
+		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "src",
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
 	dst := block.ObjectPointer{
+		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "export/to/dst",
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -130,6 +133,7 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 			envObjects = append(envObjects, tt.path)
 			for _, p := range envObjects {
 				obj := block.ObjectPointer{
+					StorageID:        "",
 					StorageNamespace: storageNamespace,
 					Identifier:       tt.name + "/" + p,
 					IdentifierType:   block.IdentifierTypeRelative,
@@ -140,6 +144,7 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 
 			// test Remove
 			obj := block.ObjectPointer{
+				StorageID:        "",
 				StorageNamespace: storageNamespace,
 				Identifier:       tt.name + "/" + tt.path,
 				IdentifierType:   block.IdentifierTypeRelative,
@@ -148,7 +153,7 @@ func testAdapterRemove(t *testing.T, adapter block.Adapter, storageNamespace str
 				t.Errorf("Remove() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			qk, err := adapter.ResolveNamespace(storageNamespace, tt.name, block.IdentifierTypeRelative)
+			qk, err := adapter.ResolveNamespace("", storageNamespace, tt.name, block.IdentifierTypeRelative)
 			require.NoError(t, err)
 
 			tree := dumpPathTree(t, ctx, adapter, qk)
@@ -165,6 +170,7 @@ func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace str
 	const contents = "exists"
 	ctx := context.Background()
 	_, err := adapter.Put(ctx, block.ObjectPointer{
+		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       contents,
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -172,6 +178,7 @@ func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace str
 	require.NoError(t, err)
 
 	_, err = adapter.Put(ctx, block.ObjectPointer{
+		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "nested/and/" + contents,
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -192,6 +199,7 @@ func testAdapterExists(t *testing.T, adapter block.Adapter, storageNamespace str
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			ok, err := adapter.Exists(ctx, block.ObjectPointer{
+				StorageID:        "",
 				StorageNamespace: storageNamespace,
 				Identifier:       tt.path,
 				IdentifierType:   block.IdentifierTypeRelative,

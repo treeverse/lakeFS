@@ -411,6 +411,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 	log := a.log(ctx).WithFields(logging.Fields{
 		"operation":  "GetPreSignedURL",
+		"storage_id": obj.StorageID,
 		"namespace":  obj.StorageNamespace,
 		"identifier": obj.Identifier,
 		"ttl":        time.Until(expiry),
@@ -466,6 +467,7 @@ func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectP
 
 	log := a.log(ctx).WithFields(logging.Fields{
 		"operation":  "GetPresignUploadPartURL",
+		"storage_id": obj.StorageID,
 		"namespace":  obj.StorageNamespace,
 		"identifier": obj.Identifier,
 	})
@@ -849,6 +851,44 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 	return &partsResp, nil
 }
 
+func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPointer, opts block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {
+	var err error
+	defer reportMetrics("ListMultipartUploads", time.Now(), nil, &err)
+	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
+	if err != nil {
+		return nil, err
+	}
+	input := &s3.ListMultipartUploadsInput{
+		Bucket:         aws.String(bucket),
+		Prefix:         aws.String(key),
+		MaxUploads:     opts.MaxUploads,
+		UploadIdMarker: opts.UploadIDMarker,
+		KeyMarker:      opts.KeyMarker,
+	}
+
+	lg := a.log(ctx).WithFields(logging.Fields{
+		"qualified_ns":  qualifiedKey.GetStorageNamespace(),
+		"qualified_key": qualifiedKey.GetKey(),
+		"key":           obj.Identifier,
+	})
+
+	client := a.clients.Get(ctx, bucket)
+	resp, err := client.ListMultipartUploads(ctx, input)
+	if err != nil {
+		lg.WithError(err).Error("List multipart uploads failed")
+		return nil, err
+	}
+
+	mpuResp := block.ListMultipartUploadsResponse{
+		Uploads:            resp.Uploads,
+		NextUploadIDMarker: resp.NextUploadIdMarker,
+		NextKeyMarker:      resp.NextKeyMarker,
+		IsTruncated:        aws.ToBool(resp.IsTruncated),
+		MaxUploads:         resp.MaxUploads,
+	}
+	return &mpuResp, nil
+}
+
 func (a *Adapter) BlockstoreType() string {
 	return block.BlockstoreTypeS3
 }
@@ -861,7 +901,7 @@ func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMeta
 	return &block.BlockstoreMetadata{Region: &region}, nil
 }
 
-func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -872,7 +912,7 @@ func (a *Adapter) GetStorageNamespaceInfo() block.StorageNamespaceInfo {
 	if !a.disablePreSignedMultipart && info.PreSignSupport {
 		info.PreSignSupportMultipart = true
 	}
-	return info
+	return info, nil
 }
 
 func resolveNamespace(obj block.ObjectPointer) (block.CommonQualifiedKey, error) {
@@ -886,7 +926,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.CommonQualifiedKey, error)
 	return qualifiedKey, nil
 }
 
-func (a *Adapter) ResolveNamespace(storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (a *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
@@ -943,7 +983,7 @@ func (a *Adapter) managerUpload(ctx context.Context, obj block.ObjectPointer, re
 }
 
 func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string, block.QualifiedKey, error) {
-	qk, err := a.ResolveNamespace(obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
+	qk, err := a.ResolveNamespace(obj.StorageID, obj.StorageNamespace, obj.Identifier, obj.IdentifierType)
 	if err != nil {
 		return "", "", nil, err
 	}

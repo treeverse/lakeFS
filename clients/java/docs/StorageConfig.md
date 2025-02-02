@@ -16,6 +16,9 @@
 |**importSupport** | **Boolean** |  |  |
 |**importValidityRegex** | **String** |  |  |
 |**preSignMultipartUpload** | **Boolean** |  |  [optional] |
+|**blockstoreId** | **String** |  |  [optional] |
+|**blockstoreDescription** | **String** |  |  [optional] |
+|**blockstoreExtras** | **Map&lt;String, String&gt;** | blockstore specific properties |  [optional] |
 
 
 

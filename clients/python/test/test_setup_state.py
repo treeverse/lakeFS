@@ -43,6 +43,8 @@ class TestSetupState(unittest.TestCase):
                 comm_prefs_missing = True, 
                 login_config = lakefs_sdk.models.login_config.LoginConfig(
                     rbac = 'none', 
+                    username_ui_placeholder = '', 
+                    password_ui_placeholder = '', 
                     login_url = '', 
                     login_failed_message = '', 
                     fallback_login_url = '', 

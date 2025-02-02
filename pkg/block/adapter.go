@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 // MultipartPart single multipart information
@@ -63,6 +65,7 @@ const DefaultPreSignExpiryDuration = 15 * time.Minute
 // ObjectPointer is a unique identifier of an object in the object
 // store: the store is a 1:1 mapping between pointers and objects.
 type ObjectPointer struct {
+	StorageID        string
 	StorageNamespace string
 	Identifier       string
 
@@ -121,6 +124,14 @@ type ListPartsResponse struct {
 	IsTruncated          bool
 }
 
+type ListMultipartUploadsResponse struct {
+	Uploads            []types.MultipartUpload
+	NextUploadIDMarker *string
+	NextKeyMarker      *string
+	IsTruncated        bool
+	MaxUploads         *int32
+}
+
 // CreateMultiPartUploadOpts contains optional arguments for
 // CreateMultiPartUpload.  These should be analogous to options on
 // some underlying storage layer.  Missing arguments are mapped to the
@@ -137,6 +148,12 @@ type CreateMultiPartUploadOpts struct {
 type ListPartsOpts struct {
 	MaxParts         *int32
 	PartNumberMarker *string
+}
+
+type ListMultipartUploadsOpts struct {
+	MaxUploads     *int32
+	UploadIDMarker *string
+	KeyMarker      *string
 }
 
 // Properties of an object stored on the underlying block store.
@@ -187,16 +204,17 @@ type Adapter interface {
 
 	CreateMultiPartUpload(ctx context.Context, obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (*CreateMultiPartUploadResponse, error)
 	UploadPart(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*UploadPartResponse, error)
-	ListParts(ctx context.Context, obj ObjectPointer, uploadID string, opts ListPartsOpts) (*ListPartsResponse, error)
 	UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int) (*UploadPartResponse, error)
+	ListParts(ctx context.Context, obj ObjectPointer, uploadID string, opts ListPartsOpts) (*ListPartsResponse, error)
+	ListMultipartUploads(ctx context.Context, obj ObjectPointer, opts ListMultipartUploadsOpts) (*ListMultipartUploadsResponse, error)
 	UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*UploadPartResponse, error)
 	AbortMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string) error
 	CompleteMultiPartUpload(ctx context.Context, obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*CompleteMultiPartUploadResponse, error)
 
 	BlockstoreType() string
 	BlockstoreMetadata(ctx context.Context) (*BlockstoreMetadata, error)
-	GetStorageNamespaceInfo() StorageNamespaceInfo
-	ResolveNamespace(storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error)
+	GetStorageNamespaceInfo(storageID string) (StorageNamespaceInfo, error)
+	ResolveNamespace(storageID, storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error)
 
 	// GetRegion storageID is not actively used, and it's here mainly for completeness
 	GetRegion(ctx context.Context, storageID, storageNamespace string) (string, error)

@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	bucketName      = "test"
-	ObjectBlockSize = 1024 * 3
+	storageNamespace = "test"
+	ObjectBlockSize  = 1024 * 3
 
 	expensiveString = "EXPENSIVE"
 	cheapString     = "CHEAP"
@@ -45,16 +45,21 @@ func TestWriteBlob(t *testing.T) {
 			}
 			reader := bytes.NewReader(data)
 			adapter := testutil.NewMockAdapter()
+			objectPointer := block.ObjectPointer{
+				StorageID:        "",
+				StorageNamespace: storageNamespace,
+				IdentifierType:   block.IdentifierTypeRelative,
+				Identifier:       upload.DefaultPathProvider.NewPath(),
+			}
 			opts := block.PutOpts{StorageClass: tc.storageClass}
-			address := upload.DefaultPathProvider.NewPath()
-			blob, err := upload.WriteBlob(context.Background(), adapter, bucketName, address, reader, tc.size, opts)
+			blob, err := upload.WriteBlob(context.Background(), adapter, objectPointer, reader, tc.size, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			// test bucketName
-			if adapter.LastBucket != bucketName && tc.size != 0 {
-				t.Fatalf("write to wrong bucket: expected:%s got:%s", bucketName, adapter.LastBucket)
+			// test storageNamespace
+			if adapter.LastStorageNamespace != storageNamespace && tc.size != 0 {
+				t.Fatalf("write to wrong storageNamespace: expected:%s got:%s", storageNamespace, adapter.LastStorageNamespace)
 			}
 			// test data size
 			expectedSize := int64(len(data))

@@ -47,7 +47,12 @@ class TestStorageConfig(unittest.TestCase):
                 pre_sign_support_ui = True, 
                 import_support = True, 
                 import_validity_regex = '', 
-                pre_sign_multipart_upload = True
+                pre_sign_multipart_upload = True, 
+                blockstore_id = '', 
+                blockstore_description = '', 
+                blockstore_extras = {
+                    'key' : ''
+                    }
             )
         else :
             return StorageConfig(

@@ -6,6 +6,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **rbac** | **str** | RBAC will remain enabled on GUI if \&quot;external\&quot;.  That only works with an external auth service.  | [optional] 
+**username_ui_placeholder** | **str** | Placeholder text to display in the username field of the login form.  | [optional] 
+**password_ui_placeholder** | **str** | Placeholder text to display in the password field of the login form.  | [optional] 
 **login_url** | **str** | primary URL to use for login. | 
 **login_failed_message** | **str** | message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method  | [optional] 
 **fallback_login_url** | **str** | secondary URL to offer users to use for login. | [optional] 

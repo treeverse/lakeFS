@@ -42,6 +42,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(w http.ResponseWriter
 
 	req = req.WithContext(logging.AddFields(ctx, logging.Fields{logging.UploadIDFieldKey: uploadID}))
 	err = o.BlockStore.AbortMultiPartUpload(ctx, block.ObjectPointer{
+		StorageID:        o.Repository.StorageID,
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       mpu.PhysicalAddress,

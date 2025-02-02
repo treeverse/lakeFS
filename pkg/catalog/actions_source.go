@@ -93,6 +93,7 @@ func (s *ActionsSource) load(ctx context.Context, record graveler.HookRecord, na
 	// get action address
 	blockAdapter := s.catalog.BlockAdapter
 	reader, err := blockAdapter.Get(ctx, block.ObjectPointer{
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       ent.PhysicalAddress,

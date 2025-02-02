@@ -18,6 +18,7 @@ func NewActionsOutputWriter(blockAdapter block.Adapter) *ActionsOutputWriter {
 }
 
 func (o *ActionsOutputWriter) OutputWrite(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+	// TODO (gilo): ObjectPointer init - add StorageID here
 	_, err := o.adapter.Put(ctx, block.ObjectPointer{
 		StorageNamespace: storageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,

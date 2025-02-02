@@ -2549,8 +2549,13 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	address := upload.DefaultPathProvider.NewPath()
-	blob, err := upload.WriteBlob(context.Background(), deps.blocks, onBlock(deps, "ns1"), address, buf, 37, block.PutOpts{StorageClass: &expensiveString})
+	objectPointer := block.ObjectPointer{
+		StorageID:        "",
+		StorageNamespace: onBlock(deps, "ns1"),
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       upload.DefaultPathProvider.NewPath(),
+	}
+	blob, err := upload.WriteBlob(context.Background(), deps.blocks, objectPointer, buf, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2625,8 +2630,13 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	address := upload.DefaultPathProvider.NewPath()
-	blob, err := upload.WriteBlob(context.Background(), deps.blocks, onBlock(deps, "ns1"), address, buf, 37, block.PutOpts{StorageClass: &expensiveString})
+	objectPointer := block.ObjectPointer{
+		StorageID:        "",
+		StorageNamespace: onBlock(deps, "ns1"),
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       upload.DefaultPathProvider.NewPath(),
+	}
+	blob, err := upload.WriteBlob(context.Background(), deps.blocks, objectPointer, buf, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3403,16 +3413,20 @@ func TestController_LogAction(t *testing.T) {
 func TestController_ConfigHandlers(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
+	expectedExample := onBlock(deps, "example-bucket/")
+
+	t.Run("Get config", func(t *testing.T) {
+		resp, err := clt.GetConfigWithResponse(ctx)
+		verifyResponseOK(t, resp, err)
+		require.Empty(t, resp.JSON200.StorageConfigList)
+		require.Equal(t, expectedExample, resp.JSON200.StorageConfig.BlockstoreNamespaceExample)
+		require.Equal(t, "dev", swag.StringValue(resp.JSON200.VersionConfig.Version))
+	})
 
 	t.Run("Get storage config", func(t *testing.T) {
-		ExpectedExample := onBlock(deps, "example-bucket/")
 		resp, err := clt.GetStorageConfigWithResponse(ctx)
 		verifyResponseOK(t, resp, err)
-
-		example := resp.JSON200.BlockstoreNamespaceExample
-		if example != ExpectedExample {
-			t.Errorf("expected to get %s, got %s", ExpectedExample, example)
-		}
+		require.Equal(t, expectedExample, resp.JSON200.BlockstoreNamespaceExample)
 	})
 
 	t.Run("Get gc config", func(t *testing.T) {
