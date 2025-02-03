@@ -79,8 +79,7 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
               </FloatingLabel>
               {repoValid === false &&
                 <Form.Text className="text-danger">
-                    Repository ID must be between 3 and 63 characters long. Only lowercase alphanumeric characters and
-                    {' \'-\''} are allowed. The first character must be alphanumeric and cannot be {'\'-\''}.
+                    The repository ID must be 3-63 lowercase alphanumeric characters or hyphens {'\'-\''}.
                 </Form.Text>
               }
           </Form.Group>
