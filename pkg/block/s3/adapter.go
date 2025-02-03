@@ -901,7 +901,7 @@ func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMeta
 	return &block.BlockstoreMetadata{Region: &region}, nil
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
+func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -912,7 +912,7 @@ func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo,
 	if !a.disablePreSignedMultipart && info.PreSignSupport {
 		info.PreSignSupportMultipart = true
 	}
-	return info, nil
+	return &info
 }
 
 func resolveNamespace(obj block.ObjectPointer) (block.CommonQualifiedKey, error) {

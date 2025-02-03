@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/block/s3"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 var ErrNotSupported = errors.New("no storage adapter found")
@@ -52,10 +53,10 @@ func (ww *WalkerWrapper) GetSkippedEntries() []block.ObjectStoreEntry {
 }
 
 type WalkerFactory struct {
-	params params.AdapterConfig
+	params config.AdapterConfig
 }
 
-func NewFactory(params params.AdapterConfig) *WalkerFactory {
+func NewFactory(params config.AdapterConfig) *WalkerFactory {
 	return &WalkerFactory{params: params}
 }
 

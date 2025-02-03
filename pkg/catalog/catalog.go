@@ -312,12 +312,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		cancelFn()
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
+	baseCfg := cfg.Config.GetBaseConfig()
+	// TODO (niro): This part will break using multiple blockstores. We should change the catalog logic to get the walker from the adapter
 	if cfg.WalkerFactory == nil {
-		// TODO(niro): Walkfer factory should be removed from catalog. This is a WA which relies on Blockstore configuration
-		cfg.WalkerFactory = store.NewFactory(cfg.Config.GetBaseConfig())
+		cfg.WalkerFactory = store.NewFactory(&baseCfg.Blockstore)
 	}
 
-	tierFSParams, err := pyramidparams.NewCommittedTierFSParams(cfg.Config.GetBaseConfig(), adapter)
+	tierFSParams, err := pyramidparams.NewCommittedTierFSParams(baseCfg, adapter)
 	if err != nil {
 		cancelFn()
 		return nil, fmt.Errorf("configure tiered FS for committed: %w", err)
@@ -348,7 +349,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
 	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
 
-	baseCfg := cfg.Config.GetBaseConfig()
 	committedParams := committed.Params{
 		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
 		MaxRangeSizeBytes:          baseCfg.Committed.Permanent.MaxRangeSizeBytes,
