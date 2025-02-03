@@ -44,6 +44,17 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	}
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 
+	// Validate the --storage-id flag (currently only allowed to be empty)
+	repoNameSID := generateUniqueRepositoryName()
+	storageSID := generateUniqueStorageNamespace(repoNameSID)
+	vars = map[string]string{
+		"REPO":    repoNameSID,
+		"STORAGE": storageSID,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" --storage-id storage1", false, "lakectl_repo_create_with_storage_id", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" --storage-id \"\"", false, "lakectl_repo_create", vars)
+
 	// lakectl repo list is expected to show the created repo
 
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
