@@ -16,7 +16,7 @@ const (
 
 // repoCreateCmd represents the create repo command
 var repoCreateCmd = &cobra.Command{
-	Use:               "create <repository URI> <storage namespace> [--storage-id <storage id>]",
+	Use:               "create <repository URI> <storage namespace>",
 	Short:             "Create a new repository",
 	Example:           "lakectl repo create " + myRepoExample + " " + myBucketExample,
 	Args:              cobra.ExactArgs(repoCreateCmdArgs),
@@ -52,7 +52,7 @@ var repoCreateCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
-	repoCreateCmd.Flags().String("storage-id", "", "the storage of this repository")
+	repoCreateCmd.Flags().String("storage-id", "", "")
 
 	repoCmd.AddCommand(repoCreateCmd)
 }

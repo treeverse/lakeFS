@@ -10,7 +10,7 @@ import (
 
 // repoCreateBareCmd represents the create repo command
 var repoCreateBareCmd = &cobra.Command{
-	Use:               "create-bare <repository URI> <storage namespace> [--storage-id <storage id>]",
+	Use:               "create-bare <repository URI> <storage namespace>",
 	Short:             "Create a new repository with no initial branch or commit",
 	Example:           "lakectl create-bare " + myRepoExample + " " + myBucketExample,
 	Hidden:            true,
@@ -49,7 +49,7 @@ var repoCreateBareCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	repoCreateBareCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch name of this repository (will not be created)")
-	repoCreateBareCmd.Flags().String("storage-id", "", "the storage of this repository")
+	repoCreateBareCmd.Flags().String("storage-id", "", "")
 
 	repoCmd.AddCommand(repoCreateBareCmd)
 }
