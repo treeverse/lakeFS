@@ -128,6 +128,35 @@ Dataset name: boat-images
 Dataset source URI: {"path": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
 ```
 
+![Run inspection](../assets/img/mlflow_inspect_experiment_run.png)
+
+```python
+import mlflow
+
+# Inspect run's dataset and tags
+run = mlflow.get_run("c0f8fbb1b63748abaa0a6479115e272c") # 
+
+# Retrieve the Dataset object
+logged_dataset = run.inputs.dataset_inputs[0].dataset
+
+# View some of the recorded Dataset information
+print(f"Dataset name: {logged_dataset.name}")
+print(f"Dataset source URI: {logged_dataset.source}")
+
+# Retrieve run's tags 
+logged_tags = run.data.tags
+print(f"Run tags: {logged_tags}")
+```
+
+```text
+Dataset name: boat-images
+Dataset source URI: {"path": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
+Run tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'mlflow-tracking'}
+```
+
+
+
+
 
 ##### Load dataset 
 
@@ -153,11 +182,6 @@ Dataset source URI: {"path": "s3://repo/experiment-branch/gold/train_v2/"}
 **Note:** 
 The URI schema is s3 because we configured lakeFS to use Spark via the s3 gateway. with these configurations the `lakefs://`
 schema won't work. 
-
-
-
-
-
 
 
 ### Log run input
@@ -204,3 +228,8 @@ Dataset name: boat-images
 Dataset digest: e88c85ce
 Dataset source URI: {"path": "s3://repo/experiment-branch/gold/train_v2/"}
 ```
+
+
+### Bonus
+
+* You can assert if two experiment runs used the same dataset by comparing dataset sources. 
