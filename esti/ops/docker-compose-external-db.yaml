@@ -1,25 +1,13 @@
 version: "3"
 services:
   lakefs:
-    image: "${REGISTRY:-treeverse}/${REPO:-lakefs}:${TAG:-dev}"
-    command: "${COMMAND:-run}"
-    ports:
-      - "8000:8000"
-    volumes:
-      - lakefs-app:/app:ro
+    extends:
+      file: esti/ops/docker-compose-common.yaml
+      service: lakefs
     environment:
-      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY="some random secret string"
       - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-simplified}
       - LAKEFS_AUTH_API_ENDPOINT=${LAKEFS_AUTH_API_ENDPOINT:-http://localhost:8001/api/v1}
       - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
-      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
-      - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
-      - LAKEFS_BLOCKSTORE_LOCAL_ALLOWED_EXTERNAL_PREFIXES=/tmp
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - LAKEFS_LOGGING_LEVEL=DEBUG
-      - LAKEFS_STATS_ENABLED=false
-      - LAKEFSACTION_VAR=this_is_actions_var
       - LAKEFS_DATABASE_TYPE=cosmosdb
       - LAKEFS_DATABASE_COSMOSDB_ENDPOINT
       - LAKEFS_DATABASE_COSMOSDB_DATABASE
@@ -28,10 +16,7 @@ services:
       - AZURE_CLIENT_ID
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
-      - LAKEFS_USAGE_REPORT_ENABLED=false
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    
+
   esti:
     image: "golang:1.23-alpine"
     links:

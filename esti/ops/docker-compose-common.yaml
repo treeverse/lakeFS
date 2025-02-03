@@ -24,7 +24,6 @@ services:
       - AZURE_CLIENT_SECRET
       - AZURE_TENANT_ID
       - LAKEFSACTION_VAR=this_is_actions_var
-    entrypoint: ["/app/wait-for", "--", "/app/lakefs", "run"]
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
