@@ -19,6 +19,7 @@ import (
 const (
 	InstallationIDKeyName  = "installation_id"
 	SetupTimestampKeyName  = "setup_timestamp"
+	SetupAuthTypeKeyPrefix = "setup_auth_"
 	CommPrefsSetKeyName    = "comm_prefs_set"
 	EmailKeyName           = "encoded_user_email"
 	FeatureUpdatesKeyName  = "feature_updates"
@@ -47,7 +48,7 @@ type MetadataManager interface {
 	GetSetupState(ctx context.Context) (SetupStateName, error)
 	UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefs) (string, error)
 	IsCommPrefsSet(ctx context.Context) (bool, error)
-	UpdateSetupTimestamp(context.Context, time.Time) error
+	UpdateSetupTimestamp(ctx context.Context, setupTime time.Time, authType string) error
 	GetMetadata(context.Context) (map[string]string, error)
 }
 
@@ -170,10 +171,15 @@ func (m *KVMetadataManager) writeMetadata(ctx context.Context, items map[string]
 	return nil
 }
 
-func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, ts time.Time) error {
-	return m.writeMetadata(ctx, map[string]string{
-		SetupTimestampKeyName: ts.UTC().Format(time.RFC3339),
-	})
+func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, setupTime time.Time, authType string) error {
+	setupTimeStr := setupTime.UTC().Format(time.RFC3339)
+	items := map[string]string{
+		SetupTimestampKeyName: setupTimeStr,
+	}
+	if authType != "" {
+		items[SetupAuthTypeKeyPrefix+authType] = setupTimeStr
+	}
+	return m.writeMetadata(ctx, items)
 }
 
 // UpdateCommPrefs - updates the comm prefs metadata.

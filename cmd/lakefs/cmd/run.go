@@ -241,7 +241,7 @@ var runCmd = &cobra.Command{
 		if (kvParams.Type == local.DriverName || kvParams.Type == mem.DriverName) &&
 			baseCfg.Installation.UserName != "" && baseCfg.Installation.AccessKeyID.SecureValue() != "" && baseCfg.Installation.SecretAccessKey.SecureValue() != "" {
 			setupCreds, err := setupLakeFS(ctx, baseCfg, authMetadataManager, authService, baseCfg.Installation.UserName,
-				baseCfg.Installation.AccessKeyID.SecureValue(), baseCfg.Installation.SecretAccessKey.SecureValue())
+				baseCfg.Installation.AccessKeyID.SecureValue(), baseCfg.Installation.SecretAccessKey.SecureValue(), false)
 			if err != nil {
 				logger.WithError(err).WithField("admin", baseCfg.Installation.UserName).Fatal("Failed to initial setup environment")
 			}
@@ -536,10 +536,10 @@ const localBanner = `
 
 var quickStartBanner = fmt.Sprintf(`
 │
-│ lakeFS running in quickstart mode. 
+│ lakeFS running in quickstart mode.
 │     Login at http://127.0.0.1:8000/
 │
-│     Access Key ID    : %s 
+│     Access Key ID    : %s
 │     Secret Access Key: %s
 │
 `, config.DefaultQuickstartKeyID, config.DefaultQuickstartSecretKey)

@@ -60,6 +60,12 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		noCheck, err := cmd.Flags().GetBool("no-check")
+		if err != nil {
+			fmt.Printf("no-check: %s\n", err)
+			os.Exit(1)
+		}
+
 		var authService auth.Service
 		kvStore, err := kv.Open(ctx, kvParams)
 		if err != nil {
@@ -74,7 +80,7 @@ var setupCmd = &cobra.Command{
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		metadata := stats.NewMetadata(ctx, logger, cfg.Blockstore.Type, authMetadataManage, cloudMetadataProvider)
 
-		credentials, err := setupLakeFS(ctx, cfg, authMetadataManage, authService, userName, accessKeyID, secretAccessKey)
+		credentials, err := setupLakeFS(ctx, cfg, authMetadataManage, authService, userName, accessKeyID, secretAccessKey, noCheck)
 		if err != nil {
 			fmt.Printf("Setup failed: %s\n", err)
 			os.Exit(1)
@@ -100,15 +106,17 @@ var setupCmd = &cobra.Command{
 	},
 }
 
-func setupLakeFS(ctx context.Context, cfg *config.BaseConfig, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string) (*model.Credential, error) {
-	initialized, err := metadataManager.IsInitialized(ctx)
-	if err != nil || initialized {
-		// return on error or if already initialized
-		return nil, err
+func setupLakeFS(ctx context.Context, cfg *config.BaseConfig, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string, noSetupCheck bool) (*model.Credential, error) {
+	if !noSetupCheck {
+		initialized, err := metadataManager.IsInitialized(ctx)
+		if err != nil || initialized {
+			// return on error or if already initialized
+			return nil, err
+		}
 	}
 
 	// mark comm prefs was not provided
-	_, err = metadataManager.UpdateCommPrefs(ctx, nil)
+	_, err := metadataManager.UpdateCommPrefs(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("update comm prefs: %w", err)
 	}
@@ -130,6 +138,7 @@ func init() {
 	f.String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
 	f.String("access-key-id", "", "AWS-format access key ID to create for that user (for integration)")
 	f.String("secret-access-key", "", "AWS-format secret access key to create for that user (for integration)")
+	f.Bool("no-check", false, "skip checking if setup is already complete")
 	if err := f.MarkHidden("access-key-id"); err != nil {
 		// (internal error)
 		_, _ = fmt.Fprint(os.Stderr, err)

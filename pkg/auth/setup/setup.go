@@ -218,7 +218,7 @@ func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *
 	return CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManger, username, nil, nil)
 }
 
-func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, metadataManger auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
+func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, metadataManager auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
 	adminUser := &model.SuperuserConfiguration{
 		User: model.User{
 			CreatedAt: time.Now(),
@@ -243,10 +243,11 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 		return nil, err
 	}
 
-	// update setup timestamp
-	if err = metadataManger.UpdateSetupTimestamp(ctx, time.Now()); err != nil {
+	// update setup time with auth type used
+	if err = metadataManager.UpdateSetupTimestamp(ctx, time.Now(), cfg.Auth.UIConfig.RBAC); err != nil {
 		logging.FromContext(ctx).WithError(err).Error("Failed the update setup timestamp")
 	}
+
 	return cred, err
 }
 
