@@ -27,6 +27,43 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  esti:
+    image: "golang:1.23-alpine"
+    links:
+      - lakefs:s3.local.lakefs.io
+      - lakefs:testmultipartupload.s3.local.lakefs.io
+      - lakefs:testmultipartuploadabort.s3.local.lakefs.io
+      - lakefs:testdeleteobjects.s3.local.lakefs.io
+      - lakefs:testmigrate-testpremigratemultipart.s3.local.lakefs.io
+      - lakefs:migrate.s3.local.lakefs.io
+    environment:
+      - CGO_ENABLED=0
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION=us-east-1
+      - ESTI_STORAGE_NAMESPACE
+      - ESTI_BLOCKSTORE_TYPE
+      - ESTI_AWS_ACCESS_KEY_ID
+      - ESTI_SETUP_LAKEFS
+      - ESTI_AWS_SECRET_ACCESS_KEY
+      - ESTI_ENDPOINT_URL=http://lakefs:8000
+      - ESTI_BINARIES_DIR=/app
+      - ESTI_GOTEST_FLAGS
+      - ESTI_FLAGS
+      - ESTI_FORCE_PATH_STYLE
+      - ESTI_AZURE_STORAGE_ACCOUNT
+      - ESTI_AZURE_STORAGE_ACCESS_KEY
+    working_dir: /lakefs
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache util-linux
+        go test -v $ESTI_GOTEST_FLAGS ./esti --system-tests $ESTI_FLAGS --skip=".*GC"
+    volumes:
+      - lakefs-code:/lakefs
+      - lakefs-app:/app:ro
+
   postgres:
     image: "postgres:11"
     ports:

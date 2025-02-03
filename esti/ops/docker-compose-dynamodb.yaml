@@ -21,34 +21,15 @@ services:
       service: dynamodb
 
   esti:
-    image: "golang:1.23-alpine"
-    links:
-      - lakefs:s3.local.lakefs.io
-      - lakefs:testmultipartupload.s3.local.lakefs.io
-      - lakefs:testmultipartuploadabort.s3.local.lakefs.io
-      - lakefs:testdeleteobjects.s3.local.lakefs.io
-      - lakefs:testmigrate-testpremigratemultipart.s3.local.lakefs.io
-      - lakefs:migrate.s3.local.lakefs.io
+    extends:
+      file: esti/ops/docker-compose-common.yaml
+      service: esti
     environment:
-      - CGO_ENABLED=0
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION=us-east-1
-      - ESTI_STORAGE_NAMESPACE
-      - ESTI_BLOCKSTORE_TYPE
-      - ESTI_AWS_ACCESS_KEY_ID
-      - ESTI_SETUP_LAKEFS
-      - ESTI_AWS_SECRET_ACCESS_KEY
-      - ESTI_ENDPOINT_URL=http://lakefs:8000
-      - ESTI_BINARIES_DIR=/app
       - ESTI_DATABASE_KV_ENABLED
       - ESTI_KV_MIGRATION=${ESTI_KV_MIGRATION:-none}
       - ESTI_POST_MIGRATE
-      - ESTI_GOTEST_FLAGS
-      - ESTI_FLAGS
       - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
       - LAKEFS_ROOT
-    working_dir: /lakefs
     command:
       - /bin/sh
       - -c
