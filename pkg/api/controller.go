@@ -1928,7 +1928,7 @@ func (c *Controller) getStorageConfigList() apigen.StorageConfigList {
 			c.Logger.WithError(err).Error("no storage config found for id: %s", id)
 			continue
 		}
-
+		info.BlockstoreId = swag.String(id)
 		configList = append(configList, *info)
 	}
 	return configList

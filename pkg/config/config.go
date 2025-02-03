@@ -32,6 +32,7 @@ const (
 	UseLocalConfiguration   = "local-settings"
 	QuickstartConfiguration = "quickstart"
 
+	// SingleBlockstoreID - Represents a single blockstore system
 	SingleBlockstoreID = ""
 )
 
@@ -226,6 +227,10 @@ type Blockstore struct {
 	} `mapstructure:"gs"`
 }
 
+func (b *Blockstore) GetStorageIDs() []string {
+	return nil
+}
+
 func (b *Blockstore) GetStorageByID(id string) AdapterConfig {
 	if id != "" {
 		return nil
@@ -342,10 +347,6 @@ func (b *Blockstore) BlockstoreAzureParams() (blockparams.Azure, error) {
 
 func (b *Blockstore) BlockstoreDescription() string {
 	return ""
-}
-
-func (b *Blockstore) GetStorageIDs() []string {
-	return nil
 }
 
 func (b *Blockstore) BlockstoreExtras() map[string]string {

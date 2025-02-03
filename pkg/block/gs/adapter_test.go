@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block/blocktest"
 	"github.com/treeverse/lakefs/pkg/block/gs"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 func newAdapter() *gs.Adapter {
@@ -36,7 +37,7 @@ func TestAdapterNamespace(t *testing.T) {
 		require.NoError(t, adapter.Close())
 	}()
 
-	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo("").ValidityRegex)
+	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo(config.SingleBlockstoreID).ValidityRegex)
 	require.NoError(t, err)
 
 	tests := []struct {
