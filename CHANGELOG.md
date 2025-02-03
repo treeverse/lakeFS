@@ -1,5 +1,17 @@
 # Changelog
 
+# v1.49.0
+
+:new: What's new:
+- change login placeholders for remote authenticator (#8519)
+- Make http client type configurable (#8516)
+- S3GW: Support list multipart uploads (#8531)
+
+:bug: Bugs fixed:
+- Fix: react-dropzone dependency (#8534)
+- Add admin/superuser error handling and cleanup (#8559)
+
+
 # v1.48.2
 
 :bug: Bugs fixed:
