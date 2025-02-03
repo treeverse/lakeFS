@@ -62,8 +62,8 @@ lakeFS.
 
 ##### Configuration
 
-To configure lakeFS to load a Spark dataframe or multiple formats, including Delta Lake tables, configure Spark to work
-with lakeFS [S3-compatible API](spark.md#s3-compatible-api), and include the following Delta Lake settings: 
+To configure lakeFS to load a Spark dataframe or multiple formats, including Delta Lake tables, configure Spark to work 
+with lakeFS [S3-compatible API](spark.md#s3-compatible-api), and Delta Lake as follows: 
 
 ```python
 from pyspark.sql import SparkSession
@@ -79,6 +79,56 @@ spark = SparkSession.builder.appName("lakeFS / Mlflow") \
     .getOrCreate()
 ```
 
+##### Spark example 
+
+```python
+import lakefs 
+import mlflow
+
+repo = lakefs.Repository("mlflow-tracking").create(storage_namespace="bucket/my-namespace", default_branch="main", exist_ok=True)
+repo_id = repo.id
+
+exp_branch = repo.branch("experiment-1").create(source_reference="main", exist_ok=True)
+branch_id = exp_branch.id
+head_commit_id = exp_branch.head.id
+
+table_path = "gold/train_v2/"
+
+dataset_source_url = f"s3://{repo_id}/{head_commit_id}/{table_path}"
+
+# Load delta lake table from lakeFS, at its most updated version to which the head commit id is pointing
+dataset = mlflow.data.load_delta(path=dataset_source_url, name="boat-images")
+
+# View some of the recorded Dataset information
+print(f"Dataset name: {dataset.name}")
+print(f"Dataset source URI: {dataset.source.path}")
+
+# Use mlflow input logging to track the dataset versioned by lakeFS
+with mlflow.start_run() as run:
+    mlflow.log_input(dataset, context="training")
+    mlflow.set_tag("lakefs_repo", repo_id)
+    mlflow.set_tag("lakefs_branch", branch_id) # Log the branch id, to have a friendly lakeFS reference to search the input dataset in 
+
+# Inspect run's dataset
+logged_run = mlflow.get_run(run.info.run_id) # 
+
+# Retrieve the Dataset object
+logged_dataset = logged_run.inputs.dataset_inputs[0].dataset
+
+# View some of the recorded Dataset information
+print(f"Dataset name: {logged_dataset.name}")
+print(f"Dataset source URI: {logged_dataset.source}")
+```
+
+Output 
+```text
+Dataset name: boat-images
+Dataset source URI: s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/
+Dataset name: boat-images
+Dataset source URI: {"path": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
+```
+
+
 ##### Load dataset 
 
 ```python
@@ -88,11 +138,31 @@ dataset_lakefs_uri = "s3://repo/my-experiment/gold/train_v2/"
 
 # Load delta lake table from lakeFS
 dataset = mlflow.data.load_delta(path=dataset_lakefs_uri, name="boat-images")
+
+# View some of the recorded Dataset information
+print(f"Dataset name: {dataset.name}")
+print(f"Dataset source URI: {dataset.source.path}")
 ```
+
+Output:
+```text
+Dataset name: boat-images
+Dataset source URI: {"path": "s3://repo/experiment-branch/gold/train_v2/"}
+```
+
+**Note:** 
+The URI schema is s3 because we configured lakeFS to use Spark via the s3 gateway. with these configurations the `lakefs://`
+schema won't work. 
+
+
+
+
+
+
 
 ### Log run input
 
-Once you created an MLflow dataset of the type of your choice, log it as input to your experiment run.  
+Once you created an MLflow dataset of the type of your choice, use it in yout experiment runs and log it as input of a run.  
 
 ```python
 with mlflow.start_run() as run:
@@ -126,7 +196,9 @@ logged_dataset = logged_run.inputs.dataset_inputs[0].dataset
 print(f"Dataset name: {logged_dataset.name}")
 print(f"Dataset digest: {logged_dataset.digest}")
 print(f"Dataset source URI: {logged_dataset.source}")
-
+```
+Output 
+```text
 ## Output
 Dataset name: boat-images
 Dataset digest: e88c85ce
