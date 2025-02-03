@@ -236,6 +236,11 @@ type Catalog struct {
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 	signingKey            config.SecureString
+	tierFSParams          pyramidparams.ExtParams
+	committedParams       committed.Params
+	rangeFS               pyramid.FS
+	metaRangeFS           pyramid.FS
+	committedManager      graveler.CommittedManager
 }
 
 const (
@@ -344,26 +349,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
 
-	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
-	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
-
 	committedParams := committed.Params{
 		MinRangeSizeBytes:          cfg.Config.Committed.Permanent.MinRangeSizeBytes,
 		MaxRangeSizeBytes:          cfg.Config.Committed.Permanent.MaxRangeSizeBytes,
 		RangeSizeEntriesRaggedness: cfg.Config.Committed.Permanent.RangeRaggednessEntries,
 		MaxUploaders:               cfg.Config.Committed.LocalCache.MaxUploadersPerWriter,
 	}
-	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
-		committedParams,
-		// TODO(ariels): Use separate range managers for metaranges and ranges
-		sstableMetaManager,
-		sstableManager,
-	)
-	if err != nil {
-		cancelFn()
-		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
-	}
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManager, sstableManager, committedParams)
+	committedManager := committed.NewCommittedManager(committedParams)
 
 	executor := batch.NewConditionalExecutor(logging.ContextUnavailable())
 	go executor.Run(ctx)
@@ -419,11 +411,16 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		walkerFactory:         cfg.WalkerFactory,
 		workPool:              workPool,
 		KVStore:               cfg.KVStore,
-		managers:              []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		managers:              []io.Closer{&ctxCloser{cancelFn}},
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
 		signingKey:            cfg.Config.Blockstore.Signing.SecretKey,
+		tierFSParams:          *tierFSParams,
+		committedParams:       committedParams,
+		rangeFS:               rangeFS,
+		metaRangeFS:           metaRangeFS,
+		committedManager:      committedManager,
 	}, nil
 }
 
@@ -461,6 +458,27 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	if storageIdentifier != "" {
 		return nil, graveler.ErrInvalidStorageID
 	}
+
+	pebbleSSTableCache := pebble.NewCache(c.tierFSParams.SharedParams.PebbleSSTableCacheSizeBytes)
+	defer pebbleSSTableCache.Unref()
+
+	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, c.rangeFS, hashAlg, committed.StorageID(storageID))
+	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, c.metaRangeFS, hashAlg, committed.StorageID(storageID))
+	// TODO NS Thread safety
+	c.managers = append(c.managers, sstableManager, sstableMetaManager)
+
+	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
+		c.committedParams,
+		// TODO(ariels): Use separate range managers for metaranges and ranges
+		sstableMetaManager,
+		sstableManager,
+		graveler.StorageID(storageID),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+	}
+
+	c.committedManager.AddMetadataManager(graveler.StorageID(storageID), sstableMetaRangeManager)
 	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
