@@ -26,6 +26,7 @@ import {ReadOnlyBadge} from "../../lib/components/badges";
 
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
+import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 
 dayjs.extend(relativeTime);
 
@@ -50,11 +51,13 @@ const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = fa
     );
 }
 
-const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress }) => {
+const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) => {
+    const pluginManager = usePluginManager();
+    const repoCreationForm = pluginManager.repoCreationForm
 
-  const [formValid, setFormValid] = useState(false);
+    const [formValid, setFormValid] = useState(false);
 
-  const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
+    const {response, error: err, loading} = useAPI(() => config.getStorageConfig());
 
     const showError = (error) ? error : err;
     if (loading) {
@@ -70,25 +73,34 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress }) =
     return (
         <Modal show={show} onHide={onCancel} size="lg">
             <Modal.Body>
-                <RepositoryCreateForm
-                  id="repository-create-form"
-                  config={response}
-                  error={showError}
-                  formValid={formValid}
-                  setFormValid={setFormValid}
-                  onSubmit={onSubmit}
-                  onCancel={onCancel}
-                  inProgress={inProgress}
-                />
+                {repoCreationForm ?
+                    repoCreationForm.build({
+                        formID: "repository-create-form",
+                        config: response,
+                        error: showError,
+                        formValid,
+                        setFormValid,
+                        onSubmit,
+                    }) :
+                    <RepositoryCreateForm
+                        formID="repository-create-form"
+                        config={response}
+                        error={showError}
+                        formValid={formValid}
+                        setFormValid={setFormValid}
+                        onSubmit={onSubmit}
+                    />
+                }
             </Modal.Body>
             <Modal.Footer>
-              <Button variant="success" type="submit" form="repository-create-form" className="me-2" disabled={!formValid || inProgress}>
-                { inProgress ? 'Creating...' : 'Create Repository' }
-              </Button>
-              <Button variant="secondary" onClick={(e) => {
-                e.preventDefault();
-                onCancel();
-              }}>Cancel</Button>
+                <Button variant="secondary" onClick={(e) => {
+                    e.preventDefault();
+                    onCancel();
+                }}>Cancel</Button>
+                <Button variant="success" type="submit" form="repository-create-form" className="me-2"
+                        disabled={!formValid || inProgress}>
+                    {inProgress ? 'Creating...' : 'Create Repository'}
+                </Button>
             </Modal.Footer>
         </Modal>
     );
@@ -105,13 +117,15 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, create
                     {`Let's dive in 🤿`}</p>
                 </Col>
             </Row>
-            <Row className="button-container">
-                <Col>
-                    <GettingStartedCreateRepoButton text={
-                      <><span>Create Sample Repository</span> </>
-                    } creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
-                </Col>
-            </Row>
+            {onCreateSampleRepo &&
+                <Row className="button-container">
+                    <Col>
+                        <GettingStartedCreateRepoButton text={
+                            <><span>Create Sample Repository</span> </>
+                        } creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo}/>
+                    </Col>
+                </Row>
+            }
             {createRepoError &&
                 <Row>
                     <Col sm={6}>
@@ -183,6 +197,9 @@ const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo
 
 
 const RepositoriesPage = () => {
+    const pluginManager = usePluginManager();
+    const disableSampleRepoCreation = pluginManager.repoCreationForm.disableSampleRepoCreation
+
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
     const [createRepoError, setCreateRepoError] = useState(null);
@@ -224,6 +241,9 @@ const RepositoriesPage = () => {
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
+    console.log('disableSampleRepoCreation:', disableSampleRepoCreation);
+    // TODO: uncomment and fix
+    // const hideSampleRepoButton = disableSampleRepoCreation && disableSampleRepoCreation(response);
     const createSampleRepoButtonCallback = useCallback(async () => {
         if (loading) return;
         if (!err && response?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {
