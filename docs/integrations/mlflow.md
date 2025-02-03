@@ -57,6 +57,69 @@ lakeFS.
 
 #### Python libraries integration
 
+```python
+import lakefs 
+import mlflow
+
+repo = lakefs.Repository("mlflow-tracking").create(storage_namespace="bucket/my-namespace", default_branch="main", exist_ok=True)
+repo_id = repo.id
+
+exp_branch = repo.branch("experiment-1").create(source_reference="main", exist_ok=True)
+branch_id = exp_branch.id
+head_commit_id = exp_branch.head.id
+
+table_path = "famous_people.csv"
+
+dataset_source_url = f"s3://{repo_id}/{head_commit_id}/{table_path}"
+
+# Use Pandas to read from lakeFS, at its most updated version to which the head commit id is pointing
+raw_data = pd.read_csv(dataset_source_url, delimiter=";", storage_options={
+        "key": "AKIAIOSFOLKFSSAMPLES",
+        "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "client_kwargs": {"endpoint_url": "http://lakefs:8000"}
+    })
+
+# Create an instance of a PandasDataset
+dataset = mlflow.data.from_pandas(
+    raw_data, source=dataset_source_url, name="famous_people"
+)
+
+# View some of the recorded Dataset information
+print(f"Dataset name: {dataset.name}")
+print(f"Dataset source URI: {dataset.source.uri}")
+
+
+# Use mlflow input logging to track the dataset versioned by lakeFS
+with mlflow.start_run() as run:
+    mlflow.log_input(dataset, context="training")
+    mlflow.set_tag("lakefs_repo", repo_id)
+    mlflow.set_tag("lakefs_branch", branch_id) # Log the branch id, to have a friendly lakeFS reference to search the input dataset in 
+
+
+# Inspect run's dataset
+logged_run = mlflow.get_run(run.info.run_id) # 
+
+# Retrieve the Dataset object
+logged_dataset = logged_run.inputs.dataset_inputs[0].dataset
+
+# View some of the recorded Dataset information
+print(f"Dataset name: {logged_dataset.name}")
+print(f"Dataset source URI: {logged_dataset.source}")
+```
+
+Output
+```text
+Dataset name: famous_people
+Dataset source URI: s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/fp.csv
+Dataset name: famous_people
+Dataset source URI: {"uri": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/fp.csv"}
+```
+
+
+##### Limitations
+
+* can't use lakeFS spec, only for loading data but not for ceating mlflow datasets. This will be supported when we have
+  an MLflow dataset source
 
 #### Spark-based
 
