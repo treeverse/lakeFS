@@ -23,6 +23,7 @@ var (
 	ErrMissingRequiredKeys   = fmt.Errorf("%w: missing required keys", ErrBadConfiguration)
 	ErrBadGCPCSEKValue       = fmt.Errorf("value of customer-supplied server side encryption is not a valid %d bytes AES key", gcpAESKeyLength)
 	ErrGCPEncryptKeyConflict = errors.New("setting both kms and customer supplied encryption will result failure when reading/writing object")
+	ErrNoStorageConfig       = errors.New("no storage config")
 )
 
 // UseLocalConfiguration set to true will add defaults that enable a lakeFS run
@@ -30,6 +31,9 @@ var (
 const (
 	UseLocalConfiguration   = "local-settings"
 	QuickstartConfiguration = "quickstart"
+
+	// SingleBlockstoreID - Represents a single blockstore system
+	SingleBlockstoreID = ""
 )
 
 type OIDC struct {
@@ -149,6 +153,18 @@ type ApproximatelyCorrectOwnership struct {
 	Acquire time.Duration `mapstructure:"acquire"`
 }
 
+// AdapterConfig configures a blockstore adapter.
+type AdapterConfig interface {
+	BlockstoreType() string
+	BlockstoreDescription() string
+	BlockstoreLocalParams() (blockparams.Local, error)
+	BlockstoreS3Params() (blockparams.S3, error)
+	BlockstoreGSParams() (blockparams.GS, error)
+	BlockstoreAzureParams() (blockparams.Azure, error)
+	BlockstoreExtras() map[string]string
+	GetDefaultNamespacePrefix() *string
+}
+
 type Blockstore struct {
 	Signing struct {
 		SecretKey SecureString `mapstructure:"secret_key"`
@@ -211,10 +227,145 @@ type Blockstore struct {
 	} `mapstructure:"gs"`
 }
 
+func (b *Blockstore) GetStorageIDs() []string {
+	return nil
+}
+
+func (b *Blockstore) GetStorageByID(id string) AdapterConfig {
+	if id != "" {
+		return nil
+	}
+
+	return b
+}
+
+func (b *Blockstore) BlockstoreType() string {
+	return b.Type
+}
+
+func (b *Blockstore) BlockstoreS3Params() (blockparams.S3, error) {
+	var webIdentity *blockparams.S3WebIdentity
+	if b.S3.WebIdentity != nil {
+		webIdentity = &blockparams.S3WebIdentity{
+			SessionDuration:     b.S3.WebIdentity.SessionDuration,
+			SessionExpiryWindow: b.S3.WebIdentity.SessionExpiryWindow,
+		}
+	}
+
+	var creds blockparams.S3Credentials
+	if b.S3.Credentials != nil {
+		creds.AccessKeyID = b.S3.Credentials.AccessKeyID.SecureValue()
+		creds.SecretAccessKey = b.S3.Credentials.SecretAccessKey.SecureValue()
+		creds.SessionToken = b.S3.Credentials.SessionToken.SecureValue()
+	}
+
+	return blockparams.S3{
+		Region:                        b.S3.Region,
+		Profile:                       b.S3.Profile,
+		CredentialsFile:               b.S3.CredentialsFile,
+		Credentials:                   creds,
+		MaxRetries:                    b.S3.MaxRetries,
+		Endpoint:                      b.S3.Endpoint,
+		ForcePathStyle:                b.S3.ForcePathStyle,
+		DiscoverBucketRegion:          b.S3.DiscoverBucketRegion,
+		SkipVerifyCertificateTestOnly: b.S3.SkipVerifyCertificateTestOnly,
+		ServerSideEncryption:          b.S3.ServerSideEncryption,
+		ServerSideEncryptionKmsKeyID:  b.S3.ServerSideEncryptionKmsKeyID,
+		PreSignedExpiry:               b.S3.PreSignedExpiry,
+		PreSignedEndpoint:             b.S3.PreSignedEndpoint,
+		DisablePreSigned:              b.S3.DisablePreSigned,
+		DisablePreSignedUI:            b.S3.DisablePreSignedUI,
+		DisablePreSignedMultipart:     b.S3.DisablePreSignedMultipart,
+		ClientLogRetries:              b.S3.ClientLogRetries,
+		ClientLogRequest:              b.S3.ClientLogRequest,
+		WebIdentity:                   webIdentity,
+	}, nil
+}
+
+func (b *Blockstore) BlockstoreLocalParams() (blockparams.Local, error) {
+	localPath := b.Local.Path
+	path, err := homedir.Expand(localPath)
+	if err != nil {
+		return blockparams.Local{}, fmt.Errorf("parse blockstore location URI %s: %w", localPath, err)
+	}
+
+	params := blockparams.Local(*b.Local)
+	params.Path = path
+	return params, nil
+}
+
+func (b *Blockstore) BlockstoreGSParams() (blockparams.GS, error) {
+	var customerSuppliedKey []byte = nil
+	if b.GS.ServerSideEncryptionCustomerSupplied != "" {
+		v, err := hex.DecodeString(b.GS.ServerSideEncryptionCustomerSupplied)
+		if err != nil {
+			return blockparams.GS{}, err
+		}
+		if len(v) != gcpAESKeyLength {
+			return blockparams.GS{}, ErrBadGCPCSEKValue
+		}
+		customerSuppliedKey = v
+		if b.GS.ServerSideEncryptionKmsKeyID != "" {
+			return blockparams.GS{}, ErrGCPEncryptKeyConflict
+		}
+	}
+
+	credPath, err := homedir.Expand(b.GS.CredentialsFile)
+	if err != nil {
+		return blockparams.GS{}, fmt.Errorf("parse GS credentials path '%s': %w", b.GS.CredentialsFile, err)
+	}
+	return blockparams.GS{
+		CredentialsFile:                      credPath,
+		CredentialsJSON:                      b.GS.CredentialsJSON,
+		PreSignedExpiry:                      b.GS.PreSignedExpiry,
+		DisablePreSigned:                     b.GS.DisablePreSigned,
+		DisablePreSignedUI:                   b.GS.DisablePreSignedUI,
+		ServerSideEncryptionCustomerSupplied: customerSuppliedKey,
+		ServerSideEncryptionKmsKeyID:         b.GS.ServerSideEncryptionKmsKeyID,
+	}, nil
+}
+
+func (b *Blockstore) BlockstoreAzureParams() (blockparams.Azure, error) {
+	if b.Azure.AuthMethod != "" {
+		logging.ContextUnavailable().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
+	}
+	if b.Azure.ChinaCloudDeprecated {
+		logging.ContextUnavailable().Warn("blockstore.azure.china_cloud is deprecated. Value is no longer used. Please pass Domain = 'blob.core.chinacloudapi.cn'")
+		b.Azure.Domain = "blob.core.chinacloudapi.cn"
+	}
+	return blockparams.Azure{
+		StorageAccount:     b.Azure.StorageAccount,
+		StorageAccessKey:   b.Azure.StorageAccessKey,
+		TryTimeout:         b.Azure.TryTimeout,
+		PreSignedExpiry:    b.Azure.PreSignedExpiry,
+		TestEndpointURL:    b.Azure.TestEndpointURL,
+		Domain:             b.Azure.Domain,
+		DisablePreSigned:   b.Azure.DisablePreSigned,
+		DisablePreSignedUI: b.Azure.DisablePreSignedUI,
+	}, nil
+}
+
+func (b *Blockstore) BlockstoreDescription() string {
+	return ""
+}
+
+func (b *Blockstore) BlockstoreExtras() map[string]string {
+	return nil
+}
+
+func (b *Blockstore) GetDefaultNamespacePrefix() *string {
+	return b.DefaultNamespacePrefix
+}
+
 type Config interface {
 	GetBaseConfig() *BaseConfig
-	StorageConfig() interface{}
+	StorageConfig() StorageConfig
 	Validate() error
+}
+
+type StorageConfig interface {
+	GetStorageByID(storageID string) AdapterConfig
+	GetStorageIDs() []string
 }
 
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
@@ -480,115 +631,9 @@ func (c *BaseConfig) Validate() error {
 	return ValidateBlockstore(&c.Blockstore)
 }
 
-func (c *BaseConfig) BlockstoreType() string {
-	return c.Blockstore.Type
-}
-
-func (c *BaseConfig) BlockstoreS3Params() (blockparams.S3, error) {
-	var webIdentity *blockparams.S3WebIdentity
-	if c.Blockstore.S3.WebIdentity != nil {
-		webIdentity = &blockparams.S3WebIdentity{
-			SessionDuration:     c.Blockstore.S3.WebIdentity.SessionDuration,
-			SessionExpiryWindow: c.Blockstore.S3.WebIdentity.SessionExpiryWindow,
-		}
-	}
-
-	var creds blockparams.S3Credentials
-	if c.Blockstore.S3.Credentials != nil {
-		creds.AccessKeyID = c.Blockstore.S3.Credentials.AccessKeyID.SecureValue()
-		creds.SecretAccessKey = c.Blockstore.S3.Credentials.SecretAccessKey.SecureValue()
-		creds.SessionToken = c.Blockstore.S3.Credentials.SessionToken.SecureValue()
-	}
-
-	return blockparams.S3{
-		Region:                        c.Blockstore.S3.Region,
-		Profile:                       c.Blockstore.S3.Profile,
-		CredentialsFile:               c.Blockstore.S3.CredentialsFile,
-		Credentials:                   creds,
-		MaxRetries:                    c.Blockstore.S3.MaxRetries,
-		Endpoint:                      c.Blockstore.S3.Endpoint,
-		ForcePathStyle:                c.Blockstore.S3.ForcePathStyle,
-		DiscoverBucketRegion:          c.Blockstore.S3.DiscoverBucketRegion,
-		SkipVerifyCertificateTestOnly: c.Blockstore.S3.SkipVerifyCertificateTestOnly,
-		ServerSideEncryption:          c.Blockstore.S3.ServerSideEncryption,
-		ServerSideEncryptionKmsKeyID:  c.Blockstore.S3.ServerSideEncryptionKmsKeyID,
-		PreSignedExpiry:               c.Blockstore.S3.PreSignedExpiry,
-		PreSignedEndpoint:             c.Blockstore.S3.PreSignedEndpoint,
-		DisablePreSigned:              c.Blockstore.S3.DisablePreSigned,
-		DisablePreSignedUI:            c.Blockstore.S3.DisablePreSignedUI,
-		DisablePreSignedMultipart:     c.Blockstore.S3.DisablePreSignedMultipart,
-		ClientLogRetries:              c.Blockstore.S3.ClientLogRetries,
-		ClientLogRequest:              c.Blockstore.S3.ClientLogRequest,
-		WebIdentity:                   webIdentity,
-	}, nil
-}
-
-func (c *BaseConfig) BlockstoreLocalParams() (blockparams.Local, error) {
-	localPath := c.Blockstore.Local.Path
-	path, err := homedir.Expand(localPath)
-	if err != nil {
-		return blockparams.Local{}, fmt.Errorf("parse blockstore location URI %s: %w", localPath, err)
-	}
-
-	params := blockparams.Local(*c.Blockstore.Local)
-	params.Path = path
-	return params, nil
-}
-
 const (
 	gcpAESKeyLength = 32
 )
-
-func (c *BaseConfig) BlockstoreGSParams() (blockparams.GS, error) {
-	var customerSuppliedKey []byte = nil
-	if c.Blockstore.GS.ServerSideEncryptionCustomerSupplied != "" {
-		v, err := hex.DecodeString(c.Blockstore.GS.ServerSideEncryptionCustomerSupplied)
-		if err != nil {
-			return blockparams.GS{}, err
-		}
-		if len(v) != gcpAESKeyLength {
-			return blockparams.GS{}, ErrBadGCPCSEKValue
-		}
-		customerSuppliedKey = v
-		if c.Blockstore.GS.ServerSideEncryptionKmsKeyID != "" {
-			return blockparams.GS{}, ErrGCPEncryptKeyConflict
-		}
-	}
-
-	credPath, err := homedir.Expand(c.Blockstore.GS.CredentialsFile)
-	if err != nil {
-		return blockparams.GS{}, fmt.Errorf("parse GS credentials path '%s': %w", c.Blockstore.GS.CredentialsFile, err)
-	}
-	return blockparams.GS{
-		CredentialsFile:                      credPath,
-		CredentialsJSON:                      c.Blockstore.GS.CredentialsJSON,
-		PreSignedExpiry:                      c.Blockstore.GS.PreSignedExpiry,
-		DisablePreSigned:                     c.Blockstore.GS.DisablePreSigned,
-		DisablePreSignedUI:                   c.Blockstore.GS.DisablePreSignedUI,
-		ServerSideEncryptionCustomerSupplied: customerSuppliedKey,
-		ServerSideEncryptionKmsKeyID:         c.Blockstore.GS.ServerSideEncryptionKmsKeyID,
-	}, nil
-}
-
-func (c *BaseConfig) BlockstoreAzureParams() (blockparams.Azure, error) {
-	if c.Blockstore.Azure.AuthMethod != "" {
-		logging.ContextUnavailable().Warn("blockstore.azure.auth_method is deprecated. Value is no longer used.")
-	}
-	if c.Blockstore.Azure.ChinaCloudDeprecated {
-		logging.ContextUnavailable().Warn("blockstore.azure.china_cloud is deprecated. Value is no longer used. Please pass Domain = 'blob.core.chinacloudapi.cn'")
-		c.Blockstore.Azure.Domain = "blob.core.chinacloudapi.cn"
-	}
-	return blockparams.Azure{
-		StorageAccount:     c.Blockstore.Azure.StorageAccount,
-		StorageAccessKey:   c.Blockstore.Azure.StorageAccessKey,
-		TryTimeout:         c.Blockstore.Azure.TryTimeout,
-		PreSignedExpiry:    c.Blockstore.Azure.PreSignedExpiry,
-		TestEndpointURL:    c.Blockstore.Azure.TestEndpointURL,
-		Domain:             c.Blockstore.Azure.Domain,
-		DisablePreSigned:   c.Blockstore.Azure.DisablePreSigned,
-		DisablePreSignedUI: c.Blockstore.Azure.DisablePreSignedUI,
-	}, nil
-}
 
 const (
 	AuthRBACNone       = "none"
@@ -644,6 +689,6 @@ func (c *BaseConfig) GetBaseConfig() *BaseConfig {
 	return c
 }
 
-func (c *BaseConfig) StorageConfig() interface{} {
-	return c.Blockstore
+func (c *BaseConfig) StorageConfig() StorageConfig {
+	return &c.Blockstore
 }

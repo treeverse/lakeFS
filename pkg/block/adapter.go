@@ -213,7 +213,7 @@ type Adapter interface {
 
 	BlockstoreType() string
 	BlockstoreMetadata(ctx context.Context) (*BlockstoreMetadata, error)
-	GetStorageNamespaceInfo(storageID string) (StorageNamespaceInfo, error)
+	GetStorageNamespaceInfo(storageID string) *StorageNamespaceInfo
 	ResolveNamespace(storageID, storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error)
 
 	// GetRegion storageID is not actively used, and it's here mainly for completeness
