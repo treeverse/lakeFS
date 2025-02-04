@@ -56,7 +56,7 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeWriter := mock.NewMockRangeWriter(ctrl)
 
 			rangeWriter.EXPECT().Abort().Return(nil)
-			rangeManager.EXPECT().GetWriter(context.Background(), committed.StorageID(""), committed.Namespace(ns), nil).Return(rangeWriter, nil)
+			rangeManager.EXPECT().GetWriter(context.Background(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
 
 			sut := committed.NewCommittedManager(metarangeManager, rangeManager, params)
 
@@ -118,7 +118,7 @@ func TestManager_WriteMetaRange(t *testing.T) {
 			metarangeWriter := mock.NewMockMetaRangeWriter(ctrl)
 
 			minKey := ""
-			metarangeManager.EXPECT().NewWriter(context.Background(), graveler.StorageID(storageID), graveler.StorageNamespace(ns), nil).Return(metarangeWriter)
+			metarangeManager.EXPECT().NewWriter(context.Background(), graveler.StorageNamespace(ns), nil).Return(metarangeWriter)
 			metarangeWriter.EXPECT().WriteRange(gomock.Any()).Return(nil).
 				DoAndReturn(func(info committed.Range) error {
 					if string(info.MinKey) < minKey {

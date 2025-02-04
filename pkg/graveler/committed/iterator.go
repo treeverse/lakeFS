@@ -16,7 +16,6 @@ type iterator struct {
 	rng         *Range                 // Decoded value at which rangeIt point
 	it          graveler.ValueIterator // nil at start of range
 	err         error
-	storageID   StorageID
 	namespace   Namespace
 	beforeRange bool
 }
@@ -33,7 +32,7 @@ func NewIterator(ctx context.Context, manager RangeManager, namespace Namespace,
 // loadIt loads rvi.it to start iterating over a new range.  It returns false and sets rvi.err
 // if it fails to open the new range.
 func (rvi *iterator) loadIt() bool {
-	it, err := rvi.manager.NewRangeIterator(rvi.ctx, rvi.storageID, rvi.namespace, rvi.rng.ID)
+	it, err := rvi.manager.NewRangeIterator(rvi.ctx, rvi.namespace, rvi.rng.ID)
 	if err != nil {
 		rvi.err = fmt.Errorf("open range %s: %w", rvi.rng.ID, err)
 		return false
