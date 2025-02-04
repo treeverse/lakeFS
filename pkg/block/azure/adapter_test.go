@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/azure"
 	"github.com/treeverse/lakefs/pkg/block/blocktest"
 	"github.com/treeverse/lakefs/pkg/block/params"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 func TestAzureAdapter(t *testing.T) {
@@ -135,7 +136,7 @@ func TestAdapterNamespace(t *testing.T) {
 			}
 			require.NoError(t, err, "create new adapter")
 
-			namespaceInfo := adapter.GetStorageNamespaceInfo("")
+			namespaceInfo := adapter.GetStorageNamespaceInfo(config.SingleBlockstoreID)
 			expr, err := regexp.Compile(namespaceInfo.ValidityRegex)
 			require.NoError(t, err)
 
