@@ -38,7 +38,7 @@ export const AttachModal = ({ show, searchFn, resolveEntityFn = (ent => ent.id),
                     results={response}
                     rowFn={ent => [
                         <Checkbox
-                            defaultChecked={selected.indexOf(ent.id) >= 0}
+                            defaultChecked={selected.some(selectedEnt => selectedEnt.id === ent.id)}
                             onAdd={() => setSelected([...selected, ent])}
                             onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
                             name={'selected'}/>,
