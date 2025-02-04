@@ -176,9 +176,7 @@ func (m *KVMetadataManager) UpdateSetupTimestamp(ctx context.Context, setupTime 
 	items := map[string]string{
 		SetupTimestampKeyName: setupTimeStr,
 	}
-	if authType != "" {
-		items[SetupAuthTypeKeyPrefix+authType] = setupTimeStr
-	}
+	items[SetupAuthTypeKeyPrefix+authType] = setupTimeStr
 	return m.writeMetadata(ctx, items)
 }
 
