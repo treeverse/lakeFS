@@ -39,12 +39,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -52,17 +50,17 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * UpdateObjectUserMetadata
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class UpdateObjectUserMetadata {
   public static final String SERIALIZED_NAME_SET = "set";
   @SerializedName(SERIALIZED_NAME_SET)
+  @javax.annotation.Nonnull
   private Map<String, String> set = new HashMap<>();
 
   public UpdateObjectUserMetadata() {
   }
 
-  public UpdateObjectUserMetadata set(Map<String, String> set) {
-    
+  public UpdateObjectUserMetadata set(@javax.annotation.Nonnull Map<String, String> set) {
     this.set = set;
     return this;
   }
@@ -75,17 +73,16 @@ public class UpdateObjectUserMetadata {
     return this;
   }
 
-   /**
+  /**
    * Get set
    * @return set
-  **/
+   */
   @javax.annotation.Nonnull
   public Map<String, String> getSet() {
     return set;
   }
 
-
-  public void setSet(Map<String, String> set) {
+  public void setSet(@javax.annotation.Nonnull Map<String, String> set) {
     this.set = set;
   }
 
@@ -188,12 +185,12 @@ public class UpdateObjectUserMetadata {
     openapiRequiredFields.add("set");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to UpdateObjectUserMetadata
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to UpdateObjectUserMetadata
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!UpdateObjectUserMetadata.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -238,7 +235,12 @@ public class UpdateObjectUserMetadata {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -277,22 +279,22 @@ public class UpdateObjectUserMetadata {
     }
   }
 
- /**
-  * Create an instance of UpdateObjectUserMetadata given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of UpdateObjectUserMetadata
-  * @throws IOException if the JSON string is invalid with respect to UpdateObjectUserMetadata
-  */
+  /**
+   * Create an instance of UpdateObjectUserMetadata given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of UpdateObjectUserMetadata
+   * @throws IOException if the JSON string is invalid with respect to UpdateObjectUserMetadata
+   */
   public static UpdateObjectUserMetadata fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, UpdateObjectUserMetadata.class);
   }
 
- /**
-  * Convert an instance of UpdateObjectUserMetadata to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of UpdateObjectUserMetadata to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.repository import Repository  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.repository import Repository
 
 class TestRepository(unittest.TestCase):
     """Repository unit test stubs"""
@@ -29,24 +26,24 @@ class TestRepository(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> Repository:
         """Test Repository
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `Repository`
         """
-        model = lakefs_sdk.models.repository.Repository()  # noqa: E501
-        if include_optional :
+        model = Repository()
+        if include_optional:
             return Repository(
-                id = '', 
-                creation_date = 56, 
-                default_branch = '', 
-                storage_id = '', 
-                storage_namespace = '', 
+                id = '',
+                creation_date = 56,
+                default_branch = '',
+                storage_id = '',
+                storage_namespace = '',
                 read_only = True
             )
-        else :
+        else:
             return Repository(
                 id = '',
                 creation_date = 56,

@@ -25,8 +25,6 @@ create pull request
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_request_creation import PullRequestCreation
 from lakefs_sdk.models.pull_request_creation_response import PullRequestCreationResponse
@@ -141,8 +139,6 @@ get pull request
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_request import PullRequest
 from lakefs_sdk.rest import ApiException
@@ -254,8 +250,6 @@ list pull requests
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_requests_list import PullRequestsList
 from lakefs_sdk.rest import ApiException
@@ -309,7 +303,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     prefix = 'prefix_example' # str | return items prefixed with this value (optional)
     after = 'after_example' # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) (default to 100)
-    status = 'all' # str |  (optional) (default to 'all')
+    status = all # str |  (optional) (default to all)
 
     try:
         # list pull requests
@@ -331,7 +325,7 @@ Name | Type | Description  | Notes
  **prefix** | **str**| return items prefixed with this value | [optional] 
  **after** | **str**| return items after this value | [optional] 
  **amount** | **int**| how many items to return | [optional] [default to 100]
- **status** | **str**|  | [optional] [default to &#39;all&#39;]
+ **status** | **str**|  | [optional] [default to all]
 
 ### Return type
 
@@ -372,8 +366,6 @@ merge pull request
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.merge_result import MergeResult
 from lakefs_sdk.rest import ApiException
@@ -488,8 +480,6 @@ update pull request
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_request_basic import PullRequestBasic
 from lakefs_sdk.rest import ApiException

@@ -40,12 +40,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -53,104 +51,104 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * information about uploaded object
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class StagingMetadata {
   public static final String SERIALIZED_NAME_STAGING = "staging";
   @SerializedName(SERIALIZED_NAME_STAGING)
+  @javax.annotation.Nonnull
   private StagingLocation staging;
 
   public static final String SERIALIZED_NAME_CHECKSUM = "checksum";
   @SerializedName(SERIALIZED_NAME_CHECKSUM)
+  @javax.annotation.Nonnull
   private String checksum;
 
   public static final String SERIALIZED_NAME_SIZE_BYTES = "size_bytes";
   @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
+  @javax.annotation.Nonnull
   private Long sizeBytes;
 
   public static final String SERIALIZED_NAME_USER_METADATA = "user_metadata";
   @SerializedName(SERIALIZED_NAME_USER_METADATA)
+  @javax.annotation.Nullable
   private Map<String, String> userMetadata = new HashMap<>();
 
   public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
+  @javax.annotation.Nullable
   private String contentType;
 
   public static final String SERIALIZED_NAME_MTIME = "mtime";
   @SerializedName(SERIALIZED_NAME_MTIME)
+  @javax.annotation.Nullable
   private Long mtime;
 
   public static final String SERIALIZED_NAME_FORCE = "force";
   @SerializedName(SERIALIZED_NAME_FORCE)
+  @javax.annotation.Nullable
   private Boolean force = false;
 
   public StagingMetadata() {
   }
 
-  public StagingMetadata staging(StagingLocation staging) {
-    
+  public StagingMetadata staging(@javax.annotation.Nonnull StagingLocation staging) {
     this.staging = staging;
     return this;
   }
 
-   /**
+  /**
    * Get staging
    * @return staging
-  **/
+   */
   @javax.annotation.Nonnull
   public StagingLocation getStaging() {
     return staging;
   }
 
-
-  public void setStaging(StagingLocation staging) {
+  public void setStaging(@javax.annotation.Nonnull StagingLocation staging) {
     this.staging = staging;
   }
 
 
-  public StagingMetadata checksum(String checksum) {
-    
+  public StagingMetadata checksum(@javax.annotation.Nonnull String checksum) {
     this.checksum = checksum;
     return this;
   }
 
-   /**
+  /**
    * unique identifier of object content on backing store (typically ETag)
    * @return checksum
-  **/
+   */
   @javax.annotation.Nonnull
   public String getChecksum() {
     return checksum;
   }
 
-
-  public void setChecksum(String checksum) {
+  public void setChecksum(@javax.annotation.Nonnull String checksum) {
     this.checksum = checksum;
   }
 
 
-  public StagingMetadata sizeBytes(Long sizeBytes) {
-    
+  public StagingMetadata sizeBytes(@javax.annotation.Nonnull Long sizeBytes) {
     this.sizeBytes = sizeBytes;
     return this;
   }
 
-   /**
+  /**
    * Get sizeBytes
    * @return sizeBytes
-  **/
+   */
   @javax.annotation.Nonnull
   public Long getSizeBytes() {
     return sizeBytes;
   }
 
-
-  public void setSizeBytes(Long sizeBytes) {
+  public void setSizeBytes(@javax.annotation.Nonnull Long sizeBytes) {
     this.sizeBytes = sizeBytes;
   }
 
 
-  public StagingMetadata userMetadata(Map<String, String> userMetadata) {
-    
+  public StagingMetadata userMetadata(@javax.annotation.Nullable Map<String, String> userMetadata) {
     this.userMetadata = userMetadata;
     return this;
   }
@@ -163,80 +161,73 @@ public class StagingMetadata {
     return this;
   }
 
-   /**
+  /**
    * Get userMetadata
    * @return userMetadata
-  **/
+   */
   @javax.annotation.Nullable
   public Map<String, String> getUserMetadata() {
     return userMetadata;
   }
 
-
-  public void setUserMetadata(Map<String, String> userMetadata) {
+  public void setUserMetadata(@javax.annotation.Nullable Map<String, String> userMetadata) {
     this.userMetadata = userMetadata;
   }
 
 
-  public StagingMetadata contentType(String contentType) {
-    
+  public StagingMetadata contentType(@javax.annotation.Nullable String contentType) {
     this.contentType = contentType;
     return this;
   }
 
-   /**
+  /**
    * Object media type
    * @return contentType
-  **/
+   */
   @javax.annotation.Nullable
   public String getContentType() {
     return contentType;
   }
 
-
-  public void setContentType(String contentType) {
+  public void setContentType(@javax.annotation.Nullable String contentType) {
     this.contentType = contentType;
   }
 
 
-  public StagingMetadata mtime(Long mtime) {
-    
+  public StagingMetadata mtime(@javax.annotation.Nullable Long mtime) {
     this.mtime = mtime;
     return this;
   }
 
-   /**
+  /**
    * Unix Epoch in seconds.  May be ignored by server.
    * @return mtime
-  **/
+   */
   @javax.annotation.Nullable
   public Long getMtime() {
     return mtime;
   }
 
-
-  public void setMtime(Long mtime) {
+  public void setMtime(@javax.annotation.Nullable Long mtime) {
     this.mtime = mtime;
   }
 
 
-  public StagingMetadata force(Boolean force) {
-    
+  public StagingMetadata force(@javax.annotation.Nullable Boolean force) {
     this.force = force;
     return this;
   }
 
-   /**
+  /**
    * Get force
    * @return force
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getForce() {
     return force;
   }
 
-
-  public void setForce(Boolean force) {
+  public void setForce(@javax.annotation.Nullable Boolean force) {
     this.force = force;
   }
 
@@ -359,12 +350,12 @@ public class StagingMetadata {
     openapiRequiredFields.add("size_bytes");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to StagingMetadata
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to StagingMetadata
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!StagingMetadata.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -417,7 +408,12 @@ public class StagingMetadata {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -456,22 +452,22 @@ public class StagingMetadata {
     }
   }
 
- /**
-  * Create an instance of StagingMetadata given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of StagingMetadata
-  * @throws IOException if the JSON string is invalid with respect to StagingMetadata
-  */
+  /**
+   * Create an instance of StagingMetadata given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of StagingMetadata
+   * @throws IOException if the JSON string is invalid with respect to StagingMetadata
+   */
   public static StagingMetadata fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, StagingMetadata.class);
   }
 
- /**
-  * Convert an instance of StagingMetadata to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of StagingMetadata to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,82 +48,79 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * UsageReport
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class UsageReport {
   public static final String SERIALIZED_NAME_YEAR = "year";
   @SerializedName(SERIALIZED_NAME_YEAR)
+  @javax.annotation.Nonnull
   private Integer year;
 
   public static final String SERIALIZED_NAME_MONTH = "month";
   @SerializedName(SERIALIZED_NAME_MONTH)
+  @javax.annotation.Nonnull
   private Integer month;
 
   public static final String SERIALIZED_NAME_COUNT = "count";
   @SerializedName(SERIALIZED_NAME_COUNT)
+  @javax.annotation.Nonnull
   private Long count;
 
   public UsageReport() {
   }
 
-  public UsageReport year(Integer year) {
-    
+  public UsageReport year(@javax.annotation.Nonnull Integer year) {
     this.year = year;
     return this;
   }
 
-   /**
+  /**
    * Get year
    * @return year
-  **/
+   */
   @javax.annotation.Nonnull
   public Integer getYear() {
     return year;
   }
 
-
-  public void setYear(Integer year) {
+  public void setYear(@javax.annotation.Nonnull Integer year) {
     this.year = year;
   }
 
 
-  public UsageReport month(Integer month) {
-    
+  public UsageReport month(@javax.annotation.Nonnull Integer month) {
     this.month = month;
     return this;
   }
 
-   /**
+  /**
    * Get month
    * @return month
-  **/
+   */
   @javax.annotation.Nonnull
   public Integer getMonth() {
     return month;
   }
 
-
-  public void setMonth(Integer month) {
+  public void setMonth(@javax.annotation.Nonnull Integer month) {
     this.month = month;
   }
 
 
-  public UsageReport count(Long count) {
-    
+  public UsageReport count(@javax.annotation.Nonnull Long count) {
     this.count = count;
     return this;
   }
 
-   /**
+  /**
    * Get count
    * @return count
-  **/
+   */
   @javax.annotation.Nonnull
   public Long getCount() {
     return count;
   }
 
-
-  public void setCount(Long count) {
+  public void setCount(@javax.annotation.Nonnull Long count) {
     this.count = count;
   }
 
@@ -236,12 +231,12 @@ public class UsageReport {
     openapiRequiredFields.add("count");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to UsageReport
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to UsageReport
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!UsageReport.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -286,7 +281,12 @@ public class UsageReport {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -325,22 +325,22 @@ public class UsageReport {
     }
   }
 
- /**
-  * Create an instance of UsageReport given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of UsageReport
-  * @throws IOException if the JSON string is invalid with respect to UsageReport
-  */
+  /**
+   * Create an instance of UsageReport given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of UsageReport
+   * @throws IOException if the JSON string is invalid with respect to UsageReport
+   */
   public static UsageReport fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, UsageReport.class);
   }
 
- /**
-  * Convert an instance of UsageReport to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of UsageReport to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

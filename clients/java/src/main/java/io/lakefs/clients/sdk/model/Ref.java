@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,57 +48,55 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Ref
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class Ref {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
+  @javax.annotation.Nonnull
   private String id;
 
   public static final String SERIALIZED_NAME_COMMIT_ID = "commit_id";
   @SerializedName(SERIALIZED_NAME_COMMIT_ID)
+  @javax.annotation.Nonnull
   private String commitId;
 
   public Ref() {
   }
 
-  public Ref id(String id) {
-    
+  public Ref id(@javax.annotation.Nonnull String id) {
     this.id = id;
     return this;
   }
 
-   /**
+  /**
    * Get id
    * @return id
-  **/
+   */
   @javax.annotation.Nonnull
   public String getId() {
     return id;
   }
 
-
-  public void setId(String id) {
+  public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
 
 
-  public Ref commitId(String commitId) {
-    
+  public Ref commitId(@javax.annotation.Nonnull String commitId) {
     this.commitId = commitId;
     return this;
   }
 
-   /**
+  /**
    * Get commitId
    * @return commitId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getCommitId() {
     return commitId;
   }
 
-
-  public void setCommitId(String commitId) {
+  public void setCommitId(@javax.annotation.Nonnull String commitId) {
     this.commitId = commitId;
   }
 
@@ -207,12 +203,12 @@ public class Ref {
     openapiRequiredFields.add("commit_id");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Ref
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Ref
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Ref.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -263,7 +259,12 @@ public class Ref {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -302,22 +303,22 @@ public class Ref {
     }
   }
 
- /**
-  * Create an instance of Ref given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Ref
-  * @throws IOException if the JSON string is invalid with respect to Ref
-  */
+  /**
+   * Create an instance of Ref given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Ref
+   * @throws IOException if the JSON string is invalid with respect to Ref
+   */
   public static Ref fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Ref.class);
   }
 
- /**
-  * Convert an instance of Ref to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Ref to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

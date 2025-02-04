@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,107 +48,103 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * GarbageCollectionPrepareResponse
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class GarbageCollectionPrepareResponse {
   public static final String SERIALIZED_NAME_RUN_ID = "run_id";
   @SerializedName(SERIALIZED_NAME_RUN_ID)
+  @javax.annotation.Nonnull
   private String runId;
 
   public static final String SERIALIZED_NAME_GC_COMMITS_LOCATION = "gc_commits_location";
   @SerializedName(SERIALIZED_NAME_GC_COMMITS_LOCATION)
+  @javax.annotation.Nonnull
   private String gcCommitsLocation;
 
   public static final String SERIALIZED_NAME_GC_ADDRESSES_LOCATION = "gc_addresses_location";
   @SerializedName(SERIALIZED_NAME_GC_ADDRESSES_LOCATION)
+  @javax.annotation.Nonnull
   private String gcAddressesLocation;
 
   public static final String SERIALIZED_NAME_GC_COMMITS_PRESIGNED_URL = "gc_commits_presigned_url";
   @SerializedName(SERIALIZED_NAME_GC_COMMITS_PRESIGNED_URL)
+  @javax.annotation.Nullable
   private String gcCommitsPresignedUrl;
 
   public GarbageCollectionPrepareResponse() {
   }
 
-  public GarbageCollectionPrepareResponse runId(String runId) {
-    
+  public GarbageCollectionPrepareResponse runId(@javax.annotation.Nonnull String runId) {
     this.runId = runId;
     return this;
   }
 
-   /**
+  /**
    * a unique identifier generated for this GC job
    * @return runId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getRunId() {
     return runId;
   }
 
-
-  public void setRunId(String runId) {
+  public void setRunId(@javax.annotation.Nonnull String runId) {
     this.runId = runId;
   }
 
 
-  public GarbageCollectionPrepareResponse gcCommitsLocation(String gcCommitsLocation) {
-    
+  public GarbageCollectionPrepareResponse gcCommitsLocation(@javax.annotation.Nonnull String gcCommitsLocation) {
     this.gcCommitsLocation = gcCommitsLocation;
     return this;
   }
 
-   /**
+  /**
    * location of the resulting commits csv table (partitioned by run_id)
    * @return gcCommitsLocation
-  **/
+   */
   @javax.annotation.Nonnull
   public String getGcCommitsLocation() {
     return gcCommitsLocation;
   }
 
-
-  public void setGcCommitsLocation(String gcCommitsLocation) {
+  public void setGcCommitsLocation(@javax.annotation.Nonnull String gcCommitsLocation) {
     this.gcCommitsLocation = gcCommitsLocation;
   }
 
 
-  public GarbageCollectionPrepareResponse gcAddressesLocation(String gcAddressesLocation) {
-    
+  public GarbageCollectionPrepareResponse gcAddressesLocation(@javax.annotation.Nonnull String gcAddressesLocation) {
     this.gcAddressesLocation = gcAddressesLocation;
     return this;
   }
 
-   /**
+  /**
    * location to use for expired addresses parquet table (partitioned by run_id)
    * @return gcAddressesLocation
-  **/
+   */
   @javax.annotation.Nonnull
   public String getGcAddressesLocation() {
     return gcAddressesLocation;
   }
 
-
-  public void setGcAddressesLocation(String gcAddressesLocation) {
+  public void setGcAddressesLocation(@javax.annotation.Nonnull String gcAddressesLocation) {
     this.gcAddressesLocation = gcAddressesLocation;
   }
 
 
-  public GarbageCollectionPrepareResponse gcCommitsPresignedUrl(String gcCommitsPresignedUrl) {
-    
+  public GarbageCollectionPrepareResponse gcCommitsPresignedUrl(@javax.annotation.Nullable String gcCommitsPresignedUrl) {
     this.gcCommitsPresignedUrl = gcCommitsPresignedUrl;
     return this;
   }
 
-   /**
+  /**
    * a presigned url to download the commits csv
    * @return gcCommitsPresignedUrl
-  **/
+   */
   @javax.annotation.Nullable
   public String getGcCommitsPresignedUrl() {
     return gcCommitsPresignedUrl;
   }
 
-
-  public void setGcCommitsPresignedUrl(String gcCommitsPresignedUrl) {
+  public void setGcCommitsPresignedUrl(@javax.annotation.Nullable String gcCommitsPresignedUrl) {
     this.gcCommitsPresignedUrl = gcCommitsPresignedUrl;
   }
 
@@ -264,12 +258,12 @@ public class GarbageCollectionPrepareResponse {
     openapiRequiredFields.add("gc_addresses_location");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to GarbageCollectionPrepareResponse
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to GarbageCollectionPrepareResponse
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!GarbageCollectionPrepareResponse.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -326,7 +320,12 @@ public class GarbageCollectionPrepareResponse {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -365,22 +364,22 @@ public class GarbageCollectionPrepareResponse {
     }
   }
 
- /**
-  * Create an instance of GarbageCollectionPrepareResponse given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of GarbageCollectionPrepareResponse
-  * @throws IOException if the JSON string is invalid with respect to GarbageCollectionPrepareResponse
-  */
+  /**
+   * Create an instance of GarbageCollectionPrepareResponse given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of GarbageCollectionPrepareResponse
+   * @throws IOException if the JSON string is invalid with respect to GarbageCollectionPrepareResponse
+   */
   public static GarbageCollectionPrepareResponse fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, GarbageCollectionPrepareResponse.class);
   }
 
- /**
-  * Convert an instance of GarbageCollectionPrepareResponse to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of GarbageCollectionPrepareResponse to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

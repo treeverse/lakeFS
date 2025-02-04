@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.revert_creation import RevertCreation  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.revert_creation import RevertCreation
 
 class TestRevertCreation(unittest.TestCase):
     """RevertCreation unit test stubs"""
@@ -29,27 +26,27 @@ class TestRevertCreation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> RevertCreation:
         """Test RevertCreation
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RevertCreation`
         """
-        model = lakefs_sdk.models.revert_creation.RevertCreation()  # noqa: E501
-        if include_optional :
+        model = RevertCreation()
+        if include_optional:
             return RevertCreation(
-                ref = '', 
+                ref = '',
                 commit_overrides = lakefs_sdk.models.commit_overrides.CommitOverrides(
                     message = '', 
                     metadata = {
                         'key' : ''
-                        }, ), 
-                parent_number = 56, 
-                force = True, 
+                        }, ),
+                parent_number = 56,
+                force = True,
                 allow_empty = True
             )
-        else :
+        else:
             return RevertCreation(
                 ref = '',
                 parent_number = 56,

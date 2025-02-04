@@ -19,12 +19,12 @@ json = "{}"
 # create an instance of ExternalPrincipal from a JSON string
 external_principal_instance = ExternalPrincipal.from_json(json)
 # print the JSON string representation of the object
-print ExternalPrincipal.to_json()
+print(ExternalPrincipal.to_json())
 
 # convert the object into a dict
 external_principal_dict = external_principal_instance.to_dict()
 # create an instance of ExternalPrincipal from a dict
-external_principal_form_dict = external_principal.from_dict(external_principal_dict)
+external_principal_from_dict = ExternalPrincipal.from_dict(external_principal_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

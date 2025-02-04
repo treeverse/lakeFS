@@ -38,12 +38,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -51,132 +49,127 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * RevertCreation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class RevertCreation {
   public static final String SERIALIZED_NAME_REF = "ref";
   @SerializedName(SERIALIZED_NAME_REF)
+  @javax.annotation.Nonnull
   private String ref;
 
   public static final String SERIALIZED_NAME_COMMIT_OVERRIDES = "commit_overrides";
   @SerializedName(SERIALIZED_NAME_COMMIT_OVERRIDES)
+  @javax.annotation.Nullable
   private CommitOverrides commitOverrides;
 
   public static final String SERIALIZED_NAME_PARENT_NUMBER = "parent_number";
   @SerializedName(SERIALIZED_NAME_PARENT_NUMBER)
+  @javax.annotation.Nonnull
   private Integer parentNumber;
 
   public static final String SERIALIZED_NAME_FORCE = "force";
   @SerializedName(SERIALIZED_NAME_FORCE)
+  @javax.annotation.Nullable
   private Boolean force = false;
 
   public static final String SERIALIZED_NAME_ALLOW_EMPTY = "allow_empty";
   @SerializedName(SERIALIZED_NAME_ALLOW_EMPTY)
+  @javax.annotation.Nullable
   private Boolean allowEmpty = false;
 
   public RevertCreation() {
   }
 
-  public RevertCreation ref(String ref) {
-    
+  public RevertCreation ref(@javax.annotation.Nonnull String ref) {
     this.ref = ref;
     return this;
   }
 
-   /**
+  /**
    * the commit to revert, given by a ref
    * @return ref
-  **/
+   */
   @javax.annotation.Nonnull
   public String getRef() {
     return ref;
   }
 
-
-  public void setRef(String ref) {
+  public void setRef(@javax.annotation.Nonnull String ref) {
     this.ref = ref;
   }
 
 
-  public RevertCreation commitOverrides(CommitOverrides commitOverrides) {
-    
+  public RevertCreation commitOverrides(@javax.annotation.Nullable CommitOverrides commitOverrides) {
     this.commitOverrides = commitOverrides;
     return this;
   }
 
-   /**
+  /**
    * Get commitOverrides
    * @return commitOverrides
-  **/
+   */
   @javax.annotation.Nullable
   public CommitOverrides getCommitOverrides() {
     return commitOverrides;
   }
 
-
-  public void setCommitOverrides(CommitOverrides commitOverrides) {
+  public void setCommitOverrides(@javax.annotation.Nullable CommitOverrides commitOverrides) {
     this.commitOverrides = commitOverrides;
   }
 
 
-  public RevertCreation parentNumber(Integer parentNumber) {
-    
+  public RevertCreation parentNumber(@javax.annotation.Nonnull Integer parentNumber) {
     this.parentNumber = parentNumber;
     return this;
   }
 
-   /**
+  /**
    * when reverting a merge commit, the parent number (starting from 1) relative to which to perform the revert.
    * @return parentNumber
-  **/
+   */
   @javax.annotation.Nonnull
   public Integer getParentNumber() {
     return parentNumber;
   }
 
-
-  public void setParentNumber(Integer parentNumber) {
+  public void setParentNumber(@javax.annotation.Nonnull Integer parentNumber) {
     this.parentNumber = parentNumber;
   }
 
 
-  public RevertCreation force(Boolean force) {
-    
+  public RevertCreation force(@javax.annotation.Nullable Boolean force) {
     this.force = force;
     return this;
   }
 
-   /**
+  /**
    * Get force
    * @return force
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getForce() {
     return force;
   }
 
-
-  public void setForce(Boolean force) {
+  public void setForce(@javax.annotation.Nullable Boolean force) {
     this.force = force;
   }
 
 
-  public RevertCreation allowEmpty(Boolean allowEmpty) {
-    
+  public RevertCreation allowEmpty(@javax.annotation.Nullable Boolean allowEmpty) {
     this.allowEmpty = allowEmpty;
     return this;
   }
 
-   /**
+  /**
    * allow empty commit (revert without changes)
    * @return allowEmpty
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getAllowEmpty() {
     return allowEmpty;
   }
 
-
-  public void setAllowEmpty(Boolean allowEmpty) {
+  public void setAllowEmpty(@javax.annotation.Nullable Boolean allowEmpty) {
     this.allowEmpty = allowEmpty;
   }
 
@@ -292,12 +285,12 @@ public class RevertCreation {
     openapiRequiredFields.add("parent_number");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to RevertCreation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to RevertCreation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!RevertCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -349,7 +342,12 @@ public class RevertCreation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -388,22 +386,22 @@ public class RevertCreation {
     }
   }
 
- /**
-  * Create an instance of RevertCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of RevertCreation
-  * @throws IOException if the JSON string is invalid with respect to RevertCreation
-  */
+  /**
+   * Create an instance of RevertCreation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of RevertCreation
+   * @throws IOException if the JSON string is invalid with respect to RevertCreation
+   */
   public static RevertCreation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, RevertCreation.class);
   }
 
- /**
-  * Convert an instance of RevertCreation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of RevertCreation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

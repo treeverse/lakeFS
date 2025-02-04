@@ -53,7 +53,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /setup_lakefs:
     get:
       operationId: getSetupState
@@ -76,7 +77,8 @@ paths:
       summary: check if the lakeFS installation is already set up
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: setup
       requestBody:
@@ -117,7 +119,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /user:
     get:
       operationId: getCurrentUser
@@ -131,7 +134,8 @@ paths:
       summary: get current user
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/login:
     post:
       operationId: login
@@ -173,7 +177,8 @@ paths:
       tags:
       - auth
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/external/principal/login:
     post:
       operationId: externalPrincipalLogin
@@ -228,7 +233,8 @@ paths:
       - experimental
       - auth
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /sts/login:
     post:
       operationId: stsLogin
@@ -264,7 +270,8 @@ paths:
       tags:
       - experimental
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/capabilities:
     get:
       operationId: getAuthCapabilities
@@ -287,7 +294,8 @@ paths:
       summary: list authentication capabilities supported
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/users:
     get:
       operationId: listUsers
@@ -343,7 +351,8 @@ paths:
       summary: list users
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: createUser
       requestBody:
@@ -388,7 +397,8 @@ paths:
       tags:
       - auth
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/users/{userId}:
     delete:
       operationId: deleteUser
@@ -426,7 +436,8 @@ paths:
       summary: delete user
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: getUser
       parameters:
@@ -467,7 +478,8 @@ paths:
       summary: get user
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/groups:
     get:
       operationId: listGroups
@@ -523,7 +535,8 @@ paths:
       summary: list groups
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: createGroup
       requestBody:
@@ -562,7 +575,8 @@ paths:
       tags:
       - auth
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/groups/{groupId}:
     delete:
       operationId: deleteGroup
@@ -600,7 +614,8 @@ paths:
       summary: delete group
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: getGroup
       parameters:
@@ -641,7 +656,8 @@ paths:
       summary: get group
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/policies:
     get:
       operationId: listPolicies
@@ -697,7 +713,8 @@ paths:
       summary: list policies
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: createPolicy
       requestBody:
@@ -743,7 +760,8 @@ paths:
       tags:
       - auth
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/policies/{policyId}:
     delete:
       operationId: deletePolicy
@@ -781,7 +799,8 @@ paths:
       summary: delete policy
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: getPolicy
       parameters:
@@ -822,7 +841,8 @@ paths:
       summary: get policy
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       operationId: updatePolicy
       parameters:
@@ -876,7 +896,8 @@ paths:
       tags:
       - auth
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/groups/{groupId}/members:
     get:
       operationId: listGroupMembers
@@ -939,7 +960,8 @@ paths:
       summary: list group members
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/groups/{groupId}/members/{userId}:
     delete:
       operationId: deleteGroupMembership
@@ -984,7 +1006,8 @@ paths:
       summary: delete group membership
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       operationId: addGroupMembership
       parameters:
@@ -1028,7 +1051,8 @@ paths:
       summary: add group membership
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/users/{userId}/credentials:
     get:
       operationId: listUserCredentials
@@ -1097,7 +1121,8 @@ paths:
       summary: list user credentials
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: createCredentials
       parameters:
@@ -1138,7 +1163,8 @@ paths:
       summary: create credentials
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/users/{userId}/credentials/{accessKeyId}:
     delete:
       operationId: deleteCredentials
@@ -1183,7 +1209,8 @@ paths:
       summary: delete credentials
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: getCredentials
       parameters:
@@ -1231,7 +1258,8 @@ paths:
       summary: get credentials
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/users/{userId}/groups:
     get:
       operationId: listUserGroups
@@ -1300,7 +1328,8 @@ paths:
       summary: list user groups
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/users/{userId}/policies:
     get:
       operationId: listUserPolicies
@@ -1379,7 +1408,8 @@ paths:
       summary: list user policies
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/users/{userId}/policies/{policyId}:
     delete:
       operationId: detachPolicyFromUser
@@ -1424,7 +1454,8 @@ paths:
       summary: detach policy from user
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       operationId: attachPolicyToUser
       parameters:
@@ -1468,7 +1499,8 @@ paths:
       summary: attach policy to user
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/users/{userId}/external/principals:
     delete:
       operationId: deleteUserExternalPrincipal
@@ -1515,7 +1547,8 @@ paths:
       - auth
       - external
       - experimental
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: createUserExternalPrincipal
       parameters:
@@ -1574,7 +1607,8 @@ paths:
       - external
       - experimental
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/users/{userId}/external/principals/ls:
     get:
       operationId: listUserExternalPrincipals
@@ -1645,7 +1679,8 @@ paths:
       - auth
       - external
       - experimental
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/external/principals:
     get:
       operationId: getExternalPrincipal
@@ -1689,7 +1724,8 @@ paths:
       - auth
       - external
       - experimental
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/groups/{groupId}/policies:
     get:
       operationId: listGroupPolicies
@@ -1758,7 +1794,8 @@ paths:
       summary: list group policies
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/groups/{groupId}/policies/{policyId}:
     delete:
       operationId: detachPolicyFromGroup
@@ -1803,7 +1840,8 @@ paths:
       summary: detach policy from group
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       operationId: attachPolicyToGroup
       parameters:
@@ -1847,7 +1885,8 @@ paths:
       summary: attach policy to group
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /auth/groups/{groupId}/acl:
     get:
       operationId: getGroupACL
@@ -1889,7 +1928,8 @@ paths:
       summary: get ACL of group
       tags:
       - auth
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: setGroupACL
       parameters:
@@ -1933,7 +1973,8 @@ paths:
       tags:
       - auth
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories:
     get:
       operationId: listRepositories
@@ -1997,7 +2038,8 @@ paths:
       summary: list repositories
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: createRepository
       parameters:
@@ -2054,7 +2096,8 @@ paths:
       tags:
       - repositories
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}:
     delete:
       operationId: deleteRepository
@@ -2101,7 +2144,8 @@ paths:
       summary: delete repository
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: getRepository
       parameters:
@@ -2142,7 +2186,8 @@ paths:
       summary: get repository
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/metadata:
     delete:
       description: |
@@ -2183,7 +2228,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: getRepositoryMetadata
       parameters:
@@ -2224,7 +2270,8 @@ paths:
       summary: get repository metadata
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       description: |
         Set repository metadata. This will only add or update the provided keys, and will not remove any existing keys.
@@ -2270,7 +2317,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/settings/gc_rules:
     delete:
       operationId: deleteGCRules
@@ -2313,7 +2361,8 @@ paths:
           description: Internal Server Error
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: getGCRules
       parameters:
@@ -2354,7 +2403,8 @@ paths:
       summary: get repository GC rules
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       operationId: setGCRules
       parameters:
@@ -2403,7 +2453,8 @@ paths:
       tags:
       - repositories
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/settings/branch_protection:
     get:
       operationId: getBranchProtectionRules
@@ -2454,7 +2505,8 @@ paths:
       summary: get branch protection rules
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       operationId: setBranchProtectionRules
       parameters:
@@ -2526,7 +2578,8 @@ paths:
       tags:
       - repositories
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/refs/dump:
     put:
       operationId: dumpRefs
@@ -2576,7 +2629,8 @@ paths:
         Deprecated: a new API will introduce long running operations
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/refs/restore:
     put:
       operationId: restoreRefs
@@ -2629,7 +2683,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/dump:
     get:
       operationId: dumpStatus
@@ -2684,7 +2739,8 @@ paths:
       summary: Status of a repository dump task
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: dumpSubmit
       parameters:
@@ -2730,7 +2786,8 @@ paths:
         \ the backup to the object store."
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/restore:
     get:
       operationId: restoreStatus
@@ -2785,7 +2842,8 @@ paths:
       summary: Status of a restore request
       tags:
       - repositories
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: restoreSubmit
       parameters:
@@ -2843,7 +2901,8 @@ paths:
       tags:
       - repositories
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/tags:
     get:
       operationId: listTags
@@ -2912,7 +2971,8 @@ paths:
       summary: list tags
       tags:
       - tags
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: createTag
       parameters:
@@ -2978,7 +3038,8 @@ paths:
       tags:
       - tags
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/tags/{tag}:
     delete:
       operationId: deleteTag
@@ -3036,7 +3097,8 @@ paths:
       summary: delete tag
       tags:
       - tags
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: getTag
       parameters:
@@ -3084,7 +3146,8 @@ paths:
       summary: get tag
       tags:
       - tags
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches:
     get:
       operationId: listBranches
@@ -3162,7 +3225,8 @@ paths:
       summary: list branches
       tags:
       - branches
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: createBranch
       parameters:
@@ -3228,7 +3292,9 @@ paths:
       tags:
       - branches
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
+      - text/html
   /repositories/{repository}/refs/{ref}/commits:
     get:
       operationId: logCommits
@@ -3355,7 +3421,8 @@ paths:
         \ all commits."
       tags:
       - refs
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/commits:
     post:
       operationId: commit
@@ -3444,7 +3511,8 @@ paths:
       tags:
       - commits
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/commits:
     post:
       operationId: CreateCommitRecord
@@ -3501,7 +3569,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}:
     delete:
       operationId: deleteBranch
@@ -3560,7 +3629,8 @@ paths:
       summary: delete branch
       tags:
       - branches
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: getBranch
       parameters:
@@ -3608,7 +3678,8 @@ paths:
       summary: get branch
       tags:
       - branches
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       operationId: resetBranch
       parameters:
@@ -3671,7 +3742,8 @@ paths:
       tags:
       - branches
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/hard_reset:
     put:
       description: Relocate branch to refer to ref.  Branch must not contain uncommitted
@@ -3746,7 +3818,8 @@ paths:
       summary: hard reset branch
       tags:
       - experimental
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/revert:
     post:
       operationId: revertBranch
@@ -3816,7 +3889,8 @@ paths:
       tags:
       - branches
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/cherry-pick:
     post:
       operationId: cherryPick
@@ -3890,7 +3964,8 @@ paths:
       tags:
       - branches
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/refs/{sourceRef}/merge/{destinationBranch}:
     get:
       operationId: findMergeBase
@@ -3954,7 +4029,8 @@ paths:
       summary: find the merge base for 2 references
       tags:
       - refs
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: mergeIntoBranch
       parameters:
@@ -4043,7 +4119,8 @@ paths:
       tags:
       - refs
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/diff:
     get:
       operationId: diffBranch
@@ -4127,7 +4204,8 @@ paths:
       summary: diff branch
       tags:
       - branches
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/refs/{leftRef}/diff/{rightRef}:
     get:
       operationId: diffRefs
@@ -4232,7 +4310,8 @@ paths:
       summary: diff references
       tags:
       - refs
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/commits/{commitId}:
     get:
       operationId: getCommit
@@ -4281,7 +4360,8 @@ paths:
       summary: get commit
       tags:
       - commits
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/refs/{ref}/objects:
     get:
       operationId: getObject
@@ -4436,7 +4516,9 @@ paths:
       summary: get object content
       tags:
       - objects
-      x-accepts: application/json
+      x-accepts:
+      - application/json
+      - application/octet-stream
     head:
       operationId: headObject
       parameters:
@@ -4533,7 +4615,8 @@ paths:
       summary: check if object exists
       tags:
       - objects
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/staging/pmpu:
     post:
       description: |
@@ -4608,7 +4691,8 @@ paths:
       summary: Initiate a multipart upload
       tags:
       - experimental
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}:
     delete:
       description: Aborts a presign multipart upload.
@@ -4681,7 +4765,8 @@ paths:
       tags:
       - experimental
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       description: Completes a presign multipart upload by assembling the uploaded
         parts.
@@ -4764,7 +4849,8 @@ paths:
       tags:
       - experimental
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/staging/backing:
     get:
       operationId: getPhysicalAddress
@@ -4828,7 +4914,8 @@ paths:
       summary: generate an address to which the client can upload an object
       tags:
       - staging
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       description: |
         Link the physical address with the path in lakeFS, creating an uncommitted change.
@@ -4928,7 +5015,8 @@ paths:
       tags:
       - staging
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/import:
     delete:
       operationId: importCancel
@@ -4993,7 +5081,8 @@ paths:
       summary: cancel ongoing import
       tags:
       - import
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       operationId: importStatus
       parameters:
@@ -5049,7 +5138,8 @@ paths:
       summary: get import status
       tags:
       - import
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: importStart
       parameters:
@@ -5116,7 +5206,8 @@ paths:
       tags:
       - import
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/objects/stage_allowed:
     get:
       operationId: uploadObjectPreflight
@@ -5176,7 +5267,8 @@ paths:
           description: Internal Server Error
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/objects:
     delete:
       operationId: deleteObject
@@ -5243,7 +5335,8 @@ paths:
       summary: delete object. Missing objects will not return a NotFound error.
       tags:
       - objects
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: uploadObject
       parameters:
@@ -5355,7 +5448,8 @@ paths:
       - objects
       x-validation-exclude-body: true
       x-content-type: multipart/form-data
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     put:
       deprecated: true
       operationId: stageObject
@@ -5431,7 +5525,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/objects/delete:
     post:
       operationId: deleteObjects
@@ -5501,7 +5596,8 @@ paths:
       tags:
       - objects
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/objects/copy:
     post:
       operationId: copyObject
@@ -5578,7 +5674,8 @@ paths:
       tags:
       - objects
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/refs/{ref}/objects/stat:
     get:
       operationId: statObject
@@ -5659,7 +5756,8 @@ paths:
       summary: get object metadata
       tags:
       - objects
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branches/{branch}/objects/stat/user_metadata:
     put:
       operationId: updateObjectUserMetadata
@@ -5727,7 +5825,8 @@ paths:
       - objects
       - experimental
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/refs/{ref}/objects/underlyingProperties:
     get:
       operationId: getUnderlyingProperties
@@ -5785,7 +5884,8 @@ paths:
       summary: get object properties on underlying storage
       tags:
       - objects
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/refs/{ref}/objects/ls:
     get:
       operationId: listObjects
@@ -5885,7 +5985,8 @@ paths:
       summary: list objects under a given prefix
       tags:
       - objects
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/refs/{branch}/symlink:
     post:
       operationId: createSymlinkFile
@@ -5942,7 +6043,8 @@ paths:
       summary: creates symlink files corresponding to the given directory
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/actions/runs:
     get:
       operationId: listRepositoryRuns
@@ -6017,7 +6119,8 @@ paths:
       summary: list runs
       tags:
       - actions
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/actions/runs/{run_id}:
     get:
       operationId: getRun
@@ -6066,7 +6169,8 @@ paths:
       summary: get a run
       tags:
       - actions
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/actions/runs/{run_id}/hooks:
     get:
       operationId: listRunHooks
@@ -6134,7 +6238,8 @@ paths:
       summary: list run hooks
       tags:
       - actions
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output:
     get:
       operationId: getRunHookOutput
@@ -6191,7 +6296,9 @@ paths:
       summary: get run hook output
       tags:
       - actions
-      x-accepts: application/json
+      x-accepts:
+      - application/json
+      - application/octet-stream
   /repositories/{repository}/metadata/object/{type}/{object_id}:
     get:
       operationId: getMetadataObject
@@ -6273,7 +6380,9 @@ paths:
       summary: return a lakeFS metadata object by ID
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
+      - application/octet-stream
   /repositories/{repository}/metadata/meta_range/{meta_range}:
     get:
       operationId: getMetaRange
@@ -6329,7 +6438,8 @@ paths:
       summary: return URI to a meta-range file
       tags:
       - metadata
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/metadata/range/{range}:
     get:
       operationId: getRange
@@ -6385,7 +6495,8 @@ paths:
       summary: return URI to a range file
       tags:
       - metadata
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/gc/rules/set_allowed:
     get:
       operationId: setGarbageCollectionRulesPreflight
@@ -6423,7 +6534,8 @@ paths:
           description: Internal Server Error
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/gc/rules:
     delete:
       deprecated: true
@@ -6461,7 +6573,8 @@ paths:
           description: Internal Server Error
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       deprecated: true
       operationId: internalGetGarbageCollectionRules
@@ -6502,7 +6615,8 @@ paths:
           description: Internal Server Error
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       deprecated: true
       operationId: internalSetGarbageCollectionRules
@@ -6546,7 +6660,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/gc/prepare_commits:
     post:
       operationId: prepareGarbageCollectionCommits
@@ -6594,7 +6709,8 @@ paths:
       summary: save lists of active commits for garbage collection
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/gc/prepare_uncommited:
     post:
       operationId: prepareGarbageCollectionUncommitted
@@ -6654,7 +6770,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branch_protection/set_allowed:
     get:
       operationId: createBranchProtectionRulePreflight
@@ -6698,7 +6815,8 @@ paths:
           description: Internal Server Error
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/branch_protection:
     delete:
       deprecated: true
@@ -6743,7 +6861,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     get:
       deprecated: true
       operationId: internalGetBranchProtectionRules
@@ -6787,7 +6906,8 @@ paths:
       summary: get branch protection rules
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       deprecated: true
       operationId: internalCreateBranchProtectionRule
@@ -6831,7 +6951,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/pulls:
     get:
       operationId: listPullRequests
@@ -6914,7 +7035,8 @@ paths:
       tags:
       - pulls
       - experimental
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     post:
       operationId: createPullRequest
       parameters:
@@ -6981,7 +7103,8 @@ paths:
       - pulls
       - experimental
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/pulls/{pull_request}:
     get:
       operationId: getPullRequest
@@ -7038,7 +7161,8 @@ paths:
       tags:
       - pulls
       - experimental
-      x-accepts: application/json
+      x-accepts:
+      - application/json
     patch:
       operationId: updatePullRequest
       parameters:
@@ -7103,7 +7227,8 @@ paths:
       - pulls
       - experimental
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /repositories/{repository}/pulls/{pull_request}/merge:
     put:
       operationId: mergePullRequest
@@ -7180,7 +7305,8 @@ paths:
       tags:
       - pulls
       - experimental
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /healthcheck:
     get:
       description: check that the API server is up and running
@@ -7191,7 +7317,8 @@ paths:
       security: []
       tags:
       - healthCheck
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /config:
     get:
       description: retrieve lakeFS configuration
@@ -7211,7 +7338,8 @@ paths:
           description: Unauthorized
       tags:
       - config
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /config/version:
     get:
       deprecated: true
@@ -7232,7 +7360,8 @@ paths:
           description: Unauthorized
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /config/storage:
     get:
       deprecated: true
@@ -7253,7 +7382,8 @@ paths:
           description: Unauthorized
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /config/garbage-collection:
     get:
       description: get information of gc settings
@@ -7273,7 +7403,8 @@ paths:
           description: Unauthorized
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /statistics:
     post:
       operationId: postStatsEvents
@@ -7310,7 +7441,8 @@ paths:
       tags:
       - internal
       x-content-type: application/json
-      x-accepts: application/json
+      x-accepts:
+      - application/json
   /usage-report/summary:
     get:
       operationId: getUsageReportSummary
@@ -7353,7 +7485,9 @@ paths:
       summary: get usage report summary
       tags:
       - internal
-      x-accepts: application/json
+      x-accepts:
+      - application/json
+      - application/text
 components:
   parameters:
     PaginationPrefix:
@@ -8464,6 +8598,9 @@ components:
       - errors
       type: object
     ErrorNoACL:
+      example:
+        no_acl: true
+        message: message
       properties:
         message:
           description: short message explaining the error
@@ -9278,7 +9415,7 @@ components:
       example:
         physical_address: physical_address
         presigned_url: presigned_url
-        presigned_url_expiry: 0
+        presigned_url_expiry: 5
       properties:
         physical_address:
           type: string
@@ -9311,7 +9448,7 @@ components:
         staging:
           physical_address: physical_address
           presigned_url: presigned_url
-          presigned_url_expiry: 0
+          presigned_url_expiry: 5
       properties:
         staging:
           $ref: '#/components/schemas/StagingLocation'
@@ -9855,6 +9992,17 @@ components:
         - id
         - source_branch
         type: object
+      example:
+        closed_date: 2000-01-23T04:56:07.000+00:00
+        merged_commit_id: merged_commit_id
+        author: author
+        destination_branch: destination_branch
+        description: description
+        id: id
+        creation_date: 2000-01-23T04:56:07.000+00:00
+        title: title
+        status: open
+        source_branch: source_branch
     PullRequestsList:
       example:
         pagination:
@@ -9863,8 +10011,26 @@ components:
           next_offset: next_offset
           results: 0
         results:
-        - null
-        - null
+        - closed_date: 2000-01-23T04:56:07.000+00:00
+          merged_commit_id: merged_commit_id
+          author: author
+          destination_branch: destination_branch
+          description: description
+          id: id
+          creation_date: 2000-01-23T04:56:07.000+00:00
+          title: title
+          status: open
+          source_branch: source_branch
+        - closed_date: 2000-01-23T04:56:07.000+00:00
+          merged_commit_id: merged_commit_id
+          author: author
+          destination_branch: destination_branch
+          description: description
+          id: id
+          creation_date: 2000-01-23T04:56:07.000+00:00
+          title: title
+          status: open
+          source_branch: source_branch
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'

@@ -38,12 +38,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -51,7 +49,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * PullRequest
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class PullRequest {
   /**
    * Gets or Sets status
@@ -100,257 +98,252 @@ public class PullRequest {
         return StatusEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      StatusEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_STATUS = "status";
   @SerializedName(SERIALIZED_NAME_STATUS)
+  @javax.annotation.Nonnull
   private StatusEnum status;
 
   public static final String SERIALIZED_NAME_TITLE = "title";
   @SerializedName(SERIALIZED_NAME_TITLE)
+  @javax.annotation.Nonnull
   private String title;
 
   public static final String SERIALIZED_NAME_DESCRIPTION = "description";
   @SerializedName(SERIALIZED_NAME_DESCRIPTION)
+  @javax.annotation.Nonnull
   private String description;
 
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
+  @javax.annotation.Nonnull
   private String id;
 
   public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
+  @javax.annotation.Nonnull
   private OffsetDateTime creationDate;
 
   public static final String SERIALIZED_NAME_AUTHOR = "author";
   @SerializedName(SERIALIZED_NAME_AUTHOR)
+  @javax.annotation.Nonnull
   private String author;
 
   public static final String SERIALIZED_NAME_SOURCE_BRANCH = "source_branch";
   @SerializedName(SERIALIZED_NAME_SOURCE_BRANCH)
+  @javax.annotation.Nonnull
   private String sourceBranch;
 
   public static final String SERIALIZED_NAME_DESTINATION_BRANCH = "destination_branch";
   @SerializedName(SERIALIZED_NAME_DESTINATION_BRANCH)
+  @javax.annotation.Nonnull
   private String destinationBranch;
 
   public static final String SERIALIZED_NAME_MERGED_COMMIT_ID = "merged_commit_id";
   @SerializedName(SERIALIZED_NAME_MERGED_COMMIT_ID)
+  @javax.annotation.Nullable
   private String mergedCommitId;
 
   public static final String SERIALIZED_NAME_CLOSED_DATE = "closed_date";
   @SerializedName(SERIALIZED_NAME_CLOSED_DATE)
+  @javax.annotation.Nullable
   private OffsetDateTime closedDate;
 
   public PullRequest() {
   }
 
-  public PullRequest status(StatusEnum status) {
-    
+  public PullRequest status(@javax.annotation.Nonnull StatusEnum status) {
     this.status = status;
     return this;
   }
 
-   /**
+  /**
    * Get status
    * @return status
-  **/
+   */
   @javax.annotation.Nonnull
   public StatusEnum getStatus() {
     return status;
   }
 
-
-  public void setStatus(StatusEnum status) {
+  public void setStatus(@javax.annotation.Nonnull StatusEnum status) {
     this.status = status;
   }
 
 
-  public PullRequest title(String title) {
-    
+  public PullRequest title(@javax.annotation.Nonnull String title) {
     this.title = title;
     return this;
   }
 
-   /**
+  /**
    * Get title
    * @return title
-  **/
+   */
   @javax.annotation.Nonnull
   public String getTitle() {
     return title;
   }
 
-
-  public void setTitle(String title) {
+  public void setTitle(@javax.annotation.Nonnull String title) {
     this.title = title;
   }
 
 
-  public PullRequest description(String description) {
-    
+  public PullRequest description(@javax.annotation.Nonnull String description) {
     this.description = description;
     return this;
   }
 
-   /**
+  /**
    * Get description
    * @return description
-  **/
+   */
   @javax.annotation.Nonnull
   public String getDescription() {
     return description;
   }
 
-
-  public void setDescription(String description) {
+  public void setDescription(@javax.annotation.Nonnull String description) {
     this.description = description;
   }
 
 
-  public PullRequest id(String id) {
-    
+  public PullRequest id(@javax.annotation.Nonnull String id) {
     this.id = id;
     return this;
   }
 
-   /**
+  /**
    * Get id
    * @return id
-  **/
+   */
   @javax.annotation.Nonnull
   public String getId() {
     return id;
   }
 
-
-  public void setId(String id) {
+  public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
 
 
-  public PullRequest creationDate(OffsetDateTime creationDate) {
-    
+  public PullRequest creationDate(@javax.annotation.Nonnull OffsetDateTime creationDate) {
     this.creationDate = creationDate;
     return this;
   }
 
-   /**
+  /**
    * Get creationDate
    * @return creationDate
-  **/
+   */
   @javax.annotation.Nonnull
   public OffsetDateTime getCreationDate() {
     return creationDate;
   }
 
-
-  public void setCreationDate(OffsetDateTime creationDate) {
+  public void setCreationDate(@javax.annotation.Nonnull OffsetDateTime creationDate) {
     this.creationDate = creationDate;
   }
 
 
-  public PullRequest author(String author) {
-    
+  public PullRequest author(@javax.annotation.Nonnull String author) {
     this.author = author;
     return this;
   }
 
-   /**
+  /**
    * Get author
    * @return author
-  **/
+   */
   @javax.annotation.Nonnull
   public String getAuthor() {
     return author;
   }
 
-
-  public void setAuthor(String author) {
+  public void setAuthor(@javax.annotation.Nonnull String author) {
     this.author = author;
   }
 
 
-  public PullRequest sourceBranch(String sourceBranch) {
-    
+  public PullRequest sourceBranch(@javax.annotation.Nonnull String sourceBranch) {
     this.sourceBranch = sourceBranch;
     return this;
   }
 
-   /**
+  /**
    * Get sourceBranch
    * @return sourceBranch
-  **/
+   */
   @javax.annotation.Nonnull
   public String getSourceBranch() {
     return sourceBranch;
   }
 
-
-  public void setSourceBranch(String sourceBranch) {
+  public void setSourceBranch(@javax.annotation.Nonnull String sourceBranch) {
     this.sourceBranch = sourceBranch;
   }
 
 
-  public PullRequest destinationBranch(String destinationBranch) {
-    
+  public PullRequest destinationBranch(@javax.annotation.Nonnull String destinationBranch) {
     this.destinationBranch = destinationBranch;
     return this;
   }
 
-   /**
+  /**
    * Get destinationBranch
    * @return destinationBranch
-  **/
+   */
   @javax.annotation.Nonnull
   public String getDestinationBranch() {
     return destinationBranch;
   }
 
-
-  public void setDestinationBranch(String destinationBranch) {
+  public void setDestinationBranch(@javax.annotation.Nonnull String destinationBranch) {
     this.destinationBranch = destinationBranch;
   }
 
 
-  public PullRequest mergedCommitId(String mergedCommitId) {
-    
+  public PullRequest mergedCommitId(@javax.annotation.Nullable String mergedCommitId) {
     this.mergedCommitId = mergedCommitId;
     return this;
   }
 
-   /**
+  /**
    * the commit id of merged PRs
    * @return mergedCommitId
-  **/
+   */
   @javax.annotation.Nullable
   public String getMergedCommitId() {
     return mergedCommitId;
   }
 
-
-  public void setMergedCommitId(String mergedCommitId) {
+  public void setMergedCommitId(@javax.annotation.Nullable String mergedCommitId) {
     this.mergedCommitId = mergedCommitId;
   }
 
 
-  public PullRequest closedDate(OffsetDateTime closedDate) {
-    
+  public PullRequest closedDate(@javax.annotation.Nullable OffsetDateTime closedDate) {
     this.closedDate = closedDate;
     return this;
   }
 
-   /**
+  /**
    * Get closedDate
    * @return closedDate
-  **/
+   */
   @javax.annotation.Nullable
   public OffsetDateTime getClosedDate() {
     return closedDate;
   }
 
-
-  public void setClosedDate(OffsetDateTime closedDate) {
+  public void setClosedDate(@javax.annotation.Nullable OffsetDateTime closedDate) {
     this.closedDate = closedDate;
   }
 
@@ -487,12 +480,12 @@ public class PullRequest {
     openapiRequiredFields.add("destination_branch");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to PullRequest
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to PullRequest
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!PullRequest.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -510,6 +503,8 @@ public class PullRequest {
       if (!jsonObj.get("status").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("status").toString()));
       }
+      // validate the required field `status`
+      StatusEnum.validateJsonElement(jsonObj.get("status"));
       if (!jsonObj.get("title").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `title` to be a primitive type in the JSON string but got `%s`", jsonObj.get("title").toString()));
       }
@@ -561,7 +556,12 @@ public class PullRequest {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -600,22 +600,22 @@ public class PullRequest {
     }
   }
 
- /**
-  * Create an instance of PullRequest given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of PullRequest
-  * @throws IOException if the JSON string is invalid with respect to PullRequest
-  */
+  /**
+   * Create an instance of PullRequest given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of PullRequest
+   * @throws IOException if the JSON string is invalid with respect to PullRequest
+   */
   public static PullRequest fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, PullRequest.class);
   }
 
- /**
-  * Convert an instance of PullRequest to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of PullRequest to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

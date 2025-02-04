@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.upload_part import UploadPart  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.upload_part import UploadPart
 
 class TestUploadPart(unittest.TestCase):
     """UploadPart unit test stubs"""
@@ -29,20 +26,20 @@ class TestUploadPart(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> UploadPart:
         """Test UploadPart
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `UploadPart`
         """
-        model = lakefs_sdk.models.upload_part.UploadPart()  # noqa: E501
-        if include_optional :
+        model = UploadPart()
+        if include_optional:
             return UploadPart(
-                part_number = 56, 
+                part_number = 56,
                 etag = ''
             )
-        else :
+        else:
             return UploadPart(
                 part_number = 56,
                 etag = '',

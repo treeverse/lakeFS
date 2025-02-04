@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,82 +48,79 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * CommPrefsInput
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class CommPrefsInput {
   public static final String SERIALIZED_NAME_EMAIL = "email";
   @SerializedName(SERIALIZED_NAME_EMAIL)
+  @javax.annotation.Nullable
   private String email;
 
   public static final String SERIALIZED_NAME_FEATURE_UPDATES = "featureUpdates";
   @SerializedName(SERIALIZED_NAME_FEATURE_UPDATES)
+  @javax.annotation.Nonnull
   private Boolean featureUpdates;
 
   public static final String SERIALIZED_NAME_SECURITY_UPDATES = "securityUpdates";
   @SerializedName(SERIALIZED_NAME_SECURITY_UPDATES)
+  @javax.annotation.Nonnull
   private Boolean securityUpdates;
 
   public CommPrefsInput() {
   }
 
-  public CommPrefsInput email(String email) {
-    
+  public CommPrefsInput email(@javax.annotation.Nullable String email) {
     this.email = email;
     return this;
   }
 
-   /**
+  /**
    * the provided email
    * @return email
-  **/
+   */
   @javax.annotation.Nullable
   public String getEmail() {
     return email;
   }
 
-
-  public void setEmail(String email) {
+  public void setEmail(@javax.annotation.Nullable String email) {
     this.email = email;
   }
 
 
-  public CommPrefsInput featureUpdates(Boolean featureUpdates) {
-    
+  public CommPrefsInput featureUpdates(@javax.annotation.Nonnull Boolean featureUpdates) {
     this.featureUpdates = featureUpdates;
     return this;
   }
 
-   /**
+  /**
    * user preference to receive feature updates
    * @return featureUpdates
-  **/
+   */
   @javax.annotation.Nonnull
   public Boolean getFeatureUpdates() {
     return featureUpdates;
   }
 
-
-  public void setFeatureUpdates(Boolean featureUpdates) {
+  public void setFeatureUpdates(@javax.annotation.Nonnull Boolean featureUpdates) {
     this.featureUpdates = featureUpdates;
   }
 
 
-  public CommPrefsInput securityUpdates(Boolean securityUpdates) {
-    
+  public CommPrefsInput securityUpdates(@javax.annotation.Nonnull Boolean securityUpdates) {
     this.securityUpdates = securityUpdates;
     return this;
   }
 
-   /**
+  /**
    * user preference to receive security updates
    * @return securityUpdates
-  **/
+   */
   @javax.annotation.Nonnull
   public Boolean getSecurityUpdates() {
     return securityUpdates;
   }
 
-
-  public void setSecurityUpdates(Boolean securityUpdates) {
+  public void setSecurityUpdates(@javax.annotation.Nonnull Boolean securityUpdates) {
     this.securityUpdates = securityUpdates;
   }
 
@@ -235,12 +230,12 @@ public class CommPrefsInput {
     openapiRequiredFields.add("securityUpdates");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to CommPrefsInput
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to CommPrefsInput
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!CommPrefsInput.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -288,7 +283,12 @@ public class CommPrefsInput {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -327,22 +327,22 @@ public class CommPrefsInput {
     }
   }
 
- /**
-  * Create an instance of CommPrefsInput given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of CommPrefsInput
-  * @throws IOException if the JSON string is invalid with respect to CommPrefsInput
-  */
+  /**
+   * Create an instance of CommPrefsInput given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of CommPrefsInput
+   * @throws IOException if the JSON string is invalid with respect to CommPrefsInput
+   */
   public static CommPrefsInput fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, CommPrefsInput.class);
   }
 
- /**
-  * Convert an instance of CommPrefsInput to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of CommPrefsInput to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

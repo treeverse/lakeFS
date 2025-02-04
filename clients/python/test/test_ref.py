@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.ref import Ref  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.ref import Ref
 
 class TestRef(unittest.TestCase):
     """Ref unit test stubs"""
@@ -29,20 +26,20 @@ class TestRef(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> Ref:
         """Test Ref
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `Ref`
         """
-        model = lakefs_sdk.models.ref.Ref()  # noqa: E501
-        if include_optional :
+        model = Ref()
+        if include_optional:
             return Ref(
-                id = '', 
+                id = '',
                 commit_id = ''
             )
-        else :
+        else:
             return Ref(
                 id = '',
                 commit_id = '',

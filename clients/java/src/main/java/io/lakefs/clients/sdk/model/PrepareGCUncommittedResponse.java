@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,82 +48,79 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * PrepareGCUncommittedResponse
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class PrepareGCUncommittedResponse {
   public static final String SERIALIZED_NAME_RUN_ID = "run_id";
   @SerializedName(SERIALIZED_NAME_RUN_ID)
+  @javax.annotation.Nonnull
   private String runId;
 
   public static final String SERIALIZED_NAME_GC_UNCOMMITTED_LOCATION = "gc_uncommitted_location";
   @SerializedName(SERIALIZED_NAME_GC_UNCOMMITTED_LOCATION)
+  @javax.annotation.Nonnull
   private String gcUncommittedLocation;
 
   public static final String SERIALIZED_NAME_CONTINUATION_TOKEN = "continuation_token";
   @SerializedName(SERIALIZED_NAME_CONTINUATION_TOKEN)
+  @javax.annotation.Nullable
   private String continuationToken;
 
   public PrepareGCUncommittedResponse() {
   }
 
-  public PrepareGCUncommittedResponse runId(String runId) {
-    
+  public PrepareGCUncommittedResponse runId(@javax.annotation.Nonnull String runId) {
     this.runId = runId;
     return this;
   }
 
-   /**
+  /**
    * Get runId
    * @return runId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getRunId() {
     return runId;
   }
 
-
-  public void setRunId(String runId) {
+  public void setRunId(@javax.annotation.Nonnull String runId) {
     this.runId = runId;
   }
 
 
-  public PrepareGCUncommittedResponse gcUncommittedLocation(String gcUncommittedLocation) {
-    
+  public PrepareGCUncommittedResponse gcUncommittedLocation(@javax.annotation.Nonnull String gcUncommittedLocation) {
     this.gcUncommittedLocation = gcUncommittedLocation;
     return this;
   }
 
-   /**
+  /**
    * location of uncommitted information data
    * @return gcUncommittedLocation
-  **/
+   */
   @javax.annotation.Nonnull
   public String getGcUncommittedLocation() {
     return gcUncommittedLocation;
   }
 
-
-  public void setGcUncommittedLocation(String gcUncommittedLocation) {
+  public void setGcUncommittedLocation(@javax.annotation.Nonnull String gcUncommittedLocation) {
     this.gcUncommittedLocation = gcUncommittedLocation;
   }
 
 
-  public PrepareGCUncommittedResponse continuationToken(String continuationToken) {
-    
+  public PrepareGCUncommittedResponse continuationToken(@javax.annotation.Nullable String continuationToken) {
     this.continuationToken = continuationToken;
     return this;
   }
 
-   /**
+  /**
    * Get continuationToken
    * @return continuationToken
-  **/
+   */
   @javax.annotation.Nullable
   public String getContinuationToken() {
     return continuationToken;
   }
 
-
-  public void setContinuationToken(String continuationToken) {
+  public void setContinuationToken(@javax.annotation.Nullable String continuationToken) {
     this.continuationToken = continuationToken;
   }
 
@@ -235,12 +230,12 @@ public class PrepareGCUncommittedResponse {
     openapiRequiredFields.add("gc_uncommitted_location");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to PrepareGCUncommittedResponse
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to PrepareGCUncommittedResponse
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!PrepareGCUncommittedResponse.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -294,7 +289,12 @@ public class PrepareGCUncommittedResponse {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -333,22 +333,22 @@ public class PrepareGCUncommittedResponse {
     }
   }
 
- /**
-  * Create an instance of PrepareGCUncommittedResponse given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of PrepareGCUncommittedResponse
-  * @throws IOException if the JSON string is invalid with respect to PrepareGCUncommittedResponse
-  */
+  /**
+   * Create an instance of PrepareGCUncommittedResponse given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of PrepareGCUncommittedResponse
+   * @throws IOException if the JSON string is invalid with respect to PrepareGCUncommittedResponse
+   */
   public static PrepareGCUncommittedResponse fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, PrepareGCUncommittedResponse.class);
   }
 
- /**
-  * Convert an instance of PrepareGCUncommittedResponse to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of PrepareGCUncommittedResponse to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

@@ -41,12 +41,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -54,42 +52,41 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ExternalPrincipalList
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class ExternalPrincipalList {
   public static final String SERIALIZED_NAME_PAGINATION = "pagination";
   @SerializedName(SERIALIZED_NAME_PAGINATION)
+  @javax.annotation.Nonnull
   private Pagination pagination;
 
   public static final String SERIALIZED_NAME_RESULTS = "results";
   @SerializedName(SERIALIZED_NAME_RESULTS)
+  @javax.annotation.Nonnull
   private List<ExternalPrincipal> results = new ArrayList<>();
 
   public ExternalPrincipalList() {
   }
 
-  public ExternalPrincipalList pagination(Pagination pagination) {
-    
+  public ExternalPrincipalList pagination(@javax.annotation.Nonnull Pagination pagination) {
     this.pagination = pagination;
     return this;
   }
 
-   /**
+  /**
    * Get pagination
    * @return pagination
-  **/
+   */
   @javax.annotation.Nonnull
   public Pagination getPagination() {
     return pagination;
   }
 
-
-  public void setPagination(Pagination pagination) {
+  public void setPagination(@javax.annotation.Nonnull Pagination pagination) {
     this.pagination = pagination;
   }
 
 
-  public ExternalPrincipalList results(List<ExternalPrincipal> results) {
-    
+  public ExternalPrincipalList results(@javax.annotation.Nonnull List<ExternalPrincipal> results) {
     this.results = results;
     return this;
   }
@@ -102,17 +99,16 @@ public class ExternalPrincipalList {
     return this;
   }
 
-   /**
+  /**
    * Get results
    * @return results
-  **/
+   */
   @javax.annotation.Nonnull
   public List<ExternalPrincipal> getResults() {
     return results;
   }
 
-
-  public void setResults(List<ExternalPrincipal> results) {
+  public void setResults(@javax.annotation.Nonnull List<ExternalPrincipal> results) {
     this.results = results;
   }
 
@@ -219,12 +215,12 @@ public class ExternalPrincipalList {
     openapiRequiredFields.add("results");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ExternalPrincipalList
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ExternalPrincipalList
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ExternalPrincipalList.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -281,7 +277,12 @@ public class ExternalPrincipalList {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -320,22 +321,22 @@ public class ExternalPrincipalList {
     }
   }
 
- /**
-  * Create an instance of ExternalPrincipalList given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ExternalPrincipalList
-  * @throws IOException if the JSON string is invalid with respect to ExternalPrincipalList
-  */
+  /**
+   * Create an instance of ExternalPrincipalList given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ExternalPrincipalList
+   * @throws IOException if the JSON string is invalid with respect to ExternalPrincipalList
+   */
   public static ExternalPrincipalList fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ExternalPrincipalList.class);
   }
 
- /**
-  * Convert an instance of ExternalPrincipalList to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ExternalPrincipalList to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

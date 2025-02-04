@@ -40,12 +40,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -53,67 +51,65 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Policy
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class Policy {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
+  @javax.annotation.Nonnull
   private String id;
 
   public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
+  @javax.annotation.Nullable
   private Long creationDate;
 
   public static final String SERIALIZED_NAME_STATEMENT = "statement";
   @SerializedName(SERIALIZED_NAME_STATEMENT)
+  @javax.annotation.Nonnull
   private List<Statement> statement = new ArrayList<>();
 
   public Policy() {
   }
 
-  public Policy id(String id) {
-    
+  public Policy id(@javax.annotation.Nonnull String id) {
     this.id = id;
     return this;
   }
 
-   /**
+  /**
    * Get id
    * @return id
-  **/
+   */
   @javax.annotation.Nonnull
   public String getId() {
     return id;
   }
 
-
-  public void setId(String id) {
+  public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
 
 
-  public Policy creationDate(Long creationDate) {
-    
+  public Policy creationDate(@javax.annotation.Nullable Long creationDate) {
     this.creationDate = creationDate;
     return this;
   }
 
-   /**
+  /**
    * Unix Epoch in seconds
    * @return creationDate
-  **/
+   */
   @javax.annotation.Nullable
   public Long getCreationDate() {
     return creationDate;
   }
 
-
-  public void setCreationDate(Long creationDate) {
+  public void setCreationDate(@javax.annotation.Nullable Long creationDate) {
     this.creationDate = creationDate;
   }
 
 
-  public Policy statement(List<Statement> statement) {
-    
+  public Policy statement(@javax.annotation.Nonnull List<Statement> statement) {
     this.statement = statement;
     return this;
   }
@@ -126,17 +122,16 @@ public class Policy {
     return this;
   }
 
-   /**
+  /**
    * Get statement
    * @return statement
-  **/
+   */
   @javax.annotation.Nonnull
   public List<Statement> getStatement() {
     return statement;
   }
 
-
-  public void setStatement(List<Statement> statement) {
+  public void setStatement(@javax.annotation.Nonnull List<Statement> statement) {
     this.statement = statement;
   }
 
@@ -246,12 +241,12 @@ public class Policy {
     openapiRequiredFields.add("statement");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Policy
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Policy
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Policy.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -309,7 +304,12 @@ public class Policy {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -348,22 +348,22 @@ public class Policy {
     }
   }
 
- /**
-  * Create an instance of Policy given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Policy
-  * @throws IOException if the JSON string is invalid with respect to Policy
-  */
+  /**
+   * Create an instance of Policy given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Policy
+   * @throws IOException if the JSON string is invalid with respect to Policy
+   */
   public static Policy fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Policy.class);
   }
 
- /**
-  * Convert an instance of Policy to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Policy to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

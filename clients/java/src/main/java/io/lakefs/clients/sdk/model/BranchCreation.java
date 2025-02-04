@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,107 +48,103 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * BranchCreation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class BranchCreation {
   public static final String SERIALIZED_NAME_NAME = "name";
   @SerializedName(SERIALIZED_NAME_NAME)
+  @javax.annotation.Nonnull
   private String name;
 
   public static final String SERIALIZED_NAME_SOURCE = "source";
   @SerializedName(SERIALIZED_NAME_SOURCE)
+  @javax.annotation.Nonnull
   private String source;
 
   public static final String SERIALIZED_NAME_FORCE = "force";
   @SerializedName(SERIALIZED_NAME_FORCE)
+  @javax.annotation.Nullable
   private Boolean force = false;
 
   public static final String SERIALIZED_NAME_HIDDEN = "hidden";
   @SerializedName(SERIALIZED_NAME_HIDDEN)
+  @javax.annotation.Nullable
   private Boolean hidden = false;
 
   public BranchCreation() {
   }
 
-  public BranchCreation name(String name) {
-    
+  public BranchCreation name(@javax.annotation.Nonnull String name) {
     this.name = name;
     return this;
   }
 
-   /**
+  /**
    * Get name
    * @return name
-  **/
+   */
   @javax.annotation.Nonnull
   public String getName() {
     return name;
   }
 
-
-  public void setName(String name) {
+  public void setName(@javax.annotation.Nonnull String name) {
     this.name = name;
   }
 
 
-  public BranchCreation source(String source) {
-    
+  public BranchCreation source(@javax.annotation.Nonnull String source) {
     this.source = source;
     return this;
   }
 
-   /**
+  /**
    * Get source
    * @return source
-  **/
+   */
   @javax.annotation.Nonnull
   public String getSource() {
     return source;
   }
 
-
-  public void setSource(String source) {
+  public void setSource(@javax.annotation.Nonnull String source) {
     this.source = source;
   }
 
 
-  public BranchCreation force(Boolean force) {
-    
+  public BranchCreation force(@javax.annotation.Nullable Boolean force) {
     this.force = force;
     return this;
   }
 
-   /**
+  /**
    * Get force
    * @return force
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getForce() {
     return force;
   }
 
-
-  public void setForce(Boolean force) {
+  public void setForce(@javax.annotation.Nullable Boolean force) {
     this.force = force;
   }
 
 
-  public BranchCreation hidden(Boolean hidden) {
-    
+  public BranchCreation hidden(@javax.annotation.Nullable Boolean hidden) {
     this.hidden = hidden;
     return this;
   }
 
-   /**
+  /**
    * When set, branch will not show up when listing branches by default. *EXPERIMENTAL*
    * @return hidden
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getHidden() {
     return hidden;
   }
 
-
-  public void setHidden(Boolean hidden) {
+  public void setHidden(@javax.annotation.Nullable Boolean hidden) {
     this.hidden = hidden;
   }
 
@@ -263,12 +257,12 @@ public class BranchCreation {
     openapiRequiredFields.add("source");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to BranchCreation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to BranchCreation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!BranchCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -319,7 +313,12 @@ public class BranchCreation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -358,22 +357,22 @@ public class BranchCreation {
     }
   }
 
- /**
-  * Create an instance of BranchCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of BranchCreation
-  * @throws IOException if the JSON string is invalid with respect to BranchCreation
-  */
+  /**
+   * Create an instance of BranchCreation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of BranchCreation
+   * @throws IOException if the JSON string is invalid with respect to BranchCreation
+   */
   public static BranchCreation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, BranchCreation.class);
   }
 
- /**
-  * Convert an instance of BranchCreation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of BranchCreation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

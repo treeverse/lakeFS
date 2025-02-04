@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Diff
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class Diff {
   /**
    * Gets or Sets type
@@ -103,14 +101,21 @@ public class Diff {
         return TypeEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      TypeEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_TYPE = "type";
   @SerializedName(SERIALIZED_NAME_TYPE)
+  @javax.annotation.Nonnull
   private TypeEnum type;
 
   public static final String SERIALIZED_NAME_PATH = "path";
   @SerializedName(SERIALIZED_NAME_PATH)
+  @javax.annotation.Nonnull
   private String path;
 
   /**
@@ -158,99 +163,98 @@ public class Diff {
         return PathTypeEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      PathTypeEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_PATH_TYPE = "path_type";
   @SerializedName(SERIALIZED_NAME_PATH_TYPE)
+  @javax.annotation.Nonnull
   private PathTypeEnum pathType;
 
   public static final String SERIALIZED_NAME_SIZE_BYTES = "size_bytes";
   @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
+  @javax.annotation.Nullable
   private Long sizeBytes;
 
   public Diff() {
   }
 
-  public Diff type(TypeEnum type) {
-    
+  public Diff type(@javax.annotation.Nonnull TypeEnum type) {
     this.type = type;
     return this;
   }
 
-   /**
+  /**
    * Get type
    * @return type
-  **/
+   */
   @javax.annotation.Nonnull
   public TypeEnum getType() {
     return type;
   }
 
-
-  public void setType(TypeEnum type) {
+  public void setType(@javax.annotation.Nonnull TypeEnum type) {
     this.type = type;
   }
 
 
-  public Diff path(String path) {
-    
+  public Diff path(@javax.annotation.Nonnull String path) {
     this.path = path;
     return this;
   }
 
-   /**
+  /**
    * Get path
    * @return path
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPath() {
     return path;
   }
 
-
-  public void setPath(String path) {
+  public void setPath(@javax.annotation.Nonnull String path) {
     this.path = path;
   }
 
 
-  public Diff pathType(PathTypeEnum pathType) {
-    
+  public Diff pathType(@javax.annotation.Nonnull PathTypeEnum pathType) {
     this.pathType = pathType;
     return this;
   }
 
-   /**
+  /**
    * Get pathType
    * @return pathType
-  **/
+   */
   @javax.annotation.Nonnull
   public PathTypeEnum getPathType() {
     return pathType;
   }
 
-
-  public void setPathType(PathTypeEnum pathType) {
+  public void setPathType(@javax.annotation.Nonnull PathTypeEnum pathType) {
     this.pathType = pathType;
   }
 
 
-  public Diff sizeBytes(Long sizeBytes) {
-    
+  public Diff sizeBytes(@javax.annotation.Nullable Long sizeBytes) {
     this.sizeBytes = sizeBytes;
     return this;
   }
 
-   /**
+  /**
    * represents the size of the added/changed/deleted entry
    * @return sizeBytes
-  **/
+   */
   @javax.annotation.Nullable
   public Long getSizeBytes() {
     return sizeBytes;
   }
 
-
-  public void setSizeBytes(Long sizeBytes) {
+  public void setSizeBytes(@javax.annotation.Nullable Long sizeBytes) {
     this.sizeBytes = sizeBytes;
   }
 
@@ -364,12 +368,12 @@ public class Diff {
     openapiRequiredFields.add("path_type");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Diff
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Diff
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Diff.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -387,12 +391,16 @@ public class Diff {
       if (!jsonObj.get("type").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("type").toString()));
       }
+      // validate the required field `type`
+      TypeEnum.validateJsonElement(jsonObj.get("type"));
       if (!jsonObj.get("path").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `path` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path").toString()));
       }
       if (!jsonObj.get("path_type").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `path_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path_type").toString()));
       }
+      // validate the required field `path_type`
+      PathTypeEnum.validateJsonElement(jsonObj.get("path_type"));
   }
 
   public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
@@ -423,7 +431,12 @@ public class Diff {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -462,22 +475,22 @@ public class Diff {
     }
   }
 
- /**
-  * Create an instance of Diff given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Diff
-  * @throws IOException if the JSON string is invalid with respect to Diff
-  */
+  /**
+   * Create an instance of Diff given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Diff
+   * @throws IOException if the JSON string is invalid with respect to Diff
+   */
   public static Diff fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Diff.class);
   }
 
- /**
-  * Convert an instance of Diff to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Diff to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

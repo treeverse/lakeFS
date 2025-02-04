@@ -12,6 +12,8 @@
     Do not edit the class manually.
 """  # noqa: E501
 
+from typing import Any, Optional
+from typing_extensions import Self
 
 class OpenApiException(Exception):
     """The base exception class for all OpenAPIExceptions"""
@@ -19,7 +21,7 @@ class OpenApiException(Exception):
 
 class ApiTypeError(OpenApiException, TypeError):
     def __init__(self, msg, path_to_item=None, valid_classes=None,
-                 key_type=None):
+                 key_type=None) -> None:
         """ Raises an exception for TypeErrors
 
         Args:
@@ -47,7 +49,7 @@ class ApiTypeError(OpenApiException, TypeError):
 
 
 class ApiValueError(OpenApiException, ValueError):
-    def __init__(self, msg, path_to_item=None):
+    def __init__(self, msg, path_to_item=None) -> None:
         """
         Args:
             msg (str): the exception message
@@ -65,7 +67,7 @@ class ApiValueError(OpenApiException, ValueError):
 
 
 class ApiAttributeError(OpenApiException, AttributeError):
-    def __init__(self, msg, path_to_item=None):
+    def __init__(self, msg, path_to_item=None) -> None:
         """
         Raised when an attribute reference or assignment fails.
 
@@ -84,7 +86,7 @@ class ApiAttributeError(OpenApiException, AttributeError):
 
 
 class ApiKeyError(OpenApiException, KeyError):
-    def __init__(self, msg, path_to_item=None):
+    def __init__(self, msg, path_to_item=None) -> None:
         """
         Args:
             msg (str): the exception message
@@ -102,17 +104,63 @@ class ApiKeyError(OpenApiException, KeyError):
 
 class ApiException(OpenApiException):
 
-    def __init__(self, status=None, reason=None, http_resp=None):
+    def __init__(
+        self, 
+        status=None, 
+        reason=None, 
+        http_resp=None,
+        *,
+        body: Optional[str] = None,
+        data: Optional[Any] = None,
+    ) -> None:
+        self.status = status
+        self.reason = reason
+        self.body = body
+        self.data = data
+        self.headers = None
+
         if http_resp:
-            self.status = http_resp.status
-            self.reason = http_resp.reason
-            self.body = http_resp.data
+            if self.status is None:
+                self.status = http_resp.status
+            if self.reason is None:
+                self.reason = http_resp.reason
+            if self.body is None:
+                try:
+                    self.body = http_resp.data.decode('utf-8')
+                except Exception:
+                    pass
             self.headers = http_resp.getheaders()
-        else:
-            self.status = status
-            self.reason = reason
-            self.body = None
-            self.headers = None
+
+    @classmethod
+    def from_response(
+        cls, 
+        *, 
+        http_resp, 
+        body: Optional[str], 
+        data: Optional[Any],
+    ) -> Self:
+        if http_resp.status == 400:
+            raise BadRequestException(http_resp=http_resp, body=body, data=data)
+
+        if http_resp.status == 401:
+            raise UnauthorizedException(http_resp=http_resp, body=body, data=data)
+
+        if http_resp.status == 403:
+            raise ForbiddenException(http_resp=http_resp, body=body, data=data)
+
+        if http_resp.status == 404:
+            raise NotFoundException(http_resp=http_resp, body=body, data=data)
+
+        # Added new conditions for 409 and 422
+        if http_resp.status == 409:
+            raise ConflictException(http_resp=http_resp, body=body, data=data)
+
+        if http_resp.status == 422:
+            raise UnprocessableEntityException(http_resp=http_resp, body=body, data=data)
+
+        if 500 <= http_resp.status <= 599:
+            raise ServiceException(http_resp=http_resp, body=body, data=data)
+        raise ApiException(http_resp=http_resp, body=body, data=data)
 
     def __str__(self):
         """Custom error messages for exception"""
@@ -122,38 +170,40 @@ class ApiException(OpenApiException):
             error_message += "HTTP response headers: {0}\n".format(
                 self.headers)
 
-        if self.body:
-            error_message += "HTTP response body: {0}\n".format(self.body)
+        if self.data or self.body:
+            error_message += "HTTP response body: {0}\n".format(self.data or self.body)
 
         return error_message
 
-class BadRequestException(ApiException):
 
-    def __init__(self, status=None, reason=None, http_resp=None):
-        super(BadRequestException, self).__init__(status, reason, http_resp)
+class BadRequestException(ApiException):
+    pass
+
 
 class NotFoundException(ApiException):
-
-    def __init__(self, status=None, reason=None, http_resp=None):
-        super(NotFoundException, self).__init__(status, reason, http_resp)
+    pass
 
 
 class UnauthorizedException(ApiException):
-
-    def __init__(self, status=None, reason=None, http_resp=None):
-        super(UnauthorizedException, self).__init__(status, reason, http_resp)
+    pass
 
 
 class ForbiddenException(ApiException):
-
-    def __init__(self, status=None, reason=None, http_resp=None):
-        super(ForbiddenException, self).__init__(status, reason, http_resp)
+    pass
 
 
 class ServiceException(ApiException):
+    pass
 
-    def __init__(self, status=None, reason=None, http_resp=None):
-        super(ServiceException, self).__init__(status, reason, http_resp)
+
+class ConflictException(ApiException):
+    """Exception for HTTP 409 Conflict."""
+    pass
+
+
+class UnprocessableEntityException(ApiException):
+    """Exception for HTTP 422 Unprocessable Entity."""
+    pass
 
 
 def render_path(path_to_item):

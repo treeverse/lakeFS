@@ -38,12 +38,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -51,57 +49,55 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Setup
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class Setup {
   public static final String SERIALIZED_NAME_USERNAME = "username";
   @SerializedName(SERIALIZED_NAME_USERNAME)
+  @javax.annotation.Nonnull
   private String username;
 
   public static final String SERIALIZED_NAME_KEY = "key";
   @SerializedName(SERIALIZED_NAME_KEY)
+  @javax.annotation.Nullable
   private AccessKeyCredentials key;
 
   public Setup() {
   }
 
-  public Setup username(String username) {
-    
+  public Setup username(@javax.annotation.Nonnull String username) {
     this.username = username;
     return this;
   }
 
-   /**
+  /**
    * an identifier for the user (e.g. jane.doe)
    * @return username
-  **/
+   */
   @javax.annotation.Nonnull
   public String getUsername() {
     return username;
   }
 
-
-  public void setUsername(String username) {
+  public void setUsername(@javax.annotation.Nonnull String username) {
     this.username = username;
   }
 
 
-  public Setup key(AccessKeyCredentials key) {
-    
+  public Setup key(@javax.annotation.Nullable AccessKeyCredentials key) {
     this.key = key;
     return this;
   }
 
-   /**
+  /**
    * Get key
    * @return key
-  **/
+   */
   @javax.annotation.Nullable
   public AccessKeyCredentials getKey() {
     return key;
   }
 
-
-  public void setKey(AccessKeyCredentials key) {
+  public void setKey(@javax.annotation.Nullable AccessKeyCredentials key) {
     this.key = key;
   }
 
@@ -207,12 +203,12 @@ public class Setup {
     openapiRequiredFields.add("username");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Setup
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Setup
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Setup.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -264,7 +260,12 @@ public class Setup {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -303,22 +304,22 @@ public class Setup {
     }
   }
 
- /**
-  * Create an instance of Setup given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Setup
-  * @throws IOException if the JSON string is invalid with respect to Setup
-  */
+  /**
+   * Create an instance of Setup given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Setup
+   * @throws IOException if the JSON string is invalid with respect to Setup
+   */
   public static Setup fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Setup.class);
   }
 
- /**
-  * Convert an instance of Setup to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Setup to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

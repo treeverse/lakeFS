@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,57 +48,55 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * AccessKeyCredentials
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class AccessKeyCredentials {
   public static final String SERIALIZED_NAME_ACCESS_KEY_ID = "access_key_id";
   @SerializedName(SERIALIZED_NAME_ACCESS_KEY_ID)
+  @javax.annotation.Nonnull
   private String accessKeyId;
 
   public static final String SERIALIZED_NAME_SECRET_ACCESS_KEY = "secret_access_key";
   @SerializedName(SERIALIZED_NAME_SECRET_ACCESS_KEY)
+  @javax.annotation.Nonnull
   private String secretAccessKey;
 
   public AccessKeyCredentials() {
   }
 
-  public AccessKeyCredentials accessKeyId(String accessKeyId) {
-    
+  public AccessKeyCredentials accessKeyId(@javax.annotation.Nonnull String accessKeyId) {
     this.accessKeyId = accessKeyId;
     return this;
   }
 
-   /**
+  /**
    * access key ID to set for user for use in integration testing.
    * @return accessKeyId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getAccessKeyId() {
     return accessKeyId;
   }
 
-
-  public void setAccessKeyId(String accessKeyId) {
+  public void setAccessKeyId(@javax.annotation.Nonnull String accessKeyId) {
     this.accessKeyId = accessKeyId;
   }
 
 
-  public AccessKeyCredentials secretAccessKey(String secretAccessKey) {
-    
+  public AccessKeyCredentials secretAccessKey(@javax.annotation.Nonnull String secretAccessKey) {
     this.secretAccessKey = secretAccessKey;
     return this;
   }
 
-   /**
+  /**
    * secret access key to set for user for use in integration testing.
    * @return secretAccessKey
-  **/
+   */
   @javax.annotation.Nonnull
   public String getSecretAccessKey() {
     return secretAccessKey;
   }
 
-
-  public void setSecretAccessKey(String secretAccessKey) {
+  public void setSecretAccessKey(@javax.annotation.Nonnull String secretAccessKey) {
     this.secretAccessKey = secretAccessKey;
   }
 
@@ -207,12 +203,12 @@ public class AccessKeyCredentials {
     openapiRequiredFields.add("secret_access_key");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to AccessKeyCredentials
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to AccessKeyCredentials
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!AccessKeyCredentials.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -263,7 +259,12 @@ public class AccessKeyCredentials {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -302,22 +303,22 @@ public class AccessKeyCredentials {
     }
   }
 
- /**
-  * Create an instance of AccessKeyCredentials given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of AccessKeyCredentials
-  * @throws IOException if the JSON string is invalid with respect to AccessKeyCredentials
-  */
+  /**
+   * Create an instance of AccessKeyCredentials given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of AccessKeyCredentials
+   * @throws IOException if the JSON string is invalid with respect to AccessKeyCredentials
+   */
   public static AccessKeyCredentials fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, AccessKeyCredentials.class);
   }
 
- /**
-  * Convert an instance of AccessKeyCredentials to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of AccessKeyCredentials to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

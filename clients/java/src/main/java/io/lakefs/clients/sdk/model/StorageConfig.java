@@ -39,12 +39,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -52,292 +50,281 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * StorageConfig
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class StorageConfig {
   public static final String SERIALIZED_NAME_BLOCKSTORE_TYPE = "blockstore_type";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_TYPE)
+  @javax.annotation.Nonnull
   private String blockstoreType;
 
   public static final String SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_EXAMPLE = "blockstore_namespace_example";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_EXAMPLE)
+  @javax.annotation.Nonnull
   private String blockstoreNamespaceExample;
 
   public static final String SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_VALIDITY_REGEX = "blockstore_namespace_ValidityRegex";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_NAMESPACE_VALIDITY_REGEX)
+  @javax.annotation.Nonnull
   private String blockstoreNamespaceValidityRegex;
 
   public static final String SERIALIZED_NAME_DEFAULT_NAMESPACE_PREFIX = "default_namespace_prefix";
   @SerializedName(SERIALIZED_NAME_DEFAULT_NAMESPACE_PREFIX)
+  @javax.annotation.Nullable
   private String defaultNamespacePrefix;
 
   public static final String SERIALIZED_NAME_PRE_SIGN_SUPPORT = "pre_sign_support";
   @SerializedName(SERIALIZED_NAME_PRE_SIGN_SUPPORT)
+  @javax.annotation.Nonnull
   private Boolean preSignSupport;
 
   public static final String SERIALIZED_NAME_PRE_SIGN_SUPPORT_UI = "pre_sign_support_ui";
   @SerializedName(SERIALIZED_NAME_PRE_SIGN_SUPPORT_UI)
+  @javax.annotation.Nonnull
   private Boolean preSignSupportUi;
 
   public static final String SERIALIZED_NAME_IMPORT_SUPPORT = "import_support";
   @SerializedName(SERIALIZED_NAME_IMPORT_SUPPORT)
+  @javax.annotation.Nonnull
   private Boolean importSupport;
 
   public static final String SERIALIZED_NAME_IMPORT_VALIDITY_REGEX = "import_validity_regex";
   @SerializedName(SERIALIZED_NAME_IMPORT_VALIDITY_REGEX)
+  @javax.annotation.Nonnull
   private String importValidityRegex;
 
   public static final String SERIALIZED_NAME_PRE_SIGN_MULTIPART_UPLOAD = "pre_sign_multipart_upload";
   @SerializedName(SERIALIZED_NAME_PRE_SIGN_MULTIPART_UPLOAD)
+  @javax.annotation.Nullable
   private Boolean preSignMultipartUpload;
 
   public static final String SERIALIZED_NAME_BLOCKSTORE_ID = "blockstore_id";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_ID)
+  @javax.annotation.Nullable
   private String blockstoreId;
 
   public static final String SERIALIZED_NAME_BLOCKSTORE_DESCRIPTION = "blockstore_description";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_DESCRIPTION)
+  @javax.annotation.Nullable
   private String blockstoreDescription;
 
   public static final String SERIALIZED_NAME_BLOCKSTORE_EXTRAS = "blockstore_extras";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_EXTRAS)
+  @javax.annotation.Nullable
   private Map<String, String> blockstoreExtras = new HashMap<>();
 
   public StorageConfig() {
   }
 
-  public StorageConfig blockstoreType(String blockstoreType) {
-    
+  public StorageConfig blockstoreType(@javax.annotation.Nonnull String blockstoreType) {
     this.blockstoreType = blockstoreType;
     return this;
   }
 
-   /**
+  /**
    * Get blockstoreType
    * @return blockstoreType
-  **/
+   */
   @javax.annotation.Nonnull
   public String getBlockstoreType() {
     return blockstoreType;
   }
 
-
-  public void setBlockstoreType(String blockstoreType) {
+  public void setBlockstoreType(@javax.annotation.Nonnull String blockstoreType) {
     this.blockstoreType = blockstoreType;
   }
 
 
-  public StorageConfig blockstoreNamespaceExample(String blockstoreNamespaceExample) {
-    
+  public StorageConfig blockstoreNamespaceExample(@javax.annotation.Nonnull String blockstoreNamespaceExample) {
     this.blockstoreNamespaceExample = blockstoreNamespaceExample;
     return this;
   }
 
-   /**
+  /**
    * Get blockstoreNamespaceExample
    * @return blockstoreNamespaceExample
-  **/
+   */
   @javax.annotation.Nonnull
   public String getBlockstoreNamespaceExample() {
     return blockstoreNamespaceExample;
   }
 
-
-  public void setBlockstoreNamespaceExample(String blockstoreNamespaceExample) {
+  public void setBlockstoreNamespaceExample(@javax.annotation.Nonnull String blockstoreNamespaceExample) {
     this.blockstoreNamespaceExample = blockstoreNamespaceExample;
   }
 
 
-  public StorageConfig blockstoreNamespaceValidityRegex(String blockstoreNamespaceValidityRegex) {
-    
+  public StorageConfig blockstoreNamespaceValidityRegex(@javax.annotation.Nonnull String blockstoreNamespaceValidityRegex) {
     this.blockstoreNamespaceValidityRegex = blockstoreNamespaceValidityRegex;
     return this;
   }
 
-   /**
+  /**
    * Get blockstoreNamespaceValidityRegex
    * @return blockstoreNamespaceValidityRegex
-  **/
+   */
   @javax.annotation.Nonnull
   public String getBlockstoreNamespaceValidityRegex() {
     return blockstoreNamespaceValidityRegex;
   }
 
-
-  public void setBlockstoreNamespaceValidityRegex(String blockstoreNamespaceValidityRegex) {
+  public void setBlockstoreNamespaceValidityRegex(@javax.annotation.Nonnull String blockstoreNamespaceValidityRegex) {
     this.blockstoreNamespaceValidityRegex = blockstoreNamespaceValidityRegex;
   }
 
 
-  public StorageConfig defaultNamespacePrefix(String defaultNamespacePrefix) {
-    
+  public StorageConfig defaultNamespacePrefix(@javax.annotation.Nullable String defaultNamespacePrefix) {
     this.defaultNamespacePrefix = defaultNamespacePrefix;
     return this;
   }
 
-   /**
+  /**
    * Get defaultNamespacePrefix
    * @return defaultNamespacePrefix
-  **/
+   */
   @javax.annotation.Nullable
   public String getDefaultNamespacePrefix() {
     return defaultNamespacePrefix;
   }
 
-
-  public void setDefaultNamespacePrefix(String defaultNamespacePrefix) {
+  public void setDefaultNamespacePrefix(@javax.annotation.Nullable String defaultNamespacePrefix) {
     this.defaultNamespacePrefix = defaultNamespacePrefix;
   }
 
 
-  public StorageConfig preSignSupport(Boolean preSignSupport) {
-    
+  public StorageConfig preSignSupport(@javax.annotation.Nonnull Boolean preSignSupport) {
     this.preSignSupport = preSignSupport;
     return this;
   }
 
-   /**
+  /**
    * Get preSignSupport
    * @return preSignSupport
-  **/
+   */
   @javax.annotation.Nonnull
   public Boolean getPreSignSupport() {
     return preSignSupport;
   }
 
-
-  public void setPreSignSupport(Boolean preSignSupport) {
+  public void setPreSignSupport(@javax.annotation.Nonnull Boolean preSignSupport) {
     this.preSignSupport = preSignSupport;
   }
 
 
-  public StorageConfig preSignSupportUi(Boolean preSignSupportUi) {
-    
+  public StorageConfig preSignSupportUi(@javax.annotation.Nonnull Boolean preSignSupportUi) {
     this.preSignSupportUi = preSignSupportUi;
     return this;
   }
 
-   /**
+  /**
    * Get preSignSupportUi
    * @return preSignSupportUi
-  **/
+   */
   @javax.annotation.Nonnull
   public Boolean getPreSignSupportUi() {
     return preSignSupportUi;
   }
 
-
-  public void setPreSignSupportUi(Boolean preSignSupportUi) {
+  public void setPreSignSupportUi(@javax.annotation.Nonnull Boolean preSignSupportUi) {
     this.preSignSupportUi = preSignSupportUi;
   }
 
 
-  public StorageConfig importSupport(Boolean importSupport) {
-    
+  public StorageConfig importSupport(@javax.annotation.Nonnull Boolean importSupport) {
     this.importSupport = importSupport;
     return this;
   }
 
-   /**
+  /**
    * Get importSupport
    * @return importSupport
-  **/
+   */
   @javax.annotation.Nonnull
   public Boolean getImportSupport() {
     return importSupport;
   }
 
-
-  public void setImportSupport(Boolean importSupport) {
+  public void setImportSupport(@javax.annotation.Nonnull Boolean importSupport) {
     this.importSupport = importSupport;
   }
 
 
-  public StorageConfig importValidityRegex(String importValidityRegex) {
-    
+  public StorageConfig importValidityRegex(@javax.annotation.Nonnull String importValidityRegex) {
     this.importValidityRegex = importValidityRegex;
     return this;
   }
 
-   /**
+  /**
    * Get importValidityRegex
    * @return importValidityRegex
-  **/
+   */
   @javax.annotation.Nonnull
   public String getImportValidityRegex() {
     return importValidityRegex;
   }
 
-
-  public void setImportValidityRegex(String importValidityRegex) {
+  public void setImportValidityRegex(@javax.annotation.Nonnull String importValidityRegex) {
     this.importValidityRegex = importValidityRegex;
   }
 
 
-  public StorageConfig preSignMultipartUpload(Boolean preSignMultipartUpload) {
-    
+  public StorageConfig preSignMultipartUpload(@javax.annotation.Nullable Boolean preSignMultipartUpload) {
     this.preSignMultipartUpload = preSignMultipartUpload;
     return this;
   }
 
-   /**
+  /**
    * Get preSignMultipartUpload
    * @return preSignMultipartUpload
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getPreSignMultipartUpload() {
     return preSignMultipartUpload;
   }
 
-
-  public void setPreSignMultipartUpload(Boolean preSignMultipartUpload) {
+  public void setPreSignMultipartUpload(@javax.annotation.Nullable Boolean preSignMultipartUpload) {
     this.preSignMultipartUpload = preSignMultipartUpload;
   }
 
 
-  public StorageConfig blockstoreId(String blockstoreId) {
-    
+  public StorageConfig blockstoreId(@javax.annotation.Nullable String blockstoreId) {
     this.blockstoreId = blockstoreId;
     return this;
   }
 
-   /**
+  /**
    * Get blockstoreId
    * @return blockstoreId
-  **/
+   */
   @javax.annotation.Nullable
   public String getBlockstoreId() {
     return blockstoreId;
   }
 
-
-  public void setBlockstoreId(String blockstoreId) {
+  public void setBlockstoreId(@javax.annotation.Nullable String blockstoreId) {
     this.blockstoreId = blockstoreId;
   }
 
 
-  public StorageConfig blockstoreDescription(String blockstoreDescription) {
-    
+  public StorageConfig blockstoreDescription(@javax.annotation.Nullable String blockstoreDescription) {
     this.blockstoreDescription = blockstoreDescription;
     return this;
   }
 
-   /**
+  /**
    * Get blockstoreDescription
    * @return blockstoreDescription
-  **/
+   */
   @javax.annotation.Nullable
   public String getBlockstoreDescription() {
     return blockstoreDescription;
   }
 
-
-  public void setBlockstoreDescription(String blockstoreDescription) {
+  public void setBlockstoreDescription(@javax.annotation.Nullable String blockstoreDescription) {
     this.blockstoreDescription = blockstoreDescription;
   }
 
 
-  public StorageConfig blockstoreExtras(Map<String, String> blockstoreExtras) {
-    
+  public StorageConfig blockstoreExtras(@javax.annotation.Nullable Map<String, String> blockstoreExtras) {
     this.blockstoreExtras = blockstoreExtras;
     return this;
   }
@@ -350,17 +337,16 @@ public class StorageConfig {
     return this;
   }
 
-   /**
+  /**
    * blockstore specific properties
    * @return blockstoreExtras
-  **/
+   */
   @javax.annotation.Nullable
   public Map<String, String> getBlockstoreExtras() {
     return blockstoreExtras;
   }
 
-
-  public void setBlockstoreExtras(Map<String, String> blockstoreExtras) {
+  public void setBlockstoreExtras(@javax.annotation.Nullable Map<String, String> blockstoreExtras) {
     this.blockstoreExtras = blockstoreExtras;
   }
 
@@ -502,12 +488,12 @@ public class StorageConfig {
     openapiRequiredFields.add("import_validity_regex");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to StorageConfig
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to StorageConfig
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!StorageConfig.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -573,7 +559,12 @@ public class StorageConfig {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -612,22 +603,22 @@ public class StorageConfig {
     }
   }
 
- /**
-  * Create an instance of StorageConfig given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of StorageConfig
-  * @throws IOException if the JSON string is invalid with respect to StorageConfig
-  */
+  /**
+   * Create an instance of StorageConfig given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of StorageConfig
+   * @throws IOException if the JSON string is invalid with respect to StorageConfig
+   */
   public static StorageConfig fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, StorageConfig.class);
   }
 
- /**
-  * Convert an instance of StorageConfig to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of StorageConfig to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

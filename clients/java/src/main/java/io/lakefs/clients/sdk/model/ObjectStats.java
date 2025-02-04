@@ -39,12 +39,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -52,10 +50,11 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ObjectStats
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class ObjectStats {
   public static final String SERIALIZED_NAME_PATH = "path";
   @SerializedName(SERIALIZED_NAME_PATH)
+  @javax.annotation.Nonnull
   private String path;
 
   /**
@@ -103,192 +102,190 @@ public class ObjectStats {
         return PathTypeEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      PathTypeEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_PATH_TYPE = "path_type";
   @SerializedName(SERIALIZED_NAME_PATH_TYPE)
+  @javax.annotation.Nonnull
   private PathTypeEnum pathType;
 
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
+  @javax.annotation.Nonnull
   private String physicalAddress;
 
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS_EXPIRY = "physical_address_expiry";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS_EXPIRY)
+  @javax.annotation.Nullable
   private Long physicalAddressExpiry;
 
   public static final String SERIALIZED_NAME_CHECKSUM = "checksum";
   @SerializedName(SERIALIZED_NAME_CHECKSUM)
+  @javax.annotation.Nonnull
   private String checksum;
 
   public static final String SERIALIZED_NAME_SIZE_BYTES = "size_bytes";
   @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
+  @javax.annotation.Nullable
   private Long sizeBytes;
 
   public static final String SERIALIZED_NAME_MTIME = "mtime";
   @SerializedName(SERIALIZED_NAME_MTIME)
+  @javax.annotation.Nonnull
   private Long mtime;
 
   public static final String SERIALIZED_NAME_METADATA = "metadata";
   @SerializedName(SERIALIZED_NAME_METADATA)
+  @javax.annotation.Nullable
   private Map<String, String> metadata = new HashMap<>();
 
   public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
+  @javax.annotation.Nullable
   private String contentType;
 
   public ObjectStats() {
   }
 
-  public ObjectStats path(String path) {
-    
+  public ObjectStats path(@javax.annotation.Nonnull String path) {
     this.path = path;
     return this;
   }
 
-   /**
+  /**
    * Get path
    * @return path
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPath() {
     return path;
   }
 
-
-  public void setPath(String path) {
+  public void setPath(@javax.annotation.Nonnull String path) {
     this.path = path;
   }
 
 
-  public ObjectStats pathType(PathTypeEnum pathType) {
-    
+  public ObjectStats pathType(@javax.annotation.Nonnull PathTypeEnum pathType) {
     this.pathType = pathType;
     return this;
   }
 
-   /**
+  /**
    * Get pathType
    * @return pathType
-  **/
+   */
   @javax.annotation.Nonnull
   public PathTypeEnum getPathType() {
     return pathType;
   }
 
-
-  public void setPathType(PathTypeEnum pathType) {
+  public void setPathType(@javax.annotation.Nonnull PathTypeEnum pathType) {
     this.pathType = pathType;
   }
 
 
-  public ObjectStats physicalAddress(String physicalAddress) {
-    
+  public ObjectStats physicalAddress(@javax.annotation.Nonnull String physicalAddress) {
     this.physicalAddress = physicalAddress;
     return this;
   }
 
-   /**
+  /**
    * The location of the object on the underlying object store. Formatted as a native URI with the object store type as scheme (\&quot;s3://...\&quot;, \&quot;gs://...\&quot;, etc.) Or, in the case of presign&#x3D;true, will be an HTTP URL to be consumed via regular HTTP GET 
    * @return physicalAddress
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPhysicalAddress() {
     return physicalAddress;
   }
 
-
-  public void setPhysicalAddress(String physicalAddress) {
+  public void setPhysicalAddress(@javax.annotation.Nonnull String physicalAddress) {
     this.physicalAddress = physicalAddress;
   }
 
 
-  public ObjectStats physicalAddressExpiry(Long physicalAddressExpiry) {
-    
+  public ObjectStats physicalAddressExpiry(@javax.annotation.Nullable Long physicalAddressExpiry) {
     this.physicalAddressExpiry = physicalAddressExpiry;
     return this;
   }
 
-   /**
+  /**
    * If present and nonzero, physical_address is a pre-signed URL and will expire at this Unix Epoch time.  This will be shorter than the pre-signed URL lifetime if an authentication token is about to expire.  This field is *optional*. 
    * @return physicalAddressExpiry
-  **/
+   */
   @javax.annotation.Nullable
   public Long getPhysicalAddressExpiry() {
     return physicalAddressExpiry;
   }
 
-
-  public void setPhysicalAddressExpiry(Long physicalAddressExpiry) {
+  public void setPhysicalAddressExpiry(@javax.annotation.Nullable Long physicalAddressExpiry) {
     this.physicalAddressExpiry = physicalAddressExpiry;
   }
 
 
-  public ObjectStats checksum(String checksum) {
-    
+  public ObjectStats checksum(@javax.annotation.Nonnull String checksum) {
     this.checksum = checksum;
     return this;
   }
 
-   /**
+  /**
    * Get checksum
    * @return checksum
-  **/
+   */
   @javax.annotation.Nonnull
   public String getChecksum() {
     return checksum;
   }
 
-
-  public void setChecksum(String checksum) {
+  public void setChecksum(@javax.annotation.Nonnull String checksum) {
     this.checksum = checksum;
   }
 
 
-  public ObjectStats sizeBytes(Long sizeBytes) {
-    
+  public ObjectStats sizeBytes(@javax.annotation.Nullable Long sizeBytes) {
     this.sizeBytes = sizeBytes;
     return this;
   }
 
-   /**
+  /**
    * The number of bytes in the object.  lakeFS always populates this field when returning ObjectStats.  This field is optional _for the client_ to supply, for instance on upload. 
    * @return sizeBytes
-  **/
+   */
   @javax.annotation.Nullable
   public Long getSizeBytes() {
     return sizeBytes;
   }
 
-
-  public void setSizeBytes(Long sizeBytes) {
+  public void setSizeBytes(@javax.annotation.Nullable Long sizeBytes) {
     this.sizeBytes = sizeBytes;
   }
 
 
-  public ObjectStats mtime(Long mtime) {
-    
+  public ObjectStats mtime(@javax.annotation.Nonnull Long mtime) {
     this.mtime = mtime;
     return this;
   }
 
-   /**
+  /**
    * Unix Epoch in seconds
    * @return mtime
-  **/
+   */
   @javax.annotation.Nonnull
   public Long getMtime() {
     return mtime;
   }
 
-
-  public void setMtime(Long mtime) {
+  public void setMtime(@javax.annotation.Nonnull Long mtime) {
     this.mtime = mtime;
   }
 
 
-  public ObjectStats metadata(Map<String, String> metadata) {
-    
+  public ObjectStats metadata(@javax.annotation.Nullable Map<String, String> metadata) {
     this.metadata = metadata;
     return this;
   }
@@ -301,38 +298,35 @@ public class ObjectStats {
     return this;
   }
 
-   /**
+  /**
    * Get metadata
    * @return metadata
-  **/
+   */
   @javax.annotation.Nullable
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-
-  public void setMetadata(Map<String, String> metadata) {
+  public void setMetadata(@javax.annotation.Nullable Map<String, String> metadata) {
     this.metadata = metadata;
   }
 
 
-  public ObjectStats contentType(String contentType) {
-    
+  public ObjectStats contentType(@javax.annotation.Nullable String contentType) {
     this.contentType = contentType;
     return this;
   }
 
-   /**
+  /**
    * Object media type
    * @return contentType
-  **/
+   */
   @javax.annotation.Nullable
   public String getContentType() {
     return contentType;
   }
 
-
-  public void setContentType(String contentType) {
+  public void setContentType(@javax.annotation.Nullable String contentType) {
     this.contentType = contentType;
   }
 
@@ -463,12 +457,12 @@ public class ObjectStats {
     openapiRequiredFields.add("mtime");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ObjectStats
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ObjectStats
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ObjectStats.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -489,6 +483,8 @@ public class ObjectStats {
       if (!jsonObj.get("path_type").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `path_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path_type").toString()));
       }
+      // validate the required field `path_type`
+      PathTypeEnum.validateJsonElement(jsonObj.get("path_type"));
       if (!jsonObj.get("physical_address").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `physical_address` to be a primitive type in the JSON string but got `%s`", jsonObj.get("physical_address").toString()));
       }
@@ -528,7 +524,12 @@ public class ObjectStats {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -567,22 +568,22 @@ public class ObjectStats {
     }
   }
 
- /**
-  * Create an instance of ObjectStats given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ObjectStats
-  * @throws IOException if the JSON string is invalid with respect to ObjectStats
-  */
+  /**
+   * Create an instance of ObjectStats given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ObjectStats
+   * @throws IOException if the JSON string is invalid with respect to ObjectStats
+   */
   public static ObjectStats fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ObjectStats.class);
   }
 
- /**
-  * Convert an instance of ObjectStats to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ObjectStats to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

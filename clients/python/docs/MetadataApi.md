@@ -22,8 +22,6 @@ return URI to a meta-range file
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.storage_uri import StorageURI
 from lakefs_sdk.rest import ApiException
@@ -134,8 +132,6 @@ return URI to a range file
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.storage_uri import StorageURI
 from lakefs_sdk.rest import ApiException

@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,57 +48,55 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Credentials
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class Credentials {
   public static final String SERIALIZED_NAME_ACCESS_KEY_ID = "access_key_id";
   @SerializedName(SERIALIZED_NAME_ACCESS_KEY_ID)
+  @javax.annotation.Nonnull
   private String accessKeyId;
 
   public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
+  @javax.annotation.Nonnull
   private Long creationDate;
 
   public Credentials() {
   }
 
-  public Credentials accessKeyId(String accessKeyId) {
-    
+  public Credentials accessKeyId(@javax.annotation.Nonnull String accessKeyId) {
     this.accessKeyId = accessKeyId;
     return this;
   }
 
-   /**
+  /**
    * Get accessKeyId
    * @return accessKeyId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getAccessKeyId() {
     return accessKeyId;
   }
 
-
-  public void setAccessKeyId(String accessKeyId) {
+  public void setAccessKeyId(@javax.annotation.Nonnull String accessKeyId) {
     this.accessKeyId = accessKeyId;
   }
 
 
-  public Credentials creationDate(Long creationDate) {
-    
+  public Credentials creationDate(@javax.annotation.Nonnull Long creationDate) {
     this.creationDate = creationDate;
     return this;
   }
 
-   /**
+  /**
    * Unix Epoch in seconds
    * @return creationDate
-  **/
+   */
   @javax.annotation.Nonnull
   public Long getCreationDate() {
     return creationDate;
   }
 
-
-  public void setCreationDate(Long creationDate) {
+  public void setCreationDate(@javax.annotation.Nonnull Long creationDate) {
     this.creationDate = creationDate;
   }
 
@@ -207,12 +203,12 @@ public class Credentials {
     openapiRequiredFields.add("creation_date");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Credentials
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Credentials
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Credentials.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -260,7 +256,12 @@ public class Credentials {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -299,22 +300,22 @@ public class Credentials {
     }
   }
 
- /**
-  * Create an instance of Credentials given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Credentials
-  * @throws IOException if the JSON string is invalid with respect to Credentials
-  */
+  /**
+   * Create an instance of Credentials given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Credentials
+   * @throws IOException if the JSON string is invalid with respect to Credentials
+   */
   public static Credentials fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Credentials.class);
   }
 
- /**
-  * Convert an instance of Credentials to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Credentials to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

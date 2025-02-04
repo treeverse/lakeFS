@@ -2,6 +2,7 @@
 
 lakeFS API
 - API version: 1.0.0
+  - Generator version: 7.11.0
 
 lakeFS HTTP API
 
@@ -83,7 +84,7 @@ import io.lakefs.clients.sdk.ApiClient;
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.Configuration;
 import io.lakefs.clients.sdk.auth.*;
-import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.model.*;
 import io.lakefs.clients.sdk.ActionsApi;
 
 public class Example {

@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,7 +48,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ImportLocation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class ImportLocation {
   /**
    * Path type, can either be &#39;common_prefix&#39; or &#39;object&#39;
@@ -97,82 +95,84 @@ public class ImportLocation {
         return TypeEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      TypeEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_TYPE = "type";
   @SerializedName(SERIALIZED_NAME_TYPE)
+  @javax.annotation.Nonnull
   private TypeEnum type;
 
   public static final String SERIALIZED_NAME_PATH = "path";
   @SerializedName(SERIALIZED_NAME_PATH)
+  @javax.annotation.Nonnull
   private String path;
 
   public static final String SERIALIZED_NAME_DESTINATION = "destination";
   @SerializedName(SERIALIZED_NAME_DESTINATION)
+  @javax.annotation.Nonnull
   private String destination;
 
   public ImportLocation() {
   }
 
-  public ImportLocation type(TypeEnum type) {
-    
+  public ImportLocation type(@javax.annotation.Nonnull TypeEnum type) {
     this.type = type;
     return this;
   }
 
-   /**
+  /**
    * Path type, can either be &#39;common_prefix&#39; or &#39;object&#39;
    * @return type
-  **/
+   */
   @javax.annotation.Nonnull
   public TypeEnum getType() {
     return type;
   }
 
-
-  public void setType(TypeEnum type) {
+  public void setType(@javax.annotation.Nonnull TypeEnum type) {
     this.type = type;
   }
 
 
-  public ImportLocation path(String path) {
-    
+  public ImportLocation path(@javax.annotation.Nonnull String path) {
     this.path = path;
     return this;
   }
 
-   /**
+  /**
    * A source location to a &#39;common_prefix&#39; or to a single object. Must match the lakeFS installation blockstore type.
    * @return path
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPath() {
     return path;
   }
 
-
-  public void setPath(String path) {
+  public void setPath(@javax.annotation.Nonnull String path) {
     this.path = path;
   }
 
 
-  public ImportLocation destination(String destination) {
-    
+  public ImportLocation destination(@javax.annotation.Nonnull String destination) {
     this.destination = destination;
     return this;
   }
 
-   /**
+  /**
    * Destination for the imported objects on the branch. Must be a relative path to the branch. If the type is an &#39;object&#39;, the destination is the exact object name under the branch. If the type is a &#39;common_prefix&#39;, the destination is the prefix under the branch. 
    * @return destination
-  **/
+   */
   @javax.annotation.Nonnull
   public String getDestination() {
     return destination;
   }
 
-
-  public void setDestination(String destination) {
+  public void setDestination(@javax.annotation.Nonnull String destination) {
     this.destination = destination;
   }
 
@@ -283,12 +283,12 @@ public class ImportLocation {
     openapiRequiredFields.add("destination");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ImportLocation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ImportLocation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ImportLocation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -306,6 +306,8 @@ public class ImportLocation {
       if (!jsonObj.get("type").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("type").toString()));
       }
+      // validate the required field `type`
+      TypeEnum.validateJsonElement(jsonObj.get("type"));
       if (!jsonObj.get("path").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `path` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path").toString()));
       }
@@ -342,7 +344,12 @@ public class ImportLocation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -381,22 +388,22 @@ public class ImportLocation {
     }
   }
 
- /**
-  * Create an instance of ImportLocation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ImportLocation
-  * @throws IOException if the JSON string is invalid with respect to ImportLocation
-  */
+  /**
+   * Create an instance of ImportLocation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ImportLocation
+   * @throws IOException if the JSON string is invalid with respect to ImportLocation
+   */
   public static ImportLocation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ImportLocation.class);
   }
 
- /**
-  * Convert an instance of ImportLocation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ImportLocation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

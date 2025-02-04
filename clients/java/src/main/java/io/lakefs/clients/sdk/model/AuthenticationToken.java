@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,57 +48,55 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * AuthenticationToken
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class AuthenticationToken {
   public static final String SERIALIZED_NAME_TOKEN = "token";
   @SerializedName(SERIALIZED_NAME_TOKEN)
+  @javax.annotation.Nonnull
   private String token;
 
   public static final String SERIALIZED_NAME_TOKEN_EXPIRATION = "token_expiration";
   @SerializedName(SERIALIZED_NAME_TOKEN_EXPIRATION)
+  @javax.annotation.Nullable
   private Long tokenExpiration;
 
   public AuthenticationToken() {
   }
 
-  public AuthenticationToken token(String token) {
-    
+  public AuthenticationToken token(@javax.annotation.Nonnull String token) {
     this.token = token;
     return this;
   }
 
-   /**
+  /**
    * a JWT token that could be used to authenticate requests
    * @return token
-  **/
+   */
   @javax.annotation.Nonnull
   public String getToken() {
     return token;
   }
 
-
-  public void setToken(String token) {
+  public void setToken(@javax.annotation.Nonnull String token) {
     this.token = token;
   }
 
 
-  public AuthenticationToken tokenExpiration(Long tokenExpiration) {
-    
+  public AuthenticationToken tokenExpiration(@javax.annotation.Nullable Long tokenExpiration) {
     this.tokenExpiration = tokenExpiration;
     return this;
   }
 
-   /**
+  /**
    * Unix Epoch in seconds
    * @return tokenExpiration
-  **/
+   */
   @javax.annotation.Nullable
   public Long getTokenExpiration() {
     return tokenExpiration;
   }
 
-
-  public void setTokenExpiration(Long tokenExpiration) {
+  public void setTokenExpiration(@javax.annotation.Nullable Long tokenExpiration) {
     this.tokenExpiration = tokenExpiration;
   }
 
@@ -206,12 +202,12 @@ public class AuthenticationToken {
     openapiRequiredFields.add("token");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to AuthenticationToken
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to AuthenticationToken
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!AuthenticationToken.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -259,7 +255,12 @@ public class AuthenticationToken {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -298,22 +299,22 @@ public class AuthenticationToken {
     }
   }
 
- /**
-  * Create an instance of AuthenticationToken given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of AuthenticationToken
-  * @throws IOException if the JSON string is invalid with respect to AuthenticationToken
-  */
+  /**
+   * Create an instance of AuthenticationToken given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of AuthenticationToken
+   * @throws IOException if the JSON string is invalid with respect to AuthenticationToken
+   */
   public static AuthenticationToken fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, AuthenticationToken.class);
   }
 
- /**
-  * Convert an instance of AuthenticationToken to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of AuthenticationToken to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

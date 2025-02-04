@@ -23,8 +23,6 @@ retrieve lakeFS configuration
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.config import Config
 from lakefs_sdk.rest import ApiException

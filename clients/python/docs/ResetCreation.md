@@ -19,12 +19,12 @@ json = "{}"
 # create an instance of ResetCreation from a JSON string
 reset_creation_instance = ResetCreation.from_json(json)
 # print the JSON string representation of the object
-print ResetCreation.to_json()
+print(ResetCreation.to_json())
 
 # convert the object into a dict
 reset_creation_dict = reset_creation_instance.to_dict()
 # create an instance of ResetCreation from a dict
-reset_creation_form_dict = reset_creation.from_dict(reset_creation_dict)
+reset_creation_from_dict = ResetCreation.from_dict(reset_creation_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

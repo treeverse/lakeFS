@@ -18,75 +18,92 @@ import pprint
 import re  # noqa: F401
 import json
 
-
-from typing import Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr, constr, validator
+    from pydantic.v1 import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 except ImportError:
-    from pydantic import BaseModel, Field, StrictBool, StrictStr, constr, validator
+    from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
+from typing import Optional, Set
+from typing_extensions import Self
 
 class RepositoryCreation(BaseModel):
     """
     RepositoryCreation
-    """
-    name: constr(strict=True) = Field(...)
-    storage_id: Optional[StrictStr] = Field(None, description="Unique identifier of the underlying data store. *EXPERIMENTAL*")
-    storage_namespace: constr(strict=True) = Field(..., description="Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")")
+    """ # noqa: E501
+    name: Annotated[str, Field(strict=True)]
+    storage_id: Optional[StrictStr] = Field(default=None, description="Unique identifier of the underlying data store. *EXPERIMENTAL*")
+    storage_namespace: Annotated[str, Field(strict=True)] = Field(description="Filesystem URI to store the underlying data in (e.g. \"s3://my-bucket/some/path/\")")
     default_branch: Optional[StrictStr] = None
     sample_data: Optional[StrictBool] = False
     read_only: Optional[StrictBool] = False
-    __properties = ["name", "storage_id", "storage_namespace", "default_branch", "sample_data", "read_only"]
+    __properties: ClassVar[List[str]] = ["name", "storage_id", "storage_namespace", "default_branch", "sample_data", "read_only"]
 
-    @validator('name')
+    @field_validator('name')
     def name_validate_regular_expression(cls, value):
         """Validates the regular expression"""
         if not re.match(r"^[a-z0-9][a-z0-9-]{2,62}$", value):
             raise ValueError(r"must validate the regular expression /^[a-z0-9][a-z0-9-]{2,62}$/")
         return value
 
-    @validator('storage_namespace')
+    @field_validator('storage_namespace')
     def storage_namespace_validate_regular_expression(cls, value):
         """Validates the regular expression"""
         if not re.match(r"^(s3|gs|https?|mem|local|transient):\/\/.*$", value):
             raise ValueError(r"must validate the regular expression /^(s3|gs|https?|mem|local|transient):\/\/.*$/")
         return value
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        protected_namespaces=(),
+    )
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> RepositoryCreation:
+    def from_json(cls, json_str: str) -> Optional[Self]:
         """Create an instance of RepositoryCreation from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        excluded_fields: Set[str] = set([
+        ])
+
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude=excluded_fields,
+            exclude_none=True,
+        )
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> RepositoryCreation:
+    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
         """Create an instance of RepositoryCreation from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return RepositoryCreation.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = RepositoryCreation.parse_obj({
+        _obj = cls.model_validate({
             "name": obj.get("name"),
             "storage_id": obj.get("storage_id"),
             "storage_namespace": obj.get("storage_namespace"),

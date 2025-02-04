@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,57 +48,55 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ErrorNoACL
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class ErrorNoACL {
   public static final String SERIALIZED_NAME_MESSAGE = "message";
   @SerializedName(SERIALIZED_NAME_MESSAGE)
+  @javax.annotation.Nonnull
   private String message;
 
   public static final String SERIALIZED_NAME_NO_ACL = "no_acl";
   @SerializedName(SERIALIZED_NAME_NO_ACL)
+  @javax.annotation.Nullable
   private Boolean noAcl;
 
   public ErrorNoACL() {
   }
 
-  public ErrorNoACL message(String message) {
-    
+  public ErrorNoACL message(@javax.annotation.Nonnull String message) {
     this.message = message;
     return this;
   }
 
-   /**
+  /**
    * short message explaining the error
    * @return message
-  **/
+   */
   @javax.annotation.Nonnull
   public String getMessage() {
     return message;
   }
 
-
-  public void setMessage(String message) {
+  public void setMessage(@javax.annotation.Nonnull String message) {
     this.message = message;
   }
 
 
-  public ErrorNoACL noAcl(Boolean noAcl) {
-    
+  public ErrorNoACL noAcl(@javax.annotation.Nullable Boolean noAcl) {
     this.noAcl = noAcl;
     return this;
   }
 
-   /**
+  /**
    * true if the group exists but has no ACL
    * @return noAcl
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getNoAcl() {
     return noAcl;
   }
 
-
-  public void setNoAcl(Boolean noAcl) {
+  public void setNoAcl(@javax.annotation.Nullable Boolean noAcl) {
     this.noAcl = noAcl;
   }
 
@@ -206,12 +202,12 @@ public class ErrorNoACL {
     openapiRequiredFields.add("message");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ErrorNoACL
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ErrorNoACL
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ErrorNoACL.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -259,7 +255,12 @@ public class ErrorNoACL {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -298,22 +299,22 @@ public class ErrorNoACL {
     }
   }
 
- /**
-  * Create an instance of ErrorNoACL given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ErrorNoACL
-  * @throws IOException if the JSON string is invalid with respect to ErrorNoACL
-  */
+  /**
+   * Create an instance of ErrorNoACL given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ErrorNoACL
+   * @throws IOException if the JSON string is invalid with respect to ErrorNoACL
+   */
   public static ErrorNoACL fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ErrorNoACL.class);
   }
 
- /**
-  * Convert an instance of ErrorNoACL to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ErrorNoACL to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

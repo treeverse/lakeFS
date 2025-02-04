@@ -38,12 +38,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -51,32 +49,31 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * UnderlyingObjectProperties
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class UnderlyingObjectProperties {
   public static final String SERIALIZED_NAME_STORAGE_CLASS = "storage_class";
   @SerializedName(SERIALIZED_NAME_STORAGE_CLASS)
+  @javax.annotation.Nullable
   private String storageClass;
 
   public UnderlyingObjectProperties() {
   }
 
-  public UnderlyingObjectProperties storageClass(String storageClass) {
-    
+  public UnderlyingObjectProperties storageClass(@javax.annotation.Nullable String storageClass) {
     this.storageClass = storageClass;
     return this;
   }
 
-   /**
+  /**
    * Get storageClass
    * @return storageClass
-  **/
+   */
   @javax.annotation.Nullable
   public String getStorageClass() {
     return storageClass;
   }
 
-
-  public void setStorageClass(String storageClass) {
+  public void setStorageClass(@javax.annotation.Nullable String storageClass) {
     this.storageClass = storageClass;
   }
 
@@ -189,12 +186,12 @@ public class UnderlyingObjectProperties {
     openapiRequiredFields = new HashSet<String>();
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to UnderlyingObjectProperties
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to UnderlyingObjectProperties
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!UnderlyingObjectProperties.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -235,7 +232,12 @@ public class UnderlyingObjectProperties {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -274,22 +276,22 @@ public class UnderlyingObjectProperties {
     }
   }
 
- /**
-  * Create an instance of UnderlyingObjectProperties given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of UnderlyingObjectProperties
-  * @throws IOException if the JSON string is invalid with respect to UnderlyingObjectProperties
-  */
+  /**
+   * Create an instance of UnderlyingObjectProperties given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of UnderlyingObjectProperties
+   * @throws IOException if the JSON string is invalid with respect to UnderlyingObjectProperties
+   */
   public static UnderlyingObjectProperties fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, UnderlyingObjectProperties.class);
   }
 
- /**
-  * Convert an instance of UnderlyingObjectProperties to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of UnderlyingObjectProperties to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

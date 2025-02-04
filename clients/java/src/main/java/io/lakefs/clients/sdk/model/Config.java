@@ -41,12 +41,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -54,67 +52,65 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Config
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class Config {
   public static final String SERIALIZED_NAME_VERSION_CONFIG = "version_config";
   @SerializedName(SERIALIZED_NAME_VERSION_CONFIG)
+  @javax.annotation.Nullable
   private VersionConfig versionConfig;
 
   public static final String SERIALIZED_NAME_STORAGE_CONFIG = "storage_config";
   @SerializedName(SERIALIZED_NAME_STORAGE_CONFIG)
+  @javax.annotation.Nullable
   private StorageConfig storageConfig;
 
   public static final String SERIALIZED_NAME_STORAGE_CONFIG_LIST = "storage_config_list";
   @SerializedName(SERIALIZED_NAME_STORAGE_CONFIG_LIST)
-  private List<StorageConfig> storageConfigList;
+  @javax.annotation.Nullable
+  private List<StorageConfig> storageConfigList = new ArrayList<>();
 
   public Config() {
   }
 
-  public Config versionConfig(VersionConfig versionConfig) {
-    
+  public Config versionConfig(@javax.annotation.Nullable VersionConfig versionConfig) {
     this.versionConfig = versionConfig;
     return this;
   }
 
-   /**
+  /**
    * Get versionConfig
    * @return versionConfig
-  **/
+   */
   @javax.annotation.Nullable
   public VersionConfig getVersionConfig() {
     return versionConfig;
   }
 
-
-  public void setVersionConfig(VersionConfig versionConfig) {
+  public void setVersionConfig(@javax.annotation.Nullable VersionConfig versionConfig) {
     this.versionConfig = versionConfig;
   }
 
 
-  public Config storageConfig(StorageConfig storageConfig) {
-    
+  public Config storageConfig(@javax.annotation.Nullable StorageConfig storageConfig) {
     this.storageConfig = storageConfig;
     return this;
   }
 
-   /**
+  /**
    * Get storageConfig
    * @return storageConfig
-  **/
+   */
   @javax.annotation.Nullable
   public StorageConfig getStorageConfig() {
     return storageConfig;
   }
 
-
-  public void setStorageConfig(StorageConfig storageConfig) {
+  public void setStorageConfig(@javax.annotation.Nullable StorageConfig storageConfig) {
     this.storageConfig = storageConfig;
   }
 
 
-  public Config storageConfigList(List<StorageConfig> storageConfigList) {
-    
+  public Config storageConfigList(@javax.annotation.Nullable List<StorageConfig> storageConfigList) {
     this.storageConfigList = storageConfigList;
     return this;
   }
@@ -127,17 +123,16 @@ public class Config {
     return this;
   }
 
-   /**
+  /**
    * Get storageConfigList
    * @return storageConfigList
-  **/
+   */
   @javax.annotation.Nullable
   public List<StorageConfig> getStorageConfigList() {
     return storageConfigList;
   }
 
-
-  public void setStorageConfigList(List<StorageConfig> storageConfigList) {
+  public void setStorageConfigList(@javax.annotation.Nullable List<StorageConfig> storageConfigList) {
     this.storageConfigList = storageConfigList;
   }
 
@@ -245,12 +240,12 @@ public class Config {
     openapiRequiredFields = new HashSet<String>();
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Config
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Config
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Config.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -310,7 +305,12 @@ public class Config {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -349,22 +349,22 @@ public class Config {
     }
   }
 
- /**
-  * Create an instance of Config given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Config
-  * @throws IOException if the JSON string is invalid with respect to Config
-  */
+  /**
+   * Create an instance of Config given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Config
+   * @throws IOException if the JSON string is invalid with respect to Config
+   */
   public static Config fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Config.class);
   }
 
- /**
-  * Convert an instance of Config to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Config to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
 
 class TestCredentialsWithSecret(unittest.TestCase):
     """CredentialsWithSecret unit test stubs"""
@@ -29,21 +26,21 @@ class TestCredentialsWithSecret(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> CredentialsWithSecret:
         """Test CredentialsWithSecret
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `CredentialsWithSecret`
         """
-        model = lakefs_sdk.models.credentials_with_secret.CredentialsWithSecret()  # noqa: E501
-        if include_optional :
+        model = CredentialsWithSecret()
+        if include_optional:
             return CredentialsWithSecret(
-                access_key_id = '', 
-                secret_access_key = '', 
+                access_key_id = '',
+                secret_access_key = '',
                 creation_date = 56
             )
-        else :
+        else:
             return CredentialsWithSecret(
                 access_key_id = '',
                 secret_access_key = '',

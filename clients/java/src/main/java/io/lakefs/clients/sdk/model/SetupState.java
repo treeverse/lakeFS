@@ -38,12 +38,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -51,7 +49,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * SetupState
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class SetupState {
   /**
    * Gets or Sets state
@@ -98,82 +96,84 @@ public class SetupState {
         return StateEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      StateEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_STATE = "state";
   @SerializedName(SERIALIZED_NAME_STATE)
+  @javax.annotation.Nullable
   private StateEnum state;
 
   public static final String SERIALIZED_NAME_COMM_PREFS_MISSING = "comm_prefs_missing";
   @SerializedName(SERIALIZED_NAME_COMM_PREFS_MISSING)
+  @javax.annotation.Nullable
   private Boolean commPrefsMissing;
 
   public static final String SERIALIZED_NAME_LOGIN_CONFIG = "login_config";
   @SerializedName(SERIALIZED_NAME_LOGIN_CONFIG)
+  @javax.annotation.Nullable
   private LoginConfig loginConfig;
 
   public SetupState() {
   }
 
-  public SetupState state(StateEnum state) {
-    
+  public SetupState state(@javax.annotation.Nullable StateEnum state) {
     this.state = state;
     return this;
   }
 
-   /**
+  /**
    * Get state
    * @return state
-  **/
+   */
   @javax.annotation.Nullable
   public StateEnum getState() {
     return state;
   }
 
-
-  public void setState(StateEnum state) {
+  public void setState(@javax.annotation.Nullable StateEnum state) {
     this.state = state;
   }
 
 
-  public SetupState commPrefsMissing(Boolean commPrefsMissing) {
-    
+  public SetupState commPrefsMissing(@javax.annotation.Nullable Boolean commPrefsMissing) {
     this.commPrefsMissing = commPrefsMissing;
     return this;
   }
 
-   /**
+  /**
    * true if the comm prefs are missing.
    * @return commPrefsMissing
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getCommPrefsMissing() {
     return commPrefsMissing;
   }
 
-
-  public void setCommPrefsMissing(Boolean commPrefsMissing) {
+  public void setCommPrefsMissing(@javax.annotation.Nullable Boolean commPrefsMissing) {
     this.commPrefsMissing = commPrefsMissing;
   }
 
 
-  public SetupState loginConfig(LoginConfig loginConfig) {
-    
+  public SetupState loginConfig(@javax.annotation.Nullable LoginConfig loginConfig) {
     this.loginConfig = loginConfig;
     return this;
   }
 
-   /**
+  /**
    * Get loginConfig
    * @return loginConfig
-  **/
+   */
   @javax.annotation.Nullable
   public LoginConfig getLoginConfig() {
     return loginConfig;
   }
 
-
-  public void setLoginConfig(LoginConfig loginConfig) {
+  public void setLoginConfig(@javax.annotation.Nullable LoginConfig loginConfig) {
     this.loginConfig = loginConfig;
   }
 
@@ -281,12 +281,12 @@ public class SetupState {
     openapiRequiredFields = new HashSet<String>();
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to SetupState
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to SetupState
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!SetupState.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -296,6 +296,10 @@ public class SetupState {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if ((jsonObj.get("state") != null && !jsonObj.get("state").isJsonNull()) && !jsonObj.get("state").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `state` to be a primitive type in the JSON string but got `%s`", jsonObj.get("state").toString()));
+      }
+      // validate the optional field `state`
+      if (jsonObj.get("state") != null && !jsonObj.get("state").isJsonNull()) {
+        StateEnum.validateJsonElement(jsonObj.get("state"));
       }
       // validate the optional field `login_config`
       if (jsonObj.get("login_config") != null && !jsonObj.get("login_config").isJsonNull()) {
@@ -331,7 +335,12 @@ public class SetupState {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -370,22 +379,22 @@ public class SetupState {
     }
   }
 
- /**
-  * Create an instance of SetupState given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of SetupState
-  * @throws IOException if the JSON string is invalid with respect to SetupState
-  */
+  /**
+   * Create an instance of SetupState given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of SetupState
+   * @throws IOException if the JSON string is invalid with respect to SetupState
+   */
   public static SetupState fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, SetupState.class);
   }
 
- /**
-  * Convert an instance of SetupState to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of SetupState to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

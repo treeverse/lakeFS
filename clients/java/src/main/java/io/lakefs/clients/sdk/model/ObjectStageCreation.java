@@ -39,12 +39,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -52,125 +50,123 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ObjectStageCreation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class ObjectStageCreation {
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
+  @javax.annotation.Nonnull
   private String physicalAddress;
 
   public static final String SERIALIZED_NAME_CHECKSUM = "checksum";
   @SerializedName(SERIALIZED_NAME_CHECKSUM)
+  @javax.annotation.Nonnull
   private String checksum;
 
   public static final String SERIALIZED_NAME_SIZE_BYTES = "size_bytes";
   @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
+  @javax.annotation.Nonnull
   private Long sizeBytes;
 
   public static final String SERIALIZED_NAME_MTIME = "mtime";
   @SerializedName(SERIALIZED_NAME_MTIME)
+  @javax.annotation.Nullable
   private Long mtime;
 
   public static final String SERIALIZED_NAME_METADATA = "metadata";
   @SerializedName(SERIALIZED_NAME_METADATA)
+  @javax.annotation.Nullable
   private Map<String, String> metadata = new HashMap<>();
 
   public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
   @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
+  @javax.annotation.Nullable
   private String contentType;
 
   public static final String SERIALIZED_NAME_FORCE = "force";
   @SerializedName(SERIALIZED_NAME_FORCE)
+  @javax.annotation.Nullable
   private Boolean force = false;
 
   public ObjectStageCreation() {
   }
 
-  public ObjectStageCreation physicalAddress(String physicalAddress) {
-    
+  public ObjectStageCreation physicalAddress(@javax.annotation.Nonnull String physicalAddress) {
     this.physicalAddress = physicalAddress;
     return this;
   }
 
-   /**
+  /**
    * Get physicalAddress
    * @return physicalAddress
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPhysicalAddress() {
     return physicalAddress;
   }
 
-
-  public void setPhysicalAddress(String physicalAddress) {
+  public void setPhysicalAddress(@javax.annotation.Nonnull String physicalAddress) {
     this.physicalAddress = physicalAddress;
   }
 
 
-  public ObjectStageCreation checksum(String checksum) {
-    
+  public ObjectStageCreation checksum(@javax.annotation.Nonnull String checksum) {
     this.checksum = checksum;
     return this;
   }
 
-   /**
+  /**
    * Get checksum
    * @return checksum
-  **/
+   */
   @javax.annotation.Nonnull
   public String getChecksum() {
     return checksum;
   }
 
-
-  public void setChecksum(String checksum) {
+  public void setChecksum(@javax.annotation.Nonnull String checksum) {
     this.checksum = checksum;
   }
 
 
-  public ObjectStageCreation sizeBytes(Long sizeBytes) {
-    
+  public ObjectStageCreation sizeBytes(@javax.annotation.Nonnull Long sizeBytes) {
     this.sizeBytes = sizeBytes;
     return this;
   }
 
-   /**
+  /**
    * Get sizeBytes
    * @return sizeBytes
-  **/
+   */
   @javax.annotation.Nonnull
   public Long getSizeBytes() {
     return sizeBytes;
   }
 
-
-  public void setSizeBytes(Long sizeBytes) {
+  public void setSizeBytes(@javax.annotation.Nonnull Long sizeBytes) {
     this.sizeBytes = sizeBytes;
   }
 
 
-  public ObjectStageCreation mtime(Long mtime) {
-    
+  public ObjectStageCreation mtime(@javax.annotation.Nullable Long mtime) {
     this.mtime = mtime;
     return this;
   }
 
-   /**
+  /**
    * Unix Epoch in seconds
    * @return mtime
-  **/
+   */
   @javax.annotation.Nullable
   public Long getMtime() {
     return mtime;
   }
 
-
-  public void setMtime(Long mtime) {
+  public void setMtime(@javax.annotation.Nullable Long mtime) {
     this.mtime = mtime;
   }
 
 
-  public ObjectStageCreation metadata(Map<String, String> metadata) {
-    
+  public ObjectStageCreation metadata(@javax.annotation.Nullable Map<String, String> metadata) {
     this.metadata = metadata;
     return this;
   }
@@ -183,59 +179,54 @@ public class ObjectStageCreation {
     return this;
   }
 
-   /**
+  /**
    * Get metadata
    * @return metadata
-  **/
+   */
   @javax.annotation.Nullable
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-
-  public void setMetadata(Map<String, String> metadata) {
+  public void setMetadata(@javax.annotation.Nullable Map<String, String> metadata) {
     this.metadata = metadata;
   }
 
 
-  public ObjectStageCreation contentType(String contentType) {
-    
+  public ObjectStageCreation contentType(@javax.annotation.Nullable String contentType) {
     this.contentType = contentType;
     return this;
   }
 
-   /**
+  /**
    * Object media type
    * @return contentType
-  **/
+   */
   @javax.annotation.Nullable
   public String getContentType() {
     return contentType;
   }
 
-
-  public void setContentType(String contentType) {
+  public void setContentType(@javax.annotation.Nullable String contentType) {
     this.contentType = contentType;
   }
 
 
-  public ObjectStageCreation force(Boolean force) {
-    
+  public ObjectStageCreation force(@javax.annotation.Nullable Boolean force) {
     this.force = force;
     return this;
   }
 
-   /**
+  /**
    * Get force
    * @return force
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getForce() {
     return force;
   }
 
-
-  public void setForce(Boolean force) {
+  public void setForce(@javax.annotation.Nullable Boolean force) {
     this.force = force;
   }
 
@@ -358,12 +349,12 @@ public class ObjectStageCreation {
     openapiRequiredFields.add("size_bytes");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ObjectStageCreation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ObjectStageCreation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ObjectStageCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -417,7 +408,12 @@ public class ObjectStageCreation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -456,22 +452,22 @@ public class ObjectStageCreation {
     }
   }
 
- /**
-  * Create an instance of ObjectStageCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ObjectStageCreation
-  * @throws IOException if the JSON string is invalid with respect to ObjectStageCreation
-  */
+  /**
+   * Create an instance of ObjectStageCreation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ObjectStageCreation
+   * @throws IOException if the JSON string is invalid with respect to ObjectStageCreation
+   */
   public static ObjectStageCreation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ObjectStageCreation.class);
   }
 
- /**
-  * Convert an instance of ObjectStageCreation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ObjectStageCreation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

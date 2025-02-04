@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.installation_usage_report import InstallationUsageReport  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.installation_usage_report import InstallationUsageReport
 
 class TestInstallationUsageReport(unittest.TestCase):
     """InstallationUsageReport unit test stubs"""
@@ -29,17 +26,17 @@ class TestInstallationUsageReport(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> InstallationUsageReport:
         """Test InstallationUsageReport
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `InstallationUsageReport`
         """
-        model = lakefs_sdk.models.installation_usage_report.InstallationUsageReport()  # noqa: E501
-        if include_optional :
+        model = InstallationUsageReport()
+        if include_optional:
             return InstallationUsageReport(
-                installation_id = '', 
+                installation_id = '',
                 reports = [
                     lakefs_sdk.models.usage_report.UsageReport(
                         year = 56, 
@@ -47,7 +44,7 @@ class TestInstallationUsageReport(unittest.TestCase):
                         count = 56, )
                     ]
             )
-        else :
+        else:
             return InstallationUsageReport(
                 installation_id = '',
                 reports = [

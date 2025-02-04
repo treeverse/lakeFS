@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,57 +48,55 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * UploadPart
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class UploadPart {
   public static final String SERIALIZED_NAME_PART_NUMBER = "part_number";
   @SerializedName(SERIALIZED_NAME_PART_NUMBER)
+  @javax.annotation.Nonnull
   private Integer partNumber;
 
   public static final String SERIALIZED_NAME_ETAG = "etag";
   @SerializedName(SERIALIZED_NAME_ETAG)
+  @javax.annotation.Nonnull
   private String etag;
 
   public UploadPart() {
   }
 
-  public UploadPart partNumber(Integer partNumber) {
-    
+  public UploadPart partNumber(@javax.annotation.Nonnull Integer partNumber) {
     this.partNumber = partNumber;
     return this;
   }
 
-   /**
+  /**
    * Get partNumber
    * @return partNumber
-  **/
+   */
   @javax.annotation.Nonnull
   public Integer getPartNumber() {
     return partNumber;
   }
 
-
-  public void setPartNumber(Integer partNumber) {
+  public void setPartNumber(@javax.annotation.Nonnull Integer partNumber) {
     this.partNumber = partNumber;
   }
 
 
-  public UploadPart etag(String etag) {
-    
+  public UploadPart etag(@javax.annotation.Nonnull String etag) {
     this.etag = etag;
     return this;
   }
 
-   /**
+  /**
    * Get etag
    * @return etag
-  **/
+   */
   @javax.annotation.Nonnull
   public String getEtag() {
     return etag;
   }
 
-
-  public void setEtag(String etag) {
+  public void setEtag(@javax.annotation.Nonnull String etag) {
     this.etag = etag;
   }
 
@@ -207,12 +203,12 @@ public class UploadPart {
     openapiRequiredFields.add("etag");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to UploadPart
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to UploadPart
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!UploadPart.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -260,7 +256,12 @@ public class UploadPart {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -299,22 +300,22 @@ public class UploadPart {
     }
   }
 
- /**
-  * Create an instance of UploadPart given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of UploadPart
-  * @throws IOException if the JSON string is invalid with respect to UploadPart
-  */
+  /**
+   * Create an instance of UploadPart given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of UploadPart
+   * @throws IOException if the JSON string is invalid with respect to UploadPart
+   */
   public static UploadPart fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, UploadPart.class);
   }
 
- /**
-  * Convert an instance of UploadPart to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of UploadPart to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

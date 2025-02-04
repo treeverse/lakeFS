@@ -38,12 +38,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -51,26 +49,31 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * HookRun
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class HookRun {
   public static final String SERIALIZED_NAME_HOOK_RUN_ID = "hook_run_id";
   @SerializedName(SERIALIZED_NAME_HOOK_RUN_ID)
+  @javax.annotation.Nonnull
   private String hookRunId;
 
   public static final String SERIALIZED_NAME_ACTION = "action";
   @SerializedName(SERIALIZED_NAME_ACTION)
+  @javax.annotation.Nonnull
   private String action;
 
   public static final String SERIALIZED_NAME_HOOK_ID = "hook_id";
   @SerializedName(SERIALIZED_NAME_HOOK_ID)
+  @javax.annotation.Nonnull
   private String hookId;
 
   public static final String SERIALIZED_NAME_START_TIME = "start_time";
   @SerializedName(SERIALIZED_NAME_START_TIME)
+  @javax.annotation.Nonnull
   private OffsetDateTime startTime;
 
   public static final String SERIALIZED_NAME_END_TIME = "end_time";
   @SerializedName(SERIALIZED_NAME_END_TIME)
+  @javax.annotation.Nullable
   private OffsetDateTime endTime;
 
   /**
@@ -118,137 +121,131 @@ public class HookRun {
         return StatusEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      StatusEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_STATUS = "status";
   @SerializedName(SERIALIZED_NAME_STATUS)
+  @javax.annotation.Nonnull
   private StatusEnum status;
 
   public HookRun() {
   }
 
-  public HookRun hookRunId(String hookRunId) {
-    
+  public HookRun hookRunId(@javax.annotation.Nonnull String hookRunId) {
     this.hookRunId = hookRunId;
     return this;
   }
 
-   /**
+  /**
    * Get hookRunId
    * @return hookRunId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getHookRunId() {
     return hookRunId;
   }
 
-
-  public void setHookRunId(String hookRunId) {
+  public void setHookRunId(@javax.annotation.Nonnull String hookRunId) {
     this.hookRunId = hookRunId;
   }
 
 
-  public HookRun action(String action) {
-    
+  public HookRun action(@javax.annotation.Nonnull String action) {
     this.action = action;
     return this;
   }
 
-   /**
+  /**
    * Get action
    * @return action
-  **/
+   */
   @javax.annotation.Nonnull
   public String getAction() {
     return action;
   }
 
-
-  public void setAction(String action) {
+  public void setAction(@javax.annotation.Nonnull String action) {
     this.action = action;
   }
 
 
-  public HookRun hookId(String hookId) {
-    
+  public HookRun hookId(@javax.annotation.Nonnull String hookId) {
     this.hookId = hookId;
     return this;
   }
 
-   /**
+  /**
    * Get hookId
    * @return hookId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getHookId() {
     return hookId;
   }
 
-
-  public void setHookId(String hookId) {
+  public void setHookId(@javax.annotation.Nonnull String hookId) {
     this.hookId = hookId;
   }
 
 
-  public HookRun startTime(OffsetDateTime startTime) {
-    
+  public HookRun startTime(@javax.annotation.Nonnull OffsetDateTime startTime) {
     this.startTime = startTime;
     return this;
   }
 
-   /**
+  /**
    * Get startTime
    * @return startTime
-  **/
+   */
   @javax.annotation.Nonnull
   public OffsetDateTime getStartTime() {
     return startTime;
   }
 
-
-  public void setStartTime(OffsetDateTime startTime) {
+  public void setStartTime(@javax.annotation.Nonnull OffsetDateTime startTime) {
     this.startTime = startTime;
   }
 
 
-  public HookRun endTime(OffsetDateTime endTime) {
-    
+  public HookRun endTime(@javax.annotation.Nullable OffsetDateTime endTime) {
     this.endTime = endTime;
     return this;
   }
 
-   /**
+  /**
    * Get endTime
    * @return endTime
-  **/
+   */
   @javax.annotation.Nullable
   public OffsetDateTime getEndTime() {
     return endTime;
   }
 
-
-  public void setEndTime(OffsetDateTime endTime) {
+  public void setEndTime(@javax.annotation.Nullable OffsetDateTime endTime) {
     this.endTime = endTime;
   }
 
 
-  public HookRun status(StatusEnum status) {
-    
+  public HookRun status(@javax.annotation.Nonnull StatusEnum status) {
     this.status = status;
     return this;
   }
 
-   /**
+  /**
    * Get status
    * @return status
-  **/
+   */
   @javax.annotation.Nonnull
   public StatusEnum getStatus() {
     return status;
   }
 
-
-  public void setStatus(StatusEnum status) {
+  public void setStatus(@javax.annotation.Nonnull StatusEnum status) {
     this.status = status;
   }
 
@@ -370,12 +367,12 @@ public class HookRun {
     openapiRequiredFields.add("status");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to HookRun
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to HookRun
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!HookRun.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -402,6 +399,8 @@ public class HookRun {
       if (!jsonObj.get("status").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("status").toString()));
       }
+      // validate the required field `status`
+      StatusEnum.validateJsonElement(jsonObj.get("status"));
   }
 
   public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
@@ -432,7 +431,12 @@ public class HookRun {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -471,22 +475,22 @@ public class HookRun {
     }
   }
 
- /**
-  * Create an instance of HookRun given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of HookRun
-  * @throws IOException if the JSON string is invalid with respect to HookRun
-  */
+  /**
+   * Create an instance of HookRun given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of HookRun
+   * @throws IOException if the JSON string is invalid with respect to HookRun
+   */
   public static HookRun fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, HookRun.class);
   }
 
- /**
-  * Convert an instance of HookRun to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of HookRun to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

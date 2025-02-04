@@ -39,12 +39,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -52,67 +50,65 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * PresignMultipartUpload
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class PresignMultipartUpload {
   public static final String SERIALIZED_NAME_UPLOAD_ID = "upload_id";
   @SerializedName(SERIALIZED_NAME_UPLOAD_ID)
+  @javax.annotation.Nonnull
   private String uploadId;
 
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
+  @javax.annotation.Nonnull
   private String physicalAddress;
 
   public static final String SERIALIZED_NAME_PRESIGNED_URLS = "presigned_urls";
   @SerializedName(SERIALIZED_NAME_PRESIGNED_URLS)
-  private List<String> presignedUrls;
+  @javax.annotation.Nullable
+  private List<String> presignedUrls = new ArrayList<>();
 
   public PresignMultipartUpload() {
   }
 
-  public PresignMultipartUpload uploadId(String uploadId) {
-    
+  public PresignMultipartUpload uploadId(@javax.annotation.Nonnull String uploadId) {
     this.uploadId = uploadId;
     return this;
   }
 
-   /**
+  /**
    * Get uploadId
    * @return uploadId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getUploadId() {
     return uploadId;
   }
 
-
-  public void setUploadId(String uploadId) {
+  public void setUploadId(@javax.annotation.Nonnull String uploadId) {
     this.uploadId = uploadId;
   }
 
 
-  public PresignMultipartUpload physicalAddress(String physicalAddress) {
-    
+  public PresignMultipartUpload physicalAddress(@javax.annotation.Nonnull String physicalAddress) {
     this.physicalAddress = physicalAddress;
     return this;
   }
 
-   /**
+  /**
    * Get physicalAddress
    * @return physicalAddress
-  **/
+   */
   @javax.annotation.Nonnull
   public String getPhysicalAddress() {
     return physicalAddress;
   }
 
-
-  public void setPhysicalAddress(String physicalAddress) {
+  public void setPhysicalAddress(@javax.annotation.Nonnull String physicalAddress) {
     this.physicalAddress = physicalAddress;
   }
 
 
-  public PresignMultipartUpload presignedUrls(List<String> presignedUrls) {
-    
+  public PresignMultipartUpload presignedUrls(@javax.annotation.Nullable List<String> presignedUrls) {
     this.presignedUrls = presignedUrls;
     return this;
   }
@@ -125,17 +121,16 @@ public class PresignMultipartUpload {
     return this;
   }
 
-   /**
+  /**
    * Get presignedUrls
    * @return presignedUrls
-  **/
+   */
   @javax.annotation.Nullable
   public List<String> getPresignedUrls() {
     return presignedUrls;
   }
 
-
-  public void setPresignedUrls(List<String> presignedUrls) {
+  public void setPresignedUrls(@javax.annotation.Nullable List<String> presignedUrls) {
     this.presignedUrls = presignedUrls;
   }
 
@@ -245,12 +240,12 @@ public class PresignMultipartUpload {
     openapiRequiredFields.add("physical_address");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to PresignMultipartUpload
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to PresignMultipartUpload
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!PresignMultipartUpload.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -305,7 +300,12 @@ public class PresignMultipartUpload {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -344,22 +344,22 @@ public class PresignMultipartUpload {
     }
   }
 
- /**
-  * Create an instance of PresignMultipartUpload given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of PresignMultipartUpload
-  * @throws IOException if the JSON string is invalid with respect to PresignMultipartUpload
-  */
+  /**
+   * Create an instance of PresignMultipartUpload given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of PresignMultipartUpload
+   * @throws IOException if the JSON string is invalid with respect to PresignMultipartUpload
+   */
   public static PresignMultipartUpload fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, PresignMultipartUpload.class);
   }
 
- /**
-  * Convert an instance of PresignMultipartUpload to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of PresignMultipartUpload to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

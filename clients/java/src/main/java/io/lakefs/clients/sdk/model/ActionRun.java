@@ -38,12 +38,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -51,26 +49,31 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * ActionRun
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class ActionRun {
   public static final String SERIALIZED_NAME_RUN_ID = "run_id";
   @SerializedName(SERIALIZED_NAME_RUN_ID)
+  @javax.annotation.Nonnull
   private String runId;
 
   public static final String SERIALIZED_NAME_BRANCH = "branch";
   @SerializedName(SERIALIZED_NAME_BRANCH)
+  @javax.annotation.Nonnull
   private String branch;
 
   public static final String SERIALIZED_NAME_START_TIME = "start_time";
   @SerializedName(SERIALIZED_NAME_START_TIME)
+  @javax.annotation.Nonnull
   private OffsetDateTime startTime;
 
   public static final String SERIALIZED_NAME_END_TIME = "end_time";
   @SerializedName(SERIALIZED_NAME_END_TIME)
+  @javax.annotation.Nullable
   private OffsetDateTime endTime;
 
   public static final String SERIALIZED_NAME_EVENT_TYPE = "event_type";
   @SerializedName(SERIALIZED_NAME_EVENT_TYPE)
+  @javax.annotation.Nonnull
   private String eventType;
 
   /**
@@ -118,162 +121,155 @@ public class ActionRun {
         return StatusEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      StatusEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_STATUS = "status";
   @SerializedName(SERIALIZED_NAME_STATUS)
+  @javax.annotation.Nonnull
   private StatusEnum status;
 
   public static final String SERIALIZED_NAME_COMMIT_ID = "commit_id";
   @SerializedName(SERIALIZED_NAME_COMMIT_ID)
+  @javax.annotation.Nonnull
   private String commitId;
 
   public ActionRun() {
   }
 
-  public ActionRun runId(String runId) {
-    
+  public ActionRun runId(@javax.annotation.Nonnull String runId) {
     this.runId = runId;
     return this;
   }
 
-   /**
+  /**
    * Get runId
    * @return runId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getRunId() {
     return runId;
   }
 
-
-  public void setRunId(String runId) {
+  public void setRunId(@javax.annotation.Nonnull String runId) {
     this.runId = runId;
   }
 
 
-  public ActionRun branch(String branch) {
-    
+  public ActionRun branch(@javax.annotation.Nonnull String branch) {
     this.branch = branch;
     return this;
   }
 
-   /**
+  /**
    * Get branch
    * @return branch
-  **/
+   */
   @javax.annotation.Nonnull
   public String getBranch() {
     return branch;
   }
 
-
-  public void setBranch(String branch) {
+  public void setBranch(@javax.annotation.Nonnull String branch) {
     this.branch = branch;
   }
 
 
-  public ActionRun startTime(OffsetDateTime startTime) {
-    
+  public ActionRun startTime(@javax.annotation.Nonnull OffsetDateTime startTime) {
     this.startTime = startTime;
     return this;
   }
 
-   /**
+  /**
    * Get startTime
    * @return startTime
-  **/
+   */
   @javax.annotation.Nonnull
   public OffsetDateTime getStartTime() {
     return startTime;
   }
 
-
-  public void setStartTime(OffsetDateTime startTime) {
+  public void setStartTime(@javax.annotation.Nonnull OffsetDateTime startTime) {
     this.startTime = startTime;
   }
 
 
-  public ActionRun endTime(OffsetDateTime endTime) {
-    
+  public ActionRun endTime(@javax.annotation.Nullable OffsetDateTime endTime) {
     this.endTime = endTime;
     return this;
   }
 
-   /**
+  /**
    * Get endTime
    * @return endTime
-  **/
+   */
   @javax.annotation.Nullable
   public OffsetDateTime getEndTime() {
     return endTime;
   }
 
-
-  public void setEndTime(OffsetDateTime endTime) {
+  public void setEndTime(@javax.annotation.Nullable OffsetDateTime endTime) {
     this.endTime = endTime;
   }
 
 
-  public ActionRun eventType(String eventType) {
-    
+  public ActionRun eventType(@javax.annotation.Nonnull String eventType) {
     this.eventType = eventType;
     return this;
   }
 
-   /**
+  /**
    * Get eventType
    * @return eventType
-  **/
+   */
   @javax.annotation.Nonnull
   public String getEventType() {
     return eventType;
   }
 
-
-  public void setEventType(String eventType) {
+  public void setEventType(@javax.annotation.Nonnull String eventType) {
     this.eventType = eventType;
   }
 
 
-  public ActionRun status(StatusEnum status) {
-    
+  public ActionRun status(@javax.annotation.Nonnull StatusEnum status) {
     this.status = status;
     return this;
   }
 
-   /**
+  /**
    * Get status
    * @return status
-  **/
+   */
   @javax.annotation.Nonnull
   public StatusEnum getStatus() {
     return status;
   }
 
-
-  public void setStatus(StatusEnum status) {
+  public void setStatus(@javax.annotation.Nonnull StatusEnum status) {
     this.status = status;
   }
 
 
-  public ActionRun commitId(String commitId) {
-    
+  public ActionRun commitId(@javax.annotation.Nonnull String commitId) {
     this.commitId = commitId;
     return this;
   }
 
-   /**
+  /**
    * Get commitId
    * @return commitId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getCommitId() {
     return commitId;
   }
 
-
-  public void setCommitId(String commitId) {
+  public void setCommitId(@javax.annotation.Nonnull String commitId) {
     this.commitId = commitId;
   }
 
@@ -399,12 +395,12 @@ public class ActionRun {
     openapiRequiredFields.add("commit_id");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ActionRun
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ActionRun
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!ActionRun.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -431,6 +427,8 @@ public class ActionRun {
       if (!jsonObj.get("status").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("status").toString()));
       }
+      // validate the required field `status`
+      StatusEnum.validateJsonElement(jsonObj.get("status"));
       if (!jsonObj.get("commit_id").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `commit_id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("commit_id").toString()));
       }
@@ -464,7 +462,12 @@ public class ActionRun {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -503,22 +506,22 @@ public class ActionRun {
     }
   }
 
- /**
-  * Create an instance of ActionRun given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of ActionRun
-  * @throws IOException if the JSON string is invalid with respect to ActionRun
-  */
+  /**
+   * Create an instance of ActionRun given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ActionRun
+   * @throws IOException if the JSON string is invalid with respect to ActionRun
+   */
   public static ActionRun fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, ActionRun.class);
   }
 
- /**
-  * Convert an instance of ActionRun to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of ActionRun to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

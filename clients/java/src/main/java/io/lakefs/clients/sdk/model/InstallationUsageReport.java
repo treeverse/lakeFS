@@ -40,12 +40,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -53,42 +51,41 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * InstallationUsageReport
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class InstallationUsageReport {
   public static final String SERIALIZED_NAME_INSTALLATION_ID = "installation_id";
   @SerializedName(SERIALIZED_NAME_INSTALLATION_ID)
+  @javax.annotation.Nonnull
   private String installationId;
 
   public static final String SERIALIZED_NAME_REPORTS = "reports";
   @SerializedName(SERIALIZED_NAME_REPORTS)
+  @javax.annotation.Nonnull
   private List<UsageReport> reports = new ArrayList<>();
 
   public InstallationUsageReport() {
   }
 
-  public InstallationUsageReport installationId(String installationId) {
-    
+  public InstallationUsageReport installationId(@javax.annotation.Nonnull String installationId) {
     this.installationId = installationId;
     return this;
   }
 
-   /**
+  /**
    * Get installationId
    * @return installationId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getInstallationId() {
     return installationId;
   }
 
-
-  public void setInstallationId(String installationId) {
+  public void setInstallationId(@javax.annotation.Nonnull String installationId) {
     this.installationId = installationId;
   }
 
 
-  public InstallationUsageReport reports(List<UsageReport> reports) {
-    
+  public InstallationUsageReport reports(@javax.annotation.Nonnull List<UsageReport> reports) {
     this.reports = reports;
     return this;
   }
@@ -101,17 +98,16 @@ public class InstallationUsageReport {
     return this;
   }
 
-   /**
+  /**
    * Get reports
    * @return reports
-  **/
+   */
   @javax.annotation.Nonnull
   public List<UsageReport> getReports() {
     return reports;
   }
 
-
-  public void setReports(List<UsageReport> reports) {
+  public void setReports(@javax.annotation.Nonnull List<UsageReport> reports) {
     this.reports = reports;
   }
 
@@ -218,12 +214,12 @@ public class InstallationUsageReport {
     openapiRequiredFields.add("reports");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to InstallationUsageReport
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to InstallationUsageReport
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!InstallationUsageReport.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -281,7 +277,12 @@ public class InstallationUsageReport {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -320,22 +321,22 @@ public class InstallationUsageReport {
     }
   }
 
- /**
-  * Create an instance of InstallationUsageReport given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of InstallationUsageReport
-  * @throws IOException if the JSON string is invalid with respect to InstallationUsageReport
-  */
+  /**
+   * Create an instance of InstallationUsageReport given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of InstallationUsageReport
+   * @throws IOException if the JSON string is invalid with respect to InstallationUsageReport
+   */
   public static InstallationUsageReport fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, InstallationUsageReport.class);
   }
 
- /**
-  * Convert an instance of InstallationUsageReport to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of InstallationUsageReport to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

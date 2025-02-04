@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,57 +48,55 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * GarbageCollectionRule
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class GarbageCollectionRule {
   public static final String SERIALIZED_NAME_BRANCH_ID = "branch_id";
   @SerializedName(SERIALIZED_NAME_BRANCH_ID)
+  @javax.annotation.Nonnull
   private String branchId;
 
   public static final String SERIALIZED_NAME_RETENTION_DAYS = "retention_days";
   @SerializedName(SERIALIZED_NAME_RETENTION_DAYS)
+  @javax.annotation.Nonnull
   private Integer retentionDays;
 
   public GarbageCollectionRule() {
   }
 
-  public GarbageCollectionRule branchId(String branchId) {
-    
+  public GarbageCollectionRule branchId(@javax.annotation.Nonnull String branchId) {
     this.branchId = branchId;
     return this;
   }
 
-   /**
+  /**
    * Get branchId
    * @return branchId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getBranchId() {
     return branchId;
   }
 
-
-  public void setBranchId(String branchId) {
+  public void setBranchId(@javax.annotation.Nonnull String branchId) {
     this.branchId = branchId;
   }
 
 
-  public GarbageCollectionRule retentionDays(Integer retentionDays) {
-    
+  public GarbageCollectionRule retentionDays(@javax.annotation.Nonnull Integer retentionDays) {
     this.retentionDays = retentionDays;
     return this;
   }
 
-   /**
+  /**
    * Get retentionDays
    * @return retentionDays
-  **/
+   */
   @javax.annotation.Nonnull
   public Integer getRetentionDays() {
     return retentionDays;
   }
 
-
-  public void setRetentionDays(Integer retentionDays) {
+  public void setRetentionDays(@javax.annotation.Nonnull Integer retentionDays) {
     this.retentionDays = retentionDays;
   }
 
@@ -207,12 +203,12 @@ public class GarbageCollectionRule {
     openapiRequiredFields.add("retention_days");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to GarbageCollectionRule
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to GarbageCollectionRule
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!GarbageCollectionRule.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -260,7 +256,12 @@ public class GarbageCollectionRule {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -299,22 +300,22 @@ public class GarbageCollectionRule {
     }
   }
 
- /**
-  * Create an instance of GarbageCollectionRule given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of GarbageCollectionRule
-  * @throws IOException if the JSON string is invalid with respect to GarbageCollectionRule
-  */
+  /**
+   * Create an instance of GarbageCollectionRule given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of GarbageCollectionRule
+   * @throws IOException if the JSON string is invalid with respect to GarbageCollectionRule
+   */
   public static GarbageCollectionRule fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, GarbageCollectionRule.class);
   }
 
- /**
-  * Convert an instance of GarbageCollectionRule to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of GarbageCollectionRule to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

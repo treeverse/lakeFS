@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.garbage_collection_config import GarbageCollectionConfig  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.garbage_collection_config import GarbageCollectionConfig
 
 class TestGarbageCollectionConfig(unittest.TestCase):
     """GarbageCollectionConfig unit test stubs"""
@@ -29,19 +26,19 @@ class TestGarbageCollectionConfig(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> GarbageCollectionConfig:
         """Test GarbageCollectionConfig
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `GarbageCollectionConfig`
         """
-        model = lakefs_sdk.models.garbage_collection_config.GarbageCollectionConfig()  # noqa: E501
-        if include_optional :
+        model = GarbageCollectionConfig()
+        if include_optional:
             return GarbageCollectionConfig(
                 grace_period = 56
             )
-        else :
+        else:
             return GarbageCollectionConfig(
         )
         """

@@ -41,12 +41,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -54,42 +52,41 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * RepositoryList
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class RepositoryList {
   public static final String SERIALIZED_NAME_PAGINATION = "pagination";
   @SerializedName(SERIALIZED_NAME_PAGINATION)
+  @javax.annotation.Nonnull
   private Pagination pagination;
 
   public static final String SERIALIZED_NAME_RESULTS = "results";
   @SerializedName(SERIALIZED_NAME_RESULTS)
+  @javax.annotation.Nonnull
   private List<Repository> results = new ArrayList<>();
 
   public RepositoryList() {
   }
 
-  public RepositoryList pagination(Pagination pagination) {
-    
+  public RepositoryList pagination(@javax.annotation.Nonnull Pagination pagination) {
     this.pagination = pagination;
     return this;
   }
 
-   /**
+  /**
    * Get pagination
    * @return pagination
-  **/
+   */
   @javax.annotation.Nonnull
   public Pagination getPagination() {
     return pagination;
   }
 
-
-  public void setPagination(Pagination pagination) {
+  public void setPagination(@javax.annotation.Nonnull Pagination pagination) {
     this.pagination = pagination;
   }
 
 
-  public RepositoryList results(List<Repository> results) {
-    
+  public RepositoryList results(@javax.annotation.Nonnull List<Repository> results) {
     this.results = results;
     return this;
   }
@@ -102,17 +99,16 @@ public class RepositoryList {
     return this;
   }
 
-   /**
+  /**
    * Get results
    * @return results
-  **/
+   */
   @javax.annotation.Nonnull
   public List<Repository> getResults() {
     return results;
   }
 
-
-  public void setResults(List<Repository> results) {
+  public void setResults(@javax.annotation.Nonnull List<Repository> results) {
     this.results = results;
   }
 
@@ -219,12 +215,12 @@ public class RepositoryList {
     openapiRequiredFields.add("results");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to RepositoryList
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to RepositoryList
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!RepositoryList.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -281,7 +277,12 @@ public class RepositoryList {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -320,22 +321,22 @@ public class RepositoryList {
     }
   }
 
- /**
-  * Create an instance of RepositoryList given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of RepositoryList
-  * @throws IOException if the JSON string is invalid with respect to RepositoryList
-  */
+  /**
+   * Create an instance of RepositoryList given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of RepositoryList
+   * @throws IOException if the JSON string is invalid with respect to RepositoryList
+   */
   public static RepositoryList fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, RepositoryList.class);
   }
 
- /**
-  * Convert an instance of RepositoryList to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of RepositoryList to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

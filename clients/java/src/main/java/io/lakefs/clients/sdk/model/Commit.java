@@ -41,12 +41,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -54,70 +52,76 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Commit
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class Commit {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
+  @javax.annotation.Nonnull
   private String id;
 
   public static final String SERIALIZED_NAME_PARENTS = "parents";
   @SerializedName(SERIALIZED_NAME_PARENTS)
+  @javax.annotation.Nonnull
   private List<String> parents = new ArrayList<>();
 
   public static final String SERIALIZED_NAME_COMMITTER = "committer";
   @SerializedName(SERIALIZED_NAME_COMMITTER)
+  @javax.annotation.Nonnull
   private String committer;
 
   public static final String SERIALIZED_NAME_MESSAGE = "message";
   @SerializedName(SERIALIZED_NAME_MESSAGE)
+  @javax.annotation.Nonnull
   private String message;
 
   public static final String SERIALIZED_NAME_CREATION_DATE = "creation_date";
   @SerializedName(SERIALIZED_NAME_CREATION_DATE)
+  @javax.annotation.Nonnull
   private Long creationDate;
 
   public static final String SERIALIZED_NAME_META_RANGE_ID = "meta_range_id";
   @SerializedName(SERIALIZED_NAME_META_RANGE_ID)
+  @javax.annotation.Nonnull
   private String metaRangeId;
 
   public static final String SERIALIZED_NAME_METADATA = "metadata";
   @SerializedName(SERIALIZED_NAME_METADATA)
+  @javax.annotation.Nullable
   private Map<String, String> metadata = new HashMap<>();
 
   public static final String SERIALIZED_NAME_GENERATION = "generation";
   @SerializedName(SERIALIZED_NAME_GENERATION)
+  @javax.annotation.Nullable
   private Long generation;
 
   public static final String SERIALIZED_NAME_VERSION = "version";
   @SerializedName(SERIALIZED_NAME_VERSION)
+  @javax.annotation.Nullable
   private Integer version;
 
   public Commit() {
   }
 
-  public Commit id(String id) {
-    
+  public Commit id(@javax.annotation.Nonnull String id) {
     this.id = id;
     return this;
   }
 
-   /**
+  /**
    * Get id
    * @return id
-  **/
+   */
   @javax.annotation.Nonnull
   public String getId() {
     return id;
   }
 
-
-  public void setId(String id) {
+  public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
 
 
-  public Commit parents(List<String> parents) {
-    
+  public Commit parents(@javax.annotation.Nonnull List<String> parents) {
     this.parents = parents;
     return this;
   }
@@ -130,107 +134,97 @@ public class Commit {
     return this;
   }
 
-   /**
+  /**
    * Get parents
    * @return parents
-  **/
+   */
   @javax.annotation.Nonnull
   public List<String> getParents() {
     return parents;
   }
 
-
-  public void setParents(List<String> parents) {
+  public void setParents(@javax.annotation.Nonnull List<String> parents) {
     this.parents = parents;
   }
 
 
-  public Commit committer(String committer) {
-    
+  public Commit committer(@javax.annotation.Nonnull String committer) {
     this.committer = committer;
     return this;
   }
 
-   /**
+  /**
    * Get committer
    * @return committer
-  **/
+   */
   @javax.annotation.Nonnull
   public String getCommitter() {
     return committer;
   }
 
-
-  public void setCommitter(String committer) {
+  public void setCommitter(@javax.annotation.Nonnull String committer) {
     this.committer = committer;
   }
 
 
-  public Commit message(String message) {
-    
+  public Commit message(@javax.annotation.Nonnull String message) {
     this.message = message;
     return this;
   }
 
-   /**
+  /**
    * Get message
    * @return message
-  **/
+   */
   @javax.annotation.Nonnull
   public String getMessage() {
     return message;
   }
 
-
-  public void setMessage(String message) {
+  public void setMessage(@javax.annotation.Nonnull String message) {
     this.message = message;
   }
 
 
-  public Commit creationDate(Long creationDate) {
-    
+  public Commit creationDate(@javax.annotation.Nonnull Long creationDate) {
     this.creationDate = creationDate;
     return this;
   }
 
-   /**
+  /**
    * Unix Epoch in seconds
    * @return creationDate
-  **/
+   */
   @javax.annotation.Nonnull
   public Long getCreationDate() {
     return creationDate;
   }
 
-
-  public void setCreationDate(Long creationDate) {
+  public void setCreationDate(@javax.annotation.Nonnull Long creationDate) {
     this.creationDate = creationDate;
   }
 
 
-  public Commit metaRangeId(String metaRangeId) {
-    
+  public Commit metaRangeId(@javax.annotation.Nonnull String metaRangeId) {
     this.metaRangeId = metaRangeId;
     return this;
   }
 
-   /**
+  /**
    * Get metaRangeId
    * @return metaRangeId
-  **/
+   */
   @javax.annotation.Nonnull
   public String getMetaRangeId() {
     return metaRangeId;
   }
 
-
-  public void setMetaRangeId(String metaRangeId) {
+  public void setMetaRangeId(@javax.annotation.Nonnull String metaRangeId) {
     this.metaRangeId = metaRangeId;
   }
 
 
-  public Commit metadata(Map<String, String> metadata) {
-    
+  public Commit metadata(@javax.annotation.Nullable Map<String, String> metadata) {
     this.metadata = metadata;
     return this;
   }
@@ -243,61 +237,56 @@ public class Commit {
     return this;
   }
 
-   /**
+  /**
    * Get metadata
    * @return metadata
-  **/
+   */
   @javax.annotation.Nullable
   public Map<String, String> getMetadata() {
     return metadata;
   }
 
-
-  public void setMetadata(Map<String, String> metadata) {
+  public void setMetadata(@javax.annotation.Nullable Map<String, String> metadata) {
     this.metadata = metadata;
   }
 
 
-  public Commit generation(Long generation) {
-    
+  public Commit generation(@javax.annotation.Nullable Long generation) {
     this.generation = generation;
     return this;
   }
 
-   /**
+  /**
    * Get generation
    * @return generation
-  **/
+   */
   @javax.annotation.Nullable
   public Long getGeneration() {
     return generation;
   }
 
-
-  public void setGeneration(Long generation) {
+  public void setGeneration(@javax.annotation.Nullable Long generation) {
     this.generation = generation;
   }
 
 
-  public Commit version(Integer version) {
-    
+  public Commit version(@javax.annotation.Nullable Integer version) {
     this.version = version;
     return this;
   }
 
-   /**
+  /**
    * Get version
    * minimum: 0
    * maximum: 1
    * @return version
-  **/
+   */
   @javax.annotation.Nullable
   public Integer getVersion() {
     return version;
   }
 
-
-  public void setVersion(Integer version) {
+  public void setVersion(@javax.annotation.Nullable Integer version) {
     this.version = version;
   }
 
@@ -429,12 +418,12 @@ public class Commit {
     openapiRequiredFields.add("meta_range_id");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Commit
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Commit
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Commit.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -497,7 +486,12 @@ public class Commit {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -536,22 +530,22 @@ public class Commit {
     }
   }
 
- /**
-  * Create an instance of Commit given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Commit
-  * @throws IOException if the JSON string is invalid with respect to Commit
-  */
+  /**
+   * Create an instance of Commit given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Commit
+   * @throws IOException if the JSON string is invalid with respect to Commit
+   */
   public static Commit fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Commit.class);
   }
 
- /**
-  * Convert an instance of Commit to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Commit to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

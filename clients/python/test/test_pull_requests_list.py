@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.pull_requests_list import PullRequestsList  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.pull_requests_list import PullRequestsList
 
 class TestPullRequestsList(unittest.TestCase):
     """PullRequestsList unit test stubs"""
@@ -29,26 +26,26 @@ class TestPullRequestsList(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> PullRequestsList:
         """Test PullRequestsList
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `PullRequestsList`
         """
-        model = lakefs_sdk.models.pull_requests_list.PullRequestsList()  # noqa: E501
-        if include_optional :
+        model = PullRequestsList()
+        if include_optional:
             return PullRequestsList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 
                     next_offset = '', 
                     results = 0, 
-                    max_per_page = 0, ), 
+                    max_per_page = 0, ),
                 results = [
                     null
                     ]
             )
-        else :
+        else:
             return PullRequestsList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 

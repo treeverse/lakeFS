@@ -37,12 +37,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -50,157 +48,151 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * RepositoryCreation
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class RepositoryCreation {
   public static final String SERIALIZED_NAME_NAME = "name";
   @SerializedName(SERIALIZED_NAME_NAME)
+  @javax.annotation.Nonnull
   private String name;
 
   public static final String SERIALIZED_NAME_STORAGE_ID = "storage_id";
   @SerializedName(SERIALIZED_NAME_STORAGE_ID)
+  @javax.annotation.Nullable
   private String storageId;
 
   public static final String SERIALIZED_NAME_STORAGE_NAMESPACE = "storage_namespace";
   @SerializedName(SERIALIZED_NAME_STORAGE_NAMESPACE)
+  @javax.annotation.Nonnull
   private String storageNamespace;
 
   public static final String SERIALIZED_NAME_DEFAULT_BRANCH = "default_branch";
   @SerializedName(SERIALIZED_NAME_DEFAULT_BRANCH)
+  @javax.annotation.Nullable
   private String defaultBranch;
 
   public static final String SERIALIZED_NAME_SAMPLE_DATA = "sample_data";
   @SerializedName(SERIALIZED_NAME_SAMPLE_DATA)
+  @javax.annotation.Nullable
   private Boolean sampleData = false;
 
   public static final String SERIALIZED_NAME_READ_ONLY = "read_only";
   @SerializedName(SERIALIZED_NAME_READ_ONLY)
+  @javax.annotation.Nullable
   private Boolean readOnly = false;
 
   public RepositoryCreation() {
   }
 
-  public RepositoryCreation name(String name) {
-    
+  public RepositoryCreation name(@javax.annotation.Nonnull String name) {
     this.name = name;
     return this;
   }
 
-   /**
+  /**
    * Get name
    * @return name
-  **/
+   */
   @javax.annotation.Nonnull
   public String getName() {
     return name;
   }
 
-
-  public void setName(String name) {
+  public void setName(@javax.annotation.Nonnull String name) {
     this.name = name;
   }
 
 
-  public RepositoryCreation storageId(String storageId) {
-    
+  public RepositoryCreation storageId(@javax.annotation.Nullable String storageId) {
     this.storageId = storageId;
     return this;
   }
 
-   /**
+  /**
    * Unique identifier of the underlying data store. *EXPERIMENTAL*
    * @return storageId
-  **/
+   */
   @javax.annotation.Nullable
   public String getStorageId() {
     return storageId;
   }
 
-
-  public void setStorageId(String storageId) {
+  public void setStorageId(@javax.annotation.Nullable String storageId) {
     this.storageId = storageId;
   }
 
 
-  public RepositoryCreation storageNamespace(String storageNamespace) {
-    
+  public RepositoryCreation storageNamespace(@javax.annotation.Nonnull String storageNamespace) {
     this.storageNamespace = storageNamespace;
     return this;
   }
 
-   /**
+  /**
    * Filesystem URI to store the underlying data in (e.g. \&quot;s3://my-bucket/some/path/\&quot;)
    * @return storageNamespace
-  **/
+   */
   @javax.annotation.Nonnull
   public String getStorageNamespace() {
     return storageNamespace;
   }
 
-
-  public void setStorageNamespace(String storageNamespace) {
+  public void setStorageNamespace(@javax.annotation.Nonnull String storageNamespace) {
     this.storageNamespace = storageNamespace;
   }
 
 
-  public RepositoryCreation defaultBranch(String defaultBranch) {
-    
+  public RepositoryCreation defaultBranch(@javax.annotation.Nullable String defaultBranch) {
     this.defaultBranch = defaultBranch;
     return this;
   }
 
-   /**
+  /**
    * Get defaultBranch
    * @return defaultBranch
-  **/
+   */
   @javax.annotation.Nullable
   public String getDefaultBranch() {
     return defaultBranch;
   }
 
-
-  public void setDefaultBranch(String defaultBranch) {
+  public void setDefaultBranch(@javax.annotation.Nullable String defaultBranch) {
     this.defaultBranch = defaultBranch;
   }
 
 
-  public RepositoryCreation sampleData(Boolean sampleData) {
-    
+  public RepositoryCreation sampleData(@javax.annotation.Nullable Boolean sampleData) {
     this.sampleData = sampleData;
     return this;
   }
 
-   /**
+  /**
    * Get sampleData
    * @return sampleData
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getSampleData() {
     return sampleData;
   }
 
-
-  public void setSampleData(Boolean sampleData) {
+  public void setSampleData(@javax.annotation.Nullable Boolean sampleData) {
     this.sampleData = sampleData;
   }
 
 
-  public RepositoryCreation readOnly(Boolean readOnly) {
-    
+  public RepositoryCreation readOnly(@javax.annotation.Nullable Boolean readOnly) {
     this.readOnly = readOnly;
     return this;
   }
 
-   /**
+  /**
    * Get readOnly
    * @return readOnly
-  **/
+   */
   @javax.annotation.Nullable
   public Boolean getReadOnly() {
     return readOnly;
   }
 
-
-  public void setReadOnly(Boolean readOnly) {
+  public void setReadOnly(@javax.annotation.Nullable Boolean readOnly) {
     this.readOnly = readOnly;
   }
 
@@ -319,12 +311,12 @@ public class RepositoryCreation {
     openapiRequiredFields.add("storage_namespace");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to RepositoryCreation
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to RepositoryCreation
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!RepositoryCreation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -381,7 +373,12 @@ public class RepositoryCreation {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -420,22 +417,22 @@ public class RepositoryCreation {
     }
   }
 
- /**
-  * Create an instance of RepositoryCreation given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of RepositoryCreation
-  * @throws IOException if the JSON string is invalid with respect to RepositoryCreation
-  */
+  /**
+   * Create an instance of RepositoryCreation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of RepositoryCreation
+   * @throws IOException if the JSON string is invalid with respect to RepositoryCreation
+   */
   public static RepositoryCreation fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, RepositoryCreation.class);
   }
 
- /**
-  * Convert an instance of RepositoryCreation to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of RepositoryCreation to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

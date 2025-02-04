@@ -39,12 +39,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -52,7 +50,7 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * Statement
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class Statement {
   /**
    * Gets or Sets effect
@@ -99,67 +97,70 @@ public class Statement {
         return EffectEnum.fromValue(value);
       }
     }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      EffectEnum.fromValue(value);
+    }
   }
 
   public static final String SERIALIZED_NAME_EFFECT = "effect";
   @SerializedName(SERIALIZED_NAME_EFFECT)
+  @javax.annotation.Nonnull
   private EffectEnum effect;
 
   public static final String SERIALIZED_NAME_RESOURCE = "resource";
   @SerializedName(SERIALIZED_NAME_RESOURCE)
+  @javax.annotation.Nonnull
   private String resource;
 
   public static final String SERIALIZED_NAME_ACTION = "action";
   @SerializedName(SERIALIZED_NAME_ACTION)
+  @javax.annotation.Nonnull
   private List<String> action = new ArrayList<>();
 
   public Statement() {
   }
 
-  public Statement effect(EffectEnum effect) {
-    
+  public Statement effect(@javax.annotation.Nonnull EffectEnum effect) {
     this.effect = effect;
     return this;
   }
 
-   /**
+  /**
    * Get effect
    * @return effect
-  **/
+   */
   @javax.annotation.Nonnull
   public EffectEnum getEffect() {
     return effect;
   }
 
-
-  public void setEffect(EffectEnum effect) {
+  public void setEffect(@javax.annotation.Nonnull EffectEnum effect) {
     this.effect = effect;
   }
 
 
-  public Statement resource(String resource) {
-    
+  public Statement resource(@javax.annotation.Nonnull String resource) {
     this.resource = resource;
     return this;
   }
 
-   /**
+  /**
    * Get resource
    * @return resource
-  **/
+   */
   @javax.annotation.Nonnull
   public String getResource() {
     return resource;
   }
 
-
-  public void setResource(String resource) {
+  public void setResource(@javax.annotation.Nonnull String resource) {
     this.resource = resource;
   }
 
 
-  public Statement action(List<String> action) {
-    
+  public Statement action(@javax.annotation.Nonnull List<String> action) {
     this.action = action;
     return this;
   }
@@ -172,17 +173,16 @@ public class Statement {
     return this;
   }
 
-   /**
+  /**
    * Get action
    * @return action
-  **/
+   */
   @javax.annotation.Nonnull
   public List<String> getAction() {
     return action;
   }
 
-
-  public void setAction(List<String> action) {
+  public void setAction(@javax.annotation.Nonnull List<String> action) {
     this.action = action;
   }
 
@@ -293,12 +293,12 @@ public class Statement {
     openapiRequiredFields.add("action");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Statement
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Statement
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!Statement.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -316,6 +316,8 @@ public class Statement {
       if (!jsonObj.get("effect").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `effect` to be a primitive type in the JSON string but got `%s`", jsonObj.get("effect").toString()));
       }
+      // validate the required field `effect`
+      EffectEnum.validateJsonElement(jsonObj.get("effect"));
       if (!jsonObj.get("resource").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `resource` to be a primitive type in the JSON string but got `%s`", jsonObj.get("resource").toString()));
       }
@@ -355,7 +357,12 @@ public class Statement {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -394,22 +401,22 @@ public class Statement {
     }
   }
 
- /**
-  * Create an instance of Statement given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of Statement
-  * @throws IOException if the JSON string is invalid with respect to Statement
-  */
+  /**
+   * Create an instance of Statement given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Statement
+   * @throws IOException if the JSON string is invalid with respect to Statement
+   */
   public static Statement fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, Statement.class);
   }
 
- /**
-  * Convert an instance of Statement to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of Statement to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }

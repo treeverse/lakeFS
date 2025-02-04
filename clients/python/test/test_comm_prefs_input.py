@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.comm_prefs_input import CommPrefsInput  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 
 class TestCommPrefsInput(unittest.TestCase):
     """CommPrefsInput unit test stubs"""
@@ -29,21 +26,21 @@ class TestCommPrefsInput(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> CommPrefsInput:
         """Test CommPrefsInput
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `CommPrefsInput`
         """
-        model = lakefs_sdk.models.comm_prefs_input.CommPrefsInput()  # noqa: E501
-        if include_optional :
+        model = CommPrefsInput()
+        if include_optional:
             return CommPrefsInput(
-                email = '', 
-                feature_updates = True, 
+                email = '',
+                feature_updates = True,
                 security_updates = True
             )
-        else :
+        else:
             return CommPrefsInput(
                 feature_updates = True,
                 security_updates = True,

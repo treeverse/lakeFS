@@ -39,12 +39,10 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.lakefs.clients.sdk.JSON;
@@ -52,132 +50,127 @@ import io.lakefs.clients.sdk.JSON;
 /**
  * RepositoryDumpStatus
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.11.0")
 public class RepositoryDumpStatus {
   public static final String SERIALIZED_NAME_ID = "id";
   @SerializedName(SERIALIZED_NAME_ID)
+  @javax.annotation.Nonnull
   private String id;
 
   public static final String SERIALIZED_NAME_DONE = "done";
   @SerializedName(SERIALIZED_NAME_DONE)
+  @javax.annotation.Nonnull
   private Boolean done;
 
   public static final String SERIALIZED_NAME_UPDATE_TIME = "update_time";
   @SerializedName(SERIALIZED_NAME_UPDATE_TIME)
+  @javax.annotation.Nonnull
   private OffsetDateTime updateTime;
 
   public static final String SERIALIZED_NAME_ERROR = "error";
   @SerializedName(SERIALIZED_NAME_ERROR)
+  @javax.annotation.Nullable
   private String error;
 
   public static final String SERIALIZED_NAME_REFS = "refs";
   @SerializedName(SERIALIZED_NAME_REFS)
+  @javax.annotation.Nullable
   private RefsDump refs;
 
   public RepositoryDumpStatus() {
   }
 
-  public RepositoryDumpStatus id(String id) {
-    
+  public RepositoryDumpStatus id(@javax.annotation.Nonnull String id) {
     this.id = id;
     return this;
   }
 
-   /**
+  /**
    * ID of the task
    * @return id
-  **/
+   */
   @javax.annotation.Nonnull
   public String getId() {
     return id;
   }
 
-
-  public void setId(String id) {
+  public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
 
 
-  public RepositoryDumpStatus done(Boolean done) {
-    
+  public RepositoryDumpStatus done(@javax.annotation.Nonnull Boolean done) {
     this.done = done;
     return this;
   }
 
-   /**
+  /**
    * Get done
    * @return done
-  **/
+   */
   @javax.annotation.Nonnull
   public Boolean getDone() {
     return done;
   }
 
-
-  public void setDone(Boolean done) {
+  public void setDone(@javax.annotation.Nonnull Boolean done) {
     this.done = done;
   }
 
 
-  public RepositoryDumpStatus updateTime(OffsetDateTime updateTime) {
-    
+  public RepositoryDumpStatus updateTime(@javax.annotation.Nonnull OffsetDateTime updateTime) {
     this.updateTime = updateTime;
     return this;
   }
 
-   /**
+  /**
    * Get updateTime
    * @return updateTime
-  **/
+   */
   @javax.annotation.Nonnull
   public OffsetDateTime getUpdateTime() {
     return updateTime;
   }
 
-
-  public void setUpdateTime(OffsetDateTime updateTime) {
+  public void setUpdateTime(@javax.annotation.Nonnull OffsetDateTime updateTime) {
     this.updateTime = updateTime;
   }
 
 
-  public RepositoryDumpStatus error(String error) {
-    
+  public RepositoryDumpStatus error(@javax.annotation.Nullable String error) {
     this.error = error;
     return this;
   }
 
-   /**
+  /**
    * Get error
    * @return error
-  **/
+   */
   @javax.annotation.Nullable
   public String getError() {
     return error;
   }
 
-
-  public void setError(String error) {
+  public void setError(@javax.annotation.Nullable String error) {
     this.error = error;
   }
 
 
-  public RepositoryDumpStatus refs(RefsDump refs) {
-    
+  public RepositoryDumpStatus refs(@javax.annotation.Nullable RefsDump refs) {
     this.refs = refs;
     return this;
   }
 
-   /**
+  /**
    * Get refs
    * @return refs
-  **/
+   */
   @javax.annotation.Nullable
   public RefsDump getRefs() {
     return refs;
   }
 
-
-  public void setRefs(RefsDump refs) {
+  public void setRefs(@javax.annotation.Nullable RefsDump refs) {
     this.refs = refs;
   }
 
@@ -294,12 +287,12 @@ public class RepositoryDumpStatus {
     openapiRequiredFields.add("update_time");
   }
 
- /**
-  * Validates the JSON Element and throws an exception if issues found
-  *
-  * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to RepositoryDumpStatus
-  */
+  /**
+   * Validates the JSON Element and throws an exception if issues found
+   *
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to RepositoryDumpStatus
+   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
         if (!RepositoryDumpStatus.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
@@ -354,7 +347,12 @@ public class RepositoryDumpStatus {
                  else if (entry.getValue() instanceof Character)
                    obj.addProperty(entry.getKey(), (Character) entry.getValue());
                  else {
-                   obj.add(entry.getKey(), gson.toJsonTree(entry.getValue()).getAsJsonObject());
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
                  }
                }
              }
@@ -393,22 +391,22 @@ public class RepositoryDumpStatus {
     }
   }
 
- /**
-  * Create an instance of RepositoryDumpStatus given an JSON string
-  *
-  * @param jsonString JSON string
-  * @return An instance of RepositoryDumpStatus
-  * @throws IOException if the JSON string is invalid with respect to RepositoryDumpStatus
-  */
+  /**
+   * Create an instance of RepositoryDumpStatus given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of RepositoryDumpStatus
+   * @throws IOException if the JSON string is invalid with respect to RepositoryDumpStatus
+   */
   public static RepositoryDumpStatus fromJson(String jsonString) throws IOException {
     return JSON.getGson().fromJson(jsonString, RepositoryDumpStatus.class);
   }
 
- /**
-  * Convert an instance of RepositoryDumpStatus to an JSON string
-  *
-  * @return JSON string
-  */
+  /**
+   * Convert an instance of RepositoryDumpStatus to an JSON string
+   *
+   * @return JSON string
+   */
   public String toJson() {
     return JSON.getGson().toJson(this);
   }
