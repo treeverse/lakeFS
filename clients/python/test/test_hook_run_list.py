@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.hook_run_list import HookRunList  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.hook_run_list import HookRunList
 
 class TestHookRunList(unittest.TestCase):
     """HookRunList unit test stubs"""
@@ -29,21 +26,21 @@ class TestHookRunList(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> HookRunList:
         """Test HookRunList
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `HookRunList`
         """
-        model = lakefs_sdk.models.hook_run_list.HookRunList()  # noqa: E501
-        if include_optional :
+        model = HookRunList()
+        if include_optional:
             return HookRunList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 
                     next_offset = '', 
                     results = 0, 
-                    max_per_page = 0, ), 
+                    max_per_page = 0, ),
                 results = [
                     lakefs_sdk.models.hook_run.HookRun(
                         hook_run_id = '', 
@@ -54,7 +51,7 @@ class TestHookRunList(unittest.TestCase):
                         status = 'failed', )
                     ]
             )
-        else :
+        else:
             return HookRunList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 

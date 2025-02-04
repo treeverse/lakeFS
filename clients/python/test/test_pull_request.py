@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.pull_request import PullRequest  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.pull_request import PullRequest
 
 class TestPullRequest(unittest.TestCase):
     """PullRequest unit test stubs"""
@@ -29,28 +26,28 @@ class TestPullRequest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> PullRequest:
         """Test PullRequest
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `PullRequest`
         """
-        model = lakefs_sdk.models.pull_request.PullRequest()  # noqa: E501
-        if include_optional :
+        model = PullRequest()
+        if include_optional:
             return PullRequest(
-                status = 'open', 
-                title = '', 
-                description = '', 
-                id = '', 
-                creation_date = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                author = '', 
-                source_branch = '', 
-                destination_branch = '', 
-                merged_commit_id = '', 
+                status = 'open',
+                title = '',
+                description = '',
+                id = '',
+                creation_date = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                author = '',
+                source_branch = '',
+                destination_branch = '',
+                merged_commit_id = '',
                 closed_date = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f')
             )
-        else :
+        else:
             return PullRequest(
                 status = 'open',
                 title = '',

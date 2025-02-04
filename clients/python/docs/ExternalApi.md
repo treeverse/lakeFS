@@ -25,8 +25,6 @@ attach external principal to user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation
 from lakefs_sdk.rest import ApiException
@@ -138,8 +136,6 @@ delete external principal from user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -242,8 +238,6 @@ perform a login using an external authenticator
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation
@@ -322,8 +316,6 @@ describe external principal by id
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal import ExternalPrincipal
 from lakefs_sdk.rest import ApiException
@@ -432,8 +424,6 @@ list user external policies attached to a user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_list import ExternalPrincipalList
 from lakefs_sdk.rest import ApiException

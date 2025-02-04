@@ -19,12 +19,12 @@ json = "{}"
 # create an instance of StatsEvent from a JSON string
 stats_event_instance = StatsEvent.from_json(json)
 # print the JSON string representation of the object
-print StatsEvent.to_json()
+print(StatsEvent.to_json())
 
 # convert the object into a dict
 stats_event_dict = stats_event_instance.to_dict()
 # create an instance of StatsEvent from a dict
-stats_event_form_dict = stats_event.from_dict(stats_event_dict)
+stats_event_from_dict = StatsEvent.from_dict(stats_event_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

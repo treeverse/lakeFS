@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.tag_creation import TagCreation  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.tag_creation import TagCreation
 
 class TestTagCreation(unittest.TestCase):
     """TagCreation unit test stubs"""
@@ -29,21 +26,21 @@ class TestTagCreation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> TagCreation:
         """Test TagCreation
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `TagCreation`
         """
-        model = lakefs_sdk.models.tag_creation.TagCreation()  # noqa: E501
-        if include_optional :
+        model = TagCreation()
+        if include_optional:
             return TagCreation(
-                id = '', 
-                ref = '', 
+                id = '',
+                ref = '',
                 force = True
             )
-        else :
+        else:
             return TagCreation(
                 id = '',
                 ref = '',

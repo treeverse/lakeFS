@@ -20,12 +20,12 @@ json = "{}"
 # create an instance of CompletePresignMultipartUpload from a JSON string
 complete_presign_multipart_upload_instance = CompletePresignMultipartUpload.from_json(json)
 # print the JSON string representation of the object
-print CompletePresignMultipartUpload.to_json()
+print(CompletePresignMultipartUpload.to_json())
 
 # convert the object into a dict
 complete_presign_multipart_upload_dict = complete_presign_multipart_upload_instance.to_dict()
 # create an instance of CompletePresignMultipartUpload from a dict
-complete_presign_multipart_upload_form_dict = complete_presign_multipart_upload.from_dict(complete_presign_multipart_upload_dict)
+complete_presign_multipart_upload_from_dict = CompletePresignMultipartUpload.from_dict(complete_presign_multipart_upload_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

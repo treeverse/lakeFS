@@ -30,8 +30,6 @@ create a copy of an object
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.object_copy_creation import ObjectCopyCreation
 from lakefs_sdk.models.object_stats import ObjectStats
@@ -149,8 +147,6 @@ delete object. Missing objects will not return a NotFound error.
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -263,8 +259,6 @@ delete objects. Missing objects will not return a NotFound error.
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.object_error_list import ObjectErrorList
 from lakefs_sdk.models.path_list import PathList
@@ -381,8 +375,6 @@ get object content
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -505,8 +497,6 @@ get object properties on underlying storage
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_sdk.rest import ApiException
@@ -619,8 +609,6 @@ check if object exists
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -735,8 +723,6 @@ list objects under a given prefix
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.object_stats_list import ObjectStatsList
 from lakefs_sdk.rest import ApiException
@@ -859,8 +845,6 @@ get object metadata
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.rest import ApiException
@@ -979,8 +963,6 @@ rewrite (all) object metadata
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata
 from lakefs_sdk.rest import ApiException
@@ -1094,8 +1076,6 @@ void (empty response body)
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.rest import ApiException

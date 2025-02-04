@@ -22,8 +22,6 @@ generate an address to which the client can upload an object
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.staging_location import StagingLocation
 from lakefs_sdk.rest import ApiException
@@ -140,8 +138,6 @@ Link the physical address with the path in lakeFS, creating an uncommitted chang
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.models.staging_metadata import StagingMetadata

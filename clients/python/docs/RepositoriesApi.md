@@ -34,8 +34,6 @@ create repository
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.repository import Repository
 from lakefs_sdk.models.repository_creation import RepositoryCreation
@@ -148,8 +146,6 @@ Name | Type | Description  | Notes
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -255,8 +251,6 @@ delete repository
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -364,8 +358,6 @@ Status of a repository dump task
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.repository_dump_status import RepositoryDumpStatus
 from lakefs_sdk.rest import ApiException
@@ -477,8 +469,6 @@ Backup the repository metadata (tags, commits, branches) and save the backup to 
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.task_info import TaskInfo
 from lakefs_sdk.rest import ApiException
@@ -587,8 +577,6 @@ get branch protection rules
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
 from lakefs_sdk.rest import ApiException
@@ -697,8 +685,6 @@ get repository GC rules
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.garbage_collection_rules import GarbageCollectionRules
 from lakefs_sdk.rest import ApiException
@@ -807,8 +793,6 @@ get repository
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.repository import Repository
 from lakefs_sdk.rest import ApiException
@@ -917,8 +901,6 @@ get repository metadata
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1026,8 +1008,6 @@ list repositories
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.repository_list import RepositoryList
 from lakefs_sdk.rest import ApiException
@@ -1141,8 +1121,6 @@ Status of a restore request
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.repository_restore_status import RepositoryRestoreStatus
 from lakefs_sdk.rest import ApiException
@@ -1254,8 +1232,6 @@ Restore repository from a dump in the object store
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.refs_restore import RefsRestore
 from lakefs_sdk.models.task_info import TaskInfo
@@ -1368,8 +1344,6 @@ Name | Type | Description  | Notes
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
 from lakefs_sdk.rest import ApiException
@@ -1482,8 +1456,6 @@ void (empty response body)
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.garbage_collection_rules import GarbageCollectionRules
 from lakefs_sdk.rest import ApiException

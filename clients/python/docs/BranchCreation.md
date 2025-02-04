@@ -20,12 +20,12 @@ json = "{}"
 # create an instance of BranchCreation from a JSON string
 branch_creation_instance = BranchCreation.from_json(json)
 # print the JSON string representation of the object
-print BranchCreation.to_json()
+print(BranchCreation.to_json())
 
 # convert the object into a dict
 branch_creation_dict = branch_creation_instance.to_dict()
 # create an instance of BranchCreation from a dict
-branch_creation_form_dict = branch_creation.from_dict(branch_creation_dict)
+branch_creation_from_dict = BranchCreation.from_dict(branch_creation_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

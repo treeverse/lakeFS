@@ -48,8 +48,6 @@ Method | HTTP request | Description
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -155,8 +153,6 @@ create commit record
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.commit_record_creation import CommitRecordCreation
 from lakefs_sdk.rest import ApiException
@@ -267,8 +263,6 @@ creates symlink files corresponding to the given directory
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.storage_uri import StorageURI
 from lakefs_sdk.rest import ApiException
@@ -383,8 +377,6 @@ Delete specified keys from the repository's metadata.
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.repository_metadata_keys import RepositoryMetadataKeys
 from lakefs_sdk.rest import ApiException
@@ -492,8 +484,6 @@ Dump repository refs (tags, commits, branches) to object store Deprecated: a new
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.refs_dump import RefsDump
 from lakefs_sdk.rest import ApiException
@@ -598,8 +588,6 @@ list authentication capabilities supported
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.auth_capabilities import AuthCapabilities
 from lakefs_sdk.rest import ApiException
@@ -671,8 +659,6 @@ get information of gc settings
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.garbage_collection_config import GarbageCollectionConfig
 from lakefs_sdk.rest import ApiException
@@ -775,8 +761,6 @@ get version of lakeFS server
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.version_config import VersionConfig
 from lakefs_sdk.rest import ApiException
@@ -877,8 +861,6 @@ return a lakeFS metadata object by ID
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -988,8 +970,6 @@ check if the lakeFS installation is already set up
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.setup_state import SetupState
 from lakefs_sdk.rest import ApiException
@@ -1061,8 +1041,6 @@ retrieve lakeFS storage configuration
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.rest import ApiException
@@ -1163,8 +1141,6 @@ get usage report summary
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.installation_usage_report import InstallationUsageReport
 from lakefs_sdk.rest import ApiException
@@ -1270,8 +1246,6 @@ This endpoint does not need any parameter.
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
 from lakefs_sdk.rest import ApiException
@@ -1379,8 +1353,6 @@ void (empty response body)
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.internal_delete_branch_protection_rule_request import InternalDeleteBranchProtectionRuleRequest
 from lakefs_sdk.rest import ApiException
@@ -1488,8 +1460,6 @@ void (empty response body)
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1594,8 +1564,6 @@ get branch protection rules
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule
 from lakefs_sdk.rest import ApiException
@@ -1704,8 +1672,6 @@ Name | Type | Description  | Notes
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.garbage_collection_rules import GarbageCollectionRules
 from lakefs_sdk.rest import ApiException
@@ -1813,8 +1779,6 @@ Name | Type | Description  | Notes
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.garbage_collection_rules import GarbageCollectionRules
 from lakefs_sdk.rest import ApiException
@@ -1922,8 +1886,6 @@ post stats events, this endpoint is meant for internal use only
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.stats_events_list import StatsEventsList
 from lakefs_sdk.rest import ApiException
@@ -2030,8 +1992,6 @@ save lists of active commits for garbage collection
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.garbage_collection_prepare_response import GarbageCollectionPrepareResponse
 from lakefs_sdk.rest import ApiException
@@ -2141,8 +2101,6 @@ save repository uncommitted metadata for garbage collection
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
@@ -2256,8 +2214,6 @@ Restore repository refs (tags, commits, branches) from object store. Deprecated:
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.refs_restore import RefsRestore
 from lakefs_sdk.rest import ApiException
@@ -2367,8 +2323,6 @@ void (empty response body)
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -2475,8 +2429,6 @@ Set repository metadata. This will only add or update the provided keys, and wil
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.repository_metadata_set import RepositoryMetadataSet
 from lakefs_sdk.rest import ApiException
@@ -2580,8 +2532,6 @@ setup lakeFS and create a first user
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
 from lakefs_sdk.models.setup import Setup
@@ -2653,8 +2603,6 @@ setup communications preferences
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.comm_prefs_input import CommPrefsInput
 from lakefs_sdk.rest import ApiException
@@ -2728,8 +2676,6 @@ stage an object's metadata for the given branch
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.object_stage_creation import ObjectStageCreation
 from lakefs_sdk.models.object_stats import ObjectStats
@@ -2847,8 +2793,6 @@ Name | Type | Description  | Notes
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint

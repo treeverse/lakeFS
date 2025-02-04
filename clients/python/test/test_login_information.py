@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.login_information import LoginInformation  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.login_information import LoginInformation
 
 class TestLoginInformation(unittest.TestCase):
     """LoginInformation unit test stubs"""
@@ -29,20 +26,20 @@ class TestLoginInformation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> LoginInformation:
         """Test LoginInformation
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `LoginInformation`
         """
-        model = lakefs_sdk.models.login_information.LoginInformation()  # noqa: E501
-        if include_optional :
+        model = LoginInformation()
+        if include_optional:
             return LoginInformation(
-                access_key_id = '', 
+                access_key_id = '',
                 secret_access_key = ''
             )
-        else :
+        else:
             return LoginInformation(
                 access_key_id = '',
                 secret_access_key = '',

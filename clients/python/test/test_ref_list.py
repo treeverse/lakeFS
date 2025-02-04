@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.ref_list import RefList  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.ref_list import RefList
 
 class TestRefList(unittest.TestCase):
     """RefList unit test stubs"""
@@ -29,28 +26,28 @@ class TestRefList(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> RefList:
         """Test RefList
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RefList`
         """
-        model = lakefs_sdk.models.ref_list.RefList()  # noqa: E501
-        if include_optional :
+        model = RefList()
+        if include_optional:
             return RefList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 
                     next_offset = '', 
                     results = 0, 
-                    max_per_page = 0, ), 
+                    max_per_page = 0, ),
                 results = [
                     lakefs_sdk.models.ref.Ref(
                         id = '', 
                         commit_id = '', )
                     ]
             )
-        else :
+        else:
             return RefList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 

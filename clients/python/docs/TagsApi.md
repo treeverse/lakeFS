@@ -24,8 +24,6 @@ create tag
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.ref import Ref
 from lakefs_sdk.models.tag_creation import TagCreation
@@ -140,8 +138,6 @@ delete tag
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -252,8 +248,6 @@ get tag
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.ref import Ref
 from lakefs_sdk.rest import ApiException
@@ -364,8 +358,6 @@ list tags
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.ref_list import RefList
 from lakefs_sdk.rest import ApiException

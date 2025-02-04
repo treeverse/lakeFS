@@ -21,12 +21,12 @@ json = "{}"
 # create an instance of CommitCreation from a JSON string
 commit_creation_instance = CommitCreation.from_json(json)
 # print the JSON string representation of the object
-print CommitCreation.to_json()
+print(CommitCreation.to_json())
 
 # convert the object into a dict
 commit_creation_dict = commit_creation_instance.to_dict()
 # create an instance of CommitCreation from a dict
-commit_creation_form_dict = commit_creation.from_dict(commit_creation_dict)
+commit_creation_from_dict = CommitCreation.from_dict(commit_creation_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

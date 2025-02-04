@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.commit_record_creation import CommitRecordCreation  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.commit_record_creation import CommitRecordCreation
 
 class TestCommitRecordCreation(unittest.TestCase):
     """CommitRecordCreation unit test stubs"""
@@ -29,32 +26,32 @@ class TestCommitRecordCreation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> CommitRecordCreation:
         """Test CommitRecordCreation
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `CommitRecordCreation`
         """
-        model = lakefs_sdk.models.commit_record_creation.CommitRecordCreation()  # noqa: E501
-        if include_optional :
+        model = CommitRecordCreation()
+        if include_optional:
             return CommitRecordCreation(
-                commit_id = '', 
-                version = 0, 
-                committer = '', 
-                message = '', 
-                metarange_id = '', 
-                creation_date = 56, 
+                commit_id = '',
+                version = 0,
+                committer = '',
+                message = '',
+                metarange_id = '',
+                creation_date = 56,
                 parents = [
                     ''
-                    ], 
+                    ],
                 metadata = {
                     'key' : ''
-                    }, 
-                generation = 56, 
+                    },
+                generation = 56,
                 force = True
             )
-        else :
+        else:
             return CommitRecordCreation(
                 commit_id = '',
                 version = 0,

@@ -38,8 +38,6 @@ Aborts a presign multipart upload.
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.abort_presign_multipart_upload import AbortPresignMultipartUpload
 from lakefs_sdk.rest import ApiException
@@ -157,8 +155,6 @@ Completes a presign multipart upload by assembling the uploaded parts.
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_sdk.models.object_stats import ObjectStats
@@ -280,8 +276,6 @@ Initiates a multipart upload and returns an upload ID with presigned URLs for ea
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
 from lakefs_sdk.rest import ApiException
@@ -397,8 +391,6 @@ create pull request
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_request_creation import PullRequestCreation
 from lakefs_sdk.models.pull_request_creation_response import PullRequestCreationResponse
@@ -513,8 +505,6 @@ attach external principal to user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation
 from lakefs_sdk.rest import ApiException
@@ -626,8 +616,6 @@ delete external principal from user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -730,8 +718,6 @@ perform a login using an external authenticator
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation
@@ -810,8 +796,6 @@ describe external principal by id
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal import ExternalPrincipal
 from lakefs_sdk.rest import ApiException
@@ -920,8 +904,6 @@ get pull request
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_request import PullRequest
 from lakefs_sdk.rest import ApiException
@@ -1035,8 +1017,6 @@ Relocate branch to refer to ref.  Branch must not contain uncommitted data.
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1150,8 +1130,6 @@ list pull requests
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_requests_list import PullRequestsList
 from lakefs_sdk.rest import ApiException
@@ -1205,7 +1183,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     prefix = 'prefix_example' # str | return items prefixed with this value (optional)
     after = 'after_example' # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) (default to 100)
-    status = 'all' # str |  (optional) (default to 'all')
+    status = all # str |  (optional) (default to all)
 
     try:
         # list pull requests
@@ -1227,7 +1205,7 @@ Name | Type | Description  | Notes
  **prefix** | **str**| return items prefixed with this value | [optional] 
  **after** | **str**| return items after this value | [optional] 
  **amount** | **int**| how many items to return | [optional] [default to 100]
- **status** | **str**|  | [optional] [default to &#39;all&#39;]
+ **status** | **str**|  | [optional] [default to all]
 
 ### Return type
 
@@ -1268,8 +1246,6 @@ list user external policies attached to a user
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_list import ExternalPrincipalList
 from lakefs_sdk.rest import ApiException
@@ -1384,8 +1360,6 @@ merge pull request
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.merge_result import MergeResult
 from lakefs_sdk.rest import ApiException
@@ -1495,8 +1469,6 @@ perform a login with STS
 
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.sts_auth_request import StsAuthRequest
@@ -1572,8 +1544,6 @@ rewrite (all) object metadata
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata
 from lakefs_sdk.rest import ApiException
@@ -1687,8 +1657,6 @@ update pull request
 * Bearer (JWT) Authentication (jwt_token):
 
 ```python
-import time
-import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_request_basic import PullRequestBasic
 from lakefs_sdk.rest import ApiException

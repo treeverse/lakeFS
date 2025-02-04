@@ -18,59 +18,75 @@ import pprint
 import re  # noqa: F401
 import json
 
-
-
 try:
-    from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr
+    from pydantic.v1 import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 except ImportError:
-    from pydantic import BaseModel, Field, StrictInt, StrictStr
+    from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
+from typing import Any, ClassVar, Dict, List
+from typing import Optional, Set
+from typing_extensions import Self
 
 class StatsEvent(BaseModel):
     """
     StatsEvent
-    """
-    var_class: StrictStr = Field(..., alias="class", description="stats event class (e.g. \"s3_gateway\", \"openapi_request\", \"experimental-feature\", \"ui-event\")")
-    name: StrictStr = Field(..., description="stats event name (e.g. \"put_object\", \"create_repository\", \"<experimental-feature-name>\")")
-    count: StrictInt = Field(..., description="number of events of the class and name")
-    __properties = ["class", "name", "count"]
+    """ # noqa: E501
+    var_class: StrictStr = Field(description="stats event class (e.g. \"s3_gateway\", \"openapi_request\", \"experimental-feature\", \"ui-event\")", alias="class")
+    name: StrictStr = Field(description="stats event name (e.g. \"put_object\", \"create_repository\", \"<experimental-feature-name>\")")
+    count: StrictInt = Field(description="number of events of the class and name")
+    __properties: ClassVar[List[str]] = ["class", "name", "count"]
 
-    class Config:
-        """Pydantic configuration"""
-        allow_population_by_field_name = True
-        validate_assignment = True
+    model_config = ConfigDict(
+        populate_by_name=True,
+        validate_assignment=True,
+        protected_namespaces=(),
+    )
+
 
     def to_str(self) -> str:
         """Returns the string representation of the model using alias"""
-        return pprint.pformat(self.dict(by_alias=True))
+        return pprint.pformat(self.model_dump(by_alias=True))
 
     def to_json(self) -> str:
         """Returns the JSON representation of the model using alias"""
+        # TODO: pydantic v2: use .model_dump_json(by_alias=True, exclude_unset=True) instead
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> StatsEvent:
+    def from_json(cls, json_str: str) -> Optional[Self]:
         """Create an instance of StatsEvent from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
-    def to_dict(self):
-        """Returns the dictionary representation of the model using alias"""
-        _dict = self.dict(by_alias=True,
-                          exclude={
-                          },
-                          exclude_none=True)
+    def to_dict(self) -> Dict[str, Any]:
+        """Return the dictionary representation of the model using alias.
+
+        This has the following differences from calling pydantic's
+        `self.model_dump(by_alias=True)`:
+
+        * `None` is only added to the output dict for nullable fields that
+          were set at model initialization. Other fields with value `None`
+          are ignored.
+        """
+        excluded_fields: Set[str] = set([
+        ])
+
+        _dict = self.model_dump(
+            by_alias=True,
+            exclude=excluded_fields,
+            exclude_none=True,
+        )
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> StatsEvent:
+    def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
         """Create an instance of StatsEvent from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return StatsEvent.parse_obj(obj)
+            return cls.model_validate(obj)
 
-        _obj = StatsEvent.parse_obj({
-            "var_class": obj.get("class"),
+        _obj = cls.model_validate({
+            "class": obj.get("class"),
             "name": obj.get("name"),
             "count": obj.get("count")
         })

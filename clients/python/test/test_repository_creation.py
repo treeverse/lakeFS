@@ -14,11 +14,8 @@
 
 
 import unittest
-import datetime
 
-import lakefs_sdk
-from lakefs_sdk.models.repository_creation import RepositoryCreation  # noqa: E501
-from lakefs_sdk.rest import ApiException
+from lakefs_sdk.models.repository_creation import RepositoryCreation
 
 class TestRepositoryCreation(unittest.TestCase):
     """RepositoryCreation unit test stubs"""
@@ -29,24 +26,24 @@ class TestRepositoryCreation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> RepositoryCreation:
         """Test RepositoryCreation
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RepositoryCreation`
         """
-        model = lakefs_sdk.models.repository_creation.RepositoryCreation()  # noqa: E501
-        if include_optional :
+        model = RepositoryCreation()
+        if include_optional:
             return RepositoryCreation(
-                name = 'wr1c2v7s6djuy1zmeto', 
-                storage_id = '', 
-                storage_namespace = 's3://example-bucket/', 
-                default_branch = 'main', 
-                sample_data = True, 
+                name = 'wr1c2v7s6djuy1zmeto',
+                storage_id = '',
+                storage_namespace = 's3://example-bucket/',
+                default_branch = 'main',
+                sample_data = True,
                 read_only = True
             )
-        else :
+        else:
             return RepositoryCreation(
                 name = 'wr1c2v7s6djuy1zmeto',
                 storage_namespace = 's3://example-bucket/',

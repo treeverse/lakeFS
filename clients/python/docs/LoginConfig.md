@@ -25,12 +25,12 @@ json = "{}"
 # create an instance of LoginConfig from a JSON string
 login_config_instance = LoginConfig.from_json(json)
 # print the JSON string representation of the object
-print LoginConfig.to_json()
+print(LoginConfig.to_json())
 
 # convert the object into a dict
 login_config_dict = login_config_instance.to_dict()
 # create an instance of LoginConfig from a dict
-login_config_form_dict = login_config.from_dict(login_config_dict)
+login_config_from_dict = LoginConfig.from_dict(login_config_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
