@@ -31,7 +31,9 @@ new insights.
 ## How to use MLflow with lakeFS
 
 To harness the combined capabilities of MLflow and lakeFS for safe experimentation and accurate result reproduction, consider
-the workflow below and review the [practical examples](#practical-examples) provided on the next section.  
+the workflow below and review the practical examples provided on the next section.  
+
+### Recommended workflow
 
 1. **Create a branch for each experiment**: Start each experiment by creating a dedicated lakeFS branch for it. This approach 
 allows you to safely make changes to your input dataset without duplicating it. You will later load data from this branch 
@@ -58,25 +60,14 @@ cost-effective to create, it's often more efficient to create a branch per exper
 commit of the experiment branch, you can distinguish between dataset versions without creating excessive branches. This
 practice maintains branch hygiene within lakeFS.
 
-#### Load versioned datasets
-
-mlflow.data provides APIs for constructing Datasets from a variety of Python data objects, Spark DataFrames, and more. 
-lakeFS seamless integration with both Spark and common Python libraries enables creating MLflow 
-[Datasets](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow.data.dataset.Dataset) with pointing to 
-[Dataset source](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow.data.dataset_source.DatasetSource) on
-lakeFS. 
-
-* s3 gateway only? 
-
-### Practical examples
-
-#### Example: Using Pandas 
+### Example: Using Pandas 
 
 ```python
 import lakefs 
 import mlflow
+import pandas as pd
 
-repo = lakefs.Repository("mlflow-tracking").create(storage_namespace="bucket/my-namespace", default_branch="main", exist_ok=True)
+repo = lakefs.Repository("my-repo")
 repo_id = repo.id
 
 exp_branch = repo.branch("experiment-1").create(source_reference="main", exist_ok=True)
@@ -91,7 +82,7 @@ dataset_source_url = f"s3://{repo_id}/{head_commit_id}/{table_path}"
 raw_data = pd.read_csv(dataset_source_url, delimiter=";", storage_options={
         "key": "AKIAIOSFOLKFSSAMPLES",
         "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-        "client_kwargs": {"endpoint_url": "http://lakefs:8000"}
+        "client_kwargs": {"endpoint_url": "http://localhost:8000"}
     })
 
 # Create an instance of a PandasDataset
@@ -103,13 +94,11 @@ dataset = mlflow.data.from_pandas(
 print(f"Dataset name: {dataset.name}")
 print(f"Dataset source URI: {dataset.source.uri}")
 
-
 # Use mlflow input logging to track the dataset versioned by lakeFS
 with mlflow.start_run() as run:
     mlflow.log_input(dataset, context="training")
     mlflow.set_tag("lakefs_repo", repo_id)
-    mlflow.set_tag("lakefs_branch", branch_id) # Log the branch id, to have a friendly lakeFS reference to search the input dataset in 
-
+    mlflow.set_tag("lakefs_branch", branch_id) 
 
 # Inspect run's dataset
 logged_run = mlflow.get_run(run.info.run_id) # 
@@ -118,50 +107,40 @@ logged_run = mlflow.get_run(run.info.run_id) #
 logged_dataset = logged_run.inputs.dataset_inputs[0].dataset
 
 # View some of the recorded Dataset information
-print(f"Dataset name: {logged_dataset.name}")
-print(f"Dataset source URI: {logged_dataset.source}")
+print(f"Logged dataset name: {logged_dataset.name}")
+print(f"Logged dataset source URI: {logged_dataset.source}")
 ```
 
 Output
 ```text
 Dataset name: famous_people
-Dataset source URI: s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/fp.csv
-Dataset name: famous_people
-Dataset source URI: {"uri": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/fp.csv"}
+Dataset source URI: s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/fp.csv
+Logged dataset name: famous_people
+Logged dataset source URI: {"uri": "s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/fp.csv"}
 ```
 
-##### Limitations
+### Example: Using Spark
 
-* can't use lakeFS spec, only for loading data but not for ceating mlflow datasets. This will be supported when we have
-  an MLflow dataset source
-
-#### Example: Using Spark
-
-##### Configuration
-
-To configure lakeFS to load a Spark dataframe or multiple formats, including Delta Lake tables, configure Spark to work 
-with lakeFS [S3-compatible API](spark.md#s3-compatible-api), and Delta Lake as follows: 
-
-```python
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.appName("lakeFS / Mlflow") \
-    .config("spark.hadoop.fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
-    .config("spark.hadoop.fs.s3a.endpoint", 'https://example-org.us-east-1.lakefscloud.io') \
-    .config("spark.hadoop.fs.s3a.path.style.access", "true") \
-    .config("spark.hadoop.fs.s3a.access.key", 'AKIAlakefs12345EXAMPLE') \
-    .config("spark.hadoop.fs.s3a.secret.key", 'abc/lakefs/1234567bPxRfiCYEXAMPLEKEY') \
-    .config("spark.jars.packages", "io.delta:delta-core_2.12:2.3.0") \
-    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
-    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
-    .getOrCreate()
-```
-
+The example below configures Spark to access lakeFS' [S3-compatible API](spark.md#s3-compatible-api) and load a Delta
+Lake tables to the experiment. 
 
 ```python
 import lakefs 
 import mlflow
+from pyspark.sql import SparkSession
 
-repo = lakefs.Repository("mlflow-tracking").create(storage_namespace="bucket/my-namespace", default_branch="main", exist_ok=True)
+spark = SparkSession.builder.appName("lakeFS / Mlflow") \
+    .config("spark.hadoop.fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \ 
+    .config("spark.hadoop.fs.s3a.endpoint", 'http://localhost:8000') \ 
+    .config("spark.hadoop.fs.s3a.path.style.access", "true") \ 
+    .config("spark.hadoop.fs.s3a.access.key", 'AKIAlakefs12345EXAMPLE') \ 
+    .config("spark.hadoop.fs.s3a.secret.key", 'abc/lakefs/1234567bPxRfiCYEXAMPLEKEY') \ 
+    .config("spark.jars.packages", "io.delta:delta-core_2.12:2.3.0") \ 
+    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \ 
+    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \ 
+    .getOrCreate()
+
+repo = lakefs.Repository("my-repo")
 repo_id = repo.id
 
 exp_branch = repo.branch("experiment-1").create(source_reference="main", exist_ok=True)
@@ -192,17 +171,20 @@ logged_run = mlflow.get_run(run.info.run_id) #
 logged_dataset = logged_run.inputs.dataset_inputs[0].dataset
 
 # View some of the recorded Dataset information
-print(f"Dataset name: {logged_dataset.name}")
-print(f"Dataset source URI: {logged_dataset.source}")
+print(f"Logged dataset name: {logged_dataset.name}")
+print(f"Logged dataset source URI: {logged_dataset.source}")
 ```
 
 Output 
 ```text
 Dataset name: boat-images
-Dataset source URI: s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/
-Dataset name: boat-images
-Dataset source URI: {"path": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
+Dataset source URI: s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/
+Logged dataset name: boat-images
+Logged dataset source URI: {"path": "s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
 ```
+
+### Reproducing experiment results
+
 
 ![Run inspection](../assets/img/mlflow_inspect_experiment_run.png)
 
@@ -226,8 +208,8 @@ print(f"Run tags: {logged_tags}")
 
 ```text
 Dataset name: boat-images
-Dataset source URI: {"path": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
-Run tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'mlflow-tracking'}
+Dataset source URI: {"path": "s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
+Run tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'my-repo'}
 ```
 
 **Note:** 
@@ -235,7 +217,6 @@ The URI schema is s3 because we configured lakeFS to use Spark via the s3 gatewa
 schema won't work. 
 
 
-### Reproducing experiment results  
 
 #### Inspecting runs input  
 
