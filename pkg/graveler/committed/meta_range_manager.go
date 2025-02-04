@@ -28,12 +28,11 @@ type metaRangeManager struct {
 	params       Params
 	metaManager  RangeManager // For metaranges
 	rangeManager RangeManager // For ranges
-	storageID    graveler.StorageID
 }
 
 var ErrNeedBatchClosers = errors.New("need at least 1 batch uploaded")
 
-func NewMetaRangeManager(params Params, metaManager, rangeManager RangeManager, storageID graveler.StorageID) (MetaRangeManager, error) {
+func NewMetaRangeManager(params Params, metaManager, rangeManager RangeManager) (MetaRangeManager, error) {
 	if params.MaxUploaders < 1 {
 		return nil, fmt.Errorf("only %d async closers: %w", params.MaxUploaders, ErrNeedBatchClosers)
 	}
@@ -41,25 +40,24 @@ func NewMetaRangeManager(params Params, metaManager, rangeManager RangeManager, 
 		params:       params,
 		metaManager:  metaManager,
 		rangeManager: rangeManager,
-		storageID:    storageID,
 	}, nil
 }
 
-func (m *metaRangeManager) Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
-	return m.metaManager.Exists(ctx, Namespace(ns), ID(id))
+func (m *metaRangeManager) Exists(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
+	return m.metaManager.Exists(ctx, StorageID(storageID), Namespace(ns), ID(id))
 }
 
 // GetValue finds the matching graveler.ValueRecord in the MetaRange with the rangeID
-func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error) {
+func (m *metaRangeManager) GetValue(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error) {
 	// Fetch range containing key.
-	rng, err := m.GetRangeByKey(ctx, ns, id, key)
+	rng, err := m.GetRangeByKey(ctx, storageID, ns, id, key)
 	if err != nil {
 		return nil, err
 	}
 
-	r, err := m.rangeManager.GetValue(ctx, Namespace(ns), rng.ID, Key(key))
+	r, err := m.rangeManager.GetValue(ctx, StorageID(storageID), Namespace(ns), rng.ID, Key(key))
 	if err != nil {
-		return nil, fmt.Errorf("get value in range %s of %s for %s: %w", rng.GetID(), id, key, err)
+		return nil, fmt.Errorf("get value in range %s of %s for %s: %w", rng.ID, id, key, err)
 	}
 	value, err := UnmarshalValue(r.Value)
 	if err != nil {
@@ -71,8 +69,8 @@ func (m *metaRangeManager) GetValue(ctx context.Context, ns graveler.StorageName
 	}, nil
 }
 
-func (m *metaRangeManager) GetRangeByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*Range, error) {
-	v, err := m.metaManager.GetValueGE(ctx, Namespace(ns), ID(id), Key(key))
+func (m *metaRangeManager) GetRangeByKey(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*Range, error) {
+	v, err := m.metaManager.GetValueGE(ctx, StorageID(storageID), Namespace(ns), ID(id), Key(key))
 	if errors.Is(err, ErrNotFound) {
 		return nil, err
 	}
@@ -98,15 +96,15 @@ func (m *metaRangeManager) GetRangeByKey(ctx context.Context, ns graveler.Storag
 	return &rng, nil
 }
 
-func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter {
-	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, &m.params, StorageID(m.storageID), Namespace(ns), metadata)
+func (m *metaRangeManager) NewWriter(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter {
+	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, &m.params, StorageID(storageID), Namespace(ns), metadata)
 }
 
-func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (Iterator, error) {
+func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID) (Iterator, error) {
 	if id == "" {
 		return NewEmptyIterator(), nil
 	}
-	rangesIt, err := m.metaManager.NewRangeIterator(ctx, Namespace(ns), ID(id))
+	rangesIt, err := m.metaManager.NewRangeIterator(ctx, StorageID(storageID), Namespace(ns), ID(id))
 	if err != nil {
 		return nil, fmt.Errorf("manage metarange %s: %w", id, err)
 	}
@@ -119,8 +117,4 @@ func (m *metaRangeManager) GetMetaRangeURI(ctx context.Context, ns graveler.Stor
 
 func (m *metaRangeManager) GetRangeURI(ctx context.Context, ns graveler.StorageNamespace, id graveler.RangeID) (string, error) {
 	return m.rangeManager.GetURI(ctx, Namespace(ns), ID(id))
-}
-
-func (m *metaRangeManager) GetStorageID() graveler.StorageID {
-	return m.storageID
 }

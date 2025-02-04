@@ -490,7 +490,7 @@ func (m *merger) validWritingRange(it Iterator) bool {
 	}
 }
 
-func Merge(ctx context.Context, writer MetaRangeWriter, base graveler.Iterator, source graveler.Iterator, destination graveler.Iterator, strategy graveler.MergeStrategy) error {
+func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {
 	m := merger{
 		ctx:      ctx,
 		logger:   logging.FromContext(ctx),

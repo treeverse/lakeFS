@@ -15,7 +15,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/xid"
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -1050,14 +1049,12 @@ type CommittedManager interface {
 	Commit(ctx context.Context, storageID StorageID, ns StorageNamespace, baseMetaRangeID MetaRangeID, changes ValueIterator, allowEmpty bool, opts ...SetOptionsFunc) (MetaRangeID, DiffSummary, error)
 
 	// GetMetaRange returns information where metarangeID is stored.
-	GetMetaRange(ctx context.Context, storageID StorageID, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeAddress, error)
+	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeAddress, error)
 	// GetRange returns information where rangeID is stored.
-	GetRange(ctx context.Context, storageID StorageID, ns StorageNamespace, rangeID RangeID) (RangeAddress, error)
+	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeAddress, error)
 
 	// GetRangeIDByKey returns the RangeID that contains the given key.
 	GetRangeIDByKey(ctx context.Context, storageID StorageID, ns StorageNamespace, id MetaRangeID, key Key) (RangeID, error)
-
-	AddMetadataManager(storageID StorageID, metadataManager committed.MetaRangeManager)
 }
 
 // StagingManager manages entries in a staging area, denoted by a staging token
@@ -3422,11 +3419,11 @@ func (g *Graveler) LoadTags(ctx context.Context, repository *RepositoryRecord, m
 }
 
 func (g *Graveler) GetMetaRange(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) (MetaRangeAddress, error) {
-	return g.CommittedManager.GetMetaRange(ctx, repository.StorageID, repository.StorageNamespace, metaRangeID)
+	return g.CommittedManager.GetMetaRange(ctx, repository.StorageNamespace, metaRangeID)
 }
 
 func (g *Graveler) GetRange(ctx context.Context, repository *RepositoryRecord, rangeID RangeID) (RangeAddress, error) {
-	return g.CommittedManager.GetRange(ctx, repository.StorageID, repository.StorageNamespace, rangeID)
+	return g.CommittedManager.GetRange(ctx, repository.StorageNamespace, rangeID)
 }
 
 func (g *Graveler) DumpCommits(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {

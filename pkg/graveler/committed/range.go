@@ -3,7 +3,6 @@ package committed
 import (
 	"bytes"
 
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -34,10 +33,6 @@ func (r Range) EqualBounds(o *Range) bool {
 
 func (r Range) BeforeRange(o *Range) bool {
 	return bytes.Compare(r.MaxKey, o.MinKey) < 0
-}
-
-func (r Range) GetID() graveler.RangeID {
-	return graveler.RangeID(r.ID)
 }
 
 func MarshalRange(r Range) ([]byte, error) {
