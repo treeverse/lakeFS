@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -107,18 +108,31 @@ var setupCmd = &cobra.Command{
 }
 
 func setupLakeFS(ctx context.Context, cfg *config.BaseConfig, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string, noSetupCheck bool) (*model.Credential, error) {
-	if !noSetupCheck {
+	var (
+		err            error
+		isCommPrefsSet = false
+	)
+	if noSetupCheck {
+		// check if we already set comm preferences, we like to skip reset in case we already set it
+		isCommPrefsSet, err = metadataManager.IsCommPrefsSet(ctx)
+		if err != nil && !errors.Is(err, auth.ErrNotFound) {
+			return nil, fmt.Errorf("check comm prefs: %w", err)
+		}
+	} else {
+		// check if already initialized
 		initialized, err := metadataManager.IsInitialized(ctx)
 		if err != nil || initialized {
-			// return on error or if already initialized
+			// we return nil credentials to indicate setup is already complete
 			return nil, err
 		}
 	}
 
-	// mark comm prefs was not provided
-	_, err := metadataManager.UpdateCommPrefs(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("update comm prefs: %w", err)
+	if !isCommPrefsSet {
+		// mark comm prefs was not provided
+		_, err := metadataManager.UpdateCommPrefs(ctx, nil)
+		if err != nil {
+			return nil, fmt.Errorf("update comm prefs: %w", err)
+		}
 	}
 
 	// populate initial data and create admin user
