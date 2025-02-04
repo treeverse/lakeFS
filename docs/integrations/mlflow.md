@@ -16,7 +16,7 @@ and comparison of experiment results.
 
 {% include toc_2-3.html %}
 
-## Why use MLflow with lakeFS? 
+## Benefits of integrating MLflow with lakeFS 
 
 1. **Experiment Reproducibility**: As a data versioning system, lakeFS enables dataset versioning. Combined with MLflow's
 [input logging](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_input) capability, lakeFS helps you track
@@ -33,10 +33,12 @@ merged back into the main dataset, incorporating the new insights seamlessly.
 We will demonstrate how to load versioned data from lakeFS into MLflow experiment runs, log run inputs, and later trace
 back the exact dataset used for a run to reproduce experiment results.
 
-We will use the [mlflow.data](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow-data) module that helps record 
-and retrieve dataset information into MLflow experiment runs. 
+We will use lakeFS for versioning operations and [mlflow.data](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow-data)
+module that helps record and retrieve dataset information into MLflow experiment runs. 
 
-### The recommended lakeFS branching strategy   
+### Recommended Workflow
+
+This section reviews how we bring the power of data versioning into MLflow experiments to make the most out of this combination. 
 
 1. **Create a branch per experiment**: Before you start an experiment, create a dedicated lakeFS branch for it. This will allow you to make changes to your input dataset
 without copying it. You will load data from this branch to your MLflow runs. 
@@ -45,7 +47,7 @@ which you made changes to your input dataset, commit them to lakeFS using a mean
 run we will load the dataset version that corresponds to the branch head commit and will make sure to keep track of this 
 reference so that we can later reproduce run results. 
 
-### Load versioned datasets
+#### Load versioned datasets
 
 mlflow.data provides APIs for constructing Datasets from a variety of Python data objects, Spark DataFrames, and more. 
 lakeFS seamless integration with both Spark and common Python libraries enables creating MLflow 
@@ -55,7 +57,9 @@ lakeFS.
 
 * s3 gateway only? 
 
-#### Python libraries integration
+### Practical examples
+
+#### Example: Using Pandas 
 
 ```python
 import lakefs 
@@ -115,13 +119,12 @@ Dataset name: famous_people
 Dataset source URI: {"uri": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/fp.csv"}
 ```
 
-
 ##### Limitations
 
 * can't use lakeFS spec, only for loading data but not for ceating mlflow datasets. This will be supported when we have
   an MLflow dataset source
 
-#### Spark-based
+#### Example: Using Spark
 
 ##### Configuration
 
@@ -142,7 +145,6 @@ spark = SparkSession.builder.appName("lakeFS / Mlflow") \
     .getOrCreate()
 ```
 
-##### Spark example 
 
 ```python
 import lakefs 
@@ -217,54 +219,14 @@ Dataset source URI: {"path": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f1668
 Run tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'mlflow-tracking'}
 ```
 
-
-
-
-
-##### Load dataset 
-
-```python
-import mlflow
-
-dataset_lakefs_uri = "s3://repo/my-experiment/gold/train_v2/"
-
-# Load delta lake table from lakeFS
-dataset = mlflow.data.load_delta(path=dataset_lakefs_uri, name="boat-images")
-
-# View some of the recorded Dataset information
-print(f"Dataset name: {dataset.name}")
-print(f"Dataset source URI: {dataset.source.path}")
-```
-
-Output:
-```text
-Dataset name: boat-images
-Dataset source URI: {"path": "s3://repo/experiment-branch/gold/train_v2/"}
-```
-
 **Note:** 
 The URI schema is s3 because we configured lakeFS to use Spark via the s3 gateway. with these configurations the `lakefs://`
 schema won't work. 
 
 
-### Log run input
+### Reproducing experiment results  
 
-Once you created an MLflow dataset of the type of your choice, use it in yout experiment runs and log it as input of a run.  
-
-```python
-with mlflow.start_run() as run:
-    mlflow.log_input(dataset, context="training")
-    mlflow.set_tag("lakefs_repo", "mlflow-tracking")
-    mlflow.set_tag("lakefs_branch", "my-experiment")
-    mlflow.set_tag("lakefs_head_commit_id", "b2d721a4a06b4071de425cfade0f41b0346512a4a0b5db440f53087abea925d3")
-```
-
-**Notes:** 
-* The dataset source will point to its lakeFS URI on branch "my-experiment".
-* To retrieve the dataset version used on a run, make sure that the branch head commit points to the logged lakeFS head
-commit id.
-
-### Inspecting runs input  
+#### Inspecting runs input  
 
 MLflow's tracking UI allows you to inspect the inputs of each run, including the specific dataset logged. However, to 
 inspect the exact dataset version we recommend the following approach.  
@@ -292,7 +254,5 @@ Dataset digest: e88c85ce
 Dataset source URI: {"path": "s3://repo/experiment-branch/gold/train_v2/"}
 ```
 
-
-### Bonus
 
 * You can assert if two experiment runs used the same dataset by comparing dataset sources. 
