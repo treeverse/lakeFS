@@ -138,7 +138,7 @@ func init() {
 	f.String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
 	f.String("access-key-id", "", "AWS-format access key ID to create for that user (for integration)")
 	f.String("secret-access-key", "", "AWS-format secret access key to create for that user (for integration)")
-	f.Bool("no-check", false, "skip checking if setup is already complete")
+	f.Bool("no-check", false, "skip checking if setup is already complete and do anyway")
 	if err := f.MarkHidden("access-key-id"); err != nil {
 		// (internal error)
 		_, _ = fmt.Fprint(os.Stderr, err)
