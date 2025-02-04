@@ -14,9 +14,9 @@ LAKEFS_ACCESS_KEY = os.getenv('LAKEFS_ACCESS_KEY_ID')
 LAKEFS_SECRET_KEY = os.getenv('LAKEFS_SECRET_ACCESS_KEY')
 LAKEFS_ENDPOINT = os.getenv('LAKEFS_ENDPOINT')
 S3_PROVIDER = os.getenv('S3_PROVIDER', default="AWS")
-S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY_ID')
-S3_SECRET_KEY = os.getenv('S3_SECRET_ACCESS_KEY')
-S3_ENDPOINT = os.getenv('S3_ENDPOINT_URL', default="")
+S3_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
+S3_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+S3_ENDPOINT = os.getenv("AWS_ENDPOINT", default="")
 
 SUCCESS_MSG = "Export completed successfully!"
 
