@@ -18,34 +18,45 @@ and comparison of experiment results.
 
 ## Benefits of integrating MLflow with lakeFS 
 
-1. **Experiment Reproducibility**: As a data versioning system, lakeFS enables dataset versioning. Combined with MLflow's
-[input logging](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_input) capability, lakeFS helps you track
-not only the dataset used for an experiment run but its exact version. Accurate tracking of run inputs makes experiments
-truly reproducible.
-2. **Parallel Experiments with Zero Data Copy**: lakeFS employs a copy-on-write technique, allowing for efficient 
-[branch](../understand/model.md#branches) creation without duplicating data. This enables multiple experiments to be 
-conducted in parallel, with each branch providing an isolated environment for modifications. Changes made in one branch
-do not affect others, ensuring safe collaboration among team members. Once an experiment is complete, the branch can be
-merged back into the main dataset, incorporating the new insights seamlessly.
+Integrating MLflow with lakeFS offers several advantages that enhance the machine learning workflow:
+1. **Experiment Reproducibility**: By leveraging MLflow's [input logging](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_input)
+capabilities alongside lakeFS's data versioning, you can precisely track the specific dataset version used in each experiment
+run. This ensures that experiments remain reproducible over time, even as datasets evolve.
+2. **Parallel Experiments with Zero Data Copy**: Parallel Experiments with Zero Data Copy: lakeFS enables efficient [branching](../understand/model.md#branches) without
+duplicating data. This allows for multiple experiments to be conducted in parallel, with each branch providing an isolated
+environment for dataset modifications. Changes in one branch do not affect others, promoting safe collaboration among
+team members. Once an experiment is complete, the branch can be seamlessly merged back into the main dataset, incorporating
+new insights.
 
 ## How to use MLflow with lakeFS
 
-We will demonstrate how to load versioned data from lakeFS into MLflow experiment runs, log run inputs, and later trace
-back the exact dataset used for a run to reproduce experiment results.
+To harness the combined capabilities of MLflow and lakeFS for safe experimentation and accurate result reproduction, consider
+the workflow below and review the [practical examples](#practical-examples) provided on the next section.  
 
-We will use lakeFS for versioning operations and [mlflow.data](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow-data)
-module that helps record and retrieve dataset information into MLflow experiment runs. 
+1. **Create a branch for each experiment**: Start each experiment by creating a dedicated lakeFS branch for it. This approach 
+allows you to safely make changes to your input dataset without duplicating it. You will later load data from this branch 
+to your MLflow experiment runs. 
+2. **Read datasets from the experiment branch**: Read Datasets from the Experiment Branch: Conduct your experiments by 
+reading data directly from the dedicated branch. We recommend to read the dataset from the head commit of the branch to
+ensure precise version tracking.
+3. **Create an MLflow Dataset pointing to lakeFS**: Use MLflow's [Dataset](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow.data.dataset.Dataset)
+ensuring that the [dataset source](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow.data.dataset_source.DatasetSource)
+points to lakeFS. 
+4. **Log your input**: Use MLflow's [log_input](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_input) 
+function to log the versioned dataset stored in lakeFS.    
+5. **Commit dataset changes**: Machine learning development is inherently iterative. When you make changes to your input dataset,
+commit them to the experiment branch in lakeFS with a meaningful commit message. During an experiment run, load the dataset
+version corresponding to the branch's head commit and track this reference to facilitate future result reproduction.
+6. **Merge experiment results**: After concluding your experimentation, merge the branch used for the selected experiment 
+run back into the main branch.
 
-### Recommended Workflow
+{: .note}
 
-This section reviews how we bring the power of data versioning into MLflow experiments to make the most out of this combination. 
-
-1. **Create a branch per experiment**: Before you start an experiment, create a dedicated lakeFS branch for it. This will allow you to make changes to your input dataset
-without copying it. You will load data from this branch to your MLflow runs. 
-2. **Commit dataset changes**: ML development is an iterative process that includes trial and error. If you reached a point in 
-which you made changes to your input dataset, commit them to lakeFS using a meaningful commit message. During an experiment 
-run we will load the dataset version that corresponds to the branch head commit and will make sure to keep track of this 
-reference so that we can later reproduce run results. 
+**Note: Branch per experiment Vs. Branch per experiment run**<br>
+While it's possible to create a lakeFS branch for each experiment run, given that lakeFS branches are both quick and 
+cost-effective to create, it's often more efficient to create a branch per experiment. By reading directly from the head
+commit of the experiment branch, you can distinguish between dataset versions without creating excessive branches. This
+practice maintains branch hygiene within lakeFS.
 
 #### Load versioned datasets
 
