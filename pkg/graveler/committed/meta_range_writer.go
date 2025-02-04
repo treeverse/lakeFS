@@ -15,6 +15,7 @@ type GeneralMetaRangeWriter struct {
 	ctx              context.Context
 	metadata         graveler.Metadata
 	params           *Params // for breaking ranges
+	storageID        StorageID
 	namespace        Namespace
 	metaRangeManager RangeManager
 	rangeManager     RangeManager
@@ -35,7 +36,7 @@ var (
 	ErrNilValue     = errors.New("record value should not be nil")
 )
 
-func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
+func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManager RangeManager, params *Params, storageID StorageID, namespace Namespace, md graveler.Metadata) *GeneralMetaRangeWriter {
 	return &GeneralMetaRangeWriter{
 		ctx:              ctx,
 		metadata:         md,
@@ -43,6 +44,7 @@ func NewGeneralMetaRangeWriter(ctx context.Context, rangeManager, metaRangeManag
 		metaRangeManager: metaRangeManager,
 		batchWriteCloser: NewBatchCloser(params.MaxUploaders),
 		params:           params,
+		storageID:        storageID,
 		namespace:        namespace,
 	}
 }
@@ -58,7 +60,7 @@ func (w *GeneralMetaRangeWriter) WriteRecord(record graveler.ValueRecord) error 
 
 	var err error
 	if w.rangeWriter == nil {
-		w.rangeWriter, err = w.rangeManager.GetWriter(w.ctx, w.namespace, w.metadata)
+		w.rangeWriter, err = w.rangeManager.GetWriter(w.ctx, w.storageID, w.namespace, w.metadata)
 		if err != nil {
 			return fmt.Errorf("get range writer: %w", err)
 		}
@@ -145,7 +147,7 @@ func (w *GeneralMetaRangeWriter) shouldBreakAtKey(key graveler.Key) bool {
 
 // writeRangesToMetaRange writes all ranges to a MetaRange and returns the MetaRangeID
 func (w *GeneralMetaRangeWriter) writeRangesToMetaRange(ctx context.Context) (*graveler.MetaRangeID, error) {
-	metaRangeWriter, err := w.metaRangeManager.GetWriter(w.ctx, w.namespace, w.metadata)
+	metaRangeWriter, err := w.metaRangeManager.GetWriter(w.ctx, w.storageID, w.namespace, w.metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating metarange writer: %w", err)
 	}
