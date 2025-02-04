@@ -2602,9 +2602,9 @@ func (m *MockCommittedManager) EXPECT() *MockCommittedManagerMockRecorder {
 }
 
 // Commit mocks base method.
-func (m *MockCommittedManager) Commit(ctx context.Context, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, allowEmpty bool, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
+func (m *MockCommittedManager) Commit(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, baseMetaRangeID graveler.MetaRangeID, changes graveler.ValueIterator, allowEmpty bool, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, graveler.DiffSummary, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, ns, baseMetaRangeID, changes, allowEmpty}
+	varargs := []interface{}{ctx, storageID, ns, baseMetaRangeID, changes, allowEmpty}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -2616,70 +2616,70 @@ func (m *MockCommittedManager) Commit(ctx context.Context, ns graveler.StorageNa
 }
 
 // Commit indicates an expected call of Commit.
-func (mr *MockCommittedManagerMockRecorder) Commit(ctx, ns, baseMetaRangeID, changes, allowEmpty interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Commit(ctx, storageID, ns, baseMetaRangeID, changes, allowEmpty interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, ns, baseMetaRangeID, changes, allowEmpty}, opts...)
+	varargs := append([]interface{}{ctx, storageID, ns, baseMetaRangeID, changes, allowEmpty}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockCommittedManager)(nil).Commit), varargs...)
 }
 
 // Compare mocks base method.
-func (m *MockCommittedManager) Compare(ctx context.Context, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.DiffIterator, error) {
+func (m *MockCommittedManager) Compare(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, destination, source, base graveler.MetaRangeID) (graveler.DiffIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Compare", ctx, ns, destination, source, base)
+	ret := m.ctrl.Call(m, "Compare", ctx, storageID, ns, destination, source, base)
 	ret0, _ := ret[0].(graveler.DiffIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Compare indicates an expected call of Compare.
-func (mr *MockCommittedManagerMockRecorder) Compare(ctx, ns, destination, source, base interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Compare(ctx, storageID, ns, destination, source, base interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Compare", reflect.TypeOf((*MockCommittedManager)(nil).Compare), ctx, ns, destination, source, base)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Compare", reflect.TypeOf((*MockCommittedManager)(nil).Compare), ctx, storageID, ns, destination, source, base)
 }
 
 // Diff mocks base method.
-func (m *MockCommittedManager) Diff(ctx context.Context, ns graveler.StorageNamespace, left, right graveler.MetaRangeID) (graveler.DiffIterator, error) {
+func (m *MockCommittedManager) Diff(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, left, right graveler.MetaRangeID) (graveler.DiffIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Diff", ctx, ns, left, right)
+	ret := m.ctrl.Call(m, "Diff", ctx, storageID, ns, left, right)
 	ret0, _ := ret[0].(graveler.DiffIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Diff indicates an expected call of Diff.
-func (mr *MockCommittedManagerMockRecorder) Diff(ctx, ns, left, right interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Diff(ctx, storageID, ns, left, right interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Diff", reflect.TypeOf((*MockCommittedManager)(nil).Diff), ctx, ns, left, right)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Diff", reflect.TypeOf((*MockCommittedManager)(nil).Diff), ctx, storageID, ns, left, right)
 }
 
 // Exists mocks base method.
-func (m *MockCommittedManager) Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
+func (m *MockCommittedManager) Exists(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Exists", ctx, ns, id)
+	ret := m.ctrl.Call(m, "Exists", ctx, storageID, ns, id)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Exists indicates an expected call of Exists.
-func (mr *MockCommittedManagerMockRecorder) Exists(ctx, ns, id interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Exists(ctx, storageID, ns, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockCommittedManager)(nil).Exists), ctx, ns, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockCommittedManager)(nil).Exists), ctx, storageID, ns, id)
 }
 
 // Get mocks base method.
-func (m *MockCommittedManager) Get(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
+func (m *MockCommittedManager) Get(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID, key graveler.Key) (*graveler.Value, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, ns, rangeID, key)
+	ret := m.ctrl.Call(m, "Get", ctx, storageID, ns, rangeID, key)
 	ret0, _ := ret[0].(*graveler.Value)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockCommittedManagerMockRecorder) Get(ctx, ns, rangeID, key interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Get(ctx, storageID, ns, rangeID, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCommittedManager)(nil).Get), ctx, ns, rangeID, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockCommittedManager)(nil).Get), ctx, storageID, ns, rangeID, key)
 }
 
 // GetMetaRange mocks base method.
@@ -2713,24 +2713,24 @@ func (mr *MockCommittedManagerMockRecorder) GetRange(ctx, ns, rangeID interface{
 }
 
 // GetRangeIDByKey mocks base method.
-func (m *MockCommittedManager) GetRangeIDByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (graveler.RangeID, error) {
+func (m *MockCommittedManager) GetRangeIDByKey(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (graveler.RangeID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRangeIDByKey", ctx, ns, id, key)
+	ret := m.ctrl.Call(m, "GetRangeIDByKey", ctx, storageID, ns, id, key)
 	ret0, _ := ret[0].(graveler.RangeID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRangeIDByKey indicates an expected call of GetRangeIDByKey.
-func (mr *MockCommittedManagerMockRecorder) GetRangeIDByKey(ctx, ns, id, key interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) GetRangeIDByKey(ctx, storageID, ns, id, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeIDByKey", reflect.TypeOf((*MockCommittedManager)(nil).GetRangeIDByKey), ctx, ns, id, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeIDByKey", reflect.TypeOf((*MockCommittedManager)(nil).GetRangeIDByKey), ctx, storageID, ns, id, key)
 }
 
 // Import mocks base method.
-func (m *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, prefixes []graveler.Prefix, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
+func (m *MockCommittedManager) Import(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, destination, source graveler.MetaRangeID, prefixes []graveler.Prefix, opts ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, ns, destination, source, prefixes}
+	varargs := []interface{}{ctx, storageID, ns, destination, source, prefixes}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -2741,25 +2741,25 @@ func (m *MockCommittedManager) Import(ctx context.Context, ns graveler.StorageNa
 }
 
 // Import indicates an expected call of Import.
-func (mr *MockCommittedManagerMockRecorder) Import(ctx, ns, destination, source, prefixes interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) Import(ctx, storageID, ns, destination, source, prefixes interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, ns, destination, source, prefixes}, opts...)
+	varargs := append([]interface{}{ctx, storageID, ns, destination, source, prefixes}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Import", reflect.TypeOf((*MockCommittedManager)(nil).Import), varargs...)
 }
 
 // List mocks base method.
-func (m *MockCommittedManager) List(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.ValueIterator, error) {
+func (m *MockCommittedManager) List(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, rangeID graveler.MetaRangeID) (graveler.ValueIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, ns, rangeID)
+	ret := m.ctrl.Call(m, "List", ctx, storageID, ns, rangeID)
 	ret0, _ := ret[0].(graveler.ValueIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // List indicates an expected call of List.
-func (mr *MockCommittedManagerMockRecorder) List(ctx, ns, rangeID interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) List(ctx, storageID, ns, rangeID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockCommittedManager)(nil).List), ctx, ns, rangeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockCommittedManager)(nil).List), ctx, storageID, ns, rangeID)
 }
 
 // Merge mocks base method.
@@ -2783,48 +2783,48 @@ func (mr *MockCommittedManagerMockRecorder) Merge(ctx, ns, destination, source, 
 }
 
 // WriteMetaRange mocks base method.
-func (m *MockCommittedManager) WriteMetaRange(ctx context.Context, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
+func (m *MockCommittedManager) WriteMetaRange(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, ranges []*graveler.RangeInfo) (*graveler.MetaRangeInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteMetaRange", ctx, ns, ranges)
+	ret := m.ctrl.Call(m, "WriteMetaRange", ctx, storageID, ns, ranges)
 	ret0, _ := ret[0].(*graveler.MetaRangeInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteMetaRange indicates an expected call of WriteMetaRange.
-func (mr *MockCommittedManagerMockRecorder) WriteMetaRange(ctx, ns, ranges interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) WriteMetaRange(ctx, storageID, ns, ranges interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteMetaRange), ctx, ns, ranges)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteMetaRange), ctx, storageID, ns, ranges)
 }
 
 // WriteMetaRangeByIterator mocks base method.
-func (m *MockCommittedManager) WriteMetaRangeByIterator(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
+func (m *MockCommittedManager) WriteMetaRangeByIterator(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, it graveler.ValueIterator, metadata graveler.Metadata) (*graveler.MetaRangeID, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteMetaRangeByIterator", ctx, ns, it, metadata)
+	ret := m.ctrl.Call(m, "WriteMetaRangeByIterator", ctx, storageID, ns, it, metadata)
 	ret0, _ := ret[0].(*graveler.MetaRangeID)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteMetaRangeByIterator indicates an expected call of WriteMetaRangeByIterator.
-func (mr *MockCommittedManagerMockRecorder) WriteMetaRangeByIterator(ctx, ns, it, metadata interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) WriteMetaRangeByIterator(ctx, storageID, ns, it, metadata interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRangeByIterator", reflect.TypeOf((*MockCommittedManager)(nil).WriteMetaRangeByIterator), ctx, ns, it, metadata)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMetaRangeByIterator", reflect.TypeOf((*MockCommittedManager)(nil).WriteMetaRangeByIterator), ctx, storageID, ns, it, metadata)
 }
 
 // WriteRange mocks base method.
-func (m *MockCommittedManager) WriteRange(ctx context.Context, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
+func (m *MockCommittedManager) WriteRange(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, it graveler.ValueIterator) (*graveler.RangeInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteRange", ctx, ns, it)
+	ret := m.ctrl.Call(m, "WriteRange", ctx, storageID, ns, it)
 	ret0, _ := ret[0].(*graveler.RangeInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteRange indicates an expected call of WriteRange.
-func (mr *MockCommittedManagerMockRecorder) WriteRange(ctx, ns, it interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) WriteRange(ctx, storageID, ns, it interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteRange), ctx, ns, it)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteRange", reflect.TypeOf((*MockCommittedManager)(nil).WriteRange), ctx, storageID, ns, it)
 }
 
 // MockStagingManager is a mock of StagingManager interface.

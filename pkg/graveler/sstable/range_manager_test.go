@@ -16,8 +16,8 @@ import (
 	fsMock "github.com/treeverse/lakefs/pkg/pyramid/mock"
 )
 
-func makeNewReader(r fakeReader) func(context.Context, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
-	return func(context.Context, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
+func makeNewReader(r fakeReader) func(context.Context, committed.StorageID, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
+	return func(context.Context, committed.StorageID, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
 		return r.Reader, nil
 	}
 }
@@ -43,7 +43,7 @@ func TestGetEntrySuccess(t *testing.T) {
 	ns := "some-ns"
 	sstableID := "some-id"
 
-	val, err := sut.GetValue(ctx, committed.Namespace(ns), committed.ID(sstableID), committed.Key(keys[len(keys)/3]))
+	val, err := sut.GetValue(ctx, "", committed.Namespace(ns), committed.ID(sstableID), committed.Key(keys[len(keys)/3]))
 	require.NoError(t, err)
 	require.NotNil(t, val)
 
@@ -58,14 +58,14 @@ func TestGetEntryCacheFailure(t *testing.T) {
 
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(func(context.Context, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(func(context.Context, committed.StorageID, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
 		return nil, expectedErr
 	}, &NoCache{}, mockFS, crypto.SHA256)
 
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
 
-	val, err := sut.GetValue(ctx, committed.Namespace(ns), sstableID, committed.Key("some-key"))
+	val, err := sut.GetValue(ctx, "", committed.Namespace(ns), sstableID, committed.Key("some-key"))
 	require.Error(t, expectedErr, err)
 	require.Nil(t, val)
 }
@@ -87,7 +87,7 @@ func TestGetEntryNotFound(t *testing.T) {
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
 
-	val, err := sut.GetValue(ctx, committed.Namespace(ns), sstableID, committed.Key("does-not-exist"))
+	val, err := sut.GetValue(ctx, "", committed.Namespace(ns), sstableID, committed.Key("does-not-exist"))
 	require.Error(t, err)
 	require.Nil(t, val)
 
@@ -104,9 +104,9 @@ func TestGetWriterSuccess(t *testing.T) {
 
 	ns := "some-ns"
 	mockFile := fsMock.NewMockStoredFile(ctrl)
-	mockFS.EXPECT().Create(ctx, ns).Return(mockFile, nil).Times(1)
+	mockFS.EXPECT().Create(ctx, "", ns).Return(mockFile, nil).Times(1)
 
-	writer, err := sut.GetWriter(ctx, committed.Namespace(ns), nil)
+	writer, err := sut.GetWriter(ctx, "", committed.Namespace(ns), nil)
 	require.NoError(t, err)
 	require.NotNil(t, writer)
 
@@ -133,7 +133,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
 
-	iter, err := sut.NewRangeIterator(ctx, committed.Namespace(ns), sstableID)
+	iter, err := sut.NewRangeIterator(ctx, "", committed.Namespace(ns), sstableID)
 	require.NoError(t, err)
 	require.NotNil(t, iter)
 
@@ -163,9 +163,9 @@ func TestGetWriterRangeID(t *testing.T) {
 		mockFile.EXPECT().Sync().Return(nil).AnyTimes()
 		mockFile.EXPECT().Close().Return(nil).Times(1)
 		mockFile.EXPECT().Store(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		mockFS.EXPECT().Create(ctx, ns).Return(mockFile, nil).Times(1)
+		mockFS.EXPECT().Create(ctx, "", ns).Return(mockFile, nil).Times(1)
 
-		writer, err := sut.GetWriter(ctx, ns, nil)
+		writer, err := sut.GetWriter(ctx, "", ns, nil)
 		require.NoError(t, err)
 		require.NotNil(t, writer)
 		err = writer.WriteRecord(committed.Record{
