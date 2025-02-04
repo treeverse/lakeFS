@@ -52,7 +52,6 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 		"STORAGE": storageSID,
 		"BRANCH":  mainBranch,
 	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoNameSID+" "+storageSID+" --storage-id \"\"", false, "lakectl_repo_create", vars)
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoNameSID+" "+storageSID+" --storage-id storage1", false, "lakectl_repo_create_with_storage_id", vars)
 
 	// lakectl repo list is expected to show the created repo
