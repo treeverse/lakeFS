@@ -183,68 +183,68 @@ Logged dataset name: boat-images
 Logged dataset source URI: {"path": "s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
 ```
 
-### Reproducing experiment results
+### Reproduce experiment results
 
+To reproduce the results of a specific experiment run in MLflow, it's essential to retrieve the exact dataset and associated
+metadata used during that run. While the MLflow Tracking UI provides a general overview, detailed dataset information 
+and its source are best accessed programmatically.
 
-![Run inspection](../assets/img/mlflow_inspect_experiment_run.png)
+1. Obtain the Run ID: Navigate to the MLflow UI and copy the Run ID of the experiment you're interested in.
+
+![mlflow run](../assets/img/mlflow_inspect_experiment_run.png)
+
+2. Extract Dataset Information Using MLflow's Python SDK:
 
 ```python
 import mlflow
 
 # Inspect run's dataset and tags
-run = mlflow.get_run("c0f8fbb1b63748abaa0a6479115e272c") # 
+run_id = "c0f8fbb1b63748abaa0a6479115e272c"
+run = mlflow.get_run(run_id) 
 
 # Retrieve the Dataset object
 logged_dataset = run.inputs.dataset_inputs[0].dataset
 
 # View some of the recorded Dataset information
-print(f"Dataset name: {logged_dataset.name}")
-print(f"Dataset source URI: {logged_dataset.source}")
+print(f"Run ID: {run_id} Dataset name: {logged_dataset.name}")
+print(f"Run ID: {run_id} Dataset source URI: {logged_dataset.source}")
 
 # Retrieve run's tags 
 logged_tags = run.data.tags
-print(f"Run tags: {logged_tags}")
+print(f"Run ID: {run_id} tags: {logged_tags}")
 ```
 
+Output
 ```text
-Dataset name: boat-images
-Dataset source URI: {"path": "s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
-Run tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'my-repo'}
+Run ID: c0f8fbb1b63748abaa0a6479115e272c Dataset name: boat-images
+Run ID: c0f8fbb1b63748abaa0a6479115e272c Dataset source URI: {"path": "s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
+Run ID: c0f8fbb1b63748abaa0a6479115e272c tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'my-repo'}
 ```
 
-**Note:** 
-The URI schema is s3 because we configured lakeFS to use Spark via the s3 gateway. with these configurations the `lakefs://`
-schema won't work. 
+Notes:
+* The Dataset Source URI provides the location of the dataset at the exact version used in the run. 
+* Run tags, such as 'lakefs_branch' and 'lakefs_repo', offer additional context about the dataset's origin within lakeFS.
 
+### Compare runs input
 
-
-#### Inspecting runs input  
-
-MLflow's tracking UI allows you to inspect the inputs of each run, including the specific dataset logged. However, to 
-inspect the exact dataset version we recommend the following approach.  
-
-1. Get runID: go to the MLflow UI and copy the runID of your choice.
-2. Extract dataset information: extract the information of the dataset used in this run.  
+To determine whether two distinct MLflow runs utilized the same input dataset, you can compare specific attributes of 
+their logged Dataset objects. The source attribute, which contains the versioned dataset's URI, is a common choice for 
+this comparison. Here's an example:
 
 ```python
-# Retrieve the run information
-logged_run = mlflow.get_run("5f7c01e28b2e41b0963dab99198f278f")
+import mlflow
+
+first_run_id = "4c0464d665944dc5bb90587d455948b8"
+first_run = mlflow.get_run(first_run_id) 
 
 # Retrieve the Dataset object
-logged_dataset = logged_run.inputs.dataset_inputs[0].dataset
+first_dataset = first_run.inputs.dataset_inputs[0].dataset
 
-# View some of the recorded Dataset information
-print(f"Dataset name: {logged_dataset.name}")
-print(f"Dataset digest: {logged_dataset.digest}")
-print(f"Dataset source URI: {logged_dataset.source}")
+sec_run_id = "12b91e073a8b40df97ea8d570534de31"
+sec_run = mlflow.get_run(sec_run_id) 
+
+# Retrieve the Dataset object
+sec_dataset = sec_run.inputs.dataset_inputs[0].dataset
+
+assert first_dataset.source == sec_dataset.source, "Dataset sources are not equal."
 ```
-Output 
-```text
-## Output
-Dataset name: boat-images
-Dataset digest: e88c85ce
-Dataset source URI: {"path": "s3://repo/experiment-branch/gold/train_v2/"}
-```
-
-
-* You can assert if two experiment runs used the same dataset by comparing dataset sources. 
