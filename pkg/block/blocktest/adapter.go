@@ -220,10 +220,11 @@ func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk b
 	uri, err := url.Parse(p)
 	require.NoError(t, err, "URL Parse Error")
 
-	walker, err := block.NewWalkerWrapperFromAdapter(adapter, "", p, block.WalkerOptions{StorageURI: uri})
+	walker, err := adapter.GetWalker("", block.WalkerOptions{StorageURI: uri})
 	require.NoError(t, err, "GetWalker failed")
 
-	err = walker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
+	wwalker := block.NewWalkerWrapper(walker, uri)
+	err = wwalker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 		_, p, _ := strings.Cut(e.Address, uri.String())
 		tree = append(tree, p)
 		return nil

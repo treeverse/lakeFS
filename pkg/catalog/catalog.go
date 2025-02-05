@@ -405,7 +405,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
 
 	return &Catalog{
-		Config:                cfg.Config,
 		BlockAdapter:          tierFSParams.Adapter,
 		Store:                 gStore,
 		UGCPrepareMaxFileSize: baseCfg.UGC.PrepareMaxFileSize,
@@ -2326,15 +2325,17 @@ func (c *Catalog) importAsync(ctx context.Context, repository *graveler.Reposito
 			if err != nil {
 				return fmt.Errorf("could not parse storage URI %s: %w", uri, err)
 			}
-			walker, err := block.NewWalkerWrapperFromAdapter(c.BlockAdapter, repository.StorageID.String(), source.Path, block.WalkerOptions{StorageURI: uri})
+
+			walker, err := c.BlockAdapter.GetWalker(repository.StorageID.String(), block.WalkerOptions{StorageURI: uri})
 			if err != nil {
-				return err
+				return fmt.Errorf("creating object-store walker on path %s: %w", source.Path, err)
 			}
 
-			it, err := NewWalkEntryIterator(wgCtx, walker, source.Type, source.Destination, "", "")
+			it, err := NewWalkEntryIterator(wgCtx, block.NewWalkerWrapper(walker, uri), source.Type, source.Destination, "", "")
 			if err != nil {
 				return fmt.Errorf("creating walk iterator on path %s: %w", source.Path, err)
 			}
+
 			logger.WithFields(logging.Fields{"source": source.Path, "itr": it}).Debug("Ingest source")
 			defer it.Close()
 			return importManager.Ingest(it)
@@ -2503,12 +2504,13 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not parse storage URI %s: %w", uri, err)
 	}
-	walker, err := block.NewWalkerWrapperFromAdapter(c.BlockAdapter, repository.StorageID.String(), params.SourceURI, block.WalkerOptions{StorageURI: uri, SkipOutOfOrder: true})
+
+	walker, err := c.BlockAdapter.GetWalker(repository.StorageID.String(), block.WalkerOptions{StorageURI: uri})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("creating object-store walker on path %s: %w", params.SourceURI, err)
 	}
 
-	it, err := NewWalkEntryIterator(ctx, walker, ImportPathTypePrefix, params.Prepend, params.After, params.ContinuationToken)
+	it, err := NewWalkEntryIterator(ctx, block.NewWalkerWrapper(walker, uri), ImportPathTypePrefix, params.Prepend, params.After, params.ContinuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}
