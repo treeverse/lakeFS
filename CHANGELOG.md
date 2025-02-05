@@ -6,6 +6,7 @@
 - change login placeholders for remote authenticator (#8519)
 - Make http client type configurable (#8516)
 - S3GW: Support list multipart uploads (#8531)
+- Metric: Report time-to-first-byte for get object API (#8503)
 
 :bug: Bugs fixed:
 - Fix: react-dropzone dependency (#8534)
