@@ -96,10 +96,11 @@ var fsDownloadCmd = &cobra.Command{
 			go func() {
 				defer wg.Done()
 				for relPath := range ch {
+					srcPath := remote.GetPath() + relPath
 					src := uri.URI{
 						Repository: remote.Repository,
 						Ref:        remote.Ref,
-						Path:       &relPath,
+						Path:       &srcPath,
 					}
 					destPath := filepath.Join(dest, relPath)
 					singleObjectDownloadHelper(ctx, downloader, src, destPath)
