@@ -1,5 +1,11 @@
 # Changelog
 
+# v1.49.1
+
+:bug: Bugs fixed:
+- Fix: UI Create user (#8604)
+- Fix: Change validation error message on create repository to reflect validation (#8585)
+
 # v1.49.0
 
 :new: What's new:
