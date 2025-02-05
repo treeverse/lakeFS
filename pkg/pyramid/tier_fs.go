@@ -140,9 +140,10 @@ func (tfs *TierFS) removeFromLocalInternal(rPath params.RelativePath) {
 	}()
 }
 
-func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, filename string) error {
+func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath, nsPath, filename string) error {
 	if tfs.logger.IsTracing() {
 		tfs.log(ctx).WithFields(logging.Fields{
+			"storageID":     storageID,
 			"namespace":     namespace,
 			"original_path": originalPath,
 			"ns_path":       nsPath,
@@ -160,7 +161,7 @@ func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, f
 		return fmt.Errorf("file stat %s: %w", originalPath, err)
 	}
 
-	if _, err = tfs.adapter.Put(ctx, tfs.objPointer(namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
+	if _, err = tfs.adapter.Put(ctx, tfs.objPointer(storageID, namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
 		return fmt.Errorf("adapter put %s %s: %w", namespace, filename, err)
 	}
 
@@ -168,7 +169,7 @@ func (tfs *TierFS) store(ctx context.Context, namespace, originalPath, nsPath, f
 		return fmt.Errorf("closing file %s: %w", filename, err)
 	}
 
-	fileRef := tfs.newLocalFileRef(namespace, nsPath, filename)
+	fileRef := tfs.newLocalFileRef(storageID, namespace, nsPath, filename)
 	if tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
 		// file was stored by the policy
 		return tfs.syncDir.renameFile(originalPath, fileRef.fullPath)
@@ -184,7 +185,7 @@ func (tfs *TierFS) GetRemoteURI(_ context.Context, _, filename string) (string, 
 // Create creates a new file in TierFS.  File isn't stored in TierFS until a successful close
 // operation.  Open(namespace, filename) calls will return an error before the close was
 // called.  Create only performs local operations so it ignores the context.
-func (tfs *TierFS) Create(_ context.Context, namespace string) (StoredFile, error) {
+func (tfs *TierFS) Create(_ context.Context, storageID, namespace string) (StoredFile, error) {
 	nsPath, err := parseNamespacePath(namespace)
 	if err != nil {
 		return nil, err
@@ -203,7 +204,7 @@ func (tfs *TierFS) Create(_ context.Context, namespace string) (StoredFile, erro
 		File:   fh,
 		logger: tfs.logger,
 		store: func(ctx context.Context, filename string) error {
-			return tfs.store(ctx, namespace, tempPath, nsPath, filename)
+			return tfs.store(ctx, storageID, namespace, tempPath, nsPath, filename)
 		},
 		abort: func(context.Context) error {
 			return os.Remove(tempPath)
@@ -213,7 +214,7 @@ func (tfs *TierFS) Create(_ context.Context, namespace string) (StoredFile, erro
 
 // Open returns a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
-func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, error) {
+func (tfs *TierFS) Open(ctx context.Context, storageID, namespace, filename string) (File, error) {
 	nsPath, err := parseNamespacePath(namespace)
 	if err != nil {
 		return nil, err
@@ -223,7 +224,7 @@ func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, 
 	}
 
 	// check if file is there - without taking the lock
-	fileRef := tfs.newLocalFileRef(namespace, nsPath, filename)
+	fileRef := tfs.newLocalFileRef(storageID, namespace, nsPath, filename)
 	fh, err := os.Open(fileRef.fullPath)
 	if err == nil {
 		if tfs.logger.IsTracing() {
@@ -249,9 +250,9 @@ func (tfs *TierFS) Open(ctx context.Context, namespace, filename string) (File, 
 	return tfs.openFile(ctx, fileRef, fh)
 }
 
-func (tfs *TierFS) Exists(ctx context.Context, namespace, filename string) (bool, error) {
+func (tfs *TierFS) Exists(ctx context.Context, storageID, namespace, filename string) (bool, error) {
 	cacheAccess.WithLabelValues(tfs.fsName, "Exists").Inc()
-	return tfs.adapter.Exists(ctx, tfs.objPointer(namespace, filename))
+	return tfs.adapter.Exists(ctx, tfs.objPointer(storageID, namespace, filename))
 }
 
 // openFile converts an os.File to pyramid.ROFile and updates the eviction control.
@@ -283,6 +284,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 	log := tfs.log(ctx)
 	if tfs.logger.IsTracing() {
 		log.WithFields(logging.Fields{
+			"storageID": fileRef.storageID,
 			"namespace": fileRef.namespace,
 			"file":      fileRef.filename,
 			"fullpath":  fileRef.fullPath,
@@ -297,6 +299,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		if err == nil {
 			if log.IsTracing() {
 				log.WithFields(logging.Fields{
+					"storageID": fileRef.storageID,
 					"namespace": fileRef.namespace,
 					"file":      fileRef.filename,
 					"fullpath":  fileRef.fullPath,
@@ -312,12 +315,13 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 
 		if log.IsTracing() {
 			log.WithFields(logging.Fields{
+				"storageID": fileRef.storageID,
 				"namespace": fileRef.namespace,
 				"file":      fileRef.filename,
 				"fullpath":  fileRef.fullPath,
 			}).Trace("get file from block storage")
 		}
-		reader, err := tfs.adapter.Get(ctx, tfs.objPointer(fileRef.namespace, fileRef.filename))
+		reader, err := tfs.adapter.Get(ctx, tfs.objPointer(fileRef.storageID, fileRef.namespace, fileRef.filename))
 		if err != nil {
 			return nil, fmt.Errorf("read from block storage: %w", err)
 		}
@@ -379,6 +383,7 @@ func validateFilename(filename string) error {
 
 // localFileRef consists of all possible local file references
 type localFileRef struct {
+	storageID      string
 	namespace      string
 	filename       string
 	fullPath       string
@@ -408,9 +413,10 @@ func (tfs *TierFS) storeLocalFile(rPath params.RelativePath, size int64) {
 	}
 }
 
-func (tfs *TierFS) newLocalFileRef(namespace, nsPath, filename string) localFileRef {
+func (tfs *TierFS) newLocalFileRef(storageID, namespace, nsPath, filename string) localFileRef {
 	rPath := path.Join(nsPath, filename)
 	return localFileRef{
+		storageID:      storageID,
 		namespace:      namespace,
 		filename:       filename,
 		fsRelativePath: params.RelativePath(rPath),
@@ -418,9 +424,9 @@ func (tfs *TierFS) newLocalFileRef(namespace, nsPath, filename string) localFile
 	}
 }
 
-func (tfs *TierFS) objPointer(namespace, filename string) block.ObjectPointer {
-	// TODO (gilo): ObjectPointer init - add StorageID here
+func (tfs *TierFS) objPointer(storageID, namespace, filename string) block.ObjectPointer {
 	return block.ObjectPointer{
+		StorageID:        storageID,
 		StorageNamespace: namespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       tfs.blockStoragePath(filepath.ToSlash(filename)),

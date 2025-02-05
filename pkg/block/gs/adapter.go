@@ -658,7 +658,7 @@ func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetada
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo, error) {
+func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -666,7 +666,7 @@ func (a *Adapter) GetStorageNamespaceInfo(_ string) (block.StorageNamespaceInfo,
 	if !(a.disablePreSignedUI || a.disablePreSigned) {
 		info.PreSignSupportUI = true
 	}
-	return info, nil
+	return &info
 }
 
 func (a *Adapter) extractParamsFromObj(obj block.ObjectPointer) (string, string, error) {

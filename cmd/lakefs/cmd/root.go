@@ -96,7 +96,7 @@ func newConfig() (config.Config, error) {
 	if name == config.QuickstartConfiguration {
 		validateQuickstartEnv(cfg.GetBaseConfig())
 	}
-	return cfg.GetBaseConfig(), nil
+	return cfg, nil
 }
 
 func loadConfig() config.Config {

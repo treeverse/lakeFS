@@ -11,6 +11,9 @@ import (
 // ID is an identifier for a Range
 type ID string
 
+// StorageID is id for object storage
+type StorageID string
+
 // Namespace is namespace for ID ranges
 type Namespace string
 
@@ -43,21 +46,21 @@ var ErrNotFound = graveler.ErrNotFound
 
 type RangeManager interface {
 	// Exists returns true if id references a Range.
-	Exists(ctx context.Context, ns Namespace, id ID) (bool, error)
+	Exists(ctx context.Context, storageID StorageID, ns Namespace, id ID) (bool, error)
 
 	// GetValue returns the value matching key in the Range referenced by id. If id not
 	// found, it return (nil, ErrNotFound).
-	GetValue(ctx context.Context, ns Namespace, id ID, key Key) (*Record, error)
+	GetValue(ctx context.Context, storageID StorageID, ns Namespace, id ID, key Key) (*Record, error)
 
 	// GetValueGE returns the first value keyed at or after key in the Range referenced by
 	// id.  If all values are keyed before key, it returns (nil, ErrNotFound).
-	GetValueGE(ctx context.Context, ns Namespace, id ID, key Key) (*Record, error)
+	GetValueGE(ctx context.Context, storageID StorageID, ns Namespace, id ID, key Key) (*Record, error)
 
 	// NewRangeIterator returns an iterator over values in the Range with ID.
-	NewRangeIterator(ctx context.Context, ns Namespace, pid ID) (ValueIterator, error)
+	NewRangeIterator(ctx context.Context, storageID StorageID, ns Namespace, pid ID) (ValueIterator, error)
 
 	// GetWriter returns a new Range writer instance
-	GetWriter(ctx context.Context, ns Namespace, metadata graveler.Metadata) (RangeWriter, error)
+	GetWriter(ctx context.Context, storageID StorageID, ns Namespace, metadata graveler.Metadata) (RangeWriter, error)
 
 	// GetURI returns a URI from which to read the contents of id.  If id does not exist
 	// it may return a URI that resolves nowhere rather than an error.

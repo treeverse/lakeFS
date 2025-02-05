@@ -35,8 +35,8 @@ type DiskWriter struct {
 	closed bool
 }
 
-func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, ns committed.Namespace, hash hash.Hash, metadata graveler.Metadata) (*DiskWriter, error) {
-	fh, err := tierFS.Create(ctx, string(ns))
+func NewDiskWriter(ctx context.Context, tierFS pyramid.FS, storageID committed.StorageID, ns committed.Namespace, hash hash.Hash, metadata graveler.Metadata) (*DiskWriter, error) {
+	fh, err := tierFS.Create(ctx, string(storageID), string(ns))
 	if err != nil {
 		return nil, fmt.Errorf("opening file: %w", err)
 	}

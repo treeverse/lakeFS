@@ -747,7 +747,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 	var expectedRecords []string
 	if numBranches > 0 {
 		test.RefManager.EXPECT().GetCommit(gomock.Any(), gomock.Any(), gomock.Any()).MinTimes(1).Return(&graveler.Commit{}, nil)
-		test.CommittedManager.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any()).MinTimes(1).Return(cUtils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
+		test.CommittedManager.EXPECT().List(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).MinTimes(1).Return(cUtils.NewFakeValueIterator([]*graveler.ValueRecord{}), nil)
 	}
 	for i := 0; i < numBranches; i++ {
 		branchID := graveler.BranchID(fmt.Sprintf("branch%04d", i))
@@ -889,7 +889,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 			sort.Slice(diffs[i], func(ii, jj int) bool {
 				return bytes.Compare(diffs[i][ii].Key, diffs[i][jj].Key) < 0
 			})
-			test.CommittedManager.EXPECT().Diff(gomock.Any(), repository.StorageNamespace, gomock.Any(), branches[i].CompactedBaseMetaRangeID).MinTimes(1).Return(gUtils.NewDiffIter(diffs[i]), nil)
+			test.CommittedManager.EXPECT().Diff(gomock.Any(), graveler.StorageID(""), repository.StorageNamespace, gomock.Any(), branches[i].CompactedBaseMetaRangeID).MinTimes(1).Return(gUtils.NewDiffIter(diffs[i]), nil)
 		}
 	}
 
