@@ -8,6 +8,9 @@ import './styles/globals.css';
 // main page
 import {IndexPage} from './pages';
 
+// Release name
+export const ReleaseName = "lakeFS";
+
 const container = document.getElementById('root');
 if (!container) throw new Error("Failed to find root element!");
 

@@ -9,6 +9,7 @@ import {Navbar, Nav, NavDropdown} from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
+import {ReleaseName} from "../../main"
 
 const NavUserInfo = () => {
     const { user, loading, error } = useUser();
@@ -47,7 +48,7 @@ const NavUserInfo = () => {
             <NavDropdown.Divider/>
             {!versionLoading && !versionError && <>
             <NavDropdown.Item disabled={true}>
-                <small>lakeFS {versionResponse.version}</small>
+                <small>{ReleaseName} {versionResponse.version}</small>
             </NavDropdown.Item></>}
         </NavDropdown>
     );
