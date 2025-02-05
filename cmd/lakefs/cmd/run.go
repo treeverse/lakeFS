@@ -212,7 +212,7 @@ var runCmd = &cobra.Command{
 		bufferedCollector.CollectMetadata(metadata)
 
 		c, err := catalog.New(ctx, catalog.Config{
-			Config:       baseCfg,
+			Config:       cfg,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
 		})
