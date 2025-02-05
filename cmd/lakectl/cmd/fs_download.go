@@ -1,17 +1,18 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
-	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -31,11 +32,13 @@ var fsDownloadCmd = &cobra.Command{
 		syncFlags := getSyncFlags(cmd, client)
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		ctx := cmd.Context()
-		remotePath := remote.GetPath()
 		downloadPartSize := Must(cmd.Flags().GetInt64(partSizeFlagName))
 		if downloadPartSize < helpers.MinDownloadPartSize {
 			DieFmt("part size must be at least %d bytes", helpers.MinDownloadPartSize)
 		}
+
+		downloader := helpers.NewDownloader(client, syncFlags.Presign)
+		downloader.PartSize = downloadPartSize
 
 		if !recursive {
 			src := uri.URI{
@@ -43,25 +46,12 @@ var fsDownloadCmd = &cobra.Command{
 				Ref:        remote.Ref,
 				Path:       remote.Path,
 			}
-			// if dest is a directory, add the file name
-			if s, _ := os.Stat(dest); s != nil && s.IsDir() {
-				dest += uri.PathSeparator
-			}
-			if strings.HasSuffix(dest, uri.PathSeparator) {
-				dest += filepath.Base(remotePath)
-			}
-
-			d := helpers.NewDownloader(client, syncFlags.Presign)
-			d.PartSize = downloadPartSize
-			err := d.Download(ctx, src, dest)
-			if err != nil {
-				DieErr(err)
-			}
-			fmt.Printf("download: %s to %s\n", src.String(), dest)
+			singleObjectDownloadHelper(ctx, downloader, src, dest)
 			return
 		}
 
-		ch := make(chan *local.Change, filesChanSize)
+		ch := make(chan string, filesChanSize)
+		remotePath := remote.GetPath()
 		if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
 			*remote.Path += uri.PathSeparator
 		}
@@ -90,11 +80,7 @@ var fsDownloadCmd = &cobra.Command{
 					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
 						continue
 					}
-					ch <- &local.Change{
-						Source: local.ChangeSourceRemote,
-						Path:   relPath,
-						Type:   local.ChangeTypeAdded,
-					}
+					ch <- relPath
 				}
 				if !listResp.JSON200.Pagination.HasMore {
 					break
@@ -103,24 +89,42 @@ var fsDownloadCmd = &cobra.Command{
 			}
 		}()
 
-		s := local.NewSyncManager(ctx, client, getHTTPClient(), local.Config{
-			SyncFlags:           syncFlags,
-			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
-			IncludePerm:         false,
-		})
-		err := s.Sync(dest, remote, ch)
-		if err != nil {
-			DieErr(err)
+		// download files in parallel
+		var wg sync.WaitGroup
+		wg.Add(syncFlags.Parallelism)
+		for i := 0; i < syncFlags.Parallelism; i++ {
+			go func() {
+				defer wg.Done()
+				for relPath := range ch {
+					src := uri.URI{
+						Repository: remote.Repository,
+						Ref:        remote.Ref,
+						Path:       &relPath,
+					}
+					destPath := filepath.Join(dest, relPath)
+					singleObjectDownloadHelper(ctx, downloader, src, destPath)
+				}
+			}()
 		}
-
-		Write(localSummaryTemplate, struct {
-			Operation string
-			local.Tasks
-		}{
-			Operation: "Download",
-			Tasks:     s.Summary(),
-		})
+		wg.Wait()
 	},
+}
+
+func singleObjectDownloadHelper(ctx context.Context, downloader *helpers.Downloader, src uri.URI, dest string) {
+	// if dest is a directory, add the file name
+	if s, _ := os.Stat(dest); s != nil && s.IsDir() {
+		dest += uri.PathSeparator
+	}
+	remotePath := src.GetPath()
+	if remotePath != "" && strings.HasSuffix(dest, uri.PathSeparator) {
+		dest += filepath.Base(remotePath)
+	}
+
+	err := downloader.Download(ctx, src, dest)
+	if err != nil {
+		DieErr(err)
+	}
+	fmt.Printf("download: %s to %s\n", src.String(), dest)
 }
 
 //nolint:gochecknoinits
