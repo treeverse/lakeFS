@@ -39,7 +39,7 @@ the sweep stage to delete them. It functions similarly to the GC's [mark-only mo
 
 ## Installation 
 
-### Step 1: Obtain Dockerhub token
+### Step 1: Obtain DockerHub token
 
 #### lakeFS Enterprise customers 
 
@@ -50,7 +50,7 @@ the `externallakefs` user.
 
 Please [contact us](https://lakefs.io/contact-sales/) to get trial access to Standalone GC.
 
-### Step 2: Login to Dockerhub with this token
+### Step 2: Login to DockerHub with this token
 
 ```bash
 docker login -u <token>
@@ -58,7 +58,8 @@ docker login -u <token>
 
 ### Step 3: Download the docker image
 
-Download the image from the [lakefs-sgc](https://hub.docker.com/repository/docker/treeverse/lakefs-sgc/general) repository:
+Download the `treeverse/lakefs-sgc` image from Docker Hub:
+
 ```bash
 docker pull treeverse/lakefs-sgc:<tag>
 ```
@@ -72,6 +73,7 @@ To run `lakefs-sgc`, you need both AWS (or S3-compatible) storage and lakeFS use
 #### Storage permissions
 
 The minimum required permissions for AWS or S3-compatible storage are:
+
 ```json
 {
   "Version": "2012-10-17",
