@@ -72,7 +72,7 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string) erro
 
 	// progress tracker
 	tracker := &progress.Tracker{
-		Message: "download " + dst,
+		Message: "download " + src.GetPath(),
 		Total:   -1,
 	}
 

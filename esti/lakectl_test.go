@@ -428,7 +428,6 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 
 	// log the commits without merges
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges", false, "lakectl_log_no_merges", vars)
-
 }
 
 func TestLakectlLogNoMergesAndAmount(t *testing.T) {
@@ -480,8 +479,8 @@ func TestLakectlLogNoMergesAndAmount(t *testing.T) {
 
 	// log the commits without merges
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges --amount=2", false, "lakectl_log_no_merges_amount", vars)
-
 }
+
 func TestLakectlAnnotate(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
@@ -577,7 +576,6 @@ func TestLakectlAuthUsers(t *testing.T) {
 
 // testing without user email for now, since it is a pain to config esti with a mail
 func TestLakectlIdentity(t *testing.T) {
-
 	userId := "mike"
 	vars := map[string]string{
 		"ID": userId,
@@ -602,16 +600,18 @@ func TestLakectlFsDownload(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
 	t.Run("single", func(t *testing.T) {
-		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
+		const fn = "data/ro/ro_1k.0"
+		src := "lakefs://" + repoName + "/" + mainBranch + "/" + fn
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src, false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download: "+src)
+		require.Contains(t, sanitizedResult, "download "+fn)
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
-		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
+		const fn = "data/ro/ro_1k.0"
+		src := "lakefs://" + repoName + "/" + mainBranch + "/" + fn
 		dest := t.TempDir()
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" "+dest, false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download: "+src)
+		require.Contains(t, sanitizedResult, "download "+fn)
 		require.Contains(t, sanitizedResult, dest+"/"+"ro_1k.0")
 	})
 
@@ -626,9 +626,10 @@ func TestLakectlFsDownload(t *testing.T) {
 			require.NoError(t, os.Chdir(currDir))
 		}()
 
-		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
+		const fn = "data/ro/ro_1k.0"
+		src := "lakefs://" + repoName + "/" + mainBranch + "/" + fn
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" ./", false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download: "+src)
+		require.Contains(t, sanitizedResult, "download "+fn)
 		require.Contains(t, sanitizedResult, dest+"/ro_1k.0")
 	})
 
@@ -690,7 +691,6 @@ func TestLakectlFsUpload(t *testing.T) {
 	t.Run("single_file_with_recursive", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/ro_1k.0"
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
-
 	})
 	t.Run("dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
