@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-openapi/swag"
+	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
@@ -21,10 +23,11 @@ const (
 )
 
 type Downloader struct {
-	Client     *apigen.ClientWithResponses
-	PreSign    bool
-	HTTPClient *http.Client
-	PartSize   int64
+	Client         *apigen.ClientWithResponses
+	PreSign        bool
+	HTTPClient     *http.Client
+	PartSize       int64
+	ProgressWriter progress.Writer
 }
 
 type downloadPart struct {
@@ -41,11 +44,21 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 		Transport: transport,
 	}
 
+	// setup progress writer
+	pw := progress.NewWriter()
+	pw.SetAutoStop(false)
+	pw.SetSortBy(progress.SortByValue)
+	pw.SetStyle(progress.StyleDefault)
+	pw.SetTrackerPosition(progress.PositionRight)
+	pw.Style().Colors = progress.StyleColorsExample
+	pw.Style().Options.PercentFormat = "%4.1f%%"
+
 	return &Downloader{
-		Client:     client,
-		PreSign:    preSign,
-		HTTPClient: httpClient,
-		PartSize:   DefaultDownloadPartSize,
+		Client:         client,
+		PreSign:        preSign,
+		HTTPClient:     httpClient,
+		PartSize:       DefaultDownloadPartSize,
+		ProgressWriter: pw,
 	}
 }
 
@@ -55,13 +68,30 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string) erro
 	dir := filepath.Dir(dst)
 	_ = os.MkdirAll(dir, os.ModePerm)
 
-	// download object
 	var err error
+
+	// progress tracker
+	tracker := &progress.Tracker{
+		Message: "download " + dst,
+		Total:   -1,
+	}
+
+	d.ProgressWriter.AppendTracker(tracker)
+	tracker.Start()
+	defer func() {
+		if err != nil {
+			tracker.MarkAsErrored()
+		} else {
+			tracker.MarkAsDone()
+		}
+	}()
+
+	// download object
 	if d.PreSign {
 		// download using presigned multipart download, it will fall back to presign single object download if needed
-		err = d.downloadPresignMultipart(ctx, src, dst)
+		err = d.downloadPresignMultipart(ctx, src, dst, tracker)
 	} else {
-		err = d.downloadObject(ctx, src, dst)
+		err = d.downloadObject(ctx, src, dst, tracker)
 	}
 	if err != nil {
 		return fmt.Errorf("download failed: %w", err)
@@ -69,7 +99,7 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string) erro
 	return nil
 }
 
-func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, dst string) (err error) {
+func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) (err error) {
 	// get object metadata for size and physical address (presigned)
 	statResp, err := d.Client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
 		Path:    *src.Path,
@@ -81,13 +111,14 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 
 	// fallback to download if missing size
 	if statResp.JSON200 == nil || statResp.JSON200.SizeBytes == nil {
-		return d.downloadObject(ctx, src, dst)
+		return d.downloadObject(ctx, src, dst, tracker)
 	}
 
 	// check if the object is small enough to download in one request
-	sizeBytes := *statResp.JSON200.SizeBytes
-	if sizeBytes < d.PartSize {
-		return d.downloadObject(ctx, src, dst)
+	size := swag.Int64Value(statResp.JSON200.SizeBytes)
+	tracker.UpdateTotal(size)
+	if size < d.PartSize {
+		return d.downloadObject(ctx, src, dst, tracker)
 	}
 
 	f, err := os.Create(dst)
@@ -99,7 +130,6 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	}()
 
 	// make sure the destination file is in the right size
-	size := swag.Int64Value(statResp.JSON200.SizeBytes)
 	if err := f.Truncate(size); err != nil {
 		return fmt.Errorf("failed to truncate '%s' to size %d: %w", f.Name(), size, err)
 	}
@@ -118,6 +148,7 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 				if err != nil {
 					return err
 				}
+				tracker.Increment(part.PartSize)
 			}
 			return nil
 		})
@@ -183,7 +214,7 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 	return nil
 }
 
-func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string) error {
+func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {
 	// get object content
 	resp, err := d.Client.GetObject(ctx, src.Repository, src.Ref, &apigen.GetObjectParams{
 		Path:    *src.Path,
@@ -197,12 +228,59 @@ func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string
 		return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
 	}
 
+	if resp.ContentLength != -1 {
+		tracker.UpdateTotal(resp.ContentLength)
+	}
+
 	// create and copy object content
 	f, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = f.Close() }()
-	_, err = io.Copy(f, resp.Body)
+	w := NewTrackerWriter(f, tracker)
+	_, err = io.Copy(w, resp.Body)
 	return err
+}
+
+// ProgressRender start render progress and return callback waiting for the progress to finish.
+func (d *Downloader) ProgressRender() func() {
+	go d.ProgressWriter.Render()
+	return func() {
+		for d.ProgressWriter.IsRenderInProgress() {
+			// for manual-stop mode, stop when there are no more active trackers
+			if d.ProgressWriter.LengthActive() == 0 {
+				d.ProgressWriter.Stop()
+			}
+			const waitForRender = 100 * time.Millisecond
+			time.Sleep(waitForRender)
+		}
+	}
+}
+
+// Tracker interface for tracking written data.
+type Tracker interface {
+	Increment(int64)
+}
+
+// TrackerWriter implements io.Writer and updates a Tracker.
+type TrackerWriter struct {
+	w       io.Writer
+	tracker Tracker
+}
+
+// NewTrackerWriter creates a new TrackerWriter.
+func NewTrackerWriter(w io.Writer, tracker Tracker) *TrackerWriter {
+	return &TrackerWriter{
+		w:       w,
+		tracker: tracker,
+	}
+}
+
+func (cw *TrackerWriter) Write(p []byte) (int, error) {
+	n, err := cw.w.Write(p)
+	if n > 0 {
+		cw.tracker.Increment(int64(n))
+	}
+	return n, err
 }

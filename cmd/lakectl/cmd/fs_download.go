@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/go-openapi/swag"
+	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
@@ -39,6 +39,11 @@ var fsDownloadCmd = &cobra.Command{
 
 		downloader := helpers.NewDownloader(client, syncFlags.Presign)
 		downloader.PartSize = downloadPartSize
+		if syncFlags.NoProgress {
+			downloader.ProgressWriter.Style().Visibility = progress.StyleVisibility{}
+		}
+		stopRender := downloader.ProgressRender()
+		defer stopRender()
 
 		if !recursive {
 			src := uri.URI{
@@ -107,6 +112,7 @@ var fsDownloadCmd = &cobra.Command{
 				}
 			}()
 		}
+		// wait for all downloads to finish
 		wg.Wait()
 	},
 }
@@ -125,7 +131,6 @@ func singleObjectDownloadHelper(ctx context.Context, downloader *helpers.Downloa
 	if err != nil {
 		DieErr(err)
 	}
-	fmt.Printf("download: %s to %s\n", src.String(), dest)
 }
 
 //nolint:gochecknoinits
