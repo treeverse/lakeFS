@@ -174,6 +174,16 @@ func AddAdminUser(ctx context.Context, authService auth.Service, user *model.Sup
 	if err != nil {
 		return nil, fmt.Errorf("create user - %w", err)
 	}
+	defer func() {
+		// delete admin on any error to avoid partial setup
+		if err != nil {
+			logger := logging.ContextUnavailable()
+			logger.WithError(err).Warn("Failed to create admin user, deleting user")
+			if delUserErr := authService.DeleteUser(ctx, user.Username); delUserErr != nil {
+				logger.WithError(delUserErr).Error("Failed to delete user")
+			}
+		}
+	}()
 
 	if addToAdmins {
 		// verify the admin group exists
@@ -208,7 +218,7 @@ func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *
 	return CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManger, username, nil, nil)
 }
 
-func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, metadataManger auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
+func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, metadataManager auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
 	adminUser := &model.SuperuserConfiguration{
 		User: model.User{
 			CreatedAt: time.Now(),
@@ -233,10 +243,11 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 		return nil, err
 	}
 
-	// update setup timestamp
-	if err = metadataManger.UpdateSetupTimestamp(ctx, time.Now()); err != nil {
+	// update setup time with auth type used
+	if err = metadataManager.UpdateSetupTimestamp(ctx, time.Now(), cfg.Auth.UIConfig.RBAC); err != nil {
 		logging.FromContext(ctx).WithError(err).Error("Failed the update setup timestamp")
 	}
+
 	return cred, err
 }
 

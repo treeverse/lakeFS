@@ -40,7 +40,7 @@ func TestReadFailDuringWrite(t *testing.T) {
 	ctx := context.Background()
 	namespace := uniqueNamespace()
 	filename := "file1"
-	f, err := fs.Create(ctx, namespace)
+	f, err := fs.Create(ctx, "", namespace)
 	require.NoError(t, err)
 
 	content := []byte("some content")
@@ -48,7 +48,7 @@ func TestReadFailDuringWrite(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(content), n)
 
-	readF, err := fs.Open(ctx, namespace, filename)
+	readF, err := fs.Open(ctx, "", namespace, filename)
 	require.Nil(t, readF)
 	require.Error(t, err)
 	require.NoError(t, f.Close())
@@ -127,7 +127,7 @@ func TestStartup(t *testing.T) {
 	// package os this does not matter.
 	assert.Error(t, err, os.ErrNotExist, "expected %s not to exist", workspacePath)
 
-	f, err := localFS.Open(ctx, "mem://"+namespaceID, filename)
+	f, err := localFS.Open(ctx, "", "mem://"+namespaceID, filename)
 	defer func() { _ = f.Close() }()
 	assert.NoError(t, err)
 
@@ -156,7 +156,7 @@ func testEviction(t *testing.T, namespaces ...string) {
 	for i := 0; i < numFiles; i++ {
 		filename := "file_" + strconv.Itoa(i)
 
-		f, err := fs.Open(ctx, namespaces[i%len(namespaces)], filename)
+		f, err := fs.Open(ctx, "", namespaces[i%len(namespaces)], filename)
 		require.NoError(t, err)
 
 		_, err = io.ReadAll(f)
@@ -206,7 +206,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 
 func writeToFile(t *testing.T, ctx context.Context, namespace, filename string, content []byte) {
 	t.Helper()
-	f, err := fs.Create(ctx, namespace)
+	f, err := fs.Create(ctx, "", namespace)
 	require.NoError(t, err)
 
 	n, err := f.Write(content)
@@ -219,7 +219,7 @@ func writeToFile(t *testing.T, ctx context.Context, namespace, filename string, 
 
 func checkContent(t *testing.T, ctx context.Context, namespace string, filename string, content []byte) {
 	t.Helper()
-	f, err := fs.Open(ctx, namespace, filename)
+	f, err := fs.Open(ctx, "", namespace, filename)
 	if err != nil {
 		t.Errorf("Failed to open namespace:%s filename:%s - %s", namespace, filename, err)
 		return

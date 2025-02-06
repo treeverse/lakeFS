@@ -175,6 +175,8 @@ jobs:
           # Do *not* test 1.48.0, we withdrew it.
           - 1.48.1
           - 1.48.2
+          - 1.49.0
+          - 1.49.1
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}

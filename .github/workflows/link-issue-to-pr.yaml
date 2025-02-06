@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-22.04
     name: Check linked issues
     steps:
-      - uses: nearform/github-action-check-linked-issues@v1.4.28
+      - uses: nearform-actions/github-action-check-linked-issues@v1.4.28
         id: check-linked-issues
         with:
           exclude-branches: "dependabot/**"

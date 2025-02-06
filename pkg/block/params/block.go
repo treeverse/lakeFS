@@ -4,15 +4,6 @@ import (
 	"time"
 )
 
-// AdapterConfig configures a block adapter.
-type AdapterConfig interface {
-	BlockstoreType() string
-	BlockstoreLocalParams() (Local, error)
-	BlockstoreS3Params() (S3, error)
-	BlockstoreGSParams() (GS, error)
-	BlockstoreAzureParams() (Azure, error)
-}
-
 type Mem struct{}
 
 type Local struct {

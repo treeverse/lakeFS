@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block/blocktest"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	s3a "github.com/treeverse/lakefs/pkg/block/s3"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 func getS3BlockAdapter(t *testing.T, opts []s3a.AdapterOption) *s3a.Adapter {
@@ -66,7 +67,7 @@ func TestS3AdapterPresignedOverride(t *testing.T) {
 // TestAdapterNamespace tests the namespace validity regex with various paths
 func TestAdapterNamespace(t *testing.T) {
 	adapter := getS3BlockAdapter(t, nil)
-	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
+	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo(config.SingleBlockstoreID).ValidityRegex)
 	require.NoError(t, err)
 
 	tests := []struct {

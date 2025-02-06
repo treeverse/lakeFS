@@ -85,6 +85,10 @@ func (m *MetricsAdapter) ListParts(ctx context.Context, obj ObjectPointer, uploa
 	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
 	return m.adapter.ListParts(ctx, obj, uploadID, opts)
 }
+func (m *MetricsAdapter) ListMultipartUploads(ctx context.Context, obj ObjectPointer, opts ListMultipartUploadsOpts) (*ListMultipartUploadsResponse, error) {
+	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
+	return m.adapter.ListMultipartUploads(ctx, obj, opts)
+}
 
 func (m *MetricsAdapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj ObjectPointer, uploadID string, partNumber int) (*UploadPartResponse, error) {
 	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
@@ -115,12 +119,12 @@ func (m *MetricsAdapter) BlockstoreMetadata(ctx context.Context) (*BlockstoreMet
 	return m.adapter.BlockstoreMetadata(ctx)
 }
 
-func (m *MetricsAdapter) GetStorageNamespaceInfo() StorageNamespaceInfo {
-	return m.adapter.GetStorageNamespaceInfo()
+func (m *MetricsAdapter) GetStorageNamespaceInfo(storageID string) *StorageNamespaceInfo {
+	return m.adapter.GetStorageNamespaceInfo(storageID)
 }
 
-func (m *MetricsAdapter) ResolveNamespace(storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error) {
-	return m.adapter.ResolveNamespace(storageNamespace, key, identifierType)
+func (m *MetricsAdapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error) {
+	return m.adapter.ResolveNamespace(storageID, storageNamespace, key, identifierType)
 }
 
 func (m *MetricsAdapter) GetRegion(ctx context.Context, storageID, storageNamespace string) (string, error) {

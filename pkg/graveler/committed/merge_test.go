@@ -1715,13 +1715,13 @@ func runMergeTests(tests testCases, t *testing.T) {
 						}
 					}
 					metaRangeManager := mock.NewMockMetaRangeManager(ctrl)
-					metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(writer)
+					metaRangeManager.EXPECT().NewWriter(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(writer)
 					sourceMetaRangeID := tst.sourceRange.GetMetaRangeID()
 					destMetaRangeID := tst.destRange.GetMetaRangeID()
 					baseMetaRangeID := tst.baseRange.GetMetaRangeID()
-					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), baseMetaRangeID).AnyTimes().Return(createIter(tst.baseRange), nil)
-					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), sourceMetaRangeID).AnyTimes().Return(createIter(tst.sourceRange), nil)
-					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), destMetaRangeID).AnyTimes().Return(createIter(tst.destRange), nil)
+					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), gomock.Any(), baseMetaRangeID).AnyTimes().Return(createIter(tst.baseRange), nil)
+					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), gomock.Any(), sourceMetaRangeID).AnyTimes().Return(createIter(tst.sourceRange), nil)
+					metaRangeManager.EXPECT().NewMetaRangeIterator(gomock.Any(), gomock.Any(), gomock.Any(), destMetaRangeID).AnyTimes().Return(createIter(tst.destRange), nil)
 
 					rangeManager := mock.NewMockRangeManager(ctrl)
 

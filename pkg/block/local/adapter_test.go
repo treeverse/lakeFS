@@ -9,6 +9,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/blocktest"
 	"github.com/treeverse/lakefs/pkg/block/local"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 const testStorageNamespace = "local://test"
@@ -31,7 +32,7 @@ func TestAdapterNamespace(t *testing.T) {
 	localPath := path.Join(tmpDir, "lakefs")
 	adapter, err := local.NewAdapter(localPath, local.WithRemoveEmptyDir(false))
 	require.NoError(t, err, "create new adapter")
-	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo().ValidityRegex)
+	expr, err := regexp.Compile(adapter.GetStorageNamespaceInfo(config.SingleBlockstoreID).ValidityRegex)
 	require.NoError(t, err)
 
 	tests := []struct {

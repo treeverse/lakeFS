@@ -2119,29 +2119,6 @@ lakectl import --from <object store URI> --to <lakeFS path URI> [flags]
 
 
 
-### lakectl ingest
-
-Ingest objects from an external source into a lakeFS branch (without actually copying them)
-
-```
-lakectl ingest --from <object store URI> --to <lakeFS path URI> [--dry-run] [flags]
-```
-
-#### Options
-{:.no_toc}
-
-```
-  -C, --concurrency int          max concurrent API calls to make to the lakeFS server (default 64)
-      --dry-run                  only print the paths to be ingested
-      --from string              prefix to read from (e.g. "s3://bucket/sub/path/"). must not be in a storage namespace
-  -h, --help                     help for ingest
-      --s3-endpoint-url string   URL to access S3 storage API (by default, use regular AWS S3 endpoint
-      --to string                lakeFS path to load objects into (e.g. "lakefs://repo/branch/sub/path/")
-  -v, --verbose                  print stats for each individual object staged
-```
-
-
-
 ### lakectl local
 
 Sync local directories with lakeFS paths

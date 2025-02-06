@@ -36,7 +36,8 @@ type GarbageCollectionManager struct {
 
 func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
-	qk, err := m.blockAdapter.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	// TODO (gilo): replace StorageID with a real value
+	qk, err := m.blockAdapter.ResolveNamespace("", sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
 		return "", err
 	}
@@ -45,7 +46,8 @@ func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn gravel
 
 func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(addressesFilePrefixTemplate, m.committedBlockStoragePrefix)
-	qk, err := m.blockAdapter.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	// TODO (gilo): replace StorageID with a real value
+	qk, err := m.blockAdapter.ResolveNamespace("", sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
 		return "", err
 	}
@@ -55,7 +57,8 @@ func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNames
 // GetUncommittedLocation return full path to underlying storage path to store uncommitted information
 func (m *GarbageCollectionManager) GetUncommittedLocation(runID string, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(uncommittedFilePrefixTemplate, m.committedBlockStoragePrefix, runID)
-	qk, err := m.blockAdapter.ResolveNamespace(sn.String(), key, block.IdentifierTypeRelative)
+	// TODO (gilo): replace StorageID with a real value
+	qk, err := m.blockAdapter.ResolveNamespace("", sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
 		return "", err
 	}
