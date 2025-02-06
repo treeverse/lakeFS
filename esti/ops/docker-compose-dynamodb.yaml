@@ -30,7 +30,6 @@ services:
     environment:
       - ESTI_DATABASE_KV_ENABLED=true
       - ESTI_KV_MIGRATION=${ESTI_KV_MIGRATION:-none}
-      - ESTI_POST_MIGRATE
       - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
       - LAKEFS_ROOT
     command:
