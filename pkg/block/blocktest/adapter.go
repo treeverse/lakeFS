@@ -14,7 +14,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/ingest/store"
 )
 
 // AdapterTest Test suite of basic adapter functionality
@@ -131,7 +130,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 		uri, err := url.Parse(qk.Format())
 		require.NoError(t, err)
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := adapter.GetWalker(uri)
+			reader, err := adapter.GetWalker("", block.WalkerOptions{StorageURI: uri})
 			require.NoError(t, err)
 
 			var results []string
@@ -217,15 +216,15 @@ func dumpPathTree(t testing.TB, ctx context.Context, adapter block.Adapter, qk b
 	t.Helper()
 	tree := make([]string, 0)
 
-	uri, err := url.Parse(qk.Format())
+	p := qk.Format()
+	uri, err := url.Parse(p)
 	require.NoError(t, err, "URL Parse Error")
 
-	w, err := adapter.GetWalker(uri)
+	walker, err := adapter.GetWalker("", block.WalkerOptions{StorageURI: uri})
 	require.NoError(t, err, "GetWalker failed")
 
-	walker := store.NewWrapper(w, uri)
-
-	err = walker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
+	wwalker := block.NewWalkerWrapper(walker, uri)
+	err = wwalker.Walk(ctx, block.WalkOptions{}, func(e block.ObjectStoreEntry) error {
 		_, p, _ := strings.Cut(e.Address, uri.String())
 		tree = append(tree, p)
 		return nil

@@ -228,11 +228,11 @@ type Blockstore struct {
 }
 
 func (b *Blockstore) GetStorageIDs() []string {
-	return nil
+	return []string{SingleBlockstoreID}
 }
 
 func (b *Blockstore) GetStorageByID(id string) AdapterConfig {
-	if id != "" {
+	if id != SingleBlockstoreID {
 		return nil
 	}
 

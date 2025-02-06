@@ -880,6 +880,7 @@ func TestLakectlFsStat(t *testing.T) {
 
 func TestLakectlImport(t *testing.T) {
 	// TODO(barak): generalize test to work all supported object stores
+	const IngestTestBucketPath = "s3://esti-system-testing-data/ingest-test-data/"
 	skipOnSchemaMismatch(t, IngestTestBucketPath)
 
 	repoName := generateUniqueRepositoryName()

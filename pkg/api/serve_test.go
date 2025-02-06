@@ -27,7 +27,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
-	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
@@ -116,7 +115,6 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	cfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 	kvStore := kvtest.GetStore(ctx, t)
-	factory := store.NewFactory(nil)
 	actionsStore := actions.NewActionsKVStore(kvStore)
 	idGen := &actions.DecreasingIDGenerator{}
 	authService := auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
@@ -128,7 +126,6 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:                cfg,
 		KVStore:               kvStore,
-		WalkerFactory:         factory,
 		SettingsManagerOption: settings.WithCache(cache.NoCache),
 		PathProvider:          upload.DefaultPathProvider,
 	})
