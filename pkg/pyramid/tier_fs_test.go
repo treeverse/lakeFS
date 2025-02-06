@@ -24,6 +24,8 @@ import (
 const (
 	blockStoragePrefix = "prefix"
 	allocatedDiskBytes = 4 * 1024 * 1024
+	defaultStorageID   = ""
+	secondaryStorageID = "another one!"
 )
 
 func TestSimpleWriteRead(t *testing.T) {
@@ -32,8 +34,8 @@ func TestSimpleWriteRead(t *testing.T) {
 	filename := "1/2/file1.txt"
 
 	content := []byte("hello world!")
-	writeToFile(t, ctx, namespace, filename, content)
-	checkContent(t, ctx, namespace, filename, content)
+	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
+	checkContent(t, ctx, defaultStorageID, namespace, filename, content)
 }
 
 func TestReadFailDuringWrite(t *testing.T) {
@@ -53,7 +55,17 @@ func TestReadFailDuringWrite(t *testing.T) {
 	require.Error(t, err)
 	require.NoError(t, f.Close())
 	require.NoError(t, f.Store(ctx, filename))
-	checkContent(t, ctx, namespace, filename, content)
+	checkContent(t, ctx, defaultStorageID, namespace, filename, content)
+}
+
+func TestWriteReadMultipleStorageIDs(t *testing.T) {
+	ctx := context.Background()
+	namespace := uniqueNamespace()
+	filename := "1/2/file1.txt"
+
+	content := []byte("hello world!")
+	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
+	checkContent(t, ctx, secondaryStorageID, namespace, filename, content)
 }
 
 func TestEvictionSingleNamespace(t *testing.T) {
@@ -149,7 +161,7 @@ func testEviction(t *testing.T, namespaces ...string) {
 		if err != nil {
 			t.Fatal("rand.Read", err)
 		}
-		writeToFile(t, ctx, namespaces[i%len(namespaces)], filename, content)
+		writeToFile(t, ctx, defaultStorageID, namespaces[i%len(namespaces)], filename, content)
 	}
 
 	// read
@@ -176,7 +188,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
 	content := []byte("hello world!")
-	writeToFile(t, ctx, namespace, filename, content)
+	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
 
 	// remove the file
 	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
@@ -194,7 +206,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	for i := 0; i < concurrencyLevel; i++ {
 		go func() {
 			defer wg.Done()
-			checkContent(t, ctx, namespace, filename, content)
+			checkContent(t, ctx, defaultStorageID, namespace, filename, content)
 		}()
 	}
 
@@ -204,9 +216,9 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	require.Equal(t, int64(1), adapter.GetCount())
 }
 
-func writeToFile(t *testing.T, ctx context.Context, namespace, filename string, content []byte) {
+func writeToFile(t *testing.T, ctx context.Context, storageID, namespace, filename string, content []byte) {
 	t.Helper()
-	f, err := fs.Create(ctx, "", namespace)
+	f, err := fs.Create(ctx, storageID, namespace)
 	require.NoError(t, err)
 
 	n, err := f.Write(content)
@@ -217,9 +229,9 @@ func writeToFile(t *testing.T, ctx context.Context, namespace, filename string, 
 	require.NoError(t, f.Store(ctx, filename))
 }
 
-func checkContent(t *testing.T, ctx context.Context, namespace string, filename string, content []byte) {
+func checkContent(t *testing.T, ctx context.Context, storageID, namespace string, filename string, content []byte) {
 	t.Helper()
-	f, err := fs.Open(ctx, "", namespace, filename)
+	f, err := fs.Open(ctx, storageID, namespace, filename)
 	if err != nil {
 		t.Errorf("Failed to open namespace:%s filename:%s - %s", namespace, filename, err)
 		return
