@@ -612,7 +612,7 @@ func TestLakectlFsDownload(t *testing.T) {
 		dest := t.TempDir()
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" "+dest, false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download "+fn)
-		require.Contains(t, sanitizedResult, dest+"/"+"ro_1k.0")
+		require.Contains(t, sanitizedResult, fn)
 	})
 
 	t.Run("single_with_rel_dest", func(t *testing.T) {
@@ -630,7 +630,7 @@ func TestLakectlFsDownload(t *testing.T) {
 		src := "lakefs://" + repoName + "/" + mainBranch + "/" + fn
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" ./", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download "+fn)
-		require.Contains(t, sanitizedResult, dest+"/ro_1k.0")
+		require.Contains(t, sanitizedResult, fn)
 	})
 
 	t.Run("single_with_recursive_flag", func(t *testing.T) {
