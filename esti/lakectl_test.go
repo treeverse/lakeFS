@@ -64,16 +64,6 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	newStorage := storage + "/new-storage/"
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+newStorage, false, "lakectl_repo_create_not_unique", vars)
 
-	// Validate the --storage-id flag (currently only allowed to be empty)
-	repoNameSID := generateUniqueRepositoryName()
-	storageSID := generateUniqueStorageNamespace(repoNameSID)
-	vars = map[string]string{
-		"REPO":    repoNameSID,
-		"STORAGE": storageSID,
-		"BRANCH":  mainBranch,
-	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoNameSID+" "+storageSID+" --storage-id \"\"", false, "lakectl_repo_create", vars)
-
 	// Fails due to the usage of repos for isolation - esti creates repos in parallel and
 	// the output of 'repo list' command cannot be well-defined
 	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list", false, "lakectl_repo_list_1", vars)
@@ -111,6 +101,19 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 
 	// Trying to delete again
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo delete lakefs://"+repoName2+" -y", false, "lakectl_repo_delete_not_found", vars)
+}
+
+func TestLakectlRepoCreateWithStorageID(t *testing.T) {
+	// Validate the --storage-id flag (currently only allowed to be empty)
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" --storage-id storage1", false, "lakectl_repo_create_with_storage_id", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" --storage-id \"\"", false, "lakectl_repo_create", vars)
 }
 
 func TestLakectlPreSignUpload(t *testing.T) {
