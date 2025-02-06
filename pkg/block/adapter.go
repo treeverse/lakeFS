@@ -222,7 +222,7 @@ type Adapter interface {
 
 type WalkerOptions struct {
 	StorageURI *url.URL
-	// SkipOutOfOrder - used when iterating on ADLS Gen 2
+	// SkipOutOfOrder skips non-lexically ordered entries (Azure only).
 	SkipOutOfOrder bool
 }
 
