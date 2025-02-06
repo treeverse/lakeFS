@@ -552,7 +552,7 @@ func (l *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	return &info
 }
 
-func (l *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
+func (l *Adapter) ResolveNamespace(storageID, storageNamespace, key string, identifierType block.IdentifierType) (block.QualifiedKey, error) {
 	qk, err := block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 	if err != nil {
 		return nil, err
