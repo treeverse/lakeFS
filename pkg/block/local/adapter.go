@@ -559,8 +559,8 @@ func (l *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierTy
 	}
 
 	// Check if path allowed and return error if path is not allowed
-	// TODO (gilo): ObjectPointer init - add StorageID here
 	_, err = l.extractParamsFromObj(block.ObjectPointer{
+		StorageID:        storageID,
 		StorageNamespace: storageNamespace,
 		Identifier:       key,
 		IdentifierType:   identifierType,
