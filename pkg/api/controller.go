@@ -2016,14 +2016,14 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
 	}
 
-	if err := c.validateStorageNamespace(storageID, storageNamespace); err != nil {
-		writeError(w, r, http.StatusBadRequest, err)
-		return
-	}
-
 	// Validate storage ID exists
 	if !slices.Contains(c.Config.StorageConfig().GetStorageIDs(), storageID) {
 		c.handleAPIError(ctx, w, r, graveler.ErrInvalidStorageID)
+		return
+	}
+
+	if err := c.validateStorageNamespace(storageID, storageNamespace); err != nil {
+		writeError(w, r, http.StatusBadRequest, err)
 		return
 	}
 
