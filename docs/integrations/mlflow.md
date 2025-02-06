@@ -235,16 +235,36 @@ this comparison. Here's an example:
 import mlflow
 
 first_run_id = "4c0464d665944dc5bb90587d455948b8"
-first_run = mlflow.get_run(first_run_id) 
+first_run = mlflow.get_run(first_run_id)
 
 # Retrieve the Dataset object
 first_dataset = first_run.inputs.dataset_inputs[0].dataset
+first_dataset_src = first_dataset.source
 
 sec_run_id = "12b91e073a8b40df97ea8d570534de31"
-sec_run = mlflow.get_run(sec_run_id) 
+sec_run = mlflow.get_run(sec_run_id)
 
 # Retrieve the Dataset object
 sec_dataset = sec_run.inputs.dataset_inputs[0].dataset
+sec_dataset_src = sec_dataset.source
 
-assert first_dataset.source == sec_dataset.source, "Dataset sources are not equal."
+assert first_dataset_src == sec_dataset_src, "Dataset sources are not equal."
+
+print(f"First dataset src: {first_dataset_src}")
+print(f"Second dataset src: {sec_dataset_src}")
 ```
+
+Output
+```text
+First dataset src: {"uri": "s3://mlflow-tracking/f16682c0186a81adf72edaad23c3f59ed2ff3afddad4fef987b4919f5e82003a/gold/train_v2/"}
+Second dataset src: {"uri": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
+```
+
+In this example, the source attribute of each Dataset object is compared to determine if the input datasets are identical. 
+If they differ, you can further inspect them. With the dataset source URI in hand, you can use lakeFS to gain more insights
+about the changes made to your dataset:
+* Inspect the lakeFS Commit ID: By examining the commit ID within the URI, you can retrieve detailed information about 
+the commit, including the author and the purpose of the changes.
+* Use lakeFS Diff: lakeFS offers a diff function that allows you to compare different versions of your data. 
+
+By leveraging these tools, you can effectively track and understand the evolution of your datasets across different MLflow runs.
