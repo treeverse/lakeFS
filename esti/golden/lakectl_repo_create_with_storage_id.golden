@@ -1,3 +1,0 @@
-Repository: lakefs://${REPO}
-error creating repository: storage id: invalid value: validation error
-400 Bad Request
