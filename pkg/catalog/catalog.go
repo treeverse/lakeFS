@@ -220,7 +220,6 @@ type Config struct {
 }
 
 type Catalog struct {
-	Config                config.Config
 	BlockAdapter          block.Adapter
 	Store                 Store
 	managers              []io.Closer

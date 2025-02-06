@@ -2,7 +2,6 @@ package block
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -237,17 +236,6 @@ func NewWalkerWrapper(walker Walker, uri *url.URL) *WalkerWrapper {
 		walker: walker,
 		uri:    uri,
 	}
-}
-
-func NewWalkerWrapperFromAdapter(adapter Adapter, storageID, path string, opts WalkerOptions) (*WalkerWrapper, error) {
-	walker, err := adapter.GetWalker(storageID, opts)
-	if err != nil {
-		return nil, fmt.Errorf("creating object-store walker on path %s: %w", path, err)
-	}
-	return &WalkerWrapper{
-		walker: walker,
-		uri:    opts.StorageURI,
-	}, nil
 }
 
 func (ww *WalkerWrapper) Walk(ctx context.Context, opts WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
