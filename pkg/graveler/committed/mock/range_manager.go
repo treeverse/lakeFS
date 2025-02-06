@@ -126,18 +126,18 @@ func (m *MockRangeManager) EXPECT() *MockRangeManagerMockRecorder {
 }
 
 // Exists mocks base method.
-func (m *MockRangeManager) Exists(ctx context.Context, ns committed.Namespace, id committed.ID) (bool, error) {
+func (m *MockRangeManager) Exists(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Exists", ctx, ns, id)
+	ret := m.ctrl.Call(m, "Exists", ctx, storageID, ns, id)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Exists indicates an expected call of Exists.
-func (mr *MockRangeManagerMockRecorder) Exists(ctx, ns, id interface{}) *gomock.Call {
+func (mr *MockRangeManagerMockRecorder) Exists(ctx, storageID, ns, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockRangeManager)(nil).Exists), ctx, ns, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockRangeManager)(nil).Exists), ctx, storageID, ns, id)
 }
 
 // GetURI mocks base method.
@@ -156,63 +156,63 @@ func (mr *MockRangeManagerMockRecorder) GetURI(ctx, ns, id interface{}) *gomock.
 }
 
 // GetValue mocks base method.
-func (m *MockRangeManager) GetValue(ctx context.Context, ns committed.Namespace, id committed.ID, key committed.Key) (*committed.Record, error) {
+func (m *MockRangeManager) GetValue(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID, key committed.Key) (*committed.Record, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValue", ctx, ns, id, key)
+	ret := m.ctrl.Call(m, "GetValue", ctx, storageID, ns, id, key)
 	ret0, _ := ret[0].(*committed.Record)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetValue indicates an expected call of GetValue.
-func (mr *MockRangeManagerMockRecorder) GetValue(ctx, ns, id, key interface{}) *gomock.Call {
+func (mr *MockRangeManagerMockRecorder) GetValue(ctx, storageID, ns, id, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValue", reflect.TypeOf((*MockRangeManager)(nil).GetValue), ctx, ns, id, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValue", reflect.TypeOf((*MockRangeManager)(nil).GetValue), ctx, storageID, ns, id, key)
 }
 
 // GetValueGE mocks base method.
-func (m *MockRangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, id committed.ID, key committed.Key) (*committed.Record, error) {
+func (m *MockRangeManager) GetValueGE(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID, key committed.Key) (*committed.Record, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetValueGE", ctx, ns, id, key)
+	ret := m.ctrl.Call(m, "GetValueGE", ctx, storageID, ns, id, key)
 	ret0, _ := ret[0].(*committed.Record)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetValueGE indicates an expected call of GetValueGE.
-func (mr *MockRangeManagerMockRecorder) GetValueGE(ctx, ns, id, key interface{}) *gomock.Call {
+func (mr *MockRangeManagerMockRecorder) GetValueGE(ctx, storageID, ns, id, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValueGE", reflect.TypeOf((*MockRangeManager)(nil).GetValueGE), ctx, ns, id, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValueGE", reflect.TypeOf((*MockRangeManager)(nil).GetValueGE), ctx, storageID, ns, id, key)
 }
 
 // GetWriter mocks base method.
-func (m *MockRangeManager) GetWriter(ctx context.Context, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
+func (m *MockRangeManager) GetWriter(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetWriter", ctx, ns, metadata)
+	ret := m.ctrl.Call(m, "GetWriter", ctx, storageID, ns, metadata)
 	ret0, _ := ret[0].(committed.RangeWriter)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetWriter indicates an expected call of GetWriter.
-func (mr *MockRangeManagerMockRecorder) GetWriter(ctx, ns, metadata interface{}) *gomock.Call {
+func (mr *MockRangeManagerMockRecorder) GetWriter(ctx, storageID, ns, metadata interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWriter", reflect.TypeOf((*MockRangeManager)(nil).GetWriter), ctx, ns, metadata)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWriter", reflect.TypeOf((*MockRangeManager)(nil).GetWriter), ctx, storageID, ns, metadata)
 }
 
 // NewRangeIterator mocks base method.
-func (m *MockRangeManager) NewRangeIterator(ctx context.Context, ns committed.Namespace, pid committed.ID) (committed.ValueIterator, error) {
+func (m *MockRangeManager) NewRangeIterator(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, pid committed.ID) (committed.ValueIterator, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewRangeIterator", ctx, ns, pid)
+	ret := m.ctrl.Call(m, "NewRangeIterator", ctx, storageID, ns, pid)
 	ret0, _ := ret[0].(committed.ValueIterator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewRangeIterator indicates an expected call of NewRangeIterator.
-func (mr *MockRangeManagerMockRecorder) NewRangeIterator(ctx, ns, pid interface{}) *gomock.Call {
+func (mr *MockRangeManagerMockRecorder) NewRangeIterator(ctx, storageID, ns, pid interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewRangeIterator", reflect.TypeOf((*MockRangeManager)(nil).NewRangeIterator), ctx, ns, pid)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewRangeIterator", reflect.TypeOf((*MockRangeManager)(nil).NewRangeIterator), ctx, storageID, ns, pid)
 }
 
 // MockRangeWriter is a mock of RangeWriter interface.

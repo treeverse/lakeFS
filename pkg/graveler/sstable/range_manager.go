@@ -14,7 +14,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/pyramid"
 )
 
-type NewSSTableReaderFn func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error)
+type NewSSTableReaderFn func(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID) (*sstable.Reader, error)
 
 type Unrefer interface {
 	Unref()
@@ -32,14 +32,14 @@ func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypt
 		cache.Ref()
 	}
 	opts := sstable.ReaderOptions{Cache: cache}
-	newReader := func(ctx context.Context, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
-		return newReader(ctx, fs, ns, id, opts)
+	newReader := func(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
+		return newReader(ctx, fs, storageID, ns, id, opts)
 	}
 	return NewPebbleSSTableRangeManagerWithNewReader(newReader, opts.Cache, fs, hash)
 }
 
-func newReader(ctx context.Context, fs pyramid.FS, ns committed.Namespace, id committed.ID, opts sstable.ReaderOptions) (*sstable.Reader, error) {
-	file, err := fs.Open(ctx, string(ns), string(id))
+func newReader(ctx context.Context, fs pyramid.FS, storageID committed.StorageID, ns committed.Namespace, id committed.ID, opts sstable.ReaderOptions) (*sstable.Reader, error) {
+	file, err := fs.Open(ctx, string(storageID), string(ns), string(id))
 	if err != nil {
 		return nil, fmt.Errorf("open sstable file %s %s: %w", ns, id, err)
 	}
@@ -66,12 +66,12 @@ var (
 	_ committed.RangeManager = &RangeManager{}
 )
 
-func (m *RangeManager) Exists(ctx context.Context, ns committed.Namespace, id committed.ID) (bool, error) {
-	return m.fs.Exists(ctx, string(ns), string(id))
+func (m *RangeManager) Exists(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID) (bool, error) {
+	return m.fs.Exists(ctx, string(storageID), string(ns), string(id))
 }
 
-func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, err := m.newReader(ctx, ns, id)
+func (m *RangeManager) GetValueGE(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+	reader, err := m.newReader(ctx, storageID, ns, id)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +105,8 @@ func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, i
 
 // GetValue returns the Record matching the key in the SSTable referenced by the id.
 // If key is not found, (nil, ErrKeyNotFound) is returned.
-func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, err := m.newReader(ctx, ns, id)
+func (m *RangeManager) GetValue(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+	reader, err := m.newReader(ctx, storageID, ns, id)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +146,8 @@ func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id 
 }
 
 // NewRangeIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *RangeManager) NewRangeIterator(ctx context.Context, ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
-	reader, err := m.newReader(ctx, ns, tid)
+func (m *RangeManager) NewRangeIterator(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
+	reader, err := m.newReader(ctx, storageID, ns, tid)
 	if err != nil {
 		return nil, err
 	}
@@ -164,8 +164,8 @@ func (m *RangeManager) NewRangeIterator(ctx context.Context, ns committed.Namesp
 }
 
 // GetWriter returns a new SSTable writer instance
-func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
-	return NewDiskWriter(ctx, m.fs, ns, m.hash.New(), metadata)
+func (m *RangeManager) GetWriter(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
+	return NewDiskWriter(ctx, m.fs, storageID, ns, m.hash.New(), metadata)
 }
 
 func (m *RangeManager) GetURI(ctx context.Context, ns committed.Namespace, id committed.ID) (string, error) {

@@ -24,10 +24,10 @@ func TestWriter(t *testing.T) {
 	// create the mock file with the matching file-system
 	mockFile := mock.NewMockStoredFile(ctrl)
 	mockFile.EXPECT().Close().Return(nil).Times(1)
-	mockFS.EXPECT().Create(gomock.Any(), string(ns)).Return(mockFile, nil)
+	mockFS.EXPECT().Create(gomock.Any(), "", string(ns)).Return(mockFile, nil)
 
 	writes := 500
-	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New(), nil)
+	dw, err := sstable.NewDiskWriter(ctx, mockFS, "", ns, sha256.New(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 
@@ -77,9 +77,9 @@ func TestWriterAbort(t *testing.T) {
 	mockFile := mock.NewMockStoredFile(ctrl)
 	mockFile.EXPECT().Abort(gomock.Any()).Return(nil).Times(1)
 	mockFile.EXPECT().Close().Return(nil).Times(1)
-	mockFS.EXPECT().Create(gomock.Any(), string(ns)).Return(mockFile, nil)
+	mockFS.EXPECT().Create(gomock.Any(), "", string(ns)).Return(mockFile, nil)
 
-	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New(), nil)
+	dw, err := sstable.NewDiskWriter(ctx, mockFS, "", ns, sha256.New(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 
@@ -111,14 +111,14 @@ func TestWriterAbortAfterClose(t *testing.T) {
 	// create the mock file with the matching file-system
 	mockFile := mock.NewMockStoredFile(ctrl)
 	mockFile.EXPECT().Close().Return(nil).Times(1)
-	mockFS.EXPECT().Create(gomock.Any(), string(ns)).Return(mockFile, nil)
+	mockFS.EXPECT().Create(gomock.Any(), "", string(ns)).Return(mockFile, nil)
 	// expect any write file actions
 	mockFile.EXPECT().Write(gomock.Any()).DoAndReturn(func(b []byte) (int, error) { return len(b), nil }).Times(1)
 	mockFile.EXPECT().Sync().Return(nil).Times(1)
 	mockFile.EXPECT().Store(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, filename string) error { return nil }).Times(1)
 
 	// Create writer
-	dw, err := sstable.NewDiskWriter(ctx, mockFS, ns, sha256.New(), nil)
+	dw, err := sstable.NewDiskWriter(ctx, mockFS, "", ns, sha256.New(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, dw)
 

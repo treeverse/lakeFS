@@ -1,11 +1,18 @@
 # Changelog
 
+# v1.49.1
+
+:bug: Bugs fixed:
+- Fix: UI Create user (#8604)
+- Fix: Change validation error message on create repository to reflect validation (#8585)
+
 # v1.49.0
 
 :new: What's new:
 - change login placeholders for remote authenticator (#8519)
 - Make http client type configurable (#8516)
 - S3GW: Support list multipart uploads (#8531)
+- Metric: Report time-to-first-byte for get object API (#8503)
 
 :bug: Bugs fixed:
 - Fix: react-dropzone dependency (#8534)
