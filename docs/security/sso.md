@@ -301,7 +301,7 @@ The authentication works by querying the LDAP server for user information and au
 
 See [Fluffy configuration][fluffy-configuration] reference.
 
-1. Repalce `auth.ldap.remote_authenticator.server_endpoint` with your LDAP server endpoint  (e.g `ldaps://ldap.ldap-address.com:636`)
+1. Replace `auth.ldap.remote_authenticator.server_endpoint` with your LDAP server endpoint  (e.g `ldaps://ldap.ldap-address.com:636`)
 2. Replace `auth.ldap.remote_authenticator.bind_dn` with the LDAP bind user/permissions to query your LDAP server.
 3. Replace `auth.ldap.remote_authenticator.user_base_dn` with the user base to search users in.
 
@@ -356,7 +356,7 @@ If you encounter LDAP connection errors, you should inspect the **fluffy contain
 
 ### Authentication issues
 
-Auth issues (e.g. user not found, invalid credentials) can be debugged with the [ldapwhoami](https://www.unix.com/man-page/osx/1/ldapwhoami) CLI tool. 
+Auth issues (e.g. user not found, invalid credentials) can be debugged with the `ldapwhoami` CLI tool. 
 
 The Examples are based on the fluffy config above:
 
