@@ -198,7 +198,7 @@ const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo
 
 const RepositoriesPage = () => {
     const pluginManager = usePluginManager();
-    const disableSampleRepoCreation = pluginManager.repoCreationForm.disableSampleRepoCreation
+    const disableSampleRepoCreation = pluginManager.repoCreationForm?.disableSampleRepoCreation
 
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
