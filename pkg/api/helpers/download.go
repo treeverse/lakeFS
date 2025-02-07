@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -23,11 +22,10 @@ const (
 )
 
 type Downloader struct {
-	Client         *apigen.ClientWithResponses
-	PreSign        bool
-	HTTPClient     *http.Client
-	PartSize       int64
-	ProgressWriter progress.Writer
+	Client     *apigen.ClientWithResponses
+	PreSign    bool
+	HTTPClient *http.Client
+	PartSize   int64
 }
 
 type downloadPart struct {
@@ -44,49 +42,22 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 		Transport: transport,
 	}
 
-	// setup progress writer
-	pw := progress.NewWriter()
-	pw.SetAutoStop(false)
-	pw.SetSortBy(progress.SortByValue)
-	pw.SetStyle(progress.StyleDefault)
-	pw.SetTrackerPosition(progress.PositionRight)
-	pw.Style().Colors = progress.StyleColorsExample
-	pw.Style().Options.PercentFormat = "%4.1f%%"
-
 	return &Downloader{
-		Client:         client,
-		PreSign:        preSign,
-		HTTPClient:     httpClient,
-		PartSize:       DefaultDownloadPartSize,
-		ProgressWriter: pw,
+		Client:     client,
+		PreSign:    preSign,
+		HTTPClient: httpClient,
+		PartSize:   DefaultDownloadPartSize,
 	}
 }
 
 // Download downloads an object from lakeFS to a local file, create the destination directory if needed.
-func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string) error {
+func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {
 	// create destination dir if needed
 	dir := filepath.Dir(dst)
 	_ = os.MkdirAll(dir, os.ModePerm)
 
-	var err error
-
-	// progress tracker
-	tracker := &progress.Tracker{
-		Message: "download " + src.GetPath(),
-		Total:   -1,
-	}
-
-	d.ProgressWriter.AppendTracker(tracker)
-	tracker.Start()
-	defer func() {
-		if err != nil {
-			tracker.MarkAsErrored()
-		} else {
-			tracker.MarkAsDone()
-		}
-	}()
-
 	// download object
+	var err error
 	if d.PreSign {
 		// download using presigned multipart download, it will fall back to presign single object download if needed
 		err = d.downloadPresignMultipart(ctx, src, dst, tracker)
@@ -116,7 +87,9 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 
 	// check if the object is small enough to download in one request
 	size := swag.Int64Value(statResp.JSON200.SizeBytes)
-	tracker.UpdateTotal(size)
+	if tracker != nil {
+		tracker.UpdateTotal(size)
+	}
 	if size < d.PartSize {
 		return d.downloadObject(ctx, src, dst, tracker)
 	}
@@ -148,7 +121,9 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 				if err != nil {
 					return err
 				}
-				tracker.Increment(part.PartSize)
+				if tracker != nil {
+					tracker.Increment(part.PartSize)
+				}
 			}
 			return nil
 		})
@@ -228,7 +203,7 @@ func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string
 		return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
 	}
 
-	if resp.ContentLength != -1 {
+	if tracker != nil && resp.ContentLength != -1 {
 		tracker.UpdateTotal(resp.ContentLength)
 	}
 
@@ -238,24 +213,12 @@ func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string
 		return err
 	}
 	defer func() { _ = f.Close() }()
-	w := NewTrackerWriter(f, tracker)
+	var w io.Writer = f
+	if tracker != nil {
+		w = NewTrackerWriter(f, tracker)
+	}
 	_, err = io.Copy(w, resp.Body)
 	return err
-}
-
-// ProgressRender start render progress and return callback waiting for the progress to finish.
-func (d *Downloader) ProgressRender() func() {
-	go d.ProgressWriter.Render()
-	return func() {
-		for d.ProgressWriter.IsRenderInProgress() {
-			// for manual-stop mode, stop when there are no more active trackers
-			if d.ProgressWriter.LengthActive() == 0 {
-				d.ProgressWriter.Stop()
-			}
-			const waitForRender = 100 * time.Millisecond
-			time.Sleep(waitForRender)
-		}
-	}
 }
 
 // Tracker interface for tracking written data.

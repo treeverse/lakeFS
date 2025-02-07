@@ -1,12 +1,13 @@
 package cmd
 
 import (
-	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/progress"
@@ -39,11 +40,6 @@ var fsDownloadCmd = &cobra.Command{
 
 		downloader := helpers.NewDownloader(client, syncFlags.Presign)
 		downloader.PartSize = downloadPartSize
-		if syncFlags.NoProgress {
-			downloader.ProgressWriter.Style().Visibility = progress.StyleVisibility{}
-		}
-		stopRender := downloader.ProgressRender()
-		defer stopRender()
 
 		if !recursive {
 			src := uri.URI{
@@ -51,9 +47,37 @@ var fsDownloadCmd = &cobra.Command{
 				Ref:        remote.Ref,
 				Path:       remote.Path,
 			}
-			singleObjectDownloadHelper(ctx, downloader, src, dest)
+			// if dest is a directory, add the file name
+			if s, _ := os.Stat(dest); s != nil && s.IsDir() {
+				dest += uri.PathSeparator
+			}
+			remotePath := src.GetPath()
+			if remotePath != "" && strings.HasSuffix(dest, uri.PathSeparator) {
+				dest += filepath.Base(remotePath)
+			}
+
+			err := downloader.Download(ctx, src, dest, nil)
+			if err != nil {
+				DieErr(err)
+			}
+			fmt.Printf("download: %s to %s\n", src.String(), dest)
 			return
 		}
+
+		// setup progress writer
+		pw := newDownloadProgressWriter(syncFlags.NoProgress)
+		// ProgressRender start render progress and return callback waiting for the progress to finish.
+		go pw.Render()
+		defer func() {
+			for pw.IsRenderInProgress() {
+				// for manual-stop mode, stop when there are no more active trackers
+				if pw.LengthActive() == 0 {
+					pw.Stop()
+				}
+				const waitForRender = 100 * time.Millisecond
+				time.Sleep(waitForRender)
+			}
+		}()
 
 		ch := make(chan string, filesChanSize)
 		remotePath := remote.GetPath()
@@ -107,8 +131,19 @@ var fsDownloadCmd = &cobra.Command{
 						Ref:        remote.Ref,
 						Path:       &srcPath,
 					}
-					destPath := filepath.Join(dest, relPath)
-					singleObjectDownloadHelper(ctx, downloader, src, destPath)
+
+					// progress tracker
+					tracker := &progress.Tracker{Message: "download " + relPath, Total: -1}
+					pw.AppendTracker(tracker)
+					tracker.Start()
+
+					dest := filepath.Join(dest, relPath)
+					err := downloader.Download(ctx, src, dest, tracker)
+					if err != nil {
+						tracker.MarkAsErrored()
+						DieErr(err)
+					}
+					tracker.MarkAsDone()
 				}
 			}()
 		}
@@ -117,20 +152,18 @@ var fsDownloadCmd = &cobra.Command{
 	},
 }
 
-func singleObjectDownloadHelper(ctx context.Context, downloader *helpers.Downloader, src uri.URI, dest string) {
-	// if dest is a directory, add the file name
-	if s, _ := os.Stat(dest); s != nil && s.IsDir() {
-		dest += uri.PathSeparator
+func newDownloadProgressWriter(noProgress bool) progress.Writer {
+	pw := progress.NewWriter()
+	pw.SetAutoStop(false)
+	pw.SetSortBy(progress.SortByValue)
+	pw.SetStyle(progress.StyleDefault)
+	pw.SetTrackerPosition(progress.PositionRight)
+	pw.Style().Colors = progress.StyleColorsExample
+	pw.Style().Options.PercentFormat = "%4.1f%%"
+	if noProgress {
+		pw.Style().Visibility = progress.StyleVisibility{}
 	}
-	remotePath := src.GetPath()
-	if remotePath != "" && strings.HasSuffix(dest, uri.PathSeparator) {
-		dest += filepath.Base(remotePath)
-	}
-
-	err := downloader.Download(ctx, src, dest)
-	if err != nil {
-		DieErr(err)
-	}
+	return pw
 }
 
 //nolint:gochecknoinits
