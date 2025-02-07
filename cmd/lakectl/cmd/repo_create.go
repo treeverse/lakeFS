@@ -43,9 +43,10 @@ var repoCreateCmd = &cobra.Command{
 			Die("Bad response from server", 1)
 		}
 		repo := resp.JSON201
-		fmt.Printf("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n", repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
+		fmt.Printf("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 		if sampleData {
-			fmt.Println("sample data included")
+			fmt.Printf("sample data included\n")
 		}
 	},
 }
