@@ -110,8 +110,8 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 		"STORAGE": storage3,
 		"BRANCH":  mainBranch,
 	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" --sample-data", false, "lakectl_repo_create_sample", vars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName+"/"+mainBranch+"/", false, "lakectl_fs_ls_sample_repo", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName3+" "+storage3+" --sample-data", false, "lakectl_repo_create_sample", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs ls lakefs://"+repoName3+"/"+mainBranch+"/", false, "lakectl_fs_ls_sample_repo", vars)
 }
 
 func TestLakectlPreSignUpload(t *testing.T) {
