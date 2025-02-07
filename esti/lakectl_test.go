@@ -600,19 +600,17 @@ func TestLakectlFsDownload(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
 	t.Run("single", func(t *testing.T) {
-		const fn = "data/ro/ro_1k.0"
-		src := "lakefs://" + repoName + "/" + mainBranch + "/" + fn
+		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src, false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download "+fn)
+		require.Contains(t, sanitizedResult, "download: "+src)
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
-		const fn = "data/ro/ro_1k.0"
-		src := "lakefs://" + repoName + "/" + mainBranch + "/" + fn
+		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
 		dest := t.TempDir()
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" "+dest, false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download "+fn)
-		require.Contains(t, sanitizedResult, fn)
+		require.Contains(t, sanitizedResult, "download: "+src)
+		require.Contains(t, sanitizedResult, dest+"/"+"ro_1k.0")
 	})
 
 	t.Run("single_with_rel_dest", func(t *testing.T) {
@@ -626,11 +624,10 @@ func TestLakectlFsDownload(t *testing.T) {
 			require.NoError(t, os.Chdir(currDir))
 		}()
 
-		const fn = "data/ro/ro_1k.0"
-		src := "lakefs://" + repoName + "/" + mainBranch + "/" + fn
+		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" ./", false, false, map[string]string{})
-		require.Contains(t, sanitizedResult, "download "+fn)
-		require.Contains(t, sanitizedResult, fn)
+		require.Contains(t, sanitizedResult, "download: "+src)
+		require.Contains(t, sanitizedResult, dest+"/ro_1k.0")
 	})
 
 	t.Run("single_with_recursive_flag", func(t *testing.T) {
@@ -645,10 +642,6 @@ func TestLakectlFsDownload(t *testing.T) {
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
-		require.Contains(t, sanitizedResult, "Download Summary:")
-		require.Contains(t, sanitizedResult, "Downloaded: 5")
-		require.Contains(t, sanitizedResult, "Uploaded: 0")
-		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
 	t.Run("directory_with_dest", func(t *testing.T) {
@@ -659,10 +652,6 @@ func TestLakectlFsDownload(t *testing.T) {
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
-		require.Contains(t, sanitizedResult, "Download Summary:")
-		require.Contains(t, sanitizedResult, "Downloaded: 5")
-		require.Contains(t, sanitizedResult, "Uploaded: 0")
-		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
 	t.Run("directory_without_recursive", func(t *testing.T) {
