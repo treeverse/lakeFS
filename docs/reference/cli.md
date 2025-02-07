@@ -2626,6 +2626,7 @@ lakectl repo create lakefs://my-repo s3://my-bucket
 ```
   -d, --default-branch string   the default branch of this repository (default "main")
   -h, --help                    help for create
+      --sample-data             create sample data in the repository
 ```
 
 
