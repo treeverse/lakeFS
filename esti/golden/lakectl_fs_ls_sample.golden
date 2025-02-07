@@ -1,0 +1,4 @@
+object          <DATE> <TIME> <TZ>   28.8 kB          README.md
+common_prefix                                         data/
+common_prefix                                         images/
+object          <DATE> <TIME> <TZ>  916.4 kB          lakes.parquet
