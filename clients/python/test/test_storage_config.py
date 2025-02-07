@@ -50,6 +50,7 @@ class TestStorageConfig(unittest.TestCase):
                 pre_sign_multipart_upload = True, 
                 blockstore_id = '', 
                 blockstore_description = '', 
+                backward_compatible = True, 
                 blockstore_extras = {
                     'key' : ''
                     }

@@ -15,6 +15,7 @@ Name | Type | Description | Notes
 **pre_sign_multipart_upload** | Option<**bool**> |  | [optional]
 **blockstore_id** | Option<**String**> |  | [optional]
 **blockstore_description** | Option<**String**> |  | [optional]
+**backward_compatible** | Option<**bool**> |  | [optional][default to false]
 **blockstore_extras** | Option<**std::collections::HashMap<String, String>**> | blockstore specific properties | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
