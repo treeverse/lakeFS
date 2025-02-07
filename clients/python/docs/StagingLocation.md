@@ -20,12 +20,12 @@ json = "{}"
 # create an instance of StagingLocation from a JSON string
 staging_location_instance = StagingLocation.from_json(json)
 # print the JSON string representation of the object
-print(StagingLocation.to_json())
+print StagingLocation.to_json()
 
 # convert the object into a dict
 staging_location_dict = staging_location_instance.to_dict()
 # create an instance of StagingLocation from a dict
-staging_location_from_dict = StagingLocation.from_dict(staging_location_dict)
+staging_location_form_dict = staging_location.from_dict(staging_location_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

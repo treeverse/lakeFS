@@ -28,8 +28,9 @@ create a copy of an object
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.object_copy_creation import ObjectCopyCreation
 from lakefs_sdk.models.object_stats import ObjectStats
@@ -95,7 +96,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -145,8 +145,9 @@ delete object. Missing objects will not return a NotFound error.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -208,7 +209,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -257,8 +257,9 @@ delete objects. Missing objects will not return a NotFound error.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.object_error_list import ObjectErrorList
 from lakefs_sdk.models.path_list import PathList
@@ -324,7 +325,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -373,8 +373,9 @@ get object content
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -440,7 +441,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -495,8 +495,9 @@ get object properties on underlying storage
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_sdk.rest import ApiException
@@ -560,7 +561,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -607,8 +607,9 @@ check if object exists
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -670,7 +671,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -721,8 +721,9 @@ list objects under a given prefix
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.object_stats_list import ObjectStatsList
 from lakefs_sdk.rest import ApiException
@@ -791,7 +792,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -843,8 +843,9 @@ get object metadata
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.rest import ApiException
@@ -910,7 +911,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -961,8 +961,9 @@ rewrite (all) object metadata
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata
 from lakefs_sdk.rest import ApiException
@@ -1025,7 +1026,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -1074,8 +1074,9 @@ void (empty response body)
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.rest import ApiException
@@ -1140,7 +1141,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling ObjectsApi->upload_object: %s\n" % e)
 ```
-
 
 
 ### Parameters

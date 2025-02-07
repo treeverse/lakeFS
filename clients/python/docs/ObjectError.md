@@ -19,12 +19,12 @@ json = "{}"
 # create an instance of ObjectError from a JSON string
 object_error_instance = ObjectError.from_json(json)
 # print the JSON string representation of the object
-print(ObjectError.to_json())
+print ObjectError.to_json()
 
 # convert the object into a dict
 object_error_dict = object_error_instance.to_dict()
 # create an instance of ObjectError from a dict
-object_error_from_dict = ObjectError.from_dict(object_error_dict)
+object_error_form_dict = object_error.from_dict(object_error_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

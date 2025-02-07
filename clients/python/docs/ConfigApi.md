@@ -21,8 +21,9 @@ retrieve lakeFS configuration
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.config import Config
 from lakefs_sdk.rest import ApiException
@@ -82,9 +83,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type

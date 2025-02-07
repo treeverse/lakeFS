@@ -20,12 +20,12 @@ json = "{}"
 # create an instance of VersionConfig from a JSON string
 version_config_instance = VersionConfig.from_json(json)
 # print the JSON string representation of the object
-print(VersionConfig.to_json())
+print VersionConfig.to_json()
 
 # convert the object into a dict
 version_config_dict = version_config_instance.to_dict()
 # create an instance of VersionConfig from a dict
-version_config_from_dict = VersionConfig.from_dict(version_config_dict)
+version_config_form_dict = version_config.from_dict(version_config_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

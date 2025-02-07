@@ -19,12 +19,12 @@ json = "{}"
 # create an instance of ImportCreation from a JSON string
 import_creation_instance = ImportCreation.from_json(json)
 # print the JSON string representation of the object
-print(ImportCreation.to_json())
+print ImportCreation.to_json()
 
 # convert the object into a dict
 import_creation_dict = import_creation_instance.to_dict()
 # create an instance of ImportCreation from a dict
-import_creation_from_dict = ImportCreation.from_dict(import_creation_dict)
+import_creation_form_dict = import_creation.from_dict(import_creation_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

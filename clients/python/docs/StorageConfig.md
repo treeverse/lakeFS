@@ -28,12 +28,12 @@ json = "{}"
 # create an instance of StorageConfig from a JSON string
 storage_config_instance = StorageConfig.from_json(json)
 # print the JSON string representation of the object
-print(StorageConfig.to_json())
+print StorageConfig.to_json()
 
 # convert the object into a dict
 storage_config_dict = storage_config_instance.to_dict()
 # create an instance of StorageConfig from a dict
-storage_config_from_dict = StorageConfig.from_dict(storage_config_dict)
+storage_config_form_dict = storage_config.from_dict(storage_config_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

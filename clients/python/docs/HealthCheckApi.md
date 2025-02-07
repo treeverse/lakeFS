@@ -16,8 +16,9 @@ check that the API server is up and running
 
 ### Example
 
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -41,9 +42,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
-
 This endpoint does not need any parameter.
 
 ### Return type

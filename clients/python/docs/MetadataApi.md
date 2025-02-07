@@ -20,8 +20,9 @@ return URI to a meta-range file
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.storage_uri import StorageURI
 from lakefs_sdk.rest import ApiException
@@ -84,7 +85,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -130,8 +130,9 @@ return URI to a range file
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.storage_uri import StorageURI
 from lakefs_sdk.rest import ApiException
@@ -192,7 +193,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling MetadataApi->get_range: %s\n" % e)
 ```
-
 
 
 ### Parameters

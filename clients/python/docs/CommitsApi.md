@@ -20,8 +20,9 @@ create commit
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.commit import Commit
 from lakefs_sdk.models.commit_creation import CommitCreation
@@ -87,7 +88,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -139,8 +139,9 @@ get commit
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.commit import Commit
 from lakefs_sdk.rest import ApiException
@@ -201,7 +202,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling CommitsApi->get_commit: %s\n" % e)
 ```
-
 
 
 ### Parameters

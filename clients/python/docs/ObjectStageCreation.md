@@ -23,12 +23,12 @@ json = "{}"
 # create an instance of ObjectStageCreation from a JSON string
 object_stage_creation_instance = ObjectStageCreation.from_json(json)
 # print the JSON string representation of the object
-print(ObjectStageCreation.to_json())
+print ObjectStageCreation.to_json()
 
 # convert the object into a dict
 object_stage_creation_dict = object_stage_creation_instance.to_dict()
 # create an instance of ObjectStageCreation from a dict
-object_stage_creation_from_dict = ObjectStageCreation.from_dict(object_stage_creation_dict)
+object_stage_creation_form_dict = object_stage_creation.from_dict(object_stage_creation_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

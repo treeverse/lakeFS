@@ -26,8 +26,9 @@ Replay the changes from the given commit on the branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.cherry_pick_creation import CherryPickCreation
 from lakefs_sdk.models.commit import Commit
@@ -92,7 +93,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -142,8 +142,9 @@ create branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.branch_creation import BranchCreation
 from lakefs_sdk.rest import ApiException
@@ -206,7 +207,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -255,8 +255,9 @@ delete branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -317,7 +318,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -365,8 +365,9 @@ diff branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.diff_list import DiffList
 from lakefs_sdk.rest import ApiException
@@ -433,7 +434,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -483,8 +483,9 @@ get branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.ref import Ref
 from lakefs_sdk.rest import ApiException
@@ -547,7 +548,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -593,8 +593,9 @@ list branches
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.ref_list import RefList
 from lakefs_sdk.rest import ApiException
@@ -660,7 +661,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -709,8 +709,9 @@ reset branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.reset_creation import ResetCreation
 from lakefs_sdk.rest import ApiException
@@ -772,7 +773,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -821,8 +821,9 @@ revert
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.revert_creation import RevertCreation
 from lakefs_sdk.rest import ApiException
@@ -882,7 +883,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling BranchesApi->revert_branch: %s\n" % e)
 ```
-
 
 
 ### Parameters

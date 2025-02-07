@@ -18,12 +18,12 @@ json = "{}"
 # create an instance of DiffList from a JSON string
 diff_list_instance = DiffList.from_json(json)
 # print the JSON string representation of the object
-print(DiffList.to_json())
+print DiffList.to_json()
 
 # convert the object into a dict
 diff_list_dict = diff_list_instance.to_dict()
 # create an instance of DiffList from a dict
-diff_list_from_dict = DiffList.from_dict(diff_list_dict)
+diff_list_form_dict = diff_list.from_dict(diff_list_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

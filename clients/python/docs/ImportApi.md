@@ -21,8 +21,9 @@ cancel ongoing import
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -83,7 +84,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -132,8 +132,9 @@ import data from object store
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.import_creation import ImportCreation
 from lakefs_sdk.models.import_creation_response import ImportCreationResponse
@@ -198,7 +199,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -247,8 +247,9 @@ get import status
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.import_status import ImportStatus
 from lakefs_sdk.rest import ApiException
@@ -310,7 +311,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling ImportApi->import_status: %s\n" % e)
 ```
-
 
 
 ### Parameters

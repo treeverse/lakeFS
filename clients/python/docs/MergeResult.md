@@ -17,12 +17,12 @@ json = "{}"
 # create an instance of MergeResult from a JSON string
 merge_result_instance = MergeResult.from_json(json)
 # print the JSON string representation of the object
-print(MergeResult.to_json())
+print MergeResult.to_json()
 
 # convert the object into a dict
 merge_result_dict = merge_result_instance.to_dict()
 # create an instance of MergeResult from a dict
-merge_result_from_dict = MergeResult.from_dict(merge_result_dict)
+merge_result_form_dict = merge_result.from_dict(merge_result_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

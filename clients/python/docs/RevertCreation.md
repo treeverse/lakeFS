@@ -21,12 +21,12 @@ json = "{}"
 # create an instance of RevertCreation from a JSON string
 revert_creation_instance = RevertCreation.from_json(json)
 # print the JSON string representation of the object
-print(RevertCreation.to_json())
+print RevertCreation.to_json()
 
 # convert the object into a dict
 revert_creation_dict = revert_creation_instance.to_dict()
 # create an instance of RevertCreation from a dict
-revert_creation_from_dict = RevertCreation.from_dict(revert_creation_dict)
+revert_creation_form_dict = revert_creation.from_dict(revert_creation_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

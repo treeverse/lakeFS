@@ -21,12 +21,12 @@ json = "{}"
 # create an instance of RangeMetadata from a JSON string
 range_metadata_instance = RangeMetadata.from_json(json)
 # print the JSON string representation of the object
-print(RangeMetadata.to_json())
+print RangeMetadata.to_json()
 
 # convert the object into a dict
 range_metadata_dict = range_metadata_instance.to_dict()
 # create an instance of RangeMetadata from a dict
-range_metadata_from_dict = RangeMetadata.from_dict(range_metadata_dict)
+range_metadata_form_dict = range_metadata.from_dict(range_metadata_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

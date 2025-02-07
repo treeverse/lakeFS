@@ -18,12 +18,12 @@ json = "{}"
 # create an instance of CommitOverrides from a JSON string
 commit_overrides_instance = CommitOverrides.from_json(json)
 # print the JSON string representation of the object
-print(CommitOverrides.to_json())
+print CommitOverrides.to_json()
 
 # convert the object into a dict
 commit_overrides_dict = commit_overrides_instance.to_dict()
 # create an instance of CommitOverrides from a dict
-commit_overrides_from_dict = CommitOverrides.from_dict(commit_overrides_dict)
+commit_overrides_form_dict = commit_overrides.from_dict(commit_overrides_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

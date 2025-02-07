@@ -18,12 +18,12 @@ json = "{}"
 # create an instance of ExternalLoginInformation from a JSON string
 external_login_information_instance = ExternalLoginInformation.from_json(json)
 # print the JSON string representation of the object
-print(ExternalLoginInformation.to_json())
+print ExternalLoginInformation.to_json()
 
 # convert the object into a dict
 external_login_information_dict = external_login_information_instance.to_dict()
 # create an instance of ExternalLoginInformation from a dict
-external_login_information_from_dict = ExternalLoginInformation.from_dict(external_login_information_dict)
+external_login_information_form_dict = external_login_information.from_dict(external_login_information_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

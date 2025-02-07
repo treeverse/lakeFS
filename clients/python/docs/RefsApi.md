@@ -22,8 +22,9 @@ diff references
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.diff_list import DiffList
 from lakefs_sdk.rest import ApiException
@@ -80,7 +81,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     amount = 100 # int | how many items to return (optional) (default to 100)
     prefix = 'prefix_example' # str | return items prefixed with this value (optional)
     delimiter = 'delimiter_example' # str | delimiter used to group common prefixes by (optional)
-    type = three_dot # str |  (optional) (default to three_dot)
+    type = 'three_dot' # str |  (optional) (default to 'three_dot')
 
     try:
         # diff references
@@ -90,7 +91,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling RefsApi->diff_refs: %s\n" % e)
 ```
-
 
 
 ### Parameters
@@ -105,7 +105,7 @@ Name | Type | Description  | Notes
  **amount** | **int**| how many items to return | [optional] [default to 100]
  **prefix** | **str**| return items prefixed with this value | [optional] 
  **delimiter** | **str**| delimiter used to group common prefixes by | [optional] 
- **type** | **str**|  | [optional] [default to three_dot]
+ **type** | **str**|  | [optional] [default to &#39;three_dot&#39;]
 
 ### Return type
 
@@ -144,8 +144,9 @@ find the merge base for 2 references
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.find_merge_base_result import FindMergeBaseResult
 from lakefs_sdk.rest import ApiException
@@ -209,7 +210,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -257,8 +257,9 @@ get commit log from ref. If both objects and prefixes are empty, return all comm
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.commit_list import CommitList
 from lakefs_sdk.rest import ApiException
@@ -329,7 +330,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -383,8 +383,9 @@ merge references
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.merge import Merge
 from lakefs_sdk.models.merge_result import MergeResult
@@ -448,7 +449,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling RefsApi->merge_into_branch: %s\n" % e)
 ```
-
 
 
 ### Parameters

@@ -20,8 +20,9 @@ generate an address to which the client can upload an object
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.staging_location import StagingLocation
 from lakefs_sdk.rest import ApiException
@@ -86,7 +87,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -136,8 +136,9 @@ Link the physical address with the path in lakeFS, creating an uncommitted chang
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.models.staging_metadata import StagingMetadata
@@ -202,7 +203,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling StagingApi->link_physical_address: %s\n" % e)
 ```
-
 
 
 ### Parameters

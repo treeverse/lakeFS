@@ -26,12 +26,12 @@ json = "{}"
 # create an instance of PullRequest from a JSON string
 pull_request_instance = PullRequest.from_json(json)
 # print the JSON string representation of the object
-print(PullRequest.to_json())
+print PullRequest.to_json()
 
 # convert the object into a dict
 pull_request_dict = pull_request_instance.to_dict()
 # create an instance of PullRequest from a dict
-pull_request_from_dict = PullRequest.from_dict(pull_request_dict)
+pull_request_form_dict = pull_request.from_dict(pull_request_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

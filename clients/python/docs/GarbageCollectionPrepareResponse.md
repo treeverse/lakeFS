@@ -20,12 +20,12 @@ json = "{}"
 # create an instance of GarbageCollectionPrepareResponse from a JSON string
 garbage_collection_prepare_response_instance = GarbageCollectionPrepareResponse.from_json(json)
 # print the JSON string representation of the object
-print(GarbageCollectionPrepareResponse.to_json())
+print GarbageCollectionPrepareResponse.to_json()
 
 # convert the object into a dict
 garbage_collection_prepare_response_dict = garbage_collection_prepare_response_instance.to_dict()
 # create an instance of GarbageCollectionPrepareResponse from a dict
-garbage_collection_prepare_response_from_dict = GarbageCollectionPrepareResponse.from_dict(garbage_collection_prepare_response_dict)
+garbage_collection_prepare_response_form_dict = garbage_collection_prepare_response.from_dict(garbage_collection_prepare_response_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

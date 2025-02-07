@@ -23,8 +23,9 @@ attach external principal to user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation
 from lakefs_sdk.rest import ApiException
@@ -86,7 +87,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -134,8 +134,9 @@ delete external principal from user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -195,7 +196,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -236,8 +236,9 @@ perform a login using an external authenticator
 
 ### Example
 
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation
@@ -265,7 +266,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling ExternalApi->external_principal_login: %s\n" % e)
 ```
-
 
 
 ### Parameters
@@ -314,8 +314,9 @@ describe external principal by id
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal import ExternalPrincipal
 from lakefs_sdk.rest import ApiException
@@ -377,7 +378,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -422,8 +422,9 @@ list user external policies attached to a user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_list import ExternalPrincipalList
 from lakefs_sdk.rest import ApiException
@@ -486,7 +487,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling ExternalApi->list_user_external_principals: %s\n" % e)
 ```
-
 
 
 ### Parameters

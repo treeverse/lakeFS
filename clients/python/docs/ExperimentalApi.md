@@ -36,8 +36,9 @@ Aborts a presign multipart upload.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.abort_presign_multipart_upload import AbortPresignMultipartUpload
 from lakefs_sdk.rest import ApiException
@@ -101,7 +102,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -153,8 +153,9 @@ Completes a presign multipart upload by assembling the uploaded parts.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.complete_presign_multipart_upload import CompletePresignMultipartUpload
 from lakefs_sdk.models.object_stats import ObjectStats
@@ -221,7 +222,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -274,8 +274,9 @@ Initiates a multipart upload and returns an upload ID with presigned URLs for ea
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
 from lakefs_sdk.rest import ApiException
@@ -340,7 +341,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -389,8 +389,9 @@ create pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_request_creation import PullRequestCreation
 from lakefs_sdk.models.pull_request_creation_response import PullRequestCreationResponse
@@ -454,7 +455,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -503,8 +503,9 @@ attach external principal to user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_creation import ExternalPrincipalCreation
 from lakefs_sdk.rest import ApiException
@@ -566,7 +567,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -614,8 +614,9 @@ delete external principal from user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -675,7 +676,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -716,8 +716,9 @@ perform a login using an external authenticator
 
 ### Example
 
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation
@@ -745,7 +746,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling ExperimentalApi->external_principal_login: %s\n" % e)
 ```
-
 
 
 ### Parameters
@@ -794,8 +794,9 @@ describe external principal by id
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal import ExternalPrincipal
 from lakefs_sdk.rest import ApiException
@@ -857,7 +858,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -902,8 +902,9 @@ get pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_request import PullRequest
 from lakefs_sdk.rest import ApiException
@@ -966,7 +967,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -1015,8 +1015,9 @@ Relocate branch to refer to ref.  Branch must not contain uncommitted data.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.rest import ApiException
 from pprint import pprint
@@ -1078,7 +1079,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -1128,8 +1128,9 @@ list pull requests
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_requests_list import PullRequestsList
 from lakefs_sdk.rest import ApiException
@@ -1183,7 +1184,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     prefix = 'prefix_example' # str | return items prefixed with this value (optional)
     after = 'after_example' # str | return items after this value (optional)
     amount = 100 # int | how many items to return (optional) (default to 100)
-    status = all # str |  (optional) (default to all)
+    status = 'all' # str |  (optional) (default to 'all')
 
     try:
         # list pull requests
@@ -1195,7 +1196,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -1205,7 +1205,7 @@ Name | Type | Description  | Notes
  **prefix** | **str**| return items prefixed with this value | [optional] 
  **after** | **str**| return items after this value | [optional] 
  **amount** | **int**| how many items to return | [optional] [default to 100]
- **status** | **str**|  | [optional] [default to all]
+ **status** | **str**|  | [optional] [default to &#39;all&#39;]
 
 ### Return type
 
@@ -1244,8 +1244,9 @@ list user external policies attached to a user
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.external_principal_list import ExternalPrincipalList
 from lakefs_sdk.rest import ApiException
@@ -1310,7 +1311,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -1358,8 +1358,9 @@ merge pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.merge_result import MergeResult
 from lakefs_sdk.rest import ApiException
@@ -1422,7 +1423,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -1467,8 +1467,9 @@ perform a login with STS
 
 ### Example
 
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken
 from lakefs_sdk.models.sts_auth_request import StsAuthRequest
@@ -1496,7 +1497,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling ExperimentalApi->sts_login: %s\n" % e)
 ```
-
 
 
 ### Parameters
@@ -1542,8 +1542,9 @@ rewrite (all) object metadata
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata
 from lakefs_sdk.rest import ApiException
@@ -1606,7 +1607,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
 ```
 
 
-
 ### Parameters
 
 
@@ -1655,8 +1655,9 @@ update pull request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
+import time
+import os
 import lakefs_sdk
 from lakefs_sdk.models.pull_request_basic import PullRequestBasic
 from lakefs_sdk.rest import ApiException
@@ -1716,7 +1717,6 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     except Exception as e:
         print("Exception when calling ExperimentalApi->update_pull_request: %s\n" % e)
 ```
-
 
 
 ### Parameters
