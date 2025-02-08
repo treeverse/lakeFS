@@ -4763,9 +4763,11 @@ func TestController_ClientDisconnect(t *testing.T) {
 	}
 
 	// retry mechanism to identify if server updated metric on client disconnect
+	const tries = 3
+	const apiReqTotalMetricLabel = `api_requests_total{code="499",method="post"}`
 	const expectedCount = 1
 	var clientRequestClosedCount int
-	for try := 0; try < 3 && clientRequestClosedCount != expectedCount; try++ {
+	for try := 0; try < tries && clientRequestClosedCount != expectedCount; try++ {
 		// wait for the server to identify we left and update the counter
 		time.Sleep(time.Second)
 
@@ -4781,7 +4783,6 @@ func TestController_ClientDisconnect(t *testing.T) {
 		}
 
 		// process relevant metrics
-		const apiReqTotalMetricLabel = `api_requests_total{code="499",method="post"}`
 		for _, line := range strings.Split(string(body), "\n") {
 			if strings.HasPrefix(line, apiReqTotalMetricLabel) {
 				if count, err := strconv.Atoi(line[len(apiReqTotalMetricLabel)+1:]); err == nil {
