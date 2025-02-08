@@ -25,7 +25,7 @@ var (
 )
 
 var (
-	reTimestamp       = regexp.MustCompile(`timestamp: \d+\n`)
+	reTimestamp       = regexp.MustCompile(`timestamp: \d+`)
 	reTime            = regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [-+]\d{4} \w{1,4}`)
 	reCommitID        = regexp.MustCompile(`[\d|a-f]{64}`)
 	reShortCommitID   = regexp.MustCompile(`[\d|a-f]{16}`)
