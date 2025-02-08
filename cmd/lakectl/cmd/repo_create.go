@@ -11,6 +11,8 @@ import (
 const (
 	DefaultBranch = "main"
 
+	SampleDataFlag = "sample-data"
+
 	repoCreateCmdArgs = 2
 )
 
@@ -25,29 +27,34 @@ var repoCreateCmd = &cobra.Command{
 		clt := getClient()
 		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
-		defaultBranch, err := cmd.Flags().GetString("default-branch")
-		if err != nil {
-			DieErr(err)
-		}
+		defaultBranch := Must(cmd.Flags().GetString("default-branch"))
+		sampleData := Must(cmd.Flags().GetBool(SampleDataFlag))
+
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&apigen.CreateRepositoryParams{},
 			apigen.CreateRepositoryJSONRequestBody{
 				Name:             u.Repository,
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
+				SampleData:       &sampleData,
 			})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
 			Die("Bad response from server", 1)
 		}
 		repo := resp.JSON201
-		fmt.Printf("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n", repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
+		fmt.Printf("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
+		if sampleData {
+			fmt.Printf("sample data included\n")
+		}
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
+	repoCreateCmd.Flags().Bool(SampleDataFlag, false, "create sample data in the repository")
 
 	repoCmd.AddCommand(repoCreateCmd)
 }
