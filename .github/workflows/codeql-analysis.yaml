@@ -36,14 +36,14 @@ jobs:
         NODE_OPTIONS: "--max-old-space-size=4096"
       run: |
         mkdir ./webui/dist
-        touch ./webui/dist/index.html         
+        touch ./webui/dist/index.html
         make gen-api
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
         languages: 'go, javascript'
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3
 

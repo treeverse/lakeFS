@@ -11,6 +11,7 @@ import (
 const (
 	defaultBranchFlagName  = "default-branch"
 	defaultBranchFlagValue = "main"
+	sampleDataFlagName     = "sample-data"
 
 	repoCreateCmdArgs = 2
 )
@@ -31,6 +32,7 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		sampleData := Must(cmd.Flags().GetBool(sampleDataFlagName))
 		storageID, _ := cmd.Flags().GetString(storageIDFlagName)
 
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
@@ -40,19 +42,25 @@ var repoCreateCmd = &cobra.Command{
 				StorageId:        &storageID,
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
+				SampleData:       &sampleData,
 			})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusCreated)
 		if resp.JSON201 == nil {
 			Die("Bad response from server", 1)
 		}
 		repo := resp.JSON201
-		fmt.Printf("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n", repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
+		fmt.Printf("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+			repo.Id, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
+		if sampleData {
+			fmt.Printf("sample data included\n")
+		}
 	},
 }
 
 //nolint:gochecknoinits
 func init() {
 	repoCreateCmd.Flags().StringP(defaultBranchFlagName, "d", defaultBranchFlagValue, "the default branch of this repository")
+	repoCreateCmd.Flags().Bool(sampleDataFlagName, false, "create sample data in the repository")
 	withStorageID(repoCreateCmd)
 
 	repoCmd.AddCommand(repoCreateCmd)

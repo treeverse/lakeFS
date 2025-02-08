@@ -101,6 +101,16 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 
 	// Trying to delete again
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo delete lakefs://"+repoName2+" -y", false, "lakectl_repo_delete_not_found", vars)
+
+	// Create repository with sample data
+	repoName3 := generateUniqueRepositoryName()
+	storage3 := generateUniqueStorageNamespace(repoName3)
+	vars = map[string]string{
+		"REPO":    repoName3,
+		"STORAGE": storage3,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName3+" "+storage3+" --sample-data", false, "lakectl_repo_create_sample", vars)
 }
 
 func TestLakectlRepoCreateWithStorageID(t *testing.T) {
@@ -441,7 +451,6 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 
 	// log the commits without merges
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges", false, "lakectl_log_no_merges", vars)
-
 }
 
 func TestLakectlLogNoMergesAndAmount(t *testing.T) {
@@ -493,8 +502,8 @@ func TestLakectlLogNoMergesAndAmount(t *testing.T) {
 
 	// log the commits without merges
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges --amount=2", false, "lakectl_log_no_merges_amount", vars)
-
 }
+
 func TestLakectlAnnotate(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)
@@ -590,7 +599,6 @@ func TestLakectlAuthUsers(t *testing.T) {
 
 // testing without user email for now, since it is a pain to config esti with a mail
 func TestLakectlIdentity(t *testing.T) {
-
 	userId := "mike"
 	vars := map[string]string{
 		"ID": userId,
@@ -703,7 +711,6 @@ func TestLakectlFsUpload(t *testing.T) {
 	t.Run("single_file_with_recursive", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/ro_1k.0"
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
-
 	})
 	t.Run("dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
