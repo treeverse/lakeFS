@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	DefaultBranch = "main"
+	defaultBranchFlagName  = "default-branch"
+	defaultBranchFlagValue = "main"
 
 	repoCreateCmdArgs = 2
 )
@@ -26,11 +27,11 @@ var repoCreateCmd = &cobra.Command{
 		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
 
-		defaultBranch, err := cmd.Flags().GetString("default-branch")
+		defaultBranch, err := cmd.Flags().GetString(defaultBranchFlagName)
 		if err != nil {
 			DieErr(err)
 		}
-		storageID, _ := cmd.Flags().GetString("storage-id")
+		storageID, _ := cmd.Flags().GetString(storageIDFlagName)
 
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&apigen.CreateRepositoryParams{},
@@ -51,8 +52,8 @@ var repoCreateCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
-	repoCreateCmd.Flags().String("storage-id", "", "")
+	repoCreateCmd.Flags().StringP(defaultBranchFlagName, "d", defaultBranchFlagValue, "the default branch of this repository")
+	withStorageID(repoCreateCmd)
 
 	repoCmd.AddCommand(repoCreateCmd)
 }

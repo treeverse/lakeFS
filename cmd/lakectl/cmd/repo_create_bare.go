@@ -21,11 +21,11 @@ var repoCreateBareCmd = &cobra.Command{
 		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
 
-		defaultBranch, err := cmd.Flags().GetString("default-branch")
+		defaultBranch, err := cmd.Flags().GetString(defaultBranchFlagName)
 		if err != nil {
 			DieErr(err)
 		}
-		storageID, _ := cmd.Flags().GetString("storage-id")
+		storageID, _ := cmd.Flags().GetString(storageIDFlagName)
 
 		bareRepo := true
 
@@ -48,8 +48,8 @@ var repoCreateBareCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	repoCreateBareCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch name of this repository (will not be created)")
-	repoCreateBareCmd.Flags().String("storage-id", "", "")
+	repoCreateBareCmd.Flags().StringP(defaultBranchFlagName, "d", defaultBranchFlagValue, "the default branch name of this repository (will not be created)")
+	withStorageID(repoCreateBareCmd)
 
 	repoCmd.AddCommand(repoCreateBareCmd)
 }
