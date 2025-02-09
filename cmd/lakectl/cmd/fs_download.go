@@ -42,25 +42,20 @@ var fsDownloadCmd = &cobra.Command{
 		downloader.PartSize = downloadPartSize
 
 		if !recursive {
-			src := uri.URI{
-				Repository: remote.Repository,
-				Ref:        remote.Ref,
-				Path:       remote.Path,
-			}
 			// if dest is a directory, add the file name
 			if s, _ := os.Stat(dest); s != nil && s.IsDir() {
 				dest += uri.PathSeparator
 			}
-			remotePath := src.GetPath()
+			remotePath := remote.GetPath()
 			if remotePath != "" && strings.HasSuffix(dest, uri.PathSeparator) {
 				dest += filepath.Base(remotePath)
 			}
 
-			err := downloader.Download(ctx, src, dest, nil)
+			err := downloader.Download(ctx, *remote, dest, nil)
 			if err != nil {
 				DieErr(err)
 			}
-			fmt.Printf("download: %s to %s\n", src.String(), dest)
+			fmt.Printf("download: %s to %s\n", remote.String(), dest)
 			return
 		}
 
