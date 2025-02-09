@@ -61,7 +61,7 @@ func TestReadFailDuringWrite(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestWriteReadMultipleStorageIDs(t *testing.T) {
+func TestOneWriteTwoStorageIDs(t *testing.T) {
 	ctx := context.Background()
 	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
@@ -73,6 +73,24 @@ func TestWriteReadMultipleStorageIDs(t *testing.T) {
 	// Read it from a different SID: should fail!
 	_, err := fs.Open(ctx, secondaryStorageID, namespace, filename)
 	require.ErrorContains(t, err, "not found")
+}
+
+func TestTwoWritesTwoStorageIDs(t *testing.T) {
+	ctx := context.Background()
+	namespace := uniqueNamespace()
+	filename := "1/2/file1.txt"
+	content1 := []byte("hello world!")
+	content2 := []byte("goodbye world!")
+
+	// Write content to two
+	writeToFile(t, ctx, defaultStorageID, namespace, filename, content1)
+	writeToFile(t, ctx, secondaryStorageID, namespace, filename, content2)
+
+	// Read it from a different SID: should fail!
+	err := checkContent(t, ctx, defaultStorageID, namespace, filename, content1)
+	require.NoError(t, err)
+	err = checkContent(t, ctx, secondaryStorageID, namespace, filename, content2)
+	require.NoError(t, err)
 }
 
 func TestEvictionSingleNamespace(t *testing.T) {
