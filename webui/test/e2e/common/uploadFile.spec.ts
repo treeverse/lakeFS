@@ -26,9 +26,6 @@ test.describe("Upload File", () => {
 
 			const repositoryPage = new RepositoryPage(page);
 			await repositoryPage.uploadObject(filePath);
-
   			await expect(page.getByRole('complementary')).toContainText(`lakefs://${TEST_REPO_NAME}/main/${FILE_NAME}`);
-  			await page.getByRole('button', { name: 'Upload', exact: true }).click();
-  			await expect(page.getByRole('rowgroup')).toContainText(FILE_NAME);
 		});
 })

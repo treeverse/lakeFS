@@ -1,6 +1,4 @@
 import { Locator, Page } from "@playwright/test";
-import fs from "fs";
-import path from "path";
 
 export class RepositoryPage {
   private page: Page;
