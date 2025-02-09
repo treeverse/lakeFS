@@ -65,12 +65,14 @@ func TestWriteReadMultipleStorageIDs(t *testing.T) {
 	ctx := context.Background()
 	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
-
 	content := []byte("hello world!")
-	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
-	err := checkContent(t, ctx, secondaryStorageID, namespace, filename, content)
-	require.NoError(t, err)
 
+	// Write content to default SID
+	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
+
+	// Read it from a different SID: should fail!
+	_, err := fs.Open(ctx, secondaryStorageID, namespace, filename)
+	require.ErrorContains(t, err, "not found")
 }
 
 func TestEvictionSingleNamespace(t *testing.T) {
