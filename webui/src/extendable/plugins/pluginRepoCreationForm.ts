@@ -11,5 +11,5 @@ type RepoCreationFormParams = {
 
 export interface PluginRepoCreationForm {
     build: (params: RepoCreationFormParams) => React.ReactElement;
-    disableSampleRepoCreation: (params: object | Array<object>) => boolean;
+    allowSampleRepoCreationFunc: (config: object | Array<object>) => boolean;
 }

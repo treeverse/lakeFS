@@ -106,7 +106,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
     );
 };
 
-const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, createRepoError }) => {
+const GetStarted = ({allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, createRepoError }) => {
     return (
         <Card className="getting-started-card">
             <h2 className="main-title">Welcome to lakeFS!</h2>
@@ -117,7 +117,7 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, create
                     {`Let's dive in 🤿`}</p>
                 </Col>
             </Row>
-            {onCreateSampleRepo &&
+            {allowSampleRepoCreation &&
                 <Row className="button-container">
                     <Col>
                         <GettingStartedCreateRepoButton text={
@@ -144,7 +144,7 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, create
     );
 };
 
-const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo, createRepoError }) => {
+const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo, createRepoError }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return repositories.list(search, after);
@@ -155,7 +155,13 @@ const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo
     if (loading) return <Loading/>;
     if (error) return <AlertError error={error}/>;
     if (!after && !search && results.length === 0) {
-        return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} creatingRepo={creatingRepo} createRepoError={createRepoError}/>;
+        return <GetStarted
+            allowSampleRepoCreation={allowSampleRepoCreation}
+            onCreateSampleRepo={onCreateSampleRepo}
+            onCreateEmptyRepo={onCreateEmptyRepo}
+            creatingRepo={creatingRepo}
+            createRepoError={createRepoError}
+        />;
     }
 
     return (
@@ -198,7 +204,8 @@ const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo
 
 const RepositoriesPage = () => {
     const pluginManager = usePluginManager();
-    const disableSampleRepoCreation = pluginManager.repoCreationForm?.disableSampleRepoCreation
+    const allowSampleRepoCreationFunc = pluginManager.repoCreationForm?.allowSampleRepoCreationFunc
+    console.log("allowSampleRepoCreationFunc", allowSampleRepoCreationFunc);
 
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
@@ -241,9 +248,11 @@ const RepositoriesPage = () => {
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
-    console.log('disableSampleRepoCreation:', disableSampleRepoCreation);
-    // TODO: uncomment and fix
-    // const hideSampleRepoButton = disableSampleRepoCreation && disableSampleRepoCreation(response);
+    let allowSampleRepoCreation = true;
+    if (allowSampleRepoCreationFunc && !allowSampleRepoCreationFunc(response)) {
+        allowSampleRepoCreation = false;
+    }
+
     const createSampleRepoButtonCallback = useCallback(async () => {
         if (loading) return;
         if (!err && response?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {
@@ -295,6 +304,7 @@ const RepositoriesPage = () => {
                         if (router.query.search) query.search = router.query.search;
                         router.push({pathname: `/repositories`, query});
                     }}
+                    allowSampleRepoCreation={allowSampleRepoCreation}
                     onCreateSampleRepo={createSampleRepoButtonCallback}
                     onCreateEmptyRepo={createRepositoryButtonCallback}
                     toggleShowActionsBar={toggleShowActionsBar}
