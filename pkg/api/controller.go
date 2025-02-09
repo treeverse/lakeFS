@@ -3467,23 +3467,11 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body apigen.CopyObjectJSONRequestBody, repository, branch string, params apigen.CopyObjectParams) {
 	srcPath := body.SrcPath
 	destPath := params.DestPath
-	if !c.authorize(w, r, permissions.Node{
-		Type: permissions.NodeTypeAnd,
-		Nodes: []permissions.Node{
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.ReadObjectAction,
-					Resource: permissions.ObjectArn(repository, srcPath),
-				},
-			},
-			{
-				Permission: permissions.Permission{
-					Action:   permissions.WriteObjectAction,
-					Resource: permissions.ObjectArn(repository, destPath),
-				},
-			},
-		},
-	}) {
+	if !c.authorize(w, r, permissions.CreatePermission("copy_object", map[string]string{
+		permissions.RepoID:  repository,
+		permissions.SrcKey:  srcPath,
+		permissions.DestKey: destPath,
+	})) {
 		return
 	}
 
