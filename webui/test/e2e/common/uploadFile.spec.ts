@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { RepositoriesPage } from "../poms/repositoriesPage";
 import { RepositoryPage } from "../poms/repositoryPage";
-import { ObjectViewerPage } from "../poms/objectViewerPage";
 import fs from "fs";
 import path from "path";
 
@@ -11,15 +10,10 @@ const FILE_NAME = "test-upload.txt";
 
 test.describe("Upload File", () => {
     test.describe.configure({mode: "serial"});
-		test("create repo", async ({page}) => {
+		test("Upload File and verify path", async ({page}) => {
 			const repositoriesPage = new RepositoriesPage(page);
 			await repositoriesPage.goto();
-			await repositoriesPage.createRepository(TEST_REPO_NAME, true);
-		});
-
-		test("view and query parquet object", async ({page}) => {
-			const repositoriesPage = new RepositoriesPage(page);
-			await repositoriesPage.goto();
+			await repositoriesPage.createRepository(TEST_REPO_NAME, false);
 			await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
 			const filePath = path.join(__dirname, FILE_NAME);
