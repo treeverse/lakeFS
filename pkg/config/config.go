@@ -163,6 +163,7 @@ type AdapterConfig interface {
 	BlockstoreAzureParams() (blockparams.Azure, error)
 	BlockstoreExtras() map[string]string
 	GetDefaultNamespacePrefix() *string
+	IsBackwardsCompatible() bool
 }
 
 type Blockstore struct {
@@ -355,6 +356,10 @@ func (b *Blockstore) BlockstoreExtras() map[string]string {
 
 func (b *Blockstore) GetDefaultNamespacePrefix() *string {
 	return b.DefaultNamespacePrefix
+}
+
+func (b *Blockstore) IsBackwardsCompatible() bool {
+	return false
 }
 
 type Config interface {
