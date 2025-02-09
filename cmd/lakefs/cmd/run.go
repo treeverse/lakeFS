@@ -290,7 +290,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal(mismatchedReposFlagName)
 		}
 		if !allowForeign {
-			checkRepos(ctx, logger, authMetadataManager, blockStore, c)
+			checkRepos(ctx, logger, cfg, authMetadataManager, blockStore, c)
 		}
 
 		// update health info with installation ID
@@ -421,7 +421,7 @@ var runCmd = &cobra.Command{
 }
 
 // checkRepos iterating on all repos and validates that their settings are correct.
-func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
+func checkRepos(ctx context.Context, logger logging.Logger, config config.Config, authMetadataManager auth.MetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to check if lakeFS is initialized")
@@ -443,8 +443,9 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 				logger.WithError(err).Fatal("Checking existing repositories failed")
 			}
 
-			adapterStorageType := blockStore.BlockstoreType()
 			for _, repo := range repos {
+				adapterConfig := config.StorageConfig().GetStorageByID(repo.StorageID)
+				adapterStorageType := adapterConfig.BlockstoreType()
 				nsURL, err := url.Parse(repo.StorageNamespace)
 				if err != nil {
 					logger.WithError(err).Fatalf("Failed to parse repository %s namespace '%s'", repo.Name, repo.StorageNamespace)
