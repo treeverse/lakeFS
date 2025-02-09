@@ -133,10 +133,4 @@ export class RepositoryPage {
   const fileInput = await this.page.locator('input[type="file"]');
   await fileInput.setInputFiles(filePath);
   }
-
-  async createTestFile(): Promise<string> {
-  const filePath = path.join(__dirname, "test-upload.txt");
-  fs.writeFileSync(filePath, "This is a test file for Playwright upload.");
-  return filePath;
-  }
 }
