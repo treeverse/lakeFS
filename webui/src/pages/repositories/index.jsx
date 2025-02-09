@@ -53,7 +53,7 @@ const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = fa
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) => {
     const pluginManager = usePluginManager();
-    const repoCreationForm = pluginManager.repoCreationForm
+    const repoCreationFormPlugin = pluginManager.repoCreationForm
 
     const [formValid, setFormValid] = useState(false);
 
@@ -73,8 +73,8 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
     return (
         <Modal show={show} onHide={onCancel} size="lg">
             <Modal.Body>
-                {repoCreationForm ?
-                    repoCreationForm.build({
+                {repoCreationFormPlugin ?
+                    repoCreationFormPlugin.build({
                         formID: "repository-create-form",
                         config: response,
                         error: showError,
