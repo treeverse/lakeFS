@@ -4,7 +4,7 @@ import { RepositoryPage } from "../poms/repositoryPage";
 import fs from "fs";
 import path from "path";
 
-const TEST_REPO_NAME = "test_upload";
+const TEST_REPO_NAME = "test-upload";
 const FILE_NAME = "test-upload.txt";
 
 
@@ -13,8 +13,14 @@ test.describe("Upload File", () => {
 		test("Upload File and verify path", async ({page}) => {
 			const repositoriesPage = new RepositoriesPage(page);
 			await repositoriesPage.goto();
-			await repositoriesPage.createRepository(TEST_REPO_NAME, false);
+			await repositoriesPage.createRepository(TEST_REPO_NAME, true);
+		});
+
+		test("Upload", async ({page}) => {
+			const repositoriesPage = new RepositoriesPage(page);
+			await repositoriesPage.goto();
 			await repositoriesPage.goToRepository(TEST_REPO_NAME);
+
 
 			const filePath = path.join(__dirname, FILE_NAME);
 			fs.writeFileSync(filePath, "This is a test file for Playwright upload.");
