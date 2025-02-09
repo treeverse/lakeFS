@@ -2,8 +2,11 @@ import { test, expect } from '@playwright/test';
 import { RepositoriesPage } from "../poms/repositoriesPage";
 import { RepositoryPage } from "../poms/repositoryPage";
 import { ObjectViewerPage } from "../poms/objectViewerPage";
+import fs from "fs";
+import path from "path";
 
-const TEST_REPO_NAME = "test";
+const TEST_REPO_NAME = "test_upload";
+const FILE_NAME = "test-upload.txt";
 
 
 test.describe("Upload File", () => {
@@ -19,12 +22,11 @@ test.describe("Upload File", () => {
 			await repositoriesPage.goto();
 			await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
-			const repositoryPage = new RepositoryPage(page);
-			await repositoryPage.clickObject(TEST_REPO_NAME);
-			await expect(page.getByText("Loading...")).not.toBeVisible();
+			const filePath = path.join(__dirname, FILE_NAME);
+			fs.writeFileSync(filePath, "This is a test file for Playwright upload.");
 
-			const objectViewerPage = new ObjectViewerPage(page);
-			await objectViewerPage.clickExecuteButton();
-			expect(await objectViewerPage.getResultRowCount()).toEqual(5);
+			const repositoryPage = new RepositoryPage(page);
+			await repositoryPage.uploadObject(filePath);
+  			await expect(page.getByRole('complementary')).toContainText(`lakefs://${TEST_REPO_NAME}/main/${FILE_NAME}`);
 		});
 })
