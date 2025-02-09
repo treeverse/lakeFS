@@ -98,6 +98,10 @@ public class StorageConfig {
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_DESCRIPTION)
   private String blockstoreDescription;
 
+  public static final String SERIALIZED_NAME_BACKWARD_COMPATIBLE = "backward_compatible";
+  @SerializedName(SERIALIZED_NAME_BACKWARD_COMPATIBLE)
+  private Boolean backwardCompatible = false;
+
   public static final String SERIALIZED_NAME_BLOCKSTORE_EXTRAS = "blockstore_extras";
   @SerializedName(SERIALIZED_NAME_BLOCKSTORE_EXTRAS)
   private Map<String, String> blockstoreExtras = new HashMap<>();
@@ -336,6 +340,27 @@ public class StorageConfig {
   }
 
 
+  public StorageConfig backwardCompatible(Boolean backwardCompatible) {
+    
+    this.backwardCompatible = backwardCompatible;
+    return this;
+  }
+
+   /**
+   * Get backwardCompatible
+   * @return backwardCompatible
+  **/
+  @javax.annotation.Nullable
+  public Boolean getBackwardCompatible() {
+    return backwardCompatible;
+  }
+
+
+  public void setBackwardCompatible(Boolean backwardCompatible) {
+    this.backwardCompatible = backwardCompatible;
+  }
+
+
   public StorageConfig blockstoreExtras(Map<String, String> blockstoreExtras) {
     
     this.blockstoreExtras = blockstoreExtras;
@@ -430,13 +455,14 @@ public class StorageConfig {
         Objects.equals(this.preSignMultipartUpload, storageConfig.preSignMultipartUpload) &&
         Objects.equals(this.blockstoreId, storageConfig.blockstoreId) &&
         Objects.equals(this.blockstoreDescription, storageConfig.blockstoreDescription) &&
+        Objects.equals(this.backwardCompatible, storageConfig.backwardCompatible) &&
         Objects.equals(this.blockstoreExtras, storageConfig.blockstoreExtras)&&
         Objects.equals(this.additionalProperties, storageConfig.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, preSignMultipartUpload, blockstoreId, blockstoreDescription, blockstoreExtras, additionalProperties);
+    return Objects.hash(blockstoreType, blockstoreNamespaceExample, blockstoreNamespaceValidityRegex, defaultNamespacePrefix, preSignSupport, preSignSupportUi, importSupport, importValidityRegex, preSignMultipartUpload, blockstoreId, blockstoreDescription, backwardCompatible, blockstoreExtras, additionalProperties);
   }
 
   @Override
@@ -454,6 +480,7 @@ public class StorageConfig {
     sb.append("    preSignMultipartUpload: ").append(toIndentedString(preSignMultipartUpload)).append("\n");
     sb.append("    blockstoreId: ").append(toIndentedString(blockstoreId)).append("\n");
     sb.append("    blockstoreDescription: ").append(toIndentedString(blockstoreDescription)).append("\n");
+    sb.append("    backwardCompatible: ").append(toIndentedString(backwardCompatible)).append("\n");
     sb.append("    blockstoreExtras: ").append(toIndentedString(blockstoreExtras)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -489,6 +516,7 @@ public class StorageConfig {
     openapiFields.add("pre_sign_multipart_upload");
     openapiFields.add("blockstore_id");
     openapiFields.add("blockstore_description");
+    openapiFields.add("backward_compatible");
     openapiFields.add("blockstore_extras");
 
     // a set of required properties/fields (JSON key names)

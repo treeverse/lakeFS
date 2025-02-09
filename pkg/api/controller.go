@@ -1909,6 +1909,7 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 		BlockstoreExtras: &apigen.StorageConfig_BlockstoreExtras{
 			AdditionalProperties: storage.BlockstoreExtras(),
 		},
+		BackwardCompatible:               swag.Bool(storage.IsBackwardsCompatible()),
 		BlockstoreType:                   storage.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
