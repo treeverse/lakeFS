@@ -186,7 +186,7 @@ func (tfs *TierFS) GetRemoteURI(_ context.Context, _, filename string) (string, 
 // operation.  Open(namespace, filename) calls will return an error before the close was
 // called.  Create only performs local operations so it ignores the context.
 func (tfs *TierFS) Create(_ context.Context, storageID, namespace string) (StoredFile, error) {
-	nsPath, err := parseNamespacePath(namespace)
+	nsPath, err := parseNamespacePath(storageID, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (tfs *TierFS) Create(_ context.Context, storageID, namespace string) (Store
 // Open returns a file descriptor to the local file.
 // If the file is missing from the local disk, it will try to fetch it from the block storage.
 func (tfs *TierFS) Open(ctx context.Context, storageID, namespace, filename string) (File, error) {
-	nsPath, err := parseNamespacePath(namespace)
+	nsPath, err := parseNamespacePath(storageID, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -449,7 +449,7 @@ func (tfs *TierFS) workspaceTempFilePath(namespace string) string {
 	return path.Join(tfs.workspaceDirPath(namespace), uuid.Must(uuid.NewRandom()).String())
 }
 
-func parseNamespacePath(namespace string) (string, error) {
+func parseNamespacePath(storageID, namespace string) (string, error) {
 	u, err := url.Parse(namespace)
 	if err != nil {
 		return "", fmt.Errorf("parse namespace: %w", err)
@@ -467,5 +467,10 @@ func parseNamespacePath(namespace string) (string, error) {
 	} else {
 		nsPath = h + "/" + u.Path
 	}
-	return nsPath, nil
+
+	if storageID == "" {
+		return nsPath, nil
+	} else {
+		return storageID + "/" + nsPath, nil
+	}
 }

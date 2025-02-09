@@ -35,7 +35,9 @@ func TestSimpleWriteRead(t *testing.T) {
 
 	content := []byte("hello world!")
 	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
-	checkContent(t, ctx, defaultStorageID, namespace, filename, content)
+	err := checkContent(t, ctx, defaultStorageID, namespace, filename, content)
+	require.NoError(t, err)
+
 }
 
 func TestReadFailDuringWrite(t *testing.T) {
@@ -55,7 +57,8 @@ func TestReadFailDuringWrite(t *testing.T) {
 	require.Error(t, err)
 	require.NoError(t, f.Close())
 	require.NoError(t, f.Store(ctx, filename))
-	checkContent(t, ctx, defaultStorageID, namespace, filename, content)
+	err = checkContent(t, ctx, defaultStorageID, namespace, filename, content)
+	require.NoError(t, err)
 }
 
 func TestWriteReadMultipleStorageIDs(t *testing.T) {
@@ -65,7 +68,9 @@ func TestWriteReadMultipleStorageIDs(t *testing.T) {
 
 	content := []byte("hello world!")
 	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
-	checkContent(t, ctx, secondaryStorageID, namespace, filename, content)
+	err := checkContent(t, ctx, secondaryStorageID, namespace, filename, content)
+	require.NoError(t, err)
+
 }
 
 func TestEvictionSingleNamespace(t *testing.T) {
@@ -206,7 +211,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	for i := 0; i < concurrencyLevel; i++ {
 		go func() {
 			defer wg.Done()
-			checkContent(t, ctx, defaultStorageID, namespace, filename, content)
+			_ = checkContent(t, ctx, defaultStorageID, namespace, filename, content)
 		}()
 	}
 
@@ -229,23 +234,25 @@ func writeToFile(t *testing.T, ctx context.Context, storageID, namespace, filena
 	require.NoError(t, f.Store(ctx, filename))
 }
 
-func checkContent(t *testing.T, ctx context.Context, storageID, namespace string, filename string, content []byte) {
+func checkContent(t *testing.T, ctx context.Context, storageID, namespace string, filename string, content []byte) error {
 	t.Helper()
 	f, err := fs.Open(ctx, storageID, namespace, filename)
 	if err != nil {
 		t.Errorf("Failed to open namespace:%s filename:%s - %s", namespace, filename, err)
-		return
+		return err
 	}
 	defer func() { _ = f.Close() }()
 
 	data, err := io.ReadAll(f)
 	if err != nil {
 		t.Errorf("Failed to read all namespace:%s filename:%s - %s", namespace, filename, err)
-		return
+		return err
 	}
 	if !bytes.Equal(content, data) {
 		t.Errorf("Content mismatch reading namespace:%s filename:%s", namespace, filename)
+		return err
 	}
+	return nil
 }
 
 type mockEv struct{}
