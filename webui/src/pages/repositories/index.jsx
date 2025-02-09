@@ -205,7 +205,6 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
 const RepositoriesPage = () => {
     const pluginManager = usePluginManager();
     const allowSampleRepoCreationFunc = pluginManager.repoCreationForm?.allowSampleRepoCreationFunc
-    console.log("allowSampleRepoCreationFunc", allowSampleRepoCreationFunc);
 
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);

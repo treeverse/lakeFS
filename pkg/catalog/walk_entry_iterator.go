@@ -6,14 +6,13 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"go.uber.org/atomic"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type walkEntryIterator struct {
 	entries chan EntryWithMarker
-	walker  *store.WalkerWrapper
+	walker  *block.WalkerWrapper
 
 	done   chan bool
 	closed *atomic.Bool
@@ -37,12 +36,7 @@ type EntryWithMarker struct {
 // bufferSize - buffer size of the buffer between reading entries from the blockstore Walk and passing it on
 const bufferSize = 100
 
-// WalkerFactory provides an abstraction for creating Walker
-type WalkerFactory interface {
-	GetWalker(ctx context.Context, opts store.WalkerOptions) (*store.WalkerWrapper, error)
-}
-
-func NewWalkEntryIterator(ctx context.Context, walker *store.WalkerWrapper, sourceType ImportPathType, destination, after, continuationToken string) (*walkEntryIterator, error) {
+func NewWalkEntryIterator(ctx context.Context, walker *block.WalkerWrapper, sourceType ImportPathType, destination, after, continuationToken string) (*walkEntryIterator, error) {
 	prepend := destination
 	if prepend != "" && !strings.HasSuffix(prepend, "/") {
 		prepend += "/"

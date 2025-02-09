@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -120,7 +119,7 @@ func verifyObjectPointer(obj block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {
+func (a *Adapter) GetWalker(_ string, _ block.WalkerOptions) (block.Walker, error) {
 	return nil, fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
 }
 
