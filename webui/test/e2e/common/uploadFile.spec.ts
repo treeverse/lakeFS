@@ -6,7 +6,7 @@ import path from "path";
 
 const TEST_REPO_NAME = "test-upload";
 const FILE_NAME = "test-upload.txt";
-
+const TEST_BRANCH = "test-branch";
 
 test.describe("Upload File", () => {
     test.describe.configure({mode: "serial"});
@@ -19,11 +19,14 @@ test.describe("Upload File", () => {
 			fs.writeFileSync(filePath, "This is a test file for Playwright upload.");
 
 			const repositoryPage = new RepositoryPage(page);
+
+			await repositoryPage.createBranch(TEST_BRANCH)
+			await repositoryPage.switchBranch(TEST_BRANCH)
 			await repositoryPage.uploadObject(filePath);
-  			await expect(page.getByRole('complementary')).toContainText(`lakefs://${TEST_REPO_NAME}/main/${FILE_NAME}`);
-			await page.getByRole('button', { name: 'Upload', exact: true }).click();
+  			await expect(page.getByRole('complementary')).toContainText(`lakefs://${TEST_REPO_NAME}/${TEST_BRANCH}/${FILE_NAME}`);
+	        
 			await page.waitForTimeout(3000);
-			await page.reload();
+            await page.reload();
             await expect(page.getByRole('rowgroup')).toContainText(FILE_NAME);
 		});
 })
