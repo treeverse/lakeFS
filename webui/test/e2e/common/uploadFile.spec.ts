@@ -21,12 +21,11 @@ test.describe("Upload File", () => {
 			const repositoryPage = new RepositoryPage(page);
 
 			await repositoryPage.createBranch(TEST_BRANCH)
+			await repositoryPage.gotoObjectsTab();
 			await repositoryPage.switchBranch(TEST_BRANCH)
 			await repositoryPage.uploadObject(filePath);
-  			await expect(page.getByRole('complementary')).toContainText(`lakefs://${TEST_REPO_NAME}/${TEST_BRANCH}/${FILE_NAME}`);
-	        
-			await page.waitForTimeout(3000);
-            await page.reload();
+			await expect(page.getByRole('complementary')).toContainText(`lakefs://${TEST_REPO_NAME}/${TEST_BRANCH}/${FILE_NAME}`);
+			await page.getByRole('button', { name: 'Upload', exact: true }).click();
             await expect(page.getByRole('rowgroup')).toContainText(FILE_NAME);
-		});
+	});
 })
