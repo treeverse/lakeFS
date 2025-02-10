@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	DefaultBranch = "main"
-
-	SampleDataFlag = "sample-data"
+	defaultBranchFlagName  = "default-branch"
+	defaultBranchFlagValue = "main"
+	sampleDataFlagName     = "sample-data"
 
 	repoCreateCmdArgs = 2
 )
@@ -27,13 +27,16 @@ var repoCreateCmd = &cobra.Command{
 		clt := getClient()
 		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
-		defaultBranch := Must(cmd.Flags().GetString("default-branch"))
-		sampleData := Must(cmd.Flags().GetBool(SampleDataFlag))
+
+		defaultBranch := Must(cmd.Flags().GetString(defaultBranchFlagName))
+		sampleData := Must(cmd.Flags().GetBool(sampleDataFlagName))
+		storageID := Must(cmd.Flags().GetString(storageIDFlagName))
 
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&apigen.CreateRepositoryParams{},
 			apigen.CreateRepositoryJSONRequestBody{
 				Name:             u.Repository,
+				StorageId:        &storageID,
 				StorageNamespace: args[1],
 				DefaultBranch:    &defaultBranch,
 				SampleData:       &sampleData,
@@ -53,8 +56,9 @@ var repoCreateCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
-	repoCreateCmd.Flags().Bool(SampleDataFlag, false, "create sample data in the repository")
+	repoCreateCmd.Flags().StringP(defaultBranchFlagName, "d", defaultBranchFlagValue, "the default branch of this repository")
+	repoCreateCmd.Flags().Bool(sampleDataFlagName, false, "create sample data in the repository")
+	withStorageID(repoCreateCmd)
 
 	repoCmd.AddCommand(repoCreateCmd)
 }
