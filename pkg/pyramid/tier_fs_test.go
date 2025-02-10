@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block/mem"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
 )
@@ -24,7 +25,6 @@ import (
 const (
 	blockStoragePrefix = "prefix"
 	allocatedDiskBytes = 4 * 1024 * 1024
-	defaultStorageID   = ""
 	secondaryStorageID = "another_one"
 )
 
@@ -34,8 +34,8 @@ func TestSimpleWriteRead(t *testing.T) {
 	filename := "1/2/file1.txt"
 
 	content := []byte("hello world!")
-	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
-	err := checkContent(t, ctx, defaultStorageID, namespace, filename, content)
+	writeToFile(t, ctx, config.SingleBlockstoreID, namespace, filename, content)
+	err := checkContent(t, ctx, config.SingleBlockstoreID, namespace, filename, content)
 	require.NoError(t, err)
 
 }
@@ -57,7 +57,7 @@ func TestReadFailDuringWrite(t *testing.T) {
 	require.Error(t, err)
 	require.NoError(t, f.Close())
 	require.NoError(t, f.Store(ctx, filename))
-	err = checkContent(t, ctx, defaultStorageID, namespace, filename, content)
+	err = checkContent(t, ctx, config.SingleBlockstoreID, namespace, filename, content)
 	require.NoError(t, err)
 }
 
@@ -68,7 +68,7 @@ func TestOneWriteTwoStorageIDs(t *testing.T) {
 	content := []byte("hello world!")
 
 	// Write content to default SID
-	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
+	writeToFile(t, ctx, config.SingleBlockstoreID, namespace, filename, content)
 
 	// Read it from a different SID: should fail!
 	_, err := fs.Open(ctx, secondaryStorageID, namespace, filename)
@@ -83,11 +83,11 @@ func TestTwoWritesTwoStorageIDs(t *testing.T) {
 	content2 := []byte("goodbye world!")
 
 	// Write content to two
-	writeToFile(t, ctx, defaultStorageID, namespace, filename, content1)
+	writeToFile(t, ctx, config.SingleBlockstoreID, namespace, filename, content1)
 	writeToFile(t, ctx, secondaryStorageID, namespace, filename, content2)
 
 	// Check that both writes succeed
-	err := checkContent(t, ctx, defaultStorageID, namespace, filename, content1)
+	err := checkContent(t, ctx, config.SingleBlockstoreID, namespace, filename, content1)
 	require.NoError(t, err)
 	err = checkContent(t, ctx, secondaryStorageID, namespace, filename, content2)
 	require.NoError(t, err)
@@ -186,7 +186,7 @@ func testEviction(t *testing.T, namespaces ...string) {
 		if err != nil {
 			t.Fatal("rand.Read", err)
 		}
-		writeToFile(t, ctx, defaultStorageID, namespaces[i%len(namespaces)], filename, content)
+		writeToFile(t, ctx, config.SingleBlockstoreID, namespaces[i%len(namespaces)], filename, content)
 	}
 
 	// read
@@ -213,7 +213,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	namespace := uniqueNamespace()
 	filename := "1/2/file1.txt"
 	content := []byte("hello world!")
-	writeToFile(t, ctx, defaultStorageID, namespace, filename, content)
+	writeToFile(t, ctx, config.SingleBlockstoreID, namespace, filename, content)
 
 	// remove the file
 	err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
@@ -231,7 +231,7 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	for i := 0; i < concurrencyLevel; i++ {
 		go func() {
 			defer wg.Done()
-			_ = checkContent(t, ctx, defaultStorageID, namespace, filename, content)
+			_ = checkContent(t, ctx, config.SingleBlockstoreID, namespace, filename, content)
 		}()
 	}
 

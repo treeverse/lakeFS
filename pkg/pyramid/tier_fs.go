@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cache"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
 )
@@ -470,7 +471,7 @@ func parseNamespacePath(storageID, namespace string) (string, error) {
 	}
 
 	// If there is a non-empty storageID, we need to add another level to the path
-	if storageID == "" {
+	if storageID == config.SingleBlockstoreID {
 		return nsPath, nil
 	} else {
 		return storageID + ":" + nsPath, nil

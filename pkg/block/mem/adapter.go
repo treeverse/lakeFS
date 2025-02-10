@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 var (
@@ -74,7 +75,7 @@ func getKey(obj block.ObjectPointer) string {
 	if obj.IdentifierType == block.IdentifierTypeFull {
 		return obj.Identifier
 	}
-	if obj.StorageID == "" {
+	if obj.StorageID == config.SingleBlockstoreID {
 		return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
 	} else {
 		return fmt.Sprintf("%s:%s:%s", obj.StorageID, obj.StorageNamespace, obj.Identifier)
