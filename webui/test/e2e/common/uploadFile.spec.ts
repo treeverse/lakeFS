@@ -14,9 +14,16 @@ test.describe("Upload File", () => {
 			const repositoriesPage = new RepositoriesPage(page);
 			await repositoriesPage.goto();
 			await repositoriesPage.createRepository(TEST_REPO_NAME, true);
+		});
+
+		test("Upload file and verify path", async ({page}) => {
+			const repositoriesPage = new RepositoriesPage(page);
+			await repositoriesPage.goto();
 			await repositoriesPage.goToRepository(TEST_REPO_NAME);
+
 			const filePath = path.join(__dirname, FILE_NAME);
-			fs.writeFileSync(filePath, "This is a test file for Playwright upload."); 
+			fs.writeFileSync(filePath, "This is a test file for Playwright upload.");
+
 			const repositoryPage = new RepositoryPage(page);
 			await repositoryPage.uploadObject(filePath);
   			await expect(page.getByRole('complementary')).toContainText(`lakefs://${TEST_REPO_NAME}/main/${FILE_NAME}`);
