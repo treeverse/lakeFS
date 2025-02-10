@@ -449,6 +449,7 @@ func (tfs *TierFS) workspaceTempFilePath(namespace string) string {
 	return path.Join(tfs.workspaceDirPath(namespace), uuid.Must(uuid.NewRandom()).String())
 }
 
+// Convert the storageID and namespace to a filepath to be used for storage
 func parseNamespacePath(storageID, namespace string) (string, error) {
 	u, err := url.Parse(namespace)
 	if err != nil {
@@ -468,9 +469,10 @@ func parseNamespacePath(storageID, namespace string) (string, error) {
 		nsPath = h + "/" + u.Path
 	}
 
+	// If there is a non-empty storageID, we need to add another level to the path
 	if storageID == "" {
 		return nsPath, nil
 	} else {
-		return storageID + "/" + nsPath, nil
+		return storageID + ":" + nsPath, nil
 	}
 }

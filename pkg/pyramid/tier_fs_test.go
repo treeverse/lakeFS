@@ -25,7 +25,7 @@ const (
 	blockStoragePrefix = "prefix"
 	allocatedDiskBytes = 4 * 1024 * 1024
 	defaultStorageID   = ""
-	secondaryStorageID = "another one!"
+	secondaryStorageID = "another_one"
 )
 
 func TestSimpleWriteRead(t *testing.T) {
@@ -86,7 +86,7 @@ func TestTwoWritesTwoStorageIDs(t *testing.T) {
 	writeToFile(t, ctx, defaultStorageID, namespace, filename, content1)
 	writeToFile(t, ctx, secondaryStorageID, namespace, filename, content2)
 
-	// Read it from a different SID: should fail!
+	// Check that both writes succeed
 	err := checkContent(t, ctx, defaultStorageID, namespace, filename, content1)
 	require.NoError(t, err)
 	err = checkContent(t, ctx, secondaryStorageID, namespace, filename, content2)
