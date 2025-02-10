@@ -10,16 +10,10 @@ const FILE_NAME = "test-upload.txt";
 
 test.describe("Upload File", () => {
     test.describe.configure({mode: "serial"});
-		test("Create repo", async ({page}) => {
+		test("Create repo, Upload file check path", async ({page}) => {
 			const repositoriesPage = new RepositoriesPage(page);
 			await repositoriesPage.goto();
 			await repositoriesPage.createRepository(TEST_REPO_NAME, true);
-		});
-
-		test("Upload file and verify path", async ({page}) => {
-			const repositoriesPage = new RepositoriesPage(page);
-			await repositoriesPage.goto();
-			await repositoriesPage.goToRepository(TEST_REPO_NAME);
 
 			const filePath = path.join(__dirname, FILE_NAME);
 			fs.writeFileSync(filePath, "This is a test file for Playwright upload.");
