@@ -30,7 +30,10 @@ var repoCreateCmd = &cobra.Command{
 
 		defaultBranch := Must(cmd.Flags().GetString(defaultBranchFlagName))
 		sampleData := Must(cmd.Flags().GetBool(sampleDataFlagName))
-		storageID, _ := cmd.Flags().GetString(storageIDFlagName)
+		storageID, err := cmd.Flags().GetString(storageIDFlagName)
+		if err != nil {
+			DieErr(err)
+		}
 
 		resp, err := clt.CreateRepositoryWithResponse(cmd.Context(),
 			&apigen.CreateRepositoryParams{},
