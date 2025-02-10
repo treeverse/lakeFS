@@ -22,7 +22,7 @@ var repoCreateBareCmd = &cobra.Command{
 		fmt.Println("Repository:", u)
 
 		defaultBranch := Must(cmd.Flags().GetString(defaultBranchFlagName))
-		storageID, _ := cmd.Flags().GetString(storageIDFlagName)
+		storageID := Must(cmd.Flags().GetString(storageIDFlagName))
 
 		bareRepo := true
 
