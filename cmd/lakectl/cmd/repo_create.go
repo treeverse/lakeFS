@@ -28,10 +28,7 @@ var repoCreateCmd = &cobra.Command{
 		u := MustParseRepoURI("repository URI", args[0])
 		fmt.Println("Repository:", u)
 
-		defaultBranch, err := cmd.Flags().GetString(defaultBranchFlagName)
-		if err != nil {
-			DieErr(err)
-		}
+		defaultBranch := Must(cmd.Flags().GetString(defaultBranchFlagName))
 		sampleData := Must(cmd.Flags().GetBool(sampleDataFlagName))
 		storageID, _ := cmd.Flags().GetString(storageIDFlagName)
 
