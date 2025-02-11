@@ -22,7 +22,7 @@ import {
     Typography
 } from "@mui/material";
 import InputGroup from "react-bootstrap/InputGroup";
-
+import "../../styles/globals.css"
 
 const defaultDebounceMs = 300;
 
@@ -342,36 +342,40 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
     }
 
     return (
-        <Table>
+        <Table className="table-fixed">
             <thead>
                 <tr>
-                {headers.map(header => (
-                    <th key={header}>{header}</th>
-                ))}
-                {(!!actions && actions.length > 0) && <th/>}
+                    {headers.map(header => (
+                        <th key={header}>{header}</th>
+                    ))}
+                    {(!!actions && actions.length > 0) && <th/>}
                 </tr>
             </thead>
             <tbody>
-            {results.map(row => (
-                <tr key={keyFn(row)}>
-                    {rowFn(row).map((cell, i) => (
-                        <td key={`${keyFn(row)}-${i}`}>
-                            {cell}
-                        </td>
-                    ))}
-                    {(!!actions && actions.length > 0) && (
-                        <td>
-                            <span className="row-hover">
-                                {actions.map(action => (
-                                    <span key={`${keyFn(row)}-${action.key}`}>
-                                        {action.buttonFn(row)}
-                                    </span>
-                                ))}
-                             </span>
-                        </td>
-                    )}
-                </tr>
-            ))}
+                {results.map(row => (
+                    <tr key={keyFn(row)}>
+                        {rowFn(row).map((cell, i) => (
+                            <td
+                                key={`${keyFn(row)}-${i}`}
+                                className="truncate-cell"
+                                title={keyFn(row)}
+                            >
+                                {cell}
+                            </td>
+                        ))}
+                        {(!!actions && actions.length > 0) && (
+                            <td>
+                                <span className="row-hover">
+                                    {actions.map(action => (
+                                        <span key={`${keyFn(row)}-${action.key}`}>
+                                            {action.buttonFn(row)}
+                                        </span>
+                                    ))}
+                                 </span>
+                            </td>
+                        )}
+                    </tr>
+                ))}
             </tbody>
         </Table>
     );

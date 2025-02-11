@@ -13,6 +13,7 @@ import {
 } from "../../../../lib/components/controls";
 import {useRouter} from "../../../../lib/hooks/router";
 
+import "../../../../styles/globals.css"
 
 const UserCredentialsList = ({ userId, after, onPaginate }) => {
     const {user} = useUser();
@@ -43,7 +44,18 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             </>
         );
 
-        const getMsg = (email) => <span>Create new credentials for user <strong>{email}</strong>?</span>;
+        const getMsg = (email) => (
+            <span>
+                Create new credentials for user{" "}
+                <strong
+                    className="d-inline-block text-truncate truncate-cell"
+                    title={email}
+                >
+                {email}
+                </strong>
+                {" "}?
+            </span>
+            );
     return (
         <>
             <UserHeaderWithContext userId={userId} page={'credentials'}/>

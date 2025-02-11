@@ -923,3 +923,24 @@ td.entry-type-indicator {
 .pull-details .description {
   min-height: 160px;
 }
+
+.truncate-link {
+  display: inline-block;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truncate-cell {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.table-fixed {
+  table-layout: fixed;
+  width: 100%;
+}
