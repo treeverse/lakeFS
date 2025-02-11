@@ -16,7 +16,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 
 import {ActionsBar, AlertError, Loading, useDebouncedState} from "../../lib/components/controls";
 import {config, repositories} from '../../lib/api';
-import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
 import {useAPI, useAPIWithPagination} from "../../lib/hooks/api";
 import {Paginator} from "../../lib/components/pagination";
 import Container from "react-bootstrap/Container";
@@ -73,24 +72,14 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
     return (
         <Modal show={show} onHide={onCancel} size="lg">
             <Modal.Body>
-                {repoCreationFormPlugin ?
-                    repoCreationFormPlugin.build({
-                        formID: "repository-create-form",
-                        config: response,
-                        error: showError,
-                        formValid,
-                        setFormValid,
-                        onSubmit,
-                    }) :
-                    <RepositoryCreateForm
-                        formID="repository-create-form"
-                        config={response}
-                        error={showError}
-                        formValid={formValid}
-                        setFormValid={setFormValid}
-                        onSubmit={onSubmit}
-                    />
-                }
+                {repoCreationFormPlugin.build({
+                    formID: "repository-create-form",
+                    config: response,
+                    error: showError,
+                    formValid,
+                    setFormValid,
+                    onSubmit,
+                })}
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={(e) => {
@@ -204,7 +193,7 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
 
 const RepositoriesPage = () => {
     const pluginManager = usePluginManager();
-    const allowSampleRepoCreationFunc = pluginManager.repoCreationForm?.allowSampleRepoCreationFunc
+    const allowSampleRepoCreationFunc = pluginManager.repoCreationForm.allowSampleRepoCreationFunc
 
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
@@ -247,11 +236,7 @@ const RepositoriesPage = () => {
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
-    let allowSampleRepoCreation = true;
-    if (allowSampleRepoCreationFunc && !allowSampleRepoCreationFunc(response)) {
-        allowSampleRepoCreation = false;
-    }
-
+    const allowSampleRepoCreation = allowSampleRepoCreationFunc(response);
     const createSampleRepoButtonCallback = useCallback(async () => {
         if (loading) return;
         if (!err && response?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {

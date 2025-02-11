@@ -1,9 +1,10 @@
 import { PluginRepoCreationForm } from "./pluginRepoCreationForm";
+import DefaultRepoCreationFormPlugin from "./impls/DefaultRepoCreationFormPlugin";
 
 export class PluginManager {
-    private _repoCreationForm: PluginRepoCreationForm | null = null;
+    private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;
 
-    registerPluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
+    overridePluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
         this._repoCreationForm = pluginRepoCreationForm;
     }
 
