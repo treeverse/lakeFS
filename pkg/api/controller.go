@@ -780,7 +780,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	storage := c.Config.StorageConfig().GetStorageByID(repo.StorageID)
 	if storage == nil {
-		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage namespace info found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
+		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage config found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
 		return
 	}
 	blockStoreType := storage.BlockstoreType()
