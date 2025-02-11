@@ -128,6 +128,14 @@ public class StorageConfigTest {
     }
 
     /**
+     * Test the property 'backwardCompatible'
+     */
+    @Test
+    public void backwardCompatibleTest() {
+        // TODO: test backwardCompatible
+    }
+
+    /**
      * Test the property 'blockstoreExtras'
      */
     @Test
