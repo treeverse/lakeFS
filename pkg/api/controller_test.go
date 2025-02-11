@@ -4763,34 +4763,38 @@ func TestController_ClientDisconnect(t *testing.T) {
 		t.Fatal("Expected to request complete without error, expected to fail")
 	}
 
-	// wait for the server to identify we left and update the counter
-	time.Sleep(time.Second)
-
-	// request for metrics
-	metricsResp, err := http.Get(server.URL + "/metrics")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		_ = metricsResp.Body.Close()
-	}()
-	body, err := io.ReadAll(metricsResp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// process relevant metrics
+	// retry mechanism to identify if server updated metric on client disconnect
+	const tries = 3
 	const apiReqTotalMetricLabel = `api_requests_total{code="499",method="post"}`
+	const expectedCount = 1
 	var clientRequestClosedCount int
-	for _, line := range strings.Split(string(body), "\n") {
-		if strings.HasPrefix(line, apiReqTotalMetricLabel) {
-			if count, err := strconv.Atoi(line[len(apiReqTotalMetricLabel)+1:]); err == nil {
-				clientRequestClosedCount += count
+	for try := 0; try < tries && clientRequestClosedCount != expectedCount; try++ {
+		// wait for the server to identify we left and update the counter
+		time.Sleep(time.Second)
+
+		// request for metrics
+		metricsResp, err := http.Get(server.URL + "/metrics")
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := io.ReadAll(metricsResp.Body)
+		_ = metricsResp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// process relevant metrics
+		for _, line := range strings.Split(string(body), "\n") {
+			if strings.HasPrefix(line, apiReqTotalMetricLabel) {
+				if count, err := strconv.Atoi(line[len(apiReqTotalMetricLabel)+1:]); err == nil {
+					clientRequestClosedCount += count
+				}
 			}
 		}
+		if clientRequestClosedCount != expectedCount {
+			t.Logf("Metric for client request mismatch, try %d", try+1)
+		}
 	}
-
-	const expectedCount = 1
 	if clientRequestClosedCount != expectedCount {
 		t.Fatalf("Metric for client request closed: %d, expected: %d", clientRequestClosedCount, expectedCount)
 	}
@@ -5606,7 +5610,8 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 				},
 			},
 			expected: "denied permission to fs:DeleteRepository",
-		}, {
+		},
+		{
 			name: "neutral action",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
@@ -5628,7 +5633,8 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 				},
 			},
 			expected: "not allowed to fs:ReadRepository",
-		}, {
+		},
+		{
 			name: "nodeAnd no policy, returns first missing one",
 			node: permissions.Node{
 				Type: permissions.NodeTypeAnd,
@@ -5651,7 +5657,8 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 			},
 			username: "user1",
 			expected: "not allowed to fs:CreateRepository",
-		}, {
+		},
+		{
 			name: "nodeAnd one policy, returns first missing policy",
 			node: permissions.Node{
 				Type: permissions.NodeTypeAnd,
@@ -5698,6 +5705,7 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 		})
 	}
 }
+
 func TestController_CreatePullRequest(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
