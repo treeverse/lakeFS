@@ -9,7 +9,6 @@ services:
     volumes:
       - lakefs-app:/app:ro
     environment:
-      - LAKEFS_AUTH_API_ENDPOINT=${LAKEFS_AUTH_API_ENDPOINT:-}
       - LAKEFS_DATABASE_TYPE=dynamodb
       - LAKEFS_DATABASE_DYNAMODB_ENDPOINT=http://dynamodb:8000
       - LAKEFS_DATABASE_DYNAMODB_AWS_REGION=us-east-1
