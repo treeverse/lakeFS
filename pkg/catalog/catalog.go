@@ -2738,6 +2738,10 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 		if err != nil {
 			return nil, err
 		}
+
+		if srcRepo.StorageID != destRepo.StorageID {
+			return nil, fmt.Errorf("copy between different blockstores is not allowed: %w", graveler.ErrInvalidValue)
+		}
 	}
 
 	// copy data to a new physical address
