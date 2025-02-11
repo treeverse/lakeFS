@@ -788,7 +788,6 @@ jobs:
           compose-file: esti/ops/docker-compose-dynamodb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
@@ -800,7 +799,6 @@ jobs:
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
-          ESTI_DATABASE_KV_ENABLED: "true"
           ESTI_DATABASE_CONNECTION_STRING: "true"
 
       - name: Check files in S3 bucket KV
@@ -864,13 +862,11 @@ jobs:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
-          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_GRAVELER_BRANCH_OWNERSHIP_ENABLED: ${{ matrix.branch_ownership }}
-          LAKEFS_DATABASE_TYPE: postgres
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
@@ -939,10 +935,8 @@ jobs:
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: gs
-          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
           ESTI_BLOCKSTORE_TYPE: gs
           ESTI_STORAGE_NAMESPACE: gs://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
@@ -996,9 +990,7 @@ jobs:
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
-          LAKEFS_DATABASE_TYPE: postgres
           LAKEFS_BLOCKSTORE_TYPE: azure
           ESTI_AZURE_STORAGE_ACCOUNT: esti
           ESTI_AZURE_STORAGE_ACCESS_KEY: ${{ secrets.LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY }}
@@ -1060,14 +1052,12 @@ jobs:
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-          LAKEFS_AUTH_API_ENDPOINT: http://host.docker.internal:8001/api/v1
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_DATABASE_TYPE: cosmosdb
           LAKEFS_DATABASE_COSMOSDB_ENDPOINT: "https://${{ env.COSMOSDB_ACCOUNT }}.documents.azure.com"
           LAKEFS_DATABASE_COSMOSDB_DATABASE: ${{ env.COSMOSDB_DATABASE }}
           LAKEFS_DATABASE_COSMOSDB_CONTAINER: ${{ github.run_number }}-${{ steps.unique.outputs.value }}
           LAKEFS_DATABASE_COSMOSDB_KEY: ${{ secrets.LAKEFS_DATABASE_COSMOSDB_READWRITEKEY }}
-          LAKEFS_BLOCKSTORE_TYPE: azure
           ESTI_BLOCKSTORE_TYPE: azure
           ESTI_STORAGE_NAMESPACE: https://esti4hns.blob.core.windows.net/esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
           ESTI_LARGE_OBJECT_PATH: https://esti4hns.blob.core.windows.net/esti-system-testing-data/copy-test-data/data.6mib
@@ -1418,7 +1408,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_DATABASE_TYPE: postgres
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
           ESTI_BLOCKSTORE_TYPE: s3
           ESTI_STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}
