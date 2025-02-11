@@ -86,7 +86,7 @@ const SettingsContainer = () => {
                         <Form.Control readOnly value={repo.id} type="text"/>
                     </Col>
                 </Row>
-                {repo.storage_id &&
+                {repo.storage_id && repo.storage_id.length &&
                     <Row>
                         <Form.Label column md={{span:3}} className="mb-3">
                             Storage
