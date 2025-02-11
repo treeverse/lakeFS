@@ -10,6 +10,7 @@ import (
 
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
 )
@@ -46,7 +47,7 @@ func TestWriteBlob(t *testing.T) {
 			reader := bytes.NewReader(data)
 			adapter := testutil.NewMockAdapter()
 			objectPointer := block.ObjectPointer{
-				StorageID:        "",
+				StorageID:        config.SingleBlockstoreID,
 				StorageNamespace: storageNamespace,
 				IdentifierType:   block.IdentifierTypeRelative,
 				Identifier:       upload.DefaultPathProvider.NewPath(),
