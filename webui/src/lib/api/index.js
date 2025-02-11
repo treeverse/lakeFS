@@ -1071,16 +1071,26 @@ class Config {
         const response = await apiRequest('/config', {
             method: 'GET',
         });
+
+        const parseBlockstoreConfig = (storageCfg) => {
+            storageCfg.warnings = []
+            if (storageCfg.blockstore_type === 'mem') {
+                storageCfg.warnings.push(`Block adapter ${storageCfg.blockstore_type} not usable in production`)
+            }
+            return storageCfg;
+        };
+
         let cfg, storageCfg;
         switch (response.status) {
             case 200:
                 cfg = await response.json();
-                storageCfg = cfg.storage_config
-                storageCfg.warnings = []
-                if (storageCfg.blockstore_type === 'mem') {
-                    storageCfg.warnings.push(`Block adapter ${storageCfg.blockstore_type} not usable in production`)
+                storageCfg = cfg['storage_config']
+                if (storageCfg) {
+                    return parseBlockstoreConfig(storageCfg);
+                } else {
+                    const storageCfgList = cfg['storage_config_list'];
+                    return storageCfgList.map(storageCfg => parseBlockstoreConfig(storageCfg));
                 }
-                return storageCfg;
             case 409:
                 throw new Error('Conflict');
             default:

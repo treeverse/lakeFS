@@ -8,7 +8,7 @@ import Accordion from "react-bootstrap/Accordion";
 const DEFAULT_BLOCKSTORE_EXAMPLE = "e.g. s3://example-bucket/";
 const DEFAULT_BLOCKSTORE_VALIDITY_REGEX = new RegExp(`^s3://`);
 
-export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormValid, error = null }) => {
+export const RepositoryCreateForm = ({ formID, config, onSubmit, formValid, setFormValid, error = null }) => {
     const repoValidityRegex = /^[a-z0-9][a-z0-9-]{2,62}$/;
 
     const [repoValid, setRepoValid] = useState(null);
@@ -141,7 +141,7 @@ export const RepositoryCreateForm = ({ id, config, onSubmit, formValid, setFormV
     )
 
     return (
-        <Form id={id} onSubmit={(e) => {
+        <Form id={formID} onSubmit={(e) => {
             e.preventDefault();
             if (!formValid) {
                 return;
