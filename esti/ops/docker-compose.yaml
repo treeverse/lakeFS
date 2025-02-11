@@ -9,6 +9,7 @@ services:
     volumes:
       - lakefs-app:/app:ro
     environment:
+      - LAKEFS_AUTH_API_ENDPOINT=${LAKEFS_AUTH_API_ENDPOINT:-}
       - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
       - LAKEFS_DATABASE_TYPE=${LAKEFS_DATABASE_TYPE:-postgres}
       - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable

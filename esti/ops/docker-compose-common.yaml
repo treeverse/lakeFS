@@ -7,7 +7,6 @@ services:
     volumes:
       - lakefs-app:/app:ro
     environment:
-      - LAKEFS_AUTH_API_ENDPOINT=${LAKEFS_AUTH_API_ENDPOINT:-http://host.docker.internal:8001/api/v1}
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-none}
       - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE:-local}
