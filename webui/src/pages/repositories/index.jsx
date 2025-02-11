@@ -193,8 +193,6 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
 
 const RepositoriesPage = () => {
     const pluginManager = usePluginManager();
-    const allowSampleRepoCreationFunc = pluginManager.repoCreationForm.allowSampleRepoCreationFunc
-
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
     const [createRepoError, setCreateRepoError] = useState(null);
@@ -236,7 +234,7 @@ const RepositoriesPage = () => {
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
-    const allowSampleRepoCreation = allowSampleRepoCreationFunc(response);
+    const allowSampleRepoCreation = pluginManager.repoCreationForm.allowSampleRepoCreationFunc(response);
     const createSampleRepoButtonCallback = useCallback(async () => {
         if (loading) return;
         if (!err && response?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {
