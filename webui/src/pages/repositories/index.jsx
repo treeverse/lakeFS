@@ -175,6 +175,9 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
                                     <small>
                                         created at <code>{dayjs.unix(repo.creation_date).toISOString()}</code> ({dayjs.unix(repo.creation_date).fromNow()})<br/>
                                         default branch: <code>{repo.default_branch}</code>,{' '}
+                                        {repo.storage_id && repo.storage_id.length &&
+                                            <>storage: <code>{repo.storage_id}</code>,{' '}</>
+                                        }
                                         storage namespace: <code>{repo.storage_namespace}</code>
                                     </small>
                                 </p>

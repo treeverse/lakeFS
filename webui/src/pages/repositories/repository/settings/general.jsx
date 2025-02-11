@@ -86,6 +86,16 @@ const SettingsContainer = () => {
                         <Form.Control readOnly value={repo.id} type="text"/>
                     </Col>
                 </Row>
+                {repo.storage_id && repo.storage_id.length &&
+                    <Row>
+                        <Form.Label column md={{span:3}} className="mb-3">
+                            Storage
+                        </Form.Label>
+                        <Col md={{span:4}}>
+                            <Form.Control readOnly value={repo.storage_id} type="text"/>
+                        </Col>
+                    </Row>
+                }
                 <Row>
                     <Form.Label column md={{span:3}} className="mb-3">
                         Storage namespace
