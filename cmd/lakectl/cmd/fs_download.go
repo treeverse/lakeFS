@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -41,12 +42,12 @@ var fsDownloadCmd = &cobra.Command{
 		downloader := helpers.NewDownloader(client, syncFlags.Presign)
 		downloader.PartSize = downloadPartSize
 
+		remotePath := remote.GetPath()
 		if !recursive {
 			// if dest is a directory, add the file name
 			if s, _ := os.Stat(dest); s != nil && s.IsDir() {
 				dest += uri.PathSeparator
 			}
-			remotePath := remote.GetPath()
 			if remotePath != "" && strings.HasSuffix(dest, uri.PathSeparator) {
 				dest += filepath.Base(remotePath)
 			}
@@ -63,19 +64,8 @@ var fsDownloadCmd = &cobra.Command{
 		pw := newDownloadProgressWriter(syncFlags.NoProgress)
 		// ProgressRender start render progress and return callback waiting for the progress to finish.
 		go pw.Render()
-		defer func() {
-			for pw.IsRenderInProgress() {
-				// for manual-stop mode, stop when there are no more active trackers
-				if pw.LengthActive() == 0 {
-					pw.Stop()
-				}
-				const waitForRender = 100 * time.Millisecond
-				time.Sleep(waitForRender)
-			}
-		}()
 
 		ch := make(chan string, filesChanSize)
-		remotePath := remote.GetPath()
 		if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
 			*remote.Path += uri.PathSeparator
 		}
@@ -116,6 +106,7 @@ var fsDownloadCmd = &cobra.Command{
 		// download files in parallel
 		var wg sync.WaitGroup
 		wg.Add(syncFlags.Parallelism)
+		var downloaded int64
 		for i := 0; i < syncFlags.Parallelism; i++ {
 			go func() {
 				defer wg.Done()
@@ -139,11 +130,32 @@ var fsDownloadCmd = &cobra.Command{
 						DieErr(err)
 					}
 					tracker.MarkAsDone()
+					atomic.AddInt64(&downloaded, 1)
 				}
 			}()
 		}
 		// wait for all downloads to finish
 		wg.Wait()
+
+		// wait for progress to finish render
+		for pw.IsRenderInProgress() {
+			// for manual-stop mode, stop when there are no more active trackers
+			if pw.LengthActive() == 0 {
+				pw.Stop()
+			}
+			const waitForRender = 100 * time.Millisecond
+			time.Sleep(waitForRender)
+		}
+
+		Write(localSummaryTemplate, struct {
+			Operation  string
+			Downloaded int64
+			Removed    int
+			Uploaded   int
+		}{
+			Operation:  "Download",
+			Downloaded: downloaded,
+		})
 	},
 }
 

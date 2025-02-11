@@ -642,6 +642,10 @@ func TestLakectlFsDownload(t *testing.T) {
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 5")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
 	t.Run("directory_with_dest", func(t *testing.T) {
@@ -652,6 +656,10 @@ func TestLakectlFsDownload(t *testing.T) {
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.3")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.4")
+		require.Contains(t, sanitizedResult, "Download Summary:")
+		require.Contains(t, sanitizedResult, "Downloaded: 5")
+		require.Contains(t, sanitizedResult, "Uploaded: 0")
+		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 
 	t.Run("directory_without_recursive", func(t *testing.T) {
