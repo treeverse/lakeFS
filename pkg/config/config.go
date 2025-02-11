@@ -163,6 +163,7 @@ type AdapterConfig interface {
 	BlockstoreAzureParams() (blockparams.Azure, error)
 	BlockstoreExtras() map[string]string
 	GetDefaultNamespacePrefix() *string
+	IsBackwardsCompatible() bool
 }
 
 type Blockstore struct {
@@ -357,6 +358,14 @@ func (b *Blockstore) GetDefaultNamespacePrefix() *string {
 	return b.DefaultNamespacePrefix
 }
 
+func (b *Blockstore) IsBackwardsCompatible() bool {
+	return false
+}
+
+func (b *Blockstore) SigningKey() SecureString {
+	return b.Signing.SecretKey
+}
+
 type Config interface {
 	GetBaseConfig() *BaseConfig
 	StorageConfig() StorageConfig
@@ -366,6 +375,7 @@ type Config interface {
 type StorageConfig interface {
 	GetStorageByID(storageID string) AdapterConfig
 	GetStorageIDs() []string
+	SigningKey() SecureString
 }
 
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor

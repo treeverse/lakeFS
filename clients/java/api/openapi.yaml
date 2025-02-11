@@ -9002,18 +9002,19 @@ components:
       type: object
     StorageConfig:
       example:
-        blockstore_description: blockstore_description
-        pre_sign_multipart_upload: true
+        backward_compatible: false
         blockstore_extras:
           key: blockstore_extras
+        pre_sign_support_ui: true
+        import_support: true
+        default_namespace_prefix: default_namespace_prefix
+        blockstore_description: blockstore_description
+        pre_sign_multipart_upload: true
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_id: blockstore_id
         blockstore_type: blockstore_type
-        pre_sign_support_ui: true
-        import_support: true
         import_validity_regex: import_validity_regex
-        default_namespace_prefix: default_namespace_prefix
         pre_sign_support: true
       properties:
         blockstore_type:
@@ -9038,6 +9039,9 @@ components:
           type: string
         blockstore_description:
           type: string
+        backward_compatible:
+          default: false
+          type: boolean
         blockstore_extras:
           additionalProperties:
             type: string
@@ -9059,45 +9063,48 @@ components:
     Config:
       example:
         storage_config_list:
-        - blockstore_description: blockstore_description
-          pre_sign_multipart_upload: true
+        - backward_compatible: false
           blockstore_extras:
             key: blockstore_extras
-          blockstore_namespace_example: blockstore_namespace_example
-          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
-          blockstore_id: blockstore_id
-          blockstore_type: blockstore_type
           pre_sign_support_ui: true
           import_support: true
-          import_validity_regex: import_validity_regex
           default_namespace_prefix: default_namespace_prefix
-          pre_sign_support: true
-        - blockstore_description: blockstore_description
-          pre_sign_multipart_upload: true
-          blockstore_extras:
-            key: blockstore_extras
-          blockstore_namespace_example: blockstore_namespace_example
-          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
-          blockstore_id: blockstore_id
-          blockstore_type: blockstore_type
-          pre_sign_support_ui: true
-          import_support: true
-          import_validity_regex: import_validity_regex
-          default_namespace_prefix: default_namespace_prefix
-          pre_sign_support: true
-        storage_config:
           blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
-          blockstore_extras:
-            key: blockstore_extras
           blockstore_namespace_example: blockstore_namespace_example
           blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
           blockstore_id: blockstore_id
           blockstore_type: blockstore_type
+          import_validity_regex: import_validity_regex
+          pre_sign_support: true
+        - backward_compatible: false
+          blockstore_extras:
+            key: blockstore_extras
           pre_sign_support_ui: true
           import_support: true
-          import_validity_regex: import_validity_regex
           default_namespace_prefix: default_namespace_prefix
+          blockstore_description: blockstore_description
+          pre_sign_multipart_upload: true
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_id: blockstore_id
+          blockstore_type: blockstore_type
+          import_validity_regex: import_validity_regex
+          pre_sign_support: true
+        storage_config:
+          backward_compatible: false
+          blockstore_extras:
+            key: blockstore_extras
+          pre_sign_support_ui: true
+          import_support: true
+          default_namespace_prefix: default_namespace_prefix
+          blockstore_description: blockstore_description
+          pre_sign_multipart_upload: true
+          blockstore_namespace_example: blockstore_namespace_example
+          blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
+          blockstore_id: blockstore_id
+          blockstore_type: blockstore_type
+          import_validity_regex: import_validity_regex
           pre_sign_support: true
         version_config:
           latest_version: latest_version

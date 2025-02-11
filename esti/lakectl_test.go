@@ -113,6 +113,19 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName3+" "+storage3+" --sample-data", false, "lakectl_repo_create_sample", vars)
 }
 
+func TestLakectlRepoCreateWithStorageID(t *testing.T) {
+	// Validate the --storage-id flag (currently only allowed to be empty)
+	repoName := generateUniqueRepositoryName()
+	storage := generateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" --storage-id storage1", false, "lakectl_repo_create_with_storage_id", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage+" --storage-id \"\"", false, "lakectl_repo_create", vars)
+}
+
 func TestLakectlPreSignUpload(t *testing.T) {
 	repoName := generateUniqueRepositoryName()
 	storage := generateUniqueStorageNamespace(repoName)

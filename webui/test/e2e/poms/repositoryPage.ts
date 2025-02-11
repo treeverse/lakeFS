@@ -124,4 +124,11 @@ export class RepositoryPage {
   async gotoPullRequestsTab(): Promise<void> {
     await this.page.getByRole("link", { name: "Pull Requests" }).click();
   }
+
+  async uploadObject(filePath: string): Promise<void> {
+	await this.page.getByRole("button", { name: "Upload Object" }).click();
+	await this.page.getByText("Drag 'n' drop files or").click();
+	const fileInput = await this.page.locator('input[type="file"]');
+	await fileInput.setInputFiles(filePath);
+  }
 }

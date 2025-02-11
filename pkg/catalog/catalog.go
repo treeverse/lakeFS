@@ -416,8 +416,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
-		// TODO(niro): This should be removed - we need to return the signing key dynamically from the blockAdapter
-		signingKey: baseCfg.Blockstore.Signing.SecretKey,
+		signingKey:            cfg.Config.StorageConfig().SigningKey(),
 	}, nil
 }
 
