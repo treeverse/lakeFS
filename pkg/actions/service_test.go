@@ -122,32 +122,32 @@ hooks:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testOutputWriter.EXPECT().
-				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedWebhookRunID), gomock.Any(), gomock.Any()).
+				OutputWrite(ctx, record.Repository, actions.FormatHookOutputPath(record.RunID, expectedWebhookRunID), gomock.Any(), gomock.Any()).
 				Return(nil).
-				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+				DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
 					var err error
 					writerBytes, err = io.ReadAll(reader)
 					return err
 				})
 			testOutputWriter.EXPECT().
-				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithConf), gomock.Any(), gomock.Any()).
+				OutputWrite(ctx, record.Repository, actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithConf), gomock.Any(), gomock.Any()).
 				Return(nil).
-				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+				DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
 					var err error
 					writerBytes, err = io.ReadAll(reader)
 					return err
 				})
 			testOutputWriter.EXPECT().
-				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithoutConf), gomock.Any(), gomock.Any()).
+				OutputWrite(ctx, record.Repository, actions.FormatHookOutputPath(record.RunID, expectedAirflowHookRunIDWithoutConf), gomock.Any(), gomock.Any()).
 				Return(nil).
-				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+				DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
 					var err error
 					writerBytes, err = io.ReadAll(reader)
 					return err
 				})
 			testOutputWriter.EXPECT().
-				OutputWrite(ctx, record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
-				DoAndReturn(func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+				OutputWrite(ctx, record.Repository, actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
+				DoAndReturn(func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
 					data, err := io.ReadAll(reader)
 					if err != nil {
 						return err
@@ -193,7 +193,7 @@ hooks:
 			lastManifest = nil
 
 			// update commit using post event record
-			err = actionsService.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.RunID, "commit1")
+			err = actionsService.UpdateCommitID(ctx, record.Repository, record.RunID, "commit1")
 			if err != nil {
 				t.Fatalf("UpdateCommitID() failed with err=%s", err)
 			}
@@ -208,7 +208,7 @@ hooks:
 			}
 
 			// get run result
-			runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
+			runResult, err := actionsService.GetRunResult(ctx, record.Repository.RepositoryID.String(), record.RunID)
 			if err != nil {
 				t.Fatal("GetRunResult() get run result", err)
 			}
@@ -242,7 +242,7 @@ hooks:
 			require.Equal(t, 3, mockStatsCollector.Hits["pre-commit"])
 
 			// get run - not found
-			runResult, err = actionsService.GetRunResult(ctx, record.RepositoryID.String(), "not-run-id")
+			runResult, err = actionsService.GetRunResult(ctx, record.Repository.RepositoryID.String(), "not-run-id")
 			expectedErr := actions.ErrNotFound
 			if !errors.Is(err, expectedErr) {
 				t.Errorf("GetRunResult() err=%v, expected=%v", err, expectedErr)
@@ -285,7 +285,7 @@ func TestDisableHooksRun(t *testing.T) {
 			}
 
 			// get run result
-			runResult, err := actionsService.GetRunResult(ctx, record.RepositoryID.String(), record.RunID)
+			runResult, err := actionsService.GetRunResult(ctx, record.Repository.RepositoryID.String(), record.RunID)
 			if !errors.Is(err, actions.ErrNotFound) || runResult != nil {
 				t.Fatal("GetRunResult() shouldn't get run result", err, runResult)
 			}
@@ -459,19 +459,19 @@ hooks:
 		t.Run(tt.Name, func(t *testing.T) {
 			testOutputWriter, ctrl, _, record := setupTest(t)
 			defer ctrl.Finish()
-			outputWriteReturn := func(ctx context.Context, storageNamespace, name string, reader io.Reader, size int64) error {
+			outputWriteReturn := func(ctx context.Context, repository *graveler.RepositoryRecord, name string, reader io.Reader, size int64) error {
 				_, err := io.ReadAll(reader)
 				return err
 			}
 			for _, idx := range tt.ExpectedHookIndexes {
 				hookRunID := actions.NewHookRunID(0, idx)
 				testOutputWriter.EXPECT().
-					OutputWrite(gomock.Any(), record.StorageNamespace.String(), actions.FormatHookOutputPath(record.RunID, hookRunID), gomock.Any(), gomock.Any()).
+					OutputWrite(gomock.Any(), record.Repository, actions.FormatHookOutputPath(record.RunID, hookRunID), gomock.Any(), gomock.Any()).
 					Return(nil).
 					DoAndReturn(outputWriteReturn)
 			}
 			testOutputWriter.EXPECT().
-				OutputWrite(gomock.Any(), record.StorageNamespace.String(), actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
+				OutputWrite(gomock.Any(), record.Repository, actions.FormatRunManifestOutputPath(record.RunID), gomock.Any(), gomock.Any()).
 				Return(nil).
 				DoAndReturn(outputWriteReturn)
 
@@ -508,8 +508,8 @@ func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInf
 	if event.HookID != hookID {
 		t.Errorf("Webhook post HookID=%s, expected=%s", event.HookID, hookID)
 	}
-	if event.RepositoryID != record.RepositoryID.String() {
-		t.Errorf("Webhook post RepositoryID=%s, expected=%s", event.RepositoryID, record.RepositoryID)
+	if event.RepositoryID != record.Repository.RepositoryID.String() {
+		t.Errorf("Webhook post RepositoryID=%s, expected=%s", event.RepositoryID, record.Repository.RepositoryID)
 	}
 	if event.BranchID != record.BranchID.String() {
 		t.Errorf("Webhook post BranchID=%s, expected=%s", event.BranchID, record.BranchID)
@@ -532,12 +532,16 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 	t.Helper()
 	hooks := graveler.HooksNoOp{}
 	record := graveler.HookRecord{
-		RunID:            hooks.NewRunID(),
-		EventType:        graveler.EventTypePreCommit,
-		StorageNamespace: "storageNamespace",
-		RepositoryID:     "repoID",
-		BranchID:         "branchID",
-		SourceRef:        "sourceRef",
+		RunID:     hooks.NewRunID(),
+		EventType: graveler.EventTypePreCommit,
+		Repository: &graveler.RepositoryRecord{
+			RepositoryID: "repoID",
+			Repository: &graveler.Repository{
+				StorageNamespace: "storageNamespace",
+			},
+		},
+		BranchID:  "branchID",
+		SourceRef: "sourceRef",
 		Commit: graveler.Commit{
 			Message:   "commitMessage",
 			Committer: "committer",

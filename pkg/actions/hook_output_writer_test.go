@@ -26,15 +26,21 @@ func TestHookWriter_OutputWritePath(t *testing.T) {
 	runID := hooks.NewRunID()
 	hookRunID := hooks.NewRunID()
 	writer := mock.NewMockOutputWriter(ctrl)
-	writer.EXPECT().OutputWrite(ctx, storageNamespace, actions.FormatHookOutputPath(runID, hookRunID), contentReader, int64(len(content))).Return(nil)
+	repositoryRecord := &graveler.RepositoryRecord{
+		RepositoryID: "someRepo",
+		Repository: &graveler.Repository{
+			StorageNamespace: storageNamespace,
+		},
+	}
+	writer.EXPECT().OutputWrite(ctx, repositoryRecord, actions.FormatHookOutputPath(runID, hookRunID), contentReader, int64(len(content))).Return(nil)
 
 	w := &actions.HookOutputWriter{
-		StorageNamespace: storageNamespace,
-		RunID:            runID,
-		HookID:           hookID,
-		HookRunID:        hookRunID,
-		ActionName:       actionName,
-		Writer:           writer,
+		Repository: repositoryRecord,
+		RunID:      runID,
+		HookID:     hookID,
+		HookRunID:  hookRunID,
+		ActionName: actionName,
+		Writer:     writer,
 	}
 	err := w.OutputWrite(ctx, contentReader, int64(len(content)))
 	if err != nil {
@@ -50,17 +56,23 @@ func TestHookWriter_OutputWriteError(t *testing.T) {
 	hooks := graveler.HooksNoOp{}
 	runID := hooks.NewRunID()
 	hookRunID := hooks.NewRunID()
+	repositoryRecord := &graveler.RepositoryRecord{
+		RepositoryID: "someRepo",
+		Repository: &graveler.Repository{
+			StorageNamespace: "storageNamespace",
+		},
+	}
 	errSomeError := errors.New("some error")
 	writer := mock.NewMockOutputWriter(ctrl)
-	writer.EXPECT().OutputWrite(ctx, "storageNamespace", actions.FormatHookOutputPath(runID, hookRunID), gomock.Any(), gomock.Any()).Return(errSomeError)
+	writer.EXPECT().OutputWrite(ctx, repositoryRecord, actions.FormatHookOutputPath(runID, hookRunID), gomock.Any(), gomock.Any()).Return(errSomeError)
 
 	w := &actions.HookOutputWriter{
-		RunID:            runID,
-		HookRunID:        hookRunID,
-		StorageNamespace: "storageNamespace",
-		ActionName:       "actionName",
-		HookID:           "hookID",
-		Writer:           writer,
+		RunID:      runID,
+		HookRunID:  hookRunID,
+		Repository: repositoryRecord,
+		ActionName: "actionName",
+		HookID:     "hookID",
+		Writer:     writer,
 	}
 	contentReader := strings.NewReader("content")
 	err := w.OutputWrite(ctx, contentReader, 10)
