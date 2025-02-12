@@ -2,7 +2,7 @@ version: "3"
 services:
   lakefs:
     extends:
-      file: esti/ops/docker-compose-common.yaml
+      file: ./docker-compose-common.yaml
       service: lakefs
     depends_on:
       - "postgres"
