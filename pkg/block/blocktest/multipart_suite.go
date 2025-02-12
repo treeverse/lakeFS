@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"slices"
 	"strconv"
 	"testing"
 
@@ -57,7 +58,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 
 			// List parts after upload
 			listResp, err := adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{})
-			if blockstoreType != block.BlockstoreTypeS3 {
+			if expectOperationNotSupported(blockstoreType) {
 				require.ErrorIs(t, err, block.ErrOperationNotSupported)
 			} else {
 				require.NoError(t, err)
@@ -74,7 +75,7 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 			const maxPartsConst = 2
 			maxParts := int32(maxPartsConst)
 			listResp, err = adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{MaxParts: &maxParts})
-			if blockstoreType != block.BlockstoreTypeS3 {
+			if expectOperationNotSupported(blockstoreType) {
 				require.ErrorIs(t, err, block.ErrOperationNotSupported)
 			} else {
 				require.NoError(t, err)
@@ -200,11 +201,22 @@ func uploadMultiPart(t *testing.T, ctx context.Context, adapter block.Adapter, o
 func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter, obj block.ObjectPointer, uploadID string) {
 	t.Helper()
 	_, err := adapter.ListParts(ctx, obj, uploadID, block.ListPartsOpts{})
-	if adapter.BlockstoreType() != block.BlockstoreTypeS3 {
+	if expectOperationNotSupported(adapter.BlockstoreType()) {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 	} else {
 		require.NotNil(t, err)
 	}
+}
+
+func expectOperationNotSupported(blockstoreType string) bool {
+	unsupportedList := []string{
+		block.BlockstoreTypeLocal,
+		block.BlockstoreTypeAzure,
+		block.BlockstoreTypeMem,
+		block.BlockstoreTypeTransient,
+		block.BlockstoreTypeGS,
+	}
+	return slices.Contains(unsupportedList, blockstoreType)
 }
 
 // Upload parts after starting a multipart upload
