@@ -1265,19 +1265,11 @@ components:
           type: string
         blockstore_description:
           type: string
-        backward_compatible:
-          type: boolean
-          default: false
-        blockstore_extras:
-          type: object
-          description: blockstore specific properties
-          additionalProperties:
-            type: string
     
     StorageConfigList:
-      type: array
-      items:
-        $ref: "#/components/schemas/StorageConfig"
+        type: array
+        items:
+          $ref: "#/components/schemas/StorageConfig"
 
     Config:
       type: object

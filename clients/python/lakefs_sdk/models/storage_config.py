@@ -19,7 +19,7 @@ import re  # noqa: F401
 import json
 
 
-from typing import Dict, Optional
+from typing import Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr
 except ImportError:
@@ -40,9 +40,7 @@ class StorageConfig(BaseModel):
     pre_sign_multipart_upload: Optional[StrictBool] = None
     blockstore_id: Optional[StrictStr] = None
     blockstore_description: Optional[StrictStr] = None
-    backward_compatible: Optional[StrictBool] = False
-    blockstore_extras: Optional[Dict[str, StrictStr]] = Field(None, description="blockstore specific properties")
-    __properties = ["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "default_namespace_prefix", "pre_sign_support", "pre_sign_support_ui", "import_support", "import_validity_regex", "pre_sign_multipart_upload", "blockstore_id", "blockstore_description", "backward_compatible", "blockstore_extras"]
+    __properties = ["blockstore_type", "blockstore_namespace_example", "blockstore_namespace_ValidityRegex", "default_namespace_prefix", "pre_sign_support", "pre_sign_support_ui", "import_support", "import_validity_regex", "pre_sign_multipart_upload", "blockstore_id", "blockstore_description"]
 
     class Config:
         """Pydantic configuration"""
@@ -90,9 +88,7 @@ class StorageConfig(BaseModel):
             "import_validity_regex": obj.get("import_validity_regex"),
             "pre_sign_multipart_upload": obj.get("pre_sign_multipart_upload"),
             "blockstore_id": obj.get("blockstore_id"),
-            "blockstore_description": obj.get("blockstore_description"),
-            "backward_compatible": obj.get("backward_compatible") if obj.get("backward_compatible") is not None else False,
-            "blockstore_extras": obj.get("blockstore_extras")
+            "blockstore_description": obj.get("blockstore_description")
         })
         return _obj
 

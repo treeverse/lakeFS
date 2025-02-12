@@ -49,11 +49,7 @@ class TestStorageConfig(unittest.TestCase):
                 import_validity_regex = '', 
                 pre_sign_multipart_upload = True, 
                 blockstore_id = '', 
-                blockstore_description = '', 
-                backward_compatible = True, 
-                blockstore_extras = {
-                    'key' : ''
-                    }
+                blockstore_description = ''
             )
         else :
             return StorageConfig(
