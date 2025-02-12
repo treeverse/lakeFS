@@ -147,7 +147,7 @@ print(repo)
 import lakefs
 
 print("Listing repositories:")
-for repo in lakefs.repositories(client=clt):
+for repo in lakefs.repositories():
     print(repo)
 
 ```
