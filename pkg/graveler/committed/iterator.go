@@ -21,12 +21,13 @@ type iterator struct {
 	beforeRange bool
 }
 
-func NewIterator(ctx context.Context, manager RangeManager, namespace Namespace, rangesIt ValueIterator) Iterator {
+func NewIterator(ctx context.Context, manager RangeManager, storageID StorageID, namespace Namespace, rangesIt ValueIterator) Iterator {
 	return &iterator{
 		ctx:       ctx,
 		manager:   manager,
 		namespace: namespace,
 		rangesIt:  rangesIt,
+		storageID: storageID,
 	}
 }
 

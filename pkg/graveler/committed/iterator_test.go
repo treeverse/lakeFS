@@ -177,7 +177,7 @@ func TestIterator(t *testing.T) {
 				lastKey = key
 			}
 			rangesIt := testutil.NewCommittedValueIteratorFake(makeRangeRecords(tt.PK))
-			pvi := committed.NewIterator(ctx, manager, namespace, rangesIt)
+			pvi := committed.NewIterator(ctx, manager, "", namespace, rangesIt)
 			defer pvi.Close()
 			assert.Equal(t, tt.PK, keysByRanges(t, pvi))
 			assert.False(t, pvi.NextRange())
@@ -202,7 +202,7 @@ func TestIterator(t *testing.T) {
 				lastKey = key
 			}
 			rangesIt := testutil.NewCommittedValueIteratorFake(makeRangeRecords(tt.PK))
-			pvi := committed.NewIterator(ctx, manager, namespace, rangesIt)
+			pvi := committed.NewIterator(ctx, manager, "", namespace, rangesIt)
 			defer pvi.Close()
 
 			if len(tt.PK) == 0 {
