@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.hook_run import HookRun  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestHookRun(unittest.TestCase):
     """HookRun unit test stubs"""
@@ -29,24 +27,24 @@ class TestHookRun(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> HookRun:
         """Test HookRun
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `HookRun`
         """
-        model = lakefs_sdk.models.hook_run.HookRun()  # noqa: E501
-        if include_optional :
+        model = HookRun()  # noqa: E501
+        if include_optional:
             return HookRun(
-                hook_run_id = '', 
-                action = '', 
-                hook_id = '', 
-                start_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
-                end_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                hook_run_id = '',
+                action = '',
+                hook_id = '',
+                start_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
+                end_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 status = 'failed'
             )
-        else :
+        else:
             return HookRun(
                 hook_run_id = '',
                 action = '',

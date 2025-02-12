@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.repository_list import RepositoryList  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestRepositoryList(unittest.TestCase):
     """RepositoryList unit test stubs"""
@@ -29,21 +27,21 @@ class TestRepositoryList(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> RepositoryList:
         """Test RepositoryList
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RepositoryList`
         """
-        model = lakefs_sdk.models.repository_list.RepositoryList()  # noqa: E501
-        if include_optional :
+        model = RepositoryList()  # noqa: E501
+        if include_optional:
             return RepositoryList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 
                     next_offset = '', 
                     results = 0, 
-                    max_per_page = 0, ), 
+                    max_per_page = 0, ),
                 results = [
                     lakefs_sdk.models.repository.Repository(
                         id = '', 
@@ -54,7 +52,7 @@ class TestRepositoryList(unittest.TestCase):
                         read_only = True, )
                     ]
             )
-        else :
+        else:
             return RepositoryList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 

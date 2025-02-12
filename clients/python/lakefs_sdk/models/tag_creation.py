@@ -27,7 +27,7 @@ except ImportError:
 
 class TagCreation(BaseModel):
     """
-    Make tag ID point at this REF.
+    Make tag ID point at this REF.  # noqa: E501
     """
     id: StrictStr = Field(..., description="ID of tag to create")
     ref: StrictStr = Field(..., description="the commit to tag")

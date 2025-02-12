@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestUpdateObjectUserMetadata(unittest.TestCase):
     """UpdateObjectUserMetadata unit test stubs"""
@@ -29,21 +27,21 @@ class TestUpdateObjectUserMetadata(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> UpdateObjectUserMetadata:
         """Test UpdateObjectUserMetadata
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `UpdateObjectUserMetadata`
         """
-        model = lakefs_sdk.models.update_object_user_metadata.UpdateObjectUserMetadata()  # noqa: E501
-        if include_optional :
+        model = UpdateObjectUserMetadata()  # noqa: E501
+        if include_optional:
             return UpdateObjectUserMetadata(
                 set = {
                     'key' : ''
                     }
             )
-        else :
+        else:
             return UpdateObjectUserMetadata(
                 set = {
                     'key' : ''

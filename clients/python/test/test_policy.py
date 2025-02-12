@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.policy import Policy  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestPolicy(unittest.TestCase):
     """Policy unit test stubs"""
@@ -29,18 +27,18 @@ class TestPolicy(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> Policy:
         """Test Policy
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `Policy`
         """
-        model = lakefs_sdk.models.policy.Policy()  # noqa: E501
-        if include_optional :
+        model = Policy()  # noqa: E501
+        if include_optional:
             return Policy(
-                id = '', 
-                creation_date = 56, 
+                id = '',
+                creation_date = 56,
                 statement = [
                     lakefs_sdk.models.statement.Statement(
                         effect = 'allow', 
@@ -50,7 +48,7 @@ class TestPolicy(unittest.TestCase):
                             ], )
                     ]
             )
-        else :
+        else:
             return Policy(
                 id = '',
                 statement = [

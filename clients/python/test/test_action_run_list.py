@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.action_run_list import ActionRunList  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestActionRunList(unittest.TestCase):
     """ActionRunList unit test stubs"""
@@ -29,21 +27,21 @@ class TestActionRunList(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ActionRunList:
         """Test ActionRunList
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ActionRunList`
         """
-        model = lakefs_sdk.models.action_run_list.ActionRunList()  # noqa: E501
-        if include_optional :
+        model = ActionRunList()  # noqa: E501
+        if include_optional:
             return ActionRunList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 
                     next_offset = '', 
                     results = 0, 
-                    max_per_page = 0, ), 
+                    max_per_page = 0, ),
                 results = [
                     lakefs_sdk.models.action_run.ActionRun(
                         run_id = '', 
@@ -55,7 +53,7 @@ class TestActionRunList(unittest.TestCase):
                         commit_id = '', )
                     ]
             )
-        else :
+        else:
             return ActionRunList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 

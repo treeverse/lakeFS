@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.refs_dump import RefsDump  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestRefsDump(unittest.TestCase):
     """RefsDump unit test stubs"""
@@ -29,21 +27,21 @@ class TestRefsDump(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> RefsDump:
         """Test RefsDump
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RefsDump`
         """
-        model = lakefs_sdk.models.refs_dump.RefsDump()  # noqa: E501
-        if include_optional :
+        model = RefsDump()  # noqa: E501
+        if include_optional:
             return RefsDump(
-                commits_meta_range_id = '', 
-                tags_meta_range_id = '', 
+                commits_meta_range_id = '',
+                tags_meta_range_id = '',
                 branches_meta_range_id = ''
             )
-        else :
+        else:
             return RefsDump(
                 commits_meta_range_id = '',
                 tags_meta_range_id = '',

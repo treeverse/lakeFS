@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.internal_delete_branch_protection_rule_request import InternalDeleteBranchProtectionRuleRequest  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestInternalDeleteBranchProtectionRuleRequest(unittest.TestCase):
     """InternalDeleteBranchProtectionRuleRequest unit test stubs"""
@@ -29,19 +27,19 @@ class TestInternalDeleteBranchProtectionRuleRequest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> InternalDeleteBranchProtectionRuleRequest:
         """Test InternalDeleteBranchProtectionRuleRequest
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `InternalDeleteBranchProtectionRuleRequest`
         """
-        model = lakefs_sdk.models.internal_delete_branch_protection_rule_request.InternalDeleteBranchProtectionRuleRequest()  # noqa: E501
-        if include_optional :
+        model = InternalDeleteBranchProtectionRuleRequest()  # noqa: E501
+        if include_optional:
             return InternalDeleteBranchProtectionRuleRequest(
                 pattern = ''
             )
-        else :
+        else:
             return InternalDeleteBranchProtectionRuleRequest(
                 pattern = '',
         )

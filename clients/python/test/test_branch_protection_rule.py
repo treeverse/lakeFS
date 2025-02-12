@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.branch_protection_rule import BranchProtectionRule  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestBranchProtectionRule(unittest.TestCase):
     """BranchProtectionRule unit test stubs"""
@@ -29,19 +27,19 @@ class TestBranchProtectionRule(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> BranchProtectionRule:
         """Test BranchProtectionRule
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `BranchProtectionRule`
         """
-        model = lakefs_sdk.models.branch_protection_rule.BranchProtectionRule()  # noqa: E501
-        if include_optional :
+        model = BranchProtectionRule()  # noqa: E501
+        if include_optional:
             return BranchProtectionRule(
                 pattern = 'stable_*'
             )
-        else :
+        else:
             return BranchProtectionRule(
                 pattern = 'stable_*',
         )

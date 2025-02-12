@@ -20,7 +20,6 @@ generate an address to which the client can upload an object
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os
@@ -138,7 +137,6 @@ Link the physical address with the path in lakeFS, creating an uncommitted chang
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
-
 ```python
 import time
 import os

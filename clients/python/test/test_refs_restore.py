@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.refs_restore import RefsRestore  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestRefsRestore(unittest.TestCase):
     """RefsRestore unit test stubs"""
@@ -29,22 +27,22 @@ class TestRefsRestore(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> RefsRestore:
         """Test RefsRestore
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RefsRestore`
         """
-        model = lakefs_sdk.models.refs_restore.RefsRestore()  # noqa: E501
-        if include_optional :
+        model = RefsRestore()  # noqa: E501
+        if include_optional:
             return RefsRestore(
-                commits_meta_range_id = '', 
-                tags_meta_range_id = '', 
-                branches_meta_range_id = '', 
+                commits_meta_range_id = '',
+                tags_meta_range_id = '',
+                branches_meta_range_id = '',
                 force = True
             )
-        else :
+        else:
             return RefsRestore(
                 commits_meta_range_id = '',
                 tags_meta_range_id = '',
