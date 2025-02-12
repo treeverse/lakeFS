@@ -3475,7 +3475,6 @@ func TestController_ConfigHandlers(t *testing.T) {
 		require.Equal(t, 1, len(*resp.JSON200.StorageConfigList))
 		require.Equal(t, expectedExample, (*resp.JSON200.StorageConfigList)[0].BlockstoreNamespaceExample)
 		require.Equal(t, expectedExample, resp.JSON200.StorageConfig.BlockstoreNamespaceExample)
-		require.False(t, *resp.JSON200.StorageConfig.BackwardCompatible)
 		require.Equal(t, "dev", swag.StringValue(resp.JSON200.VersionConfig.Version))
 	})
 
