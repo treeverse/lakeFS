@@ -1905,11 +1905,7 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 		info.DefaultNamespacePrefix = *defaultNamespacePrefix
 	}
 	return &apigen.StorageConfig{
-		BlockstoreDescription: swag.String(storage.BlockstoreDescription()),
-		BlockstoreExtras: &apigen.StorageConfig_BlockstoreExtras{
-			AdditionalProperties: storage.BlockstoreExtras(),
-		},
-		BackwardCompatible:               swag.Bool(storage.IsBackwardsCompatible()),
+		BlockstoreDescription:            swag.String(storage.BlockstoreDescription()),
 		BlockstoreType:                   storage.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
