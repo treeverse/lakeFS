@@ -34,9 +34,6 @@ pub struct StorageConfig {
     pub blockstore_id: Option<String>,
     #[serde(rename = "blockstore_description", skip_serializing_if = "Option::is_none")]
     pub blockstore_description: Option<String>,
-    /// blockstore specific properties
-    #[serde(rename = "blockstore_extras", skip_serializing_if = "Option::is_none")]
-    pub blockstore_extras: Option<std::collections::HashMap<String, String>>,
 }
 
 impl StorageConfig {
@@ -53,7 +50,6 @@ impl StorageConfig {
             pre_sign_multipart_upload: None,
             blockstore_id: None,
             blockstore_description: None,
-            blockstore_extras: None,
         }
     }
 }

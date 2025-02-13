@@ -69,7 +69,7 @@ You can choose from the the following options:
 version: "3"
 services:
   lakefs:
-    image: "treeverse/lakefs:latest"
+    image: "treeverse/lakefs-enterprise:latest"
     command: "RUN"
     ports:
       - "8080:8080"
@@ -160,7 +160,7 @@ LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
 version: "3"
 services:
   lakefs:
-    image: "treeverse/lakefs:latest"
+    image: "treeverse/lakefs-enterprise:latest"
     command: "RUN"
     ports:
       - "8080:8080"

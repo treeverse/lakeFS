@@ -16,7 +16,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 
 import {ActionsBar, AlertError, Loading, useDebouncedState} from "../../lib/components/controls";
 import {config, repositories} from '../../lib/api';
-import {RepositoryCreateForm} from "../../lib/components/repositoryCreateForm";
 import {useAPI, useAPIWithPagination} from "../../lib/hooks/api";
 import {Paginator} from "../../lib/components/pagination";
 import Container from "react-bootstrap/Container";
@@ -26,6 +25,7 @@ import {ReadOnlyBadge} from "../../lib/components/badges";
 
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
+import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 
 dayjs.extend(relativeTime);
 
@@ -50,11 +50,13 @@ const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = fa
     );
 }
 
-const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress }) => {
+const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) => {
+    const pluginManager = usePluginManager();
+    const repoCreationFormPlugin = pluginManager.repoCreationForm
 
-  const [formValid, setFormValid] = useState(false);
+    const [formValid, setFormValid] = useState(false);
 
-  const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
+    const {response, error: err, loading} = useAPI(() => config.getStorageConfig());
 
     const showError = (error) ? error : err;
     if (loading) {
@@ -70,31 +72,30 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress }) =
     return (
         <Modal show={show} onHide={onCancel} size="lg">
             <Modal.Body>
-                <RepositoryCreateForm
-                  id="repository-create-form"
-                  config={response}
-                  error={showError}
-                  formValid={formValid}
-                  setFormValid={setFormValid}
-                  onSubmit={onSubmit}
-                  onCancel={onCancel}
-                  inProgress={inProgress}
-                />
+                {repoCreationFormPlugin.build({
+                    formID: "repository-create-form",
+                    config: response,
+                    error: showError,
+                    formValid,
+                    setFormValid,
+                    onSubmit,
+                })}
             </Modal.Body>
             <Modal.Footer>
-              <Button variant="success" type="submit" form="repository-create-form" className="me-2" disabled={!formValid || inProgress}>
-                { inProgress ? 'Creating...' : 'Create Repository' }
-              </Button>
-              <Button variant="secondary" onClick={(e) => {
-                e.preventDefault();
-                onCancel();
-              }}>Cancel</Button>
+                <Button variant="secondary" onClick={(e) => {
+                    e.preventDefault();
+                    onCancel();
+                }}>Cancel</Button>
+                <Button variant="success" type="submit" form="repository-create-form" className="me-2"
+                        disabled={!formValid || inProgress}>
+                    {inProgress ? 'Creating...' : 'Create Repository'}
+                </Button>
             </Modal.Footer>
         </Modal>
     );
 };
 
-const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, createRepoError }) => {
+const GetStarted = ({allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, createRepoError }) => {
     return (
         <Card className="getting-started-card">
             <h2 className="main-title">Welcome to lakeFS!</h2>
@@ -105,13 +106,15 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, create
                     {`Let's dive in 🤿`}</p>
                 </Col>
             </Row>
-            <Row className="button-container">
-                <Col>
-                    <GettingStartedCreateRepoButton text={
-                      <><span>Create Sample Repository</span> </>
-                    } creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo} />
-                </Col>
-            </Row>
+            {allowSampleRepoCreation &&
+                <Row className="button-container">
+                    <Col>
+                        <GettingStartedCreateRepoButton text={
+                            <><span>Create Sample Repository</span> </>
+                        } creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo}/>
+                    </Col>
+                </Row>
+            }
             {createRepoError &&
                 <Row>
                     <Col sm={6}>
@@ -130,7 +133,7 @@ const GetStarted = ({onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, create
     );
 };
 
-const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo, createRepoError }) => {
+const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo, createRepoError }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return repositories.list(search, after);
@@ -141,7 +144,13 @@ const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo
     if (loading) return <Loading/>;
     if (error) return <AlertError error={error}/>;
     if (!after && !search && results.length === 0) {
-        return <GetStarted onCreateSampleRepo={onCreateSampleRepo} onCreateEmptyRepo={onCreateEmptyRepo} creatingRepo={creatingRepo} createRepoError={createRepoError}/>;
+        return <GetStarted
+            allowSampleRepoCreation={allowSampleRepoCreation}
+            onCreateSampleRepo={onCreateSampleRepo}
+            onCreateEmptyRepo={onCreateEmptyRepo}
+            creatingRepo={creatingRepo}
+            createRepoError={createRepoError}
+        />;
     }
 
     return (
@@ -166,6 +175,9 @@ const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo
                                     <small>
                                         created at <code>{dayjs.unix(repo.creation_date).toISOString()}</code> ({dayjs.unix(repo.creation_date).fromNow()})<br/>
                                         default branch: <code>{repo.default_branch}</code>,{' '}
+                                        {repo.storage_id && repo.storage_id.length &&
+                                            <>storage: <code>{repo.storage_id}</code>,{' '}</>
+                                        }
                                         storage namespace: <code>{repo.storage_namespace}</code>
                                     </small>
                                 </p>
@@ -183,6 +195,7 @@ const RepositoryList = ({ onPaginate, search, after, refresh, onCreateSampleRepo
 
 
 const RepositoriesPage = () => {
+    const pluginManager = usePluginManager();
     const router = useRouter();
     const [showCreateRepositoryModal, setShowCreateRepositoryModal] = useState(false);
     const [createRepoError, setCreateRepoError] = useState(null);
@@ -224,6 +237,7 @@ const RepositoriesPage = () => {
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
+    const allowSampleRepoCreation = pluginManager.repoCreationForm.allowSampleRepoCreationFunc(response);
     const createSampleRepoButtonCallback = useCallback(async () => {
         if (loading) return;
         if (!err && response?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {
@@ -275,6 +289,7 @@ const RepositoriesPage = () => {
                         if (router.query.search) query.search = router.query.search;
                         router.push({pathname: `/repositories`, query});
                     }}
+                    allowSampleRepoCreation={allowSampleRepoCreation}
                     onCreateSampleRepo={createSampleRepoButtonCallback}
                     onCreateEmptyRepo={createRepositoryButtonCallback}
                     toggleShowActionsBar={toggleShowActionsBar}

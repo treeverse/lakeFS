@@ -13,7 +13,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
@@ -109,15 +108,6 @@ func (f *FakeEntryIterator) Err() error {
 }
 
 func (f *FakeEntryIterator) Close() {}
-
-type FakeFactory struct {
-	Walker *FakeWalker
-}
-
-func (f FakeFactory) GetWalker(_ context.Context, op store.WalkerOptions) (*store.WalkerWrapper, error) {
-	u, _ := url.Parse(op.StorageURI)
-	return store.NewWrapper(f.Walker, u), nil
-}
 
 func NewFakeWalker(count, max int, uriPrefix, expectedAfter, expectedContinuationToken, expectedFromSourceURIWithPrefix string, err error) *FakeWalker {
 	w := &FakeWalker{

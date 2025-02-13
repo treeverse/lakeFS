@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -779,7 +780,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 
 	storage := c.Config.StorageConfig().GetStorageByID(repo.StorageID)
 	if storage == nil {
-		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage namespace info found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
+		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage config found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
 		return
 	}
 	blockStoreType := storage.BlockstoreType()
@@ -1904,10 +1905,7 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 		info.DefaultNamespacePrefix = *defaultNamespacePrefix
 	}
 	return &apigen.StorageConfig{
-		BlockstoreDescription: swag.String(storage.BlockstoreDescription()),
-		BlockstoreExtras: &apigen.StorageConfig_BlockstoreExtras{
-			AdditionalProperties: storage.BlockstoreExtras(),
-		},
+		BlockstoreDescription:            swag.String(storage.BlockstoreDescription()),
 		BlockstoreType:                   storage.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
 		BlockstoreNamespaceExample:       info.Example,
@@ -2015,6 +2013,12 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
 	}
 
+	// Validate storage ID exists
+	if !slices.Contains(c.Config.StorageConfig().GetStorageIDs(), storageID) {
+		c.handleAPIError(ctx, w, r, graveler.ErrInvalidStorageID)
+		return
+	}
+
 	if err := c.validateStorageNamespace(storageID, storageNamespace); err != nil {
 		writeError(w, r, http.StatusBadRequest, err)
 		return
@@ -2033,7 +2037,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 
 	if !swag.BoolValue(body.ReadOnly) {
-		if err := c.ensureStorageNamespace(ctx, storageNamespace); err != nil {
+		if err := c.ensureStorageNamespace(ctx, storageID, storageNamespace); err != nil {
 			var (
 				reason string
 				retErr error
@@ -2135,7 +2139,7 @@ func (c *Controller) validateStorageNamespace(storageID, storageNamespace string
 	return nil
 }
 
-func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespace string) error {
+func (c *Controller) ensureStorageNamespace(ctx context.Context, storageID, storageNamespace string) error {
 	const (
 		dummyData    = "this is dummy data - created by lakeFS to check accessibility"
 		dummyObjName = "dummy"
@@ -2148,8 +2152,8 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 	// this serves two purposes, first, we maintain safety check for older lakeFS version.
 	// second, in scenarios where lakeFS shouldn't have access to the root namespace (i.e pre-sign URL only).
 	if c.Config.GetBaseConfig().Graveler.EnsureReadableRootNamespace {
-		// TODO (gilo): ObjectPointer init - add StorageID here
 		rootObj := block.ObjectPointer{
+			StorageID:        storageID,
 			StorageNamespace: storageNamespace,
 			IdentifierType:   block.IdentifierTypeRelative,
 			Identifier:       dummyObjName,
@@ -2157,8 +2161,8 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 
 		if s, err := c.BlockAdapter.Get(ctx, rootObj); err == nil {
 			_ = s.Close()
-			return fmt.Errorf("found lakeFS objects in the storage namespace root(%s): %w",
-				storageNamespace, ErrStorageNamespaceInUse)
+			return fmt.Errorf("found lakeFS objects in the storage root (%s:%s): %w",
+				storageID, storageNamespace, ErrStorageNamespaceInUse)
 		} else if !errors.Is(err, block.ErrDataNotFound) {
 			return err
 		}
@@ -2166,7 +2170,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 
 	// check if the dummy file exists
 	obj := block.ObjectPointer{
-		// TODO (gilo): ObjectPointer init - add StorageID here
+		StorageID:        storageID,
 		StorageNamespace: storageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       dummyKey,
@@ -2174,8 +2178,8 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageNamespac
 
 	if s, err := c.BlockAdapter.Get(ctx, obj); err == nil {
 		_ = s.Close()
-		return fmt.Errorf("found lakeFS objects in the storage namespace(%s) key(%s): %w",
-			storageNamespace, obj.Identifier, ErrStorageNamespaceInUse)
+		return fmt.Errorf("found lakeFS objects in the storage (%s:%s) key(%s): %w",
+			storageID, storageNamespace, obj.Identifier, ErrStorageNamespaceInUse)
 	} else if !errors.Is(err, block.ErrDataNotFound) {
 		return err
 	}

@@ -20,8 +20,6 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -125,14 +123,6 @@ public class StorageConfigTest {
     @Test
     public void blockstoreDescriptionTest() {
         // TODO: test blockstoreDescription
-    }
-
-    /**
-     * Test the property 'blockstoreExtras'
-     */
-    @Test
-    public void blockstoreExtrasTest() {
-        // TODO: test blockstoreExtras
     }
 
 }

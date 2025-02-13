@@ -9004,8 +9004,6 @@ components:
       example:
         blockstore_description: blockstore_description
         pre_sign_multipart_upload: true
-        blockstore_extras:
-          key: blockstore_extras
         blockstore_namespace_example: blockstore_namespace_example
         blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
         blockstore_id: blockstore_id
@@ -9038,11 +9036,6 @@ components:
           type: string
         blockstore_description:
           type: string
-        blockstore_extras:
-          additionalProperties:
-            type: string
-          description: blockstore specific properties
-          type: object
       required:
       - blockstore_namespace_ValidityRegex
       - blockstore_namespace_example
@@ -9061,8 +9054,6 @@ components:
         storage_config_list:
         - blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
-          blockstore_extras:
-            key: blockstore_extras
           blockstore_namespace_example: blockstore_namespace_example
           blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
           blockstore_id: blockstore_id
@@ -9074,8 +9065,6 @@ components:
           pre_sign_support: true
         - blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
-          blockstore_extras:
-            key: blockstore_extras
           blockstore_namespace_example: blockstore_namespace_example
           blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
           blockstore_id: blockstore_id
@@ -9088,8 +9077,6 @@ components:
         storage_config:
           blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
-          blockstore_extras:
-            key: blockstore_extras
           blockstore_namespace_example: blockstore_namespace_example
           blockstore_namespace_ValidityRegex: blockstore_namespace_ValidityRegex
           blockstore_id: blockstore_id

@@ -102,15 +102,15 @@ func (m *metaRangeManager) NewWriter(ctx context.Context, ns graveler.StorageNam
 	return NewGeneralMetaRangeWriter(ctx, m.rangeManager, m.metaManager, &m.params, StorageID(m.storageID), Namespace(ns), metadata)
 }
 
-func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (Iterator, error) {
-	if id == "" {
+func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (Iterator, error) {
+	if metaRangeID == "" {
 		return NewEmptyIterator(), nil
 	}
-	rangesIt, err := m.metaManager.NewRangeIterator(ctx, Namespace(ns), ID(id))
+	rangesIt, err := m.metaManager.NewRangeIterator(ctx, Namespace(ns), ID(metaRangeID))
 	if err != nil {
-		return nil, fmt.Errorf("manage metarange %s: %w", id, err)
+		return nil, fmt.Errorf("manage metarange %s: %w", metaRangeID, err)
 	}
-	return NewIterator(ctx, m.rangeManager, Namespace(ns), rangesIt), nil
+	return NewIterator(ctx, m.rangeManager, StorageID(m.storageID), Namespace(ns), rangesIt), nil
 }
 
 func (m *metaRangeManager) GetMetaRangeURI(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (string, error) {

@@ -16,7 +16,6 @@ Name | Type | Description | Notes
 **pre_sign_multipart_upload** | **bool** |  | [optional] 
 **blockstore_id** | **str** |  | [optional] 
 **blockstore_description** | **str** |  | [optional] 
-**blockstore_extras** | **Dict[str, str]** | blockstore specific properties | [optional] 
 
 ## Example
 

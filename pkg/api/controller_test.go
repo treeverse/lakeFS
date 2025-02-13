@@ -1029,7 +1029,7 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("create repo no StorageId success", func(t *testing.T) {
+	t.Run("create repo no storage id success", func(t *testing.T) {
 		repoName := testUniqueRepoName()
 		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    apiutil.Ptr("main"),
@@ -1045,6 +1045,19 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		if response.Id != repoName {
 			t.Fatalf("CreateRepository id=%s, expected=%s", response.Id, repoName)
 		}
+	})
+
+	t.Run("create repo non empty storage id", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			DefaultBranch:    apiutil.Ptr("main"),
+			Name:             repoName,
+			StorageNamespace: onBlock(deps, "foo-bucket-1-1"),
+			StorageId:        swag.String("foo"),
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, "storage id: invalid value")
 	})
 
 	t.Run("create bare repo success", func(t *testing.T) {
@@ -1067,6 +1080,46 @@ func TestController_CreateRepositoryHandler(t *testing.T) {
 		if response.Id != repoName {
 			t.Fatalf("CreateRepository bare id=%s, expected=%s", response.Id, repoName)
 		}
+	})
+
+	t.Run("create bare repo storage id success", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		bareRepo := true
+		resp, err := clt.CreateRepositoryWithResponse(ctx,
+			&apigen.CreateRepositoryParams{
+				Bare: &bareRepo,
+			}, apigen.CreateRepositoryJSONRequestBody{
+				DefaultBranch:    apiutil.Ptr("main"),
+				Name:             repoName,
+				StorageNamespace: onBlock(deps, "foo-bucket-3"),
+				StorageId:        swag.String(""),
+			})
+		verifyResponseOK(t, resp, err)
+
+		response := resp.JSON201
+		if response == nil {
+			t.Fatal("CreateRepository (bare) got bad response")
+		}
+		if response.Id != repoName {
+			t.Fatalf("CreateRepository bare id=%s, expected=%s", response.Id, repoName)
+		}
+	})
+
+	t.Run("create bare repo non empty storage id", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		bareRepo := true
+		resp, err := clt.CreateRepositoryWithResponse(ctx,
+			&apigen.CreateRepositoryParams{
+				Bare: &bareRepo,
+			}, apigen.CreateRepositoryJSONRequestBody{
+				DefaultBranch:    apiutil.Ptr("main"),
+				Name:             repoName,
+				StorageNamespace: onBlock(deps, "foo-bucket-2"),
+				StorageId:        swag.String("foo"),
+			})
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON400)
+		require.Contains(t, resp.JSON400.Message, "storage id: invalid value")
 	})
 
 	t.Run("create repo duplicate", func(t *testing.T) {
@@ -3418,7 +3471,9 @@ func TestController_ConfigHandlers(t *testing.T) {
 	t.Run("Get config", func(t *testing.T) {
 		resp, err := clt.GetConfigWithResponse(ctx)
 		verifyResponseOK(t, resp, err)
-		require.Empty(t, resp.JSON200.StorageConfigList)
+		require.NotEmpty(t, resp.JSON200.StorageConfigList)
+		require.Equal(t, 1, len(*resp.JSON200.StorageConfigList))
+		require.Equal(t, expectedExample, (*resp.JSON200.StorageConfigList)[0].BlockstoreNamespaceExample)
 		require.Equal(t, expectedExample, resp.JSON200.StorageConfig.BlockstoreNamespaceExample)
 		require.Equal(t, "dev", swag.StringValue(resp.JSON200.VersionConfig.Version))
 	})
@@ -4707,34 +4762,38 @@ func TestController_ClientDisconnect(t *testing.T) {
 		t.Fatal("Expected to request complete without error, expected to fail")
 	}
 
-	// wait for the server to identify we left and update the counter
-	time.Sleep(time.Second)
-
-	// request for metrics
-	metricsResp, err := http.Get(server.URL + "/metrics")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		_ = metricsResp.Body.Close()
-	}()
-	body, err := io.ReadAll(metricsResp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// process relevant metrics
+	// retry mechanism to identify if server updated metric on client disconnect
+	const tries = 3
 	const apiReqTotalMetricLabel = `api_requests_total{code="499",method="post"}`
+	const expectedCount = 1
 	var clientRequestClosedCount int
-	for _, line := range strings.Split(string(body), "\n") {
-		if strings.HasPrefix(line, apiReqTotalMetricLabel) {
-			if count, err := strconv.Atoi(line[len(apiReqTotalMetricLabel)+1:]); err == nil {
-				clientRequestClosedCount += count
+	for try := 0; try < tries && clientRequestClosedCount != expectedCount; try++ {
+		// wait for the server to identify we left and update the counter
+		time.Sleep(time.Second)
+
+		// request for metrics
+		metricsResp, err := http.Get(server.URL + "/metrics")
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, err := io.ReadAll(metricsResp.Body)
+		_ = metricsResp.Body.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// process relevant metrics
+		for _, line := range strings.Split(string(body), "\n") {
+			if strings.HasPrefix(line, apiReqTotalMetricLabel) {
+				if count, err := strconv.Atoi(line[len(apiReqTotalMetricLabel)+1:]); err == nil {
+					clientRequestClosedCount += count
+				}
 			}
 		}
+		if clientRequestClosedCount != expectedCount {
+			t.Logf("Metric for client request mismatch, try %d", try+1)
+		}
 	}
-
-	const expectedCount = 1
 	if clientRequestClosedCount != expectedCount {
 		t.Fatalf("Metric for client request closed: %d, expected: %d", clientRequestClosedCount, expectedCount)
 	}
@@ -5550,7 +5609,8 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 				},
 			},
 			expected: "denied permission to fs:DeleteRepository",
-		}, {
+		},
+		{
 			name: "neutral action",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
@@ -5572,7 +5632,8 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 				},
 			},
 			expected: "not allowed to fs:ReadRepository",
-		}, {
+		},
+		{
 			name: "nodeAnd no policy, returns first missing one",
 			node: permissions.Node{
 				Type: permissions.NodeTypeAnd,
@@ -5595,7 +5656,8 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 			},
 			username: "user1",
 			expected: "not allowed to fs:CreateRepository",
-		}, {
+		},
+		{
 			name: "nodeAnd one policy, returns first missing policy",
 			node: permissions.Node{
 				Type: permissions.NodeTypeAnd,
@@ -5642,6 +5704,7 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 		})
 	}
 }
+
 func TestController_CreatePullRequest(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()

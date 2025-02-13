@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -301,12 +300,12 @@ func (l *Adapter) Get(_ context.Context, obj block.ObjectPointer) (reader io.Rea
 	return f, nil
 }
 
-func (l *Adapter) GetWalker(uri *url.URL) (block.Walker, error) {
-	if err := block.ValidateStorageType(uri, block.StorageTypeLocal); err != nil {
+func (l *Adapter) GetWalker(_ string, opts block.WalkerOptions) (block.Walker, error) {
+	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeLocal); err != nil {
 		return nil, err
 	}
-
-	err := VerifyAbsPath(uri.Path, l.path, l.allowedExternalPrefixes)
+	uriPath := strings.TrimSuffix(opts.StorageURI.Path, string(filepath.Separator))
+	err := VerifyAbsPath(uriPath, l.path, l.allowedExternalPrefixes)
 	if err != nil {
 		return nil, err
 	}
@@ -560,8 +559,8 @@ func (l *Adapter) ResolveNamespace(storageID, storageNamespace, key string, iden
 	}
 
 	// Check if path allowed and return error if path is not allowed
-	// TODO (gilo): ObjectPointer init - add StorageID here
 	_, err = l.extractParamsFromObj(block.ObjectPointer{
+		StorageID:        storageID,
 		StorageNamespace: storageNamespace,
 		Identifier:       key,
 		IdentifierType:   identifierType,

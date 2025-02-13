@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 var (
@@ -75,7 +75,11 @@ func getKey(obj block.ObjectPointer) string {
 	if obj.IdentifierType == block.IdentifierTypeFull {
 		return obj.Identifier
 	}
-	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
+	if obj.StorageID == config.SingleBlockstoreID {
+		return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
+	} else {
+		return fmt.Sprintf("%s:%s:%s", obj.StorageID, obj.StorageNamespace, obj.Identifier)
+	}
 }
 
 func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) (*block.PutResponse, error) {
@@ -120,7 +124,7 @@ func verifyObjectPointer(obj block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) GetWalker(_ *url.URL) (block.Walker, error) {
+func (a *Adapter) GetWalker(_ string, _ block.WalkerOptions) (block.Walker, error) {
 	return nil, fmt.Errorf("mem block adapter: %w", block.ErrOperationNotSupported)
 }
 

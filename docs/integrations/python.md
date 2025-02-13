@@ -166,7 +166,7 @@ import lakefs
 branch1 = lakefs.repository("example-repo").branch("experiment1").create(source_reference="main")
 print("experiment1 ref:", branch1.get_commit().id)
 
-branch1 = lakefs.repository("example-repo").branch("experiment2").create(source_reference="main")
+branch2 = lakefs.repository("example-repo").branch("experiment2").create(source_reference="main")
 print("experiment2 ref:", branch2.get_commit().id)
 ```
 
@@ -205,7 +205,7 @@ A simple way to upload data is to use the `upload` method which accepts contents
 
 ```python
 obj = branch1.object(path="text/sample_data.txt").upload(content_type="text/plain", data="This is my object data")
-print(obj.stats())
+print(obj.stat())
 ```
 
 #### Output
@@ -246,7 +246,7 @@ with obj.writer(mode='w', pre_sign=True, content_type="text/csv") as fd:
 On context exit the object will be uploaded to lakeFS
 
 ```python
-print(obj.stats())
+print(obj.stat())
 ```
 
 #### Output
@@ -258,7 +258,7 @@ We can also upload raw byte contents:
 
 ```python
 obj = branch1.object(path="raw/file1.data").upload(data=b"Hello Object World", pre_sign=True)
-print(obj.stats())
+print(obj.stat())
 ```
 
 #### Output

@@ -241,7 +241,7 @@ var runCmd = &cobra.Command{
 		if (kvParams.Type == local.DriverName || kvParams.Type == mem.DriverName) &&
 			baseCfg.Installation.UserName != "" && baseCfg.Installation.AccessKeyID.SecureValue() != "" && baseCfg.Installation.SecretAccessKey.SecureValue() != "" {
 			setupCreds, err := setupLakeFS(ctx, baseCfg, authMetadataManager, authService, baseCfg.Installation.UserName,
-				baseCfg.Installation.AccessKeyID.SecureValue(), baseCfg.Installation.SecretAccessKey.SecureValue())
+				baseCfg.Installation.AccessKeyID.SecureValue(), baseCfg.Installation.SecretAccessKey.SecureValue(), false)
 			if err != nil {
 				logger.WithError(err).WithField("admin", baseCfg.Installation.UserName).Fatal("Failed to initial setup environment")
 			}
@@ -290,7 +290,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal(mismatchedReposFlagName)
 		}
 		if !allowForeign {
-			checkRepos(ctx, logger, authMetadataManager, blockStore, c)
+			checkRepos(ctx, logger, cfg, authMetadataManager, blockStore, c)
 		}
 
 		// update health info with installation ID
@@ -421,7 +421,7 @@ var runCmd = &cobra.Command{
 }
 
 // checkRepos iterating on all repos and validates that their settings are correct.
-func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
+func checkRepos(ctx context.Context, logger logging.Logger, config config.Config, authMetadataManager auth.MetadataManager, blockStore block.Adapter, c *catalog.Catalog) {
 	initialized, err := authMetadataManager.IsInitialized(ctx)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to check if lakeFS is initialized")
@@ -443,8 +443,9 @@ func checkRepos(ctx context.Context, logger logging.Logger, authMetadataManager 
 				logger.WithError(err).Fatal("Checking existing repositories failed")
 			}
 
-			adapterStorageType := blockStore.BlockstoreType()
 			for _, repo := range repos {
+				adapterConfig := config.StorageConfig().GetStorageByID(repo.StorageID)
+				adapterStorageType := adapterConfig.BlockstoreType()
 				nsURL, err := url.Parse(repo.StorageNamespace)
 				if err != nil {
 					logger.WithError(err).Fatalf("Failed to parse repository %s namespace '%s'", repo.Name, repo.StorageNamespace)
@@ -536,10 +537,10 @@ const localBanner = `
 
 var quickStartBanner = fmt.Sprintf(`
 │
-│ lakeFS running in quickstart mode. 
+│ lakeFS running in quickstart mode.
 │     Login at http://127.0.0.1:8000/
 │
-│     Access Key ID    : %s 
+│     Access Key ID    : %s
 │     Secret Access Key: %s
 │
 `, config.DefaultQuickstartKeyID, config.DefaultQuickstartSecretKey)

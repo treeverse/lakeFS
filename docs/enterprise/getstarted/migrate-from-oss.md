@@ -11,6 +11,7 @@ nav_order: 203
 To migrate from lakeFS Open Source to lakeFS Enterprise, follow the steps below:
 
 1. Make sure you have the Fluffy Docker token, if not [contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy. You will be granted with a token that enables downloading *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse).
+1. Update lakeFS docker image to enterprise. Use `treeverse/lakefs-enterprise` instead of `treeverse/lakefs`. The image can be pulled using the same token as Fluffy.
 1. Sanity Test (Optional): Install a new test lakeFS Enterprise before moving your current production setup. Test the setup > login > Create repository etc. Once everything seems to work, delete and cleanup the test setup and we will move to the migration process.
 1. Follow lakeFS [Enterprise installation guide][lakefs-enterprise-install]
    1. Make sure that you meet the [prerequisites][lakefs-enterprise-install-prerequisites]
@@ -22,6 +23,12 @@ To migrate from lakeFS Open Source to lakeFS Enterprise, follow the steps below:
    1. You should expect to see a log message saying Migration completed successfully.
    1. During this short db migration process please make sure not to make any policy / RBAC related changes.
 1. Once the migration completed - Upgrade your helm release with the modified `values.yaml` and the new version and run `helm ugprade`.
+1. Login to the new lakeFS pod: Execute the following command, make sure you have proper credentials, or discard to get new ones:
+   ```shell
+   lakefs setup --user-name <admin> --access-key-id <key> --secret-access-key <secret> --no-check
+   ```
+{: .warning }
+>Please note that the newly set up lakeFS instance remains inaccessible to users until full setup completion, due to the absence of established credentials within the system.
 
 [lakefs-enterprise-install]: {% link enterprise/getstarted/install.md %}
 [lakefs-enterprise-install-prerequisites]: {% link enterprise/getstarted/install.md %}#prerequisites

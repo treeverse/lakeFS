@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -32,8 +31,8 @@ func (m *MetricsAdapter) Get(ctx context.Context, obj ObjectPointer) (io.ReadClo
 	return m.adapter.Get(ctx, obj)
 }
 
-func (m *MetricsAdapter) GetWalker(uri *url.URL) (Walker, error) {
-	return m.adapter.GetWalker(uri)
+func (m *MetricsAdapter) GetWalker(storageID string, opts WalkerOptions) (Walker, error) {
+	return m.adapter.GetWalker(storageID, opts)
 }
 
 func (m *MetricsAdapter) GetPreSignedURL(ctx context.Context, obj ObjectPointer, mode PreSignMode) (string, time.Time, error) {

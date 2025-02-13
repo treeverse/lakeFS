@@ -185,9 +185,7 @@ type Adapter interface {
 	Put(ctx context.Context, obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) (*PutResponse, error)
 	Get(ctx context.Context, obj ObjectPointer) (io.ReadCloser, error)
 
-	// GetWalker is never called on the server side.
-	// TODO(itaiad200): Remove it from this interface.
-	GetWalker(uri *url.URL) (Walker, error)
+	GetWalker(storageID string, opts WalkerOptions) (Walker, error)
 
 	// GetPreSignedURL returns a pre-signed URL for accessing obj with mode, and the
 	// expiry time for this URL.  The expiry time IsZero() if reporting
@@ -220,4 +218,34 @@ type Adapter interface {
 	GetRegion(ctx context.Context, storageID, storageNamespace string) (string, error)
 
 	RuntimeStats() map[string]string
+}
+
+type WalkerOptions struct {
+	StorageURI *url.URL
+	// SkipOutOfOrder skips non-lexically ordered entries (Azure only).
+	SkipOutOfOrder bool
+}
+
+type WalkerWrapper struct {
+	walker Walker
+	uri    *url.URL
+}
+
+func NewWalkerWrapper(walker Walker, uri *url.URL) *WalkerWrapper {
+	return &WalkerWrapper{
+		walker: walker,
+		uri:    uri,
+	}
+}
+
+func (ww *WalkerWrapper) Walk(ctx context.Context, opts WalkOptions, walkFn func(e ObjectStoreEntry) error) error {
+	return ww.walker.Walk(ctx, ww.uri, opts, walkFn)
+}
+
+func (ww *WalkerWrapper) Marker() Mark {
+	return ww.walker.Marker()
+}
+
+func (ww *WalkerWrapper) GetSkippedEntries() []ObjectStoreEntry {
+	return ww.walker.GetSkippedEntries()
 }

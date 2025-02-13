@@ -36,7 +36,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/graveler/staging"
 	"github.com/treeverse/lakefs/pkg/ident"
-	"github.com/treeverse/lakefs/pkg/ingest/store"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid"
@@ -216,7 +215,6 @@ type WriteRangeRequest struct {
 type Config struct {
 	Config                config.Config
 	KVStore               kv.Store
-	WalkerFactory         WalkerFactory
 	SettingsManagerOption settings.ManagerOption
 	PathProvider          *upload.PathPartitionProvider
 }
@@ -224,7 +222,6 @@ type Config struct {
 type Catalog struct {
 	BlockAdapter          block.Adapter
 	Store                 Store
-	walkerFactory         WalkerFactory
 	managers              []io.Closer
 	workPool              *pond.WorkerPool
 	PathProvider          *upload.PathPartitionProvider
@@ -312,12 +309,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		cancelFn()
 		return nil, fmt.Errorf("build block adapter: %w", err)
 	}
-	baseCfg := cfg.Config.GetBaseConfig()
-	// TODO (niro): This part will break using multiple blockstores. We should change the catalog logic to get the walker from the adapter
-	if cfg.WalkerFactory == nil {
-		cfg.WalkerFactory = store.NewFactory(&baseCfg.Blockstore)
-	}
 
+	baseCfg := cfg.Config.GetBaseConfig()
 	tierFSParams, err := pyramidparams.NewCommittedTierFSParams(baseCfg, adapter)
 	if err != nil {
 		cancelFn()
@@ -430,15 +423,13 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		UGCPrepareInterval:    baseCfg.UGC.PrepareInterval,
 		PathProvider:          cfg.PathProvider,
 		BackgroundLimiter:     limiter,
-		walkerFactory:         cfg.WalkerFactory,
 		workPool:              workPool,
 		KVStore:               cfg.KVStore,
 		managers:              closers,
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
-		// TODO(niro): This should be removed - we need to return the signing key dynamically from the blockAdapter
-		signingKey: baseCfg.Blockstore.Signing.SecretKey,
+		signingKey:            cfg.Config.StorageConfig().SigningKey(),
 	}, nil
 }
 
@@ -472,10 +463,7 @@ func (c *Catalog) CreateRepository(ctx context.Context, repository string, stora
 	}); err != nil {
 		return nil, err
 	}
-	// TODO: this is a temporary validation. we should probably move this to the store level
-	if storageIdentifier != "" {
-		return nil, graveler.ErrInvalidStorageID
-	}
+
 	repo, err := c.Store.CreateRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
@@ -504,10 +492,7 @@ func (c *Catalog) CreateBareRepository(ctx context.Context, repository string, s
 	}); err != nil {
 		return nil, err
 	}
-	// TODO: this is a temporary validation. we should probably move this to the store level
-	if storageIdentifier != "" {
-		return nil, graveler.ErrInvalidStorageID
-	}
+
 	repo, err := c.Store.CreateBareRepository(ctx, repositoryID, storageIdentifier, storageNS, branchID, readOnly)
 	if err != nil {
 		return nil, err
@@ -2340,19 +2325,23 @@ func (c *Catalog) importAsync(ctx context.Context, repository *graveler.Reposito
 
 	wg, wgCtx := c.workPool.GroupContext(ctx)
 	for _, source := range params.Paths {
-		src := source // Pinning
 		wg.Submit(func() error {
-			// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-			walker, err := c.walkerFactory.GetWalker(wgCtx, store.WalkerOptions{StorageURI: src.Path})
+			uri, err := url.Parse(source.Path)
+			if err != nil {
+				return fmt.Errorf("could not parse storage URI %s: %w", uri, err)
+			}
+
+			walker, err := c.BlockAdapter.GetWalker(repository.StorageID.String(), block.WalkerOptions{StorageURI: uri})
 			if err != nil {
 				return fmt.Errorf("creating object-store walker on path %s: %w", source.Path, err)
 			}
 
-			it, err := NewWalkEntryIterator(wgCtx, walker, src.Type, src.Destination, "", "")
+			it, err := NewWalkEntryIterator(wgCtx, block.NewWalkerWrapper(walker, uri), source.Type, source.Destination, "", "")
 			if err != nil {
-				return fmt.Errorf("creating walk iterator on path %s: %w", src.Path, err)
+				return fmt.Errorf("creating walk iterator on path %s: %w", source.Path, err)
 			}
-			logger.WithFields(logging.Fields{"source": src.Path, "itr": it}).Debug("Ingest source")
+
+			logger.WithFields(logging.Fields{"source": source.Path, "itr": it}).Debug("Ingest source")
 			defer it.Close()
 			return importManager.Ingest(it)
 		})
@@ -2516,13 +2505,17 @@ func (c *Catalog) WriteRange(ctx context.Context, repositoryID string, params Wr
 		return nil, nil, err
 	}
 
-	// TODO (niro): Need to handle this at some point (use adapter GetWalker)
-	walker, err := c.walkerFactory.GetWalker(ctx, store.WalkerOptions{StorageURI: params.SourceURI, SkipOutOfOrder: true})
+	uri, err := url.Parse(params.SourceURI)
 	if err != nil {
-		return nil, nil, fmt.Errorf("creating object-store walker: %w", err)
+		return nil, nil, fmt.Errorf("could not parse storage URI %s: %w", uri, err)
 	}
 
-	it, err := NewWalkEntryIterator(ctx, walker, ImportPathTypePrefix, params.Prepend, params.After, params.ContinuationToken)
+	walker, err := c.BlockAdapter.GetWalker(repository.StorageID.String(), block.WalkerOptions{StorageURI: uri})
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating object-store walker on path %s: %w", params.SourceURI, err)
+	}
+
+	it, err := NewWalkEntryIterator(ctx, block.NewWalkerWrapper(walker, uri), ImportPathTypePrefix, params.Prepend, params.After, params.ContinuationToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating walk iterator: %w", err)
 	}
