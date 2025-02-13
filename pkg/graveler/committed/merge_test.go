@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/committed/mock"
@@ -1729,9 +1730,9 @@ func runMergeTests(tests testCases, t *testing.T) {
 					metaRangeId := graveler.MetaRangeID("merge")
 					writer.EXPECT().Close(gomock.Any()).Return(&metaRangeId, nil).AnyTimes()
 					rangeManagers := make(map[string]committed.RangeManager)
-					rangeManagers[""] = rangeManager
+					rangeManagers[config.SingleBlockstoreID] = rangeManager
 					metaRangeManagers := make(map[string]committed.MetaRangeManager)
-					metaRangeManagers[""] = metaRangeManager
+					metaRangeManagers[config.SingleBlockstoreID] = metaRangeManager
 					committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 					_, err := committedManager.Merge(ctx, "", "ns", destMetaRangeID, sourceMetaRangeID, baseMetaRangeID, mergeStrategy)
 					if !errors.Is(err, expectedResult.expectedErr) {

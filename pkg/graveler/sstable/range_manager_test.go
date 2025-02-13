@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	fsMock "github.com/treeverse/lakefs/pkg/pyramid/mock"
@@ -38,7 +38,7 @@ func TestGetEntrySuccess(t *testing.T) {
 
 	reader := createSStableReader(t, keys, vals)
 
-	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(makeNewReader(reader), &NoCache{}, mockFS, crypto.SHA256, "")
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(makeNewReader(reader), &NoCache{}, mockFS, crypto.SHA256, config.SingleBlockstoreID)
 
 	ns := "some-ns"
 	sstableID := "some-id"
@@ -60,7 +60,7 @@ func TestGetEntryCacheFailure(t *testing.T) {
 
 	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(func(context.Context, committed.StorageID, committed.Namespace, committed.ID) (*pebblesst.Reader, error) {
 		return nil, expectedErr
-	}, &NoCache{}, mockFS, crypto.SHA256, "")
+	}, &NoCache{}, mockFS, crypto.SHA256, config.SingleBlockstoreID)
 
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
@@ -82,7 +82,7 @@ func TestGetEntryNotFound(t *testing.T) {
 
 	reader := createSStableReader(t, keys, vals)
 
-	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(makeNewReader(reader), &NoCache{}, mockFS, crypto.SHA256, "")
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(makeNewReader(reader), &NoCache{}, mockFS, crypto.SHA256, config.SingleBlockstoreID)
 
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
@@ -100,7 +100,7 @@ func TestGetWriterSuccess(t *testing.T) {
 
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(nil, &NoCache{}, mockFS, crypto.SHA256, "")
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(nil, &NoCache{}, mockFS, crypto.SHA256, config.SingleBlockstoreID)
 
 	ns := "some-ns"
 	mockFile := fsMock.NewMockStoredFile(ctrl)
@@ -128,7 +128,7 @@ func TestNewPartIteratorSuccess(t *testing.T) {
 	vals := randomStrings(len(keys))
 	reader := createSStableReader(t, keys, vals)
 
-	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(makeNewReader(reader), &NoCache{}, mockFS, crypto.SHA256, "")
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(makeNewReader(reader), &NoCache{}, mockFS, crypto.SHA256, config.SingleBlockstoreID)
 
 	ns := "some-ns"
 	sstableID := committed.ID("some-id")
@@ -152,7 +152,7 @@ func TestGetWriterRangeID(t *testing.T) {
 
 	mockFS := fsMock.NewMockFS(ctrl)
 
-	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(nil, &NoCache{}, mockFS, crypto.SHA256, "")
+	sut := sstable.NewPebbleSSTableRangeManagerWithNewReader(nil, &NoCache{}, mockFS, crypto.SHA256, config.SingleBlockstoreID)
 
 	for times := 0; times < 2; times++ {
 		const ns = "some-ns"

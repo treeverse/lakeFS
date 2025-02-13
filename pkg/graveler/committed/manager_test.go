@@ -7,6 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/committed/mock"
@@ -59,9 +60,9 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeManager.EXPECT().GetWriter(context.Background(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
 
 			rangeManagers := make(map[string]committed.RangeManager)
-			rangeManagers[""] = rangeManager
+			rangeManagers[config.SingleBlockstoreID] = rangeManager
 			metaRangeManagers := make(map[string]committed.MetaRangeManager)
-			metaRangeManagers[""] = metarangeManager
+			metaRangeManagers[config.SingleBlockstoreID] = metarangeManager
 			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 
 			times := 0
@@ -134,9 +135,9 @@ func TestManager_WriteMetaRange(t *testing.T) {
 			metarangeWriter.EXPECT().Close(gomock.Any()).Return(&expectedMetarangeID, nil)
 			metarangeWriter.EXPECT().Abort().Return(nil)
 			rangeManagers := make(map[string]committed.RangeManager)
-			rangeManagers[""] = rangeManager
+			rangeManagers[config.SingleBlockstoreID] = rangeManager
 			metaRangeManagers := make(map[string]committed.MetaRangeManager)
-			metaRangeManagers[""] = metarangeManager
+			metaRangeManagers[config.SingleBlockstoreID] = metarangeManager
 			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 
 			actualMetarangeID, err := sut.WriteMetaRange(context.Background(), storageID, ns, tt.records)
