@@ -29,7 +29,7 @@ func marshalEventInformation(actionName, hookID string, record graveler.HookReco
 		EventTime:      now.UTC().Format(time.RFC3339),
 		ActionName:     actionName,
 		HookID:         hookID,
-		RepositoryID:   record.RepositoryID.String(),
+		RepositoryID:   record.Repository.RepositoryID.String(),
 		BranchID:       record.BranchID.String(),
 		SourceRef:      record.SourceRef.String(),
 		TagID:          record.TagID.String(),

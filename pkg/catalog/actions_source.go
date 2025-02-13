@@ -38,7 +38,7 @@ func NewActionsSource(catalog *Catalog) *ActionsSource {
 }
 
 func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([]string, error) {
-	key := fmt.Sprintf("%s:%s", record.RepositoryID.String(), record.SourceRef.String())
+	key := fmt.Sprintf("%s:%s", record.Repository.RepositoryID.String(), record.SourceRef.String())
 	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
 		return s.list(ctx, record)
 	})
@@ -56,7 +56,7 @@ func (s *ActionsSource) list(ctx context.Context, record graveler.HookRecord) ([
 	for hasMore {
 		var res []*DBEntry
 		var err error
-		res, hasMore, err = s.catalog.ListEntries(ctx, record.RepositoryID.String(), record.SourceRef.String(), repositoryLocation, after, DefaultPathDelimiter, amount)
+		res, hasMore, err = s.catalog.ListEntries(ctx, record.Repository.RepositoryID.String(), record.SourceRef.String(), repositoryLocation, after, DefaultPathDelimiter, amount)
 		if err != nil {
 			return nil, fmt.Errorf("listing actions: %w", err)
 		}
@@ -68,7 +68,7 @@ func (s *ActionsSource) list(ctx context.Context, record graveler.HookRecord) ([
 }
 
 func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
-	key := fmt.Sprintf("%s:%s:%s", record.RepositoryID.String(), record.SourceRef.String(), name)
+	key := fmt.Sprintf("%s:%s:%s", record.Repository.RepositoryID.String(), record.SourceRef.String(), name)
 	names, err := s.cache.GetOrSet(key, func() (interface{}, error) {
 		return s.load(ctx, record, name)
 	})
@@ -80,7 +80,7 @@ func (s *ActionsSource) Load(ctx context.Context, record graveler.HookRecord, na
 
 func (s *ActionsSource) load(ctx context.Context, record graveler.HookRecord, name string) ([]byte, error) {
 	// get name's address
-	repositoryID := record.RepositoryID
+	repositoryID := record.Repository.RepositoryID
 	ent, err := s.catalog.GetEntry(ctx, repositoryID.String(), record.SourceRef.String(), name, GetEntryParams{})
 	if err != nil {
 		return nil, fmt.Errorf("get action file metadata %s: %w", name, err)
