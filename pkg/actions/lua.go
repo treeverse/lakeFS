@@ -54,8 +54,8 @@ func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRe
 		"branch_id":         record.BranchID.String(),
 		"source_ref":        record.SourceRef.String(),
 		"tag_id":            record.TagID.String(),
-		"repository_id":     record.RepositoryID.String(),
-		"storage_namespace": record.StorageNamespace.String(),
+		"repository_id":     record.Repository.RepositoryID.String(),
+		"storage_namespace": record.Repository.StorageNamespace.String(),
 		"commit": map[string]interface{}{
 			"message":       record.Commit.Message,
 			"meta_range_id": record.Commit.MetaRangeID.String(),
@@ -125,7 +125,7 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 			return fmt.Errorf("no endpoint configured, cannot request object: %s: %w", h.ScriptPath, ErrInvalidAction)
 		}
 		reqURL, err := url.JoinPath(apiutil.BaseURL,
-			"repositories", string(record.RepositoryID), "refs", string(record.SourceRef), "objects")
+			"repositories", string(record.Repository.RepositoryID), "refs", string(record.SourceRef), "objects")
 		if err != nil {
 			return err
 		}

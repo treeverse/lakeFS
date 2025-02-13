@@ -23,17 +23,15 @@ const (
 	EventTypePreDeleteBranch  EventType = "pre-delete-branch"
 	EventTypePostDeleteBranch EventType = "post-delete-branch"
 
-	RunIDTimeLayout = "20060102150405"
-	UnixYear3000    = 32500915200
+	UnixYear3000 = 32500915200
 )
 
 // HookRecord is an aggregation of all necessary fields for all event types
 type HookRecord struct {
 	// Required fields for all event types:
-	RunID            string
-	EventType        EventType
-	RepositoryID     RepositoryID
-	StorageNamespace StorageNamespace
+	RunID      string
+	EventType  EventType
+	Repository *RepositoryRecord
 	// The reference which the actions files are read from
 	SourceRef Ref
 	// Event specific fields:

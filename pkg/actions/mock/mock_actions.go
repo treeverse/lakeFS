@@ -90,7 +90,7 @@ func (m *MockOutputWriter) EXPECT() *MockOutputWriterMockRecorder {
 }
 
 // OutputWrite mocks base method.
-func (m *MockOutputWriter) OutputWrite(arg0 context.Context, arg1, arg2 string, arg3 io.Reader, arg4 int64) error {
+func (m *MockOutputWriter) OutputWrite(arg0 context.Context, arg1 *graveler.RepositoryRecord, arg2 string, arg3 io.Reader, arg4 int64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OutputWrite", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(error)

@@ -12,10 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
-
 	"github.com/antonmedv/expr"
 	"github.com/hashicorp/go-multierror"
+	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -212,7 +211,7 @@ type TaskResultIterator interface {
 type Service interface {
 	Stop()
 	Run(ctx context.Context, record graveler.HookRecord) error
-	UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error
+	UpdateCommitID(ctx context.Context, repository *graveler.RepositoryRecord, runID string, commitID string) error
 	GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error)
 	ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error)
@@ -317,8 +316,8 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 	var tasks [][]*Task
 	for actionIdx, action := range actions {
 		var actionTasks []*Task
-		for hookIdx, hook := range action.Hooks {
-			h, err := NewHook(hook, action, s.cfg, s.endpoint, s.serverAddress, s.stats)
+		for hookIdx, actionHook := range action.Hooks {
+			h, err := NewHook(actionHook, action, s.cfg, s.endpoint, s.serverAddress, s.stats)
 			if err != nil {
 				return nil, err
 			}
@@ -326,9 +325,9 @@ func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task
 				RunID:     runID,
 				HookRunID: NewHookRunID(actionIdx, hookIdx),
 				Action:    action,
-				HookID:    hook.ID,
+				HookID:    actionHook.ID,
 				Hook:      h,
-				If:        hook.If,
+				If:        actionHook.If,
 			}
 			// append new task or chain to the last one based on the current action
 			actionTasks = append(actionTasks, task)
@@ -347,12 +346,12 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 			var actionErr error
 			for _, task := range actionTasks {
 				hookOutputWriter := &HookOutputWriter{
-					Writer:           s.Writer,
-					StorageNamespace: record.StorageNamespace.String(),
-					RunID:            task.RunID,
-					HookRunID:        task.HookRunID,
-					ActionName:       task.Action.Name,
-					HookID:           task.HookID,
+					Writer:     s.Writer,
+					Repository: record.Repository,
+					RunID:      task.RunID,
+					HookRunID:  task.HookRunID,
+					ActionName: task.Action.Name,
+					HookID:     task.HookID,
 				}
 
 				// evaluate if expression and keep error for later
@@ -431,15 +430,16 @@ func (s *StoreService) saveRunInformation(ctx context.Context, record graveler.H
 
 	manifest := buildRunManifestFromTasks(record, tasks)
 
-	err := s.saveRunManifestDB(ctx, record.RepositoryID, manifest)
+	repositoryID := record.Repository.RepositoryID
+	err := s.saveRunManifestDB(ctx, repositoryID, manifest)
 	if err != nil {
 		return fmt.Errorf("insert run information: %w", err)
 	}
 
-	return s.saveRunManifestObjectStore(ctx, manifest, record.StorageNamespace.String(), record.RunID)
+	return s.saveRunManifestObjectStore(ctx, manifest, record.Repository, record.RunID)
 }
 
-func (s *StoreService) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, storageNamespace string, runID string) error {
+func (s *StoreService) saveRunManifestObjectStore(ctx context.Context, manifest RunManifest, repository *graveler.RepositoryRecord, runID string) error {
 	manifestJSON, err := json.Marshal(manifest)
 	if err != nil {
 		return fmt.Errorf("marshal run manifest: %w", err)
@@ -447,7 +447,7 @@ func (s *StoreService) saveRunManifestObjectStore(ctx context.Context, manifest 
 	runManifestPath := FormatRunManifestOutputPath(runID)
 	manifestReader := bytes.NewReader(manifestJSON)
 	manifestSize := int64(len(manifestJSON))
-	return s.Writer.OutputWrite(ctx, storageNamespace, runManifestPath, manifestReader, manifestSize)
+	return s.Writer.OutputWrite(ctx, repository, runManifestPath, manifestReader, manifestSize)
 }
 
 func (s *StoreService) saveRunManifestDB(ctx context.Context, repositoryID graveler.RepositoryID, manifest RunManifest) error {
@@ -495,8 +495,8 @@ func buildRunManifestFromTasks(record graveler.HookRecord, tasks [][]*Task) RunM
 }
 
 // UpdateCommitID assume record is a post event, we use the PreRunID to update the commit_id and save the run manifest again
-func (s *StoreService) UpdateCommitID(ctx context.Context, repositoryID string, storageNamespace string, runID string, commitID string) error {
-	manifest, err := s.Store.UpdateCommitID(ctx, repositoryID, runID, commitID)
+func (s *StoreService) UpdateCommitID(ctx context.Context, repository *graveler.RepositoryRecord, runID string, commitID string) error {
+	manifest, err := s.Store.UpdateCommitID(ctx, repository.RepositoryID.String(), runID, commitID)
 	if err != nil {
 		return fmt.Errorf("updating commit ID: %w", err)
 	}
@@ -505,7 +505,7 @@ func (s *StoreService) UpdateCommitID(ctx context.Context, repositoryID string, 
 	}
 
 	// update manifest
-	return s.saveRunManifestObjectStore(ctx, *manifest, storageNamespace, runID)
+	return s.saveRunManifestObjectStore(ctx, *manifest, repository, runID)
 }
 
 func (s *StoreService) GetRunResult(ctx context.Context, repositoryID string, runID string) (*RunResult, error) {
@@ -530,7 +530,7 @@ func (s *StoreService) PreCommitHook(ctx context.Context, record graveler.HookRe
 
 func (s *StoreService) PostCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	// update pre-commit with commit ID if needed
-	err := s.UpdateCommitID(ctx, record.RepositoryID.String(), record.StorageNamespace.String(), record.PreRunID, record.CommitID.String())
+	err := s.UpdateCommitID(ctx, record.Repository, record.PreRunID, record.CommitID.String())
 	if err != nil {
 		return err
 	}
