@@ -367,10 +367,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 		sstableMetaRangeManager, err := committed.NewMetaRangeManager(
 			committedParams,
-			// TODO(ariels): Use separate range managers for metaranges and ranges
 			sstableMetaManager,
 			sstableManager,
-			"",
+			graveler.StorageID(sID),
 		)
 		if err != nil {
 			cancelFn()
