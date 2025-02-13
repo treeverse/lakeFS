@@ -6,12 +6,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/go-openapi/swag"
+	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
-	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
@@ -31,37 +34,38 @@ var fsDownloadCmd = &cobra.Command{
 		syncFlags := getSyncFlags(cmd, client)
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		ctx := cmd.Context()
-		remotePath := remote.GetPath()
 		downloadPartSize := Must(cmd.Flags().GetInt64(partSizeFlagName))
 		if downloadPartSize < helpers.MinDownloadPartSize {
 			DieFmt("part size must be at least %d bytes", helpers.MinDownloadPartSize)
 		}
 
+		downloader := helpers.NewDownloader(client, syncFlags.Presign)
+		downloader.PartSize = downloadPartSize
+
+		remotePath := remote.GetPath()
 		if !recursive {
-			src := uri.URI{
-				Repository: remote.Repository,
-				Ref:        remote.Ref,
-				Path:       remote.Path,
-			}
 			// if dest is a directory, add the file name
 			if s, _ := os.Stat(dest); s != nil && s.IsDir() {
 				dest += uri.PathSeparator
 			}
-			if strings.HasSuffix(dest, uri.PathSeparator) {
+			if remotePath != "" && strings.HasSuffix(dest, uri.PathSeparator) {
 				dest += filepath.Base(remotePath)
 			}
 
-			d := helpers.NewDownloader(client, syncFlags.Presign)
-			d.PartSize = downloadPartSize
-			err := d.Download(ctx, src, dest)
+			err := downloader.Download(ctx, *remote, dest, nil)
 			if err != nil {
 				DieErr(err)
 			}
-			fmt.Printf("download: %s to %s\n", src.String(), dest)
+			fmt.Printf("download: %s to %s\n", remote.String(), dest)
 			return
 		}
 
-		ch := make(chan *local.Change, filesChanSize)
+		// setup progress writer
+		pw := newDownloadProgressWriter(syncFlags.NoProgress)
+		// ProgressRender start render progress and return callback waiting for the progress to finish.
+		go pw.Render()
+
+		ch := make(chan string, filesChanSize)
 		if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
 			*remote.Path += uri.PathSeparator
 		}
@@ -90,11 +94,7 @@ var fsDownloadCmd = &cobra.Command{
 					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
 						continue
 					}
-					ch <- &local.Change{
-						Source: local.ChangeSourceRemote,
-						Path:   relPath,
-						Type:   local.ChangeTypeAdded,
-					}
+					ch <- relPath
 				}
 				if !listResp.JSON200.Pagination.HasMore {
 					break
@@ -103,24 +103,74 @@ var fsDownloadCmd = &cobra.Command{
 			}
 		}()
 
-		s := local.NewSyncManager(ctx, client, getHTTPClient(), local.Config{
-			SyncFlags:           syncFlags,
-			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
-			IncludePerm:         false,
-		})
-		err := s.Sync(dest, remote, ch)
-		if err != nil {
-			DieErr(err)
+		// download files in parallel
+		var wg sync.WaitGroup
+		wg.Add(syncFlags.Parallelism)
+		var downloaded int64
+		for i := 0; i < syncFlags.Parallelism; i++ {
+			go func() {
+				defer wg.Done()
+				for relPath := range ch {
+					srcPath := remote.GetPath() + relPath
+					src := uri.URI{
+						Repository: remote.Repository,
+						Ref:        remote.Ref,
+						Path:       &srcPath,
+					}
+
+					// progress tracker
+					tracker := &progress.Tracker{Message: "download " + relPath, Total: -1}
+					pw.AppendTracker(tracker)
+					tracker.Start()
+
+					dest := filepath.Join(dest, relPath)
+					err := downloader.Download(ctx, src, dest, tracker)
+					if err != nil {
+						tracker.MarkAsErrored()
+						DieErr(err)
+					}
+					tracker.MarkAsDone()
+					atomic.AddInt64(&downloaded, 1)
+				}
+			}()
+		}
+		// wait for all downloads to finish
+		wg.Wait()
+
+		// wait for progress to finish render
+		for pw.IsRenderInProgress() {
+			// for manual-stop mode, stop when there are no more active trackers
+			if pw.LengthActive() == 0 {
+				pw.Stop()
+			}
+			const waitForRender = 100 * time.Millisecond
+			time.Sleep(waitForRender)
 		}
 
 		Write(localSummaryTemplate, struct {
-			Operation string
-			local.Tasks
+			Operation  string
+			Downloaded int64
+			Removed    int
+			Uploaded   int
 		}{
-			Operation: "Download",
-			Tasks:     s.Summary(),
+			Operation:  "Download",
+			Downloaded: downloaded,
 		})
 	},
+}
+
+func newDownloadProgressWriter(noProgress bool) progress.Writer {
+	pw := progress.NewWriter()
+	pw.SetAutoStop(false)
+	pw.SetSortBy(progress.SortByValue)
+	pw.SetStyle(progress.StyleDefault)
+	pw.SetTrackerPosition(progress.PositionRight)
+	pw.Style().Colors = progress.StyleColorsExample
+	pw.Style().Options.PercentFormat = "%4.1f%%"
+	if noProgress {
+		pw.Style().Visibility = progress.StyleVisibility{}
+	}
+	return pw
 }
 
 //nolint:gochecknoinits

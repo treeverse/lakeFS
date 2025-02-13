@@ -161,7 +161,6 @@ type AdapterConfig interface {
 	BlockstoreS3Params() (blockparams.S3, error)
 	BlockstoreGSParams() (blockparams.GS, error)
 	BlockstoreAzureParams() (blockparams.Azure, error)
-	BlockstoreExtras() map[string]string
 	GetDefaultNamespacePrefix() *string
 	IsBackwardsCompatible() bool
 }
@@ -348,10 +347,6 @@ func (b *Blockstore) BlockstoreAzureParams() (blockparams.Azure, error) {
 
 func (b *Blockstore) BlockstoreDescription() string {
 	return ""
-}
-
-func (b *Blockstore) BlockstoreExtras() map[string]string {
-	return nil
 }
 
 func (b *Blockstore) GetDefaultNamespacePrefix() *string {
