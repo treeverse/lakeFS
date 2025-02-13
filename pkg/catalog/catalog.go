@@ -2740,7 +2740,7 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 		}
 
 		if srcRepo.StorageID != destRepo.StorageID {
-			return nil, fmt.Errorf("copy between different blockstores is not allowed: %w", graveler.ErrInvalidValue)
+			return nil, fmt.Errorf("%w: cannot copy between repos with different StorageIDs", graveler.ErrInvalidStorageID)
 		}
 	}
 
