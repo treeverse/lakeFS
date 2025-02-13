@@ -346,27 +346,39 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
 
-	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg, "")
-	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg, "")
-
+	// Build committed manager
 	committedParams := committed.Params{
 		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
 		MaxRangeSizeBytes:          baseCfg.Committed.Permanent.MaxRangeSizeBytes,
 		RangeSizeEntriesRaggedness: baseCfg.Committed.Permanent.RangeRaggednessEntries,
 		MaxUploaders:               baseCfg.Committed.LocalCache.MaxUploadersPerWriter,
 	}
-	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
-		committedParams,
-		// TODO(ariels): Use separate range managers for metaranges and ranges
-		sstableMetaManager,
-		sstableManager,
-		"",
-	)
-	if err != nil {
-		cancelFn()
-		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+	closers := []io.Closer{&ctxCloser{cancelFn}}
+	sstableManagers := make(map[string]committed.RangeManager)
+	sstableMetaRangeManagers := make(map[string]committed.MetaRangeManager)
+	storageIDs := cfg.Config.StorageConfig().GetStorageIDs()
+	for _, sID := range storageIDs {
+		sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg, committed.StorageID(sID))
+		sstableManagers[sID] = sstableManager
+		closers = append(closers, sstableManager)
+
+		sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg, committed.StorageID(sID))
+		closers = append(closers, sstableMetaManager)
+
+		sstableMetaRangeManager, err := committed.NewMetaRangeManager(
+			committedParams,
+			// TODO(ariels): Use separate range managers for metaranges and ranges
+			sstableMetaManager,
+			sstableManager,
+			"",
+		)
+		if err != nil {
+			cancelFn()
+			return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+		}
+		sstableMetaRangeManagers[sID] = sstableMetaRangeManager
 	}
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManager, sstableManager, committedParams)
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, committedParams)
 
 	executor := batch.NewConditionalExecutor(logging.ContextUnavailable())
 	go executor.Run(ctx)
@@ -422,7 +434,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		walkerFactory:         cfg.WalkerFactory,
 		workPool:              workPool,
 		KVStore:               cfg.KVStore,
-		managers:              []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		managers:              closers,
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,

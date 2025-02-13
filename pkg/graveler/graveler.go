@@ -1037,7 +1037,7 @@ type CommittedManager interface {
 	// Merge applies changes from 'source' to 'destination', relative to a merge base 'base' and
 	// returns the ID of the new metarange. This is similar to a git merge operation.
 	// The resulting tree is expected to be immediately addressable.
-	Merge(ctx context.Context, ns StorageNamespace, destination, source, base MetaRangeID, strategy MergeStrategy, opts ...SetOptionsFunc) (MetaRangeID, error)
+	Merge(ctx context.Context, storageID StorageID, ns StorageNamespace, destination, source, base MetaRangeID, strategy MergeStrategy, opts ...SetOptionsFunc) (MetaRangeID, error)
 
 	// Import sync changes from 'source' to 'destination'. All the given prefixes are completely overridden on the resulting metarange. Returns the ID of the new
 	// metarange.
@@ -1049,9 +1049,9 @@ type CommittedManager interface {
 	Commit(ctx context.Context, storageID StorageID, ns StorageNamespace, baseMetaRangeID MetaRangeID, changes ValueIterator, allowEmpty bool, opts ...SetOptionsFunc) (MetaRangeID, DiffSummary, error)
 
 	// GetMetaRange returns information where metarangeID is stored.
-	GetMetaRange(ctx context.Context, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeAddress, error)
+	GetMetaRange(ctx context.Context, storageID StorageID, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeAddress, error)
 	// GetRange returns information where rangeID is stored.
-	GetRange(ctx context.Context, ns StorageNamespace, rangeID RangeID) (RangeAddress, error)
+	GetRange(ctx context.Context, storageID StorageID, ns StorageNamespace, rangeID RangeID) (RangeAddress, error)
 
 	// GetRangeIDByKey returns the RangeID that contains the given key.
 	GetRangeIDByKey(ctx context.Context, storageID StorageID, ns StorageNamespace, id MetaRangeID, key Key) (RangeID, error)
@@ -2719,7 +2719,7 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 			return nil, fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageID, repository.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
@@ -2811,7 +2811,7 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 			return nil, fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageNamespace, branchCommit.MetaRangeID, commitRecord.MetaRangeID, parentMetaRangeID, MergeStrategyNone)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageID, repository.StorageNamespace, branchCommit.MetaRangeID, commitRecord.MetaRangeID, parentMetaRangeID, MergeStrategyNone)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
@@ -2933,7 +2933,7 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			return nil, ErrInvalidMergeStrategy
 		}
 
-		metaRangeID, err := g.CommittedManager.Merge(ctx, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy, opts...)
+		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageID, storageNamespace, toCommit.MetaRangeID, fromCommit.MetaRangeID, baseCommit.MetaRangeID, mergeStrategy, opts...)
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge in CommitManager: %w", err)
@@ -3419,11 +3419,11 @@ func (g *Graveler) LoadTags(ctx context.Context, repository *RepositoryRecord, m
 }
 
 func (g *Graveler) GetMetaRange(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) (MetaRangeAddress, error) {
-	return g.CommittedManager.GetMetaRange(ctx, repository.StorageNamespace, metaRangeID)
+	return g.CommittedManager.GetMetaRange(ctx, repository.StorageID, repository.StorageNamespace, metaRangeID)
 }
 
 func (g *Graveler) GetRange(ctx context.Context, repository *RepositoryRecord, rangeID RangeID) (RangeAddress, error) {
-	return g.CommittedManager.GetRange(ctx, repository.StorageNamespace, rangeID)
+	return g.CommittedManager.GetRange(ctx, repository.StorageID, repository.StorageNamespace, rangeID)
 }
 
 func (g *Graveler) DumpCommits(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {
