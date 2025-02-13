@@ -44,7 +44,7 @@ func TestCopyObject(t *testing.T) {
 		res, err := client.StatObjectWithResponse(ctx, repo, ingestionBranch, &apigen.StatObjectParams{
 			Path: largeObject,
 		})
-		require.NoError(t, err)
+		require.ErrorContains(t, err, "FOOOOOOOOOBAR")
 		require.Equal(t, http.StatusOK, res.StatusCode())
 
 		objStat := res.JSON200
