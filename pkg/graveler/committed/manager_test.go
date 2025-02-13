@@ -59,9 +59,9 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeWriter.EXPECT().Abort().Return(nil)
 			rangeManager.EXPECT().GetWriter(context.Background(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
 
-			rangeManagers := make(map[string]committed.RangeManager)
+			rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
 			rangeManagers[config.SingleBlockstoreID] = rangeManager
-			metaRangeManagers := make(map[string]committed.MetaRangeManager)
+			metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 			metaRangeManagers[config.SingleBlockstoreID] = metarangeManager
 			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 
@@ -134,9 +134,9 @@ func TestManager_WriteMetaRange(t *testing.T) {
 				}).Times(len(tt.records))
 			metarangeWriter.EXPECT().Close(gomock.Any()).Return(&expectedMetarangeID, nil)
 			metarangeWriter.EXPECT().Abort().Return(nil)
-			rangeManagers := make(map[string]committed.RangeManager)
+			rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
 			rangeManagers[config.SingleBlockstoreID] = rangeManager
-			metaRangeManagers := make(map[string]committed.MetaRangeManager)
+			metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 			metaRangeManagers[config.SingleBlockstoreID] = metarangeManager
 			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 

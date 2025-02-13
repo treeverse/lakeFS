@@ -3,6 +3,7 @@ package committed_test
 import (
 	"context"
 	"errors"
+	"github.com/treeverse/lakefs/pkg/config"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -372,12 +373,12 @@ func Test_import(t *testing.T) {
 				metaRangeId := graveler.MetaRangeID("import")
 				writer.EXPECT().Close(gomock.Any()).Return(&metaRangeId, nil).AnyTimes()
 
-				rangeManagers := make(map[string]committed.RangeManager)
-				rangeManagers[""] = rangeManager
-				metaRangeManagers := make(map[string]committed.MetaRangeManager)
-				metaRangeManagers[""] = metaRangeManager
+				rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
+				rangeManagers[config.SingleBlockstoreID] = rangeManager
+				metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
+				metaRangeManagers[config.SingleBlockstoreID] = metaRangeManager
 				committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
-				_, err := committedManager.Import(ctx, "", "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
+				_, err := committedManager.Import(ctx, config.SingleBlockstoreID, "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
 				if !errors.Is(err, expectedResult.expectedErr) {
 					t.Fatalf("Import error = '%v', expected '%v'", err, expectedResult.expectedErr)
 				}

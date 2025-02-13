@@ -415,12 +415,12 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 		MaxUploaders:               baseCfg.Committed.LocalCache.MaxUploadersPerWriter,
 	}
 	var closers []io.Closer
-	sstableManagers := make(map[string]committed.RangeManager)
-	sstableMetaRangeManagers := make(map[string]committed.MetaRangeManager)
+	sstableManagers := make(map[graveler.StorageID]committed.RangeManager)
+	sstableMetaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 	storageIDs := cfg.Config.StorageConfig().GetStorageIDs()
 	for _, sID := range storageIDs {
 		sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg, committed.StorageID(sID))
-		sstableManagers[sID] = sstableManager
+		sstableManagers[graveler.StorageID(sID)] = sstableManager
 		closers = append(closers, sstableManager)
 
 		sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg, committed.StorageID(sID))
@@ -435,7 +435,7 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 		if err != nil {
 			return nil, nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
 		}
-		sstableMetaRangeManagers[sID] = sstableMetaRangeManager
+		sstableMetaRangeManagers[graveler.StorageID(sID)] = sstableMetaRangeManager
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, committedParams)
 	return committedManager, closers, nil

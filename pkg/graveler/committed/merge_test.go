@@ -1729,9 +1729,9 @@ func runMergeTests(tests testCases, t *testing.T) {
 					writer.EXPECT().Abort().AnyTimes()
 					metaRangeId := graveler.MetaRangeID("merge")
 					writer.EXPECT().Close(gomock.Any()).Return(&metaRangeId, nil).AnyTimes()
-					rangeManagers := make(map[string]committed.RangeManager)
+					rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
 					rangeManagers[config.SingleBlockstoreID] = rangeManager
-					metaRangeManagers := make(map[string]committed.MetaRangeManager)
+					metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 					metaRangeManagers[config.SingleBlockstoreID] = metaRangeManager
 					committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 					_, err := committedManager.Merge(ctx, "", "ns", destMetaRangeID, sourceMetaRangeID, baseMetaRangeID, mergeStrategy)
