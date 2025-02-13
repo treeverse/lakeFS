@@ -2,7 +2,7 @@ version: "3"
 services:
   lakefs:
     extends:
-      file: esti/ops/docker-compose-common.yaml
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: lakefs
     depends_on:
       - "postgres"
@@ -21,12 +21,12 @@ services:
 
   postgres:
     extends:
-      file: esti/ops/docker-compose-common.yaml
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: postgres
 
   esti:
     extends:
-      file: esti/ops/docker-compose-common.yaml
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
     environment:
       - ESTI_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
