@@ -2,7 +2,7 @@ version: "3"
 services:
   lakefs:
     extends:
-      file: esti/ops/docker-compose-common.yaml
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: lakefs
     environment:
       - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-simplified}
@@ -20,7 +20,7 @@ services:
 
   esti:
     extends:
-      file: esti/ops/docker-compose-common.yaml
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
     environment:
       - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
