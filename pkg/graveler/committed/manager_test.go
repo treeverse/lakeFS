@@ -58,7 +58,11 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeWriter.EXPECT().Abort().Return(nil)
 			rangeManager.EXPECT().GetWriter(context.Background(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
 
-			sut := committed.NewCommittedManager(metarangeManager, rangeManager, params)
+			rangeManagers := make(map[string]committed.RangeManager)
+			rangeManagers[""] = rangeManager
+			metaRangeManagers := make(map[string]committed.MetaRangeManager)
+			metaRangeManagers[""] = metarangeManager
+			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 
 			times := 0
 			expectedTimes := min(len(tt.records), maxRecords)
@@ -129,7 +133,11 @@ func TestManager_WriteMetaRange(t *testing.T) {
 				}).Times(len(tt.records))
 			metarangeWriter.EXPECT().Close(gomock.Any()).Return(&expectedMetarangeID, nil)
 			metarangeWriter.EXPECT().Abort().Return(nil)
-			sut := committed.NewCommittedManager(metarangeManager, rangeManager, params)
+			rangeManagers := make(map[string]committed.RangeManager)
+			rangeManagers[""] = rangeManager
+			metaRangeManagers := make(map[string]committed.MetaRangeManager)
+			metaRangeManagers[""] = metarangeManager
+			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 
 			actualMetarangeID, err := sut.WriteMetaRange(context.Background(), storageID, ns, tt.records)
 			require.NoError(t, err)
