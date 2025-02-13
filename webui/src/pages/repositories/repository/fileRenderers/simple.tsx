@@ -1,4 +1,4 @@
-import React, { FC, useContext } from "react";
+import React, {FC, useContext, useEffect, useRef} from "react";
 import Alert from "react-bootstrap/Alert";
 import { humanSize } from "../../../../lib/components/repository/tree";
 import { useAPI } from "../../../../lib/hooks/api";
@@ -18,6 +18,7 @@ import "react-ipynb-renderer/dist/styles/default.css";
 import { useMarkdownProcessor } from "./useMarkdownProcessor";
 import { AppContext } from "../../../../lib/hooks/appContext";
 import { dark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { renderAsync } from 'docx-preview'
 
 export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
   return (
@@ -146,3 +147,70 @@ export const PDFRenderer: FC<RendererComponent> = ({
     </div>
   );
 };
+
+export const DocxRenderer1: FC<RendererComponent> = ({
+                                                      repoId,
+                                                      refId,
+                                                      path,
+                                                      presign,
+                                                    }) => {
+  const query = qs({ path, presign })
+  const docxUrl = `/api/v1/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(refId)}/objects?${query}`
+
+  return (
+      <div className="m-3 object-viewer-docx">
+        <object
+            data={docxUrl}
+            type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            width="100%"
+            height="800px"
+        >
+          <p>
+            Your browser does not support previewing DOCX files.
+            <br />
+            <a href={docxUrl} download>Download the file</a>
+          </p>
+        </object>
+      </div>
+  )
+}
+
+export const DocxRenderer2: FC<RendererComponent> = ({
+                                                        repoId,
+                                                        refId,
+                                                        path,
+                                                        presign,
+                                                    }) => {
+
+    const containerRef = useRef<HTMLDivElement>(null)
+    const query = qs({ path, presign });
+    const docxUrl = `/api/v1/repositories/${encodeURIComponent(
+        repoId
+    )}/refs/${encodeURIComponent(refId)}/objects?${query}`;
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const response = await fetch(docxUrl)
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch docx: ${response.statusText}`)
+                }
+                const arrayBuffer = await response.arrayBuffer()
+
+                if (containerRef.current) {
+                    await renderAsync(arrayBuffer, containerRef.current)
+                }
+            } catch (error) {
+                throw new Error('Error rendering DOCX:', error)
+            }
+        })()
+    }, [docxUrl])
+
+    return (
+        <div className="m-3 object-viewer-docx">
+            <div ref={containerRef}>
+                <Loading />
+            </div>
+        </div>
+    )
+}

@@ -23,6 +23,7 @@ export enum FileType {
     IMAGE,
     PDF,
     TEXT,
+    DOCX,
     UNSUPPORTED,
     TOO_LARGE,
 }

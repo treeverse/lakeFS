@@ -10,6 +10,8 @@ import {
     PDFRenderer,
     TextDownloader,
     TextRenderer,
+    //DocxRenderer1,
+    DocxRenderer2,
     UnsupportedFileType
 } from "./simple";
 
@@ -41,6 +43,9 @@ export const Renderers: {[fileType in FileType] : FC<RendererComponent> } = {
         <TextDownloader {...props} onReady={text =>
             <TextRenderer {...props} text={text}/>}
         />
+    ),
+    [FileType.DOCX]: props => (
+        <DocxRenderer2 {...props}/>
     ),
     [FileType.UNSUPPORTED]: props => (
         <UnsupportedFileType {...props}/>
@@ -117,6 +122,8 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'application/pdf':
         case 'application/x-pdf':
             return FileType.PDF
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            return FileType.DOCX
     }
     switch (fileExtension) {
         case 'parquet':
@@ -144,6 +151,8 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'jsonl':
         case 'ndjson':
             return FileType.TEXT
+        case 'docx':
+            return FileType.DOCX
     }
     if (guessLanguage(fileExtension, contentType))
         return FileType.TEXT
