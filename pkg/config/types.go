@@ -17,6 +17,8 @@ var (
 	ourStringsType  = reflect.TypeOf(Strings{})
 	stringType      = reflect.TypeOf("")
 	stringSliceType = reflect.TypeOf([]string{})
+
+	ErrInvalidKeyValuePair = errors.New("invalid key-value pair")
 )
 
 // DecodeStrings is a mapstructure.HookFuncType that decodes a single string value or a slice
@@ -109,9 +111,9 @@ func DecodeStringToMap() mapstructure.DecodeHookFunc {
 		for _, pair := range pairs {
 			key, value, found := strings.Cut(pair, valueSep)
 			if !found {
-				return nil, fmt.Errorf("invalid key-value pair: %s", pair)
+				return nil, fmt.Errorf("%w: %s", ErrInvalidKeyValuePair, pair)
 			}
-			m[key] = value
+			m[strings.TrimSpace(key)] = strings.TrimSpace(value)
 		}
 
 		return m, nil
