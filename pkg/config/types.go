@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 // Strings is a []string that mapstructure can deserialize from a single string or from a list
@@ -79,4 +81,39 @@ func DecodeOnlyString(fromValue reflect.Value, toValue reflect.Value) (interface
 		return nil, fmt.Errorf("%w, not a %s", ErrMustBeString, fromValue.Type().String())
 	}
 	return OnlyString(fromValue.Interface().(string)), nil
+}
+
+// DecodeStringToMap returns a DecodeHookFunc that converts a string to a map[string]string.
+// The string is expected to be a comma-separated list of key-value pairs, where the key and value
+// are separated by an equal sign.
+func DecodeStringToMap() mapstructure.DecodeHookFunc {
+	return func(f reflect.Kind, t reflect.Kind, data interface{}) (interface{}, error) {
+		// check if field is a string and target is a map
+		if f != reflect.String || t != reflect.Map {
+			return data, nil
+		}
+		// check if target is map[string]string
+		if t != reflect.TypeOf(map[string]string{}).Kind() {
+			return data, nil
+		}
+
+		raw := data.(string)
+		if raw == "" {
+			return map[string]string{}, nil
+		}
+		// parse raw string as key1=value1,key2=value2
+		const pairSep = ","
+		const valueSep = "="
+		pairs := strings.Split(raw, pairSep)
+		m := make(map[string]string, len(pairs))
+		for _, pair := range pairs {
+			key, value, found := strings.Cut(pair, valueSep)
+			if !found {
+				return nil, fmt.Errorf("invalid key-value pair: %s", pair)
+			}
+			m[key] = value
+		}
+
+		return m, nil
+	}
 }
