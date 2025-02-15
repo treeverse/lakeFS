@@ -77,6 +77,59 @@ func TestStrings(t *testing.T) {
 	}
 }
 
+func TestDecodeStringToMap(t *testing.T) {
+	cases := []struct {
+		Name        string
+		Source      string
+		Expected    map[string]string
+		ExpectedErr error
+	}{
+		{
+			Name:     "empty string",
+			Source:   "",
+			Expected: map[string]string{},
+		}, {
+			Name:     "single pair",
+			Source:   "key=value",
+			Expected: map[string]string{"key": "value"},
+		}, {
+			Name:     "multiple pairs",
+			Source:   "key1=value1,key2=value2",
+			Expected: map[string]string{"key1": "value1", "key2": "value2"},
+		}, {
+			Name:     "pair with spaces",
+			Source:   "key = value , key2 = value2",
+			Expected: map[string]string{"key": "value", "key2": "value2"},
+		}, {
+			Name:        "invalid pair",
+			Source:      "key1=value1,key2",
+			ExpectedErr: config.ErrInvalidKeyValuePair,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			result := make(map[string]string)
+			dc := mapstructure.DecoderConfig{
+				DecodeHook: config.DecodeStringToMap(),
+				Result:     &result,
+			}
+			decoder, err := mapstructure.NewDecoder(&dc)
+			testutil.MustDo(t, "new decoder", err)
+			err = decoder.Decode(c.Source)
+			if c.ExpectedErr == nil {
+				testutil.MustDo(t, "decode", err)
+				if diffs := deep.Equal(result, c.Expected); diffs != nil {
+					t.Error(diffs)
+				}
+			} else {
+				if !errorsMatch(err, c.ExpectedErr) {
+					t.Errorf("Got error \"%v\", expected error \"%v\"", err, c.ExpectedErr)
+				}
+			}
+		})
+	}
+}
+
 type OnlyStringStruct struct {
 	S config.OnlyString
 }
