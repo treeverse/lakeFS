@@ -31,19 +31,39 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             });
     };
     const content = (
-            <>
-                {createError && <AlertError error={createError}/>}
-                <CredentialsTable
-                    userId={userId}
-                    currentAccessKey={(user) ? user.accessKeyId : ""}
-                    refresh={refresh}
-                    after={after}
-                    onPaginate={onPaginate}
-                />
-            </>
-        );
+        <>
+            {createError && <AlertError error={createError}/>}
+            <CredentialsTable
+                userId={userId}
+                currentAccessKey={(user) ? user.accessKeyId : ""}
+                refresh={refresh}
+                after={after}
+                onPaginate={onPaginate}
+            />
+        </>
+    );
 
-        const getMsg = (email) => <span>Create new credentials for user <strong>{email}</strong>?</span>;
+    const getMsg = (email) => (
+        <span>
+                Create new credentials for user{" "}
+            <br/>
+            <strong
+                className="
+                        d-inline-block
+                        w-50
+                        text-nowrap
+                        overflow-hidden
+                        text-truncate
+                        align-middle
+                    "
+                title={email}
+            >
+                {email}
+                </strong>
+            <br/>
+            {" "}?
+            </span>
+    );
     return (
         <>
             <UserHeaderWithContext userId={userId} page={'credentials'}/>
