@@ -67,7 +67,7 @@ export const AttachModal = ({
                                     "
                                     title={resolveEntityFn(item)}
                                 >
-                                    {resolveEntityFn(item)}
+                                {resolveEntityFn(item)}
                                 </Badge>
                             )))}
                         </p>
