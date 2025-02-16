@@ -9,6 +9,7 @@ import {SearchIcon} from "@primer/octicons-react";
 import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
 
+
 export const AttachModal = ({
                               show, searchFn, resolveEntityFn = (ent => ent.id), onAttach, onHide, addText = "Add",
                               emptyState = 'No matches', modalTitle = 'Add', headers = ['Select', 'ID'],
@@ -51,21 +52,7 @@ export const AttachModal = ({
             <p>
               <strong>Selected: </strong>
               {(selected.map(item => (
-                <Badge
-                    key={item.id}
-                    pill
-                    variant="primary"
-                    className="
-                        me-1
-                        d-inline-block
-                        w-25
-                        text-nowrap
-                        overflow-hidden
-                        text-truncate
-                        align-middle
-                      "
-                    title={resolveEntityFn(item)}
-                >
+                <Badge key={item.id} pill variant="primary" className="me-1">
                     {resolveEntityFn(item)}
                 </Badge>
               )))}

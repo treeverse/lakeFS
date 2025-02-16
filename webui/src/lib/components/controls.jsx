@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import InputGroup from "react-bootstrap/InputGroup";
 
+
 const defaultDebounceMs = 300;
 
 export const debounce = (func, wait, immediate) => {
@@ -341,73 +342,57 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
     }
 
     return (
-        //<Table className="w-100" style={{ tableLayout: "fixed" }}>
-        <Table>
+        <Table className="w-100" style={{ tableLayout: "fixed" }}>
             <thead>
                 <tr>
-                {/*{headers.map((header, i) => {*/}
-                {/*    if (i === 0) {*/}
-                {/*        let calculatedWidth = Math.min(header.length * 2, 20);*/}
-                {/*        if (calculatedWidth === 0) {*/}
-                {/*            calculatedWidth = 5;*/}
-                {/*        }*/}
-                {/*        return (*/}
-                {/*            <th*/}
-                {/*                key={header}*/}
-                {/*                style={{ width: `${calculatedWidth}%` }}*/}
-                {/*            >*/}
-                {/*                {header}*/}
-                {/*            </th>*/}
-                {/*        );*/}
-                {/*    }*/}
-                {/*    return (*/}
-                {/*        <th*/}
-                {/*            key={header}*/}
-                {/*        >*/}
-                {/*            {header}*/}
-                {/*        </th>*/}
-                {/*    );*/}
-                {/*})}*/}
-                    {headers.map(header => (
-                        <th key={header}>{header}</th>
-                    ))}
-                    {(!!actions && actions.length > 0) && <th/>}
-                </tr>
-            </thead>
-            <tbody>
-                {results.map(row => (
-                    <tr
-                        key={keyFn(row)}
-                        style ={{}}
-                        className="
+                {headers.map((header, i) => (
+                    <th
+                        key={header}
+                        title={header}
+                        className={`
+                            ${i === 0 ? "col-1" : ""}
                             text-nowrap
                             overflow-hidden
                             text-truncate
                             align-middle
-                            w-25
-                        "
+                        `}
                     >
-                        {rowFn(row).map((cell, i) => (
-                            <td
-                                key={`${keyFn(row)}-${i}`}
-                                title={keyFn(row)}
-                            >
-                                {cell}
-                            </td>
-                        ))}
-                        {(!!actions && actions.length > 0) && (
-                            <td>
-                                <span className="row-hover">
-                                    {actions.map(action => (
-                                        <span key={`${keyFn(row)}-${action.key}`}>
-                                            {action.buttonFn(row)}
-                                        </span>
-                                    ))}
-                                 </span>
-                            </td>
-                        )}
-                    </tr>
+                        {header}
+                    </th>
                 ))}
+                {(!!actions && actions.length > 0) && <th/>}
+                </tr>
+            </thead>
+            <tbody>
+            {results.map(row => (
+                <tr key={keyFn(row)}>
+                    {rowFn(row).map((cell, i) => (
+                        <td
+                            key={`${keyFn(row)}-${i}`}
+                            className="
+                                text-nowrap
+                                overflow-hidden
+                                text-truncate
+                                align-middle
+                            "
+                            title={keyFn(row)}
+                        >
+                            {cell}
+                        </td>
+                    ))}
+                    {(!!actions && actions.length > 0) && (
+                        <td>
+                            <span className="row-hover">
+                                {actions.map(action => (
+                                    <span key={`${keyFn(row)}-${action.key}`}>
+                                        {action.buttonFn(row)}
+                                    </span>
+                                ))}
+                             </span>
+                        </td>
+                    )}
+                </tr>
+            ))}
             </tbody>
         </Table>
     );

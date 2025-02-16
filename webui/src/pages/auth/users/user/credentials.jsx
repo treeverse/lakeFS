@@ -13,6 +13,7 @@ import {
 } from "../../../../lib/components/controls";
 import {useRouter} from "../../../../lib/hooks/router";
 
+
 const UserCredentialsList = ({ userId, after, onPaginate }) => {
     const {user} = useUser();
     const [refresh, setRefresh] = useState(false);
@@ -42,25 +43,8 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             </>
         );
 
-        const getMsg = (email) => (
-            <span>
-                Create new credentials for user{" "}
-                <strong
-                    className="
-                        d-inline-block
-                        w-50
-                        text-nowrap
-                        overflow-hidden
-                        text-truncate
-                        align-middle
-                    "
-                    title={email}
-                >
-                {email}
-                </strong>
-                {" "}?
-            </span>
-            );
+        const getMsg = (email) => <span> Create new credentials for user <strong>{email}</strong>?</span>;
+
     return (
         <>
             <UserHeaderWithContext userId={userId} page={'credentials'}/>
