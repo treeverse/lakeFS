@@ -13,7 +13,7 @@ import (
 
 const (
 	CosmosDBLocalPort = "8081"
-	maxWait           = 7 * time.Minute // Cosmosdb emulator takes time to start
+	maxWait           = 5 * time.Minute // Cosmosdb emulator takes time to start
 )
 
 var cosmosdbLocalURI string
