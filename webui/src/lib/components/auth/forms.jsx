@@ -69,12 +69,12 @@ export const AttachModal = ({
                 >
                   {resolveEntityFn(item)}
                 </Badge>
-            )))}
+              )))}
             </p>
           }
         </div>
       </>
-  );
+    );
 
   return (
     <Modal show={show} onHide={onHide}>
