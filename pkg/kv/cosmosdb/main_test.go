@@ -26,11 +26,11 @@ var (
 )
 
 func TestCosmosDB(t *testing.T) {
-	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
-		if runtime.GOOS == "darwin" {
-			t.Skipf("this test hangs for macOS users, and fails. skipping - see Issue#8476 for more details")
-		}
+	if runtime.GOOS == "darwin" {
+		t.Skipf("this test hangs for macOS users, and fails. skipping - see Issue#8476 for more details")
+	}
 
+	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
 
 		databaseClient, err := client.NewDatabase(testParams.Database)
