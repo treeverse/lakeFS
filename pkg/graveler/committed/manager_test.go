@@ -7,7 +7,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
-	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/committed/mock"
@@ -110,26 +109,31 @@ func TestManager_WriteRange(t *testing.T) {
 }
 
 func TestManager_WriteMetaRange(t *testing.T) {
-	const (
-		storageID = ""
-		ns        = "some-ns"
-	)
+	const ns = "some-ns"
 
 	expectedMetarangeID := graveler.MetaRangeID("some-id")
 
 	tests := []struct {
-		name    string
-		records []*graveler.RangeInfo
+		name           string
+		initStorageID  graveler.StorageID
+		writeStorageID graveler.StorageID
+		records        []*graveler.RangeInfo
+		errorIs        error
 	}{
-		//{
-		//	name: "in_order",
-		//	records: []*graveler.RangeInfo{
-		//		{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
-		//		{ID: "id2", MinKey: graveler.Key("2"), MaxKey: graveler.Key("22")},
-		//	},
-		//},
 		{
-			name: "wrong_order",
+			name:           "mismatched_sid",
+			initStorageID:  "",
+			writeStorageID: "summat_else",
+			records: []*graveler.RangeInfo{
+				{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
+				{ID: "id2", MinKey: graveler.Key("2"), MaxKey: graveler.Key("22")},
+			},
+			errorIs: graveler.ErrInvalidStorageID,
+		},
+		{
+			name:           "wrong_order",
+			initStorageID:  "",
+			writeStorageID: "",
 			records: []*graveler.RangeInfo{
 				{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
 				{ID: "id3", MinKey: graveler.Key("3"), MaxKey: graveler.Key("33")},
@@ -144,27 +148,34 @@ func TestManager_WriteMetaRange(t *testing.T) {
 			rangeManager := mock.NewMockRangeManager(ctrl)
 			metarangeWriter := mock.NewMockMetaRangeWriter(ctrl)
 
-			minKey := ""
-			metarangeManager.EXPECT().NewWriter(context.Background(), graveler.StorageNamespace(ns), nil).Return(metarangeWriter)
-			metarangeWriter.EXPECT().WriteRange(gomock.Any()).Return(nil).
-				DoAndReturn(func(info committed.Range) error {
-					if string(info.MinKey) < minKey {
-						t.Fatalf("record should be sorted ascending - previous minKey '%s', current '%s'", minKey, info.MinKey)
-					}
-					minKey = string(info.MinKey)
-					return nil
-				}).Times(len(tt.records))
-			metarangeWriter.EXPECT().Close(gomock.Any()).Return(&expectedMetarangeID, nil)
-			metarangeWriter.EXPECT().Abort().Return(nil)
+			if tt.errorIs == nil {
+				minKey := ""
+				metarangeManager.EXPECT().NewWriter(context.Background(), graveler.StorageNamespace(ns), nil).Return(metarangeWriter)
+				metarangeWriter.EXPECT().WriteRange(gomock.Any()).Return(nil).
+					DoAndReturn(func(info committed.Range) error {
+						if string(info.MinKey) < minKey {
+							t.Fatalf("record should be sorted ascending - previous minKey '%s', current '%s'", minKey, info.MinKey)
+						}
+						minKey = string(info.MinKey)
+						return nil
+					}).Times(len(tt.records))
+				metarangeWriter.EXPECT().Close(gomock.Any()).Return(&expectedMetarangeID, nil)
+				metarangeWriter.EXPECT().Abort().Return(nil)
+			}
+
 			rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
-			rangeManagers[config.SingleBlockstoreID] = rangeManager
+			rangeManagers[tt.initStorageID] = rangeManager
 			metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
-			metaRangeManagers[config.SingleBlockstoreID] = metarangeManager
+			metaRangeManagers[tt.initStorageID] = metarangeManager
 			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 
-			actualMetarangeID, err := sut.WriteMetaRange(context.Background(), storageID, ns, tt.records)
-			require.NoError(t, err)
-			require.Equal(t, &graveler.MetaRangeInfo{ID: expectedMetarangeID}, actualMetarangeID)
+			actualMetarangeID, err := sut.WriteMetaRange(context.Background(), tt.writeStorageID, ns, tt.records)
+			if tt.errorIs != nil {
+				require.ErrorIs(t, err, tt.errorIs)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, &graveler.MetaRangeInfo{ID: expectedMetarangeID}, actualMetarangeID)
+			}
 		})
 	}
 }
