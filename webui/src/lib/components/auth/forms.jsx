@@ -53,7 +53,7 @@ export const AttachModal = ({
               <strong>Selected: </strong>
               {(selected.map(item => (
                 <Badge key={item.id} pill variant="primary" className="me-1">
-                    {resolveEntityFn(item)}
+                  {resolveEntityFn(item)}
                 </Badge>
               )))}
             </p>
