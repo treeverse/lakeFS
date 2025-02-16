@@ -15,5 +15,5 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 		return nil, err
 	}
 
-	return block.NewMetricsAdapter(adapter), nil
+	return block.NewMetricsAdapter(adapter, nil), nil
 }

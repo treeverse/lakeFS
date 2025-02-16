@@ -13,15 +13,23 @@ import (
 var connectionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 	Name: "out_in_use_conns",
 	Help: "A gauge of in-use TCP connections",
-}, []string{"service"})
+}, []string{"service", "label"})
 
 func SetClientTrace(ctx context.Context, service string) context.Context {
+	return SetClientTraceWithLabel(ctx, service, nil)
+}
+
+func SetClientTraceWithLabel(ctx context.Context, service string, label *string) context.Context {
+	labelValues := []string{service}
+	if label != nil {
+		labelValues = append(labelValues, *label)
+	}
 	trace := &httptrace.ClientTrace{
 		GotConn: func(info httptrace.GotConnInfo) {
-			connectionGauge.WithLabelValues(service).Inc()
+			connectionGauge.WithLabelValues(labelValues...).Inc()
 		},
 		PutIdleConn: func(err error) {
-			connectionGauge.WithLabelValues(service).Dec()
+			connectionGauge.WithLabelValues(labelValues...).Dec()
 		},
 	}
 
