@@ -19,14 +19,14 @@ export const UserNav = ({ userId, page = 'groups' }) => {
             </Link>
             {
                 rbac !== 'simplified' && (
-                    <>
-                        <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/users/:userId/policies', params: {userId}}}>
-                            Directly Attached Policies
-                        </Link>
-                        <Link component={NavItem} active={page === 'effectivePolicies'} href={{pathname: '/auth/users/:userId/policies/effective', params: {userId}}}>
-                            Effective Attached Policies
-                        </Link>
-                    </>
+                <>
+                    <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/users/:userId/policies', params: {userId}}}>
+                        Directly Attached Policies
+                    </Link>
+                    <Link component={NavItem} active={page === 'effectivePolicies'} href={{pathname: '/auth/users/:userId/policies/effective', params: {userId}}}>
+                        Effective Attached Policies
+                    </Link>
+                </>
                 )
 
             }
