@@ -89,12 +89,17 @@ func TestLuaRun(t *testing.T) {
 		Username:  "user1",
 	})
 	err = h.Run(ctx, graveler.HookRecord{
-		RunID:            "abc123",
-		EventType:        graveler.EventTypePreCreateBranch,
-		RepositoryID:     "example123",
-		StorageNamespace: "local://foo/bar",
-		SourceRef:        "abc123",
-		BranchID:         "my-branch",
+		RunID:     "abc123",
+		EventType: graveler.EventTypePreCreateBranch,
+		Repository: &graveler.RepositoryRecord{
+			RepositoryID: "example123",
+			Repository: &graveler.Repository{
+				StorageNamespace: "local://foo/bar",
+				CreationDate:     time.Time{},
+			},
+		},
+		SourceRef: "abc123",
+		BranchID:  "my-branch",
 		Commit: graveler.Commit{
 			Version: 1,
 		},
@@ -141,12 +146,17 @@ func TestLuaRun_NetHttpDisabled(t *testing.T) {
 		Username:  "user1",
 	})
 	err = h.Run(ctx, graveler.HookRecord{
-		RunID:            "abc123",
-		EventType:        graveler.EventTypePreCreateBranch,
-		RepositoryID:     "example123",
-		StorageNamespace: "local://foo/bar",
-		SourceRef:        "abc123",
-		BranchID:         "my-branch",
+		RunID:     "abc123",
+		EventType: graveler.EventTypePreCreateBranch,
+		Repository: &graveler.RepositoryRecord{
+			RepositoryID: "example123",
+			Repository: &graveler.Repository{
+				StorageNamespace: "local://foo/bar",
+				CreationDate:     time.Time{},
+			},
+		},
+		SourceRef: "abc123",
+		BranchID:  "my-branch",
 		Commit: graveler.Commit{
 			Version: 1,
 		},
@@ -291,12 +301,17 @@ print(code .. " " .. body .. " " .. status)
 			})
 			runID := nanoid.Must(20)
 			err = h.Run(ctx, graveler.HookRecord{
-				RunID:            runID,
-				EventType:        graveler.EventTypePreCreateBranch,
-				RepositoryID:     "example123",
-				StorageNamespace: "local://foo/bar",
-				SourceRef:        "abc123",
-				BranchID:         "my-branch",
+				RunID:     runID,
+				EventType: graveler.EventTypePreCreateBranch,
+				Repository: &graveler.RepositoryRecord{
+					RepositoryID: "example123",
+					Repository: &graveler.Repository{
+						StorageNamespace: "local://foo/bar",
+						CreationDate:     time.Time{},
+					},
+				},
+				SourceRef: "abc123",
+				BranchID:  "my-branch",
 				Commit: graveler.Commit{
 					Version: 1,
 				},
@@ -420,12 +435,17 @@ func TestLuaRunTable(t *testing.T) {
 				Username:  "user1",
 			})
 			err = h.Run(ctx, graveler.HookRecord{
-				RunID:            "abc123",
-				EventType:        graveler.EventTypePreCreateBranch,
-				RepositoryID:     "example123",
-				StorageNamespace: "local://foo/bar",
-				SourceRef:        "abc123",
-				BranchID:         "my-branch",
+				RunID:     "abc123",
+				EventType: graveler.EventTypePreCreateBranch,
+				Repository: &graveler.RepositoryRecord{
+					RepositoryID: "example123",
+					Repository: &graveler.Repository{
+						StorageNamespace: "local://foo/bar",
+						CreationDate:     time.Time{},
+					},
+				},
+				SourceRef: "abc123",
+				BranchID:  "my-branch",
 				Commit: graveler.Commit{
 					Version: 1,
 				},

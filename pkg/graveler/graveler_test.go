@@ -35,8 +35,8 @@ var ErrGravelerUpdate = errors.New("test update error")
 
 func (h *Hooks) PreCommitHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.RepositoryID = record.RepositoryID
-	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
 	h.BranchID = record.BranchID
 	h.Commit = record.Commit
 	return h.Err
@@ -44,7 +44,7 @@ func (h *Hooks) PreCommitHook(_ context.Context, record graveler.HookRecord) err
 
 func (h *Hooks) PostCommitHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.RepositoryID = record.RepositoryID
+	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
 	h.Commit = record.Commit
@@ -53,8 +53,8 @@ func (h *Hooks) PostCommitHook(_ context.Context, record graveler.HookRecord) er
 
 func (h *Hooks) PreMergeHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.RepositoryID = record.RepositoryID
-	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
 	h.BranchID = record.BranchID
 	h.SourceRef = record.SourceRef
 	h.Commit = record.Commit
@@ -63,8 +63,8 @@ func (h *Hooks) PreMergeHook(_ context.Context, record graveler.HookRecord) erro
 
 func (h *Hooks) PostMergeHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.RepositoryID = record.RepositoryID
-	h.StorageNamespace = record.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
 	h.BranchID = record.BranchID
 	h.SourceRef = record.SourceRef
 	h.CommitID = record.CommitID
@@ -74,8 +74,8 @@ func (h *Hooks) PostMergeHook(_ context.Context, record graveler.HookRecord) err
 
 func (h *Hooks) PreCreateTagHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.StorageNamespace = record.StorageNamespace
-	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
 	h.CommitID = record.CommitID
 	h.TagID = record.TagID
 	return h.Err
@@ -83,31 +83,31 @@ func (h *Hooks) PreCreateTagHook(_ context.Context, record graveler.HookRecord) 
 
 func (h *Hooks) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
 	h.Called = true
-	h.StorageNamespace = record.StorageNamespace
-	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
 	h.CommitID = record.CommitID
 	h.TagID = record.TagID
 }
 
 func (h *Hooks) PreDeleteTagHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.StorageNamespace = record.StorageNamespace
-	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
 	h.TagID = record.TagID
 	return h.Err
 }
 
 func (h *Hooks) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
 	h.Called = true
-	h.StorageNamespace = record.StorageNamespace
-	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
 	h.TagID = record.TagID
 }
 
 func (h *Hooks) PreCreateBranchHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.StorageNamespace = record.StorageNamespace
-	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
 	h.SourceRef = record.SourceRef
@@ -116,8 +116,8 @@ func (h *Hooks) PreCreateBranchHook(_ context.Context, record graveler.HookRecor
 
 func (h *Hooks) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
 	h.Called = true
-	h.StorageNamespace = record.StorageNamespace
-	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
 	h.SourceRef = record.SourceRef
@@ -125,16 +125,16 @@ func (h *Hooks) PostCreateBranchHook(_ context.Context, record graveler.HookReco
 
 func (h *Hooks) PreDeleteBranchHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
-	h.StorageNamespace = record.StorageNamespace
-	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
 	return h.Err
 }
 
 func (h *Hooks) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
 	h.Called = true
-	h.StorageNamespace = record.StorageNamespace
-	h.RepositoryID = record.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
 }
 
