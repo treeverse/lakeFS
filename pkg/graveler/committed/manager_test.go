@@ -28,18 +28,35 @@ func TestManager_WriteRange(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		records []*graveler.ValueRecord
+		name           string
+		initStorageID  graveler.StorageID
+		writeStorageID graveler.StorageID
+		records        []*graveler.ValueRecord
+		errorIs        error
 	}{
 		{
-			name: "iterator_exhausted",
+			name:           "iterator_exhausted",
+			initStorageID:  "",
+			writeStorageID: "",
 			records: []*graveler.ValueRecord{
 				{Key: graveler.Key("1"), Value: &graveler.Value{}},
 				{Key: graveler.Key("2"), Value: &graveler.Value{}},
 			},
 		},
 		{
-			name: "break_at_key",
+			name:           "mismatched_sid",
+			initStorageID:  "",
+			writeStorageID: "summat_else",
+			records: []*graveler.ValueRecord{
+				{Key: graveler.Key("1"), Value: &graveler.Value{}},
+				{Key: graveler.Key("2"), Value: &graveler.Value{}},
+			},
+			errorIs: graveler.ErrInvalidStorageID,
+		},
+		{
+			name:           "break_at_key",
+			initStorageID:  "",
+			writeStorageID: "",
 			records: []*graveler.ValueRecord{
 				{Key: graveler.Key("1"), Value: &graveler.Value{}},
 				{Key: graveler.Key("2"), Value: &graveler.Value{}},
@@ -56,33 +73,38 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeManager := mock.NewMockRangeManager(ctrl)
 			rangeWriter := mock.NewMockRangeWriter(ctrl)
 
-			rangeWriter.EXPECT().Abort().Return(nil)
-			rangeManager.EXPECT().GetWriter(context.Background(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
-
 			rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
-			rangeManagers[config.SingleBlockstoreID] = rangeManager
+			rangeManagers[tt.initStorageID] = rangeManager
 			metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
-			metaRangeManagers[config.SingleBlockstoreID] = metarangeManager
+			metaRangeManagers[tt.initStorageID] = metarangeManager
 			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 
 			times := 0
 			expectedTimes := min(len(tt.records), maxRecords)
-			rangeWriter.EXPECT().WriteRecord(gomock.Any()).Return(nil).Times(expectedTimes)
-			rangeWriter.EXPECT().ShouldBreakAtKey(gomock.Any(), gomock.Any()).
-				DoAndReturn(func(interface{}, interface{}) bool { times++; return times == maxRecords }).Times(expectedTimes)
-			rangeWriter.EXPECT().Close().Return(writeResult, nil)
-			rangeWriter.EXPECT().SetMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
+			if tt.errorIs == nil {
+				rangeWriter.EXPECT().Abort().Return(nil)
+				rangeManager.EXPECT().GetWriter(context.Background(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
+				rangeWriter.EXPECT().WriteRecord(gomock.Any()).Return(nil).Times(expectedTimes)
+				rangeWriter.EXPECT().ShouldBreakAtKey(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(interface{}, interface{}) bool { times++; return times == maxRecords }).Times(expectedTimes)
+				rangeWriter.EXPECT().Close().Return(writeResult, nil)
+				rangeWriter.EXPECT().SetMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
+			}
 
 			it := testutils.NewFakeValueIterator(tt.records)
-			rangeInfo, err := sut.WriteRange(context.Background(), "", ns, it)
-			require.NoError(t, err)
-			require.Equal(t, &graveler.RangeInfo{
-				ID:                      graveler.RangeID(writeResult.RangeID),
-				MinKey:                  graveler.Key(writeResult.First),
-				MaxKey:                  graveler.Key(writeResult.Last),
-				Count:                   writeResult.Count,
-				EstimatedRangeSizeBytes: writeResult.EstimatedRangeSizeBytes,
-			}, rangeInfo)
+			rangeInfo, err := sut.WriteRange(context.Background(), tt.writeStorageID, ns, it)
+			if tt.errorIs != nil {
+				require.ErrorIs(t, err, tt.errorIs)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, &graveler.RangeInfo{
+					ID:                      graveler.RangeID(writeResult.RangeID),
+					MinKey:                  graveler.Key(writeResult.First),
+					MaxKey:                  graveler.Key(writeResult.Last),
+					Count:                   writeResult.Count,
+					EstimatedRangeSizeBytes: writeResult.EstimatedRangeSizeBytes,
+				}, rangeInfo)
+			}
 		})
 	}
 }

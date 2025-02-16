@@ -12,11 +12,13 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/committed/mock"
 )
 
+// Tests for graveler.CommittedManager.Import
 func Test_import(t *testing.T) {
 	tests := []struct {
 		name           string
 		sourceRange    *testMetaRange
 		destRange      *testMetaRange
+		storageID      graveler.StorageID
 		prefixes       []graveler.Prefix
 		expectedResult []testRunResult
 	}{
@@ -44,6 +46,50 @@ func Test_import(t *testing.T) {
 					},
 				},
 			}),
+			storageID: config.SingleBlockstoreID,
+			prefixes: []graveler.Prefix{
+				"a",
+			},
+			expectedResult: []testRunResult{
+				{
+					expectedActions: []writeAction{
+						{
+							action: actionTypeWriteRange,
+							rng:    committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
+						},
+						{
+							action: actionTypeWriteRange,
+							rng:    committed.Range{ID: "a/3-a/6", MinKey: committed.Key("a/3"), MaxKey: committed.Key("a/6"), Count: 4, EstimatedSize: 2048},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "source range smaller than dest range, alternate StorageID",
+			sourceRange: newTestMetaRange([]testRange{
+				{
+					rng: committed.Range{ID: "a/1-a/2", MinKey: committed.Key("a/1"), MaxKey: committed.Key("a/2"), Count: 2, EstimatedSize: 1024},
+					records: []testValueRecord{
+						{"a/1", "a1"}, {"a/2", "a2"},
+					},
+				},
+				{
+					rng: committed.Range{ID: "a/3-a/6", MinKey: committed.Key("a/3"), MaxKey: committed.Key("a/6"), Count: 4, EstimatedSize: 2048},
+					records: []testValueRecord{
+						{"a/3", "a3"}, {"a/4", "a4"}, {"a/5", "a5"}, {"a/6", "a6"},
+					},
+				},
+			}),
+			destRange: newTestMetaRange([]testRange{
+				{
+					rng: committed.Range{ID: "a/7-a/9", MinKey: committed.Key("a/7"), MaxKey: committed.Key("a/9"), Count: 3, EstimatedSize: 1536},
+					records: []testValueRecord{
+						{"a/7", "a7"}, {"a/8", "a8"}, {"a/9", "a9"},
+					},
+				},
+			}),
+			storageID: "alternate_storage",
 			prefixes: []graveler.Prefix{
 				"a",
 			},
@@ -86,6 +132,7 @@ func Test_import(t *testing.T) {
 					},
 				},
 			}),
+			storageID: config.SingleBlockstoreID,
 			prefixes: []graveler.Prefix{
 				"b",
 			},
@@ -142,6 +189,7 @@ func Test_import(t *testing.T) {
 					},
 				},
 			}),
+			storageID: config.SingleBlockstoreID,
 			prefixes: []graveler.Prefix{
 				"a",
 			},
@@ -186,6 +234,7 @@ func Test_import(t *testing.T) {
 					},
 				},
 			}),
+			storageID: config.SingleBlockstoreID,
 			prefixes: []graveler.Prefix{
 				"a",
 			},
@@ -238,6 +287,7 @@ func Test_import(t *testing.T) {
 					},
 				},
 			}),
+			storageID: config.SingleBlockstoreID,
 			prefixes: []graveler.Prefix{
 				"a",
 			},
@@ -314,6 +364,7 @@ func Test_import(t *testing.T) {
 					},
 				},
 			}),
+			storageID: config.SingleBlockstoreID,
 			prefixes: []graveler.Prefix{
 				"a",
 				"c",
@@ -374,11 +425,11 @@ func Test_import(t *testing.T) {
 				writer.EXPECT().Close(gomock.Any()).Return(&metaRangeId, nil).AnyTimes()
 
 				rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
-				rangeManagers[config.SingleBlockstoreID] = rangeManager
+				rangeManagers[tst.storageID] = rangeManager
 				metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
-				metaRangeManagers[config.SingleBlockstoreID] = metaRangeManager
+				metaRangeManagers[tst.storageID] = metaRangeManager
 				committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
-				_, err := committedManager.Import(ctx, config.SingleBlockstoreID, "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
+				_, err := committedManager.Import(ctx, tst.storageID, "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
 				if !errors.Is(err, expectedResult.expectedErr) {
 					t.Fatalf("Import error = '%v', expected '%v'", err, expectedResult.expectedErr)
 				}
