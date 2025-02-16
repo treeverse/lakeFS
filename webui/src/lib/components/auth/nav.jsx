@@ -19,14 +19,14 @@ export const UserNav = ({ userId, page = 'groups' }) => {
             </Link>
             {
                 rbac !== 'simplified' && (
-                <>
-                    <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/users/:userId/policies', params: {userId}}}>
-                        Directly Attached Policies
-                    </Link>
-                    <Link component={NavItem} active={page === 'effectivePolicies'} href={{pathname: '/auth/users/:userId/policies/effective', params: {userId}}}>
-                        Effective Attached Policies
-                    </Link>
-                </>
+                    <>
+                        <Link component={NavItem} active={page === 'policies'} href={{pathname: '/auth/users/:userId/policies', params: {userId}}}>
+                            Directly Attached Policies
+                        </Link>
+                        <Link component={NavItem} active={page === 'effectivePolicies'} href={{pathname: '/auth/users/:userId/policies/effective', params: {userId}}}>
+                            Effective Attached Policies
+                        </Link>
+                    </>
                 )
 
             }
@@ -87,7 +87,19 @@ export const UserHeader = ({ userEmail, userId, page }) => {
                 <Link component={BreadcrumbItem} href='/auth/users'>
                     Users
                 </Link>
-                <Link component={BreadcrumbItem} href={{pathname: '/auth/users/:userId', params: {userId}}}>
+                <Link
+                    component={BreadcrumbItem}
+                    href={{pathname: '/auth/users/:userId', params: {userId}}}
+                    className="
+                        d-inline-block
+                        w-50
+                        text-nowrap
+                        overflow-hidden
+                        text-truncate
+                        align-middle
+                    "
+                    title={userEmail}
+                >
                     {userEmail}
                 </Link>
             </Breadcrumb>
@@ -104,7 +116,19 @@ export const GroupHeader = ({ groupId, page }) => {
                 <Link component={BreadcrumbItem} href='/auth/groups'>
                     Groups
                 </Link>
-                <Link component={BreadcrumbItem} href={{pathname: '/auth/groups/:groupId', params: {groupId}}}>
+                <Link
+                    component={BreadcrumbItem}
+                    href={{pathname: '/auth/groups/:groupId', params: {groupId}}}
+                    className="
+                        d-inline-block
+                        w-50
+                        text-nowrap
+                        overflow-hidden
+                        text-truncate
+                        align-middle
+                    "
+                    title={groupId}
+                >
                     {groupId}
                 </Link>
             </Breadcrumb>
@@ -121,7 +145,19 @@ export const PolicyHeader = ({ policyId }) => {
                 <Link component={BreadcrumbItem} href='/auth/policies'>
                     Policies
                 </Link>
-                <Link component={BreadcrumbItem} href={{pathname: '/auth/policies/:policyId', params: {policyId}}}>
+                <Link
+                    component={BreadcrumbItem}
+                    href={{pathname: '/auth/policies/:policyId', params: {policyId}}}
+                    className="
+                        d-inline-block
+                        w-50
+                        text-nowrap
+                        overflow-hidden
+                        text-truncate
+                        align-middle
+                    "
+                    title={policyId}
+                >
                     {policyId}
                 </Link>
             </Breadcrumb>
