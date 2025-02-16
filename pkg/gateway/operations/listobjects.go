@@ -442,6 +442,7 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		opts.KeyMarker = &keyMarker
 	}
 	mpuResp, err := o.BlockStore.ListMultipartUploads(req.Context(), block.ObjectPointer{
+		StorageID:        o.Repository.StorageID,
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, opts)

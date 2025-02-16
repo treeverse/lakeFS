@@ -211,6 +211,7 @@ type Adapter interface {
 
 	BlockstoreType() string
 	BlockstoreMetadata(ctx context.Context) (*BlockstoreMetadata, error)
+	// GetStorageNamespaceInfo returns the StorageNamespaceInfo for storageID or nil if not found.
 	GetStorageNamespaceInfo(storageID string) *StorageNamespaceInfo
 	ResolveNamespace(storageID, storageNamespace, key string, identifierType IdentifierType) (QualifiedKey, error)
 

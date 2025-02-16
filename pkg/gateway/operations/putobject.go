@@ -177,6 +177,12 @@ func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation
 			}
 		}
 
+		if srcRepo.StorageID != o.Repository.StorageID {
+			o.Log(req).WithField("copy_source", copySource).Error("copy between repos with different StorageIDs is not allowed")
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInvalidCopySource))
+			return
+		}
+
 		src := block.ObjectPointer{
 			StorageID:        srcRepo.StorageID,
 			StorageNamespace: srcRepo.StorageNamespace,
