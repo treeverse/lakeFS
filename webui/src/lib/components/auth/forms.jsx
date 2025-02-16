@@ -9,8 +9,6 @@ import {SearchIcon} from "@primer/octicons-react";
 import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
 
-import "../../../styles/globals.css"
-
 export const AttachModal = ({
                               show, searchFn, resolveEntityFn = (ent => ent.id), onAttach, onHide, addText = "Add",
                               emptyState = 'No matches', modalTitle = 'Add', headers = ['Select', 'ID'],
@@ -57,7 +55,15 @@ export const AttachModal = ({
                     key={item.id}
                     pill
                     variant="primary"
-                    className="me-1 text-truncate truncate-cell"
+                    className="
+                        me-1
+                        d-inline-block
+                        w-25
+                        text-nowrap
+                        overflow-hidden
+                        text-truncate
+                        align-middle
+                      "
                     title={resolveEntityFn(item)}
                 >
                     {resolveEntityFn(item)}

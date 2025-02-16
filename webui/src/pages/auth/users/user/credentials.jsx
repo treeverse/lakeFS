@@ -13,8 +13,6 @@ import {
 } from "../../../../lib/components/controls";
 import {useRouter} from "../../../../lib/hooks/router";
 
-import "../../../../styles/globals.css"
-
 const UserCredentialsList = ({ userId, after, onPaginate }) => {
     const {user} = useUser();
     const [refresh, setRefresh] = useState(false);
@@ -48,7 +46,14 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             <span>
                 Create new credentials for user{" "}
                 <strong
-                    className="d-inline-block text-truncate truncate-cell"
+                    className="
+                        d-inline-block
+                        w-50
+                        text-nowrap
+                        overflow-hidden
+                        text-truncate
+                        align-middle
+                    "
                     title={email}
                 >
                 {email}
