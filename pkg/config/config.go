@@ -597,7 +597,10 @@ func Unmarshal(c Config) error {
 	return viper.UnmarshalExact(&c,
 		viper.DecodeHook(
 			mapstructure.ComposeDecodeHookFunc(
-				DecodeStrings, mapstructure.StringToTimeDurationHookFunc())))
+				DecodeStrings,
+				mapstructure.StringToTimeDurationHookFunc(),
+				DecodeStringToMap(),
+			)))
 }
 
 func stringReverse(s string) string {
