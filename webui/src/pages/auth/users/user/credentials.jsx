@@ -44,7 +44,6 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
         );
 
         const getMsg = (email) => <span>Create new credentials for user <strong>{email}</strong>?</span>;
-
     return (
         <>
             <UserHeaderWithContext userId={userId} page={'credentials'}/>
