@@ -45,36 +45,36 @@ export const AttachModal = ({
               onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
               name={'selected'}/>,
             <strong>{resolveEntityFn(ent)}</strong>
-        ]}/>
+          ]}/>
 
         <div className="mt-3">
-        {(selected.length > 0) &&
-          <p>
-            <strong>Selected: </strong>
-            {(selected.map(item => (
-              <Badge
-                key={item.id}
-                pill
-                variant="primary"
-                className="
-                    me-1
-                    d-inline-block
-                    w-25
-                    text-nowrap
-                    overflow-hidden
-                    text-truncate
-                    align-middle
-                "
-                title={resolveEntityFn(item)}
-              >
-                {resolveEntityFn(item)}
-              </Badge>
+          {(selected.length > 0) &&
+            <p>
+              <strong>Selected: </strong>
+              {(selected.map(item => (
+                <Badge
+                  key={item.id}
+                  pill
+                  variant="primary"
+                  className="
+                      me-1
+                      d-inline-block
+                      w-25
+                      text-nowrap
+                      overflow-hidden
+                      text-truncate
+                      align-middle
+                  "
+                  title={resolveEntityFn(item)}
+                >
+                  {resolveEntityFn(item)}
+                </Badge>
             )))}
-          </p>
-        }
+            </p>
+          }
         </div>
       </>
-    );
+  );
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -150,7 +150,7 @@ export const EntityActionModal = ({
           setError(validationResult.errorMessage);
           return;
         }
-     }
+      }
       onAction(idField.current.value, extraField.current.value).catch(err => setError(err));
     } else {
       onAction(idField.current.value).catch(err => setError(err));
@@ -172,7 +172,7 @@ export const EntityActionModal = ({
           {showExtraField &&
             <FormControl ref={extraField} placeholder={extraPlaceholder} type="text" className="mt-3"/>
           }
-      </Form>
+        </Form>
 
         {(!!error) && <AlertError className="mt-3" error={error}/>}
 
