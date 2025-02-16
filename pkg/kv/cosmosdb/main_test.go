@@ -72,13 +72,17 @@ func TestMain(m *testing.M) {
 	}
 	defer cleanupFunc()
 
+	const clientTimeout = 30 * time.Second
 	testParams = &kvparams.CosmosDB{
 		Endpoint: databaseURI,
 		Key:      "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
 		Database: "test-db",
-		Client: &http.Client{Timeout: 30 * time.Second, Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
-		}},
+		Client: &http.Client{
+			Timeout: clientTimeout,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
+			},
+		},
 		StrongConsistency: false,
 	}
 

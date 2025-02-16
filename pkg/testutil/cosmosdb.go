@@ -59,11 +59,12 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return "", nil, fmt.Errorf("joining urls: %w", err)
 	}
 
+	const clientTimeout = 5 * time.Second
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
 		},
-		Timeout: 5 * time.Second,
+		Timeout: clientTimeout,
 	}
 
 	dockerPool.MaxWait = maxWait
