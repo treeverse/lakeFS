@@ -270,7 +270,6 @@ type mergeContext struct {
 }
 
 func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (graveler.MetaRangeID, error) {
-	var err error = nil
 	metaRangeManager, err := c.getMetaRangeManager(mctx.storageID)
 	if err != nil {
 		return "", err
