@@ -3,10 +3,10 @@ package committed_test
 import (
 	"context"
 	"errors"
-	"github.com/treeverse/lakefs/pkg/config"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/committed/mock"
