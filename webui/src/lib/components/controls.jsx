@@ -335,7 +335,8 @@ export const RefreshButton = ({ onClick, size = "md", variant = "light", tooltip
     );
 };
 
-export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], actions = [], emptyState = null }) => {
+export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], actions = [],
+                              emptyState = null, firstFixedCol = false }) => {
 
     if ((!results || results.length === 0) && emptyState !== null) {
         return <Alert variant="warning">{emptyState}</Alert>;
@@ -350,7 +351,7 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
                         key={header}
                         title={header}
                         className={`
-                            ${i === 0 ? "col-1" : ""}
+                            ${(firstFixedCol && i === 0) ? "col-1" : ""}
                             text-nowrap
                             overflow-hidden
                             text-truncate
