@@ -48,20 +48,18 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                 Create new credentials for user{" "}
             <br/>
             <strong
-                className="
-                        d-inline-block
-                        w-50
-                        text-nowrap
-                        overflow-hidden
-                        text-truncate
-                        align-middle
-                    "
+                className={`d-inline-block
+                            text-nowrap
+                            overflow-hidden
+                            text-truncate
+                            align-bottom
+                            ${email.length > 40 ? "w-75" : ""}`}
                 title={email}
             >
                 {email}
-                </strong>
+            </strong>
             {" "}?
-            </span>
+        </span>
     );
     return (
         <>
