@@ -31,16 +31,16 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             });
     };
     const content = (
-        <>
-            {createError && <AlertError error={createError}/>}
-            <CredentialsTable
-                userId={userId}
-                currentAccessKey={(user) ? user.accessKeyId : ""}
-                refresh={refresh}
-                after={after}
-                onPaginate={onPaginate}
-            />
-        </>
+            <>
+                {createError && <AlertError error={createError}/>}
+                <CredentialsTable
+                    userId={userId}
+                    currentAccessKey={(user) ? user.accessKeyId : ""}
+                    refresh={refresh}
+                    after={after}
+                    onPaginate={onPaginate}
+                />
+            </>
     );
 
     const getMsg = (email) => (
