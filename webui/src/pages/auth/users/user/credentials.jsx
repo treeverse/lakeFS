@@ -41,7 +41,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                     onPaginate={onPaginate}
                 />
             </>
-    );
+        );
 
     const getMsg = (email) => (
         <span>
@@ -60,7 +60,6 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             >
                 {email}
                 </strong>
-            <br/>
             {" "}?
             </span>
     );
