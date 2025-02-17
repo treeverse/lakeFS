@@ -36,6 +36,7 @@ var (
 
 type Adapter struct {
 	clients                      *ClientCache
+	stats                        block.Histograms
 	respServer                   atomic.Pointer[string]
 	ServerSideEncryption         string
 	ServerSideEncryptionKmsKeyID string
@@ -116,7 +117,7 @@ func WithNowFactory(f func() time.Time) func(a *Adapter) {
 
 type AdapterOption func(a *Adapter)
 
-func NewAdapter(ctx context.Context, params params.S3, opts ...AdapterOption) (*Adapter, error) {
+func NewAdapter(ctx context.Context, params params.S3, statsLabel *string, opts ...AdapterOption) (*Adapter, error) {
 	cfg, err := LoadConfig(ctx, params)
 	if err != nil {
 		return nil, err
@@ -127,6 +128,7 @@ func NewAdapter(ctx context.Context, params params.S3, opts ...AdapterOption) (*
 	}
 	a := &Adapter{
 		clients:             NewClientCache(cfg, params),
+		stats:               NewS3Stats(statsLabel),
 		preSignedExpiry:     block.DefaultPreSignExpiryDuration,
 		sessionExpiryWindow: sessionExpiryWindow,
 		nowFactory:          time.Now, // current time function can be mocked out via injection for testing purposes
@@ -229,7 +231,7 @@ func getServerTimeFromResponseMetadata(metadata middleware.Metadata) time.Time {
 
 func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) (*block.PutResponse, error) {
 	var err error
-	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
+	defer a.stats.ReportMetrics("Put", time.Now(), &sizeBytes, &err)
 
 	// for unknown size, we assume we like to stream content, will use s3manager to perform the request.
 	// we assume the caller may not have 1:1 request to s3 put object in this case as it may perform multipart upload
@@ -307,7 +309,7 @@ func (a *Adapter) captureServerDeserializeMiddleware(ctx context.Context, input 
 
 func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
-	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
+	defer a.stats.ReportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -358,7 +360,7 @@ func isErrNotFound(err error) bool {
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadCloser, error) {
 	var err error
 	var sizeBytes int64
-	defer reportMetrics("Get", time.Now(), &sizeBytes, &err)
+	defer a.stats.ReportMetrics("Get", time.Now(), &sizeBytes, &err)
 	log := a.log(ctx).WithField("operation", "GetObject")
 	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
@@ -494,7 +496,7 @@ func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectP
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
-	defer reportMetrics("Exists", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("Exists", time.Now(), nil, &err)
 	log := a.log(ctx).WithField("operation", "HeadObject")
 	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
@@ -520,7 +522,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	var err error
 	var sizeBytes int64
-	defer reportMetrics("GetRange", time.Now(), &sizeBytes, &err)
+	defer a.stats.ReportMetrics("GetRange", time.Now(), &sizeBytes, &err)
 	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -549,7 +551,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 
 func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {
 	var err error
-	defer reportMetrics("GetProperties", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("GetProperties", time.Now(), nil, &err)
 	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return block.Properties{}, err
@@ -571,7 +573,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	var err error
-	defer reportMetrics("Remove", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("Remove", time.Now(), nil, &err)
 	bucket, key, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
@@ -636,13 +638,13 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 
 func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
-	defer reportMetrics("UploadCopyPart", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("UploadCopyPart", time.Now(), nil, &err)
 	return a.copyPart(ctx, sourceObj, destinationObj, uploadID, partNumber, nil)
 }
 
 func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
-	defer reportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
 	return a.copyPart(ctx,
 		sourceObj, destinationObj, uploadID, partNumber,
 		aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)))
@@ -650,7 +652,7 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
-	defer reportMetrics("Copy", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("Copy", time.Now(), nil, &err)
 	qualifiedSourceKey, err := resolveNamespace(sourceObj)
 	if err != nil {
 		return err
@@ -681,7 +683,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 
 func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, opts block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	var err error
-	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -722,7 +724,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 
 func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string) error {
 	var err error
-	defer reportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
 	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
@@ -762,7 +764,7 @@ func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUpl
 
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
-	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -803,7 +805,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 
 func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, uploadID string, opts block.ListPartsOpts) (*block.ListPartsResponse, error) {
 	var err error
-	defer reportMetrics("ListParts", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("ListParts", time.Now(), nil, &err)
 	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -853,7 +855,7 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 
 func (a *Adapter) ListMultipartUploads(ctx context.Context, obj block.ObjectPointer, opts block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {
 	var err error
-	defer reportMetrics("ListMultipartUploads", time.Now(), nil, &err)
+	defer a.stats.ReportMetrics("ListMultipartUploads", time.Now(), nil, &err)
 	bucket, key, qualifiedKey, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err

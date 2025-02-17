@@ -160,7 +160,7 @@ func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 		if err != nil {
 			t.Fatal("Google Storage new client", err)
 		}
-		return gs.NewAdapter(client)
+		return gs.NewAdapter(client, nil)
 
 	case block.BlockstoreTypeS3:
 		var s3Params params.S3
@@ -175,7 +175,7 @@ func NewBlockAdapterByType(t testing.TB, blockstoreType string) block.Adapter {
 			s3Params.Credentials.AccessKeyID = awsKey
 			s3Params.Credentials.SecretAccessKey = awsSecret
 		}
-		blockAdapter, err := blocks3.NewAdapter(ctx, s3Params)
+		blockAdapter, err := blocks3.NewAdapter(ctx, s3Params, nil)
 		if err != nil {
 			t.Fatal("Failed to create S3 block adapter", err)
 		}

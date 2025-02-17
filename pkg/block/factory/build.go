@@ -44,7 +44,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, stat
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(ctx, statsCollector, p)
+		return buildS3Adapter(ctx, statsCollector, p, statsLabel)
 	case block.BlockstoreTypeMem, "memory":
 		return mem.New(ctx), nil
 	case block.BlockstoreTypeTransient:
@@ -54,7 +54,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, stat
 		if err != nil {
 			return nil, err
 		}
-		return buildGSAdapter(ctx, p)
+		return buildGSAdapter(ctx, p, statsLabel)
 	case block.BlockstoreTypeAzure:
 		p, err := c.BlockstoreAzureParams()
 		if err != nil {
@@ -92,7 +92,7 @@ func BuildS3Client(ctx context.Context, params params.S3) (*s3.Client, error) {
 	return client, nil
 }
 
-func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
+func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3, statsLabel *string) (*s3a.Adapter, error) {
 	opts := []s3a.AdapterOption{
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
@@ -110,7 +110,7 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 	if params.PreSignedEndpoint != "" {
 		opts = append(opts, s3a.WithPreSignedEndpoint(params.PreSignedEndpoint))
 	}
-	adapter, err := s3a.NewAdapter(ctx, params, opts...)
+	adapter, err := s3a.NewAdapter(ctx, params, statsLabel, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, erro
 	return storage.NewClient(ctx, opts...)
 }
 
-func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) {
+func buildGSAdapter(ctx context.Context, params params.GS, statsLabel *string) (*gs.Adapter, error) {
 	client, err := BuildGSClient(ctx, params)
 	if err != nil {
 		return nil, err
@@ -148,7 +148,7 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 	case params.ServerSideEncryptionKmsKeyID != "":
 		opts = append(opts, gs.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
 	}
-	adapter := gs.NewAdapter(client, opts...)
+	adapter := gs.NewAdapter(client, statsLabel, opts...)
 	logging.FromContext(ctx).WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }

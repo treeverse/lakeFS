@@ -4,8 +4,11 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
@@ -133,4 +136,50 @@ func (m *MetricsAdapter) GetRegion(ctx context.Context, storageID, storageNamesp
 
 func (m *MetricsAdapter) RuntimeStats() map[string]string {
 	return m.adapter.RuntimeStats()
+}
+
+type Histograms struct {
+	durationHistograms    *prometheus.HistogramVec
+	requestSizeHistograms *prometheus.HistogramVec
+	tag                   *string
+}
+
+func BuildHistogramsInstance(name string, tag *string) Histograms {
+	labelNames := []string{"operation", "error"}
+	if tag != nil {
+		labelNames = append(labelNames, "tag")
+	}
+	var durationHistograms = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name: name + "_operation_duration_seconds",
+			Help: "durations of outgoing " + name + " operations",
+		},
+		labelNames,
+	)
+	var requestSizeHistograms = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    name + "_operation_size_bytes",
+			Help:    "handled sizes of outgoing " + name + " operations",
+			Buckets: prometheus.ExponentialBuckets(1, 10, 10), //nolint: mnd
+		},
+		labelNames,
+	)
+
+	return Histograms{
+		durationHistograms:    durationHistograms,
+		requestSizeHistograms: requestSizeHistograms,
+		tag:                   tag,
+	}
+}
+
+func (s Histograms) ReportMetrics(operation string, start time.Time, sizeBytes *int64, err *error) {
+	isErrStr := strconv.FormatBool(*err != nil)
+	labels := []string{operation, isErrStr}
+	if s.tag != nil {
+		labels = append(labels, *s.tag)
+	}
+	s.durationHistograms.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
+	if sizeBytes != nil {
+		s.requestSizeHistograms.WithLabelValues(labels...).Observe(float64(*sizeBytes))
+	}
 }
