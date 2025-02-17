@@ -13,6 +13,8 @@ import {
 } from "../../../../lib/components/controls";
 import {useRouter} from "../../../../lib/hooks/router";
 
+const EMAIL_TRUNCATION_THRESHOLD_LENGTH = 40;
+
 
 const UserCredentialsList = ({ userId, after, onPaginate }) => {
     const {user} = useUser();
@@ -53,7 +55,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
                             overflow-hidden
                             text-truncate
                             align-bottom
-                            ${email.length > 40 ? "w-75" : ""}`}
+                            ${email.length > EMAIL_TRUNCATION_THRESHOLD_LENGTH ? "w-75" : ""}`}
                 title={email}
             >
                 {email}
