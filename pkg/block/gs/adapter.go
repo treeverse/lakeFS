@@ -70,10 +70,10 @@ func WithDisablePreSignedUI(b bool) func(a *Adapter) {
 
 type AdapterOption func(a *Adapter)
 
-func NewAdapter(client *storage.Client, statsLabel *string, opts ...AdapterOption) *Adapter {
+func NewAdapter(client *storage.Client, statsTag *string, opts ...AdapterOption) *Adapter {
 	a := &Adapter{
 		client:          client,
-		stats:           NewGSStats(statsLabel),
+		stats:           NewGSStats(statsTag),
 		preSignedExpiry: block.DefaultPreSignExpiryDuration,
 	}
 	for _, opt := range opts {
