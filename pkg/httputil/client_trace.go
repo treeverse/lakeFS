@@ -13,32 +13,23 @@ import (
 var connectionGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 	Name: "out_in_use_conns",
 	Help: "A gauge of in-use TCP connections",
-}, []string{"service"})
-var connectionGaugeLabeled = promauto.NewGaugeVec(prometheus.GaugeOpts{
-	Name: "out_in_use_conns",
-	Help: "A gauge of in-use TCP connections",
 }, []string{"service", "label"})
 
 func SetClientTrace(ctx context.Context, service string) context.Context {
-	trace := &httptrace.ClientTrace{
-		GotConn: func(info httptrace.GotConnInfo) {
-			connectionGauge.WithLabelValues(service).Inc()
-		},
-		PutIdleConn: func(err error) {
-			connectionGauge.WithLabelValues(service).Dec()
-		},
-	}
-
-	return httptrace.WithClientTrace(ctx, trace)
+	return SetClientTraceWithLabel(ctx, service, nil)
 }
 
-func SetClientTraceWithLabel(ctx context.Context, service string, label string) context.Context {
+func SetClientTraceWithLabel(ctx context.Context, service string, label *string) context.Context {
+	labelValues := []string{service}
+	if label != nil {
+		labelValues = append(labelValues, *label)
+	}
 	trace := &httptrace.ClientTrace{
 		GotConn: func(info httptrace.GotConnInfo) {
-			connectionGaugeLabeled.WithLabelValues(service, label).Inc()
+			connectionGauge.WithLabelValues(labelValues...).Inc()
 		},
 		PutIdleConn: func(err error) {
-			connectionGaugeLabeled.WithLabelValues(service, label).Dec()
+			connectionGauge.WithLabelValues(labelValues...).Dec()
 		},
 	}
 
