@@ -9,6 +9,7 @@ import {Link, NavItem} from "../nav";
 import {useAPI} from "../../hooks/api";
 import {auth} from "../../api";
 
+const truncatedHeaderClass = "d-inline-block w-50 text-nowrap overflow-hidden text-truncate align-middle";
 
 export const UserNav = ({ userId, page = 'groups' }) => {
     const {RBAC: rbac} = useLoginConfigContext();
@@ -87,7 +88,12 @@ export const UserHeader = ({ userEmail, userId, page }) => {
                 <Link component={BreadcrumbItem} href='/auth/users'>
                     Users
                 </Link>
-                <Link component={BreadcrumbItem} href={{pathname: '/auth/users/:userId', params: {userId}}}>
+                <Link
+                    component={BreadcrumbItem}
+                    href={{pathname: '/auth/users/:userId', params: {userId}}}
+                    className={truncatedHeaderClass}
+                    title={userEmail}
+                >
                     {userEmail}
                 </Link>
             </Breadcrumb>
@@ -104,7 +110,12 @@ export const GroupHeader = ({ groupId, page }) => {
                 <Link component={BreadcrumbItem} href='/auth/groups'>
                     Groups
                 </Link>
-                <Link component={BreadcrumbItem} href={{pathname: '/auth/groups/:groupId', params: {groupId}}}>
+                <Link
+                    component={BreadcrumbItem}
+                    href={{pathname: '/auth/groups/:groupId', params: {groupId}}}
+                    className={truncatedHeaderClass}
+                    title={groupId}
+                >
                     {groupId}
                 </Link>
             </Breadcrumb>
@@ -121,7 +132,12 @@ export const PolicyHeader = ({ policyId }) => {
                 <Link component={BreadcrumbItem} href='/auth/policies'>
                     Policies
                 </Link>
-                <Link component={BreadcrumbItem} href={{pathname: '/auth/policies/:policyId', params: {policyId}}}>
+                <Link
+                    component={BreadcrumbItem}
+                    href={{pathname: '/auth/policies/:policyId', params: {policyId}}}
+                    className={truncatedHeaderClass}
+                    title={policyId}
+                >
                     {policyId}
                 </Link>
             </Breadcrumb>
