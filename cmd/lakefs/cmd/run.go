@@ -445,6 +445,10 @@ func checkRepos(ctx context.Context, logger logging.Logger, config config.Config
 
 			for _, repo := range repos {
 				adapterConfig := config.StorageConfig().GetStorageByID(repo.StorageID)
+				if adapterConfig == nil {
+					logger.Fatalf("No storage configuration found for repository '%s', StorageID='%s'", repo.Name, repo.StorageID)
+					continue
+				}
 				adapterStorageType := adapterConfig.BlockstoreType()
 				nsURL, err := url.Parse(repo.StorageNamespace)
 				if err != nil {
