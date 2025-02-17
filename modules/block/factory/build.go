@@ -10,7 +10,7 @@ import (
 )
 
 func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c config.Config) (block.Adapter, error) {
-	adapter, err := factory.BuildBlockAdapter(ctx, statsCollector, c.StorageConfig().GetStorageByID(config.SingleBlockstoreID))
+	adapter, err := factory.BuildBlockAdapter(ctx, statsCollector, nil, c.StorageConfig().GetStorageByID(config.SingleBlockstoreID))
 	if err != nil {
 		return nil, err
 	}

@@ -27,7 +27,7 @@ const (
 	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 )
 
-func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c config.AdapterConfig) (block.Adapter, error) {
+func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, statsLabel *string, c config.AdapterConfig) (block.Adapter, error) {
 	blockstore := strings.ToLower(c.BlockstoreType())
 	logging.FromContext(ctx).
 		WithField("type", blockstore).
@@ -60,7 +60,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 		if err != nil {
 			return nil, err
 		}
-		return azure.NewAdapter(ctx, p)
+		return azure.NewAdapter(ctx, p, statsLabel)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
 			block.ErrInvalidAddress, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
