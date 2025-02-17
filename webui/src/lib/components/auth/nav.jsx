@@ -9,6 +9,7 @@ import {Link, NavItem} from "../nav";
 import {useAPI} from "../../hooks/api";
 import {auth} from "../../api";
 
+const truncatedHeaderClass = "d-inline-block w-50 text-nowrap overflow-hidden text-truncate align-middle";
 
 export const UserNav = ({ userId, page = 'groups' }) => {
     const {RBAC: rbac} = useLoginConfigContext();
@@ -90,14 +91,7 @@ export const UserHeader = ({ userEmail, userId, page }) => {
                 <Link
                     component={BreadcrumbItem}
                     href={{pathname: '/auth/users/:userId', params: {userId}}}
-                    className="
-                        d-inline-block
-                        w-50
-                        text-nowrap
-                        overflow-hidden
-                        text-truncate
-                        align-middle
-                    "
+                    className={truncatedHeaderClass}
                     title={userEmail}
                 >
                     {userEmail}
@@ -119,14 +113,7 @@ export const GroupHeader = ({ groupId, page }) => {
                 <Link
                     component={BreadcrumbItem}
                     href={{pathname: '/auth/groups/:groupId', params: {groupId}}}
-                    className="
-                        d-inline-block
-                        w-50
-                        text-nowrap
-                        overflow-hidden
-                        text-truncate
-                        align-middle
-                    "
+                    className={truncatedHeaderClass}
                     title={groupId}
                 >
                     {groupId}
@@ -148,14 +135,7 @@ export const PolicyHeader = ({ policyId }) => {
                 <Link
                     component={BreadcrumbItem}
                     href={{pathname: '/auth/policies/:policyId', params: {policyId}}}
-                    className="
-                        d-inline-block
-                        w-50
-                        text-nowrap
-                        overflow-hidden
-                        text-truncate
-                        align-middle
-                    "
+                    className={truncatedHeaderClass}
                     title={policyId}
                 >
                     {policyId}
