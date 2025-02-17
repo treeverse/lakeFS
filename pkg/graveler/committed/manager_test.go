@@ -121,6 +121,26 @@ func TestManager_WriteMetaRange(t *testing.T) {
 		errorIs        error
 	}{
 		{
+			name:           "simple_write",
+			initStorageID:  "",
+			writeStorageID: "",
+			records: []*graveler.RangeInfo{
+				{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
+				{ID: "id2", MinKey: graveler.Key("2"), MaxKey: graveler.Key("22")},
+				{ID: "id3", MinKey: graveler.Key("3"), MaxKey: graveler.Key("33")},
+			},
+		},
+		{
+			name:           "simple_write_alternate_storageID",
+			initStorageID:  "summat_else",
+			writeStorageID: "summat_else",
+			records: []*graveler.RangeInfo{
+				{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
+				{ID: "id2", MinKey: graveler.Key("2"), MaxKey: graveler.Key("22")},
+				{ID: "id3", MinKey: graveler.Key("3"), MaxKey: graveler.Key("33")},
+			},
+		},
+		{
 			name:           "mismatched_sid",
 			initStorageID:  "",
 			writeStorageID: "summat_else",
