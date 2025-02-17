@@ -22,7 +22,7 @@ Integrating MLflow with lakeFS offers several advantages that enhance the machin
 1. **Experiment Reproducibility**: By leveraging MLflow's [input logging](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_input)
 capabilities alongside lakeFS's data versioning, you can precisely track the specific dataset version used in each experiment
 run. This ensures that experiments remain reproducible over time, even as datasets evolve.
-2. **Parallel Experiments with Zero Data Copy**: Parallel Experiments with Zero Data Copy: lakeFS enables efficient [branching](../understand/model.md#branches) without
+2. **Parallel Experiments with Zero Data Copy**: lakeFS enables efficient [branching](../understand/model.md#branches) without
 duplicating data. This allows for multiple experiments to be conducted in parallel, with each branch providing an isolated
 environment for dataset modifications. Changes in one branch do not affect others, promoting safe collaboration among
 team members. Once an experiment is complete, the branch can be seamlessly merged back into the main dataset, incorporating
@@ -38,9 +38,8 @@ the workflow below and review the practical examples provided on the next sectio
 1. **Create a branch for each experiment**: Start each experiment by creating a dedicated lakeFS branch for it. This approach 
 allows you to safely make changes to your input dataset without duplicating it. You will later load data from this branch 
 to your MLflow experiment runs. 
-2. **Read datasets from the experiment branch**: Read Datasets from the Experiment Branch: Conduct your experiments by 
-reading data directly from the dedicated branch. We recommend to read the dataset from the head commit of the branch to
-ensure precise version tracking.
+2. **Read datasets from the experiment branch**: Conduct your experiments by reading data directly from the dedicated 
+branch. We recommend to read the dataset from the head commit of the branch to ensure precise version tracking.
 3. **Create an MLflow Dataset pointing to lakeFS**: Use MLflow's [Dataset](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow.data.dataset.Dataset)
 ensuring that the [dataset source](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow.data.dataset_source.DatasetSource)
 points to lakeFS. 
@@ -60,7 +59,7 @@ cost-effective to create, it's often more efficient to create a branch per exper
 commit of the experiment branch, you can distinguish between dataset versions without creating excessive branches. This
 practice maintains branch hygiene within lakeFS.
 
-### Example: Using Pandas 
+### Example: Using Pandas
 
 ```python
 import lakefs 
