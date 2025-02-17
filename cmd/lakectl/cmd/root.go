@@ -436,9 +436,12 @@ func preRunCmd(cmd *cobra.Command) {
 	logging.ContextUnavailable().
 		WithField("file", viper.ConfigFileUsed()).
 		Debug("loaded configuration from file")
-	err = viper.UnmarshalExact(&cfg, viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
-		lakefsconfig.DecodeOnlyString,
-		mapstructure.StringToTimeDurationHookFunc())))
+	err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
+		mapstructure.ComposeDecodeHookFunc(
+			lakefsconfig.DecodeOnlyString,
+			mapstructure.StringToTimeDurationHookFunc(),
+			lakefsconfig.DecodeStringToMap(),
+		)))
 	if err != nil {
 		DieFmt("error unmarshal configuration: %v", err)
 	}
