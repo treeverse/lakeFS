@@ -336,7 +336,22 @@ class Auth {
             body: JSON.stringify(policy)
         });
         if (response.status !== 201) {
-            throw new Error(await extractError(response));
+            //throw new Error(await extractError(response));
+
+            const rawError = await extractError(response);
+            const idMatch = rawError.match(/"id":\s*"([^"]+)"/);
+            let truncatedError = rawError;
+            if (idMatch) {
+                const fullId = idMatch[1];
+                // truncate logic:
+                const displayId = (fullId.length > 40) ? fullId.slice(0,40) + "..." : fullId;
+                // replace the ID in the displayed error with a <span> that has a hover tooltip:
+                truncatedError = rawError.replace(
+                    fullId,
+                    displayId
+                );
+            }
+            throw new Error(truncatedError)
         }
         return response.json();
     }
