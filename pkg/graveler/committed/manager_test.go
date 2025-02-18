@@ -27,18 +27,35 @@ func TestManager_WriteRange(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		records []*graveler.ValueRecord
+		name           string
+		initStorageID  graveler.StorageID
+		writeStorageID graveler.StorageID
+		records        []*graveler.ValueRecord
+		errorIs        error
 	}{
 		{
-			name: "iterator_exhausted",
+			name:           "iterator_exhausted",
+			initStorageID:  "",
+			writeStorageID: "",
 			records: []*graveler.ValueRecord{
 				{Key: graveler.Key("1"), Value: &graveler.Value{}},
 				{Key: graveler.Key("2"), Value: &graveler.Value{}},
 			},
 		},
 		{
-			name: "break_at_key",
+			name:           "mismatched_sid",
+			initStorageID:  "",
+			writeStorageID: "summat_else",
+			records: []*graveler.ValueRecord{
+				{Key: graveler.Key("1"), Value: &graveler.Value{}},
+				{Key: graveler.Key("2"), Value: &graveler.Value{}},
+			},
+			errorIs: graveler.ErrInvalidStorageID,
+		},
+		{
+			name:           "break_at_key",
+			initStorageID:  "",
+			writeStorageID: "",
 			records: []*graveler.ValueRecord{
 				{Key: graveler.Key("1"), Value: &graveler.Value{}},
 				{Key: graveler.Key("2"), Value: &graveler.Value{}},
@@ -55,54 +72,88 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeManager := mock.NewMockRangeManager(ctrl)
 			rangeWriter := mock.NewMockRangeWriter(ctrl)
 
-			rangeWriter.EXPECT().Abort().Return(nil)
-			rangeManager.EXPECT().GetWriter(context.Background(), committed.StorageID(""), committed.Namespace(ns), nil).Return(rangeWriter, nil)
-
-			sut := committed.NewCommittedManager(metarangeManager, rangeManager, params)
+			rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
+			rangeManagers[tt.initStorageID] = rangeManager
+			metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
+			metaRangeManagers[tt.initStorageID] = metarangeManager
+			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
 
 			times := 0
 			expectedTimes := min(len(tt.records), maxRecords)
-			rangeWriter.EXPECT().WriteRecord(gomock.Any()).Return(nil).Times(expectedTimes)
-			rangeWriter.EXPECT().ShouldBreakAtKey(gomock.Any(), gomock.Any()).
-				DoAndReturn(func(interface{}, interface{}) bool { times++; return times == maxRecords }).Times(expectedTimes)
-			rangeWriter.EXPECT().Close().Return(writeResult, nil)
-			rangeWriter.EXPECT().SetMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
+			if tt.errorIs == nil {
+				rangeWriter.EXPECT().Abort().Return(nil)
+				rangeManager.EXPECT().GetWriter(context.Background(), committed.Namespace(ns), nil).Return(rangeWriter, nil)
+				rangeWriter.EXPECT().WriteRecord(gomock.Any()).Return(nil).Times(expectedTimes)
+				rangeWriter.EXPECT().ShouldBreakAtKey(gomock.Any(), gomock.Any()).
+					DoAndReturn(func(interface{}, interface{}) bool { times++; return times == maxRecords }).Times(expectedTimes)
+				rangeWriter.EXPECT().Close().Return(writeResult, nil)
+				rangeWriter.EXPECT().SetMetadata(committed.MetadataTypeKey, committed.MetadataRangesType)
+			}
 
 			it := testutils.NewFakeValueIterator(tt.records)
-			rangeInfo, err := sut.WriteRange(context.Background(), "", ns, it)
-			require.NoError(t, err)
-			require.Equal(t, &graveler.RangeInfo{
-				ID:                      graveler.RangeID(writeResult.RangeID),
-				MinKey:                  graveler.Key(writeResult.First),
-				MaxKey:                  graveler.Key(writeResult.Last),
-				Count:                   writeResult.Count,
-				EstimatedRangeSizeBytes: writeResult.EstimatedRangeSizeBytes,
-			}, rangeInfo)
+			rangeInfo, err := sut.WriteRange(context.Background(), tt.writeStorageID, ns, it)
+			if tt.errorIs != nil {
+				require.ErrorIs(t, err, tt.errorIs)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, &graveler.RangeInfo{
+					ID:                      graveler.RangeID(writeResult.RangeID),
+					MinKey:                  graveler.Key(writeResult.First),
+					MaxKey:                  graveler.Key(writeResult.Last),
+					Count:                   writeResult.Count,
+					EstimatedRangeSizeBytes: writeResult.EstimatedRangeSizeBytes,
+				}, rangeInfo)
+			}
 		})
 	}
 }
 
 func TestManager_WriteMetaRange(t *testing.T) {
-	const (
-		storageID = ""
-		ns        = "some-ns"
-	)
+	const ns = "some-ns"
 
 	expectedMetarangeID := graveler.MetaRangeID("some-id")
 
 	tests := []struct {
-		name    string
-		records []*graveler.RangeInfo
+		name           string
+		initStorageID  graveler.StorageID
+		writeStorageID graveler.StorageID
+		records        []*graveler.RangeInfo
+		errorIs        error
 	}{
-		//{
-		//	name: "in_order",
-		//	records: []*graveler.RangeInfo{
-		//		{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
-		//		{ID: "id2", MinKey: graveler.Key("2"), MaxKey: graveler.Key("22")},
-		//	},
-		//},
 		{
-			name: "wrong_order",
+			name:           "simple_write",
+			initStorageID:  "",
+			writeStorageID: "",
+			records: []*graveler.RangeInfo{
+				{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
+				{ID: "id2", MinKey: graveler.Key("2"), MaxKey: graveler.Key("22")},
+				{ID: "id3", MinKey: graveler.Key("3"), MaxKey: graveler.Key("33")},
+			},
+		},
+		{
+			name:           "simple_write_alternate_storageID",
+			initStorageID:  "summat_else",
+			writeStorageID: "summat_else",
+			records: []*graveler.RangeInfo{
+				{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
+				{ID: "id2", MinKey: graveler.Key("2"), MaxKey: graveler.Key("22")},
+				{ID: "id3", MinKey: graveler.Key("3"), MaxKey: graveler.Key("33")},
+			},
+		},
+		{
+			name:           "mismatched_sid",
+			initStorageID:  "",
+			writeStorageID: "summat_else",
+			records: []*graveler.RangeInfo{
+				{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
+				{ID: "id2", MinKey: graveler.Key("2"), MaxKey: graveler.Key("22")},
+			},
+			errorIs: graveler.ErrInvalidStorageID,
+		},
+		{
+			name:           "wrong_order",
+			initStorageID:  "",
+			writeStorageID: "",
 			records: []*graveler.RangeInfo{
 				{ID: "id1", MinKey: graveler.Key("1"), MaxKey: graveler.Key("11")},
 				{ID: "id3", MinKey: graveler.Key("3"), MaxKey: graveler.Key("33")},
@@ -117,23 +168,34 @@ func TestManager_WriteMetaRange(t *testing.T) {
 			rangeManager := mock.NewMockRangeManager(ctrl)
 			metarangeWriter := mock.NewMockMetaRangeWriter(ctrl)
 
-			minKey := ""
-			metarangeManager.EXPECT().NewWriter(context.Background(), graveler.StorageID(storageID), graveler.StorageNamespace(ns), nil).Return(metarangeWriter)
-			metarangeWriter.EXPECT().WriteRange(gomock.Any()).Return(nil).
-				DoAndReturn(func(info committed.Range) error {
-					if string(info.MinKey) < minKey {
-						t.Fatalf("record should be sorted ascending - previous minKey '%s', current '%s'", minKey, info.MinKey)
-					}
-					minKey = string(info.MinKey)
-					return nil
-				}).Times(len(tt.records))
-			metarangeWriter.EXPECT().Close(gomock.Any()).Return(&expectedMetarangeID, nil)
-			metarangeWriter.EXPECT().Abort().Return(nil)
-			sut := committed.NewCommittedManager(metarangeManager, rangeManager, params)
+			if tt.errorIs == nil {
+				minKey := ""
+				metarangeManager.EXPECT().NewWriter(context.Background(), graveler.StorageNamespace(ns), nil).Return(metarangeWriter)
+				metarangeWriter.EXPECT().WriteRange(gomock.Any()).Return(nil).
+					DoAndReturn(func(info committed.Range) error {
+						if string(info.MinKey) < minKey {
+							t.Fatalf("record should be sorted ascending - previous minKey '%s', current '%s'", minKey, info.MinKey)
+						}
+						minKey = string(info.MinKey)
+						return nil
+					}).Times(len(tt.records))
+				metarangeWriter.EXPECT().Close(gomock.Any()).Return(&expectedMetarangeID, nil)
+				metarangeWriter.EXPECT().Abort().Return(nil)
+			}
 
-			actualMetarangeID, err := sut.WriteMetaRange(context.Background(), storageID, ns, tt.records)
-			require.NoError(t, err)
-			require.Equal(t, &graveler.MetaRangeInfo{ID: expectedMetarangeID}, actualMetarangeID)
+			rangeManagers := make(map[graveler.StorageID]committed.RangeManager)
+			rangeManagers[tt.initStorageID] = rangeManager
+			metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
+			metaRangeManagers[tt.initStorageID] = metarangeManager
+			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
+
+			actualMetarangeID, err := sut.WriteMetaRange(context.Background(), tt.writeStorageID, ns, tt.records)
+			if tt.errorIs != nil {
+				require.ErrorIs(t, err, tt.errorIs)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, &graveler.MetaRangeInfo{ID: expectedMetarangeID}, actualMetarangeID)
+			}
 		})
 	}
 }
