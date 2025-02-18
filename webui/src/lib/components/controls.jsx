@@ -351,7 +351,7 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
                         key={header}
                         title={header}
                         className={`
-                            ${(firstFixedCol && i === 0) ? "col-1" : ""}
+                            ${(firstFixedCol && i === 0) ? "col-1" : "col-12"}
                             text-nowrap
                             overflow-hidden
                             text-truncate
