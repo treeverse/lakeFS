@@ -1661,11 +1661,11 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository 
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}
-	commitsLocation, err := g.garbageCollectionManager.GetCommitsCSVLocation(runID, repository.StorageNamespace)
+	commitsLocation, err := g.garbageCollectionManager.GetCommitsCSVLocation(runID, repository.StorageID, repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
-	addressLocation, err := g.garbageCollectionManager.GetAddressesLocation(repository.StorageNamespace)
+	addressLocation, err := g.garbageCollectionManager.GetAddressesLocation(repository.StorageID, repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
@@ -1678,7 +1678,7 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository 
 }
 
 func (g *Graveler) GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error) {
-	return g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageNamespace)
+	return g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageID, repository.StorageNamespace)
 }
 
 func (g *Graveler) GCNewRunID() string {
@@ -3729,10 +3729,10 @@ type GarbageCollectionManager interface {
 	SaveRules(ctx context.Context, storageNamespace StorageNamespace, rules *GarbageCollectionRules) error
 
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules) (string, error)
-	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
+	GetCommitsCSVLocation(runID string, storageID StorageID, sn StorageNamespace) (string, error)
 	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) error
-	GetUncommittedLocation(runID string, sn StorageNamespace) (string, error)
-	GetAddressesLocation(sn StorageNamespace) (string, error)
+	GetUncommittedLocation(runID string, storageID StorageID, sn StorageNamespace) (string, error)
+	GetAddressesLocation(storageID StorageID, sn StorageNamespace) (string, error)
 	NewID() string
 }
 
