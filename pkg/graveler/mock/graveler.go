@@ -3040,33 +3040,33 @@ func (m *MockGarbageCollectionManager) EXPECT() *MockGarbageCollectionManagerMoc
 }
 
 // GetAddressesLocation mocks base method.
-func (m *MockGarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNamespace) (string, error) {
+func (m *MockGarbageCollectionManager) GetAddressesLocation(storageID graveler.StorageID, sn graveler.StorageNamespace) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAddressesLocation", sn)
+	ret := m.ctrl.Call(m, "GetAddressesLocation", storageID, sn)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAddressesLocation indicates an expected call of GetAddressesLocation.
-func (mr *MockGarbageCollectionManagerMockRecorder) GetAddressesLocation(sn interface{}) *gomock.Call {
+func (mr *MockGarbageCollectionManagerMockRecorder) GetAddressesLocation(storageID, sn interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAddressesLocation", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetAddressesLocation), sn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAddressesLocation", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetAddressesLocation), storageID, sn)
 }
 
 // GetCommitsCSVLocation mocks base method.
-func (m *MockGarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
+func (m *MockGarbageCollectionManager) GetCommitsCSVLocation(runID string, storageID graveler.StorageID, sn graveler.StorageNamespace) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCommitsCSVLocation", runID, sn)
+	ret := m.ctrl.Call(m, "GetCommitsCSVLocation", runID, storageID, sn)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCommitsCSVLocation indicates an expected call of GetCommitsCSVLocation.
-func (mr *MockGarbageCollectionManagerMockRecorder) GetCommitsCSVLocation(runID, sn interface{}) *gomock.Call {
+func (mr *MockGarbageCollectionManagerMockRecorder) GetCommitsCSVLocation(runID, storageID, sn interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitsCSVLocation", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetCommitsCSVLocation), runID, sn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitsCSVLocation", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetCommitsCSVLocation), runID, storageID, sn)
 }
 
 // GetRules mocks base method.
@@ -3085,18 +3085,18 @@ func (mr *MockGarbageCollectionManagerMockRecorder) GetRules(ctx, storageNamespa
 }
 
 // GetUncommittedLocation mocks base method.
-func (m *MockGarbageCollectionManager) GetUncommittedLocation(runID string, sn graveler.StorageNamespace) (string, error) {
+func (m *MockGarbageCollectionManager) GetUncommittedLocation(runID string, storageID graveler.StorageID, sn graveler.StorageNamespace) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUncommittedLocation", runID, sn)
+	ret := m.ctrl.Call(m, "GetUncommittedLocation", runID, storageID, sn)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUncommittedLocation indicates an expected call of GetUncommittedLocation.
-func (mr *MockGarbageCollectionManagerMockRecorder) GetUncommittedLocation(runID, sn interface{}) *gomock.Call {
+func (mr *MockGarbageCollectionManagerMockRecorder) GetUncommittedLocation(runID, storageID, sn interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUncommittedLocation", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetUncommittedLocation), runID, sn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUncommittedLocation", reflect.TypeOf((*MockGarbageCollectionManager)(nil).GetUncommittedLocation), runID, storageID, sn)
 }
 
 // NewID mocks base method.
