@@ -60,7 +60,7 @@ const UserCredentialsList = ({ userId, after, onPaginate }) => {
             >
                 {email}
             </strong>
-            {" "}?
+            ?
         </span>
     );
     return (
