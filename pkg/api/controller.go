@@ -1897,7 +1897,6 @@ func (c *Controller) getStorageConfigs() (*apigen.StorageConfig, apigen.StorageC
 		storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
 		return storageCfg, storageListCfg
 	}
-
 }
 
 func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, error) {
