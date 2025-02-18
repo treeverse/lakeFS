@@ -58,7 +58,7 @@ type Adapter struct {
 	disablePreSignedUI bool
 }
 
-func NewAdapter(ctx context.Context, params params.Azure, statsTag *string) (*Adapter, error) {
+func NewAdapter(ctx context.Context, params params.Azure, blockstoreTag *string) (*Adapter, error) {
 	logging.FromContext(ctx).WithField("type", "azure").Info("initialized blockstore adapter")
 	preSignedExpiry := params.PreSignedExpiry
 	if preSignedExpiry == 0 {
@@ -78,7 +78,7 @@ func NewAdapter(ctx context.Context, params params.Azure, statsTag *string) (*Ad
 
 	return &Adapter{
 		clientCache:        cache,
-		stats:              NewAzureStats(statsTag),
+		stats:              NewAzureStats(blockstoreTag),
 		preSignedExpiry:    preSignedExpiry,
 		disablePreSigned:   params.DisablePreSigned,
 		disablePreSignedUI: params.DisablePreSignedUI,

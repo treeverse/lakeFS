@@ -141,13 +141,13 @@ func (m *MetricsAdapter) RuntimeStats() map[string]string {
 type Histograms struct {
 	durationHistograms    *prometheus.HistogramVec
 	requestSizeHistograms *prometheus.HistogramVec
-	tag                   *string
+	blockstoreTag         *string
 }
 
-func BuildHistogramsInstance(name string, tag *string) Histograms {
+func BuildHistogramsInstance(name string, blockstoreTag *string) Histograms {
 	labelNames := []string{"operation", "error"}
-	if tag != nil {
-		labelNames = append(labelNames, "tag")
+	if blockstoreTag != nil {
+		labelNames = append(labelNames, "blockstoreTag")
 	}
 	var durationHistograms = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -168,15 +168,15 @@ func BuildHistogramsInstance(name string, tag *string) Histograms {
 	return Histograms{
 		durationHistograms:    durationHistograms,
 		requestSizeHistograms: requestSizeHistograms,
-		tag:                   tag,
+		blockstoreTag:         blockstoreTag,
 	}
 }
 
 func (s Histograms) ReportMetrics(operation string, start time.Time, sizeBytes *int64, err *error) {
 	isErrStr := strconv.FormatBool(*err != nil)
 	labels := []string{operation, isErrStr}
-	if s.tag != nil {
-		labels = append(labels, *s.tag)
+	if s.blockstoreTag != nil {
+		labels = append(labels, *s.blockstoreTag)
 	}
 	s.durationHistograms.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
 	if sizeBytes != nil {

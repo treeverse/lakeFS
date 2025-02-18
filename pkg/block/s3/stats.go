@@ -6,9 +6,9 @@ import (
 
 var instance *block.Histograms
 
-func NewS3Stats(tag *string) block.Histograms {
+func NewS3Stats(blockstoreTag *string) block.Histograms {
 	if instance == nil {
-		inst := block.BuildHistogramsInstance("s3", tag)
+		inst := block.BuildHistogramsInstance("s3", blockstoreTag)
 		instance = &inst
 	}
 	return *instance
