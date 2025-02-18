@@ -1221,7 +1221,7 @@ jobs:
           job-summary: true
           custom-arguments: './clients/python-wrapper/tests/integration -rP -We'
           click-to-expand: true
-          report-title: 'Python Wrapper System Tests Report'
+          report-title: 'Python Wrapper System Tests SDK Changes Report'
 
   # e2e-<db type>-<block adapter type>
   e2e-ddb-local-local:

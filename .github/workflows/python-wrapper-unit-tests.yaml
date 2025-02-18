@@ -110,15 +110,6 @@ jobs:
           PACKAGE_VERSION=0.0.0-dev make sdk-python
           pip install ./clients/python
 
-      - name: Generate Documentation
-        run: make python-wrapper-gen-docs
-
-      - name: Validate Documentation
-        run: make validate-python-wrapper
-
-      - name: Run Pylint
-        run: make python-wrapper-lint
-
       - name: Run Unit Tests
         uses: pavelzw/pytest-action@v2
         with:
@@ -127,4 +118,4 @@ jobs:
           job-summary: true
           custom-arguments: './clients/python-wrapper/tests/utests -q -We'
           click-to-expand: true
-          report-title: 'Python Wrapper Unit Tests Report'
+          report-title: 'Python Wrapper Unit Tests SDK Changes Report'
