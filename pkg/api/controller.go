@@ -1869,8 +1869,7 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
-	storageListCfg := c.getStorageConfigList()
+	storageCfg, storageListCfg := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
 	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageListCfg})
 }
@@ -1885,8 +1884,20 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
+	storageCfg, _ := c.getStorageConfigs()
 	writeResponse(w, r, http.StatusOK, storageCfg)
+}
+
+func (c *Controller) getStorageConfigs() (*apigen.StorageConfig, apigen.StorageConfigList) {
+	storageListCfg := c.getStorageConfigList()
+	if len(storageListCfg) > 1 {
+		// non-empty storage-config-list, return empty storage-config
+		return &apigen.StorageConfig{}, storageListCfg
+	} else {
+		storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
+		return storageCfg, storageListCfg
+	}
+
 }
 
 func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, error) {
