@@ -339,25 +339,11 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
 
-	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
-	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
-	committedParams := committed.Params{
-		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
-		MaxRangeSizeBytes:          baseCfg.Committed.Permanent.MaxRangeSizeBytes,
-		RangeSizeEntriesRaggedness: baseCfg.Committed.Permanent.RangeRaggednessEntries,
-		MaxUploaders:               baseCfg.Committed.LocalCache.MaxUploadersPerWriter,
-	}
-	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
-		committedParams,
-		// TODO(ariels): Use separate range managers for metaranges and ranges
-		sstableMetaManager,
-		sstableManager,
-	)
+	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS)
 	if err != nil {
 		cancelFn()
-		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+		return nil, err
 	}
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManager, sstableManager, committedParams)
 
 	executor := batch.NewConditionalExecutor(logging.ContextUnavailable())
 	go executor.Run(ctx)
@@ -402,7 +388,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
-
+	closers = append(closers, &ctxCloser{cancelFn})
 	return &Catalog{
 		BlockAdapter:          tierFSParams.Adapter,
 		Store:                 gStore,
@@ -412,12 +398,47 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		BackgroundLimiter:     limiter,
 		workPool:              workPool,
 		KVStore:               cfg.KVStore,
-		managers:              []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		managers:              closers,
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
 		signingKey:            cfg.Config.StorageConfig().SigningKey(),
 	}, nil
+}
+
+func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS) (graveler.CommittedManager, []io.Closer, error) {
+	baseCfg := cfg.Config.GetBaseConfig()
+	committedParams := committed.Params{
+		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
+		MaxRangeSizeBytes:          baseCfg.Committed.Permanent.MaxRangeSizeBytes,
+		RangeSizeEntriesRaggedness: baseCfg.Committed.Permanent.RangeRaggednessEntries,
+		MaxUploaders:               baseCfg.Committed.LocalCache.MaxUploadersPerWriter,
+	}
+	var closers []io.Closer
+	sstableManagers := make(map[graveler.StorageID]committed.RangeManager)
+	sstableMetaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
+	storageIDs := cfg.Config.StorageConfig().GetStorageIDs()
+	for _, sID := range storageIDs {
+		sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg, committed.StorageID(sID))
+		sstableManagers[graveler.StorageID(sID)] = sstableManager
+		closers = append(closers, sstableManager)
+
+		sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg, committed.StorageID(sID))
+		closers = append(closers, sstableMetaManager)
+
+		sstableMetaRangeManager, err := committed.NewMetaRangeManager(
+			committedParams,
+			sstableMetaManager,
+			sstableManager,
+			graveler.StorageID(sID),
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+		}
+		sstableMetaRangeManagers[graveler.StorageID(sID)] = sstableMetaRangeManager
+	}
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, committedParams)
+	return committedManager, closers, nil
 }
 
 func newLimiter(rateLimit int) ratelimit.Limiter {

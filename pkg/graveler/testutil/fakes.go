@@ -80,7 +80,7 @@ func (c *CommittedFake) Compare(context.Context, graveler.StorageID, graveler.St
 	return c.DiffIterator, nil
 }
 
-func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _ graveler.MergeStrategy, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
+func (c *CommittedFake) Merge(_ context.Context, _ graveler.StorageID, _ graveler.StorageNamespace, _, _, _ graveler.MetaRangeID, _ graveler.MergeStrategy, _ ...graveler.SetOptionsFunc) (graveler.MetaRangeID, error) {
 	if c.Err != nil {
 		return "", c.Err
 	}
@@ -118,11 +118,11 @@ func (c *CommittedFake) WriteMetaRange(context.Context, graveler.StorageID, grav
 	return &graveler.MetaRangeInfo{ID: c.MetaRangeID}, nil
 }
 
-func (c *CommittedFake) GetMetaRange(_ context.Context, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
+func (c *CommittedFake) GetMetaRange(_ context.Context, _ graveler.StorageID, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
 	return graveler.MetaRangeAddress(fmt.Sprintf("fake://prefix/%s(metarange)", metaRangeID)), nil
 }
 
-func (c *CommittedFake) GetRange(_ context.Context, _ graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.RangeAddress, error) {
+func (c *CommittedFake) GetRange(_ context.Context, _ graveler.StorageID, _ graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.RangeAddress, error) {
 	return graveler.RangeAddress(fmt.Sprintf("fake://prefix/%s(range)", rangeID)), nil
 }
 
