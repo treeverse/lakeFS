@@ -15,6 +15,19 @@ permissions:
   pull-requests: write
 
 jobs:
+  paths-filter:
+    runs-on: ubuntu-22.04
+    outputs:
+      python-sdk-change: ${{ steps.filter.outputs.python-sdk == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            python-sdk: 
+              - 'clients/python/**'
+
   check-secrets:
     name: Check if secrets are available.
     outputs:
@@ -1142,6 +1155,73 @@ jobs:
           custom-arguments: './clients/python-wrapper/tests/integration -rP -We'
           click-to-expand: true
           report-title: 'Python Wrapper System Tests Report'
+
+  python-wrapper-new-sdk:
+    needs: [deploy-image, login-to-amazon-ecr, paths-filter]
+    if: ${{ needs.paths-filter.outputs.python-sdk-change == 'true' }}
+    name: Test changes in SDK against the python wrapper
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ needs.deploy-image.outputs.tag }}
+      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
+      LAKEFS_INSTALLATION_ACCESS_KEY_ID: AKIAIOSFDNN7EXAMPLEQ
+      LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+    services:
+      lakefs:
+        image: ${{ needs.login-to-amazon-ecr.outputs.registry }}/lakefs:${{ needs.deploy-image.outputs.tag }}
+        credentials:
+          username: ${{ needs.login-to-amazon-ecr.outputs.docker_username }}
+          password: ${{ needs.login-to-amazon-ecr.outputs.docker_password }}
+        ports:
+          - '8000:8000'
+        env:
+          LAKEFS_DATABASE_TYPE: local
+          LAKEFS_BLOCKSTORE_TYPE: s3
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_INSTALLATION_USER_NAME: admin
+          LAKEFS_INSTALLATION_ACCESS_KEY_ID: ${{ env.LAKEFS_INSTALLATION_ACCESS_KEY_ID }}
+          LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: ${{env.LAKEFS_INSTALLATION_SECRET_ACCESS_KEY }}
+          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_STATS_ENABLED: false
+
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        working-directory: ./clients/python-wrapper
+        run: pip install -r requirements.txt pytest pytest-md pytest-emoji
+
+      - name: build and install lakeFS Python SDK
+        run: |
+          PACKAGE_VERSION=0.0.0-dev make sdk-python
+          pip install ./clients/python
+
+      - name: Generate uniquifying value
+        id: unique
+        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+
+      - name: Run Python Wrapper Tests
+        uses: pavelzw/pytest-action@v2
+        env:
+          LAKECTL_CREDENTIALS_ACCESS_KEY_ID: ${{ env.LAKEFS_INSTALLATION_ACCESS_KEY_ID }}
+          LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY: ${{env.LAKEFS_INSTALLATION_SECRET_ACCESS_KEY }}
+          LAKECTL_SERVER_ENDPOINT_URL: http://localhost:8000
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-python-wrapper/${{ steps.unique.outputs.value }}
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          custom-arguments: './clients/python-wrapper/tests/integration -rP -We'
+          click-to-expand: true
+          report-title: 'Python Wrapper System Tests SDK Changes Report'
 
   # e2e-<db type>-<block adapter type>
   e2e-ddb-local-local:
