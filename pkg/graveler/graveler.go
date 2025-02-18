@@ -1049,9 +1049,9 @@ type CommittedManager interface {
 	Commit(ctx context.Context, storageID StorageID, ns StorageNamespace, baseMetaRangeID MetaRangeID, changes ValueIterator, allowEmpty bool, opts ...SetOptionsFunc) (MetaRangeID, DiffSummary, error)
 
 	// GetMetaRange returns information where metarangeID is stored.
-	GetMetaRange(ctx context.Context, storageID StorageID, ns StorageNamespace, metaRangeID MetaRangeID) (MetaRangeAddress, error)
+	GetMetaRange(ctx context.Context, storageID StorageID, metaRangeID MetaRangeID) (MetaRangeAddress, error)
 	// GetRange returns information where rangeID is stored.
-	GetRange(ctx context.Context, storageID StorageID, ns StorageNamespace, rangeID RangeID) (RangeAddress, error)
+	GetRange(ctx context.Context, storageID StorageID, rangeID RangeID) (RangeAddress, error)
 
 	// GetRangeIDByKey returns the RangeID that contains the given key.
 	GetRangeIDByKey(ctx context.Context, storageID StorageID, ns StorageNamespace, id MetaRangeID, key Key) (RangeID, error)
@@ -3400,11 +3400,11 @@ func (g *Graveler) LoadTags(ctx context.Context, repository *RepositoryRecord, m
 }
 
 func (g *Graveler) GetMetaRange(ctx context.Context, repository *RepositoryRecord, metaRangeID MetaRangeID) (MetaRangeAddress, error) {
-	return g.CommittedManager.GetMetaRange(ctx, repository.StorageID, repository.StorageNamespace, metaRangeID)
+	return g.CommittedManager.GetMetaRange(ctx, repository.StorageID, metaRangeID)
 }
 
 func (g *Graveler) GetRange(ctx context.Context, repository *RepositoryRecord, rangeID RangeID) (RangeAddress, error) {
-	return g.CommittedManager.GetRange(ctx, repository.StorageID, repository.StorageNamespace, rangeID)
+	return g.CommittedManager.GetRange(ctx, repository.StorageID, rangeID)
 }
 
 func (g *Graveler) DumpCommits(ctx context.Context, repository *RepositoryRecord) (*MetaRangeID, error) {

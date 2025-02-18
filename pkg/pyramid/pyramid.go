@@ -25,7 +25,7 @@ type FS interface {
 
 	// GetRemoteURI returns the URI for filename on block storage.  That URI might not
 	// resolve if filename does not exist.
-	GetRemoteURI(ctx context.Context, namespace, filename string) (string, error)
+	GetRemoteURI(ctx context.Context, filename string) (string, error)
 }
 
 // File is pyramid abstraction for an os.File

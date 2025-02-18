@@ -260,18 +260,18 @@ func (mr *MockMetaRangeManagerMockRecorder) Exists(ctx, ns, id interface{}) *gom
 }
 
 // GetMetaRangeURI mocks base method.
-func (m *MockMetaRangeManager) GetMetaRangeURI(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (string, error) {
+func (m *MockMetaRangeManager) GetMetaRangeURI(ctx context.Context, metaRangeID graveler.MetaRangeID) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMetaRangeURI", ctx, ns, metaRangeID)
+	ret := m.ctrl.Call(m, "GetMetaRangeURI", ctx, metaRangeID)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetMetaRangeURI indicates an expected call of GetMetaRangeURI.
-func (mr *MockMetaRangeManagerMockRecorder) GetMetaRangeURI(ctx, ns, metaRangeID interface{}) *gomock.Call {
+func (mr *MockMetaRangeManagerMockRecorder) GetMetaRangeURI(ctx, metaRangeID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetaRangeURI", reflect.TypeOf((*MockMetaRangeManager)(nil).GetMetaRangeURI), ctx, ns, metaRangeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetaRangeURI", reflect.TypeOf((*MockMetaRangeManager)(nil).GetMetaRangeURI), ctx, metaRangeID)
 }
 
 // GetRangeByKey mocks base method.
@@ -290,18 +290,18 @@ func (mr *MockMetaRangeManagerMockRecorder) GetRangeByKey(ctx, ns, id, key inter
 }
 
 // GetRangeURI mocks base method.
-func (m *MockMetaRangeManager) GetRangeURI(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.RangeID) (string, error) {
+func (m *MockMetaRangeManager) GetRangeURI(ctx context.Context, rangeID graveler.RangeID) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRangeURI", ctx, ns, rangeID)
+	ret := m.ctrl.Call(m, "GetRangeURI", ctx, rangeID)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRangeURI indicates an expected call of GetRangeURI.
-func (mr *MockMetaRangeManagerMockRecorder) GetRangeURI(ctx, ns, rangeID interface{}) *gomock.Call {
+func (mr *MockMetaRangeManagerMockRecorder) GetRangeURI(ctx, rangeID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeURI", reflect.TypeOf((*MockMetaRangeManager)(nil).GetRangeURI), ctx, ns, rangeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRangeURI", reflect.TypeOf((*MockMetaRangeManager)(nil).GetRangeURI), ctx, rangeID)
 }
 
 // GetValue mocks base method.

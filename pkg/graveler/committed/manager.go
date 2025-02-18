@@ -374,21 +374,21 @@ func (c *committedManager) Compare(ctx context.Context, storageID graveler.Stora
 	return NewCompareValueIterator(ctx, NewDiffIteratorWrapper(diffIt), baseIt), nil
 }
 
-func (c *committedManager) GetMetaRange(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
+func (c *committedManager) GetMetaRange(ctx context.Context, storageID graveler.StorageID, id graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
 	metaRangeManager, err := c.getMetaRangeManager(storageID)
 	if err != nil {
 		return "", err
 	}
-	uri, err := metaRangeManager.GetMetaRangeURI(ctx, ns, id)
+	uri, err := metaRangeManager.GetMetaRangeURI(ctx, id)
 	return graveler.MetaRangeAddress(uri), err
 }
 
-func (c *committedManager) GetRange(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.RangeID) (graveler.RangeAddress, error) {
+func (c *committedManager) GetRange(ctx context.Context, storageID graveler.StorageID, id graveler.RangeID) (graveler.RangeAddress, error) {
 	metaRangeManager, err := c.getMetaRangeManager(storageID)
 	if err != nil {
 		return "", err
 	}
-	uri, err := metaRangeManager.GetRangeURI(ctx, ns, id)
+	uri, err := metaRangeManager.GetRangeURI(ctx, id)
 	return graveler.RangeAddress(uri), err
 }
 
