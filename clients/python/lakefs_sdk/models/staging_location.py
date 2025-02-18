@@ -27,7 +27,7 @@ except ImportError:
 
 class StagingLocation(BaseModel):
     """
-    location for placing an object when staging it
+    location for placing an object when staging it  # noqa: E501
     """
     physical_address: Optional[StrictStr] = None
     presigned_url: Optional[StrictStr] = Field(None, description="if presign=true is passed in the request, this field will contain a pre-signed URL to use when uploading")

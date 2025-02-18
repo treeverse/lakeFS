@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.stats_event import StatsEvent  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestStatsEvent(unittest.TestCase):
     """StatsEvent unit test stubs"""
@@ -29,21 +27,21 @@ class TestStatsEvent(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> StatsEvent:
         """Test StatsEvent
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `StatsEvent`
         """
-        model = lakefs_sdk.models.stats_event.StatsEvent()  # noqa: E501
-        if include_optional :
+        model = StatsEvent()  # noqa: E501
+        if include_optional:
             return StatsEvent(
-                var_class = '', 
-                name = '', 
+                var_class = '',
+                name = '',
                 count = 56
             )
-        else :
+        else:
             return StatsEvent(
                 var_class = '',
                 name = '',

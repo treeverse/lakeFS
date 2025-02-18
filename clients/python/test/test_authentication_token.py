@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.authentication_token import AuthenticationToken  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestAuthenticationToken(unittest.TestCase):
     """AuthenticationToken unit test stubs"""
@@ -29,20 +27,20 @@ class TestAuthenticationToken(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> AuthenticationToken:
         """Test AuthenticationToken
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `AuthenticationToken`
         """
-        model = lakefs_sdk.models.authentication_token.AuthenticationToken()  # noqa: E501
-        if include_optional :
+        model = AuthenticationToken()  # noqa: E501
+        if include_optional:
             return AuthenticationToken(
-                token = '', 
+                token = '',
                 token_expiration = 56
             )
-        else :
+        else:
             return AuthenticationToken(
                 token = '',
         )

@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.object_stats import ObjectStats  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestObjectStats(unittest.TestCase):
     """ObjectStats unit test stubs"""
@@ -29,29 +27,29 @@ class TestObjectStats(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ObjectStats:
         """Test ObjectStats
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ObjectStats`
         """
-        model = lakefs_sdk.models.object_stats.ObjectStats()  # noqa: E501
-        if include_optional :
+        model = ObjectStats()  # noqa: E501
+        if include_optional:
             return ObjectStats(
-                path = '', 
-                path_type = 'common_prefix', 
-                physical_address = '', 
-                physical_address_expiry = 56, 
-                checksum = '', 
-                size_bytes = 56, 
-                mtime = 56, 
+                path = '',
+                path_type = 'common_prefix',
+                physical_address = '',
+                physical_address_expiry = 56,
+                checksum = '',
+                size_bytes = 56,
+                mtime = 56,
                 metadata = {
                     'key' : ''
-                    }, 
+                    },
                 content_type = ''
             )
-        else :
+        else:
             return ObjectStats(
                 path = '',
                 path_type = 'common_prefix',

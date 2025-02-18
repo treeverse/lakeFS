@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.commit_list import CommitList  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestCommitList(unittest.TestCase):
     """CommitList unit test stubs"""
@@ -29,21 +27,21 @@ class TestCommitList(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> CommitList:
         """Test CommitList
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `CommitList`
         """
-        model = lakefs_sdk.models.commit_list.CommitList()  # noqa: E501
-        if include_optional :
+        model = CommitList()  # noqa: E501
+        if include_optional:
             return CommitList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 
                     next_offset = '', 
                     results = 0, 
-                    max_per_page = 0, ), 
+                    max_per_page = 0, ),
                 results = [
                     lakefs_sdk.models.commit.Commit(
                         id = '', 
@@ -61,7 +59,7 @@ class TestCommitList(unittest.TestCase):
                         version = 0, )
                     ]
             )
-        else :
+        else:
             return CommitList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 

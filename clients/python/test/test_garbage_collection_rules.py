@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.garbage_collection_rules import GarbageCollectionRules  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestGarbageCollectionRules(unittest.TestCase):
     """GarbageCollectionRules unit test stubs"""
@@ -29,24 +27,24 @@ class TestGarbageCollectionRules(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> GarbageCollectionRules:
         """Test GarbageCollectionRules
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `GarbageCollectionRules`
         """
-        model = lakefs_sdk.models.garbage_collection_rules.GarbageCollectionRules()  # noqa: E501
-        if include_optional :
+        model = GarbageCollectionRules()  # noqa: E501
+        if include_optional:
             return GarbageCollectionRules(
-                default_retention_days = 56, 
+                default_retention_days = 56,
                 branches = [
                     lakefs_sdk.models.garbage_collection_rule.GarbageCollectionRule(
                         branch_id = '', 
                         retention_days = 56, )
                     ]
             )
-        else :
+        else:
             return GarbageCollectionRules(
                 default_retention_days = 56,
                 branches = [

@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.import_location import ImportLocation  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestImportLocation(unittest.TestCase):
     """ImportLocation unit test stubs"""
@@ -29,21 +27,21 @@ class TestImportLocation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ImportLocation:
         """Test ImportLocation
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ImportLocation`
         """
-        model = lakefs_sdk.models.import_location.ImportLocation()  # noqa: E501
-        if include_optional :
+        model = ImportLocation()  # noqa: E501
+        if include_optional:
             return ImportLocation(
-                type = 'common_prefix', 
-                path = 's3://my-bucket/production/collections/', 
+                type = 'common_prefix',
+                path = 's3://my-bucket/production/collections/',
                 destination = 'collections/'
             )
-        else :
+        else:
             return ImportLocation(
                 type = 'common_prefix',
                 path = 's3://my-bucket/production/collections/',
