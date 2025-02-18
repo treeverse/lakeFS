@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.staging_location import StagingLocation  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestStagingLocation(unittest.TestCase):
     """StagingLocation unit test stubs"""
@@ -29,21 +27,21 @@ class TestStagingLocation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> StagingLocation:
         """Test StagingLocation
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `StagingLocation`
         """
-        model = lakefs_sdk.models.staging_location.StagingLocation()  # noqa: E501
-        if include_optional :
+        model = StagingLocation()  # noqa: E501
+        if include_optional:
             return StagingLocation(
-                physical_address = '', 
-                presigned_url = '', 
+                physical_address = '',
+                presigned_url = '',
                 presigned_url_expiry = 56
             )
-        else :
+        else:
             return StagingLocation(
         )
         """

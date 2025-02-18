@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.sts_auth_request import StsAuthRequest  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestStsAuthRequest(unittest.TestCase):
     """StsAuthRequest unit test stubs"""
@@ -29,22 +27,22 @@ class TestStsAuthRequest(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> StsAuthRequest:
         """Test StsAuthRequest
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `StsAuthRequest`
         """
-        model = lakefs_sdk.models.sts_auth_request.StsAuthRequest()  # noqa: E501
-        if include_optional :
+        model = StsAuthRequest()  # noqa: E501
+        if include_optional:
             return StsAuthRequest(
-                code = '', 
-                state = '', 
-                redirect_uri = '', 
+                code = '',
+                state = '',
+                redirect_uri = '',
                 ttl_seconds = 56
             )
-        else :
+        else:
             return StsAuthRequest(
                 code = '',
                 state = '',

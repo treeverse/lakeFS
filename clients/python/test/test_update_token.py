@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.update_token import UpdateToken  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestUpdateToken(unittest.TestCase):
     """UpdateToken unit test stubs"""
@@ -29,19 +27,19 @@ class TestUpdateToken(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> UpdateToken:
         """Test UpdateToken
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `UpdateToken`
         """
-        model = lakefs_sdk.models.update_token.UpdateToken()  # noqa: E501
-        if include_optional :
+        model = UpdateToken()  # noqa: E501
+        if include_optional:
             return UpdateToken(
                 staging_token = ''
             )
-        else :
+        else:
             return UpdateToken(
                 staging_token = '',
         )

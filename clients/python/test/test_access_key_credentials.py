@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.access_key_credentials import AccessKeyCredentials  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestAccessKeyCredentials(unittest.TestCase):
     """AccessKeyCredentials unit test stubs"""
@@ -29,20 +27,20 @@ class TestAccessKeyCredentials(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> AccessKeyCredentials:
         """Test AccessKeyCredentials
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `AccessKeyCredentials`
         """
-        model = lakefs_sdk.models.access_key_credentials.AccessKeyCredentials()  # noqa: E501
-        if include_optional :
+        model = AccessKeyCredentials()  # noqa: E501
+        if include_optional:
             return AccessKeyCredentials(
-                access_key_id = 'AKIAIOSFODNN7EXAMPLE', 
+                access_key_id = 'AKIAIOSFODNN7EXAMPLE',
                 secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
             )
-        else :
+        else:
             return AccessKeyCredentials(
                 access_key_id = 'AKIAIOSFODNN7EXAMPLE',
                 secret_access_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',

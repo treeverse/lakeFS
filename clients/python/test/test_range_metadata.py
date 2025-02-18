@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.range_metadata import RangeMetadata  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestRangeMetadata(unittest.TestCase):
     """RangeMetadata unit test stubs"""
@@ -29,23 +27,23 @@ class TestRangeMetadata(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> RangeMetadata:
         """Test RangeMetadata
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RangeMetadata`
         """
-        model = lakefs_sdk.models.range_metadata.RangeMetadata()  # noqa: E501
-        if include_optional :
+        model = RangeMetadata()  # noqa: E501
+        if include_optional:
             return RangeMetadata(
-                id = '480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c', 
-                min_key = 'production/collections/some/file_1.parquet', 
-                max_key = 'production/collections/some/file_8229.parquet', 
-                count = 56, 
+                id = '480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c',
+                min_key = 'production/collections/some/file_1.parquet',
+                max_key = 'production/collections/some/file_8229.parquet',
+                count = 56,
                 estimated_size = 56
             )
-        else :
+        else:
             return RangeMetadata(
                 id = '480e19972a6fbe98ab8e81ae5efdfd1a29037587e91244e87abd4adefffdb01c',
                 min_key = 'production/collections/some/file_1.parquet',

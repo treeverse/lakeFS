@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.current_user import CurrentUser  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestCurrentUser(unittest.TestCase):
     """CurrentUser unit test stubs"""
@@ -29,15 +27,15 @@ class TestCurrentUser(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> CurrentUser:
         """Test CurrentUser
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `CurrentUser`
         """
-        model = lakefs_sdk.models.current_user.CurrentUser()  # noqa: E501
-        if include_optional :
+        model = CurrentUser()  # noqa: E501
+        if include_optional:
             return CurrentUser(
                 user = lakefs_sdk.models.user.User(
                     id = '', 
@@ -45,7 +43,7 @@ class TestCurrentUser(unittest.TestCase):
                     friendly_name = '', 
                     email = '', )
             )
-        else :
+        else:
             return CurrentUser(
                 user = lakefs_sdk.models.user.User(
                     id = '', 

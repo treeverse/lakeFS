@@ -28,7 +28,7 @@ from lakefs_sdk.models.staging_location import StagingLocation
 
 class StagingMetadata(BaseModel):
     """
-    information about uploaded object
+    information about uploaded object  # noqa: E501
     """
     staging: StagingLocation = Field(...)
     checksum: StrictStr = Field(..., description="unique identifier of object content on backing store (typically ETag)")

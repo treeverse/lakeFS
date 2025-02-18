@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.user_list import UserList  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestUserList(unittest.TestCase):
     """UserList unit test stubs"""
@@ -29,21 +27,21 @@ class TestUserList(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> UserList:
         """Test UserList
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `UserList`
         """
-        model = lakefs_sdk.models.user_list.UserList()  # noqa: E501
-        if include_optional :
+        model = UserList()  # noqa: E501
+        if include_optional:
             return UserList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 
                     next_offset = '', 
                     results = 0, 
-                    max_per_page = 0, ), 
+                    max_per_page = 0, ),
                 results = [
                     lakefs_sdk.models.user.User(
                         id = '', 
@@ -52,7 +50,7 @@ class TestUserList(unittest.TestCase):
                         email = '', )
                     ]
             )
-        else :
+        else:
             return UserList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 

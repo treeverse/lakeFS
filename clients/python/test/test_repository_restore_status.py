@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.repository_restore_status import RepositoryRestoreStatus  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestRepositoryRestoreStatus(unittest.TestCase):
     """RepositoryRestoreStatus unit test stubs"""
@@ -29,22 +27,22 @@ class TestRepositoryRestoreStatus(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> RepositoryRestoreStatus:
         """Test RepositoryRestoreStatus
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RepositoryRestoreStatus`
         """
-        model = lakefs_sdk.models.repository_restore_status.RepositoryRestoreStatus()  # noqa: E501
-        if include_optional :
+        model = RepositoryRestoreStatus()  # noqa: E501
+        if include_optional:
             return RepositoryRestoreStatus(
-                id = '', 
-                done = True, 
-                update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
+                id = '',
+                done = True,
+                update_time = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'),
                 error = ''
             )
-        else :
+        else:
             return RepositoryRestoreStatus(
                 id = '',
                 done = True,
