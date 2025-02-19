@@ -99,7 +99,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
             filterPlaceholder={"Find Group..."}
             modalTitle={"Add to Groups"}
             addText={"Add to Groups"}
-            headers={["Select", "Group Name"]}
+            headers={["", "Group Name"]}
             searchFn={(prefix) =>
               auth.listGroups(prefix, "", 5).then((res) => res.results)
             }
