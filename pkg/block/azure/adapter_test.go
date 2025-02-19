@@ -26,7 +26,7 @@ func TestAzureAdapter(t *testing.T) {
 		StorageAccessKey: accountKey,
 		TestEndpointURL:  blockURL,
 		Domain:           domain,
-	})
+	}, nil)
 	require.NoError(t, err, "create new adapter")
 	blocktest.AdapterTest(t, adapter, localPath, externalPath, true)
 }
@@ -129,7 +129,7 @@ func TestAdapterNamespace(t *testing.T) {
 				StorageAccessKey: accountKey,
 				TestEndpointURL:  blockURL,
 				Domain:           tt.Domain,
-			})
+			}, nil)
 			if tt.InvalidDomain {
 				require.ErrorIs(t, err, azure.ErrInvalidDomain)
 				return
