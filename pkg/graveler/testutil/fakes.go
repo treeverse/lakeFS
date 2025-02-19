@@ -118,11 +118,11 @@ func (c *CommittedFake) WriteMetaRange(context.Context, graveler.StorageID, grav
 	return &graveler.MetaRangeInfo{ID: c.MetaRangeID}, nil
 }
 
-func (c *CommittedFake) GetMetaRange(_ context.Context, _ graveler.StorageID, _ graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
+func (c *CommittedFake) GetMetaRange(_ context.Context, _ graveler.StorageID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
 	return graveler.MetaRangeAddress(fmt.Sprintf("fake://prefix/%s(metarange)", metaRangeID)), nil
 }
 
-func (c *CommittedFake) GetRange(_ context.Context, _ graveler.StorageID, _ graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.RangeAddress, error) {
+func (c *CommittedFake) GetRange(_ context.Context, _ graveler.StorageID, rangeID graveler.RangeID) (graveler.RangeAddress, error) {
 	return graveler.RangeAddress(fmt.Sprintf("fake://prefix/%s(range)", rangeID)), nil
 }
 

@@ -67,18 +67,18 @@ func (mr *MockFSMockRecorder) Exists(ctx, storageID, namespace, filename interfa
 }
 
 // GetRemoteURI mocks base method.
-func (m *MockFS) GetRemoteURI(ctx context.Context, namespace, filename string) (string, error) {
+func (m *MockFS) GetRemoteURI(ctx context.Context, filename string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRemoteURI", ctx, namespace, filename)
+	ret := m.ctrl.Call(m, "GetRemoteURI", ctx, filename)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRemoteURI indicates an expected call of GetRemoteURI.
-func (mr *MockFSMockRecorder) GetRemoteURI(ctx, namespace, filename interface{}) *gomock.Call {
+func (mr *MockFSMockRecorder) GetRemoteURI(ctx, filename interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemoteURI", reflect.TypeOf((*MockFS)(nil).GetRemoteURI), ctx, namespace, filename)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRemoteURI", reflect.TypeOf((*MockFS)(nil).GetRemoteURI), ctx, filename)
 }
 
 // Open mocks base method.
