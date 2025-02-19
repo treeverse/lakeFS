@@ -25,7 +25,7 @@ func TestGarbageCollectionManager_GetUncommittedLocation(t *testing.T) {
 	ns := graveler.StorageNamespace("mem://test-namespace/my-repo")
 	path := fmt.Sprintf("%s/%s/retention/gc/uncommitted/%s/uncommitted/", ns, prefix, runID)
 	gc := retention.NewGarbageCollectionManager(blockAdapter, refMgr, prefix)
-	location, err := gc.GetUncommittedLocation(runID, ns)
+	location, err := gc.GetUncommittedLocation(runID, "", ns)
 	require.NoError(t, err)
 	require.Equal(t, path, location)
 }
@@ -60,7 +60,7 @@ func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T)
 		},
 	}
 	gc := retention.NewGarbageCollectionManager(blockAdapter, refMgr, prefix)
-	location, err := gc.GetUncommittedLocation(runID, ns)
+	location, err := gc.GetUncommittedLocation(runID, "", ns)
 	require.NoError(t, err)
 	filename := "uncommitted_test_file"
 	testLine := "TestLine"
