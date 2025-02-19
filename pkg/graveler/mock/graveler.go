@@ -2683,33 +2683,33 @@ func (mr *MockCommittedManagerMockRecorder) Get(ctx, storageID, ns, rangeID, key
 }
 
 // GetMetaRange mocks base method.
-func (m *MockCommittedManager) GetMetaRange(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
+func (m *MockCommittedManager) GetMetaRange(ctx context.Context, storageID graveler.StorageID, metaRangeID graveler.MetaRangeID) (graveler.MetaRangeAddress, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMetaRange", ctx, storageID, ns, metaRangeID)
+	ret := m.ctrl.Call(m, "GetMetaRange", ctx, storageID, metaRangeID)
 	ret0, _ := ret[0].(graveler.MetaRangeAddress)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetMetaRange indicates an expected call of GetMetaRange.
-func (mr *MockCommittedManagerMockRecorder) GetMetaRange(ctx, storageID, ns, metaRangeID interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) GetMetaRange(ctx, storageID, metaRangeID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetaRange", reflect.TypeOf((*MockCommittedManager)(nil).GetMetaRange), ctx, storageID, ns, metaRangeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetaRange", reflect.TypeOf((*MockCommittedManager)(nil).GetMetaRange), ctx, storageID, metaRangeID)
 }
 
 // GetRange mocks base method.
-func (m *MockCommittedManager) GetRange(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, rangeID graveler.RangeID) (graveler.RangeAddress, error) {
+func (m *MockCommittedManager) GetRange(ctx context.Context, storageID graveler.StorageID, rangeID graveler.RangeID) (graveler.RangeAddress, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRange", ctx, storageID, ns, rangeID)
+	ret := m.ctrl.Call(m, "GetRange", ctx, storageID, rangeID)
 	ret0, _ := ret[0].(graveler.RangeAddress)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRange indicates an expected call of GetRange.
-func (mr *MockCommittedManagerMockRecorder) GetRange(ctx, storageID, ns, rangeID interface{}) *gomock.Call {
+func (mr *MockCommittedManagerMockRecorder) GetRange(ctx, storageID, rangeID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRange", reflect.TypeOf((*MockCommittedManager)(nil).GetRange), ctx, storageID, ns, rangeID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRange", reflect.TypeOf((*MockCommittedManager)(nil).GetRange), ctx, storageID, rangeID)
 }
 
 // GetRangeIDByKey mocks base method.
