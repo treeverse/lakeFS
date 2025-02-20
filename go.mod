@@ -96,6 +96,9 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/puzpuzpuz/xsync v1.5.2
+	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20250127142328-f2b9264a4b8b
+	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250127142328-f2b9264a4b8b
+	github.com/treeverse/lakefs/webui v0.0.0-20250127142328-f2b9264a4b8b
 	go.uber.org/ratelimit v0.3.0
 )
 
@@ -135,7 +138,7 @@ require (
 	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
-	github.com/golang/glog v1.1.2 // indirect
+	github.com/golang/glog v1.2.4 // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
