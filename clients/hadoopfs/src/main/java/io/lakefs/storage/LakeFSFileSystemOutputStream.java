@@ -50,7 +50,7 @@ public class LakeFSFileSystemOutputStream extends OutputStream {
         if (eTag == null) {
             throw new IOException("Failed to finish writing to presigned link. No ETag found.");
         }
-        linker.link(eTag, buffer.size());
+        linker.link(eTag, buffer.size(), null);
         if (connection.getResponseCode() > 299) {
             throw new IOException("Failed to finish writing to presigned link. Response code: "
                     + connection.getResponseCode());

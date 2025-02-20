@@ -121,19 +121,11 @@ public abstract class FSTestBase {
         return removeStart(stagingLocation.getPhysicalAddress(), s3Base);
     }
 
-    /**
-     * Override to add to Hadoop configuration.
-     */
-    protected void addHadoopConfiguration(Configuration conf) {
-    }
-
     @Before
     public void hadoopSetup() throws IOException, URISyntaxException {
         s3Base = "s3a://UNUSED/"; // Overridden if S3 will be used!
 
         conf = new Configuration(false);
-
-        addHadoopConfiguration(conf);
 
         conf.set("fs.lakefs.impl", "io.lakefs.LakeFSFileSystem");
 
