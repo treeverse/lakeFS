@@ -3678,6 +3678,7 @@ func (c *commitValueIterator) setValue() bool {
 	}
 	commit := c.src.Value()
 	data, err := proto.Marshal(&CommitData{
+		// version is already int32, safe
 		Version:      int32(commit.Version), //nolint:gosec
 		Id:           string(commit.CommitID),
 		Committer:    commit.Committer,

@@ -32,6 +32,7 @@ var (
 	ErrConnectFailed       = errors.New("connect failed")
 	ErrDriverConfiguration = errors.New("driver configuration")
 	ErrMissingPartitionKey = errors.New("missing partition key")
+	ErrBatchSizeTooBig     = errors.New("batch size too big")
 	ErrMissingKey          = errors.New("missing key")
 	ErrMissingValue        = errors.New("missing value")
 	ErrNotFound            = errors.New("not found")

@@ -283,6 +283,7 @@ type ConstantWithJitterBackOff struct {
 
 func (b *ConstantWithJitterBackOff) Reset() {}
 func (b *ConstantWithJitterBackOff) NextBackOff() time.Duration {
+	// time.Duration is int64, safe
 	return b.Interval + time.Duration(rand.Int63n(int64(b.Interval)))/2 //nolint:gosec
 }
 

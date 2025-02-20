@@ -1329,6 +1329,7 @@ func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, c
 		commitParents[i] = graveler.CommitID(parent)
 	}
 	commit := graveler.Commit{
+		// cast from int32 to int. no information loss danger
 		Version:      graveler.CommitVersion(version), //nolint:gosec
 		Committer:    committer,
 		Message:      message,
@@ -1336,7 +1337,8 @@ func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, c
 		CreationDate: time.Unix(creationDate, 0).UTC(),
 		Parents:      commitParents,
 		Metadata:     metadata,
-		Generation:   graveler.CommitGeneration(generation), //nolint:gosec
+		// cast from int32 to int32
+		Generation: graveler.CommitGeneration(generation), //nolint:gosec
 	}
 	return c.Store.CreateCommitRecord(ctx, repository, graveler.CommitID(commitID), commit, opts...)
 }

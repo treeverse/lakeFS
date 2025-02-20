@@ -150,6 +150,7 @@ func (w *FakeWalker) createEntries(count int) {
 	// For example, setting "5" here will cause the test to constantly fail.
 	// Fix Bug #3384
 	const seed = 6
+	// tests, safe
 	//nolint:gosec
 	randGen := rand.New(rand.NewSource(seed))
 	for i := 0; i < count; i++ {

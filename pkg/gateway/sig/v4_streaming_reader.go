@@ -35,6 +35,7 @@ import (
 
 // Streaming AWS Signature Version '4' constants.
 const (
+	// These constants are part of the AWS SigV4 spec, so they are safe.
 	emptySHA256            = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" //nolint:gosec
 	signV4ChunkedAlgorithm = "AWS4-HMAC-SHA256-PAYLOAD"                                         //nolint:gosec
 	SlashSeparator         = "/"
@@ -226,6 +227,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			n += n0
 			buf = buf[n0:]
 			// Update bytes to be read of the current chunk before verifying chunk's signature.
+			// n >= n0 >= 0, cast is safe
 			cr.n -= uint64(n0) //nolint:gosec
 
 			// If we're at the end of a chunk.

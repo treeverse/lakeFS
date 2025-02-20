@@ -203,7 +203,9 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 
 	// check valid number of parts
 	if params.Parts != nil {
-		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts { //nolint:gosec
+		// casting MaxUploadParts from int32 to int does not pose a danger since int
+		// is int32 or int64 thus no information will be lost
+		if *params.Parts < 0 || *params.Parts > int(manager.MaxUploadParts) {
 			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("parts can be between 0 and %d", manager.MaxUploadParts))
 			return
 		}
@@ -5336,6 +5338,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 			UserID: user.Username,
 			Client: client,
 		}
+		// count of stats, we can filter it on the receiving side
 		c.Collector.CollectEvents(ev, uint64(statsEv.Count)) //nolint:gosec
 
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{

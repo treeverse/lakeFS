@@ -24,6 +24,7 @@ func randomFilepath(basename string) string {
 	const maxDirSuffixes = 3
 	depth := rand.Intn(maxDepthLevel) //nolint:gosec
 	for i := 0; i < depth; i++ {
+		// tests, safe
 		dirSuffix := rand.Intn(maxDirSuffixes) //nolint:gosec
 		sb.WriteString(fmt.Sprintf("dir%d/", dirSuffix))
 	}
@@ -42,6 +43,7 @@ func (t *TargetGenerator) GenerateCreateFileTargets(repo, branch string, num int
 	now := time.Now().UnixNano()
 	result := make([]vegeta.Target, num)
 	for i := 0; i < num; i++ {
+		// tests, safe
 		randomContent := rand.Int() //nolint:gosec
 		fileContent := "--" + boundary + "\n" +
 			"Content-Disposition: form-data; name=\"content\"; filename=\"file\"\n" +
