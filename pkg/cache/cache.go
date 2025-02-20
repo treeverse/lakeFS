@@ -69,7 +69,8 @@ func NewJitterFn(jitter time.Duration) JitterFn {
 		}
 	}
 	return func() time.Duration {
-		n := rand.Intn(int(jitter)) //nolint:gosec
+		// Safe cast, jitter is of type int64
+		n := rand.Int63n(int64(jitter)) //nolint:gosec
 		return time.Duration(n)
 	}
 }

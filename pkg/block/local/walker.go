@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	// MD5 required for ETag computation.
 	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"encoding/json"
@@ -173,6 +174,7 @@ func calcFileETag(ent block.ObjectStoreEntry) (string, error) {
 		return "", err
 	}
 	defer func() { _ = f.Close() }()
+	// MD5 required for ETag computation.
 	hash := md5.New() //nolint:gosec
 	_, err = io.Copy(hash, f)
 	if err != nil {

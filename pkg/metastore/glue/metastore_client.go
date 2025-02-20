@@ -64,7 +64,8 @@ func (g *MSClient) GetDatabase(ctx context.Context, name string) (*metastore.Dat
 
 func (g *MSClient) getDatabaseFromGlue(ctx context.Context, token *string, parts int) (*glue.GetDatabasesOutput, error) {
 	return g.client.GetDatabases(ctx, &glue.GetDatabasesInput{
-		CatalogId:  aws.String(g.catalogID),
+		CatalogId: aws.String(g.catalogID),
+		// parts <= 10000, safe
 		MaxResults: aws.Int32(int32(parts)), //nolint:gosec
 		NextToken:  token,
 	})

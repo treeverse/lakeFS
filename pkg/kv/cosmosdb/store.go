@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 
@@ -355,6 +356,9 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 	if len(partitionKey) == 0 {
 		return nil, kv.ErrMissingPartitionKey
 	}
+	if options.BatchSize > math.MaxInt32 {
+		return nil, kv.ErrBatchSizeTooBig
+	}
 	it := &EntriesIterator{
 		store:        s,
 		partitionKey: partitionKey,
@@ -517,7 +521,8 @@ func (e *EntriesIterator) runQuery(includeStartKey bool) error {
 	pk := azcosmos.NewPartitionKeyString(encoding.EncodeToString(e.partitionKey))
 	e.queryPager = e.store.containerClient.NewQueryItemsPager(query, pk, &azcosmos.QueryOptions{
 		ConsistencyLevel: e.store.consistencyLevel.ToPtr(),
-		PageSizeHint:     int32(e.batchSize), //nolint:gosec
+		// batchSize checked, safe cast
+		PageSizeHint: int32(e.batchSize), //nolint:gosec
 		QueryParameters: []azcosmos.QueryParameter{{
 			Name:  "@start",
 			Value: encoding.EncodeToString(e.startKey),
