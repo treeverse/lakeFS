@@ -7,11 +7,12 @@ import (
 )
 
 const (
-	DefaultListenAddress             = "0.0.0.0:8000"
-	DefaultLoggingLevel              = "INFO"
-	DefaultLoggingAuditLogLevel      = "DEBUG"
-	BlockstoreTypeKey                = "blockstore.type"
-	DefaultQuickstartUsername        = "quickstart"
+	DefaultListenAddress        = "0.0.0.0:8000"
+	DefaultLoggingLevel         = "INFO"
+	DefaultLoggingAuditLogLevel = "DEBUG"
+	BlockstoreTypeKey           = "blockstore.type"
+	DefaultQuickstartUsername   = "quickstart"
+	// quicksart creds, safe
 	DefaultQuickstartKeyID           = "AKIAIOSFOLQUICKSTART"                     //nolint:gosec
 	DefaultQuickstartSecretKey       = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
 	DefaultAuthAPIHealthCheckTimeout = 20 * time.Second

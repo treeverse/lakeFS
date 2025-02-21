@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.pull_request_creation import PullRequestCreation  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestPullRequestCreation(unittest.TestCase):
     """PullRequestCreation unit test stubs"""
@@ -29,22 +27,22 @@ class TestPullRequestCreation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> PullRequestCreation:
         """Test PullRequestCreation
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `PullRequestCreation`
         """
-        model = lakefs_sdk.models.pull_request_creation.PullRequestCreation()  # noqa: E501
-        if include_optional :
+        model = PullRequestCreation()  # noqa: E501
+        if include_optional:
             return PullRequestCreation(
-                title = '', 
-                description = '', 
-                source_branch = '', 
+                title = '',
+                description = '',
+                source_branch = '',
                 destination_branch = ''
             )
-        else :
+        else:
             return PullRequestCreation(
                 title = '',
                 source_branch = '',

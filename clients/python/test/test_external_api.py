@@ -15,49 +15,47 @@
 
 import unittest
 
-import lakefs_sdk
 from lakefs_sdk.api.external_api import ExternalApi  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 
 class TestExternalApi(unittest.TestCase):
     """ExternalApi unit test stubs"""
 
-    def setUp(self):
-        self.api = lakefs_sdk.api.external_api.ExternalApi()  # noqa: E501
+    def setUp(self) -> None:
+        self.api = ExternalApi()  # noqa: E501
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         pass
 
-    def test_create_user_external_principal(self):
+    def test_create_user_external_principal(self) -> None:
         """Test case for create_user_external_principal
 
         attach external principal to user  # noqa: E501
         """
         pass
 
-    def test_delete_user_external_principal(self):
+    def test_delete_user_external_principal(self) -> None:
         """Test case for delete_user_external_principal
 
         delete external principal from user  # noqa: E501
         """
         pass
 
-    def test_external_principal_login(self):
+    def test_external_principal_login(self) -> None:
         """Test case for external_principal_login
 
         perform a login using an external authenticator  # noqa: E501
         """
         pass
 
-    def test_get_external_principal(self):
+    def test_get_external_principal(self) -> None:
         """Test case for get_external_principal
 
         describe external principal by id  # noqa: E501
         """
         pass
 
-    def test_list_user_external_principals(self):
+    def test_list_user_external_principals(self) -> None:
         """Test case for list_user_external_principals
 
         list user external policies attached to a user  # noqa: E501

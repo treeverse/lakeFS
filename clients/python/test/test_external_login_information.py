@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestExternalLoginInformation(unittest.TestCase):
     """ExternalLoginInformation unit test stubs"""
@@ -29,20 +27,20 @@ class TestExternalLoginInformation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ExternalLoginInformation:
         """Test ExternalLoginInformation
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ExternalLoginInformation`
         """
-        model = lakefs_sdk.models.external_login_information.ExternalLoginInformation()  # noqa: E501
-        if include_optional :
+        model = ExternalLoginInformation()  # noqa: E501
+        if include_optional:
             return ExternalLoginInformation(
-                token_expiration_duration = 56, 
+                token_expiration_duration = 56,
                 identity_request = None
             )
-        else :
+        else:
             return ExternalLoginInformation(
                 identity_request = None,
         )

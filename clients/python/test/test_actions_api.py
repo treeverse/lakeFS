@@ -15,42 +15,40 @@
 
 import unittest
 
-import lakefs_sdk
 from lakefs_sdk.api.actions_api import ActionsApi  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 
 class TestActionsApi(unittest.TestCase):
     """ActionsApi unit test stubs"""
 
-    def setUp(self):
-        self.api = lakefs_sdk.api.actions_api.ActionsApi()  # noqa: E501
+    def setUp(self) -> None:
+        self.api = ActionsApi()  # noqa: E501
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         pass
 
-    def test_get_run(self):
+    def test_get_run(self) -> None:
         """Test case for get_run
 
         get a run  # noqa: E501
         """
         pass
 
-    def test_get_run_hook_output(self):
+    def test_get_run_hook_output(self) -> None:
         """Test case for get_run_hook_output
 
         get run hook output  # noqa: E501
         """
         pass
 
-    def test_list_repository_runs(self):
+    def test_list_repository_runs(self) -> None:
         """Test case for list_repository_runs
 
         list runs  # noqa: E501
         """
         pass
 
-    def test_list_run_hooks(self):
+    def test_list_run_hooks(self) -> None:
         """Test case for list_run_hooks
 
         list run hooks  # noqa: E501

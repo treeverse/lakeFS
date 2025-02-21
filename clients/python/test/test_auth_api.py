@@ -15,266 +15,264 @@
 
 import unittest
 
-import lakefs_sdk
 from lakefs_sdk.api.auth_api import AuthApi  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 
 class TestAuthApi(unittest.TestCase):
     """AuthApi unit test stubs"""
 
-    def setUp(self):
-        self.api = lakefs_sdk.api.auth_api.AuthApi()  # noqa: E501
+    def setUp(self) -> None:
+        self.api = AuthApi()  # noqa: E501
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         pass
 
-    def test_add_group_membership(self):
+    def test_add_group_membership(self) -> None:
         """Test case for add_group_membership
 
         add group membership  # noqa: E501
         """
         pass
 
-    def test_attach_policy_to_group(self):
+    def test_attach_policy_to_group(self) -> None:
         """Test case for attach_policy_to_group
 
         attach policy to group  # noqa: E501
         """
         pass
 
-    def test_attach_policy_to_user(self):
+    def test_attach_policy_to_user(self) -> None:
         """Test case for attach_policy_to_user
 
         attach policy to user  # noqa: E501
         """
         pass
 
-    def test_create_credentials(self):
+    def test_create_credentials(self) -> None:
         """Test case for create_credentials
 
         create credentials  # noqa: E501
         """
         pass
 
-    def test_create_group(self):
+    def test_create_group(self) -> None:
         """Test case for create_group
 
         create group  # noqa: E501
         """
         pass
 
-    def test_create_policy(self):
+    def test_create_policy(self) -> None:
         """Test case for create_policy
 
         create policy  # noqa: E501
         """
         pass
 
-    def test_create_user(self):
+    def test_create_user(self) -> None:
         """Test case for create_user
 
         create user  # noqa: E501
         """
         pass
 
-    def test_create_user_external_principal(self):
+    def test_create_user_external_principal(self) -> None:
         """Test case for create_user_external_principal
 
         attach external principal to user  # noqa: E501
         """
         pass
 
-    def test_delete_credentials(self):
+    def test_delete_credentials(self) -> None:
         """Test case for delete_credentials
 
         delete credentials  # noqa: E501
         """
         pass
 
-    def test_delete_group(self):
+    def test_delete_group(self) -> None:
         """Test case for delete_group
 
         delete group  # noqa: E501
         """
         pass
 
-    def test_delete_group_membership(self):
+    def test_delete_group_membership(self) -> None:
         """Test case for delete_group_membership
 
         delete group membership  # noqa: E501
         """
         pass
 
-    def test_delete_policy(self):
+    def test_delete_policy(self) -> None:
         """Test case for delete_policy
 
         delete policy  # noqa: E501
         """
         pass
 
-    def test_delete_user(self):
+    def test_delete_user(self) -> None:
         """Test case for delete_user
 
         delete user  # noqa: E501
         """
         pass
 
-    def test_delete_user_external_principal(self):
+    def test_delete_user_external_principal(self) -> None:
         """Test case for delete_user_external_principal
 
         delete external principal from user  # noqa: E501
         """
         pass
 
-    def test_detach_policy_from_group(self):
+    def test_detach_policy_from_group(self) -> None:
         """Test case for detach_policy_from_group
 
         detach policy from group  # noqa: E501
         """
         pass
 
-    def test_detach_policy_from_user(self):
+    def test_detach_policy_from_user(self) -> None:
         """Test case for detach_policy_from_user
 
         detach policy from user  # noqa: E501
         """
         pass
 
-    def test_external_principal_login(self):
+    def test_external_principal_login(self) -> None:
         """Test case for external_principal_login
 
         perform a login using an external authenticator  # noqa: E501
         """
         pass
 
-    def test_get_credentials(self):
+    def test_get_credentials(self) -> None:
         """Test case for get_credentials
 
         get credentials  # noqa: E501
         """
         pass
 
-    def test_get_current_user(self):
+    def test_get_current_user(self) -> None:
         """Test case for get_current_user
 
         get current user  # noqa: E501
         """
         pass
 
-    def test_get_external_principal(self):
+    def test_get_external_principal(self) -> None:
         """Test case for get_external_principal
 
         describe external principal by id  # noqa: E501
         """
         pass
 
-    def test_get_group(self):
+    def test_get_group(self) -> None:
         """Test case for get_group
 
         get group  # noqa: E501
         """
         pass
 
-    def test_get_group_acl(self):
+    def test_get_group_acl(self) -> None:
         """Test case for get_group_acl
 
         get ACL of group  # noqa: E501
         """
         pass
 
-    def test_get_policy(self):
+    def test_get_policy(self) -> None:
         """Test case for get_policy
 
         get policy  # noqa: E501
         """
         pass
 
-    def test_get_user(self):
+    def test_get_user(self) -> None:
         """Test case for get_user
 
         get user  # noqa: E501
         """
         pass
 
-    def test_list_group_members(self):
+    def test_list_group_members(self) -> None:
         """Test case for list_group_members
 
         list group members  # noqa: E501
         """
         pass
 
-    def test_list_group_policies(self):
+    def test_list_group_policies(self) -> None:
         """Test case for list_group_policies
 
         list group policies  # noqa: E501
         """
         pass
 
-    def test_list_groups(self):
+    def test_list_groups(self) -> None:
         """Test case for list_groups
 
         list groups  # noqa: E501
         """
         pass
 
-    def test_list_policies(self):
+    def test_list_policies(self) -> None:
         """Test case for list_policies
 
         list policies  # noqa: E501
         """
         pass
 
-    def test_list_user_credentials(self):
+    def test_list_user_credentials(self) -> None:
         """Test case for list_user_credentials
 
         list user credentials  # noqa: E501
         """
         pass
 
-    def test_list_user_external_principals(self):
+    def test_list_user_external_principals(self) -> None:
         """Test case for list_user_external_principals
 
         list user external policies attached to a user  # noqa: E501
         """
         pass
 
-    def test_list_user_groups(self):
+    def test_list_user_groups(self) -> None:
         """Test case for list_user_groups
 
         list user groups  # noqa: E501
         """
         pass
 
-    def test_list_user_policies(self):
+    def test_list_user_policies(self) -> None:
         """Test case for list_user_policies
 
         list user policies  # noqa: E501
         """
         pass
 
-    def test_list_users(self):
+    def test_list_users(self) -> None:
         """Test case for list_users
 
         list users  # noqa: E501
         """
         pass
 
-    def test_login(self):
+    def test_login(self) -> None:
         """Test case for login
 
         perform a login  # noqa: E501
         """
         pass
 
-    def test_set_group_acl(self):
+    def test_set_group_acl(self) -> None:
         """Test case for set_group_acl
 
         set ACL of group  # noqa: E501
         """
         pass
 
-    def test_update_policy(self):
+    def test_update_policy(self) -> None:
         """Test case for update_policy
 
         update policy  # noqa: E501

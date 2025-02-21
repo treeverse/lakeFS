@@ -1,7 +1,9 @@
 package api
 
 import (
-	"crypto/md5" //nolint:gosec
+	// MD5 required for ETag computation.
+	//nolint:gosec
+	"crypto/md5"
 	"encoding/hex"
 	"io"
 	"io/fs"
@@ -62,7 +64,7 @@ func scanFSEtags(fSys fs.FS) (map[string]string, error) {
 			return err
 		}
 		defer func() { _ = f.Close() }()
-
+		// MD5 required for ETag computation.
 		h := md5.New() //nolint:gosec
 		if _, err := io.Copy(h, f); err != nil {
 			return err

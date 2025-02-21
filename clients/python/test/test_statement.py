@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.statement import Statement  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestStatement(unittest.TestCase):
     """Statement unit test stubs"""
@@ -29,23 +27,23 @@ class TestStatement(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> Statement:
         """Test Statement
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `Statement`
         """
-        model = lakefs_sdk.models.statement.Statement()  # noqa: E501
-        if include_optional :
+        model = Statement()  # noqa: E501
+        if include_optional:
             return Statement(
-                effect = 'allow', 
-                resource = '', 
+                effect = 'allow',
+                resource = '',
                 action = [
                     ''
                     ]
             )
-        else :
+        else:
             return Statement(
                 effect = 'allow',
                 resource = '',

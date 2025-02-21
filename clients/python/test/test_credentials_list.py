@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.credentials_list import CredentialsList  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestCredentialsList(unittest.TestCase):
     """CredentialsList unit test stubs"""
@@ -29,28 +27,28 @@ class TestCredentialsList(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> CredentialsList:
         """Test CredentialsList
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `CredentialsList`
         """
-        model = lakefs_sdk.models.credentials_list.CredentialsList()  # noqa: E501
-        if include_optional :
+        model = CredentialsList()  # noqa: E501
+        if include_optional:
             return CredentialsList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 
                     next_offset = '', 
                     results = 0, 
-                    max_per_page = 0, ), 
+                    max_per_page = 0, ),
                 results = [
                     lakefs_sdk.models.credentials.Credentials(
                         access_key_id = '', 
                         creation_date = 56, )
                     ]
             )
-        else :
+        else:
             return CredentialsList(
                 pagination = lakefs_sdk.models.pagination.Pagination(
                     has_more = True, 

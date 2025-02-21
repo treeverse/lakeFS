@@ -8,7 +8,7 @@ UID_GID := $(shell id -u):$(shell id -g)
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
 # https://openapi-generator.tech
-OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.0.1
+OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.1
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
@@ -197,7 +197,7 @@ esti: ## run esti (system testing)
 test: test-go test-hadoopfs  ## Run tests for the project
 
 test-go: gen-api			# Run parallelism > num_cores: most of our slow tests are *not* CPU-bound.
-	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" ./...
+	go list -f '{{.Dir}}/...' -m | xargs $(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast -parallel="$(GOTEST_PARALLELISM)" ./...
 
 test-hadoopfs:
 	cd clients/hadoopfs && mvn test

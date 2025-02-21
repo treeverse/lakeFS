@@ -203,7 +203,9 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 
 	// check valid number of parts
 	if params.Parts != nil {
-		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts { //nolint:gosec
+		// casting MaxUploadParts from int32 to int does not pose a danger since int
+		// is int32 or int64 thus no information will be lost
+		if *params.Parts < 0 || *params.Parts > int(manager.MaxUploadParts) {
 			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("parts can be between 0 and %d", manager.MaxUploadParts))
 			return
 		}
@@ -1869,10 +1871,9 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
-	storageListCfg := c.getStorageConfigList()
+	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
-	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageListCfg})
+	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageCfgList})
 }
 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
@@ -1885,8 +1886,19 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
+	storageCfg, _ := c.getStorageConfigs()
 	writeResponse(w, r, http.StatusOK, storageCfg)
+}
+
+func (c *Controller) getStorageConfigs() (*apigen.StorageConfig, apigen.StorageConfigList) {
+	storageCfgList := c.getStorageConfigList()
+	if len(storageCfgList) > 1 {
+		// non-empty storage-config-list, return empty storage-config
+		return &apigen.StorageConfig{}, storageCfgList
+	} else {
+		storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
+		return storageCfg, storageCfgList
+	}
 }
 
 func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, error) {
@@ -5326,6 +5338,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 			UserID: user.Username,
 			Client: client,
 		}
+		// count of stats, we can filter it on the receiving side
 		c.Collector.CollectEvents(ev, uint64(statsEv.Count)) //nolint:gosec
 
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{

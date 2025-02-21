@@ -316,8 +316,9 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 	}
 
 	uploadPartInput := &s3.UploadPartInput{
-		Bucket:        aws.String(bucket),
-		Key:           aws.String(key),
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		// partNumber can only be as big as 10,000
 		PartNumber:    aws.Int32(int32(partNumber)), //nolint:gosec
 		UploadId:      aws.String(uploadID),
 		Body:          reader,
@@ -482,9 +483,10 @@ func (a *Adapter) GetPresignUploadPartURL(ctx context.Context, obj block.ObjectP
 	presigner := a.presignerClient(ctx, bucket)
 
 	uploadInput := &s3.UploadPartInput{
-		Bucket:     aws.String(bucket),
-		Key:        aws.String(key),
-		UploadId:   aws.String(uploadID),
+		Bucket:   aws.String(bucket),
+		Key:      aws.String(key),
+		UploadId: aws.String(uploadID),
+		// partNumber can only be as big as 10,000
 		PartNumber: aws.Int32(int32(partNumber)), //nolint:gosec
 	}
 	uploadPart, err := presigner.PresignUploadPart(ctx, uploadInput)
@@ -611,8 +613,9 @@ func (a *Adapter) copyPart(ctx context.Context, sourceObj, destinationObj block.
 	}
 
 	uploadPartCopyObject := s3.UploadPartCopyInput{
-		Bucket:     aws.String(bucket),
-		Key:        aws.String(key),
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		// partNumber can only be as big as 10,000
 		PartNumber: aws.Int32(int32(partNumber)), //nolint:gosec
 		UploadId:   aws.String(uploadID),
 		CopySource: aws.String(fmt.Sprintf("%s/%s", srcKey.GetStorageNamespace(), srcKey.GetKey())),
@@ -755,7 +758,8 @@ func convertFromBlockMultipartUploadCompletion(multipartList *block.MultipartUpl
 	parts := make([]types.CompletedPart, 0, len(multipartList.Part))
 	for _, p := range multipartList.Part {
 		parts = append(parts, types.CompletedPart{
-			ETag:       aws.String(p.ETag),
+			ETag: aws.String(p.ETag),
+			// partNumber can only be as big as 10,000
 			PartNumber: aws.Int32(int32(p.PartNumber)), //nolint:gosec
 		})
 	}

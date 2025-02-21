@@ -73,28 +73,28 @@ func (r RangeDiff) Copy() *RangeDiff {
 
 // MetaRangeManager is an abstraction for a repository of MetaRanges that exposes operations on them
 type MetaRangeManager interface {
-	Exists(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error)
+	Exists(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID) (bool, error)
 
 	// GetValue returns the matching in-range graveler.ValueRecord for key in the
 	// MetaRange with id.
-	GetValue(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
+	GetValue(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*graveler.ValueRecord, error)
 
 	// NewWriter returns a writer that is used for creating new MetaRanges
-	NewWriter(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter
+	NewWriter(ctx context.Context, ns graveler.StorageNamespace, metadata graveler.Metadata) MetaRangeWriter
 
 	// NewMetaRangeIterator returns an Iterator over the MetaRange with id.
-	NewMetaRangeIterator(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (Iterator, error)
+	NewMetaRangeIterator(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (Iterator, error)
 
 	// GetMetaRangeURI returns a URI with an object representing metarange ID.  It may
 	// return a URI that does not resolve (rather than an error) if ID does not exist.
-	GetMetaRangeURI(ctx context.Context, ns graveler.StorageNamespace, metaRangeID graveler.MetaRangeID) (string, error)
+	GetMetaRangeURI(ctx context.Context, metaRangeID graveler.MetaRangeID) (string, error)
 
 	// GetRangeURI returns a URI with an object representing range ID.  It may
 	// return a URI that does not resolve (rather than an error) if ID does not exist.
-	GetRangeURI(ctx context.Context, ns graveler.StorageNamespace, rangeID graveler.RangeID) (string, error)
+	GetRangeURI(ctx context.Context, rangeID graveler.RangeID) (string, error)
 
 	// GetRangeByKey returns the Range that contains key in the MetaRange with id.
-	GetRangeByKey(ctx context.Context, storageID graveler.StorageID, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*Range, error)
+	GetRangeByKey(ctx context.Context, ns graveler.StorageNamespace, id graveler.MetaRangeID, key graveler.Key) (*Range, error)
 }
 
 // MetaRangeWriter is an abstraction for creating new MetaRanges

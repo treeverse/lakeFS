@@ -235,11 +235,12 @@ func SDLocalToGlue(sd *metastore.StorageDescriptor) *types.StorageDescriptor {
 	}
 	schemaRef, _ := sd.AWSSchemaReference.(*types.SchemaReference)
 	return &types.StorageDescriptor{
-		BucketColumns:          sd.BucketCols,
-		Columns:                columnsLocalToGlue(sd.Cols),
-		Compressed:             sd.Compressed,
-		InputFormat:            aws.String(sd.InputFormat),
-		Location:               aws.String(sd.Location),
+		BucketColumns: sd.BucketCols,
+		Columns:       columnsLocalToGlue(sd.Cols),
+		Compressed:    sd.Compressed,
+		InputFormat:   aws.String(sd.InputFormat),
+		Location:      aws.String(sd.Location),
+		// numBuckets < int32
 		NumberOfBuckets:        int32(sd.NumBuckets), //nolint:gosec
 		OutputFormat:           aws.String(sd.OutputFormat),
 		Parameters:             sd.Parameters,

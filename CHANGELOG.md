@@ -1,5 +1,20 @@
 # Changelog
 
+# v1.50.0
+
+:new: What's new:
+- Accelerate large files download using concurent chunks for lakectl download recursive (#8613)
+- lakectl support create repository with sample data (#8628)
+- Enable parse config map properties from environment string value (#8657)
+- Upgrade code to use openapi-generator-cli v7.0.1.1 (#8652)
+- Renewed the PGP key (#8661)
+- Add support for no-check flag in setup command (#8591)
+
+:bug: Bugs fixed:
+- UI: Truncated long value names in selected in the AttachModal (#8668)
+- UI: Truncated long value names in groups, users and policies (#8666)
+- UI: Truncated long value names in confirmation window (#8670)
+
 # v1.49.1
 
 :bug: Bugs fixed:

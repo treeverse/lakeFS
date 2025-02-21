@@ -15,28 +15,26 @@
 
 import unittest
 
-import lakefs_sdk
 from lakefs_sdk.api.commits_api import CommitsApi  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 
 class TestCommitsApi(unittest.TestCase):
     """CommitsApi unit test stubs"""
 
-    def setUp(self):
-        self.api = lakefs_sdk.api.commits_api.CommitsApi()  # noqa: E501
+    def setUp(self) -> None:
+        self.api = CommitsApi()  # noqa: E501
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         pass
 
-    def test_commit(self):
+    def test_commit(self) -> None:
         """Test case for commit
 
         create commit  # noqa: E501
         """
         pass
 
-    def test_get_commit(self):
+    def test_get_commit(self) -> None:
         """Test case for get_commit
 
         get commit  # noqa: E501

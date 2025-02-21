@@ -9,20 +9,23 @@ jobs:
   paths-filter:
     runs-on: ubuntu-22.04
     outputs:
-      client-change: ${{ steps.filter.outputs.client == 'true' }}
+      wrapper-change: ${{ steps.filter.outputs.wrapper == 'true' }}
+      sdk-change: ${{ steps.filter.outputs.sdk == 'true' }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: dorny/paths-filter@v2
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
-            client: 
+            wrapper: 
               - 'clients/python-wrapper/**'
               - '.github/workflows/python-wrapper-unit-tests.yaml'
+            sdk:
+              - 'clients/python/**'
 
   always-succeed:
     needs: paths-filter
-    if: ${{ needs.paths-filter.outputs.client-change != 'true' }}
+    if: ${{ needs.paths-filter.outputs.wrapper-change != 'true' }}
     name: Unit Test Python SDK Wrapper
     runs-on: ubuntu-22.04
     steps:
@@ -31,7 +34,7 @@ jobs:
 
   unit-tests:
     needs: paths-filter
-    if: ${{ needs.paths-filter.outputs.client-change == 'true' }}
+    if: ${{ needs.paths-filter.outputs.wrapper-change == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -74,3 +77,45 @@ jobs:
           custom-arguments: './clients/python-wrapper/tests/utests -q -We'
           click-to-expand: true
           report-title: 'Python Wrapper Unit Tests Report'
+
+  unit-tests-new-sdk:
+    needs: paths-filter
+    if: ${{ needs.paths-filter.outputs.sdk-change == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        pydantic_v1: [ true, false ]
+    name: Unit Test Python SDK Wrapper - SDK Changes
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      
+      # When installed it will skip the installation of pydantic in the next step which will install the latest > 2
+      - name: Install pydantic V1
+        if: matrix.pydantic_v1
+        run: pip install pydantic==1.10.6
+
+      - name: Install dependencies
+        working-directory: ./clients/python-wrapper
+        run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
+
+      - name: build and install lakeFS Python SDK
+        run: |
+          PACKAGE_VERSION=0.0.0-dev make sdk-python
+          pip install ./clients/python
+
+      - name: Run Unit Tests
+        uses: pavelzw/pytest-action@v2
+        with:
+          verbose: true
+          emoji: true
+          job-summary: true
+          custom-arguments: './clients/python-wrapper/tests/utests -q -We'
+          click-to-expand: true
+          report-title: 'Python Wrapper Unit Tests SDK Changes Report'
