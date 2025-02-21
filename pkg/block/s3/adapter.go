@@ -117,7 +117,7 @@ func WithNowFactory(f func() time.Time) func(a *Adapter) {
 
 type AdapterOption func(a *Adapter)
 
-func NewAdapter(ctx context.Context, params params.S3, blockstoreTag *string, opts ...AdapterOption) (*Adapter, error) {
+func NewAdapter(ctx context.Context, params params.S3, adapterStatsID *string, opts ...AdapterOption) (*Adapter, error) {
 	cfg, err := LoadConfig(ctx, params)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func NewAdapter(ctx context.Context, params params.S3, blockstoreTag *string, op
 	}
 	a := &Adapter{
 		clients:             NewClientCache(cfg, params),
-		stats:               NewS3Stats(blockstoreTag),
+		stats:               NewS3Stats(adapterStatsID),
 		preSignedExpiry:     block.DefaultPreSignExpiryDuration,
 		sessionExpiryWindow: sessionExpiryWindow,
 		nowFactory:          time.Now, // current time function can be mocked out via injection for testing purposes

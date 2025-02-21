@@ -6,9 +6,9 @@ import (
 
 var instance *block.Histograms
 
-func NewGSStats(blockstoreTag *string) block.Histograms {
+func NewGSStats(adapterStatsID *string) block.Histograms {
 	if instance == nil {
-		inst := block.BuildHistogramsInstance("gs", blockstoreTag)
+		inst := block.BuildHistogramsInstance("gs", adapterStatsID)
 		instance = &inst
 	}
 	return *instance

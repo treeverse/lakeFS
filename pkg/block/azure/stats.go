@@ -6,9 +6,9 @@ import (
 
 var instance *block.Histograms
 
-func NewAzureStats(blockstoreTag *string) block.Histograms {
+func NewAzureStats(adapterStatsID *string) block.Histograms {
 	if instance == nil {
-		inst := block.BuildHistogramsInstance("azure", blockstoreTag)
+		inst := block.BuildHistogramsInstance("azure", adapterStatsID)
 		instance = &inst
 	}
 	return *instance
