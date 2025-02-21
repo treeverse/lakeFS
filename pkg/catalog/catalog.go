@@ -430,7 +430,7 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 
 		sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg, committed.StorageID(sID))
 		closers = append(closers, sstableMetaManager)
-
+		
 		sstableMetaRangeManager, err := committed.NewMetaRangeManager(
 			committedParams,
 			sstableMetaManager,

@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
@@ -2026,7 +2025,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 
 	// Validate storage ID exists
-	if !slices.Contains(c.Config.StorageConfig().GetStorageIDs(), storageID) {
+	storage := c.Config.StorageConfig().GetStorageByID(storageID)
+	if storage == nil {
 		c.handleAPIError(ctx, w, r, graveler.ErrInvalidStorageID)
 		return
 	}
