@@ -6,14 +6,23 @@ import {AlertError, Loading} from "../controls";
 import {humanSize} from "./tree";
 import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
-import {useStorageConfig} from "../../hooks/storageConfig";
+import {useStorageConfigs} from "../../hooks/storageConfig";
 import {AppContext} from "../../hooks/appContext";
+import {useRefs} from "../../hooks/repo";
+import {getRepoStorageConfig} from "../../../pages/repositories/repository/utils";
 
 const maxDiffSizeBytes = 120 << 10;
 const supportedReadableFormats = ["txt", "text", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
-    const config = useStorageConfig();
+    const {repo, error: refsError, loading: refsLoading} = useRefs();
+    const {configs: storageConfigs, error: configsError, loading: storageConfigsLoading} = useStorageConfigs();
+    const {storageConfig, error: storageConfigError} = getRepoStorageConfig(storageConfigs, repo);
+    const hooksLoading = refsLoading || storageConfigsLoading;
+    const hooksError = hooksLoading ? null : refsError || configsError || storageConfigError;
+
+    if (hooksError) return <AlertError error={hooksError}/>;
+
     const readable = readableObject(path);
     let left;
     let right;
@@ -37,7 +46,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
             return <AlertError error={"Unsupported diff type " + diffType}/>;
     }
 
-    if ((left && left.loading) || (right && right.loading)) return <Loading/>;
+    if (hooksLoading || (left && left.loading) || (right && right.loading)) return <Loading/>;
     const err = (left && left.error) || (right && right.err);
     if (err) return <AlertError error={err}/>;
 
@@ -53,7 +62,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     }
     const leftSize = leftStat && leftStat.size_bytes;
     const rightSize = rightStat && rightStat.size_bytes;
-    return <ContentDiff config={config} repoId={repoId} path={path} leftRef={left && leftRef} rightRef={right && rightRef}
+    return <ContentDiff config={storageConfig} repoId={repoId} path={path} leftRef={left && leftRef} rightRef={right && rightRef}
                         leftSize={leftSize} rightSize={rightSize} diffType={diffType}/>;
 }
 

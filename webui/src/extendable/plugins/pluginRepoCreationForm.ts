@@ -2,7 +2,7 @@ import React from "react";
 
 type RepoCreationFormParams = {
     formID: string;
-    config: object | Array<object>;
+    configs: Array<object>;
     formValid: unknown;
     setFormValid: unknown;
     onSubmit: unknown;
@@ -11,5 +11,5 @@ type RepoCreationFormParams = {
 
 export interface PluginRepoCreationForm {
     build: (params: RepoCreationFormParams) => React.ReactElement;
-    allowSampleRepoCreationFunc: (config: object | Array<object>) => boolean;
+    allowSampleRepoCreationFunc: (configs: Array<object>) => boolean;
 }

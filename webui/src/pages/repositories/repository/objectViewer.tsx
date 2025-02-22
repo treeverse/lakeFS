@@ -11,9 +11,10 @@ import { ObjectRenderer } from "./fileRenderers";
 import { AlertError } from "../../../lib/components/controls";
 import { URINavigator } from "../../../lib/components/repository/tree";
 import { RefTypeBranch } from "../../../constants";
-import { RefContextProvider } from "../../../lib/hooks/repo";
-import { useStorageConfig } from "../../../lib/hooks/storageConfig";
+import { RefContextProvider, useRefs } from "../../../lib/hooks/repo";
+import { useStorageConfigs } from "../../../lib/hooks/storageConfig";
 import { linkToPath } from "../../../lib/api";
+import { getRepoStorageConfig } from "./utils";
 
 import "../../../styles/quickstart.css";
 
@@ -56,17 +57,22 @@ export const getContentType = (headers: Headers): string | null => {
 };
 
 const FileObjectsViewerPage = () => {
-  const config = useStorageConfig();
+  const {repo} = useRefs();
+  const {configs: storageConfigs, error: configsError, loading: storageConfigsLoading} = useStorageConfigs();
+  const {storageConfig, error: storageConfigError} = getRepoStorageConfig(storageConfigs, repo);
+
   const { repoId } = useParams<ObjectViewerPathParams>();
   const queryString = useQuery<ObjectViewerQueryString>();
   const refId = queryString["ref"] ?? "";
   const path = queryString["path"] ?? "";
-  const { response, error, loading } = useAPI(() => {
+  const { response, error: apiError, loading: apiLoading } = useAPI(() => {
     return objects.head(repoId, refId, path);
   }, [repoId, refId, path]);
+  const loading = apiLoading || storageConfigsLoading;
+  const error = loading ? null : apiError || configsError || storageConfigError;
 
   let content;
-  if (loading || config.loading) {
+  if (loading) {
     content = <Loading />;
   } else if (error) {
     content = <AlertError error={error} />;
@@ -92,7 +98,7 @@ const FileObjectsViewerPage = () => {
         sizeBytes={sizeBytes}
         error={error}
         loading={loading}
-        presign={config.pre_sign_support_ui}
+        presign={storageConfig.pre_sign_support_ui}
       />
     );
   }

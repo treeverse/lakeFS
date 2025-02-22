@@ -56,7 +56,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
 
     const [formValid, setFormValid] = useState(false);
 
-    const {response, error: err, loading} = useAPI(() => config.getStorageConfig());
+    const {response: storageConfigs, error: err, loading} = useAPI(() => config.getStorageConfigs());
 
     const showError = (error) ? error : err;
     if (loading) {
@@ -74,7 +74,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
             <Modal.Body>
                 {repoCreationFormPlugin.build({
                     formID: "repository-create-form",
-                    config: response,
+                    configs: storageConfigs,
                     error: showError,
                     formValid,
                     setFormValid,
@@ -209,7 +209,7 @@ const RepositoriesPage = () => {
         (search) => router.push({pathname: `/repositories`, query: {search}})
     );
 
-    const { response, error: err, loading } = useAPI(() => config.getStorageConfig());
+    const { response: storageConfigs, error: err, loading } = useAPI(() => config.getStorageConfigs());
 
     const createRepo = async (repo, presentRepo = true) => {
         try {
@@ -237,10 +237,10 @@ const RepositoriesPage = () => {
         setCreateRepoError(null);
     }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
 
-    const allowSampleRepoCreation = pluginManager.repoCreationForm.allowSampleRepoCreationFunc(response);
+    const allowSampleRepoCreation = pluginManager.repoCreationForm.allowSampleRepoCreationFunc(storageConfigs);
     const createSampleRepoButtonCallback = useCallback(async () => {
         if (loading) return;
-        if (!err && response?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {
+        if (!err && storageConfigs.length && storageConfigs[0]?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {
             const sampleRepo = {
                 name: LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME,
                 storage_namespace: `local://${LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME}`,
@@ -253,7 +253,7 @@ const RepositoriesPage = () => {
         }
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
-    }, [showCreateRepositoryModal, setShowCreateRepositoryModal, loading, err, response, createRepo]);
+    }, [showCreateRepositoryModal, setShowCreateRepositoryModal, loading, err, storageConfigs, createRepo]);
 
     return (
         <Container fluid="xl" className="mt-3">
