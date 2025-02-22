@@ -5,12 +5,10 @@ import (
 	"testing"
 
 	pebblesst "github.com/cockroachdb/pebble/sstable"
-	"github.com/treeverse/lakefs/pkg/graveler/sstable"
-
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
-
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/graveler/committed"
+	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 )
 
 func gravelerIterator(data []byte) (*sstable.Iterator, error) {
@@ -33,7 +31,6 @@ func gravelerIterator(data []byte) (*sstable.Iterator, error) {
 
 func TestDownloadMetadataObject(t *testing.T) {
 	ctx := context.Background()
-	const numOfRepos = 5
 
 	repo := createRepositoryUnique(ctx, t)
 	uploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930")
@@ -41,6 +38,7 @@ func TestDownloadMetadataObject(t *testing.T) {
 		Message: "committing just to get a meta range!",
 	})
 	require.NoError(t, err, "failed to commit changes")
+	require.NotNil(t, commitResp.JSON201)
 	metarangeId := commitResp.JSON201.MetaRangeId
 
 	// download meta-range
