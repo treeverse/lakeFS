@@ -350,13 +350,8 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
                     <th
                         key={header}
                         title={header}
-                        className={`
-                            ${(firstFixedCol && i === 0) ? "col-1" : "col-12"}
-                            text-nowrap
-                            overflow-hidden
-                            text-truncate
-                            align-middle
-                        `}
+                        style={firstFixedCol && i === 0 ? { width: "30px" } : {}}
+                        className="text-nowrap overflow-hidden text-truncate align-middle"
                     >
                         {header}
                     </th>
