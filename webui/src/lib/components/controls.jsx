@@ -365,12 +365,7 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
                     {rowFn(row).map((cell, i) => (
                         <td
                             key={`${keyFn(row)}-${i}`}
-                            className="
-                                text-nowrap
-                                overflow-hidden
-                                text-truncate
-                                align-middle
-                            "
+                            className="text-nowrap overflow-hidden text-truncate align-middle"
                             title={keyFn(row)}
                         >
                             {cell}
