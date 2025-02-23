@@ -336,15 +336,7 @@ class Auth {
             body: JSON.stringify(policy)
         });
         if (response.status !== 201) {
-            const rawError = await extractError(response);
-            const idPatternInError = rawError.match(/"id":\s*"([^"]+)"/);
-            let truncatedError = rawError;
-            if (idPatternInError) {
-                const fullId = idPatternInError[1];
-                const truncatedId = (fullId.length > 40) ? fullId.slice(0,40) + "..." : fullId;
-                truncatedError = rawError.replace(fullId, truncatedId);
-            }
-            throw new Error(truncatedError)
+            throw new Error(await extractError(response));
         }
         return response.json();
     }

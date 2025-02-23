@@ -81,12 +81,15 @@ export const AlertError = ({error, onDismiss = null, className = null}) => {
     let err = error;
     while (err.error) err = err.error;
     if (err.message) content = err.message;
+
+    const alertClassName = `${className} text-wrap text-break`.trim();
+
     if (onDismiss !== null) {
-        return <Alert className={className} variant="danger" dismissible onClose={onDismiss}>{content}</Alert>;
+        return <Alert className={alertClassName} variant="danger" dismissible onClose={onDismiss}>{content}</Alert>;
     }
     
     return (
-        <Alert className={className} variant="danger">{content}</Alert>
+        <Alert className={alertClassName} variant="danger">{content}</Alert>
     );
 };
 
