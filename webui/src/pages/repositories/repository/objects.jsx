@@ -38,7 +38,8 @@ import { getContentType, getFileExtension, FileContents } from "./objectViewer";
 import {OverlayTrigger, ProgressBar} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import { useSearchParams } from "react-router-dom";
-import { useStorageConfig } from "../../../lib/hooks/storageConfig";
+import { useStorageConfigs } from "../../../lib/hooks/storageConfig";
+import { getRepoStorageConfig } from "./utils";
 import {useDropzone} from "react-dropzone";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -774,11 +775,15 @@ const ObjectsBrowser = ({ config, configError }) => {
 };
 
 const RepositoryObjectsPage = () => {
-  const config = useStorageConfig();
-  const [setActivePage] = useOutletContext();
-  useEffect(() => setActivePage("objects"), [setActivePage]);
+    const {repo} = useRefs();
+    const {configs: storageConfigs, loading, error: configError} = useStorageConfigs();
+    const {storageConfig, error: storageConfigsError} = getRepoStorageConfig(storageConfigs, repo);
+    const error = loading ? null : configError || storageConfigsError;
 
-  return <ObjectsBrowser config={config} configError={config.error} />;
+    const [setActivePage] = useOutletContext();
+    useEffect(() => setActivePage("objects"), [setActivePage]);
+
+    return <ObjectsBrowser config={storageConfig} configError={error}/>;
 };
 
 export default RepositoryObjectsPage;
