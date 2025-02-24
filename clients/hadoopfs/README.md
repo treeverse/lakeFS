@@ -6,3 +6,7 @@ It uses the lakeFS server for metadata operations only.
 ## Publishing
 
 Follow the [HadoopFS release checklist](https://github.com/treeverse/dev/blob/main/pages/lakefs-clients-release.md#lakefs-hadoop-filesystem)
+
+## Building
+
+Maven tests must be run with Java 8.
