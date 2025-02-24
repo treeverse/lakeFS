@@ -75,13 +75,13 @@ Upon execution, a webhook will send a request containing a JSON object with the 
 | commit_metadata[^2] | The metadata for the commit that is taking place                  | string |
 | commit_id[^2,^4]    | The ID of the commit that is being created                        | string |
 | tag_id[^3]          | The ID of the created/deleted tag                                 | string |
-| merge_source[^5]    | The ID of the created/deleted tag                                 | string |
+| merge_source[^5]    | The source branch/tag/ref on merge operation                      | string |
 
 [^1]: N\A for Tag events  
 [^2]: N\A for Tag and Create/Delete Branch events  
 [^3]: Applicable only for Tag events
 [^4]: Applicable to commit/merge events. For merges, this represents the merge commit ID to be created if the merge operation succeeds.
-[^5]: Applicable to merge events. This represents the merge source, if can be equal to the source_ref in case the source is a commit.
+[^5]: Applicable to merge events. This represents the merge source, it may be same as `source_ref` in case the source is a commit.
 
 Example:
 ```json
