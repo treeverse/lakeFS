@@ -7,10 +7,7 @@ It uses the lakeFS server for metadata operations only.
 
 Follow the [HadoopFS release checklist](https://github.com/treeverse/dev/blob/main/pages/lakefs-clients-release.md#lakefs-hadoop-filesystem)
 
-## Building
+## Building and Testing
 
-Maven must be run with Java 8.
-
-## Testing
-
-Maven tests must be run with Java 8.
+The project uses Maven.  
+**Prerequisite:** Java 8 must be installed for building and testing.
