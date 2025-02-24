@@ -335,18 +335,26 @@ export const RefreshButton = ({ onClick, size = "md", variant = "light", tooltip
     );
 };
 
-export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], actions = [], emptyState = null }) => {
+export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], actions = [],
+                              emptyState = null, firstFixedCol = false }) => {
 
     if ((!results || results.length === 0) && emptyState !== null) {
         return <Alert variant="warning">{emptyState}</Alert>;
     }
 
     return (
-        <Table>
+        <Table className="w-100" style={{ tableLayout: "fixed" }}>
             <thead>
                 <tr>
-                {headers.map(header => (
-                    <th key={header}>{header}</th>
+                {headers.map((header, i) => (
+                    <th
+                        key={header}
+                        title={header}
+                        style={firstFixedCol && i === 0 ? { width: "30px" } : {}}
+                        className="text-nowrap overflow-hidden text-truncate align-middle"
+                    >
+                        {header}
+                    </th>
                 ))}
                 {(!!actions && actions.length > 0) && <th/>}
                 </tr>
@@ -355,7 +363,11 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
             {results.map(row => (
                 <tr key={keyFn(row)}>
                     {rowFn(row).map((cell, i) => (
-                        <td key={`${keyFn(row)}-${i}`}>
+                        <td
+                            key={`${keyFn(row)}-${i}`}
+                            title={keyFn(row)}
+                            className="text-nowrap overflow-hidden text-truncate align-middle"
+                        >
                             {cell}
                         </td>
                     ))}

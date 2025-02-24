@@ -122,7 +122,9 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
                         { resolveUserDisplayName(user) }
                     </Link>,
                     <FormattedDate dateValue={user.creation_date}/>
-                ]}/>
+                ]}
+                firstFixedCol={true}
+            />
 
             <Paginator
                 nextPage={nextPage}
