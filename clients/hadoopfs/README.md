@@ -9,4 +9,8 @@ Follow the [HadoopFS release checklist](https://github.com/treeverse/dev/blob/ma
 
 ## Building
 
+Maven must be run with Java 8.
+
+## Testing
+
 Maven tests must be run with Java 8.
