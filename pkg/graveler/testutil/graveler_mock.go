@@ -1,10 +1,10 @@
 package testutil
 
 import (
-	"github.com/cenkalti/backoff/v4"
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
