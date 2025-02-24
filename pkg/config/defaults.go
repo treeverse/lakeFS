@@ -19,7 +19,8 @@ const (
 	DefaultAuthSecret                = "THIS_MUST_BE_CHANGED_IN_PRODUCTION"   // #nosec
 	DefaultSigningSecretKey          = "OVERRIDE_THIS_SIGNING_SECRET_DEFAULT" // #nosec
 	// storage blockstore values
-	DefaultBlockstoreS3Region                         = "us-east-1" // #nosec
+	DefaultBlockstoreLocalPath                        = "~/lakefs/data/block" // #nosec
+	DefaultBlockstoreS3Region                         = "us-east-1"           // #nosec
 	DefaultBlockstoreS3MaxRetries                     = 5
 	DefaultBlockstoreS3DiscoverBucketRegion           = true
 	DefaultBlockstoreS3PreSignedExpiry                = 15 * time.Minute
@@ -106,7 +107,7 @@ func setBaseDefaults(cfgType string) {
 	// blockstore defaults
 	viper.SetDefault("blockstore.signing.secret_key", DefaultSigningSecretKey)
 
-	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
+	viper.SetDefault("blockstore.local.path", DefaultBlockstoreLocalPath)
 
 	viper.SetDefault("blockstore.s3.region", DefaultBlockstoreS3Region)
 	viper.SetDefault("blockstore.s3.max_retries", DefaultBlockstoreS3MaxRetries)
