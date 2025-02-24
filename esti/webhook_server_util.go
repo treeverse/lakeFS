@@ -18,18 +18,24 @@ type hookResponse struct {
 	queryParams map[string][]string
 }
 
-type webhookServer struct {
+type WebhookServer struct {
 	s      *http.Server
 	respCh chan hookResponse
 	port   int
 	host   string
 }
 
-func (s *webhookServer) BaseURL() string {
+const hooksTimeout = 2 * time.Second
+
+func (s *WebhookServer) BaseURL() string {
 	return fmt.Sprintf("http://%s:%d", s.host, s.port)
 }
 
-func startWebhookServer() (*webhookServer, error) {
+func (s *WebhookServer) Server() *http.Server {
+	return s.s
+}
+
+func StartWebhookServer() (*WebhookServer, error) {
 	respCh := make(chan hookResponse, 10)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/pre-commit", hookHandlerFunc(respCh))
@@ -67,7 +73,7 @@ func startWebhookServer() (*webhookServer, error) {
 		}
 	}()
 
-	return &webhookServer{
+	return &WebhookServer{
 		s:      s,
 		respCh: respCh,
 		port:   port,
@@ -111,7 +117,7 @@ func hookHandlerFunc(respCh chan hookResponse) func(http.ResponseWriter, *http.R
 	}
 }
 
-func responseWithTimeout(s *webhookServer, timeout time.Duration) (*hookResponse, error) {
+func responseWithTimeout(s *WebhookServer, timeout time.Duration) (*hookResponse, error) {
 	select {
 	case res := <-s.respCh:
 		return &res, nil

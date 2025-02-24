@@ -78,7 +78,7 @@ func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 	ctx := context.Background()
 	name := strings.ToLower(t.Name())
 	storageNamespace := generateUniqueStorageNamespace(name)
-	repoName := makeRepositoryName(name)
+	repoName := MakeRepositoryName(name)
 	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             repoName,

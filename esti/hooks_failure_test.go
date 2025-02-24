@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"testing"
 	"text/template"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -43,8 +42,6 @@ hooks:
       url: "{{.URL}}/{{.Path}}"
       timeout : {{.Timeout}}
 `))
-
-const hooksTimeout = 2 * time.Second
 
 func TestHooksTimeout(t *testing.T) {
 	hookFailToCommit(t, "timeout")

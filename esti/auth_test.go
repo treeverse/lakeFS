@@ -219,7 +219,7 @@ func TestCreateRepo_Unauthorized(t *testing.T) {
 
 	name := generateUniqueRepositoryName()
 	storageNamespace := generateUniqueStorageNamespace(name)
-	name = makeRepositoryName(name)
+	name = MakeRepositoryName(name)
 	groups := []string{"Readers", "Viewers"}
 
 	// map group names to IDs

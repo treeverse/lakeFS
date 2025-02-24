@@ -27,19 +27,9 @@ services:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
     environment:
-      - ESTI_DATABASE_KV_ENABLED=true
       - ESTI_KV_MIGRATION=${ESTI_KV_MIGRATION:-none}
       - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
       - LAKEFS_ROOT
-    command:
-      - /bin/sh
-      - -c
-      - |
-        apk add --no-cache util-linux
-        go test -v $$ESTI_GOTEST_FLAGS ./esti --system-tests $$ESTI_FLAGS --skip $$ESTI_SKIP_TESTS
-    volumes:
-      - lakefs-code:/lakefs
-      - lakefs-app:/app:ro
 
 volumes:
   lakefs-code:
