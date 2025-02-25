@@ -364,7 +364,8 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 			CommitCacheConfig:                ref.CacheConfig(baseCfg.Graveler.CommitCache),
 			MaxBatchDelay:                    baseCfg.Graveler.MaxBatchDelay,
 			BranchApproximateOwnershipParams: makeBranchApproximateOwnershipParams(baseCfg.Graveler.BranchOwnership),
-		}, cfg.Config.StorageConfig(),
+		},
+		cfg.Config.StorageConfig(),
 	)
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, baseCfg.Committed.BlockStoragePrefix)
 	settingManager := settings.NewManager(refManager, cfg.KVStore)

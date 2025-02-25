@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/pkg/config"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/cache"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/distributed"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -147,7 +147,11 @@ func (m *Manager) getRepository(ctx context.Context, repositoryID graveler.Repos
 	}
 	repo := graveler.RepoFromProto(&data)
 	if repo.StorageID == config.SingleBlockstoreID {
-		repo.StorageID = graveler.StorageID(m.storageConfig.GetStorageByID(config.SingleBlockstoreID).ID()) // Will return the real actual ID
+		storage := m.storageConfig.GetStorageByID(config.SingleBlockstoreID)
+		if storage != nil {
+			repo.StorageID = graveler.StorageID(storage.ID()) // Will return the real actual ID
+		}
+
 	}
 	return graveler.RepoFromProto(&data), nil
 }
