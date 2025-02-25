@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/pkg/config"
 	"strings"
 	"time"
 
@@ -40,6 +41,7 @@ type Manager struct {
 	commitCache     cache.Cache
 	maxBatchDelay   time.Duration
 	branchOwnership *distributed.MostlyCorrectOwner
+	storageConfig   config.StorageConfig
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -107,7 +109,7 @@ type ManagerConfig struct {
 	BranchApproximateOwnershipParams BranchApproximateOwnershipParams
 }
 
-func NewRefManager(cfg ManagerConfig) *Manager {
+func NewRefManager(cfg ManagerConfig, storageCfg config.StorageConfig) *Manager {
 	var branchOwnership *distributed.MostlyCorrectOwner
 	if cfg.BranchApproximateOwnershipParams.RefreshInterval > 0 {
 		log := logging.ContextUnavailable().WithField("component", "RefManager approximate branch ownership")
@@ -130,6 +132,7 @@ func NewRefManager(cfg ManagerConfig) *Manager {
 		commitCache:     newCache(cfg.CommitCacheConfig),
 		maxBatchDelay:   cfg.MaxBatchDelay,
 		branchOwnership: branchOwnership,
+		storageConfig:   storageCfg,
 	}
 }
 
@@ -141,6 +144,10 @@ func (m *Manager) getRepository(ctx context.Context, repositoryID graveler.Repos
 			err = graveler.ErrRepositoryNotFound
 		}
 		return nil, err
+	}
+	repo := graveler.RepoFromProto(&data)
+	if repo.StorageID == config.SingleBlockstoreID {
+		repo.StorageID = graveler.StorageID(m.storageConfig.GetStorageByID(config.SingleBlockstoreID).ID()) // Will return the real actual ID
 	}
 	return graveler.RepoFromProto(&data), nil
 }
