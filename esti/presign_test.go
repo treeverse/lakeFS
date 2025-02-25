@@ -50,7 +50,7 @@ func TestPreSign(t *testing.T) {
 		t.Skipf("Only GS, S3 and Azure Blob supported for pre-signed urls. Got: %s", blockStoreType)
 	}
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar")
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar")
 
 	objContent := randstr.String(randomDataContentLength)
 	_, err = uploadFileAndReport(ctx, repo, mainBranch, "foo/bar", objContent, false)
@@ -107,7 +107,7 @@ func TestPreSign(t *testing.T) {
 
 	t.Run("preSignGetMetaRangeAndRange", func(t *testing.T) {
 		// get a metarange from main
-		uploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930")
+		UploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930")
 		commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 			Message: "committing just to get a meta range!",
 		})

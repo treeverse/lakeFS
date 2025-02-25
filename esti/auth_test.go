@@ -219,7 +219,7 @@ func TestCreateRepo_Unauthorized(t *testing.T) {
 
 	name := generateUniqueRepositoryName()
 	storageNamespace := generateUniqueStorageNamespace(name)
-	name = makeRepositoryName(name)
+	name = MakeRepositoryName(name)
 	groups := []string{"Readers", "Viewers"}
 
 	// map group names to IDs
@@ -483,13 +483,13 @@ func TestUpdatePolicy(t *testing.T) {
 
 // Tests merge with different clients
 func mergeAuthTest(t *testing.T, cli *apigen.ClientWithResponses, ctx context.Context, repo string, branch string) (*apigen.MergeIntoBranchResponse, error) {
-	uploadFileRandomData(ctx, t, repo, mainBranch, "README")
+	UploadFileRandomData(ctx, t, repo, mainBranch, "README")
 
 	resMainCommit, err := cli.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Initial content"})
 	require.NoError(t, err, "failed to commit initial content in merge auth test")
 	require.Equal(t, http.StatusCreated, resMainCommit.StatusCode())
 
-	uploadFileRandomData(ctx, t, repo, branch, "foo.txt")
+	UploadFileRandomData(ctx, t, repo, branch, "foo.txt")
 
 	resBranchCommit, err := cli.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Additional content"})
 	require.NoError(t, err, "failed to commit additional content in merge auth test")

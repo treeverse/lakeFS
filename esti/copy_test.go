@@ -131,7 +131,7 @@ func TestCopyObject(t *testing.T) {
 	t.Run("read-only repository", func(t *testing.T) {
 		name := strings.ToLower(t.Name())
 		storageNamespace := generateUniqueStorageNamespace(name)
-		repoName := makeRepositoryName(name)
+		repoName := MakeRepositoryName(name)
 		resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    apiutil.Ptr(mainBranch),
 			Name:             repoName,

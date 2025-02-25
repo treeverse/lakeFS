@@ -16,7 +16,7 @@ func TestResetAll(t *testing.T) {
 	const objPath = "1.txt"
 
 	// upload file
-	_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, objContent := UploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
@@ -63,7 +63,7 @@ func TestHardReset(t *testing.T) {
 	const objPath = "1.txt"
 
 	// upload file
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
@@ -109,12 +109,12 @@ func TestResetPath(t *testing.T) {
 	objPath2 := "2.txt"
 
 	// upload files
-	_, objContent1 := uploadFileRandomData(ctx, t, repo, mainBranch, objPath1)
+	_, objContent1 := UploadFileRandomData(ctx, t, repo, mainBranch, objPath1)
 	f, err := objectFound(ctx, repo, mainBranch, objPath1)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
 
-	uploadFileRandomData(ctx, t, repo, mainBranch, objPath2)
+	UploadFileRandomData(ctx, t, repo, mainBranch, objPath2)
 	f, err = objectFound(ctx, repo, mainBranch, objPath2)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
@@ -176,12 +176,12 @@ func TestResetObject(t *testing.T) {
 	objPath2 := "2.txt"
 
 	// upload files
-	_, objContent1 := uploadFileRandomData(ctx, t, repo, mainBranch, objPath1)
+	_, objContent1 := UploadFileRandomData(ctx, t, repo, mainBranch, objPath1)
 	f, err := objectFound(ctx, repo, mainBranch, objPath1)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
 
-	uploadFileRandomData(ctx, t, repo, mainBranch, objPath2)
+	UploadFileRandomData(ctx, t, repo, mainBranch, objPath2)
 	f, err = objectFound(ctx, repo, mainBranch, objPath2)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
@@ -242,7 +242,7 @@ func TestRevert(t *testing.T) {
 	objPath2 := "2.txt"
 
 	// upload file1
-	uploadFileRandomData(ctx, t, repo, mainBranch, objPath1)
+	UploadFileRandomData(ctx, t, repo, mainBranch, objPath1)
 	f, err := objectFound(ctx, repo, mainBranch, objPath1)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
@@ -259,7 +259,7 @@ func TestRevert(t *testing.T) {
 	commitId := commitResp.JSON201.Id
 
 	// upload file2
-	_, objContent2 := uploadFileRandomData(ctx, t, repo, mainBranch, objPath2)
+	_, objContent2 := UploadFileRandomData(ctx, t, repo, mainBranch, objPath2)
 	f, err = objectFound(ctx, repo, mainBranch, objPath2)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
