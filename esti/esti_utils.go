@@ -22,6 +22,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-multierror"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -575,4 +577,24 @@ func getServerConfig(t testing.TB, ctx context.Context) *apigen.SetupState {
 	require.NoError(t, err)
 	require.NotNil(t, resp.JSON200)
 	return resp.JSON200
+}
+
+type GetCredentials = func(id, secret, token string) *credentials.Credentials
+
+func NewMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
+	t.Helper()
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	endpoint := viper.GetString("s3_endpoint")
+	endpointSecure := viper.GetBool("s3_endpoint_secure")
+	creds := getCredentials(accessKeyID, secretAccessKey, "")
+
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  creds,
+		Secure: endpointSecure,
+	})
+	if err != nil {
+		t.Fatalf("minio.New: %s", err)
+	}
+	return client
 }

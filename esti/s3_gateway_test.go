@@ -33,32 +33,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-type GetCredentials = func(id, secret, token string) *credentials.Credentials
-
 const (
 	numUploads           = 100
 	randomDataPathLength = 1020
 	branch               = "main"
 	gatewayTestPrefix    = branch + "/data/"
 )
-
-func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
-	t.Helper()
-	accessKeyID := viper.GetString("access_key_id")
-	secretAccessKey := viper.GetString("secret_access_key")
-	endpoint := viper.GetString("s3_endpoint")
-	endpointSecure := viper.GetBool("s3_endpoint_secure")
-	creds := getCredentials(accessKeyID, secretAccessKey, "")
-
-	client, err := minio.New(endpoint, &minio.Options{
-		Creds:  creds,
-		Secure: endpointSecure,
-	})
-	if err != nil {
-		t.Fatalf("minio.New: %s", err)
-	}
-	return client
-}
 
 func TestS3UploadToReadOnlyRepoError(t *testing.T) {
 	ctx, _, repo := setupTest(t)
@@ -67,7 +47,7 @@ func TestS3UploadToReadOnlyRepoError(t *testing.T) {
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3uploadobjectdestreadonly")
 	defer deleteRepositoryIfAskedTo(ctx, readOnlyRepo)
 
-	minioClient := newMinioClient(t, credentials.NewStaticV4)
+	minioClient := NewMinioClient(t, credentials.NewStaticV4)
 	const tenMibi = 10 * 1024 * 1024
 	reader := NewZeroReader(tenMibi)
 
@@ -92,7 +72,7 @@ func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3deleteobjectdestreadonly")
 	defer deleteRepositoryIfAskedTo(ctx, readOnlyRepo)
 
-	minioClient := newMinioClient(t, credentials.NewStaticV4)
+	minioClient := NewMinioClient(t, credentials.NewStaticV4)
 	content := "some random data"
 	contentReader := strings.NewReader(content)
 
@@ -143,7 +123,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 				objects = make(chan Object, parallelism*2)
 			)
 
-			client := newMinioClient(t, sig.GetCredentials)
+			client := NewMinioClient(t, sig.GetCredentials)
 			wg.Add(parallelism)
 			for i := 0; i < parallelism; i++ {
 				go func() {
@@ -469,7 +449,7 @@ func TestS3ReadObject(t *testing.T) {
 	defer tearDownTest(repo)
 
 	// Upload an object
-	minioClient := newMinioClient(t, credentials.NewStaticV2)
+	minioClient := NewMinioClient(t, credentials.NewStaticV2)
 
 	_, err := minioClient.PutObject(ctx, repo, goodPath, strings.NewReader(contents), int64(len(contents)), minio.PutObjectOptions{})
 	if err != nil {
@@ -634,7 +614,7 @@ func TestS3HeadBucket(t *testing.T) {
 	badRepo := repo + "-nonexistent"
 
 	// Upload an object
-	client := newMinioClient(t, credentials.NewStaticV2)
+	client := NewMinioClient(t, credentials.NewStaticV2)
 
 	t.Run("existing", func(t *testing.T) {
 		ok, err := client.BucketExists(ctx, repo)
@@ -700,7 +680,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 	destRepo := createRepositoryByName(ctx, t, destRepoName)
 	defer deleteRepositoryIfAskedTo(ctx, destRepoName)
 
-	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
+	s3lakefsClient := NewMinioClient(t, credentials.NewStaticV4)
 
 	srcPath, objectLength := getOrCreatePathToLargeObject(t, ctx, s3lakefsClient, repo, branch)
 	destPath := gatewayTestPrefix + "dest-file"
@@ -783,7 +763,7 @@ func TestS3CopyObject(t *testing.T) {
 	userMetadata := map[string]string{"X-Amz-Meta-Key1": "value1", "X-Amz-Meta-Key2": "value2"}
 
 	// upload data
-	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
+	s3lakefsClient := NewMinioClient(t, credentials.NewStaticV2)
 	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
 		minio.PutObjectOptions{
 			UserMetadata: userMetadata,
@@ -889,7 +869,7 @@ func TestS3PutObjectTagging(t *testing.T) {
 	defer tearDownTest(repo)
 
 	srcPath := gatewayTestPrefix + "source-file"
-	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
+	s3lakefsClient := NewMinioClient(t, credentials.NewStaticV2)
 
 	tag, err := tags.NewTags(map[string]string{"tag1": "value1"}, true)
 	require.NoError(t, err)
@@ -913,7 +893,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	destPath := gatewayTestPrefix + "dest-file"
 
 	// upload data
-	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
+	s3lakefsClient := NewMinioClient(t, credentials.NewStaticV2)
 
 	t.Run("malformed dest", func(t *testing.T) {
 		// copy the object to a non-existent repo - tests internal lakeFS error
@@ -989,7 +969,7 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 	defer tearDownTest(repo)
 
 	// Upload an object
-	minioClient := newMinioClient(t, credentials.NewStaticV4)
+	minioClient := NewMinioClient(t, credentials.NewStaticV4)
 
 	_, err := minioClient.PutObject(ctx, repo, goodPath, strings.NewReader(contents), int64(len(contents)), minio.PutObjectOptions{})
 	if err != nil {
