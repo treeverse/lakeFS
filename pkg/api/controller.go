@@ -2026,7 +2026,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 
 	// Validate storage ID exists
-	storageID = c.getRepoStorageID(storageID)
+	storageID = c.getRepoStorageID(storageID) // This returns the actual storageID for the repository
 	if !slices.Contains(c.Config.StorageConfig().GetStorageIDs(), storageID) {
 		c.handleAPIError(ctx, w, r, graveler.ErrInvalidStorageID)
 		return
