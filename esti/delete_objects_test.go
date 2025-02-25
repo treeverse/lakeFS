@@ -27,7 +27,7 @@ func TestDeleteObjects(t *testing.T) {
 		identifiers = append(identifiers, types.ObjectIdentifier{
 			Key: aws.String(mainBranch + "/" + file),
 		})
-		_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, file)
+		_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, file)
 	}
 
 	listOut, err := svc.ListObjects(ctx, &s3.ListObjectsInput{
@@ -65,7 +65,7 @@ func TestDeleteObjects_Viewer(t *testing.T) {
 
 	// setup data
 	const filename = "delete-me"
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, filename)
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, filename)
 
 	// setup user with only view rights - create user, add to group, generate credentials
 	uid := "del-viewer"

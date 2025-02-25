@@ -477,7 +477,7 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	}, w.FormDataContentType(), &b)
 }
 
-func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
+func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
 	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, false)
 	require.NoError(t, err, "failed to upload file", repo, branch, objPath)
 	return checksum, content

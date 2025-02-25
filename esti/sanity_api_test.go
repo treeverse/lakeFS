@@ -23,7 +23,7 @@ func TestSanityAPI(t *testing.T) {
 	contents := make([]string, numOfFiles)
 	for i := 0; i < numOfFiles; i++ {
 		paths[i] = fmt.Sprintf("file%d", i)
-		_, contents[i] = uploadFileRandomData(ctx, t, repo, mainBranch, paths[i])
+		_, contents[i] = UploadFileRandomData(ctx, t, repo, mainBranch, paths[i])
 	}
 
 	log.Debug("verify upload content")
@@ -79,7 +79,7 @@ func TestSanityAPI(t *testing.T) {
 		"match existing branches")
 
 	log.Debug("branch1 - change file0")
-	_, _ = uploadFileRandomData(ctx, t, repo, "branch1", "file0")
+	_, _ = UploadFileRandomData(ctx, t, repo, "branch1", "file0")
 
 	log.Debug("branch1 - delete file1")
 	deleteResp, err := client.DeleteObjectWithResponse(ctx, repo, "branch1", &apigen.DeleteObjectParams{Path: "file1"})
@@ -87,7 +87,7 @@ func TestSanityAPI(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, deleteResp.StatusCode())
 
 	log.Debug("branch1 - add fileX")
-	_, _ = uploadFileRandomData(ctx, t, repo, "branch1", "fileX")
+	_, _ = UploadFileRandomData(ctx, t, repo, "branch1", "fileX")
 
 	log.Debug("main - list files")
 	mainObjects := listRepositoryObjects(ctx, t, repo, "main")
