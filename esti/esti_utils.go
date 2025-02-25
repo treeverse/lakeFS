@@ -1,4 +1,8 @@
+//nolint:unused
 package esti
+
+// TODO (niro): All the unused errors is because our esti tests filenames are suffixed with _test
+// TODO (niro): WE will need to rename all the esti tests file names to instead using test prefix and not suffix
 
 import (
 	"bytes"
@@ -47,8 +51,8 @@ var (
 )
 
 const (
-	DefaultAdminAccessKeyID     = "AKIAIOSFDNN7EXAMPLEQ"
-	DefaultAdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	DefaultAdminAccessKeyID     = "AKIAIOSFDNN7EXAMPLEQ"                     //nolint:gosec
+	DefaultAdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
 	AdminUsername               = "esti"
 
 	mainBranch               = "main"
@@ -57,9 +61,12 @@ const (
 	ViperBlockstoreType      = "blockstore_type"
 )
 
-var errNotVerified = errors.New("lakeFS failed")
+var (
+	nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
 
-var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
+	errNotVerified     = errors.New("lakeFS failed")
+	errWrongStatusCode = errors.New("wrong status code")
+)
 
 func (i *ArrayFlags) String() string {
 	return strings.Join(*i, " ")
@@ -92,7 +99,7 @@ func DeleteAllRepositories(ctx context.Context, client apigen.ClientWithResponse
 			return fmt.Errorf("list repositories: %w", err)
 		}
 		if resp.StatusCode() != http.StatusOK {
-			return fmt.Errorf("list repositories: status: %s", resp.Status())
+			return fmt.Errorf("list repositories: status %s: %w", resp.Status(), errWrongStatusCode)
 		}
 		for _, repo := range resp.JSON200.Results {
 			if !slices.Contains(repositoriesToKeep, repo.Id) {
@@ -111,10 +118,10 @@ func DeleteAllRepositories(ctx context.Context, client apigen.ClientWithResponse
 		if err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, err: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
-			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, status: %s", id, resp.Status()))
+			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
-
 	}
+
 	return errs.ErrorOrNil()
 }
 
@@ -130,7 +137,7 @@ func DeleteAllGroups(ctx context.Context, client apigen.ClientWithResponsesInter
 			return fmt.Errorf("list groups: %w", err)
 		}
 		if resp.StatusCode() != http.StatusOK {
-			return fmt.Errorf("list groups: status: %s", resp.Status())
+			return fmt.Errorf("list groups: status %s: %w", resp.Status(), errWrongStatusCode)
 		}
 		for _, group := range resp.JSON200.Results {
 			if !slices.Contains(groupsToKeep, swag.StringValue(group.Name)) {
@@ -150,7 +157,7 @@ func DeleteAllGroups(ctx context.Context, client apigen.ClientWithResponsesInter
 		if err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, err: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
-			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, status: %s", id, resp.Status()))
+			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
 	}
 	return errs.ErrorOrNil()
@@ -165,14 +172,15 @@ func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterf
 	for {
 		resp, err := client.ListUsersWithResponse(ctx, &apigen.ListUsersParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
 		if err != nil {
-			return fmt.Errorf("list users: %s", err)
+			return fmt.Errorf("list users: %w", err)
 		}
 		if resp.JSON200 == nil {
-			return fmt.Errorf("list users, status: %s", resp.Status())
+			return fmt.Errorf("list users, status %s: %w", resp.Status(), errWrongStatusCode)
 		}
 		for _, user := range resp.JSON200.Results {
 			if !slices.Contains(usersToKeep, user.Id) {
-				usersToKeep = append(usersToDelete, user.Id)
+				usersToKeep = usersToDelete
+				usersToKeep = append(usersToKeep, user.Id)
 			}
 		}
 		if !resp.JSON200.Pagination.HasMore {
@@ -188,7 +196,7 @@ func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterf
 		if err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("delete user %s: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
-			errs = multierror.Append(errs, fmt.Errorf("delete user %s, status: %s", id, resp.Status()))
+			errs = multierror.Append(errs, fmt.Errorf("delete user %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
 	}
 	return errs.ErrorOrNil()
@@ -206,7 +214,7 @@ func DeleteAllPolicies(ctx context.Context, client apigen.ClientWithResponsesInt
 			return fmt.Errorf("list policies: %w", err)
 		}
 		if resp.JSON200 == nil {
-			return fmt.Errorf("list policies, status: %s", resp.Status())
+			return fmt.Errorf("list policies, status %s: %w", resp.Status(), errWrongStatusCode)
 		}
 		for _, policy := range resp.JSON200.Results {
 			if !slices.Contains(policiesToKeep, policy.Id) {
@@ -226,7 +234,7 @@ func DeleteAllPolicies(ctx context.Context, client apigen.ClientWithResponsesInt
 		if err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("delete policy %s: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
-			errs = multierror.Append(errs, fmt.Errorf("delete policy %s, status: %s", id, resp.Status()))
+			errs = multierror.Append(errs, fmt.Errorf("delete policy %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
 	}
 	return errs.ErrorOrNil()
@@ -335,11 +343,12 @@ func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	deleteRepositories := viper.GetBool("delete_repositories")
 	if deleteRepositories {
 		resp, err := client.DeleteRepositoryWithResponse(ctx, repositoryName, &apigen.DeleteRepositoryParams{Force: swag.Bool(true)})
-		if err != nil {
+		switch {
+		case err != nil:
 			logger.WithError(err).WithField("repo", repositoryName).Error("Request to delete repository failed")
-		} else if resp.StatusCode() != http.StatusNoContent {
+		case resp.StatusCode() != http.StatusNoContent:
 			logger.WithFields(logging.Fields{"repo": repositoryName, "status_code": resp.StatusCode()}).Error("Request to delete repository failed")
-		} else {
+		default:
 			logger.WithField("repo", repositoryName).Info("Deleted repository")
 		}
 	}

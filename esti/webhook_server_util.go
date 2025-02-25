@@ -1,4 +1,8 @@
+//nolint:unused
 package esti
+
+// TODO (niro): All the unused errors is because our esti tests filenames are suffixed with _test
+// TODO (niro): WE will need to rename all the esti tests file names to instead using test prefix and not suffix
 
 import (
 	"errors"
@@ -27,6 +31,8 @@ type WebhookServer struct {
 
 const hooksTimeout = 2 * time.Second
 
+var ErrWebhookTimeout = errors.New("timeout passed waiting for hook")
+
 func (s *WebhookServer) BaseURL() string {
 	return fmt.Sprintf("http://%s:%d", s.host, s.port)
 }
@@ -36,7 +42,8 @@ func (s *WebhookServer) Server() *http.Server {
 }
 
 func StartWebhookServer() (*WebhookServer, error) {
-	respCh := make(chan hookResponse, 10)
+	const channelSize = 10
+	respCh := make(chan hookResponse, channelSize)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/pre-commit", hookHandlerFunc(respCh))
 	mux.HandleFunc("/post-commit", hookHandlerFunc(respCh))
@@ -52,7 +59,7 @@ func StartWebhookServer() (*WebhookServer, error) {
 	mux.HandleFunc("/post-delete-tag", hookHandlerFunc(respCh))
 	mux.HandleFunc("/timeout", timeoutHandlerFunc(respCh))
 	mux.HandleFunc("/fail", failHandlerFunc(respCh))
-	listener, err := net.Listen("tcp", ":0")
+	listener, err := net.Listen("tcp", ":0") //nolint:gosec
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +88,12 @@ func StartWebhookServer() (*WebhookServer, error) {
 	}, nil
 }
 
-func timeoutHandlerFunc(chan hookResponse) func(http.ResponseWriter, *http.Request) {
+func timeoutHandlerFunc(_ hookResponse) func(http.ResponseWriter, *http.Request) {
+	const timeout = 2 * hooksTimeout
 	return func(writer http.ResponseWriter, req *http.Request) {
 		select {
 		case <-req.Context().Done():
-		case <-time.After(2 * hooksTimeout):
+		case <-time.After(timeout):
 		}
 
 		writer.WriteHeader(http.StatusOK)
@@ -93,7 +101,7 @@ func timeoutHandlerFunc(chan hookResponse) func(http.ResponseWriter, *http.Reque
 	}
 }
 
-func failHandlerFunc(chan hookResponse) func(http.ResponseWriter, *http.Request) {
+func failHandlerFunc(_ hookResponse) func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, _ *http.Request) {
 		writer.WriteHeader(http.StatusInternalServerError)
 		_, _ = io.WriteString(writer, "Failed")
@@ -122,6 +130,6 @@ func responseWithTimeout(s *WebhookServer, timeout time.Duration) (*hookResponse
 	case res := <-s.respCh:
 		return &res, nil
 	case <-time.After(timeout):
-		return nil, errors.New("timeout passed waiting for hook")
+		return nil, ErrWebhookTimeout
 	}
 }
