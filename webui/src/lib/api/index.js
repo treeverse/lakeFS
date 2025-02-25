@@ -1,5 +1,5 @@
 export const API_ENDPOINT = '/api/v1';
-export const DEFAULT_LISTING_AMOUNT = 100;
+export const DEFAULT_LISTING_AMOUNT = 10; // TODO-change back to 100!!!!!!!!!!
 export const MAX_LISTING_AMOUNT = 1000;
 
 export const SETUP_STATE_INITIALIZED = "initialized";
@@ -26,7 +26,9 @@ class LocalCache {
 const cache = new LocalCache();
 
 export const qs = (queryParts) => {
+    console.log("queryParts", queryParts)
     const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
+    console.log("parts", parts)
     return new URLSearchParams(parts).toString();
 };
 
@@ -194,6 +196,7 @@ class Auth {
     }
 
     async listUsers(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        after = ""
         const query = qs({prefix, after, amount});
         const response = await apiRequest(`/auth/users?${query}`);
         if (response.status !== 200) {
