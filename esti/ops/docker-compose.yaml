@@ -18,6 +18,9 @@ services:
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
       - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
       - LAKEFS_BLOCKSTORE_LOCAL_ALLOWED_EXTERNAL_PREFIXES=/tmp
+      - AZURE_CLIENT_ID
+      - AZURE_CLIENT_SECRET
+      - AZURE_TENANT_ID
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
 
   postgres:
