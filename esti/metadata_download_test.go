@@ -33,7 +33,7 @@ func TestDownloadMetadataObject(t *testing.T) {
 	ctx := context.Background()
 
 	repo := createRepositoryUnique(ctx, t)
-	uploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930")
+	UploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930")
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "committing just to get a meta range!",
 	})

@@ -35,7 +35,7 @@ func TestDeleteStaging(t *testing.T) {
 	defer tearDownTest(repo)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
 	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
@@ -55,7 +55,7 @@ func TestDeleteCommitted(t *testing.T) {
 	defer tearDownTest(repo)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
 	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
@@ -78,7 +78,7 @@ func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 	ctx := context.Background()
 	name := strings.ToLower(t.Name())
 	storageNamespace := generateUniqueStorageNamespace(name)
-	repoName := makeRepositoryName(name)
+	repoName := MakeRepositoryName(name)
 	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             repoName,
@@ -128,7 +128,7 @@ func TestCommitDeleteCommitted(t *testing.T) {
 	defer tearDownTest(repo)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath)
 
 	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
