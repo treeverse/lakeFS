@@ -88,7 +88,7 @@ func StartWebhookServer() (*WebhookServer, error) {
 	}, nil
 }
 
-func timeoutHandlerFunc(_ hookResponse) func(http.ResponseWriter, *http.Request) {
+func timeoutHandlerFunc(_ chan hookResponse) func(http.ResponseWriter, *http.Request) {
 	const timeout = 2 * hooksTimeout
 	return func(writer http.ResponseWriter, req *http.Request) {
 		select {
@@ -101,7 +101,7 @@ func timeoutHandlerFunc(_ hookResponse) func(http.ResponseWriter, *http.Request)
 	}
 }
 
-func failHandlerFunc(_ hookResponse) func(http.ResponseWriter, *http.Request) {
+func failHandlerFunc(_ chan hookResponse) func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, _ *http.Request) {
 		writer.WriteHeader(http.StatusInternalServerError)
 		_, _ = io.WriteString(writer, "Failed")
