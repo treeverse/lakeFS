@@ -147,12 +147,11 @@ func (m *Manager) getRepository(ctx context.Context, repositoryID graveler.Repos
 	}
 	repo := graveler.RepoFromProto(&data)
 	if repo.StorageID == config.SingleBlockstoreID {
-		storage := m.storageConfig.GetStorageByID(config.SingleBlockstoreID)
-		if storage != nil {
+		if storage := m.storageConfig.GetStorageByID(config.SingleBlockstoreID); storage != nil {
 			repo.StorageID = graveler.StorageID(storage.ID()) // Will return the real actual ID
 		}
-
 	}
+
 	return graveler.RepoFromProto(&data), nil
 }
 
