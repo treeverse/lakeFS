@@ -111,6 +111,8 @@ everest diff <data_directory>
 The `commit` command commits the changes made in the mounted directory to the original lakeFS branch.
 If `<data_directory>` not specified, search for the mount directory in the current working directory and upwards based on `.everest` directory existence.
 The new commit will be merged to the original branch with the `source-wins` strategy in case of conflicts.
+Writes during commit may be lost.
+After committing, the mounted directory will be updated with the HEAD of the source branch; that means that changes made to the source branch out of the mount scope will also be reflected in the mounted directory.
 
 ```bash
 everest commit <data_directory>
