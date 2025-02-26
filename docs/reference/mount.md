@@ -21,7 +21,7 @@ This functionality is currently in limited support and is a Read-Only file syste
 ⚠️ No installation is required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access to the Everest binary.
 {: .note }
 
-**Note**
+****
 Everest mount write mode is now available for MacOS on experimental mode!
 [Everest mount write mode limitations](mount-write-mode-limitations.md).
 {: .note }
@@ -213,7 +213,34 @@ lakeFS Mount supports Linux and MacOS. Windows support is on the roadmap.
 
 You can use lakeFS’s existing [Role-Based Access Control mechanism](../security/rbac.md), which includes repository and path-level policies. lakeFS Mount translates filesystem operations into lakeFS API operations and authorizes them based on these policies.
 
-The minimal RBAC permissions required for mounting a prefix from a lakeFS repository look like this:
+The minimal RBAC permissions required for mounting a prefix from a lakeFS repository in read-only mode look like this:
+```json
+{
+  "id": "MountPolicy",
+  "statement": [
+    {
+      "action": [
+        "fs:ReadObject"
+      ],
+      "effect": "allow",
+      "resource": "arn:lakefs:fs:::repository/<repository-name>/object/<prefix>/*"
+    },
+    {
+      "action": [
+        "fs:ListObjects",
+        "fs:ReadCommit",
+        "fs:ReadBranch",
+        "fs:ReadTag",
+        "fs:ReadRepository"
+      ],
+      "effect": "allow",
+      "resource": "arn:lakefs:fs:::repository/<repository-name>"
+    }
+  ]
+}
+```
+
+The minimal RBAC permissions required for mounting a prefix from a lakeFS repository in write mode look like this:
 ```json
 {
   "id": "MountPolicy",
@@ -221,7 +248,6 @@ The minimal RBAC permissions required for mounting a prefix from a lakeFS reposi
     {
       "action": [
         "fs:ReadObject",
-        // Only required for write-mode
         "fs:WriteObject",
         "fs:DeleteObject"
       ],
@@ -233,9 +259,7 @@ The minimal RBAC permissions required for mounting a prefix from a lakeFS reposi
         "fs:ListObjects",
         "fs:ReadCommit",
         "fs:ReadBranch",
-        "fs:ReadTag",
         "fs:ReadRepository",
-        // Only required for write-mode
         "fs:CreateCommit",
         "fs:CreateBranch",
         "fs:DeleteBranch"
