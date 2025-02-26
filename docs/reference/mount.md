@@ -118,7 +118,7 @@ Flags
 experimental
 {: .label .label-red }
 
-Everest can read only a subsets of files on demand from lakeFS.
+When reading large files, Everest can fetch from lakeFS only the parts actually accessed.
 This is useful for large files that are not needed at once, 
 or for files that are too large to fit in memory.
 
