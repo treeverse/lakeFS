@@ -18,8 +18,8 @@ var filesForDiffTest = map[string]string{
 }
 
 func TestLakectlDiffAddedFiles(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 
 	createRepo(t, repoName, storage)
 	createBranch(t, repoName, storage, testBranch)
@@ -35,8 +35,8 @@ func TestLakectlDiffAddedFiles(t *testing.T) {
 }
 
 func TestLakectlDiffDeletedFiles(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 
 	createRepo(t, repoName, storage)
 	uploadFiles(t, repoName, mainBranch, filesForDiffTest)
@@ -54,8 +54,8 @@ func TestLakectlDiffDeletedFiles(t *testing.T) {
 }
 
 func TestLakectlDiffPrefix(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 
 	createRepo(t, repoName, storage)
 	createBranch(t, repoName, storage, testBranch)

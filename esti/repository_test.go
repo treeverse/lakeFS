@@ -38,8 +38,8 @@ func TestRepositoryBasicOps(t *testing.T) {
 
 func TestRepositoryCreateSampleRepo(t *testing.T) {
 	ctx := context.Background()
-	name := generateUniqueRepositoryName()
-	storageNamespace := generateUniqueStorageNamespace(name)
+	name := GenerateUniqueRepositoryName()
+	storageNamespace := GenerateUniqueStorageNamespace(name)
 	name = MakeRepositoryName(name)
 	logger.WithFields(logging.Fields{
 		"repository":        name,
@@ -53,7 +53,7 @@ func TestRepositoryCreateSampleRepo(t *testing.T) {
 		SampleData:       swag.Bool(true),
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
-	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+	require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, storageNamespace)
 	_, err = client.GetRepositoryWithResponse(ctx, name)
 	require.NoErrorf(t, err, "failed to get repository '%s'", name)

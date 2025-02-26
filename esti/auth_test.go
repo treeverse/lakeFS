@@ -217,8 +217,8 @@ func TestCreateRepo_Unauthorized(t *testing.T) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
 
-	name := generateUniqueRepositoryName()
-	storageNamespace := generateUniqueStorageNamespace(name)
+	name := GenerateUniqueRepositoryName()
+	storageNamespace := GenerateUniqueStorageNamespace(name)
 	name = MakeRepositoryName(name)
 	groups := []string{"Readers", "Viewers"}
 
