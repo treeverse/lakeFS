@@ -232,7 +232,7 @@ func getStorageConfig(ctx context.Context, client *apigen.ClientWithResponses, r
 			}
 		}
 		Die("Storage config not found for repo "+repositoryID, 1)
-		return nil, fmt.Errorf("storage config not found for repo %s", repositoryID)
+		return nil, nil // this is unreachable - just to make the go code happy
 	} else {
 		storageConfig := confResp.JSON200.StorageConfig
 		if storageConfig == nil {
