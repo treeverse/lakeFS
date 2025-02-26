@@ -41,8 +41,8 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
    1. [Node.js & npm](https://www.npmjs.com/get-npm)
    1. Java 8
       * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
-   1. [Maven](https://maven.apache.org/) with Java 8
-      * Java 8 is required for building and testing the hadoopfs client.
+   1. [Maven](https://maven.apache.org/) 
+      *  Required for building and testing Spark client code, as well as the hadoopfs client.
    1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
    1. *Optional* - [Rust & Cargo](https://www.rust-lang.org/tools/install) (useful for building the Rust SDK)
    1. *Optional* - [Buf CLI](https://buf.build/docs/installation) (only needed if you like to update Protocol Buffer files)
