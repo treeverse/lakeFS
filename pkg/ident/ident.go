@@ -61,6 +61,7 @@ func MarshalInt64(h hash.Hash, v int64) {
 	marshalType(h, AddressTypeInt64)
 	_, _ = h.Write([]byte{int64Bytes})
 	bytes := make([]byte, int64Bytes)
+	// safe as we are only interested in v's bytes value
 	binary.BigEndian.PutUint64(bytes, uint64(v)) //nolint:gosec
 	_, _ = h.Write(bytes)
 }

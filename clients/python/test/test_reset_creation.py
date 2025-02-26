@@ -16,9 +16,7 @@
 import unittest
 import datetime
 
-import lakefs_sdk
 from lakefs_sdk.models.reset_creation import ResetCreation  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 class TestResetCreation(unittest.TestCase):
     """ResetCreation unit test stubs"""
@@ -29,21 +27,21 @@ class TestResetCreation(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional):
+    def make_instance(self, include_optional) -> ResetCreation:
         """Test ResetCreation
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ResetCreation`
         """
-        model = lakefs_sdk.models.reset_creation.ResetCreation()  # noqa: E501
-        if include_optional :
+        model = ResetCreation()  # noqa: E501
+        if include_optional:
             return ResetCreation(
-                type = 'object', 
-                path = '', 
+                type = 'object',
+                path = '',
                 force = True
             )
-        else :
+        else:
             return ResetCreation(
                 type = 'object',
         )

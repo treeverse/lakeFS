@@ -203,7 +203,9 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 
 	// check valid number of parts
 	if params.Parts != nil {
-		if *params.Parts < 0 || int32(*params.Parts) > manager.MaxUploadParts { //nolint:gosec
+		// casting MaxUploadParts from int32 to int does not pose a danger since int
+		// is int32 or int64 thus no information will be lost
+		if *params.Parts < 0 || *params.Parts > int(manager.MaxUploadParts) {
 			writeError(w, r, http.StatusBadRequest, fmt.Sprintf("parts can be between 0 and %d", manager.MaxUploadParts))
 			return
 		}
@@ -1869,10 +1871,9 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
-	storageListCfg := c.getStorageConfigList()
+	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
-	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageListCfg})
+	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageCfgList})
 }
 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
@@ -1885,8 +1886,17 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
+	storageCfg, _ := c.getStorageConfigs()
 	writeResponse(w, r, http.StatusOK, storageCfg)
+}
+
+func (c *Controller) getStorageConfigs() (*apigen.StorageConfig, apigen.StorageConfigList) {
+	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
+	if storageCfg == nil {
+		storageCfg = &apigen.StorageConfig{}
+	}
+	storageCfgList := c.getStorageConfigList()
+	return storageCfg, storageCfgList
 }
 
 func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, error) {
@@ -1957,7 +1967,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 		creationDate := repo.CreationDate.Unix()
 		r := apigen.Repository{
 			Id:               repo.Name,
-			StorageId:        swag.String(repo.StorageID),
+			StorageId:        swag.String(c.getActualStorageID(repo.StorageID)),
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
@@ -2014,6 +2024,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 
 	// Validate storage ID exists
+	storageID = c.getActualStorageID(storageID)
 	if !slices.Contains(c.Config.StorageConfig().GetStorageIDs(), storageID) {
 		c.handleAPIError(ctx, w, r, graveler.ErrInvalidStorageID)
 		return
@@ -2214,6 +2225,16 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
+// getActualStorageID - This returns the actual storageID of the storage
+func (c *Controller) getActualStorageID(storageID string) string {
+	if storageID == config.SingleBlockstoreID {
+		if storage := c.Config.StorageConfig().GetStorageByID(config.SingleBlockstoreID); storage != nil {
+			return storage.ID() // Will return the real actual ID
+		}
+	}
+	return storageID
+}
+
 func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -2232,7 +2253,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			CreationDate:     repo.CreationDate.Unix(),
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
-			StorageId:        swag.String(repo.StorageID),
+			StorageId:        swag.String(c.getActualStorageID(repo.StorageID)),
 			StorageNamespace: repo.StorageNamespace,
 			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}
@@ -5326,6 +5347,7 @@ func (c *Controller) PostStatsEvents(w http.ResponseWriter, r *http.Request, bod
 			UserID: user.Username,
 			Client: client,
 		}
+		// count of stats, we can filter it on the receiving side
 		c.Collector.CollectEvents(ev, uint64(statsEv.Count)) //nolint:gosec
 
 		c.Logger.WithContext(ctx).WithFields(logging.Fields{

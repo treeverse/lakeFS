@@ -40,6 +40,7 @@ var abuseRandomReadsCmd = &cobra.Command{
 		// generate randomly selected keys as input
 		generator.Setup(func(add stress.GeneratorAddFn) {
 			for i := 0; i < amount; i++ {
+				// rand.Intn is good enough for abuse.
 				//nolint:gosec
 				add(keys[rand.Intn(len(keys))])
 			}

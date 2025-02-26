@@ -26,8 +26,9 @@ const (
 
 	EnvKeyUseBlockAdapter = "USE_BLOCK_ADAPTER" // pragma: allowlist secret
 	envKeyAwsKeyID        = "AWS_ACCESS_KEY_ID"
-	envKeyAwsSecretKey    = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
-	envKeyAwsRegion       = "AWS_DEFAULT_REGION"    // pragma: allowlist secret
+	// read env var, safe
+	envKeyAwsSecretKey = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
+	envKeyAwsRegion    = "AWS_DEFAULT_REGION"    // pragma: allowlist secret
 )
 
 var keepDB = flag.Bool("keep-db", false, "keep test DB instance running")

@@ -339,25 +339,11 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
 
-	sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg)
-	sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg)
-	committedParams := committed.Params{
-		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
-		MaxRangeSizeBytes:          baseCfg.Committed.Permanent.MaxRangeSizeBytes,
-		RangeSizeEntriesRaggedness: baseCfg.Committed.Permanent.RangeRaggednessEntries,
-		MaxUploaders:               baseCfg.Committed.LocalCache.MaxUploadersPerWriter,
-	}
-	sstableMetaRangeManager, err := committed.NewMetaRangeManager(
-		committedParams,
-		// TODO(ariels): Use separate range managers for metaranges and ranges
-		sstableMetaManager,
-		sstableManager,
-	)
+	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS)
 	if err != nil {
 		cancelFn()
-		return nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+		return nil, err
 	}
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManager, sstableManager, committedParams)
 
 	executor := batch.NewConditionalExecutor(logging.ContextUnavailable())
 	go executor.Run(ctx)
@@ -402,7 +388,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	// The size of the workPool is determined by the number of workers and the number of desired pending tasks for each worker.
 	workPool := pond.New(sharedWorkers, sharedWorkers*pendingTasksPerWorker, pond.Context(ctx))
-
+	closers = append(closers, &ctxCloser{cancelFn})
 	return &Catalog{
 		BlockAdapter:          tierFSParams.Adapter,
 		Store:                 gStore,
@@ -412,12 +398,55 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		BackgroundLimiter:     limiter,
 		workPool:              workPool,
 		KVStore:               cfg.KVStore,
-		managers:              []io.Closer{sstableManager, sstableMetaManager, &ctxCloser{cancelFn}},
+		managers:              closers,
 		KVStoreLimited:        storeLimiter,
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
 		signingKey:            cfg.Config.StorageConfig().SigningKey(),
 	}, nil
+}
+
+func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS) (graveler.CommittedManager, []io.Closer, error) {
+	baseCfg := cfg.Config.GetBaseConfig()
+	committedParams := committed.Params{
+		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
+		MaxRangeSizeBytes:          baseCfg.Committed.Permanent.MaxRangeSizeBytes,
+		RangeSizeEntriesRaggedness: baseCfg.Committed.Permanent.RangeRaggednessEntries,
+		MaxUploaders:               baseCfg.Committed.LocalCache.MaxUploadersPerWriter,
+	}
+	var closers []io.Closer
+	sstableManagers := make(map[graveler.StorageID]committed.RangeManager)
+	sstableMetaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
+	storageIDs := cfg.Config.StorageConfig().GetStorageIDs()
+	for _, sID := range storageIDs {
+		sstableRangeManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg, committed.StorageID(sID))
+		sstableManagers[graveler.StorageID(sID)] = sstableRangeManager
+		closers = append(closers, sstableRangeManager)
+
+		storage := cfg.Config.StorageConfig().GetStorageByID(sID)
+		if storage.IsBackwardsCompatible() {
+			sstableManagers[config.SingleBlockstoreID] = sstableRangeManager
+		}
+
+		sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg, committed.StorageID(sID))
+		closers = append(closers, sstableMetaManager)
+
+		sstableMetaRangeManager, err := committed.NewMetaRangeManager(
+			committedParams,
+			sstableMetaManager,
+			sstableRangeManager,
+			graveler.StorageID(sID),
+		)
+		if err != nil {
+			return nil, nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
+		}
+		sstableMetaRangeManagers[graveler.StorageID(sID)] = sstableMetaRangeManager
+		if storage.IsBackwardsCompatible() {
+			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
+		}
+	}
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, committedParams)
+	return committedManager, closers, nil
 }
 
 func newLimiter(rateLimit int) ratelimit.Limiter {
@@ -1308,6 +1337,7 @@ func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, c
 		commitParents[i] = graveler.CommitID(parent)
 	}
 	commit := graveler.Commit{
+		// cast from int32 to int. no information loss danger
 		Version:      graveler.CommitVersion(version), //nolint:gosec
 		Committer:    committer,
 		Message:      message,
@@ -1315,7 +1345,8 @@ func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, c
 		CreationDate: time.Unix(creationDate, 0).UTC(),
 		Parents:      commitParents,
 		Metadata:     metadata,
-		Generation:   graveler.CommitGeneration(generation), //nolint:gosec
+		// cast from int32 to int32
+		Generation: graveler.CommitGeneration(generation), //nolint:gosec
 	}
 	return c.Store.CreateCommitRecord(ctx, repository, graveler.CommitID(commitID), commit, opts...)
 }
@@ -2737,6 +2768,10 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 		srcRepo, err = c.GetRepository(ctx, srcRepository)
 		if err != nil {
 			return nil, err
+		}
+
+		if srcRepo.StorageID != destRepo.StorageID {
+			return nil, fmt.Errorf("%w: cannot copy between repos with different StorageIDs", graveler.ErrInvalidStorageID)
 		}
 	}
 

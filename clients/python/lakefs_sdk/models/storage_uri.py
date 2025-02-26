@@ -27,7 +27,7 @@ except ImportError:
 
 class StorageURI(BaseModel):
     """
-    URI to a path in a storage provider (e.g. \"s3://bucket1/path/to/object\")
+    URI to a path in a storage provider (e.g. \"s3://bucket1/path/to/object\")  # noqa: E501
     """
     location: StrictStr = Field(...)
     __properties = ["location"]

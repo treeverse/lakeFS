@@ -1,7 +1,9 @@
 package block
 
 import (
-	"crypto/md5" //nolint:gosec
+	// MD5 required for ETag computation.
+	//nolint:gosec
+	"crypto/md5"
 	"crypto/sha256"
 	"hash"
 	"io"
@@ -45,6 +47,7 @@ func NewHashingReader(body io.Reader, hashTypes ...HashFunction) *HashingReader 
 		switch hashType {
 		case HashFunctionMD5:
 			if s.Md5 == nil {
+				// MD5 required for ETag computation.
 				s.Md5 = md5.New() //nolint:gosec
 			}
 		case HashFunctionSHA256:

@@ -335,6 +335,7 @@ To set an environment variable, prepend `LAKEFS_` to its name, convert it to upp
 
 For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.region` becomes `LAKEFS_BLOCKSTORE_S3_REGION`, etc.
 
+To set a value into a `map[string]string` type field, use the syntax `key1=value1,key2=value2,...`
 
 ## Example Configurations
 

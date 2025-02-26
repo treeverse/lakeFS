@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	// MD5 required for ETag computation.
 	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"errors"
@@ -463,6 +464,7 @@ func computeETag(parts []block.MultipartPart) string {
 	}
 	s := strings.Join(etagHex, "")
 	b, _ := hex.DecodeString(s)
+	// MD5 required for ETag computation.
 	md5res := md5.Sum(b) //nolint:gosec
 	csm := hex.EncodeToString(md5res[:])
 	return csm

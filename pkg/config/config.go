@@ -163,6 +163,7 @@ type AdapterConfig interface {
 	BlockstoreAzureParams() (blockparams.Azure, error)
 	GetDefaultNamespacePrefix() *string
 	IsBackwardsCompatible() bool
+	ID() string
 }
 
 type Blockstore struct {
@@ -355,6 +356,10 @@ func (b *Blockstore) GetDefaultNamespacePrefix() *string {
 
 func (b *Blockstore) IsBackwardsCompatible() bool {
 	return false
+}
+
+func (b *Blockstore) ID() string {
+	return SingleBlockstoreID
 }
 
 func (b *Blockstore) SigningKey() SecureString {
@@ -597,7 +602,10 @@ func Unmarshal(c Config) error {
 	return viper.UnmarshalExact(&c,
 		viper.DecodeHook(
 			mapstructure.ComposeDecodeHookFunc(
-				DecodeStrings, mapstructure.StringToTimeDurationHookFunc())))
+				DecodeStrings,
+				mapstructure.StringToTimeDurationHookFunc(),
+				DecodeStringToMap(),
+			)))
 }
 
 func stringReverse(s string) string {

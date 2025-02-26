@@ -15,35 +15,33 @@
 
 import unittest
 
-import lakefs_sdk
 from lakefs_sdk.api.import_api import ImportApi  # noqa: E501
-from lakefs_sdk.rest import ApiException
 
 
 class TestImportApi(unittest.TestCase):
     """ImportApi unit test stubs"""
 
-    def setUp(self):
-        self.api = lakefs_sdk.api.import_api.ImportApi()  # noqa: E501
+    def setUp(self) -> None:
+        self.api = ImportApi()  # noqa: E501
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         pass
 
-    def test_import_cancel(self):
+    def test_import_cancel(self) -> None:
         """Test case for import_cancel
 
         cancel ongoing import  # noqa: E501
         """
         pass
 
-    def test_import_start(self):
+    def test_import_start(self) -> None:
         """Test case for import_start
 
         import data from object store  # noqa: E501
         """
         pass
 
-    def test_import_status(self):
+    def test_import_status(self) -> None:
         """Test case for import_status
 
         get import status  # noqa: E501

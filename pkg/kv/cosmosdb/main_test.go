@@ -80,7 +80,11 @@ func TestMain(m *testing.M) {
 		Client: &http.Client{
 			Timeout: clientTimeout,
 			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
+				TLSClientConfig: &tls.Config{
+					// ignore self-signed cert for local testing using the emulator
+					//nolint:gosec
+					InsecureSkipVerify: true,
+				},
 			},
 		},
 		StrongConsistency: false,

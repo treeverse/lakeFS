@@ -223,6 +223,7 @@ func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation)
 	parts := make([]serde.MultipartUploadPart, len(partsResp.Parts))
 	for i, part := range partsResp.Parts {
 		parts[i] = serde.MultipartUploadPart{
+			// PartNumber <= 10000, safe
 			PartNumber:   int32(part.PartNumber), //nolint:gosec
 			ETag:         part.ETag,
 			LastModified: serde.Timestamp(part.LastModified),

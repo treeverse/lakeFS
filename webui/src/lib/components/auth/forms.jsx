@@ -12,7 +12,7 @@ import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "..
 
 export const AttachModal = ({
                               show, searchFn, resolveEntityFn = (ent => ent.id), onAttach, onHide, addText = "Add",
-                              emptyState = 'No matches', modalTitle = 'Add', headers = ['Select', 'ID'],
+                              emptyState = 'No matches', modalTitle = 'Add', headers = ['', 'ID'],
                               filterPlaceholder = 'Filter...'
                             }) => {
   const search = useRef(null);
@@ -45,14 +45,30 @@ export const AttachModal = ({
               onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
               name={'selected'}/>,
             <strong>{resolveEntityFn(ent)}</strong>
-          ]}/>
+          ]}
+          firstFixedCol={true}
+        />
 
         <div className="mt-3">
           {(selected.length > 0) &&
             <p>
               <strong>Selected: </strong>
               {(selected.map(item => (
-                <Badge key={item.id} pill variant="primary" className="me-1">
+                <Badge
+                  key={item.id}
+                  pill
+                  variant="primary"
+                  className="
+                      me-1
+                      d-inline-block
+                      w-25
+                      text-nowrap
+                      overflow-hidden
+                      text-truncate
+                      align-middle
+                  "
+                  title={resolveEntityFn(item)}
+                >
                   {resolveEntityFn(item)}
                 </Badge>
               )))}

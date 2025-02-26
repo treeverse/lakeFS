@@ -97,7 +97,8 @@ func sortColumnsLocalToHive(columns []*metastore.Order) []*hive_metastore.Order 
 	res := make([]*hive_metastore.Order, len(columns))
 	for i, column := range columns {
 		res[i] = &hive_metastore.Order{
-			Col:   column.Col,
+			Col: column.Col,
+			// safe, there are less than int32 different columns
 			Order: int32(column.Order), //nolint:gosec
 		}
 	}
@@ -121,9 +122,11 @@ func TableLocalToHive(table *metastore.Table) *hive_metastore.Table {
 	privileges, _ := table.Privileges.(*hive_metastore.PrincipalPrivilegeSet)
 
 	ht := &hive_metastore.Table{
-		DbName:         table.DBName,
-		TableName:      table.TableName,
-		Owner:          table.Owner,
+		DbName:    table.DBName,
+		TableName: table.TableName,
+		Owner:     table.Owner,
+		// Hive spec stores in32 creation times and is susceptible to Y2K38;
+		// we cannot do anything about that.  See hive_metastore.thrift.
 		CreateTime:     int32(table.CreateTime),     //nolint:gosec
 		LastAccessTime: int32(table.LastAccessTime), //nolint:gosec
 		Retention:      int32(table.Retention),      //nolint:gosec
@@ -206,11 +209,12 @@ func SDLocalToHive(sd *metastore.StorageDescriptor) *hive_metastore.StorageDescr
 		return nil
 	}
 	return &hive_metastore.StorageDescriptor{
-		Cols:                   columnsLocalToHive(sd.Cols),
-		Location:               sd.Location,
-		InputFormat:            sd.InputFormat,
-		OutputFormat:           sd.OutputFormat,
-		Compressed:             sd.Compressed,
+		Cols:         columnsLocalToHive(sd.Cols),
+		Location:     sd.Location,
+		InputFormat:  sd.InputFormat,
+		OutputFormat: sd.OutputFormat,
+		Compressed:   sd.Compressed,
+		// numBuckets < int32
 		NumBuckets:             int32(sd.NumBuckets), //nolint:gosec
 		SerdeInfo:              serDeLocalToHive(sd.SerdeInfo),
 		BucketCols:             sd.BucketCols,

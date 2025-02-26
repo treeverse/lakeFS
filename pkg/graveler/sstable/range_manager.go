@@ -25,9 +25,10 @@ type RangeManager struct {
 	fs        pyramid.FS
 	hash      crypto.Hash
 	cache     Unrefer
+	storageID committed.StorageID
 }
 
-func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypto.Hash) *RangeManager {
+func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypto.Hash, storageID committed.StorageID) *RangeManager {
 	if cache != nil { // nil cache allowed (size=0), see sstable.ReaderOptions
 		cache.Ref()
 	}
@@ -35,7 +36,7 @@ func NewPebbleSSTableRangeManager(cache *pebble.Cache, fs pyramid.FS, hash crypt
 	newReader := func(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID) (*sstable.Reader, error) {
 		return newReader(ctx, fs, storageID, ns, id, opts)
 	}
-	return NewPebbleSSTableRangeManagerWithNewReader(newReader, opts.Cache, fs, hash)
+	return NewPebbleSSTableRangeManagerWithNewReader(newReader, opts.Cache, fs, hash, storageID)
 }
 
 func newReader(ctx context.Context, fs pyramid.FS, storageID committed.StorageID, ns committed.Namespace, id committed.ID, opts sstable.ReaderOptions) (*sstable.Reader, error) {
@@ -50,12 +51,13 @@ func newReader(ctx context.Context, fs pyramid.FS, storageID committed.StorageID
 	return r, nil
 }
 
-func NewPebbleSSTableRangeManagerWithNewReader(newReader NewSSTableReaderFn, cache Unrefer, fs pyramid.FS, hash crypto.Hash) *RangeManager {
+func NewPebbleSSTableRangeManagerWithNewReader(newReader NewSSTableReaderFn, cache Unrefer, fs pyramid.FS, hash crypto.Hash, storageID committed.StorageID) *RangeManager {
 	return &RangeManager{
 		fs:        fs,
 		hash:      hash,
 		newReader: newReader,
 		cache:     cache,
+		storageID: storageID,
 	}
 }
 
@@ -66,12 +68,12 @@ var (
 	_ committed.RangeManager = &RangeManager{}
 )
 
-func (m *RangeManager) Exists(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID) (bool, error) {
-	return m.fs.Exists(ctx, string(storageID), string(ns), string(id))
+func (m *RangeManager) Exists(ctx context.Context, ns committed.Namespace, id committed.ID) (bool, error) {
+	return m.fs.Exists(ctx, string(m.storageID), string(ns), string(id))
 }
 
-func (m *RangeManager) GetValueGE(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, err := m.newReader(ctx, storageID, ns, id)
+func (m *RangeManager) GetValueGE(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+	reader, err := m.newReader(ctx, m.storageID, ns, id)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +107,8 @@ func (m *RangeManager) GetValueGE(ctx context.Context, storageID committed.Stora
 
 // GetValue returns the Record matching the key in the SSTable referenced by the id.
 // If key is not found, (nil, ErrKeyNotFound) is returned.
-func (m *RangeManager) GetValue(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
-	reader, err := m.newReader(ctx, storageID, ns, id)
+func (m *RangeManager) GetValue(ctx context.Context, ns committed.Namespace, id committed.ID, lookup committed.Key) (*committed.Record, error) {
+	reader, err := m.newReader(ctx, m.storageID, ns, id)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +148,8 @@ func (m *RangeManager) GetValue(ctx context.Context, storageID committed.Storage
 }
 
 // NewRangeIterator takes a given SSTable and returns an EntryIterator seeked to >= "from" path
-func (m *RangeManager) NewRangeIterator(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
-	reader, err := m.newReader(ctx, storageID, ns, tid)
+func (m *RangeManager) NewRangeIterator(ctx context.Context, ns committed.Namespace, tid committed.ID) (committed.ValueIterator, error) {
+	reader, err := m.newReader(ctx, m.storageID, ns, tid)
 	if err != nil {
 		return nil, err
 	}
@@ -164,12 +166,12 @@ func (m *RangeManager) NewRangeIterator(ctx context.Context, storageID committed
 }
 
 // GetWriter returns a new SSTable writer instance
-func (m *RangeManager) GetWriter(ctx context.Context, storageID committed.StorageID, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
-	return NewDiskWriter(ctx, m.fs, storageID, ns, m.hash.New(), metadata)
+func (m *RangeManager) GetWriter(ctx context.Context, ns committed.Namespace, metadata graveler.Metadata) (committed.RangeWriter, error) {
+	return NewDiskWriter(ctx, m.fs, m.storageID, ns, m.hash.New(), metadata)
 }
 
-func (m *RangeManager) GetURI(ctx context.Context, ns committed.Namespace, id committed.ID) (string, error) {
-	return m.fs.GetRemoteURI(ctx, string(ns), string(id))
+func (m *RangeManager) GetURI(ctx context.Context, id committed.ID) (string, error) {
+	return m.fs.GetRemoteURI(ctx, string(id))
 }
 
 func (m *RangeManager) execAndLog(ctx context.Context, f func() error, msg string) {

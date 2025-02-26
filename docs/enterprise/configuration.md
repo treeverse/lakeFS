@@ -142,3 +142,5 @@ All the configuration variables can be set or overridden using environment varia
 To set an environment variable, prepend `FLUFFY_` to its name, convert it to upper case, and replace `.` with `_`:
 
 For example, `logging.format` becomes `FLUFFY_LOGGING_FORMAT`, `auth.saml.enabled` becomes `FLUFFY_AUTH_SAML_ENABLED`, etc.
+
+To set a value for a `map[string]string` type field, use the syntax `key1=value1,key2=value2,...`.

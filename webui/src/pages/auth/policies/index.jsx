@@ -119,7 +119,9 @@ const PoliciesContainer = () => {
                         {policy.id}
                     </Link>,
                     <FormattedDate dateValue={policy.creation_date}/>
-                ]}/>
+                ]}
+                firstFixedCol={true}
+            />
 
             <Paginator
                 nextPage={nextPage}
