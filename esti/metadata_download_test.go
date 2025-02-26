@@ -4,11 +4,9 @@ import (
 	"context"
 	"testing"
 
-	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
-	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 )
 
 func TestDownloadMetadataObject(t *testing.T) {

@@ -16,7 +16,7 @@ func TestResetAll(t *testing.T) {
 	const objPath = "1.txt"
 
 	// upload file
-	_, objContent := UploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, objContent := UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)
 	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	require.NoError(t, err)
 	require.True(t, f, "uploaded object found")
