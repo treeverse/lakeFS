@@ -112,6 +112,19 @@ Flags
 --presign: Use presign for downloading.
 ```
 
+### Partial Reads
+
+{: .d-inline-block }
+experimental
+{: .label .label-red }
+
+Everest can read only a subsets of files on demand from lakeFS.
+This is useful for large files that are not needed at once, 
+or for files that are too large to fit in memory.
+
+To enable partial reads, pass the `--partial-reads` flag to the `mount` (or `mount-server`) command.
+
+
 ## Examples
 
 **Note**
