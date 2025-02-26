@@ -1983,7 +1983,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateRepositoryJSONRequestBody, params apigen.CreateRepositoryParams) {
-	storageID := swag.StringValue(body.StorageId)
+	storageID := config.GetActualStorageID(c.Config.StorageConfig(), swag.StringValue(body.StorageId))
 	storageNamespace := body.StorageNamespace
 
 	if !c.authorize(w, r, permissions.Node{
@@ -2024,7 +2024,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 
 	// Validate storage ID exists
-	storageID = config.GetActualStorageID(c.Config.StorageConfig(), storageID)
 	if !slices.Contains(c.Config.StorageConfig().GetStorageIDs(), storageID) {
 		c.handleAPIError(ctx, w, r, graveler.ErrInvalidStorageID)
 		return
