@@ -85,7 +85,6 @@ var localCommitCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		_, localPath := getSyncArgs(args, false, false)
-		syncFlags := getSyncFlags(cmd, client)
 		message, kvPairs := getCommitFlags(cmd)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
 
@@ -98,6 +97,7 @@ var localCommitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		syncFlags := getSyncFlags(cmd, client, remote.Repository)
 
 		if idx.ActiveOperation != "" {
 			fmt.Printf("Latest 'local %s' operation was interrupted, running 'local commit' operation now might lead to data loss.\n", idx.ActiveOperation)

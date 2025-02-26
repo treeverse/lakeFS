@@ -38,7 +38,7 @@ var importCmd = &cobra.Command{
 
 		ctx := cmd.Context()
 		client := getClient()
-		verifySourceMatchConfiguredStorage(ctx, client, from)
+		verifySourceMatchConfiguredStorage(ctx, client, toURI.Repository, from)
 
 		// verify target branch exists before we try to create and import into the associated imported branch
 		if err, ok := branchExists(ctx, client, toURI.Repository, toURI.Ref); err != nil {
@@ -160,18 +160,16 @@ func newImportProgressBar(visible bool) *progressbar.ProgressBar {
 	return bar
 }
 
-func verifySourceMatchConfiguredStorage(ctx context.Context, client *apigen.ClientWithResponses, source string) {
+func verifySourceMatchConfiguredStorage(ctx context.Context, client *apigen.ClientWithResponses, repositoryID string, source string) {
 	// Adds backwards compatibility for ADLS Gen2 storage import `hint`
 	if strings.Contains(source, "adls.core.windows.net") {
 		source = strings.Replace(source, "adls.core.windows.net", "blob.core.windows.net", 1)
 		Warning(fmt.Sprintf("'adls' hint is deprecated\n Using %s", source))
 	}
 
-	confResp, err := client.GetConfigWithResponse(ctx)
-	DieOnErrorOrUnexpectedStatusCode(confResp, err, http.StatusOK)
-	storageConfig := confResp.JSON200.StorageConfig
-	if storageConfig == nil {
-		Die("Bad response from server", 1)
+	storageConfig, err := getStorageConfig(ctx, client, repositoryID)
+	if err != nil {
+		DieErr(err)
 	}
 	if storageConfig.ImportValidityRegex == "" {
 		return
