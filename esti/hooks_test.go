@@ -111,7 +111,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	ref := string(createBranchResp.Body)
 	t.Log("Branch created", ref)
 
-	resp, err := uploadContent(ctx, repo, branch, "somefile", "")
+	resp, err := uploadContent(ctx, repo, branch, "somefile", "", nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
@@ -457,7 +457,7 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		require.NoError(t, err)
 
 		action := doc.String()
-		resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action)
+		resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action, nil)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}
