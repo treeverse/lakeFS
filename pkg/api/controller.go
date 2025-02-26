@@ -1967,7 +1967,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 		creationDate := repo.CreationDate.Unix()
 		r := apigen.Repository{
 			Id:               repo.Name,
-			StorageId:        swag.String(c.getActualStorageID(repo.StorageID)),
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 			CreationDate:     creationDate,
 			DefaultBranch:    repo.DefaultBranch,
@@ -2024,7 +2024,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 
 	// Validate storage ID exists
-	storageID = c.getActualStorageID(storageID)
+	storageID = config.GetActualStorageID(c.Config.StorageConfig(), storageID)
 	if !slices.Contains(c.Config.StorageConfig().GetStorageIDs(), storageID) {
 		c.handleAPIError(ctx, w, r, graveler.ErrInvalidStorageID)
 		return
@@ -2225,16 +2225,6 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
 
-// getActualStorageID - This returns the actual storageID of the storage
-func (c *Controller) getActualStorageID(storageID string) string {
-	if storageID == config.SingleBlockstoreID {
-		if storage := c.Config.StorageConfig().GetStorageByID(config.SingleBlockstoreID); storage != nil {
-			return storage.ID() // Will return the real actual ID
-		}
-	}
-	return storageID
-}
-
 func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -2253,7 +2243,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 			CreationDate:     repo.CreationDate.Unix(),
 			DefaultBranch:    repo.DefaultBranch,
 			Id:               repo.Name,
-			StorageId:        swag.String(c.getActualStorageID(repo.StorageID)),
+			StorageId:        swag.String(repo.StorageID),
 			StorageNamespace: repo.StorageNamespace,
 			ReadOnly:         swag.Bool(repo.ReadOnly),
 		}

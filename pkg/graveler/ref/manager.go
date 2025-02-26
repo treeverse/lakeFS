@@ -146,13 +146,9 @@ func (m *Manager) getRepository(ctx context.Context, repositoryID graveler.Repos
 		return nil, err
 	}
 	repo := graveler.RepoFromProto(&data)
-	if repo.StorageID == config.SingleBlockstoreID {
-		if storage := m.storageConfig.GetStorageByID(config.SingleBlockstoreID); storage != nil {
-			repo.StorageID = graveler.StorageID(storage.ID()) // Will return the real actual ID
-		}
-	}
+	repo.StorageID = graveler.StorageID(config.GetActualStorageID(m.storageConfig, repo.StorageID.String()))
 
-	return graveler.RepoFromProto(&data), nil
+	return repo, nil
 }
 
 func (m *Manager) getRepositoryBatch(ctx context.Context, repositoryID graveler.RepositoryID) (*graveler.RepositoryRecord, error) {

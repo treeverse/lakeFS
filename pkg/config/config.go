@@ -366,6 +366,16 @@ func (b *Blockstore) SigningKey() SecureString {
 	return b.Signing.SecretKey
 }
 
+// getActualStorageID - This returns the actual storageID of the storage
+func GetActualStorageID(storageConfig StorageConfig, storageID string) string {
+	if storageID == SingleBlockstoreID {
+		if storage := storageConfig.GetStorageByID(SingleBlockstoreID); storage != nil {
+			return storage.ID() // Will return the real actual ID
+		}
+	}
+	return storageID
+}
+
 type Config interface {
 	GetBaseConfig() *BaseConfig
 	StorageConfig() StorageConfig

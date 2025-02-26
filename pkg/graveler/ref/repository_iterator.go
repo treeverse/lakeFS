@@ -63,6 +63,7 @@ func (ri *RepositoryIterator) Next() bool {
 	}
 
 	ri.value = graveler.RepoFromProto(repo)
+	ri.value.StorageID = graveler.StorageID(config.GetActualStorageID(ri.storageConfig, ri.value.StorageID.String()))
 	updateStorageID(ri.value, ri.storageConfig)
 	return true
 }
