@@ -23,7 +23,7 @@ func TestCommitSingle(t *testing.T) {
 	defer tearDownTest(repo)
 
 	const objPath = "1.txt"
-	_, objContent := UploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, objContent := UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "singleCommit",
 	})
@@ -56,7 +56,7 @@ type Upload struct {
 // upload uploads random file data for uploads.
 func upload(ctx context.Context, uploads chan Upload) error {
 	for u := range uploads {
-		_, _, err := uploadFileRandomDataAndReport(ctx, u.Repo, u.Branch, u.Path, false)
+		_, _, err := uploadFileRandomDataAndReport(ctx, u.Repo, u.Branch, u.Path, false, nil)
 		if err != nil {
 			return err
 		}
@@ -137,8 +137,8 @@ func TestCommitWithTombstone(t *testing.T) {
 	defer tearDownTest(repo)
 	origObjPathLow := "objb.txt"
 	origObjPathHigh := "objc.txt"
-	UploadFileRandomData(ctx, t, repo, mainBranch, origObjPathLow)
-	UploadFileRandomData(ctx, t, repo, mainBranch, origObjPathHigh)
+	UploadFileRandomData(ctx, t, repo, mainBranch, origObjPathLow, nil)
+	UploadFileRandomData(ctx, t, repo, mainBranch, origObjPathHigh, nil)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "First commit",
 	})
@@ -148,8 +148,8 @@ func TestCommitWithTombstone(t *testing.T) {
 
 	tombstoneObjPath := "obja.txt"
 	newObjPath := "objd.txt"
-	UploadFileRandomData(ctx, t, repo, mainBranch, tombstoneObjPath)
-	UploadFileRandomData(ctx, t, repo, mainBranch, newObjPath)
+	UploadFileRandomData(ctx, t, repo, mainBranch, tombstoneObjPath, nil)
+	UploadFileRandomData(ctx, t, repo, mainBranch, newObjPath, nil)
 
 	// Turning tombstoneObjPath to tombstone
 	resp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &apigen.DeleteObjectParams{Path: tombstoneObjPath})

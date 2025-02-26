@@ -106,7 +106,7 @@ func uploadAndCommitObjects(t *testing.T, ctx context.Context, repo, branch stri
 	t.Helper()
 	for _, objects := range objectsGroups {
 		for path, obj := range objects {
-			resp, err := uploadContent(ctx, repo, branch, path, obj)
+			resp, err := uploadContent(ctx, repo, branch, path, obj, nil)
 			require.NoError(t, err)
 			require.Equal(t, http.StatusCreated, resp.StatusCode())
 		}
@@ -503,7 +503,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			uploadResp, err := uploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf))
+			uploadResp, err := uploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf), nil)
 			if err != nil {
 				return err
 			}
@@ -645,7 +645,7 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			uploadResp, err := uploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf))
+			uploadResp, err := uploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf), nil)
 			if err != nil {
 				return err
 			}

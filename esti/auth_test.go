@@ -483,13 +483,13 @@ func TestUpdatePolicy(t *testing.T) {
 
 // Tests merge with different clients
 func mergeAuthTest(t *testing.T, cli *apigen.ClientWithResponses, ctx context.Context, repo string, branch string) (*apigen.MergeIntoBranchResponse, error) {
-	UploadFileRandomData(ctx, t, repo, mainBranch, "README")
+	UploadFileRandomData(ctx, t, repo, mainBranch, "README", nil)
 
 	resMainCommit, err := cli.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Initial content"})
 	require.NoError(t, err, "failed to commit initial content in merge auth test")
 	require.Equal(t, http.StatusCreated, resMainCommit.StatusCode())
 
-	UploadFileRandomData(ctx, t, repo, branch, "foo.txt")
+	UploadFileRandomData(ctx, t, repo, branch, "foo.txt", nil)
 
 	resBranchCommit, err := cli.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: "Additional content"})
 	require.NoError(t, err, "failed to commit additional content in merge auth test")
