@@ -192,6 +192,10 @@ everest diff ./pets
 
 # Commit the changes to the original lakeFS branch
 everest commit ./pets
+
+everest diff ./pets
+# No changes
+
 everest umount ./pets
 ```
 
