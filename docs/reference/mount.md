@@ -119,8 +119,7 @@ experimental
 {: .label .label-red }
 
 When reading large files, Everest can fetch from lakeFS only the parts actually accessed.
-This is useful for large files that are not needed at once, 
-or for files that are too large to fit in memory.
+This can be useful for streaming workloads or for applications handling file formats such as Parquet, m4a, zip, tar that do not need to read the entire file.
 
 To enable partial reads, pass the `--partial-reads` flag to the `mount` (or `mount-server`) command.
 
