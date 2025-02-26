@@ -207,7 +207,8 @@ lakeFS Mount is available for lakeFS Cloud and lakeFS Enterprise customers. Once
 
 ### What operating systems are supported by lakeFS Mount?
 
-lakeFS Mount supports Linux and MacOS. Windows support is on the roadmap.
+lakeFS Mount supports Linux in read-only mode and MacOS in both read-only and write mode. 
+Windows support and Linux in write-mode are both on the roadmap.
 
 ### How can I control access to my data when using lakeFS Mount?
 
