@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/xid"
@@ -30,6 +31,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -283,7 +285,7 @@ func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 
 func tearDownTest(repoName string) {
 	ctx := context.Background()
-	deleteRepositoryIfAskedTo(ctx, repoName)
+	DeleteRepositoryIfAskedTo(ctx, repoName)
 }
 
 func createRepositoryForTest(ctx context.Context, t testing.TB) string {
@@ -339,7 +341,7 @@ func createRepository(ctx context.Context, t testing.TB, name string, repoStorag
 		"create repository '%s', storage '%s'", name, repoStorage)
 }
 
-func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
+func DeleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	deleteRepositories := viper.GetBool("delete_repositories")
 	if deleteRepositories {
 		resp, err := client.DeleteRepositoryWithResponse(ctx, repositoryName, &apigen.DeleteRepositoryParams{Force: swag.Bool(true)})
@@ -369,16 +371,16 @@ const (
 	largeDataContentLength = 6 << 20
 )
 
-func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
+func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum, content string, err error) {
 	objContent := randstr.String(randomDataContentLength)
-	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct)
+	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct, clt)
 	if err != nil {
 		return "", "", err
 	}
 	return checksum, objContent, nil
 }
 
-func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool) (checksum string, err error) {
+func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum string, err error) {
 	// Upload using direct access
 	if direct {
 		stats, err := uploadContentDirect(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
@@ -388,7 +390,7 @@ func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent 
 		return stats.Checksum, nil
 	}
 	// Upload using API
-	resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
+	resp, err := uploadContent(ctx, repo, branch, objPath, objContent, clt)
 	if err != nil {
 		return "", err
 	}
@@ -457,7 +459,10 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 	}
 }
 
-func uploadContent(ctx context.Context, repo string, branch string, objPath string, objContent string) (*apigen.UploadObjectResponse, error) {
+func uploadContent(ctx context.Context, repo, branch, objPath, objContent string, clt apigen.ClientWithResponsesInterface) (*apigen.UploadObjectResponse, error) {
+	if clt == nil {
+		clt = client
+	}
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
@@ -472,13 +477,13 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	if err != nil {
 		return nil, fmt.Errorf("close form file: %w", err)
 	}
-	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
+	return clt.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)
 }
 
-func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, false)
+func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, clt apigen.ClientWithResponsesInterface) (checksum, content string) {
+	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, false, clt)
 	require.NoError(t, err, "failed to upload file", repo, branch, objPath)
 	return checksum, content
 }
@@ -575,4 +580,22 @@ func getServerConfig(t testing.TB, ctx context.Context) *apigen.SetupState {
 	require.NoError(t, err)
 	require.NotNil(t, resp.JSON200)
 	return resp.JSON200
+}
+
+func GravelerIterator(data []byte) (*sstable.Iterator, error) {
+	// read file descriptor
+	reader, err := pebblesst.NewMemReader(data, pebblesst.ReaderOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// create an iterator over the whole thing
+	iter, err := reader.NewIter(nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// wrap it in a Graveler iterator
+	dummyDeref := func() error { return nil }
+	return sstable.NewIterator(iter, dummyDeref), nil
 }

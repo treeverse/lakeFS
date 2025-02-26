@@ -11,29 +11,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 )
 
-func gravelerIterator(data []byte) (*sstable.Iterator, error) {
-	// read file descriptor
-	reader, err := pebblesst.NewMemReader(data, pebblesst.ReaderOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	// create an iterator over the whole thing
-	iter, err := reader.NewIter(nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// wrap it in a Graveler iterator
-	dummyDeref := func() error { return nil }
-	return sstable.NewIterator(iter, dummyDeref), nil
-}
-
 func TestDownloadMetadataObject(t *testing.T) {
 	ctx := context.Background()
 
 	repo := createRepositoryUnique(ctx, t)
-	UploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930")
+	UploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930", nil)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "committing just to get a meta range!",
 	})
@@ -47,7 +29,7 @@ func TestDownloadMetadataObject(t *testing.T) {
 		t.Errorf("got unexpected error downloading metarange")
 	}
 	// try reading the meta-range
-	iter, err := gravelerIterator(response.Body)
+	iter, err := GravelerIterator(response.Body)
 	if err != nil {
 		t.Error("could not get an iterator from meta-range body")
 	}
@@ -66,7 +48,7 @@ func TestDownloadMetadataObject(t *testing.T) {
 	require.NoError(t, err, "failed to get range with presign=true")
 
 	// try reading the range
-	iter, err = gravelerIterator(response.Body)
+	iter, err = GravelerIterator(response.Body)
 	if err != nil {
 		t.Error("could not get an iterator from range body")
 	}
