@@ -23,7 +23,7 @@ This functionality is currently in limited support and is a Read-Only file syste
 
 ****
 Everest mount write mode is now available for MacOS on experimental mode!
-[Everest mount write mode limitations](mount-write-mode-limitations.md).
+[Everest mount write mode semantics](mount-write-mode-semantics.md).
 {: .note }
 
 {% include toc.html %}
