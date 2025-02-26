@@ -35,8 +35,8 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 
 	// Create repo using lakectl repo create and verifying the output
 	// A variable mapping is used to pass random generated names for verification
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -69,8 +69,8 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	// RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list", false, "lakectl_repo_list_1", vars)
 
 	// Create another repo with non-default branch
-	repoName2 := generateUniqueRepositoryName()
-	storage2 := generateUniqueStorageNamespace(repoName2)
+	repoName2 := GenerateUniqueRepositoryName()
+	storage2 := GenerateUniqueStorageNamespace(repoName2)
 	notDefaultBranchName := "branch-123"
 	vars["REPO"] = repoName2
 	vars["STORAGE"] = storage2
@@ -103,8 +103,8 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo delete lakefs://"+repoName2+" -y", false, "lakectl_repo_delete_not_found", vars)
 
 	// Create repository with sample data
-	repoName3 := generateUniqueRepositoryName()
-	storage3 := generateUniqueStorageNamespace(repoName3)
+	repoName3 := GenerateUniqueRepositoryName()
+	storage3 := GenerateUniqueStorageNamespace(repoName3)
 	vars = map[string]string{
 		"REPO":    repoName3,
 		"STORAGE": storage3,
@@ -115,8 +115,8 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 
 func TestLakectlRepoCreateWithStorageID(t *testing.T) {
 	// Validate the --storage-id flag (currently only allowed to be empty)
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -127,8 +127,8 @@ func TestLakectlRepoCreateWithStorageID(t *testing.T) {
 }
 
 func TestLakectlPreSignUpload(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -148,8 +148,8 @@ func TestLakectlPreSignUpload(t *testing.T) {
 }
 
 func TestLakectlCommit(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -201,8 +201,8 @@ func TestLakectlCommit(t *testing.T) {
 }
 
 func TestLakectlBranchAndTagValidation(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	validTagName := "my.valid.tag"
 
 	vars := map[string]string{
@@ -233,8 +233,8 @@ func TestLakectlBranchAndTagValidation(t *testing.T) {
 }
 
 func TestLakectlMerge(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -316,8 +316,8 @@ func TestLakectlMerge(t *testing.T) {
 }
 
 func TestLakectlMergeAndStrategies(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -403,8 +403,8 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 }
 
 func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -454,8 +454,8 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 }
 
 func TestLakectlLogNoMergesAndAmount(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -505,8 +505,8 @@ func TestLakectlLogNoMergesAndAmount(t *testing.T) {
 }
 
 func TestLakectlAnnotate(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -607,8 +607,8 @@ func TestLakectlIdentity(t *testing.T) {
 }
 
 func TestLakectlFsDownload(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -691,8 +691,8 @@ func TestLakectlFsDownload(t *testing.T) {
 }
 
 func TestLakectlFsUpload(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -754,8 +754,8 @@ func getStorageConfig(t *testing.T) *apigen.StorageConfig {
 }
 
 func TestLakectlFsUpload_protectedBranch(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -771,8 +771,8 @@ func TestLakectlFsUpload_protectedBranch(t *testing.T) {
 }
 
 func TestLakectlFsRm_protectedBranch(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -795,8 +795,8 @@ func TestLakectlFsPresign(t *testing.T) {
 	if !config.PreSignSupport {
 		t.Skip()
 	}
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -822,8 +822,8 @@ func TestLakectlFsPresign(t *testing.T) {
 }
 
 func TestLakectlFsStat(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -890,8 +890,8 @@ func TestLakectlImport(t *testing.T) {
 	const IngestTestBucketPath = "s3://esti-system-testing-data/ingest-test-data/"
 	skipOnSchemaMismatch(t, IngestTestBucketPath)
 
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -907,8 +907,8 @@ func TestLakectlImport(t *testing.T) {
 }
 
 func TestLakectlCherryPick(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -977,8 +977,8 @@ func TestLakectlCherryPick(t *testing.T) {
 }
 
 func TestLakectlBisect(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -1018,8 +1018,8 @@ func TestLakectlBisect(t *testing.T) {
 }
 
 func TestLakectlUsage(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -1033,8 +1033,8 @@ func TestLakectlUsage(t *testing.T) {
 }
 
 func TestLakectlBranchProtection(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -1048,8 +1048,8 @@ func TestLakectlBranchProtection(t *testing.T) {
 
 // TestLakectlAbuse runs a series of abuse commands to test the functionality of lakectl abuse (not in order to test how lakeFS handles abuse)
 func TestLakectlAbuse(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,

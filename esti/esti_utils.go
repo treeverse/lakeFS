@@ -257,9 +257,9 @@ func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	}
 }
 
-// verifyResponse returns an error based on failed if resp failed to perform action.  It uses
+// VerifyResponse returns an error based on failed if resp failed to perform action.  It uses
 // body in errors.
-func verifyResponse(resp *http.Response, body []byte) error {
+func VerifyResponse(resp *http.Response, body []byte) error {
 	if resp.StatusCode >= minHTTPErrorStatusCode {
 		return fmt.Errorf("%w: got %d %s: %s", errNotVerified, resp.StatusCode, resp.Status, string(body))
 	}
@@ -292,29 +292,29 @@ func createRepositoryForTest(ctx context.Context, t testing.TB) string {
 }
 
 func createRepositoryByName(ctx context.Context, t testing.TB, name string) string {
-	storageNamespace := generateUniqueStorageNamespace(name)
+	storageNamespace := GenerateUniqueStorageNamespace(name)
 	name = MakeRepositoryName(name)
 	createRepository(ctx, t, name, storageNamespace, false)
 	return name
 }
 
 func createReadOnlyRepositoryByName(ctx context.Context, t testing.TB, name string) string {
-	storageNamespace := generateUniqueStorageNamespace(name)
+	storageNamespace := GenerateUniqueStorageNamespace(name)
 	name = MakeRepositoryName(name)
 	createRepository(ctx, t, name, storageNamespace, true)
 	return name
 }
 
 func createRepositoryUnique(ctx context.Context, t testing.TB) string {
-	name := generateUniqueRepositoryName()
+	name := GenerateUniqueRepositoryName()
 	return createRepositoryByName(ctx, t, name)
 }
 
-func generateUniqueRepositoryName() string {
+func GenerateUniqueRepositoryName() string {
 	return "repo-" + xid.New().String()
 }
 
-func generateUniqueStorageNamespace(repoName string) string {
+func GenerateUniqueStorageNamespace(repoName string) string {
 	ns := viper.GetString("storage_namespace")
 	if !strings.HasSuffix(ns, "/") {
 		ns += "/"
@@ -335,7 +335,7 @@ func createRepository(ctx context.Context, t testing.TB, name string, repoStorag
 		ReadOnly:         &isReadOnly,
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
-	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+	require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, repoStorage)
 }
 
@@ -392,7 +392,7 @@ func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent 
 	if err != nil {
 		return "", err
 	}
-	if err := verifyResponse(resp.HTTPResponse, resp.Body); err != nil {
+	if err := VerifyResponse(resp.HTTPResponse, resp.Body); err != nil {
 		return "", err
 	}
 	return resp.JSON201.Checksum, nil
@@ -494,7 +494,7 @@ func listRepositoryObjects(ctx context.Context, t *testing.T, repository string,
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
 		require.NoError(t, err, "listing objects")
-		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 			"failed to list repo %s ref %s after %s amount %d", repository, ref, after, amount)
 
 		entries = append(entries, resp.JSON200.Results...)
@@ -525,7 +525,7 @@ func listRepositories(t *testing.T, ctx context.Context) []apigen.Repository {
 			Amount: apiutil.Ptr(apigen.PaginationAmount(repoPerPage)),
 		})
 		require.NoError(t, err, "list repositories")
-		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 			"failed to list repositories after %s amount %d", after, repoPerPage)
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		payload := resp.JSON200

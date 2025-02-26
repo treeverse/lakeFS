@@ -26,7 +26,7 @@ func TestIdentity(t *testing.T) {
 		Message: "commit on branch1",
 	})
 	require.NoError(t, err, "failed to commit changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+	require.NoErrorf(t, VerifyResponse(commitResp.HTTPResponse, commitResp.Body),
 		"failed to commit changes repo %s branch %s", repo, mainBranch)
 
 	// upload the same content again to a different branch

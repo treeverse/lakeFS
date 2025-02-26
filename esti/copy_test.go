@@ -130,7 +130,7 @@ func TestCopyObject(t *testing.T) {
 
 	t.Run("read-only repository", func(t *testing.T) {
 		name := strings.ToLower(t.Name())
-		storageNamespace := generateUniqueStorageNamespace(name)
+		storageNamespace := GenerateUniqueStorageNamespace(name)
 		repoName := MakeRepositoryName(name)
 		resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    apiutil.Ptr(mainBranch),
@@ -139,7 +139,7 @@ func TestCopyObject(t *testing.T) {
 			ReadOnly:         swag.Bool(true),
 		})
 		require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
-		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 			"create repository '%s', storage '%s'", name, storageNamespace)
 		defer tearDownTest(repoName)
 
