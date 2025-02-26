@@ -22,7 +22,7 @@ This functionality is currently in limited support and is a Read-Only file syste
 {: .note }
 
 ****
-Everest mount write mode is now available for MacOS on experimental mode!
+Everest mount supports writing to the file system and now available for NFS (the default protocol for MacOS)!
 [Everest mount write mode semantics](mount-write-mode-semantics.md).
 {: .note }
 
@@ -96,6 +96,7 @@ everest umount <data_directory>
 ### Diff Command (write-mode only)
 The `diff` command Show the diff between the source branch and the current mount directory. 
 If `<data_directory>` not specified, search for the mount directory in the current working directory and upwards based on `.everest` directory existence.
+Please note that the diffs are from the source branch state at the time of mounting and not the current state of the source branch.
 
 ```bash
 everest diff <data_directory>
@@ -148,7 +149,7 @@ Flags
 ⚠️ For simplicity, the examples show `main` as the ref, Everest will always mount a specific commit ID when using read-only mode, given a ref it will use the HEAD (e.g the most recent commit).
 {: .note }
 
-#### Data Exploration
+##### Data Exploration
 Mount the lakeFS repository and explore data as if it's on the local filesystem.
 
 ```bash
@@ -159,7 +160,7 @@ open -a Preview "./pets/dogs/golden_retrievers/cute.jpg"
 everest umount "./pets"
 ```
 
-#### Working with Data Locally
+##### Working with Data Locally
 Mount the remote lakeFS server and use all familiar tools without changing the workflow.
 ```bash
 everest mount lakefs://image-repo/main/datasets/pets/ ./pets
@@ -170,14 +171,14 @@ everest umount ./pets
 
 ### Write Mode
 
-#### Changing Data Locally
+##### Changing Data Locally
 Mount the remote lakeFS server in write mode and change data locally.
 ```bash
 everest mount lakefs://image-repo/main/datasets/pets/ ./pets --write-mode
 # Add a new file
-echo "new data" > ./pets/birds/parrot/cute.jpg
+echo "new data" >> ./pets/birds/parrot/cute.jpg
 # Update an existing file
-echo "new data" > ./pets/dogs/golden_retrievers/cute.jpg
+echo "new data" >> ./pets/dogs/golden_retrievers/cute.jpg
 # Delete a file
 rm ./pets/cats/persian/cute.jpg
 
@@ -207,8 +208,7 @@ lakeFS Mount is available for lakeFS Cloud and lakeFS Enterprise customers. Once
 
 ### What operating systems are supported by lakeFS Mount?
 
-lakeFS Mount supports Linux in read-only mode and MacOS in both read-only and write mode. 
-Windows support and Linux in write-mode are both on the roadmap.
+lakeFS Mount supports Linux and MacOS. Windows support is on the roadmap.
 
 ### How can I control access to my data when using lakeFS Mount?
 
@@ -236,6 +236,11 @@ The minimal RBAC permissions required for mounting a prefix from a lakeFS reposi
       ],
       "effect": "allow",
       "resource": "arn:lakefs:fs:::repository/<repository-name>"
+    },
+    {
+      "action": ["fs:ReadConfig"],
+      "effect": "allow",
+      "resource": "*"
     }
   ]
 }
@@ -267,6 +272,11 @@ The minimal RBAC permissions required for mounting a prefix from a lakeFS reposi
       ],
       "effect": "allow",
       "resource": "arn:lakefs:fs:::repository/<repository-name>"
+    },
+    {
+      "action": ["fs:ReadConfig"],
+      "effect": "allow",
+      "resource": "*"
     }
   ]
 }
