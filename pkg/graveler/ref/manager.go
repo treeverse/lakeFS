@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/cache"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/distributed"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -40,6 +41,7 @@ type Manager struct {
 	commitCache     cache.Cache
 	maxBatchDelay   time.Duration
 	branchOwnership *distributed.MostlyCorrectOwner
+	storageConfig   config.StorageConfig
 }
 
 func branchFromProto(pb *graveler.BranchData) *graveler.Branch {
@@ -107,7 +109,7 @@ type ManagerConfig struct {
 	BranchApproximateOwnershipParams BranchApproximateOwnershipParams
 }
 
-func NewRefManager(cfg ManagerConfig) *Manager {
+func NewRefManager(cfg ManagerConfig, storageCfg config.StorageConfig) *Manager {
 	var branchOwnership *distributed.MostlyCorrectOwner
 	if cfg.BranchApproximateOwnershipParams.RefreshInterval > 0 {
 		log := logging.ContextUnavailable().WithField("component", "RefManager approximate branch ownership")
@@ -130,6 +132,7 @@ func NewRefManager(cfg ManagerConfig) *Manager {
 		commitCache:     newCache(cfg.CommitCacheConfig),
 		maxBatchDelay:   cfg.MaxBatchDelay,
 		branchOwnership: branchOwnership,
+		storageConfig:   storageCfg,
 	}
 }
 
@@ -142,6 +145,13 @@ func (m *Manager) getRepository(ctx context.Context, repositoryID graveler.Repos
 		}
 		return nil, err
 	}
+	repo := graveler.RepoFromProto(&data)
+	if repo.StorageID == config.SingleBlockstoreID {
+		if storage := m.storageConfig.GetStorageByID(config.SingleBlockstoreID); storage != nil {
+			repo.StorageID = graveler.StorageID(storage.ID()) // Will return the real actual ID
+		}
+	}
+
 	return graveler.RepoFromProto(&data), nil
 }
 
@@ -232,7 +242,7 @@ func (m *Manager) CreateBareRepository(ctx context.Context, repositoryID gravele
 }
 
 func (m *Manager) ListRepositories(ctx context.Context) (graveler.RepositoryIterator, error) {
-	return NewRepositoryIterator(ctx, m.kvStore)
+	return NewRepositoryIterator(ctx, m.kvStore, m.storageConfig)
 }
 
 func (m *Manager) updateRepoState(ctx context.Context, repo *graveler.RepositoryRecord, state graveler.RepositoryState) error {
