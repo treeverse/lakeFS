@@ -70,6 +70,7 @@ class ServerStorageConfiguration(LenientNamedTuple):
     """
     Represent a lakeFS server's storage configuration
     """
+    blockstore_id: str
     blockstore_type: str
     pre_sign_support: bool
     import_support: bool

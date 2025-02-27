@@ -7,6 +7,8 @@ import pytest
 
 import lakefs_sdk.api
 
+from lakefs import StoredObject
+from lakefs.client import SINGLE_STORAGE_ID
 from lakefs.object import ReadModes
 from tests.utests.common import get_test_client, expect_exception_context
 
@@ -49,9 +51,9 @@ def readable_object_context(monkey, **kwargs):
     with monkey.context():
         from lakefs.object import StoredObject
         clt = get_test_client()
-        conf = lakefs_sdk.Config(version_config=lakefs_sdk.VersionConfig(), storage_config=StorageTestConfig())
-        monkey.setattr(clt, "_server_conf", conf)
+        monkey.setattr(clt, "storage_config_by_id", lambda *args: StorageTestConfig())
         read_obj = StoredObject(client=clt, **kwargs)
+        monkey.setattr(read_obj, "_storage_id", SINGLE_STORAGE_ID)
         yield read_obj
 
 
@@ -60,10 +62,10 @@ def writeable_object_context(monkey, **kwargs):
     with monkey.context():
         monkey.setattr(lakefs_sdk.api.BranchesApi, "get_branch", lambda *args: None)
         from lakefs.object import WriteableObject
-        conf = lakefs_sdk.Config(version_config=lakefs_sdk.VersionConfig(), storage_config=StorageTestConfig())
         clt = get_test_client()
-        monkey.setattr(clt, "_server_conf", conf)
+        monkey.setattr(clt, "storage_config_by_id", lambda *args: StorageTestConfig())
         obj = WriteableObject(client=clt, **kwargs)
+        monkey.setattr(obj, "_storage_id", SINGLE_STORAGE_ID)
         yield obj
 
 
