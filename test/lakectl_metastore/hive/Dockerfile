@@ -10,7 +10,6 @@ ENV HIVE_HOME=/opt/apache-hive-bin
 
 RUN mkdir ${HADOOP_HOME} ${HIVE_HOME}
 # Using the archive mirror instead of dist, see this Issue: https://github.com/treeverse/lakeFS/issues/8728
-# RUN curl -sSL https://www.apache.org/dist/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz | tar -zx --strip-components 1 -C ${HIVE_HOME} -f -
 RUN curl -sSL https://archive.apache.org/dist/hive/hive-${HIVE_VERSION}/apache-hive-${HIVE_VERSION}-bin.tar.gz | tar -zx --strip-components 1 -C ${HIVE_HOME} -f -
 RUN curl -sSL https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz | tar -zx --strip-components 1 -C ${HADOOP_HOME} -f -
 RUN curl -sSL https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.0.19.tar.gz | tar -zx --strip-components 1 -C ${HIVE_HOME}/lib -f - mysql-connector-java-8.0.19/mysql-connector-java-8.0.19.jar
