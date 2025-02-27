@@ -32,7 +32,7 @@ func objectFound(ctx context.Context, repo, ref, path string) (bool, error) {
 
 func TestDeleteStaging(t *testing.T) {
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 	objPath := "1.txt"
 
 	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)
@@ -52,7 +52,7 @@ func TestDeleteStaging(t *testing.T) {
 
 func TestDeleteCommitted(t *testing.T) {
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 	objPath := "1.txt"
 
 	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)
@@ -88,7 +88,7 @@ func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
 	require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, storageNamespace)
-	defer TearDownTest(repoName)
+	defer tearDownTest(repoName)
 
 	const objPath = "1.txt"
 	objContent := randstr.String(randomDataContentLength)
@@ -125,7 +125,7 @@ func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 
 func TestCommitDeleteCommitted(t *testing.T) {
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 	objPath := "1.txt"
 
 	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)

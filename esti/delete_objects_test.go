@@ -17,7 +17,7 @@ import (
 
 func TestDeleteObjects(t *testing.T) {
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 	const numOfObjects = 10
 
 	identifiers := make([]types.ObjectIdentifier, 0, numOfObjects)
@@ -61,7 +61,7 @@ func TestDeleteObjects(t *testing.T) {
 func TestDeleteObjects_Viewer(t *testing.T) {
 	t.SkipNow()
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	// setup data
 	const filename = "delete-me"

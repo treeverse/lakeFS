@@ -28,7 +28,7 @@ const (
 
 func TestCopyObject(t *testing.T) {
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	t.Run("copy_large_size_file", func(t *testing.T) {
 		importPath := getImportPath(t)
@@ -141,7 +141,7 @@ func TestCopyObject(t *testing.T) {
 		require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
 		require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 			"create repository '%s', storage '%s'", name, storageNamespace)
-		defer TearDownTest(repoName)
+		defer tearDownTest(repoName)
 
 		importPath := getImportPath(t)
 

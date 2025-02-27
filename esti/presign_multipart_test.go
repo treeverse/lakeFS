@@ -20,7 +20,7 @@ func TestCreatePresignMultipartUpload(t *testing.T) {
 	skipPresignMultipart(t)
 
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	tests := []struct {
 		name       string
@@ -75,7 +75,7 @@ func TestAbortPresignMultipartUpload(t *testing.T) {
 	skipPresignMultipart(t)
 
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	tests := []struct {
 		name            string
@@ -129,7 +129,7 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 	skipPresignMultipart(t)
 
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	// fake parts used for the above tests
 	var fakeParts []apigen.UploadPart

@@ -38,7 +38,7 @@ func appendRes(info webhookEventInfo) {
 
 func TestHooksSuccess(t *testing.T) {
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 	parseAndUploadActions(t, ctx, repo, mainBranch)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",

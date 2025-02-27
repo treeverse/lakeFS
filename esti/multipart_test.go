@@ -33,7 +33,7 @@ func TestMultipartUpload(t *testing.T) {
 	const timeResolution = time.Second
 
 	ctx, logger, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 	file := "multipart_file"
 	path := mainBranch + "/" + file
 	input := &s3.CreateMultipartUploadInput{
@@ -97,7 +97,7 @@ func TestMultipartUpload(t *testing.T) {
 
 func TestMultipartUploadAbort(t *testing.T) {
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	t.Run("exists", func(t *testing.T) {
 		const objPath = mainBranch + "/multipart_file1"
