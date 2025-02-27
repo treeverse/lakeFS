@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 cd "$(dirname "$0")" || exit
 . set_env_vars.sh
 
@@ -22,7 +24,7 @@ cleanup() {
 
 invalid_option() {
   echo "Error: Invalid option"
-  Help
+  help
 }
 
 help() {
@@ -31,7 +33,7 @@ help() {
   echo "Syntax: runner [-h|r]"
   echo "options:"
   echo "h     Print this Help."
-  echo "r     Runs the given process [lakefs | tests | all]."
+  echo "r     Runs the given process [lakefs | test | all]."
   echo
 }
 
@@ -46,7 +48,7 @@ wait_for_lakefs_ready() {
 
 run_tests() {
   echo "Run Tests (logs at $TEST_LOG)"
-  go test -v ../../esti --args --system-tests --use-local-credentials --skip=".*GC" "$@" | tee "$TEST_LOG"
+  go test -v ../../esti -skip=".*GC" --args --system-tests --use-local-credentials "$@" | tee "$TEST_LOG"
   return "${PIPESTATUS[0]}"
 }
 
