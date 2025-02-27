@@ -13,10 +13,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 //go:embed action_files/*.yaml
@@ -39,7 +37,7 @@ func appendRes(info webhookEventInfo) {
 }
 
 func TestHooksSuccess(t *testing.T) {
-	ctx, _, repo := setupTest(t)
+	ctx, _, repo := SetupTest(t)
 	defer tearDownTest(repo)
 	parseAndUploadActions(t, ctx, repo, mainBranch)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
@@ -68,34 +66,12 @@ func TestHooksSuccess(t *testing.T) {
 	})
 
 	t.Log("check runs are sorted in descending order")
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, "", 13)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", 13)
 	require.Equal(t, len(runs.Results), len(hooksTestData.data))
 	for i, run := range runs.Results {
 		valIdx := len(hooksTestData.data) - (i + 1)
 		require.Equal(t, hooksTestData.data[valIdx].EventType, run.EventType)
 	}
-}
-
-func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *apigen.ActionRunList {
-	var runs *apigen.ActionRunList
-	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = 5 * time.Second
-	bo.MaxElapsedTime = 30 * time.Second
-	listFunc := func() error {
-		runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
-			Commit: apiutil.Ptr(ref),
-		})
-		require.NoError(t, err)
-		runs = runsResp.JSON200
-		require.NotNil(t, runs)
-		if len(runs.Results) == l {
-			return nil
-		}
-		return fmt.Errorf("run results size: %d", len(runs.Results))
-	}
-	err := backoff.Retry(listFunc, bo)
-	require.NoError(t, err)
-	return runs
 }
 
 func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
@@ -111,7 +87,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	ref := string(createBranchResp.Body)
 	t.Log("Branch created", ref)
 
-	resp, err := uploadContent(ctx, repo, branch, "somefile", "", nil)
+	resp, err := UploadContent(ctx, repo, branch, "somefile", "", nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
@@ -219,7 +195,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	}, postMergeEvent)
 
 	t.Log("List repository runs", mergeRef)
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2)
 	eventType := map[string]bool{
 		"pre-merge":  true,
 		"post-merge": true,
@@ -457,7 +433,7 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		require.NoError(t, err)
 
 		action := doc.String()
-		resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action, nil)
+		resp, err := UploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action, nil)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}
