@@ -1892,7 +1892,7 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 
 func (c *Controller) getStorageConfigs() (*apigen.StorageConfig, apigen.StorageConfigList) {
 	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
-	if storageCfg != nil {
+	if storageCfg != nil && swag.StringValue(storageCfg.BlockstoreId) == config.SingleBlockstoreID {
 		return storageCfg, apigen.StorageConfigList{}
 	}
 	storageCfgList := c.getStorageConfigList()
