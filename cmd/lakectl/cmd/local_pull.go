@@ -20,7 +20,6 @@ var localPullCmd = &cobra.Command{
 		client := getClient()
 		_, localPath := getSyncArgs(args, false, false)
 		force := Must(cmd.Flags().GetBool(localForceFlagName))
-		syncFlags := getSyncFlags(cmd, client)
 		idx, err := local.ReadIndex(localPath)
 		if err != nil {
 			DieErr(err)
@@ -30,6 +29,7 @@ var localPullCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
+		syncFlags := getSyncFlags(cmd, client, remote.Repository)
 
 		dieOnInterruptedOperation(LocalOperation(idx.ActiveOperation), force)
 

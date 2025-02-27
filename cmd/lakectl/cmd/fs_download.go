@@ -31,7 +31,7 @@ var fsDownloadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		remote, dest := getSyncArgs(args, true, false)
 		client := getClient()
-		syncFlags := getSyncFlags(cmd, client)
+		syncFlags := getSyncFlags(cmd, client, remote.Repository)
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		ctx := cmd.Context()
 		downloadPartSize := Must(cmd.Flags().GetInt64(partSizeFlagName))
