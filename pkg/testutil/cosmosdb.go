@@ -26,7 +26,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 
 	cosmosdbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
-		Tag:        "latest",
+		Tag:        "vnext-preview",
 		Env: []string{
 			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100",
 		},
@@ -59,6 +59,14 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return "", nil, fmt.Errorf("joining urls: %w", err)
 	}
 
+	const clientTimeout = 5 * time.Second
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
+		},
+		Timeout: clientTimeout,
+	}
+
 	dockerPool.MaxWait = maxWait
 	log.Printf("Waiting up to %v for emulator to start", dockerPool.MaxWait)
 	// Note: this hangs for macOS users, and fails. See https://github.com/treeverse/lakeFS/issues/8476
@@ -66,9 +74,6 @@ func GetCosmosDBInstance() (string, func(), error) {
 		// waiting for cosmosdb container to be ready by issuing an HTTP get request with
 		// exponential backoff retry. The response is not really meaningful for that case
 		// and so is ignored
-		client := http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
-		}}
 		resp, err := client.Get(p)
 		if err != nil {
 			return err
