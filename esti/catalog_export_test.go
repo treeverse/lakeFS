@@ -273,7 +273,7 @@ func TestAWSCatalogExport(t *testing.T) {
 		symlinkPrefix string
 	)
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	tmplDir, _ := fs.Sub(exportHooksFiles, "export_hooks_files/glue")
 	testData := &exportHooksTestData{
@@ -480,7 +480,7 @@ func validateExportTestByStorageType(t *testing.T, ctx context.Context, commit s
 
 func TestDeltaCatalogExport(t *testing.T) {
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
@@ -534,7 +534,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 
 func TestDeltaCatalogImportExport(t *testing.T) {
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	accessKeyID := viper.GetString("access_key_id")
@@ -621,7 +621,7 @@ func getStorageNamespace(t *testing.T, ctx context.Context, repo string) string 
 func TestDeltaCatalogExportAbfss(t *testing.T) {
 	RequireBlockstoreType(t, block.BlockstoreTypeAzure)
 	ctx, _, repo := SetupTest(t)
-	defer TearDownTest(repo)
+	defer tearDownTest(repo)
 
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
