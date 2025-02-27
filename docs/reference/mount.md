@@ -290,7 +290,8 @@ The minimal RBAC permissions required for mounting a prefix from a lakeFS reposi
         "fs:ReadRepository",
         "fs:CreateCommit",
         "fs:CreateBranch",
-        "fs:DeleteBranch"
+        "fs:DeleteBranch",
+        "fs:RevertBranch"
       ],
       "effect": "allow",
       "resource": "arn:lakefs:fs:::repository/<repository-name>"

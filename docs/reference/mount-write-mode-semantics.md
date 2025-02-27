@@ -19,21 +19,21 @@ If, for example, two users mount the same branch, they will not see each other's
 
 ## Functionality Limitations
 - Newly created empty directories will not reflect as directory marker in lakeFS.
-- Mount write mode is not supported with Everest partial-read mode.
+- LakeFS allows having 2 path keys that one is a "directory" prefix of the other, for example the following 2 lakeFS keys are valid: `animals/cat.png` and `animals` (empty object) but since a file system cannot contain both a file and a directory of the same name it will lead to an undefined behavior depending on the Filesystem type (e.g., dir and dir/file).
 
 ## File System Behavior
+
+## Not Supported:
 - Rename is not supported.
 - Temporary files are not supported.
 - Hard/symbolic links are not supported.
 - POSIX file locks (lockf) are not supported.
 - POSIX permissions are not supported- default permissions are assigned given to files and dirs.
-- A file system directory cannot contain both a file and a directory of the same name (e.g., dir and dir/file).
 - A deleted file's name cannot be used as a directory type later and the same for opposite types (e.g, Not allowed: touch foo; rm foo; mkdir foo;).
 - Calling remove on a directory type will fail explicitly with an error.
 
-## Behavior modified:
-- File opened for Read And Write will be treated as Opened for Write.
-- Modifying file metadata (chmod, chown, chgrp, time) will result in an error unless the file doesn't exist.
+### Behavior modified:
+- Modifying file metadata (chmod, chown, chgrp, time) will result in noop (the file metadata will not be changed). 
 - Remove:
   - (a) Open handlers to a file will error if the file is removed during a read operation.
-  - (b) removal is not an atomic operation, calling remove and open at the same time might result in a race condition where the open might succeed.
+  - (b) Removal is not an atomic operation, calling remove and open at the same time might result in a race condition where the open might succeed.
