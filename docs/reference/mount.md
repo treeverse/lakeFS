@@ -22,7 +22,7 @@ This functionality is currently in limited support and is a Read-Only file syste
 {: .note }
 
 ****
-Everest mount supports writing to the file system and now available for NFS (the default protocol for MacOS)!
+Everest mount supports writing to the file system for NFS (the default protocol for MacOS)!
 [Everest mount write mode semantics](mount-write-mode-semantics.md).
 {: .note }
 
@@ -95,8 +95,8 @@ everest umount <data_directory>
 
 ### Diff Command (write-mode only)
 The `diff` command Show the diff between the source branch and the current mount directory. 
-If `<data_directory>` not specified, search for the mount directory in the current working directory and upwards based on `.everest` directory existence.
-Please note that the diffs are from the source branch state at the time of mounting and not the current state of the source branch.
+If `<data_directory>` not specified, the command searches for the mount directory in the current working directory and upwards based on `.everest` directory existence.
+Please note that the diffs are from the source branch state at the time of mounting and not the current state of the source branch, i.e., changes to the source branch from other operations will not be reflected in the diff result.
 
 ```bash
 everest diff <data_directory>
@@ -109,10 +109,12 @@ everest diff <data_directory>
 
 ### Commit Command (write-mode only)
 The `commit` command commits the changes made in the mounted directory to the original lakeFS branch.
-If `<data_directory>` not specified, search for the mount directory in the current working directory and upwards based on `.everest` directory existence.
+If `<data_directory>` not specified, the command searches for the mount directory in the current working directory and upwards based on `.everest` directory existence.
 The new commit will be merged to the original branch with the `source-wins` strategy in case of conflicts.
-Writes during commit may be lost.
 After committing, the mounted directory will be updated with the HEAD of the source branch; that means that changes made to the source branch out of the mount scope will also be reflected in the mounted directory.
+****
+⚠️ Writes to a mount directory during commit may be lost.
+{: .note }
 
 ```bash
 everest commit <data_directory>
@@ -121,7 +123,7 @@ everest commit <data_directory>
 ### mount-server Command (Advanced)
 
 **Note**
-⚠️ The `mount-server` command is for advanced use cases and will only spin the server without calling OS mount command.
+ The `mount-server` command is for advanced use cases and will only spin the server without calling OS mount command.
 {: .note }
 
 The mount-server command starts a mount server manually. Generally, users would use the mount command which handles server operations automatically.
@@ -236,7 +238,7 @@ lakeFS Mount supports Linux and MacOS. Windows support is on the roadmap.
 
 You can use lakeFS’s existing [Role-Based Access Control mechanism](../security/rbac.md), which includes repository and path-level policies. lakeFS Mount translates filesystem operations into lakeFS API operations and authorizes them based on these policies.
 
-The minimal RBAC permissions required for mounting a prefix from a lakeFS repository in read-only mode look like this:
+The minimal RBAC permissions required for mounting a prefix from a lakeFS repository in read-only mode:
 ```json
 {
   "id": "MountPolicy",
@@ -268,7 +270,7 @@ The minimal RBAC permissions required for mounting a prefix from a lakeFS reposi
 }
 ```
 
-The minimal RBAC permissions required for mounting a prefix from a lakeFS repository in write mode look like this:
+The minimal RBAC permissions required for mounting a prefix from a lakeFS repository in write mode:
 ```json
 {
   "id": "MountPolicy",

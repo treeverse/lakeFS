@@ -1,6 +1,6 @@
 ---
 title: Mount Write Mode Semantics
-description: Everest mount file system semantics, limitations, and and general info.
+description: Everest mount file system semantics, limitations and and general info.
 grand_parent: Features
 parent: Mount
 ---
@@ -24,8 +24,8 @@ If, for example, two users mount the same branch, they will not see each other's
 ## Mount Write Mode File System Behavior
 
 ### Functionality Limitations
-- Newly created empty directories will not reflect as directory marker in lakeFS.
-- LakeFS allows having 2 path keys that one is a "directory" prefix of the other, for example the following 2 lakeFS keys are valid: `animals/cat.png` and `animals` (empty object) but since a file system cannot contain both a file and a directory of the same name it will lead to an undefined behavior depending on the Filesystem type (e.g., dir and dir/file).
+- Newly created empty directories will not reflect as directory markers in lakeFS.
+- lakeFS allows having 2 path keys that one is a "directory" prefix of the other, for example the following 2 lakeFS keys are valid: `animals/cat.png` and `animals` (empty object) but since a file system cannot contain both a file and a directory of the same name it will lead to an undefined behavior depending on the Filesystem type (e.g., dir and dir/file).
 
 ### File System Behavior
 
@@ -34,7 +34,7 @@ If, for example, two users mount the same branch, they will not see each other's
 - Temporary files are not supported.
 - Hard/symbolic links are not supported.
 - POSIX file locks (lockf) are not supported.
-- POSIX permissions are not supported- default permissions are assigned given to files and dirs.
+- POSIX permissions are not supported- default permissions are given to files and dirs.
 - A deleted file's name cannot be used as a directory type later and the same for opposite types (e.g, Not allowed: touch foo; rm foo; mkdir foo;).
 - Calling remove on a directory type will fail explicitly with an error.
 
