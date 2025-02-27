@@ -216,7 +216,7 @@ func withSyncFlags(cmd *cobra.Command) {
 	withNoProgress(cmd)
 }
 
-func getStorageConfig(ctx context.Context, client *apigen.ClientWithResponses, repositoryID string) (*apigen.StorageConfig, error) {
+func getStorageConfigOrDie(ctx context.Context, client *apigen.ClientWithResponses, repositoryID string) *apigen.StorageConfig {
 	confResp, err := client.GetConfigWithResponse(ctx)
 	DieOnErrorOrUnexpectedStatusCode(confResp, err, http.StatusOK)
 
@@ -224,22 +224,26 @@ func getStorageConfig(ctx context.Context, client *apigen.ClientWithResponses, r
 	if len(*storageConfigList) > 1 {
 		repoResp, errRepo := client.GetRepositoryWithResponse(ctx, repositoryID)
 		DieOnErrorOrUnexpectedStatusCode(repoResp, errRepo, http.StatusOK)
+		if repoResp.JSON200 == nil {
+			Die("Bad response from server for GetRepository", 1)
+		}
 		storageID := repoResp.JSON200.StorageId
+
 		// find the storage config for the repository
 		for _, storageConfig := range *storageConfigList {
 			if storageConfig.BlockstoreId == storageID {
-				return &storageConfig, err
+				return &storageConfig
 			}
 		}
+
 		Die("Storage config not found for repo "+repositoryID, 1)
-		return nil, nil // this is unreachable - just to make the go code happy
-	} else {
-		storageConfig := confResp.JSON200.StorageConfig
-		if storageConfig == nil {
-			Die("Bad response from server", 1)
-		}
-		return storageConfig, err
 	}
+
+	storageConfig := confResp.JSON200.StorageConfig
+	if storageConfig == nil {
+		Die("Bad response from server for GetConfig", 1)
+	}
+	return storageConfig
 }
 
 type PresignMode struct {
@@ -248,10 +252,7 @@ type PresignMode struct {
 }
 
 func getServerPreSignMode(ctx context.Context, client *apigen.ClientWithResponses, repositoryID string) PresignMode {
-	storageConfig, err := getStorageConfig(ctx, client, repositoryID)
-	if err != nil {
-		DieErr(err)
-	}
+	storageConfig := getStorageConfigOrDie(ctx, client, repositoryID)
 	return PresignMode{
 		Enabled:   storageConfig.PreSignSupport,
 		Multipart: swag.BoolValue(storageConfig.PreSignMultipartUpload),

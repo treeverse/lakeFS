@@ -167,10 +167,7 @@ func verifySourceMatchConfiguredStorage(ctx context.Context, client *apigen.Clie
 		Warning(fmt.Sprintf("'adls' hint is deprecated\n Using %s", source))
 	}
 
-	storageConfig, err := getStorageConfig(ctx, client, repositoryID)
-	if err != nil {
-		DieErr(err)
-	}
+	storageConfig := getStorageConfigOrDie(ctx, client, repositoryID)
 	if storageConfig.ImportValidityRegex == "" {
 		return
 	}
