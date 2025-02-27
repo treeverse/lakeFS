@@ -23,7 +23,7 @@ var fsUploadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI, _ := getSyncArgs(args, true, false)
-		syncFlags := getSyncFlags(cmd, client)
+		syncFlags := getSyncFlags(cmd, client, pathURI.Repository)
 		source := Must(cmd.Flags().GetString("source"))
 		contentType := Must(cmd.Flags().GetString("content-type"))
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
