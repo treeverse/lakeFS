@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cenkalti/backoff/v4"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	pebblesst "github.com/cockroachdb/pebble/sstable"
@@ -598,4 +600,26 @@ func GravelerIterator(data []byte) (*sstable.Iterator, error) {
 	// wrap it in a Graveler iterator
 	dummyDeref := func() error { return nil }
 	return sstable.NewIterator(iter, dummyDeref), nil
+}
+
+func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *apigen.ActionRunList {
+	var runs *apigen.ActionRunList
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = 5 * time.Second
+	bo.MaxElapsedTime = 30 * time.Second
+	listFunc := func() error {
+		runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
+			Commit: apiutil.Ptr(ref),
+		})
+		require.NoError(t, err)
+		runs = runsResp.JSON200
+		require.NotNil(t, runs)
+		if len(runs.Results) == l {
+			return nil
+		}
+		return fmt.Errorf("run results size: %d", len(runs.Results))
+	}
+	err := backoff.Retry(listFunc, bo)
+	require.NoError(t, err)
+	return runs
 }
