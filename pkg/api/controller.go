@@ -3729,8 +3729,12 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	// TODO (gilo): ObjectPointer init - add StorageID here
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
 	presignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		StorageID:      repo.StorageID,
 		Identifier:     gcRunMetadata.CommitsCSVLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, block.PreSignModeRead)
