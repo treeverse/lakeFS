@@ -3471,9 +3471,7 @@ func TestController_ConfigHandlers(t *testing.T) {
 	t.Run("Get config", func(t *testing.T) {
 		resp, err := clt.GetConfigWithResponse(ctx)
 		verifyResponseOK(t, resp, err)
-		require.NotEmpty(t, resp.JSON200.StorageConfigList)
-		require.Equal(t, 1, len(*resp.JSON200.StorageConfigList))
-		require.Equal(t, expectedExample, (*resp.JSON200.StorageConfigList)[0].BlockstoreNamespaceExample)
+		require.Empty(t, resp.JSON200.StorageConfigList)
 		require.Equal(t, expectedExample, resp.JSON200.StorageConfig.BlockstoreNamespaceExample)
 		require.Equal(t, "dev", swag.StringValue(resp.JSON200.VersionConfig.Version))
 	})
