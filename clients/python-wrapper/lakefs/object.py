@@ -58,7 +58,7 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         self._pos = 0
         super().__init__(client)
         # must be set after super().__init__ to ensure the client is properly initialized.
-        self._pre_sign = pre_sign if pre_sign is not None else self._client.storage_config.pre_sign_support
+        self._pre_sign = pre_sign if pre_sign is not None else self._client.storage_config_by_id(obj.storage_id()).pre_sign_support
 
     @property
     def mode(self) -> str:
@@ -203,7 +203,7 @@ class ObjectReader(LakeFSIOBase):
         Returns whether the pre_sign mode is enabled
         """
         if self._pre_sign is None:
-            self._pre_sign = self._client.storage_config.pre_sign_support
+            self._pre_sign = self._client.storage_config_by_id(self._obj.storage_id()).pre_sign_support
         return self._pre_sign
 
     @pre_sign.setter
@@ -423,7 +423,7 @@ class ObjectWriter(LakeFSIOBase):
         Returns whether the pre_sign mode is enabled
         """
         if self._pre_sign is None:
-            self._pre_sign = self._client.storage_config.pre_sign_support
+            self._pre_sign = self._client.storage_config_by_id(self._obj.storage_id()).pre_sign_support
         return self._pre_sign
 
     @pre_sign.setter
@@ -550,7 +550,7 @@ class ObjectWriter(LakeFSIOBase):
         headers = {"Content-Length": self._pos}
         if self.content_type:
             headers["Content-Type"] = self.content_type
-        if self._client.storage_config.blockstore_type == "azure":
+        if self._client.storage_config_by_id(self._obj.storage_id()).blockstore_type == "azure":
             headers["x-ms-blob-type"] = "BlockBlob"
 
         self._fd.seek(0)
@@ -614,6 +614,7 @@ class StoredObject(_BaseLakeFSObject):
     _ref_id: str
     _path: str
     _stats: Optional[ObjectInfo] = None
+    _storage_id: Optional[str] = None
 
     def __init__(self, repository_id: str, reference_id: str, path: str, client: Optional[Client] = None):
         self._repo_id = repository_id
@@ -683,6 +684,16 @@ class StoredObject(_BaseLakeFSObject):
                 stat = self._client.sdk_client.objects_api.stat_object(self._repo_id, self._ref_id, self._path)
                 self._stats = ObjectInfo(**stat.dict())
         return self._stats
+
+    def storage_id(self) -> str:
+        """
+        Return the Stat object representing this object
+        """
+        if self._storage_id is None:
+            with api_exception_handler(_io_exception_handler):
+                repo = self._client.sdk_client.repositories_api.get_repository(self._repo_id)
+                self._storage_id = repo.storage_id
+        return self._storage_id
 
     def exists(self) -> bool:
         """

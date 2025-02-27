@@ -24,20 +24,25 @@ from lakefs.models import ServerStorageConfiguration
 if TYPE_CHECKING:
     import boto3
 
-DEFAULT_REGION = 'us-east-1'
-
+DEFAULT_REGION = "us-east-1"
+SINGLE_STORAGE_ID = ""
 
 class ServerConfiguration:
     """
     Represent a lakeFS server's configuration
     """
     _conf: lakefs_sdk.Config
-    _storage_conf: ServerStorageConfiguration
+    _storage_conf: dict[str, ServerStorageConfiguration] = dict()
 
     def __init__(self, client: Optional[Client] = None):
         try:
             self._conf = client.sdk_client.config_api.get_config()
-            self._storage_conf = ServerStorageConfiguration(**self._conf.storage_config.dict())
+            if self._conf.storage_config_list is not None:
+                for storage in self._conf.storage_config_list:
+                    self._storage_conf[storage.blockstore_id] = ServerStorageConfiguration(**self._conf.storage_config.dict())
+            if self._conf.storage_config is not None:
+                self._storage_conf[SINGLE_STORAGE_ID] = ServerStorageConfiguration(**self._conf.storage_config.dict())
+
         except lakefs_sdk.exceptions.ApiException as e:
             if isinstance(e, lakefs_sdk.exceptions.ApiException):
                 raise NotAuthorizedException(e.status, e.reason) from e
@@ -55,8 +60,10 @@ class ServerConfiguration:
         """
         Returns the lakeFS server storage configuration
         """
-        return self._storage_conf
-
+        return self.storage_config_by_id()
+    
+    def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
+        return self._storage_conf[storage_id]
 
 class Client:
     """
@@ -102,9 +109,12 @@ class Client:
         """
         lakeFS SDK storage config object, lazy evaluated.
         """
+        return self.storage_config_by_id()
+
+    def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
         if self._server_conf is None:
             self._server_conf = ServerConfiguration(self)
-        return self._server_conf.storage_config
+        return self._server_conf.storage_config_by_id(storage_id)
 
     @property
     def version(self) -> str:
