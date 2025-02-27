@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/pkg/batch"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/ident"
@@ -41,7 +42,7 @@ func testRefManager(t testing.TB) (graveler.RefManager, kv.Store) {
 		RepositoryCacheConfig: testRepoCacheConfig,
 		CommitCacheConfig:     testCommitCacheConfig,
 	}
-	return ref.NewRefManager(cfg), kvStore
+	return ref.NewRefManager(cfg, NewStorageConfigMock(config.SingleBlockstoreID)), kvStore
 }
 
 func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.AddressProvider) (graveler.RefManager, kv.Store) {
@@ -55,7 +56,7 @@ func testRefManagerWithAddressProvider(t testing.TB, addressProvider ident.Addre
 		RepositoryCacheConfig: testRepoCacheConfig,
 		CommitCacheConfig:     testCommitCacheConfig,
 	}
-	return ref.NewRefManager(cfg), kvStore
+	return ref.NewRefManager(cfg, NewStorageConfigMock(config.SingleBlockstoreID)), kvStore
 }
 
 func TestMain(m *testing.M) {
