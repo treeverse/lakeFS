@@ -1,4 +1,4 @@
-//nolint:unused
+//nolint:unused, mnd, err113
 package esti
 
 // TODO (niro): All the unused errors is because our esti tests filenames are suffixed with _test
@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/cenkalti/backoff/v4"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -22,6 +21,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/cenkalti/backoff/v4"
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-multierror"
