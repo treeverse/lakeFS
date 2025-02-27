@@ -219,6 +219,9 @@ func withSyncFlags(cmd *cobra.Command) {
 func getStorageConfigOrDie(ctx context.Context, client *apigen.ClientWithResponses, repositoryID string) *apigen.StorageConfig {
 	confResp, err := client.GetConfigWithResponse(ctx)
 	DieOnErrorOrUnexpectedStatusCode(confResp, err, http.StatusOK)
+	if confResp.JSON200 == nil {
+		Die("Bad response from server for GetConfig", 1)
+	}
 
 	storageConfigList := confResp.JSON200.StorageConfigList
 	if storageConfigList != nil && len(*storageConfigList) >= 1 {
@@ -239,9 +242,6 @@ func getStorageConfigOrDie(ctx context.Context, client *apigen.ClientWithRespons
 		Die("Storage config not found for repo "+repositoryID, 1)
 	}
 
-	if confResp.JSON200 == nil {
-		Die("Bad response from server for GetConfig", 1)
-	}
 	storageConfig := confResp.JSON200.StorageConfig
 	if storageConfig == nil {
 		Die("Bad response from server for GetConfig", 1)
