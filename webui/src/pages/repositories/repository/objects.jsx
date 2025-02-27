@@ -626,7 +626,7 @@ const NoGCRulesWarning = ({ repoId }) => {
   return <></>;
 };
 
-const ObjectsBrowser = ({ config, configError }) => {
+const ObjectsBrowser = ({ config }) => {
   const router = useRouter();
   const { path, after, importDialog } = router.query;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -649,8 +649,8 @@ const ObjectsBrowser = ({ config, configError }) => {
     }
   }, [router.route, importDialog, searchParams, setSearchParams]);
 
-  if (loading || !config) return <Loading />;
-  if (error || configError) return <RepoError error={error || configError} />;
+  if (loading) return <Loading />;
+  if (error) return <RepoError error={error} />;
 
   return (
     <>
@@ -776,14 +776,16 @@ const ObjectsBrowser = ({ config, configError }) => {
 
 const RepositoryObjectsPage = () => {
     const {repo} = useRefs();
-    const {configs: storageConfigs, loading, error: configError} = useStorageConfigs();
-    const {storageConfig, error: storageConfigsError} = getRepoStorageConfig(storageConfigs, repo);
-    const error = loading ? null : configError || storageConfigsError;
+    const {configs: storageConfigs, loading: configsLoading, error: configsError} = useStorageConfigs();
+    const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(storageConfigs, repo);
 
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage("objects"), [setActivePage]);
 
-    return <ObjectsBrowser config={storageConfig} configError={error}/>;
+    if (configsLoading || configLoading) return <Loading/>;
+    if (configsError || configError) return <RepoError error={configsError || configError}/>;
+
+    return <ObjectsBrowser config={storageConfig}/>;
 };
 
 export default RepositoryObjectsPage;

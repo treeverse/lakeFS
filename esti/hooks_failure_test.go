@@ -75,7 +75,7 @@ func createAction(t *testing.T, ctx context.Context, repo, branch, path string, 
 	err := tmp.Execute(&doc, docData)
 	require.NoError(t, err)
 	content := doc.String()
-	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+uuid.NewString(), content)
+	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+uuid.NewString(), content, nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")
