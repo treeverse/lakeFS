@@ -221,7 +221,7 @@ func getStorageConfigOrDie(ctx context.Context, client *apigen.ClientWithRespons
 	DieOnErrorOrUnexpectedStatusCode(confResp, err, http.StatusOK)
 
 	storageConfigList := confResp.JSON200.StorageConfigList
-	if len(*storageConfigList) > 1 {
+	if storageConfigList != nil && len(*storageConfigList) > 1 {
 		repoResp, errRepo := client.GetRepositoryWithResponse(ctx, repositoryID)
 		DieOnErrorOrUnexpectedStatusCode(repoResp, errRepo, http.StatusOK)
 		if repoResp.JSON200 == nil {
