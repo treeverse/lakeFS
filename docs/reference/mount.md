@@ -66,7 +66,7 @@ The `mount` command is used to mount a lakeFS repository to a local directory, i
 - Cache: Everest uses a local cache to store the data and metadata of the lakeFS repository. The optimal cache size is the size of the data you are going to read/write.
 - Reusing Cache: between restarts of the same mount endpoint, set `--cache-dir` to make sure the cache is reused.
 - Mounted data consistency (read-mode): When providing lakeFS URI mount endpoint `lakefs://<repo>/<ref>/<path>` the `<ref>` should be a specific commit ID. If a branch/tag is provided, Everest will use the HEAD commit instead.
-- When running mount in write-mode, the lakeFS URI should be a branch name, not a commit ID or a tag.
+- When running mount in write-mode, the lakeFS URI must be a branch name, not a commit ID or a tag.
 
 #### Usage
 ```bash

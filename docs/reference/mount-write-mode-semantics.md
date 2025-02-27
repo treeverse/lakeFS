@@ -13,7 +13,7 @@ experimental
 ## Consistency Model
 
 ### File System Consistency
-Everest mount provides a strong read-after-write consistency model. 
+Everest mount provides a strong read-after-write consistency model within a single mount point.
 This means that once a write operation is done, the data is guaranteed to be available for subsequent read operations.
 
 ### lakeFS Consistency
@@ -34,7 +34,7 @@ If, for example, two users mount the same branch, they will not see each other's
 - Temporary files are not supported.
 - Hard/symbolic links are not supported.
 - POSIX file locks (lockf) are not supported.
-- POSIX permissions are not supported- default permissions are given to files and dirs.
+- POSIX permissions are not supported - default permissions are given to files and dirs.
 - A deleted file's name cannot be used as a directory type later and the same for opposite types (e.g, Not allowed: touch foo; rm foo; mkdir foo;).
 - Calling remove on a directory type will fail explicitly with an error.
 
