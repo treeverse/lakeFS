@@ -517,6 +517,9 @@ func checkEvent(t *testing.T, record graveler.HookRecord, event actions.EventInf
 	if event.SourceRef != record.SourceRef.String() {
 		t.Errorf("Webhook post SourceRef=%s, expected=%s", event.SourceRef, record.SourceRef)
 	}
+	if event.MergeSource != record.MergeSource.String() {
+		t.Errorf("Webhook post MergeSource=%s, expected=%s", event.MergeSource, record.MergeSource)
+	}
 	if event.CommitMessage != record.Commit.Message {
 		t.Errorf("Webhook post CommitMessage=%s, expected=%s", event.CommitMessage, record.Commit.Message)
 	}
