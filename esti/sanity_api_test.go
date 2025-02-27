@@ -11,7 +11,7 @@ import (
 )
 
 func TestSanityAPI(t *testing.T) {
-	ctx, log, repo := setupTest(t)
+	ctx, log, repo := SetupTest(t)
 
 	log.Debug("list entries")
 	entries := listRepositoryObjects(ctx, t, repo, mainBranch)

@@ -75,15 +75,15 @@ func createAction(t *testing.T, ctx context.Context, repo, branch, path string, 
 	err := tmp.Execute(&doc, docData)
 	require.NoError(t, err)
 	content := doc.String()
-	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+uuid.NewString(), content, nil)
+	uploadResp, err := UploadContent(ctx, repo, branch, "_lakefs_actions/"+uuid.NewString(), content, nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")
 }
 
 func hookFailToCreateBranch(t *testing.T, path string) {
-	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, logger, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	const branch = "feature-1"
 
 	logger.WithField("branch", branch).Info("Create branch")
@@ -106,8 +106,8 @@ func hookFailToCreateBranch(t *testing.T, path string) {
 }
 
 func hookFailToCommit(t *testing.T, path string) {
-	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, logger, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	const branch = "feature-1"
 
 	logger.WithField("branch", branch).Info("Create branch")

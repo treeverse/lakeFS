@@ -61,8 +61,8 @@ func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
 }
 
 func TestS3UploadToReadOnlyRepoError(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3uploadobjectdestreadonly")
 	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
@@ -86,8 +86,8 @@ func TestS3UploadToReadOnlyRepoError(t *testing.T) {
 }
 
 func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3deleteobjectdestreadonly")
 	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
@@ -118,8 +118,8 @@ func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
 func TestS3UploadAndDownload(t *testing.T) {
 	const parallelism = 10
 
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	sigs := []struct {
 		Name           string
@@ -188,8 +188,8 @@ func TestS3UploadAndDownload(t *testing.T) {
 }
 
 func TestMultipartUploadIfNoneMatch(t *testing.T) {
-	ctx, log, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, log, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
 	testCases := []struct {
@@ -250,8 +250,8 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 }
 
 func TestS3IfNoneMatch(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
@@ -320,8 +320,8 @@ func TestListMultipartUploads(t *testing.T) {
 	if blockStoreType != "s3" {
 		return
 	}
-	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, logger, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
 	multipartNumberOfParts := 3
@@ -407,8 +407,8 @@ func TestListMultipartUploadsUnsupported(t *testing.T) {
 	if blockStoreType != "s3" {
 		return
 	}
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
 	Bucket := aws.String(repo)
@@ -465,8 +465,8 @@ func TestS3ReadObject(t *testing.T) {
 		badPath  = "main/does/not/exist"
 	)
 
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	// Upload an object
 	minioClient := newMinioClient(t, credentials.NewStaticV2)
@@ -628,8 +628,8 @@ func TestS3ReadObject(t *testing.T) {
 }
 
 func TestS3HeadBucket(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	badRepo := repo + "-nonexistent"
 
@@ -692,8 +692,8 @@ func getOrCreatePathToLargeObject(t *testing.T, ctx context.Context, s3lakefsCli
 }
 
 func TestS3CopyObjectMultipart(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	// additional repository for copy between repos
 	const destRepoName = "tests3copyobjectmultipartdest"
@@ -767,8 +767,8 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 }
 
 func TestS3CopyObject(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	// additional repository for copy between repos
 	const destRepoName = "tests3copyobjectdest"
@@ -885,8 +885,8 @@ func TestS3CopyObject(t *testing.T) {
 }
 
 func TestS3PutObjectTagging(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	srcPath := gatewayTestPrefix + "source-file"
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
@@ -903,13 +903,13 @@ func TestS3PutObjectTagging(t *testing.T) {
 }
 
 func TestS3CopyObjectErrors(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3copyobjectdestreadonly")
 	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
 
-	requireBlockstoreType(t, block.BlockstoreTypeS3)
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	destPath := gatewayTestPrefix + "dest-file"
 
 	// upload data
@@ -979,14 +979,14 @@ func TestS3CopyObjectErrors(t *testing.T) {
 }
 
 func TestS3ReadObjectRedirect(t *testing.T) {
-	requireBlockstoreType(t, block.BlockstoreTypeS3)
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	const (
 		contents = "the quick brown fox jumps over the lazy dog"
 		goodPath = "main/exists.txt"
 	)
 
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	// Upload an object
 	minioClient := newMinioClient(t, credentials.NewStaticV4)
@@ -1017,8 +1017,8 @@ func createS3Client(endpoint string, t *testing.T) *s3.Client {
 }
 
 func TestPossibleAPIEndpointError(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {
 		s3Client := createS3Client(endpointURL+apiutil.BaseURL, t)

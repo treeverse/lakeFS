@@ -39,8 +39,8 @@ func appendRes(info webhookEventInfo) {
 }
 
 func TestHooksSuccess(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	parseAndUploadActions(t, ctx, repo, mainBranch)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
@@ -68,7 +68,7 @@ func TestHooksSuccess(t *testing.T) {
 	})
 
 	t.Log("check runs are sorted in descending order")
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, "", 13)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", 13)
 	require.Equal(t, len(runs.Results), len(hooksTestData.data))
 	for i, run := range runs.Results {
 		valIdx := len(hooksTestData.data) - (i + 1)
@@ -76,7 +76,7 @@ func TestHooksSuccess(t *testing.T) {
 	}
 }
 
-func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *apigen.ActionRunList {
+func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *apigen.ActionRunList {
 	var runs *apigen.ActionRunList
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = 5 * time.Second
@@ -111,7 +111,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	ref := string(createBranchResp.Body)
 	t.Log("Branch created", ref)
 
-	resp, err := uploadContent(ctx, repo, branch, "somefile", "", nil)
+	resp, err := UploadContent(ctx, repo, branch, "somefile", "", nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
@@ -219,7 +219,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	}, postMergeEvent)
 
 	t.Log("List repository runs", mergeRef)
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2)
 	eventType := map[string]bool{
 		"pre-merge":  true,
 		"post-merge": true,
@@ -457,7 +457,7 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		require.NoError(t, err)
 
 		action := doc.String()
-		resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action, nil)
+		resp, err := UploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action, nil)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}

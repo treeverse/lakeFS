@@ -19,8 +19,8 @@ import (
 )
 
 func TestCommitSingle(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	const objPath = "1.txt"
 	_, objContent := UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)
@@ -70,8 +70,8 @@ func TestCommitInMixedOrder(t *testing.T) {
 		size        = 100
 	)
 
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	names1 := genNames(size, "run2/foo")
 	uploads := make(chan Upload, size)
 	wg := sync.WaitGroup{}
@@ -133,8 +133,8 @@ func TestCommitInMixedOrder(t *testing.T) {
 
 // Verify panic fix when committing with nil tombstone over KV
 func TestCommitWithTombstone(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	origObjPathLow := "objb.txt"
 	origObjPathHigh := "objc.txt"
 	UploadFileRandomData(ctx, t, repo, mainBranch, origObjPathLow, nil)
@@ -178,7 +178,7 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
 	require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, storageNamespace)
-	defer tearDownTest(repoName)
+	defer TearDownTest(repoName)
 
 	commitResp, _ := client.CommitWithResponse(ctx, repoName, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "singleCommit",

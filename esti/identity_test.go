@@ -8,8 +8,8 @@ import (
 )
 
 func TestIdentity(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	objPath := "1.txt"
 	branch1 := "feature-1"
 	branch2 := "feature-2"

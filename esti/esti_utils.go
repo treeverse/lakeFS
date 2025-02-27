@@ -274,7 +274,7 @@ func MakeRepositoryName(name string) string {
 	return nonAlphanumericSequence.ReplaceAllString(name, "-")
 }
 
-func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
+func SetupTest(t testing.TB) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
 	name := MakeRepositoryName(t.Name())
 	log := logger.WithField("testName", name)
@@ -390,7 +390,7 @@ func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent 
 		return stats.Checksum, nil
 	}
 	// Upload using API
-	resp, err := uploadContent(ctx, repo, branch, objPath, objContent, clt)
+	resp, err := UploadContent(ctx, repo, branch, objPath, objContent, clt)
 	if err != nil {
 		return "", err
 	}
@@ -459,7 +459,7 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 	}
 }
 
-func uploadContent(ctx context.Context, repo, branch, objPath, objContent string, clt apigen.ClientWithResponsesInterface) (*apigen.UploadObjectResponse, error) {
+func UploadContent(ctx context.Context, repo, branch, objPath, objContent string, clt apigen.ClientWithResponsesInterface) (*apigen.UploadObjectResponse, error) {
 	if clt == nil {
 		clt = client
 	}
@@ -553,8 +553,8 @@ func isBlockstoreType(requiredTypes ...string) *string {
 	return &blockstoreType
 }
 
-// requireBlockstoreType Skips test if blockstore type doesn't match the required type
-func requireBlockstoreType(t testing.TB, requiredTypes ...string) {
+// RequireBlockstoreType Skips test if blockstore type doesn't match the required type
+func RequireBlockstoreType(t testing.TB, requiredTypes ...string) {
 	if blockstoreType := isBlockstoreType(requiredTypes...); blockstoreType != nil {
 		t.Skipf("Required blockstore types: %v, got: %s", requiredTypes, *blockstoreType)
 	}

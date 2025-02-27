@@ -32,8 +32,8 @@ func TestMultipartUpload(t *testing.T) {
 	// lakeFS objects share the same time.
 	const timeResolution = time.Second
 
-	ctx, logger, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, logger, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	file := "multipart_file"
 	path := mainBranch + "/" + file
 	input := &s3.CreateMultipartUploadInput{
@@ -96,8 +96,8 @@ func TestMultipartUpload(t *testing.T) {
 }
 
 func TestMultipartUploadAbort(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	t.Run("exists", func(t *testing.T) {
 		const objPath = mainBranch + "/multipart_file1"

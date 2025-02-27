@@ -16,8 +16,8 @@ import (
 )
 
 func TestDeleteObjects(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 	const numOfObjects = 10
 
 	identifiers := make([]types.ObjectIdentifier, 0, numOfObjects)
@@ -60,8 +60,8 @@ func TestDeleteObjects(t *testing.T) {
 // TestDeleteObjects_Viewer verify we can't delete with read only user
 func TestDeleteObjects_Viewer(t *testing.T) {
 	t.SkipNow()
-	ctx, _, repo := setupTest(t)
-	defer tearDownTest(repo)
+	ctx, _, repo := SetupTest(t)
+	defer TearDownTest(repo)
 
 	// setup data
 	const filename = "delete-me"

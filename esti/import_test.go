@@ -142,8 +142,8 @@ func TestImport(t *testing.T) {
 	metadata := map[string]string{"created_by": "import"}
 
 	t.Run("default", func(t *testing.T) {
-		ctx, _, repoName := setupTest(t)
-		defer tearDownTest(repoName)
+		ctx, _, repoName := SetupTest(t)
+		defer TearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
 		paths := []apigen.ImportLocation{{
 			Destination: importTargetPrefix,
@@ -180,8 +180,8 @@ func TestImport(t *testing.T) {
 	})
 
 	t.Run("parent", func(t *testing.T) {
-		ctx, _, repoName := setupTest(t)
-		defer tearDownTest(repoName)
+		ctx, _, repoName := SetupTest(t)
+		defer TearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
 		if blockstoreType == block.BlockstoreTypeLocal {
 			t.Skip("local cannot import by prefix, only directory or object")
@@ -198,8 +198,8 @@ func TestImport(t *testing.T) {
 	})
 
 	t.Run("several_paths", func(t *testing.T) {
-		ctx, _, repoName := setupTest(t)
-		defer tearDownTest(repoName)
+		ctx, _, repoName := SetupTest(t)
+		defer TearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
 		var paths []apigen.ImportLocation
 		for i := 1; i < 8; i++ {
@@ -221,8 +221,8 @@ func TestImport(t *testing.T) {
 	})
 
 	t.Run("prefixes_and_objects", func(t *testing.T) {
-		ctx, _, repoName := setupTest(t)
-		defer tearDownTest(repoName)
+		ctx, _, repoName := SetupTest(t)
+		defer TearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
 		var paths []apigen.ImportLocation
 		for i := 1; i < 8; i++ {
@@ -301,8 +301,8 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 
 func TestImportCancel(t *testing.T) {
 	_, importPath, _ := setupImportByBlockstoreType(t)
-	ctx, _, repoName := setupTest(t)
-	defer tearDownTest(repoName)
+	ctx, _, repoName := SetupTest(t)
+	defer TearDownTest(repoName)
 	branch := fmt.Sprintf("%s-%s", importBranchBase, "canceled")
 	createResp, err := client.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
 		Name:   branch,
