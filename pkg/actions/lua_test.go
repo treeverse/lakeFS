@@ -449,9 +449,10 @@ func TestLuaRunTable(t *testing.T) {
 				Commit: graveler.Commit{
 					Version: 1,
 				},
-				CommitID: "123456789",
-				PreRunID: "3498032432",
-				TagID:    "",
+				CommitID:    "123456789",
+				PreRunID:    "3498032432",
+				TagID:       "tag1",
+				MergeSource: "merge-source",
 			}, out)
 			if testCase.Error != "" {
 				if !strings.Contains(err.Error(), testCase.Error) {
