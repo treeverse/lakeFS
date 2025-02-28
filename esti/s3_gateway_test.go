@@ -65,7 +65,7 @@ func TestS3UploadToReadOnlyRepoError(t *testing.T) {
 	defer tearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3uploadobjectdestreadonly")
-	defer deleteRepositoryIfAskedTo(ctx, readOnlyRepo)
+	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
 
 	minioClient := newMinioClient(t, credentials.NewStaticV4)
 	const tenMibi = 10 * 1024 * 1024
@@ -90,7 +90,7 @@ func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
 	defer tearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3deleteobjectdestreadonly")
-	defer deleteRepositoryIfAskedTo(ctx, readOnlyRepo)
+	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
 
 	minioClient := newMinioClient(t, credentials.NewStaticV4)
 	content := "some random data"
@@ -698,7 +698,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 	// additional repository for copy between repos
 	const destRepoName = "tests3copyobjectmultipartdest"
 	destRepo := createRepositoryByName(ctx, t, destRepoName)
-	defer deleteRepositoryIfAskedTo(ctx, destRepoName)
+	defer DeleteRepositoryIfAskedTo(ctx, destRepoName)
 
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
 
@@ -773,7 +773,7 @@ func TestS3CopyObject(t *testing.T) {
 	// additional repository for copy between repos
 	const destRepoName = "tests3copyobjectdest"
 	destRepo := createRepositoryByName(ctx, t, destRepoName)
-	defer deleteRepositoryIfAskedTo(ctx, destRepoName)
+	defer DeleteRepositoryIfAskedTo(ctx, destRepoName)
 
 	// content
 	r := rand.New(rand.NewSource(17))
@@ -907,7 +907,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	defer tearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3copyobjectdestreadonly")
-	defer deleteRepositoryIfAskedTo(ctx, readOnlyRepo)
+	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
 
 	requireBlockstoreType(t, block.BlockstoreTypeS3)
 	destPath := gatewayTestPrefix + "dest-file"

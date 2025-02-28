@@ -86,8 +86,8 @@ func TestLakectlLocal_init(t *testing.T) {
 	require.NoError(t, fd.Close())
 	dataDir, err := os.MkdirTemp(tmpDir, "")
 	require.NoError(t, err)
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -156,8 +156,8 @@ func TestLakectlLocal_clone(t *testing.T) {
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -202,7 +202,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		require.NoError(t, err)
 		vars["PREFIX"] = "dir_marker/"
 		vars["LOCAL_DIR"] = dataDir
-		_, err = uploadContent(context.Background(), vars["REPO"], vars["BRANCH"], vars["PREFIX"], "")
+		_, err = uploadContent(context.Background(), vars["REPO"], vars["BRANCH"], vars["PREFIX"], "", nil)
 		require.NoError(t, err)
 		runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
@@ -263,8 +263,8 @@ func TestLakectlLocal_posix_permissions(t *testing.T) {
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -396,8 +396,8 @@ func TestLakectlLocal_pull(t *testing.T) {
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"LOCAL_DIR": tmpDir,
 		"REPO":      repoName,
@@ -488,8 +488,8 @@ func TestLakectlLocal_pull(t *testing.T) {
 }
 
 func TestLakectlLocal_commitProtectedBranch(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	tmpDir := t.TempDir()
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
@@ -523,8 +523,8 @@ func TestLakectlLocal_commitProtectedBranch(t *testing.T) {
 }
 
 func TestLakectlLocal_RmCommitProtectedBranch(t *testing.T) {
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	tmpDir := t.TempDir()
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
@@ -566,8 +566,8 @@ func TestLakectlLocal_commit(t *testing.T) {
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -675,8 +675,8 @@ func TestLakectlLocal_commit_symlink(t *testing.T) {
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -751,8 +751,8 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
 	require.NoError(t, fd.Close())
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -885,8 +885,8 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 
 func TestLakectlLocal_interrupted(t *testing.T) {
 	tmpDir := t.TempDir()
-	repoName := generateUniqueRepositoryName()
-	storage := generateUniqueStorageNamespace(repoName)
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,

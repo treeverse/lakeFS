@@ -38,7 +38,8 @@ import { getContentType, getFileExtension, FileContents } from "./objectViewer";
 import {OverlayTrigger, ProgressBar} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import { useSearchParams } from "react-router-dom";
-import { useStorageConfig } from "../../../lib/hooks/storageConfig";
+import { useStorageConfigs } from "../../../lib/hooks/storageConfig";
+import { getRepoStorageConfig } from "./utils";
 import {useDropzone} from "react-dropzone";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -625,7 +626,7 @@ const NoGCRulesWarning = ({ repoId }) => {
   return <></>;
 };
 
-const ObjectsBrowser = ({ config, configError }) => {
+const ObjectsBrowser = ({ config }) => {
   const router = useRouter();
   const { path, after, importDialog } = router.query;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -648,8 +649,8 @@ const ObjectsBrowser = ({ config, configError }) => {
     }
   }, [router.route, importDialog, searchParams, setSearchParams]);
 
-  if (loading || !config) return <Loading />;
-  if (error || configError) return <RepoError error={error || configError} />;
+  if (loading) return <Loading />;
+  if (error) return <RepoError error={error} />;
 
   return (
     <>
@@ -774,11 +775,17 @@ const ObjectsBrowser = ({ config, configError }) => {
 };
 
 const RepositoryObjectsPage = () => {
-  const config = useStorageConfig();
-  const [setActivePage] = useOutletContext();
-  useEffect(() => setActivePage("objects"), [setActivePage]);
+    const {repo} = useRefs();
+    const {configs: storageConfigs, loading: configsLoading, error: configsError} = useStorageConfigs();
+    const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(storageConfigs, repo);
 
-  return <ObjectsBrowser config={config} configError={config.error} />;
+    const [setActivePage] = useOutletContext();
+    useEffect(() => setActivePage("objects"), [setActivePage]);
+
+    if (configsLoading || configLoading) return <Loading/>;
+    if (configsError || configError) return <RepoError error={configsError || configError}/>;
+
+    return <ObjectsBrowser config={storageConfig}/>;
 };
 
 export default RepositoryObjectsPage;

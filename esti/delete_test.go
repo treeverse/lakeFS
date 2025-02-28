@@ -35,7 +35,7 @@ func TestDeleteStaging(t *testing.T) {
 	defer tearDownTest(repo)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)
 
 	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
@@ -55,7 +55,7 @@ func TestDeleteCommitted(t *testing.T) {
 	defer tearDownTest(repo)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)
 
 	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)
@@ -77,8 +77,8 @@ func TestDeleteCommitted(t *testing.T) {
 func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 	ctx := context.Background()
 	name := strings.ToLower(t.Name())
-	storageNamespace := generateUniqueStorageNamespace(name)
-	repoName := makeRepositoryName(name)
+	storageNamespace := GenerateUniqueStorageNamespace(name)
+	repoName := MakeRepositoryName(name)
 	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             repoName,
@@ -86,7 +86,7 @@ func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 		ReadOnly:         swag.Bool(true),
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
-	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+	require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, storageNamespace)
 	defer tearDownTest(repoName)
 
@@ -105,7 +105,7 @@ func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 		Force: swag.Bool(true),
 	}, w.FormDataContentType(), &b)
 	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
-	err = verifyResponse(uploadResp.HTTPResponse, uploadResp.Body)
+	err = VerifyResponse(uploadResp.HTTPResponse, uploadResp.Body)
 	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
 
 	deleteResp, err := client.DeleteObjectWithResponse(ctx, repoName, mainBranch, &apigen.DeleteObjectParams{Path: objPath})
@@ -128,7 +128,7 @@ func TestCommitDeleteCommitted(t *testing.T) {
 	defer tearDownTest(repo)
 	objPath := "1.txt"
 
-	_, _ = uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)
 
 	f, err := objectFound(ctx, repo, mainBranch, objPath)
 	assert.NoError(t, err)

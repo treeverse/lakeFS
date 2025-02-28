@@ -1,4 +1,8 @@
+//nolint:unused
 package esti
+
+// TODO (niro): All the unused errors is because our esti tests filenames are suffixed with _test
+// TODO (niro): WE will need to rename all the esti tests file names to instead using test prefix and not suffix
 
 import (
 	"bytes"
@@ -11,10 +15,14 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/go-openapi/swag"
+	"github.com/hashicorp/go-multierror"
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -23,22 +31,216 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"golang.org/x/exp/slices"
 )
 
-const mainBranch = "main"
+type ArrayFlags []string
 
-const minHTTPErrorStatusCode = 400
+var (
+	logger      logging.Logger
+	client      apigen.ClientWithResponsesInterface
+	endpointURL string
+	svc         *s3.Client
+	server      *WebhookServer
+
+	metaClientJarPath  string
+	sparkImageTag      string
+	repositoriesToKeep ArrayFlags
+	groupsToKeep       ArrayFlags
+	usersToKeep        ArrayFlags
+	policiesToKeep     ArrayFlags
+)
 
 const (
+	DefaultAdminAccessKeyID     = "AKIAIOSFDNN7EXAMPLEQ"                     //nolint:gosec
+	DefaultAdminSecretAccessKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
+	AdminUsername               = "esti"
+
+	mainBranch               = "main"
+	minHTTPErrorStatusCode   = 400
 	ViperStorageNamespaceKey = "storage_namespace"
 	ViperBlockstoreType      = "blockstore_type"
 )
 
-var errNotVerified = errors.New("lakeFS failed")
+var (
+	nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
 
-var nonAlphanumericSequence = regexp.MustCompile("[^a-zA-Z0-9]+")
+	errNotVerified     = errors.New("lakeFS failed")
+	errWrongStatusCode = errors.New("wrong status code")
+)
+
+func (i *ArrayFlags) String() string {
+	return strings.Join(*i, " ")
+}
+
+func (i *ArrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
+func EnvCleanup(client apigen.ClientWithResponsesInterface, repositoriesToKeep, groupsToKeep, usersToKeep, policiesToKeep ArrayFlags) error {
+	ctx := context.Background()
+	errRepos := DeleteAllRepositories(ctx, client, repositoriesToKeep)
+	errGroups := DeleteAllGroups(ctx, client, groupsToKeep)
+	errPolicies := DeleteAllPolicies(ctx, client, policiesToKeep)
+	errUsers := DeleteAllUsers(ctx, client, usersToKeep)
+	return multierror.Append(errRepos, errGroups, errPolicies, errUsers).ErrorOrNil()
+}
+
+func DeleteAllRepositories(ctx context.Context, client apigen.ClientWithResponsesInterface, repositoriesToKeep ArrayFlags) error {
+	// collect repositories to delete
+	var (
+		repositoriesToDelete []string
+		nextOffset           string
+	)
+
+	for {
+		resp, err := client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
+		if err != nil {
+			return fmt.Errorf("list repositories: %w", err)
+		}
+		if resp.StatusCode() != http.StatusOK {
+			return fmt.Errorf("list repositories: status %s: %w", resp.Status(), errWrongStatusCode)
+		}
+		for _, repo := range resp.JSON200.Results {
+			if !slices.Contains(repositoriesToKeep, repo.Id) {
+				repositoriesToDelete = append(repositoriesToDelete, repo.Id)
+			}
+		}
+		if !resp.JSON200.Pagination.HasMore {
+			break
+		}
+		nextOffset = resp.JSON200.Pagination.NextOffset
+	}
+
+	var errs *multierror.Error
+	for _, id := range repositoriesToDelete {
+		resp, err := client.DeleteRepositoryWithResponse(ctx, id, &apigen.DeleteRepositoryParams{})
+		if err != nil {
+			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, err: %w", id, err))
+		} else if resp.StatusCode() != http.StatusNoContent {
+			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+		}
+	}
+
+	return errs.ErrorOrNil()
+}
+
+func DeleteAllGroups(ctx context.Context, client apigen.ClientWithResponsesInterface, groupsToKeep ArrayFlags) error {
+	// list groups to delete
+	var (
+		groupsToDelete []string
+		nextOffset     string
+	)
+	for {
+		resp, err := client.ListGroupsWithResponse(ctx, &apigen.ListGroupsParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
+		if err != nil {
+			return fmt.Errorf("list groups: %w", err)
+		}
+		if resp.StatusCode() != http.StatusOK {
+			return fmt.Errorf("list groups: status %s: %w", resp.Status(), errWrongStatusCode)
+		}
+		for _, group := range resp.JSON200.Results {
+			if !slices.Contains(groupsToKeep, swag.StringValue(group.Name)) {
+				groupsToDelete = append(groupsToDelete, group.Id)
+			}
+		}
+		if !resp.JSON200.Pagination.HasMore {
+			break
+		}
+		nextOffset = resp.JSON200.Pagination.NextOffset
+	}
+
+	// delete groups
+	var errs *multierror.Error
+	for _, id := range groupsToDelete {
+		resp, err := client.DeleteGroupWithResponse(ctx, id)
+		if err != nil {
+			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, err: %w", id, err))
+		} else if resp.StatusCode() != http.StatusNoContent {
+			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+		}
+	}
+	return errs.ErrorOrNil()
+}
+
+func DeleteAllUsers(ctx context.Context, client apigen.ClientWithResponsesInterface, usersToKeep ArrayFlags) error {
+	// collect users to delete
+	var (
+		usersToDelete []string
+		nextOffset    string
+	)
+	for {
+		resp, err := client.ListUsersWithResponse(ctx, &apigen.ListUsersParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
+		if err != nil {
+			return fmt.Errorf("list users: %w", err)
+		}
+		if resp.JSON200 == nil {
+			return fmt.Errorf("list users, status %s: %w", resp.Status(), errWrongStatusCode)
+		}
+		for _, user := range resp.JSON200.Results {
+			if !slices.Contains(usersToKeep, user.Id) {
+				usersToKeep = usersToDelete
+				usersToKeep = append(usersToKeep, user.Id)
+			}
+		}
+		if !resp.JSON200.Pagination.HasMore {
+			break
+		}
+		nextOffset = resp.JSON200.Pagination.NextOffset
+	}
+
+	// delete users
+	var errs *multierror.Error
+	for _, id := range usersToDelete {
+		resp, err := client.DeleteUserWithResponse(ctx, id)
+		if err != nil {
+			errs = multierror.Append(errs, fmt.Errorf("delete user %s: %w", id, err))
+		} else if resp.StatusCode() != http.StatusNoContent {
+			errs = multierror.Append(errs, fmt.Errorf("delete user %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+		}
+	}
+	return errs.ErrorOrNil()
+}
+
+func DeleteAllPolicies(ctx context.Context, client apigen.ClientWithResponsesInterface, policiesToKeep ArrayFlags) error {
+	// list policies to delete
+	var (
+		policiesToDelete []string
+		nextOffset       string
+	)
+	for {
+		resp, err := client.ListPoliciesWithResponse(ctx, &apigen.ListPoliciesParams{After: apiutil.Ptr(apigen.PaginationAfter(nextOffset))})
+		if err != nil {
+			return fmt.Errorf("list policies: %w", err)
+		}
+		if resp.JSON200 == nil {
+			return fmt.Errorf("list policies, status %s: %w", resp.Status(), errWrongStatusCode)
+		}
+		for _, policy := range resp.JSON200.Results {
+			if !slices.Contains(policiesToKeep, policy.Id) {
+				policiesToDelete = append(policiesToDelete, policy.Id)
+			}
+		}
+		if !resp.JSON200.Pagination.HasMore {
+			break
+		}
+		nextOffset = resp.JSON200.Pagination.NextOffset
+	}
+
+	// delete policies
+	var errs *multierror.Error
+	for _, id := range policiesToDelete {
+		resp, err := client.DeletePolicyWithResponse(ctx, id)
+		if err != nil {
+			errs = multierror.Append(errs, fmt.Errorf("delete policy %s: %w", id, err))
+		} else if resp.StatusCode() != http.StatusNoContent {
+			errs = multierror.Append(errs, fmt.Errorf("delete policy %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
+		}
+	}
+	return errs.ErrorOrNil()
+}
 
 // skipOnSchemaMismatch matches the rawURL schema to the current tested storage namespace schema
 func skipOnSchemaMismatch(t *testing.T, rawURL string) {
@@ -57,24 +259,24 @@ func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	}
 }
 
-// verifyResponse returns an error based on failed if resp failed to perform action.  It uses
+// VerifyResponse returns an error based on failed if resp failed to perform action.  It uses
 // body in errors.
-func verifyResponse(resp *http.Response, body []byte) error {
+func VerifyResponse(resp *http.Response, body []byte) error {
 	if resp.StatusCode >= minHTTPErrorStatusCode {
 		return fmt.Errorf("%w: got %d %s: %s", errNotVerified, resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }
 
-// makeRepositoryName changes name to make it an acceptable repository name by replacing all
+// MakeRepositoryName changes name to make it an acceptable repository name by replacing all
 // non-alphanumeric characters with a `-`.
-func makeRepositoryName(name string) string {
+func MakeRepositoryName(name string) string {
 	return nonAlphanumericSequence.ReplaceAllString(name, "-")
 }
 
 func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
-	name := makeRepositoryName(t.Name())
+	name := MakeRepositoryName(t.Name())
 	log := logger.WithField("testName", name)
 	repo := createRepositoryForTest(ctx, t)
 	log.WithField("repo", repo).Info("Created repository")
@@ -83,7 +285,7 @@ func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 
 func tearDownTest(repoName string) {
 	ctx := context.Background()
-	deleteRepositoryIfAskedTo(ctx, repoName)
+	DeleteRepositoryIfAskedTo(ctx, repoName)
 }
 
 func createRepositoryForTest(ctx context.Context, t testing.TB) string {
@@ -92,29 +294,29 @@ func createRepositoryForTest(ctx context.Context, t testing.TB) string {
 }
 
 func createRepositoryByName(ctx context.Context, t testing.TB, name string) string {
-	storageNamespace := generateUniqueStorageNamespace(name)
-	name = makeRepositoryName(name)
+	storageNamespace := GenerateUniqueStorageNamespace(name)
+	name = MakeRepositoryName(name)
 	createRepository(ctx, t, name, storageNamespace, false)
 	return name
 }
 
 func createReadOnlyRepositoryByName(ctx context.Context, t testing.TB, name string) string {
-	storageNamespace := generateUniqueStorageNamespace(name)
-	name = makeRepositoryName(name)
+	storageNamespace := GenerateUniqueStorageNamespace(name)
+	name = MakeRepositoryName(name)
 	createRepository(ctx, t, name, storageNamespace, true)
 	return name
 }
 
 func createRepositoryUnique(ctx context.Context, t testing.TB) string {
-	name := generateUniqueRepositoryName()
+	name := GenerateUniqueRepositoryName()
 	return createRepositoryByName(ctx, t, name)
 }
 
-func generateUniqueRepositoryName() string {
+func GenerateUniqueRepositoryName() string {
 	return "repo-" + xid.New().String()
 }
 
-func generateUniqueStorageNamespace(repoName string) string {
+func GenerateUniqueStorageNamespace(repoName string) string {
 	ns := viper.GetString("storage_namespace")
 	if !strings.HasSuffix(ns, "/") {
 		ns += "/"
@@ -135,19 +337,20 @@ func createRepository(ctx context.Context, t testing.TB, name string, repoStorag
 		ReadOnly:         &isReadOnly,
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
-	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+	require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, repoStorage)
 }
 
-func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
+func DeleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	deleteRepositories := viper.GetBool("delete_repositories")
 	if deleteRepositories {
 		resp, err := client.DeleteRepositoryWithResponse(ctx, repositoryName, &apigen.DeleteRepositoryParams{Force: swag.Bool(true)})
-		if err != nil {
+		switch {
+		case err != nil:
 			logger.WithError(err).WithField("repo", repositoryName).Error("Request to delete repository failed")
-		} else if resp.StatusCode() != http.StatusNoContent {
+		case resp.StatusCode() != http.StatusNoContent:
 			logger.WithFields(logging.Fields{"repo": repositoryName, "status_code": resp.StatusCode()}).Error("Request to delete repository failed")
-		} else {
+		default:
 			logger.WithField("repo", repositoryName).Info("Deleted repository")
 		}
 	}
@@ -168,16 +371,16 @@ const (
 	largeDataContentLength = 6 << 20
 )
 
-func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
+func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum, content string, err error) {
 	objContent := randstr.String(randomDataContentLength)
-	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct)
+	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct, clt)
 	if err != nil {
 		return "", "", err
 	}
 	return checksum, objContent, nil
 }
 
-func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool) (checksum string, err error) {
+func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum string, err error) {
 	// Upload using direct access
 	if direct {
 		stats, err := uploadContentDirect(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
@@ -187,11 +390,11 @@ func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent 
 		return stats.Checksum, nil
 	}
 	// Upload using API
-	resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
+	resp, err := uploadContent(ctx, repo, branch, objPath, objContent, clt)
 	if err != nil {
 		return "", err
 	}
-	if err := verifyResponse(resp.HTTPResponse, resp.Body); err != nil {
+	if err := VerifyResponse(resp.HTTPResponse, resp.Body); err != nil {
 		return "", err
 	}
 	return resp.JSON201.Checksum, nil
@@ -256,7 +459,10 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 	}
 }
 
-func uploadContent(ctx context.Context, repo string, branch string, objPath string, objContent string) (*apigen.UploadObjectResponse, error) {
+func uploadContent(ctx context.Context, repo, branch, objPath, objContent string, clt apigen.ClientWithResponsesInterface) (*apigen.UploadObjectResponse, error) {
+	if clt == nil {
+		clt = client
+	}
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
@@ -271,13 +477,13 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	if err != nil {
 		return nil, fmt.Errorf("close form file: %w", err)
 	}
-	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
+	return clt.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)
 }
 
-func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, false)
+func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, clt apigen.ClientWithResponsesInterface) (checksum, content string) {
+	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, false, clt)
 	require.NoError(t, err, "failed to upload file", repo, branch, objPath)
 	return checksum, content
 }
@@ -293,7 +499,7 @@ func listRepositoryObjects(ctx context.Context, t *testing.T, repository string,
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
 		require.NoError(t, err, "listing objects")
-		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 			"failed to list repo %s ref %s after %s amount %d", repository, ref, after, amount)
 
 		entries = append(entries, resp.JSON200.Results...)
@@ -324,7 +530,7 @@ func listRepositories(t *testing.T, ctx context.Context) []apigen.Repository {
 			Amount: apiutil.Ptr(apigen.PaginationAmount(repoPerPage)),
 		})
 		require.NoError(t, err, "list repositories")
-		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 			"failed to list repositories after %s amount %d", after, repoPerPage)
 		require.Equal(t, http.StatusOK, resp.StatusCode())
 		payload := resp.JSON200
@@ -374,4 +580,22 @@ func getServerConfig(t testing.TB, ctx context.Context) *apigen.SetupState {
 	require.NoError(t, err)
 	require.NotNil(t, resp.JSON200)
 	return resp.JSON200
+}
+
+func GravelerIterator(data []byte) (*sstable.Iterator, error) {
+	// read file descriptor
+	reader, err := pebblesst.NewMemReader(data, pebblesst.ReaderOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// create an iterator over the whole thing
+	iter, err := reader.NewIter(nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// wrap it in a Graveler iterator
+	dummyDeref := func() error { return nil }
+	return sstable.NewIterator(iter, dummyDeref), nil
 }

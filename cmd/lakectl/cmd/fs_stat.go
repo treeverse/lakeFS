@@ -16,7 +16,7 @@ var fsStatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path URI", args[0])
 		client := getClient()
-		preSignMode := getPresignMode(cmd, client)
+		preSignMode := getPresignMode(cmd, client, pathURI.Repository)
 
 		resp, err := client.StatObjectWithResponse(cmd.Context(), pathURI.Repository, pathURI.Ref, &apigen.StatObjectParams{
 			Path:         *pathURI.Path,
