@@ -167,7 +167,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 
 	// No repo
 	vars["LOCAL_DIR"] = tmpDir
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo delete lakefs://"+repoName+" -y", false, "lakectl_repo_delete_not_found", vars)
 
 	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
@@ -274,7 +274,7 @@ func TestLakectlLocal_posix_permissions(t *testing.T) {
 
 	// No repo
 	vars["LOCAL_DIR"] = tmpDir
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo delete lakefs://"+repoName+" -y", false, "lakectl_repo_delete_not_found", vars)
 
 	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
