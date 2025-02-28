@@ -34,7 +34,7 @@ var (
 
 type Adapter struct {
 	client                               *storage.Client
-	stats                                block.Histograms
+	metricsHandler                       block.AdapterMetricsHandler
 	preSignedExpiry                      time.Duration
 	disablePreSigned                     bool
 	disablePreSignedUI                   bool
@@ -73,7 +73,7 @@ type AdapterOption func(a *Adapter)
 func NewAdapter(client *storage.Client, adapterStatsID *string, opts ...AdapterOption) *Adapter {
 	a := &Adapter{
 		client:          client,
-		stats:           NewGSStats(adapterStatsID),
+		metricsHandler:  NewMetricsHandler(adapterStatsID),
 		preSignedExpiry: block.DefaultPreSignExpiryDuration,
 	}
 	for _, opt := range opts {
@@ -157,7 +157,7 @@ func (o *storageObjectHandle) newComposer(a *Adapter, srcs ...*storage.ObjectHan
 
 func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ block.PutOpts) (*block.PutResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("Put", time.Now(), &sizeBytes, &err)
+	defer a.metricsHandler.ReportMetrics("Put", time.Now(), &sizeBytes, &err)
 	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -177,7 +177,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadCloser, error) {
 	var err error
-	defer a.stats.ReportMetrics("Get", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("Get", time.Now(), nil, &err)
 	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	}
 
 	var err error
-	defer a.stats.ReportMetrics("GetPreSignedURL", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("GetPreSignedURL", time.Now(), nil, &err)
 
 	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
@@ -250,7 +250,7 @@ func isErrNotFound(err error) bool {
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
-	defer a.stats.ReportMetrics("Exists", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("Exists", time.Now(), nil, &err)
 	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return false, err
@@ -267,7 +267,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	var err error
-	defer a.stats.ReportMetrics("GetRange", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("GetRange", time.Now(), nil, &err)
 	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -287,7 +287,7 @@ func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPo
 
 func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {
 	var err error
-	defer a.stats.ReportMetrics("GetProperties", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("GetProperties", time.Now(), nil, &err)
 	var props block.Properties
 	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
@@ -302,7 +302,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	var err error
-	defer a.stats.ReportMetrics("Remove", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("Remove", time.Now(), nil, &err)
 	bucket, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
@@ -316,7 +316,7 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
-	defer a.stats.ReportMetrics("Copy", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("Copy", time.Now(), nil, &err)
 	dstBucket, dstKey, err := a.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return fmt.Errorf("resolve destination: %w", err)
@@ -339,7 +339,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 
 func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 	bucket, uploadID, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -370,7 +370,7 @@ func (a *Adapter) CreateMultiPartUpload(ctx context.Context, obj block.ObjectPoi
 
 func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
+	defer a.metricsHandler.ReportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	bucket, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err
@@ -397,7 +397,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 
 func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("UploadCopyPart", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("UploadCopyPart", time.Now(), nil, &err)
 	bucket, _, err := a.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return nil, err
@@ -424,7 +424,7 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 
 func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("UploadCopyPartRange", time.Now(), nil, &err)
 	bucket, _, err := a.extractParamsFromObj(destinationObj)
 	if err != nil {
 		return nil, err
@@ -462,7 +462,7 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 
 func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string) error {
 	var err error
-	defer a.stats.ReportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
 	bucketName, _, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return err
@@ -491,7 +491,7 @@ func (a *Adapter) AbortMultiPartUpload(ctx context.Context, obj block.ObjectPoin
 
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	bucketName, key, err := a.extractParamsFromObj(obj)
 	if err != nil {
 		return nil, err

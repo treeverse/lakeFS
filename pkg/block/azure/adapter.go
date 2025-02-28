@@ -52,7 +52,7 @@ var (
 
 type Adapter struct {
 	clientCache        *ClientCache
-	stats              block.Histograms
+	metricsHandler     block.AdapterMetricsHandler
 	preSignedExpiry    time.Duration
 	disablePreSigned   bool
 	disablePreSignedUI bool
@@ -78,7 +78,7 @@ func NewAdapter(ctx context.Context, params params.Azure, adapterStatsID *string
 
 	return &Adapter{
 		clientCache:        cache,
-		stats:              NewAzureStats(adapterStatsID),
+		metricsHandler:     NewMetricsHandler(adapterStatsID),
 		preSignedExpiry:    preSignedExpiry,
 		disablePreSigned:   params.DisablePreSigned,
 		disablePreSignedUI: params.DisablePreSignedUI,
@@ -199,7 +199,7 @@ func (a *Adapter) log(ctx context.Context) logging.Logger {
 
 func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) (*block.PutResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("Put", time.Now(), &sizeBytes, &err)
+	defer a.metricsHandler.ReportMetrics("Put", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return nil, err
@@ -218,7 +218,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 
 func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadCloser, error) {
 	var err error
-	defer a.stats.ReportMetrics("Get", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("Get", time.Now(), nil, &err)
 
 	return a.Download(ctx, obj, 0, blockblob.CountToEnd)
 }
@@ -321,7 +321,7 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 func (a *Adapter) GetRange(ctx context.Context, obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	var err error
-	defer a.stats.ReportMetrics("GetRange", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("GetRange", time.Now(), nil, &err)
 
 	return a.Download(ctx, obj, startPosition, endPosition-startPosition+1)
 }
@@ -356,7 +356,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 
 func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, error) {
 	var err error
-	defer a.stats.ReportMetrics("Exists", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("Exists", time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
@@ -382,7 +382,7 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 
 func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (block.Properties, error) {
 	var err error
-	defer a.stats.ReportMetrics("GetProperties", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("GetProperties", time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
@@ -404,7 +404,7 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 	var err error
-	defer a.stats.ReportMetrics("Remove", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("Remove", time.Now(), nil, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return err
@@ -421,7 +421,7 @@ func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {
 
 func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.ObjectPointer) error {
 	var err error
-	defer a.stats.ReportMetrics("Copy", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("Copy", time.Now(), nil, &err)
 
 	qualifiedDestinationKey, err := resolveBlobURLInfo(destinationObj)
 	if err != nil {
@@ -513,7 +513,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPointer, _ *http.Request, _ block.CreateMultiPartUploadOpts) (*block.CreateMultiPartUploadResponse, error) {
 	// Azure has no create multipart upload
 	var err error
-	defer a.stats.ReportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
@@ -527,7 +527,7 @@ func (a *Adapter) CreateMultiPartUpload(_ context.Context, obj block.ObjectPoint
 
 func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int64, reader io.Reader, _ string, _ int) (*block.UploadPartResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("UploadPart", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("UploadPart", time.Now(), nil, &err)
 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
@@ -555,14 +555,14 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, _ int
 
 func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _ int) (*block.UploadPartResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("UploadPart", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("UploadPart", time.Now(), nil, &err)
 
 	return a.copyPartRange(ctx, sourceObj, destinationObj, 0, blockblob.CountToEnd)
 }
 
 func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, _ string, _ int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("UploadPart", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("UploadPart", time.Now(), nil, &err)
 	return a.copyPartRange(ctx, sourceObj, destinationObj, startPosition, endPosition-startPosition+1)
 }
 
@@ -595,7 +595,7 @@ func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetada
 
 func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectPointer, _ string, multipartList *block.MultipartUploadCompletion) (*block.CompleteMultiPartUploadResponse, error) {
 	var err error
-	defer a.stats.ReportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
+	defer a.metricsHandler.ReportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return nil, err

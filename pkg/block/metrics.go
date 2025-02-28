@@ -141,12 +141,16 @@ func (m *MetricsAdapter) RuntimeStats() map[string]string {
 type Histograms struct {
 	durationHistograms    *prometheus.HistogramVec
 	requestSizeHistograms *prometheus.HistogramVec
-	adapterStatsID        *string
 }
 
-func BuildHistogramsInstance(name string, adapterStatsID *string) Histograms {
+type AdapterMetricsHandler struct {
+	Histograms
+	adapterStatsID *string
+}
+
+func InitHistograms(name string, withAdapterStatsID bool) Histograms {
 	labelNames := []string{"operation", "error"}
-	if adapterStatsID != nil {
+	if withAdapterStatsID {
 		labelNames = append(labelNames, "adapter_stats_id")
 	}
 	var durationHistograms = promauto.NewHistogramVec(
@@ -168,11 +172,17 @@ func BuildHistogramsInstance(name string, adapterStatsID *string) Histograms {
 	return Histograms{
 		durationHistograms:    durationHistograms,
 		requestSizeHistograms: requestSizeHistograms,
-		adapterStatsID:        adapterStatsID,
 	}
 }
 
-func (s Histograms) ReportMetrics(operation string, start time.Time, sizeBytes *int64, err *error) {
+func BuildAdapterMetricsHandler(histograms Histograms, adapterStatsID *string) AdapterMetricsHandler {
+	return AdapterMetricsHandler{
+		Histograms:     histograms,
+		adapterStatsID: adapterStatsID,
+	}
+}
+
+func (s AdapterMetricsHandler) ReportMetrics(operation string, start time.Time, sizeBytes *int64, err *error) {
 	isErrStr := strconv.FormatBool(*err != nil)
 	labels := []string{operation, isErrStr}
 	if s.adapterStatsID != nil {
