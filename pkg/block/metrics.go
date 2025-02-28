@@ -145,13 +145,13 @@ type Histograms struct {
 
 type AdapterMetricsHandler struct {
 	Histograms
-	adapterStatsID *string
+	metricsID *string
 }
 
-func InitHistograms(name string, withAdapterStatsID bool) Histograms {
+func InitHistograms(name string, withMetricsID bool) Histograms {
 	labelNames := []string{"operation", "error"}
-	if withAdapterStatsID {
-		labelNames = append(labelNames, "adapter_stats_id")
+	if withMetricsID {
+		labelNames = append(labelNames, "metrics_id")
 	}
 	var durationHistograms = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -175,18 +175,18 @@ func InitHistograms(name string, withAdapterStatsID bool) Histograms {
 	}
 }
 
-func BuildAdapterMetricsHandler(histograms Histograms, adapterStatsID *string) AdapterMetricsHandler {
+func BuildAdapterMetricsHandler(histograms Histograms, metricsID *string) AdapterMetricsHandler {
 	return AdapterMetricsHandler{
-		Histograms:     histograms,
-		adapterStatsID: adapterStatsID,
+		Histograms: histograms,
+		metricsID:  metricsID,
 	}
 }
 
 func (s AdapterMetricsHandler) ReportMetrics(operation string, start time.Time, sizeBytes *int64, err *error) {
 	isErrStr := strconv.FormatBool(*err != nil)
 	labels := []string{operation, isErrStr}
-	if s.adapterStatsID != nil {
-		labels = append(labels, *s.adapterStatsID)
+	if s.metricsID != nil {
+		labels = append(labels, *s.metricsID)
 	}
 	s.durationHistograms.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
 	if sizeBytes != nil {

@@ -6,11 +6,11 @@ import (
 
 var instance *block.Histograms
 
-func NewMetricsHandler(adapterStatsID *string) block.AdapterMetricsHandler {
+func NewMetricsHandler(metricsID *string) block.AdapterMetricsHandler {
 	if instance == nil {
-		// note that a server can have an instance either with or without 'adapter_stats_id', not both.
-		inst := block.InitHistograms("gs", adapterStatsID != nil)
+		// note that a server can have an instance either with or without 'metrics_id', not both.
+		inst := block.InitHistograms("gs", metricsID != nil)
 		instance = &inst
 	}
-	return block.BuildAdapterMetricsHandler(*instance, adapterStatsID)
+	return block.BuildAdapterMetricsHandler(*instance, metricsID)
 }

@@ -27,7 +27,7 @@ const (
 	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 )
 
-func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, adapterStatsID *string, c config.AdapterConfig) (block.Adapter, error) {
+func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, metricsID *string, c config.AdapterConfig) (block.Adapter, error) {
 	blockstore := strings.ToLower(c.BlockstoreType())
 	logging.FromContext(ctx).
 		WithField("type", blockstore).
@@ -44,7 +44,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, adap
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(ctx, statsCollector, p, adapterStatsID)
+		return buildS3Adapter(ctx, statsCollector, p, metricsID)
 	case block.BlockstoreTypeMem, "memory":
 		return mem.New(ctx), nil
 	case block.BlockstoreTypeTransient:
@@ -54,13 +54,13 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, adap
 		if err != nil {
 			return nil, err
 		}
-		return buildGSAdapter(ctx, p, adapterStatsID)
+		return buildGSAdapter(ctx, p, metricsID)
 	case block.BlockstoreTypeAzure:
 		p, err := c.BlockstoreAzureParams()
 		if err != nil {
 			return nil, err
 		}
-		return azure.NewAdapter(ctx, p, adapterStatsID)
+		return azure.NewAdapter(ctx, p, metricsID)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
 			block.ErrInvalidAddress, blockstore, []string{block.BlockstoreTypeLocal, block.BlockstoreTypeS3, block.BlockstoreTypeAzure, block.BlockstoreTypeMem, block.BlockstoreTypeTransient, block.BlockstoreTypeGS})
@@ -92,7 +92,7 @@ func BuildS3Client(ctx context.Context, params params.S3) (*s3.Client, error) {
 	return client, nil
 }
 
-func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3, adapterStatsID *string) (*s3a.Adapter, error) {
+func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3, metricsID *string) (*s3a.Adapter, error) {
 	opts := []s3a.AdapterOption{
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
@@ -110,7 +110,7 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 	if params.PreSignedEndpoint != "" {
 		opts = append(opts, s3a.WithPreSignedEndpoint(params.PreSignedEndpoint))
 	}
-	adapter, err := s3a.NewAdapter(ctx, params, adapterStatsID, opts...)
+	adapter, err := s3a.NewAdapter(ctx, params, metricsID, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, erro
 	return storage.NewClient(ctx, opts...)
 }
 
-func buildGSAdapter(ctx context.Context, params params.GS, adapterStatsID *string) (*gs.Adapter, error) {
+func buildGSAdapter(ctx context.Context, params params.GS, metricsID *string) (*gs.Adapter, error) {
 	client, err := BuildGSClient(ctx, params)
 	if err != nil {
 		return nil, err
@@ -148,7 +148,7 @@ func buildGSAdapter(ctx context.Context, params params.GS, adapterStatsID *strin
 	case params.ServerSideEncryptionKmsKeyID != "":
 		opts = append(opts, gs.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
 	}
-	adapter := gs.NewAdapter(client, adapterStatsID, opts...)
+	adapter := gs.NewAdapter(client, metricsID, opts...)
 	logging.FromContext(ctx).WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }
