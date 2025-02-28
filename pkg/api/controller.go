@@ -1893,10 +1893,10 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 func (c *Controller) getStorageConfigs() (*apigen.StorageConfig, apigen.StorageConfigList) {
 	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
 	storageCfgList := c.getStorageConfigList()
-	if len(storageCfgList) > 1 {
-		return storageCfg, storageCfgList
+	if len(storageCfgList) <= 1 {
+		storageCfgList = apigen.StorageConfigList{}
 	}
-	return storageCfg, apigen.StorageConfigList{}
+	return storageCfg, storageCfgList
 }
 
 func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, error) {
