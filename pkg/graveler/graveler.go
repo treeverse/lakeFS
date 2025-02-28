@@ -2953,9 +2953,9 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 				Repository:  repository,
 				BranchID:    destination,
 				SourceRef:   fromCommit.CommitID.Ref(), // comment id we merge from
+				MergeSource: source,                    // the requested source to merge from (branch/tag/ref)
 				Commit:      commit,
 				CommitID:    commitID,
-				MergeSource: source, // the requested source to merge from (branch/tag/ref)
 			})
 			if err != nil {
 				return nil, &HookAbortError{
@@ -2982,8 +2982,8 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 			RunID:       postRunID,
 			Repository:  repository,
 			BranchID:    destination,
-			MergeSource: source,         // the requested source to merge from (branch/tag/ref)
 			SourceRef:   commitID.Ref(), // commit id we merge from
+			MergeSource: source,         // the requested source to merge from (branch/tag/ref)
 			Commit:      commit,
 			CommitID:    commitID,
 			PreRunID:    preRunID,
