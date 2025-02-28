@@ -2948,13 +2948,14 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		if !repository.ReadOnly {
 			preRunID = g.hooks.NewRunID()
 			err = g.hooks.PreMergeHook(ctx, HookRecord{
-				EventType:  EventTypePreMerge,
-				RunID:      preRunID,
-				Repository: repository,
-				BranchID:   destination,
-				SourceRef:  fromCommit.CommitID.Ref(),
-				Commit:     commit,
-				CommitID:   commitID,
+				EventType:   EventTypePreMerge,
+				RunID:       preRunID,
+				Repository:  repository,
+				BranchID:    destination,
+				SourceRef:   fromCommit.CommitID.Ref(), // comment id we merge from
+				MergeSource: source,                    // the requested source to merge from (branch/tag/ref)
+				Commit:      commit,
+				CommitID:    commitID,
 			})
 			if err != nil {
 				return nil, &HookAbortError{
@@ -2977,15 +2978,15 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 	if !repository.ReadOnly {
 		postRunID := g.hooks.NewRunID()
 		err = g.hooks.PostMergeHook(ctx, HookRecord{
-			EventType:  EventTypePostMerge,
-			RunID:      postRunID,
-			Repository: repository,
-			BranchID:   destination,
-
-			SourceRef: commitID.Ref(),
-			Commit:    commit,
-			CommitID:  commitID,
-			PreRunID:  preRunID,
+			EventType:   EventTypePostMerge,
+			RunID:       postRunID,
+			Repository:  repository,
+			BranchID:    destination,
+			SourceRef:   commitID.Ref(), // commit id we merge from
+			MergeSource: source,         // the requested source to merge from (branch/tag/ref)
+			Commit:      commit,
+			CommitID:    commitID,
+			PreRunID:    preRunID,
 		})
 		if err != nil {
 			g.log(ctx).

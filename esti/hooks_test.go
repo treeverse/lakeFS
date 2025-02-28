@@ -191,6 +191,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		ActionName:    "Test Pre Merge",
 		HookID:        "test_webhook",
 		RepositoryID:  repo,
+		MergeSource:   branch,
 		BranchID:      mainBranch,
 		Committer:     commitRecord.Committer,
 		CommitMessage: fmt.Sprintf("Merge '%s' into '%s'", branch, mainBranch),
@@ -212,6 +213,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		ActionName:    "Test Post Merge",
 		HookID:        "test_webhook",
 		RepositoryID:  repo,
+		MergeSource:   branch,
 		BranchID:      mainBranch,
 		CommitID:      mergeRef,
 		Committer:     commitRecord.Committer,
@@ -473,6 +475,7 @@ type webhookEventInfo struct {
 	HookID        string            `json:"hook_id"`
 	RepositoryID  string            `json:"repository_id"`
 	BranchID      string            `json:"branch_id"`
+	MergeSource   string            `json:"merge_source"`
 	SourceRef     string            `json:"source_ref"`
 	TagID         string            `json:"tag_id"`
 	CommitID      string            `json:"commit_id"`
