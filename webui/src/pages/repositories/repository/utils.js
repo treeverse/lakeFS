@@ -3,8 +3,12 @@ function getRepoStorageConfig(configs, repo) {
         return {storageConfig: null, error: new Error('No storage configs found')};
     }
 
-    const storageID = repo?.storage_id;
-    if (storageID) {
+    if (configs.length > 1) {
+        const storageID = repo?.storage_id;
+        if (!storageID) {
+            return {storageConfig: null, error: new Error('Repo with no StorageID, cannot match storage config')};
+        }
+        
         // find the storage config that matches the repo
         const storageConfig = configs.find(c => c['blockstore_id'] === storageID);
         if (!storageConfig) {
@@ -12,9 +16,6 @@ function getRepoStorageConfig(configs, repo) {
         }
         return {storageConfig, error: null};
     } else {
-        if (configs.length > 1) {
-            return {storageConfig: null, error: new Error('Repo with no StorageID, cannot match storage config')};
-        }
         // single blockstore config
         return {storageConfig: configs[0], error: null};
     }
