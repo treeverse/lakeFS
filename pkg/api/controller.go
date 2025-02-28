@@ -1914,6 +1914,7 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 		info.DefaultNamespacePrefix = *defaultNamespacePrefix
 	}
 	return &apigen.StorageConfig{
+		BlockstoreId:                     swag.String(storage.ID()),
 		BlockstoreDescription:            swag.String(storage.BlockstoreDescription()),
 		BlockstoreType:                   storage.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
@@ -1935,7 +1936,6 @@ func (c *Controller) getStorageConfigList() apigen.StorageConfigList {
 			c.Logger.WithError(err).Error("no storage config found for id: %s", id)
 			continue
 		}
-		info.BlockstoreId = swag.String(id)
 		configList = append(configList, *info)
 	}
 	return configList
