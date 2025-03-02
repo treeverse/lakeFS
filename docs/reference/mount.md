@@ -112,6 +112,7 @@ The `commit` command commits the changes made in the mounted directory to the or
 If `<mount_directory>` not specified, the command searches for the mount directory in the current working directory and upwards based on `.everest` directory existence.
 The new commit will be merged to the original branch with the `source-wins` strategy.
 After the commit is successful, the mounted directory source commit will be updated to the HEAD of the latest commit at the source branch; that means that changes made to the source branch out of the mount scope will also be reflected in the mounted directory.
+
 **Note**
 ⚠️ Writes to a mount directory during commit may be lost.
 {: .note }
