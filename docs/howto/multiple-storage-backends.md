@@ -31,9 +31,122 @@ Multi-storage backends support is available from version X of lakeFS Enterprise.
 
 ## Configuring Multiple Storage Backends
 
-### Configuration format 
+To configure your lakeFS server to connect to multiple storage backends, define them under the `blockstores` section in 
+your server configuration.
 
-To set your lakeFS server up to connect to multiple storage backends, use configuration structure below.
+### Configuration Structure
+
+```yaml
+blockstores:
+    signing:
+      secret_key: "<random_secret>"  # Required. A cryptographically secure random string for encryption and HMAC signing in storage-related APIs.
+
+    stores:
+        - id: "<storage_id>" # Unique storage id 
+          backward_compatible: <true|false>  # Optional. Set to `true` for upgrading from a single-store setup.
+          description: "<description_of_storage>"  
+          type: "<storage_type>"  # Supported types: s3, azure, gcs, local, etc.
+
+          # Storage-specific configuration
+          s3:  
+              force_path_style: <true|false>  
+              endpoint: "<storage_endpoint>"  
+              discover_bucket_region: <true|false>  
+              credentials:
+                access_key_id: "<access_key>"
+                secret_access_key: "<secret_key>"
+
+          azure:  
+              storage_account: "<account_name>"  
+              storage_access_key: "<access_key>"
+
+          gcs:  
+              credentials_file: "<path_to_service_account.json>"
+              bucket_project_id: "<project_id>"
+
+          local:  
+              path: "<local_storage_path>"
+```  
+
+### Configuration Parameters
+
+- **`signing.secret_key`** – A required, cryptographically secure string used for encryption and signing storage-related API operations.
+- **`stores`** – A list of configured storage backends, each defined by:
+  - **`id`** – A unique identifier for the storage backend.
+  - **`backward_compatible`** – Enables backward compatibility for upgrading from a single-store setup. Defaults to `false`.
+  - **`description`** – A short description of the backend’s purpose.
+  - **`type`** – The storage provider type (`s3`, `azure`, `gcs`, or `local`).
+  - **Provider-specific settings** – Each backend type requires different parameters (see below).
+
+#### Example Configurations
+
+##### **S3-Compatible Backends (AWS S3, MinIO, Ceph, etc.)**
+
+```yaml
+- id: "minio-main"
+  description: "MinIO backend for production data"
+  type: "s3"
+  s3:
+      force_path_style: true
+      endpoint: "http://minio-main.local"
+      discover_bucket_region: false
+      credentials:
+        access_key_id: "<main_access_key>"
+        secret_access_key: "<main_secret_key>"
+```
+
+##### **Azure Blob Storage**
+
+```yaml
+- id: "azure-prod"
+  description: "Azure storage for analytics"
+  type: "azure"
+  azure:
+      storage_account: "myaccount"
+      storage_access_key: "<access_key>"
+```
+
+##### **Google Cloud Storage (GCS)**
+
+```yaml
+- id: "gcs-research"
+  description: "Google Cloud Storage for research data"
+  type: "gcs"
+  gcs:
+      credentials_file: "/path/to/service-account.json"
+      bucket_project_id: "my-gcp-project"
+```
+
+##### **Local Storage**
+
+```yaml
+- id: "local-dev"
+  description: "Local storage for development"
+  type: "local"
+  local:
+      path: "/data/lakefs-storage"
+```
+
+---
+
+### **Upgrading from Single to Multi-Store**
+- Set `backward_compatible: true` for the existing store to ensure a smooth transition.
+- When `backward_compatible` is enabled, repositories created before the upgrade default to the existing store unless explicitly assigned to a new one.
+
+### **Common Configuration Errors & Fixes**
+| Issue | Cause | Solution |
+|-------|-------|---------|
+| Blockstore ID conflicts | Duplicate `id` values in `stores` | Ensure each storage backend has a unique ID |
+| Missing `backward_compatible` | Upgrade from single to multi-store without setting the flag | Add `backward_compatible: true` for the existing storage |
+| Unsupported configurations in OSS | Enterprise-only features used in OSS version | Verify feature availability in the [lakeFS Enterprise documentation]({% link enterprise/index.md %}) |
+
+---
+
+This structure makes it clear how to configure multi-store setups, keeps provider-specific details modular, and improves readability. Let me know if you’d like further refinements! 🚀
+
+To configure your lakeFS server to connect to multiple storage backends, define them under the blockstores section in 
+your server configuration.
+
 ```yaml
     blockstores:
         signing:
