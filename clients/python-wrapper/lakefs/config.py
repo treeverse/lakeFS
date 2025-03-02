@@ -76,19 +76,16 @@ class ClientConfig(Configuration):
         key_env = os.getenv(_LAKECTL_ACCESS_KEY_ID_ENV)
         secret_env = os.getenv(_LAKECTL_SECRET_ACCESS_KEY_ENV)
         access_token_env = os.getenv(_LAKECTL_CREDENTIALS_ACCESS_TOKEN)
-        print("endpoints: ",print(os.environ))
 
         self.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
         self.username = key_env if key_env is not None else self.credentials.access_key_id
         self.password = secret_env if secret_env is not None else self.credentials.secret_access_key
         if len(self.username) > 0 and len(self.password) > 0:
             found = True
-        print("access ",access_token_env)
-        print("endpint ",self.host)
+
         self.access_token = access_token_env if access_token_env is not None  else  ""  
         if len(self.access_token) > 0:
             found = True
             
         if not found:
-            print('got here')
             raise NoAuthenticationFound

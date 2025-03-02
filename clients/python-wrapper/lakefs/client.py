@@ -25,6 +25,12 @@ from lakefs.config import ClientConfig
 from lakefs.exceptions import NotAuthorizedException, ServerException, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
 
+from .config import (
+    _LAKECTL_ENDPOINT_ENV,
+    _LAKECTL_CREDENTIALS_ACCESS_TOKEN
+)
+
+
 if TYPE_CHECKING:
     import boto3
 
@@ -215,42 +221,8 @@ def _get_identity_token(
     return base64.b64encode(json_string.encode('utf-8')).decode('utf-8')
 
 
-def get_auth_token(
-        session: boto3.Session,
-        ttl_seconds: int = 3600,
-        presigned_ttl: int = 60,
-        additional_headers: dict[str, str] = None,
-        **kwargs) -> str:
-    """
-    Create a lakeFS client from an AWS role.
-    :param session: : The boto3 session.
-    :param ttl_seconds: The time-to-live for the generated lakeFS token in seconds. The default value is 3600 seconds.
-    :param presigned_ttl: The time-to-live for the presigned URL in seconds. The default value is 60 seconds.
-    :param additional_headers: Additional headers to include in the presigned URL.
-    :param kwargs: The arguments to pass to the client.
-    :return: A lakeFS client.
-    """
-
-    client = Client(**kwargs)
-    lakefs_host = urlparse(client.config.host).hostname
-    identity_token = _get_identity_token(session, lakefs_host, presign_expiry=presigned_ttl,
-                                         additional_headers=additional_headers)
-    external_login_information = ExternalLoginInformation(token_expiration_duration=ttl_seconds, identity_request={
-        "identity_token": identity_token
-    })
-
-    with api_exception_handler():
-        auth_token = client.sdk_client.auth_api.external_principal_login(external_login_information)
-
-    # client.config.access_token = auth_token.token
-    os.environ['LAKECTL_CREDENTIALS_ACCESS_TOKEN'] = auth_token.token 
-    os.environ['LAKECTL_SERVER_ENDPOINT_URL'] = client.config.host
-    return auth_token.token
-
-
-
 def from_aws_role(
-        session: boto3.Session,
+        session: boto3.Session = None,
         ttl_seconds: int = 3600,
         presigned_ttl: int = 60,
         additional_headers: dict[str, str] = None,
@@ -264,6 +236,9 @@ def from_aws_role(
     :param kwargs: The arguments to pass to the client.
     :return: A lakeFS client.
     """
+    if session is None:
+        session = boto3.Session()
+        
 
     client = Client(**kwargs)
     lakefs_host = urlparse(client.config.host).hostname
@@ -275,8 +250,8 @@ def from_aws_role(
 
     with api_exception_handler():
         auth_token = client.sdk_client.auth_api.external_principal_login(external_login_information)
-    os.environ['LAKECTL_CREDENTIALS_ACCESS_TOKEN'] = auth_token.token 
-    os.environ['LAKECTL_SERVER_ENDPOINT_URL'] = client.config.host
+    os.environ[_LAKECTL_CREDENTIALS_ACCESS_TOKEN] = auth_token.token 
+    os.environ[_LAKECTL_ENDPOINT_ENV] = client.config.host
     client.config.access_token = auth_token.token
     return client
 
@@ -327,13 +302,8 @@ class _BaseLakeFSObject:
             if _BaseLakeFSObject.__client is None:
                 try:
                     _BaseLakeFSObject.__client = Client()
-                    print('here')
                 except NoAuthenticationFound:
-                    host = os.getenv('LAKECTL_SERVER_ENDPOINT_URL') 
-                    session = boto3.Session()
-                    # token = get_auth_token(session = session ,host = host)
-                    # print('we hve a token, ',token)
-                    # _BaseLakeFSObject.__client = Client(access_token = token,host=host)
-                    _BaseLakeFSObject.__client = from_aws_role(session = session, host = host) 
+                    host = os.getenv(_LAKECTL_ENDPOINT_ENV) 
+                    _BaseLakeFSObject.__client = from_aws_role(host = host) 
                 
             return _BaseLakeFSObject.__client
