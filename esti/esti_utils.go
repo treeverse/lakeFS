@@ -462,7 +462,7 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 }
 
 func UploadContent(ctx context.Context, repo, branch, objPath, objContent string, clt apigen.ClientWithResponsesInterface) (*apigen.UploadObjectResponse, error) {
-	fmt.Printf("UploadContent for repo=%s, branch=%s, objPath=%s, objContent=%s",repo,branch,objPath,objContent)
+	fmt.Printf("UploadContent for repo=%s, branch=%s, objPath=%s, objContent=%s", repo, branch, objPath, objContent)
 	if clt == nil {
 		clt = client
 	}
