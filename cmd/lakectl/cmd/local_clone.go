@@ -28,7 +28,6 @@ var localCloneCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		remote, localPath := getSyncArgs(args, true, false)
-		syncFlags := getSyncFlags(cmd, client, remote.Repository)
 		updateIgnore := Must(cmd.Flags().GetBool(localGitIgnoreFlagName))
 		empty, err := fileutil.IsDirEmpty(localPath)
 		if err != nil {
@@ -86,6 +85,7 @@ var localCloneCmd = &cobra.Command{
 			DieErr(err)
 		}
 		sigCtx := localHandleSyncInterrupt(ctx, idx, string(cloneOperation))
+		syncFlags := getSyncFlags(cmd, client, remote.Repository)
 		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
 			SyncFlags:           syncFlags,
 			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
