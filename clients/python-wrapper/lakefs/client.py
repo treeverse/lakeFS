@@ -18,10 +18,10 @@ import lakefs_sdk
 from lakefs_sdk import ExternalLoginInformation
 from lakefs_sdk.client import LakeFSClient
 
+from botocore.exceptions import NoCredentialsError
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NotAuthorizedException, ServerException, NoAuthenticationFound, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
-from botocore.exceptions import NoCredentialsError
 
 from .config import (
     _LAKECTL_ENDPOINT_ENV,
@@ -316,5 +316,4 @@ class _BaseLakeFSObject:
                 except NoAuthenticationFound:
                     _BaseLakeFSObject.__client = _authenticate_with_aws()
 
-    
             return _BaseLakeFSObject.__client
