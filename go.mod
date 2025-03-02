@@ -71,6 +71,7 @@ require (
 	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/alitto/pond v1.8.3
 	github.com/antonmedv/expr v1.15.3
+	github.com/aws/aws-sdk-go v1.48.11
 	github.com/aws/aws-sdk-go-v2 v1.23.5
 	github.com/aws/aws-sdk-go-v2/config v1.25.11
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.9
@@ -96,6 +97,9 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/puzpuzpuz/xsync v1.5.2
+	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20250302084420-19657b3cf7f9
+	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250302084420-19657b3cf7f9
+	github.com/treeverse/lakefs/webui v0.0.0-20250302084420-19657b3cf7f9
 	go.uber.org/ratelimit v0.3.0
 )
 
@@ -112,7 +116,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/ahmetb/go-linq/v3 v3.2.0 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20200730104253-651201b0f516 // indirect
-	github.com/aws/aws-sdk-go v1.48.11 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.3 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.14.9 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.8 // indirect
@@ -135,7 +138,6 @@ require (
 	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
-	github.com/golang/glog v1.1.2 // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
