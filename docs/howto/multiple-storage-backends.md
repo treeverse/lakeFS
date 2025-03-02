@@ -129,9 +129,10 @@ blockstores:
 
 ---
 
-### **Upgrading from Single to Multi-Store**
+### Upgrading from Single to Multi-Store
 - Set `backward_compatible: true` for the existing store to ensure a smooth transition.
-- When `backward_compatible` is enabled, repositories created before the upgrade default to the existing store unless explicitly assigned to a new one.
+- When `backward_compatible` is enabled, repositories created before the upgrade default to the existing store and repos 
+created without specifying a storage id default to it. 
 
 ### **Common Configuration Errors & Fixes**
 | Issue | Cause | Solution |
@@ -139,53 +140,6 @@ blockstores:
 | Blockstore ID conflicts | Duplicate `id` values in `stores` | Ensure each storage backend has a unique ID |
 | Missing `backward_compatible` | Upgrade from single to multi-store without setting the flag | Add `backward_compatible: true` for the existing storage |
 | Unsupported configurations in OSS | Enterprise-only features used in OSS version | Verify feature availability in the [lakeFS Enterprise documentation]({% link enterprise/index.md %}) |
-
----
-
-This structure makes it clear how to configure multi-store setups, keeps provider-specific details modular, and improves readability. Let me know if you’d like further refinements! 🚀
-
-To configure your lakeFS server to connect to multiple storage backends, define them under the blockstores section in 
-your server configuration.
-
-```yaml
-    blockstores:
-        signing:
-          secret_key: "some_secret" # Required. A random (cryptographically safe) generated string that is used for encryption and HMAC signing when using storage related APIs.   
-        stores:
-            - id: minio-main 
-              backward_compatible: true # by default set to false, used to upgrade installations from single to multi-store.  
-              description: MinIO backend for production data
-              type: s3
-              s3:
-                  force_path_style: true
-                  endpoint: 'http://minio-main.local'
-                  discover_bucket_region: false
-                  credentials:
-                    access_key_id: <main_access_key>
-                    secret_access_key: <main_secret_key>
-            - id: minio-backup
-              description: MinIO backend for backups
-              type: s3
-              s3:
-                  force_path_style: true
-                  endpoint: 'http://minio-backup.local'
-                  discover_bucket_region: false
-                  credentials:
-                    access_key_id: <backup_access_key>
-                    secret_access_key: <backup_secret_key>
-            - id: ceph
-              description: Ceph account for ML experiments
-              type: s3
-              s3:
-                  force_path_style: true
-                  endpoint: 'http://ceph.local'
-                  discover_bucket_region: false
-                  credentials:
-                    access_key_id: <ceph_access_key>
-                    secret_access_key: <ceph_secret_key>
-   ```
-Notes:
-*
 
 
 ### Upgrading from single to multi-store
