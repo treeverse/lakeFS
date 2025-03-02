@@ -234,7 +234,7 @@ func getStorageConfigOrDie(ctx context.Context, client *apigen.ClientWithRespons
 
 		// find the storage config for the repository
 		for _, storageConfig := range *storageConfigList {
-			if storageConfig.BlockstoreId == storageID {
+			if swag.StringValue(storageConfig.BlockstoreId) == swag.StringValue(storageID) {
 				return &storageConfig
 			}
 		}
