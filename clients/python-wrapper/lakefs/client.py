@@ -241,7 +241,7 @@ def from_aws_role(
         identity_token = _get_identity_token(session, lakefs_host, presign_expiry=presigned_ttl,
                                          additional_headers=additional_headers)
     except Exception as e:
-        raise NoAuthenticationFound(f"Failed to get identity token: {e}")
+        raise NoAuthenticationFound(f"Failed to get identity token: {e}") from e
 
     external_login_information = ExternalLoginInformation(token_expiration_duration=ttl_seconds, identity_request={
         "identity_token": identity_token
