@@ -605,13 +605,16 @@ func GravelerIterator(data []byte) (*sstable.Iterator, error) {
 	return sstable.NewIterator(iter, dummyDeref), nil
 }
 
-func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *apigen.ActionRunList {
+func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int, clt apigen.ClientWithResponsesInterface) *apigen.ActionRunList {
+	if clt == nil {
+		clt = client
+	}
 	var runs *apigen.ActionRunList
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxInterval = 5 * time.Second
 	bo.MaxElapsedTime = 30 * time.Second
 	listFunc := func() error {
-		runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
+		runsResp, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
 			Commit: apiutil.Ptr(ref),
 		})
 		require.NoError(t, err)

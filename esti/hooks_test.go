@@ -66,7 +66,7 @@ func TestHooksSuccess(t *testing.T) {
 	})
 
 	t.Log("check runs are sorted in descending order")
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", 13)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", 13, nil)
 	require.Equal(t, len(runs.Results), len(hooksTestData.data))
 	for i, run := range runs.Results {
 		valIdx := len(hooksTestData.data) - (i + 1)
@@ -195,7 +195,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	}, postMergeEvent)
 
 	t.Log("List repository runs", mergeRef)
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2, nil)
 	eventType := map[string]bool{
 		"pre-merge":  true,
 		"post-merge": true,

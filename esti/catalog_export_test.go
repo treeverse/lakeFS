@@ -163,7 +163,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	commit := uploadAndCommitObjects(t, ctx, repo, mainBranch, tablePaths, hookFiles)
 
 	// wait until actions finish running
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, commit.Id, 1)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, commit.Id, 1, nil)
 	require.Equal(t, "completed", runs.Results[0].Status, "symlink action result not finished")
 
 	// list symlink.txt files from blockstore
@@ -332,7 +332,7 @@ func TestAWSCatalogExport(t *testing.T) {
 		})
 
 		// wait for action to finish
-		runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+		runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1, nil)
 		require.Equal(t, "completed", runs.Results[0].Status, "glue action result not finished")
 
 		// create glue client
@@ -518,7 +518,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 		"_lakefs_actions/delta_export.yaml": renderTplFileAsStr(t, testData, tmplDir, fmt.Sprintf("%s/_lakefs_actions/delta_export.yaml", blockstore)),
 	})
 
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1, nil)
 	run := runs.Results[0]
 	require.Equal(t, "completed", run.Status)
 
@@ -568,7 +568,7 @@ func TestDeltaCatalogImportExport(t *testing.T) {
 		"_lakefs_actions/delta_export.yaml": renderTplFileAsStr(t, testData, tmplDir, fmt.Sprintf("%s/_lakefs_actions/delta_export.yaml", blockstore)),
 	})
 
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1, nil)
 	run := runs.Results[0]
 	require.Equal(t, "completed", run.Status)
 
@@ -660,7 +660,7 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 		"_lakefs_actions/delta_export.yaml": renderTplFileAsStr(t, testData, tmplDir, "azure_adls/_lakefs_actions/delta_export.yaml"),
 	})
 
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1, nil)
 	run := runs.Results[0]
 	require.Equal(t, "completed", run.Status)
 
