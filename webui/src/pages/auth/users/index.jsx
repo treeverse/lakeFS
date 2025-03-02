@@ -20,17 +20,21 @@ import {
     AlertError,
     FormattedDate,
     Loading,
-    RefreshButton
+    RefreshButton,
+    useDebouncedState
 } from "../../../lib/components/controls";
 import validator from "validator/es";
 import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from "../validation";
 import { resolveUserDisplayName } from "../../../lib/utils";
+import {SearchIcon} from "@primer/octicons-react";
+import InputGroup from "react-bootstrap/InputGroup";
+import Form from "react-bootstrap/Form";
 
 const USER_NOT_FOUND = "unknown";
 export const GetUserEmailByIdContext = createContext();
 
 
-const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userListResults}) => {
+const UsersContainer = ({refresh, setRefresh}) => {
     const { user } = useUser();
     const currentUser = user;
 
@@ -40,12 +44,21 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
     const [deleteError, setDeleteError] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [showInvite, setShowInvite] = useState(false);
-    
-    
+    const prefix = (router.query.prefix) ? router.query.prefix : "";
 
     useEffect(() => { setSelected([]); }, [refresh, after]);
 
     const authCapabilities = useAPI(() => auth.getAuthCapabilities());
+
+    const [searchPrefix, setSearchPrefix] = useDebouncedState(
+        prefix,
+        (search) => router.push({pathname: '/auth/users', query: {prefix: search}})
+    );
+
+    const { results, loading, error, nextPage } = useAPIWithPagination( () => {
+        return auth.listUsers(prefix, after);
+    }, [refresh, prefix, after]);
+
     if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
     if (authCapabilities.loading) return <Loading/>;
@@ -65,6 +78,18 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
                                                     setRefresh(!refresh);
                                                 })}}/>
                 <ActionGroup orientation="right">
+                    <InputGroup>
+                        <Form.Control
+                            placeholder="Find a user..."
+                            autoFocus
+                            value={searchPrefix}
+                            onChange={event => setSearchPrefix(event.target.value)}
+                        />
+                        <InputGroup.Text>
+                            <SearchIcon/>
+                        </InputGroup.Text>
+                    </InputGroup>
+
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
@@ -108,7 +133,7 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
             />
 
             <DataTable
-                results={userListResults}
+                results={results}
                 headers={['', 'User ID', 'Created At']}
                 keyFn={user => user.id}
                 rowFn={user => [
@@ -129,7 +154,11 @@ const UsersContainer = ({nextPage, refresh, setRefresh, error, loading, userList
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => router.push({pathname: '/auth/users', query: {after}})}
+                onPaginate={after => {
+                    const query = {after};
+                    if (router.query.prefix) query.prefix = router.query.prefix;
+                    router.push({pathname: '/auth/users', query})
+                }}
             />
         </>
     );
@@ -163,16 +192,12 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
 }
 
 export const UsersPage = () => {
-    const { setActiveTab, refresh, loading, error, nextPage, setRefresh, usersList } = useOutletContext();
+    const { setActiveTab, refresh, setRefresh } = useOutletContext();
     useEffect(() => setActiveTab("users"), [setActiveTab]);
     return (
         <UsersContainer
             refresh={refresh}
-            loading={loading}
-            error={error}
-            nextPage={nextPage}
             setRefresh={setRefresh}
-            userListResults={usersList}
         />
     );
 };
@@ -182,10 +207,11 @@ const UsersIndexPage = () => {
     const [refresh, setRefresh] = useState(false);
     const [usersList, setUsersList] = useState([]);
     const router = useRouter();
+    const prefix = (router.query.prefix) ? router.query.prefix : "";
     const after = (router.query.after) ? router.query.after : "";
-    const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listUsers('', after);
-    }, [after, refresh]);
+    const { results, loading, error, nextPage } = useAPIWithPagination( async () => {
+        return auth.listUsers(prefix, after);
+    }, [refresh, prefix, after]);
 
     useEffect(() => {
         setUsersList(results);

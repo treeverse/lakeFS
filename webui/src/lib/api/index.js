@@ -26,9 +26,7 @@ class LocalCache {
 const cache = new LocalCache();
 
 export const qs = (queryParts) => {
-    console.log("queryParts", queryParts)
     const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
-    console.log("parts", parts)
     return new URLSearchParams(parts).toString();
 };
 
@@ -196,7 +194,6 @@ class Auth {
     }
 
     async listUsers(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        after = ""
         const query = qs({prefix, after, amount});
         const response = await apiRequest(`/auth/users?${query}`);
         if (response.status !== 200) {
@@ -545,6 +542,7 @@ class Branches {
     }
 
     async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
+        console.log("in list")
         const query = qs({prefix, after, amount});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches?` + query);
         if (response.status !== 200) {
