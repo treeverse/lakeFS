@@ -21,7 +21,9 @@ from lakefs_sdk.client import LakeFSClient
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NotAuthorizedException, ServerException, NoAuthenticationFound, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
+import logging
 
+logger = logging.getLogger(__name__)
 from .config import (
     _LAKECTL_ENDPOINT_ENV,
     _LAKECTL_CREDENTIALS_ACCESS_TOKEN
@@ -276,6 +278,8 @@ def _authenticate_with_aws() -> Client:
     """Try to authenticate using AWS role-based credentials."""
     host = os.getenv(_LAKECTL_ENDPOINT_ENV)
     profile = os.getenv("AWS_PROFILE")
+    logger.error("Missing environment variables: host=%s, profile=%s", host, profile)
+
 
     if not host or not profile:
         raise NoAuthenticationFound
@@ -307,9 +311,8 @@ class _BaseLakeFSObject:
 
         with _BaseLakeFSObject.__mutex:
             if _BaseLakeFSObject.__client is None:
-                try:
-                    _BaseLakeFSObject.__client = Client()
-                except NoAuthenticationFound:
-                    _BaseLakeFSObject.__client = _authenticate_with_aws()
+                _BaseLakeFSObject.__client = Client()
+            if _BaseLakeFSObject.__client is None:
+                _BaseLakeFSObject.__client = _authenticate_with_aws()
 
             return _BaseLakeFSObject.__client
