@@ -12,14 +12,12 @@ from threading import Lock
 from typing import Optional
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse, parse_qs
-
 import boto3.session
 
 import lakefs_sdk
 from lakefs.exceptions import NoAuthenticationFound
 from lakefs_sdk import ExternalLoginInformation
 from lakefs_sdk.client import LakeFSClient
-from lakefs_sdk import configuration
 
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NotAuthorizedException, ServerException, api_exception_handler
@@ -302,8 +300,6 @@ class _BaseLakeFSObject:
                     _BaseLakeFSObject.__client = Client()
                 except NoAuthenticationFound:
                     host = os.getenv(_LAKECTL_ENDPOINT_ENV)
-                    print('got host' , host) 
-
                     _BaseLakeFSObject.__client = from_aws_role(host = host) 
                 
             return _BaseLakeFSObject.__client
