@@ -33,9 +33,53 @@ Multi-storage backends support is available from version X of lakeFS Enterprise.
 
 ### Configuration format 
 
+To set your lakeFS server up to connect to multiple storage backends, use configuration structure below.
+```yaml
+    blockstores:
+        signing:
+          secret_key: "some_secret" # Required. A random (cryptographically safe) generated string that is used for encryption and HMAC signing when using storage related APIs.   
+        stores:
+            - id: minio-main 
+              backward_compatible: true # by default set to false, used to upgrade installations from single to multi-store.  
+              description: MinIO backend for production data
+              type: s3
+              s3:
+                  force_path_style: true
+                  endpoint: 'http://minio-main.local'
+                  discover_bucket_region: false
+                  credentials:
+                    access_key_id: <main_access_key>
+                    secret_access_key: <main_secret_key>
+            - id: minio-backup
+              description: MinIO backend for backups
+              type: s3
+              s3:
+                  force_path_style: true
+                  endpoint: 'http://minio-backup.local'
+                  discover_bucket_region: false
+                  credentials:
+                    access_key_id: <backup_access_key>
+                    secret_access_key: <backup_secret_key>
+            - id: ceph
+              description: Ceph account for ML experiments
+              type: s3
+              s3:
+                  force_path_style: true
+                  endpoint: 'http://ceph.local'
+                  discover_bucket_region: false
+                  credentials:
+                    access_key_id: <ceph_access_key>
+                    secret_access_key: <ceph_secret_key>
+   ```
+Notes:
+*
+
+
 ### Upgrading from single to multi-store
+* 
 * The backward_compatible flag
 * default to it when storage id is empty
+
 
 ### Common Configuration Errors & Fixes
 
@@ -67,4 +111,6 @@ We use the configurations for it. go change configurations and restart the serve
 
 
 TODO: 
-* add to https://docs.lakefs.io/understand/architecture.html#object-storage for msb discoverability 
+* add to https://docs.lakefs.io/understand/architecture.html#object-storage for msb discoverability
+* Make sure configuration reference has the new configurations
+* Understand the status storage combinations of non self-managed s3 compatible 
