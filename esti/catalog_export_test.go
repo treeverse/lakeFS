@@ -274,6 +274,7 @@ func TestAWSCatalogExport(t *testing.T) {
 	)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
+	fmt.Printf("repo= %s", repo)
 
 	tmplDir, _ := fs.Sub(exportHooksFiles, "export_hooks_files/glue")
 	testData := &exportHooksTestData{
