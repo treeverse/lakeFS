@@ -1,4 +1,4 @@
-//nolint:unused, mnd, err113
+//nolint:unused
 package esti
 
 // TODO (niro): All the unused errors is because our esti tests filenames are suffixed with _test
@@ -70,6 +70,7 @@ var (
 
 	errNotVerified     = errors.New("lakeFS failed")
 	errWrongStatusCode = errors.New("wrong status code")
+	errRunResultsSize  = errors.New("run results size")
 )
 
 func (i *ArrayFlags) String() string {
@@ -605,13 +606,16 @@ func GravelerIterator(data []byte) (*sstable.Iterator, error) {
 }
 
 func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int, clt apigen.ClientWithResponsesInterface) *apigen.ActionRunList {
+	const MaxIntervalSecs = 5
+	const MaxElapsedSecs = 30
+
 	if clt == nil {
 		clt = client
 	}
 	var runs *apigen.ActionRunList
 	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = 5 * time.Second
-	bo.MaxElapsedTime = 30 * time.Second
+	bo.MaxInterval = MaxIntervalSecs * time.Second
+	bo.MaxElapsedTime = MaxElapsedSecs * time.Second
 	listFunc := func() error {
 		runsResp, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
 			Commit: apiutil.Ptr(ref),
@@ -622,7 +626,7 @@ func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref s
 		if len(runs.Results) == l {
 			return nil
 		}
-		return fmt.Errorf("run results size: %d", len(runs.Results))
+		return fmt.Errorf("size: %d: %w", len(runs.Results), errRunResultsSize)
 	}
 	err := backoff.Retry(listFunc, bo)
 	require.NoError(t, err)
