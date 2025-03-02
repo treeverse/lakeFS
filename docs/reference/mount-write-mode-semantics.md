@@ -21,6 +21,9 @@ Local changes are reflected in lakeFS only after the changes are **committed**.
 That means that the data is not available for other users until the changes are committed.
 If, for example, two users mount the same branch, they will not see each other's changes until they are committed.
 
+### Sync local changes to lakeFS
+- As part of `commit` and `diff` commands a `sync` operation will upload all the local changes to a temporary write-branch.
+
 ## Mount Write Mode File System Behavior
 
 ### Functionality Limitations

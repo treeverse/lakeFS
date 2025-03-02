@@ -216,6 +216,7 @@ everest diff ./pets
 
 everest umount ./pets
 ```
+To learn more, read about [Mount Write Mode Semantics](mount-write-mode-semantics.md).
 
 [lakectl]: {% link reference/cli.md %}
 
