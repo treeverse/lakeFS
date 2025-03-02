@@ -21,6 +21,7 @@ from lakefs_sdk.client import LakeFSClient
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NotAuthorizedException, ServerException, NoAuthenticationFound, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
+from botocore.exceptions import NoCredentialsError
 
 from .config import (
     _LAKECTL_ENDPOINT_ENV,
@@ -237,12 +238,9 @@ def from_aws_role(
 
     client = Client(**kwargs)
     lakefs_host = urlparse(client.config.host).hostname
-    try:
-        identity_token = _get_identity_token(session, lakefs_host, presign_expiry=presigned_ttl,
+
+    identity_token = _get_identity_token(session, lakefs_host, presign_expiry=presigned_ttl,
                                          additional_headers=additional_headers)
-    except Exception:
-        identity_token = None
-        return
 
     external_login_information = ExternalLoginInformation(token_expiration_duration=ttl_seconds, identity_request={
         "identity_token": identity_token
@@ -304,6 +302,11 @@ class _BaseLakeFSObject:
                     _BaseLakeFSObject.__client = Client()
                 except NoAuthenticationFound:
                     host = os.getenv(_LAKECTL_ENDPOINT_ENV)
-                    _BaseLakeFSObject.__client = from_aws_role(host = host)
+                    if not host:
+                        raise NoAuthenticationFound("Missing environment variable for lakeFS host.")
+                    try:
+                        _BaseLakeFSObject.__client = from_aws_role(host=host)
+                    except (NoAuthenticationFound, NoCredentialsError) as e:
+                        raise NoAuthenticationFound(f"Failed to authenticate using AWS role: {e}") from e
 
             return _BaseLakeFSObject.__client
