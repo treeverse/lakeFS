@@ -83,7 +83,7 @@ class ClientConfig(Configuration):
         if len(self.username) > 0 and len(self.password) > 0:
             found = True
 
-        self.access_token = access_token_env if access_token_env is not None  else  "" 
+        self.access_token = access_token_env if access_token_env is not None  else  ""
         if len(self.access_token) > 0:
             found = True
 
