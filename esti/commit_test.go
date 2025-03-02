@@ -19,7 +19,7 @@ import (
 )
 
 func TestCommitSingle(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	const objPath = "1.txt"
@@ -70,7 +70,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 		size        = 100
 	)
 
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	names1 := genNames(size, "run2/foo")
 	uploads := make(chan Upload, size)
@@ -133,7 +133,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 
 // Verify panic fix when committing with nil tombstone over KV
 func TestCommitWithTombstone(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	origObjPathLow := "objb.txt"
 	origObjPathHigh := "objc.txt"

@@ -61,7 +61,7 @@ func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
 }
 
 func TestS3UploadToReadOnlyRepoError(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3uploadobjectdestreadonly")
@@ -86,7 +86,7 @@ func TestS3UploadToReadOnlyRepoError(t *testing.T) {
 }
 
 func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3deleteobjectdestreadonly")
@@ -118,7 +118,7 @@ func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
 func TestS3UploadAndDownload(t *testing.T) {
 	const parallelism = 10
 
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	sigs := []struct {
@@ -188,7 +188,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 }
 
 func TestMultipartUploadIfNoneMatch(t *testing.T) {
-	ctx, log, repo := SetupTest(t)
+	ctx, log, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
@@ -250,7 +250,7 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 }
 
 func TestS3IfNoneMatch(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -320,7 +320,7 @@ func TestListMultipartUploads(t *testing.T) {
 	if blockStoreType != "s3" {
 		return
 	}
-	ctx, logger, repo := SetupTest(t)
+	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
@@ -407,7 +407,7 @@ func TestListMultipartUploadsUnsupported(t *testing.T) {
 	if blockStoreType != "s3" {
 		return
 	}
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
@@ -465,7 +465,7 @@ func TestS3ReadObject(t *testing.T) {
 		badPath  = "main/does/not/exist"
 	)
 
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	// Upload an object
@@ -628,7 +628,7 @@ func TestS3ReadObject(t *testing.T) {
 }
 
 func TestS3HeadBucket(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	badRepo := repo + "-nonexistent"
@@ -692,7 +692,7 @@ func getOrCreatePathToLargeObject(t *testing.T, ctx context.Context, s3lakefsCli
 }
 
 func TestS3CopyObjectMultipart(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	// additional repository for copy between repos
@@ -767,7 +767,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 }
 
 func TestS3CopyObject(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	// additional repository for copy between repos
@@ -885,7 +885,7 @@ func TestS3CopyObject(t *testing.T) {
 }
 
 func TestS3PutObjectTagging(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	srcPath := gatewayTestPrefix + "source-file"
@@ -903,7 +903,7 @@ func TestS3PutObjectTagging(t *testing.T) {
 }
 
 func TestS3CopyObjectErrors(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3copyobjectdestreadonly")
@@ -985,7 +985,7 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 		goodPath = "main/exists.txt"
 	)
 
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	// Upload an object
@@ -1017,7 +1017,7 @@ func createS3Client(endpoint string, t *testing.T) *s3.Client {
 }
 
 func TestPossibleAPIEndpointError(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {

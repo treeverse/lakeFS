@@ -19,7 +19,7 @@ import (
 func TestCreatePresignMultipartUpload(t *testing.T) {
 	skipPresignMultipart(t)
 
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	tests := []struct {
@@ -74,7 +74,7 @@ func TestCreatePresignMultipartUpload(t *testing.T) {
 func TestAbortPresignMultipartUpload(t *testing.T) {
 	skipPresignMultipart(t)
 
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	tests := []struct {
@@ -128,7 +128,7 @@ func TestAbortPresignMultipartUpload(t *testing.T) {
 func TestCompletePresignMultipartUpload(t *testing.T) {
 	skipPresignMultipart(t)
 
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	// fake parts used for the above tests

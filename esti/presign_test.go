@@ -29,7 +29,7 @@ func matchPreSignedURLContent(t *testing.T, preSignedURL, content string) {
 }
 
 func TestPreSign(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	// look at the storage namespace to make sure our repo is indeed running with a supported object store

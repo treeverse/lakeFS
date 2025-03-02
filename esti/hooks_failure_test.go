@@ -82,7 +82,7 @@ func createAction(t *testing.T, ctx context.Context, repo, branch, path string, 
 }
 
 func hookFailToCreateBranch(t *testing.T, path string) {
-	ctx, logger, repo := SetupTest(t)
+	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const branch = "feature-1"
 
@@ -106,7 +106,7 @@ func hookFailToCreateBranch(t *testing.T, path string) {
 }
 
 func hookFailToCommit(t *testing.T, path string) {
-	ctx, logger, repo := SetupTest(t)
+	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const branch = "feature-1"
 

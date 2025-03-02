@@ -276,7 +276,7 @@ func MakeRepositoryName(name string) string {
 	return nonAlphanumericSequence.ReplaceAllString(name, "-")
 }
 
-func SetupTest(t testing.TB) (context.Context, logging.Logger, string) {
+func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
 	name := MakeRepositoryName(t.Name())
 	log := logger.WithField("testName", name)

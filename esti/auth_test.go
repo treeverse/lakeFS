@@ -20,7 +20,7 @@ import (
 
 // Test Admin permissions: AuthFullAccess, ExportSetConfiguration, FSFullAccess, RepoManagementFullAccess
 func TestAdminPermissions(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	const gname = "TestGroup"
@@ -66,7 +66,7 @@ func TestAdminPermissions(t *testing.T) {
 
 // Test Super Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestSuperPermissions(t *testing.T) {
-	ctx, log, repo := SetupTest(t)
+	ctx, log, repo := setupTest(t)
 	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
@@ -121,7 +121,7 @@ func TestSuperPermissions(t *testing.T) {
 
 // Test Writer Permissions: AuthManageOwnCredentials, FSFullAccess, RepoManagementReadAll
 func TestWriterPermissions(t *testing.T) {
-	ctx, log, repo := SetupTest(t)
+	ctx, log, repo := setupTest(t)
 	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
@@ -172,7 +172,7 @@ func TestWriterPermissions(t *testing.T) {
 
 // Test Reader Permissions: AuthManageOwnCredentials, FSReadAll
 func TestReaderPermissions(t *testing.T) {
-	ctx, log, repo := SetupTest(t)
+	ctx, log, repo := setupTest(t)
 	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
@@ -241,7 +241,7 @@ func TestCreateRepo_Unauthorized(t *testing.T) {
 }
 
 func TestRepoMetadata_Unauthorized(t *testing.T) {
-	ctx, log, repo := SetupTest(t)
+	ctx, log, repo := setupTest(t)
 	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
@@ -321,7 +321,7 @@ func TestCreatePolicy(t *testing.T) {
 }
 
 func TestBranchProtectionRules_Unauthorized(t *testing.T) {
-	ctx, log, repo := SetupTest(t)
+	ctx, log, repo := setupTest(t)
 	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
@@ -341,7 +341,7 @@ func TestBranchProtectionRules_Unauthorized(t *testing.T) {
 }
 
 func TestGarbageCollectionRules_Unauthorized(t *testing.T) {
-	ctx, log, repo := SetupTest(t)
+	ctx, log, repo := setupTest(t)
 	if isBasicAuth(t, ctx) {
 		t.Skip("Unsupported in basic auth configuration")
 	}

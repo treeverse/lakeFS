@@ -142,7 +142,7 @@ func TestImport(t *testing.T) {
 	metadata := map[string]string{"created_by": "import"}
 
 	t.Run("default", func(t *testing.T) {
-		ctx, _, repoName := SetupTest(t)
+		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
 		paths := []apigen.ImportLocation{{
@@ -180,7 +180,7 @@ func TestImport(t *testing.T) {
 	})
 
 	t.Run("parent", func(t *testing.T) {
-		ctx, _, repoName := SetupTest(t)
+		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
 		if blockstoreType == block.BlockstoreTypeLocal {
@@ -198,7 +198,7 @@ func TestImport(t *testing.T) {
 	})
 
 	t.Run("several_paths", func(t *testing.T) {
-		ctx, _, repoName := SetupTest(t)
+		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
 		var paths []apigen.ImportLocation
@@ -221,7 +221,7 @@ func TestImport(t *testing.T) {
 	})
 
 	t.Run("prefixes_and_objects", func(t *testing.T) {
-		ctx, _, repoName := SetupTest(t)
+		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
 		var paths []apigen.ImportLocation
@@ -301,7 +301,7 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 
 func TestImportCancel(t *testing.T) {
 	_, importPath, _ := setupImportByBlockstoreType(t)
-	ctx, _, repoName := SetupTest(t)
+	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
 	branch := fmt.Sprintf("%s-%s", importBranchBase, "canceled")
 	createResp, err := client.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{

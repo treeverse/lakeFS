@@ -14,7 +14,7 @@ import (
 )
 
 func TestMergeAndList(t *testing.T) {
-	ctx, logger, repo := SetupTest(t)
+	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const branch = "feature-1"
 

@@ -27,7 +27,7 @@ const (
 )
 
 func TestCopyObject(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	t.Run("copy_large_size_file", func(t *testing.T) {

@@ -16,7 +16,7 @@ import (
 )
 
 func TestDeleteObjects(t *testing.T) {
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const numOfObjects = 10
 
@@ -60,7 +60,7 @@ func TestDeleteObjects(t *testing.T) {
 // TestDeleteObjects_Viewer verify we can't delete with read only user
 func TestDeleteObjects_Viewer(t *testing.T) {
 	t.SkipNow()
-	ctx, _, repo := SetupTest(t)
+	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	// setup data
