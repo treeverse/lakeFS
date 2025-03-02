@@ -21,7 +21,7 @@ This functionality is currently in limited support and is a Read-Only file syste
 ⚠️ No installation is required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access to the Everest binary.
 {: .note }
 
-****
+**Note**
 Everest mount supports writing to the file system for NFS (the default protocol for MacOS)!
 [Everest mount write mode semantics](mount-write-mode-semantics.md).
 {: .note }
@@ -90,16 +90,16 @@ Flags
 The `umount` command is used to unmount a currently mounted lakeFS repository.
 
 ```bash
-everest umount <data_directory>
+everest umount <mount_directory>
 ````
 
 ### Diff Command (write-mode only)
 The `diff` command Show the diff between the source branch and the current mount directory. 
-If `<data_directory>` not specified, the command searches for the mount directory in the current working directory and upwards based on `.everest` directory existence.
+If `<mount_directory>` not specified, the command searches for the mount directory in the current working directory and upwards based on `.everest` directory existence.
 Please note that the diffs are from the source branch state at the time of mounting and not the current state of the source branch, i.e., changes to the source branch from other operations will not be reflected in the diff result.
 
 ```bash
-everest diff <data_directory>
+everest diff <mount_directory>
 
 #Example output:
 # - removed cats/persian/cute.jpg
@@ -109,15 +109,15 @@ everest diff <data_directory>
 
 ### Commit Command (write-mode only)
 The `commit` command commits the changes made in the mounted directory to the original lakeFS branch.
-If `<data_directory>` not specified, the command searches for the mount directory in the current working directory and upwards based on `.everest` directory existence.
-The new commit will be merged to the original branch with the `source-wins` strategy in case of conflicts.
-After committing, the mounted directory will be updated with the HEAD of the source branch; that means that changes made to the source branch out of the mount scope will also be reflected in the mounted directory.
-****
+If `<mount_directory>` not specified, the command searches for the mount directory in the current working directory and upwards based on `.everest` directory existence.
+The new commit will be merged to the original branch with the `source-wins` strategy.
+After the commit is successful, the mounted directory source commit will be updated to the HEAD of the latest commit at the source branch; that means that changes made to the source branch out of the mount scope will also be reflected in the mounted directory.
+**Note**
 ⚠️ Writes to a mount directory during commit may be lost.
 {: .note }
 
 ```bash
-everest commit <data_directory>
+everest commit <mount_directory> -m <optional_commit_message>
 ```
 
 ### mount-server Command (Advanced)

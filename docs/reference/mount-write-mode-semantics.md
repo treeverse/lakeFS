@@ -40,6 +40,5 @@ If, for example, two users mount the same branch, they will not see each other's
 
 #### Behavior modified:
 - Modifying file metadata (chmod, chown, chgrp, time) will result in noop (the file metadata will not be changed). 
-- Remove:
-  - (a) Open handlers to a file will error if the file is removed during a read operation.
-  - (b) Removal is not an atomic operation, calling remove and open at the same time might result in a race condition where the open might succeed.
+- When calling `remove` we mark a file as a tombstone using [Extended Attributes](https://en.wikipedia.org/wiki/Extended_file_attributes) API's.
+- Removal is not an atomic operation, calling remove and open at the same time might result in a race condition where the open might succeed.
