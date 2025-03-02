@@ -22,7 +22,7 @@ This functionality is currently in limited support and is a Read-Only file syste
 {: .note }
 
 **Note**
-Everest mount supports writing to the file system for NFS (the default protocol for MacOS)!
+Everest mount supports writing to the file system for NFS (the default protocol for MacOS) starting version 0.1.0!
 [Everest mount write mode semantics](mount-write-mode-semantics.md).
 {: .note }
 
