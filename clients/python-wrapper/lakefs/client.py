@@ -279,7 +279,7 @@ def _authenticate_with_aws() -> Client:
     profile = os.getenv("AWS_PROFILE")
 
     if not host or not profile:
-        raise NoAuthenticationFound("Missing environment variable for lakeFS host.")
+        raise NoAuthenticationFound
 
     session = boto3.Session(profile_name=profile)
     return from_aws_role(session=session, host=host)
