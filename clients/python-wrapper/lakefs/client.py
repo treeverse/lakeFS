@@ -15,12 +15,11 @@ from urllib.parse import urlparse, parse_qs
 import boto3.session
 
 import lakefs_sdk
-from lakefs.exceptions import NoAuthenticationFound
 from lakefs_sdk import ExternalLoginInformation
 from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
-from lakefs.exceptions import NotAuthorizedException, ServerException, api_exception_handler
+from lakefs.exceptions import NotAuthorizedException, ServerException, NoAuthenticationFound, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
 
 from .config import (
@@ -235,7 +234,7 @@ def from_aws_role(
     """
     if session is None:
         session = boto3.Session()
-        
+
     client = Client(**kwargs)
     lakefs_host = urlparse(client.config.host).hostname
     identity_token = _get_identity_token(session, lakefs_host, presign_expiry=presigned_ttl,
@@ -246,7 +245,7 @@ def from_aws_role(
 
     with api_exception_handler():
         auth_token = client.sdk_client.auth_api.external_principal_login(external_login_information)
-    os.environ[_LAKECTL_CREDENTIALS_ACCESS_TOKEN] = auth_token.token 
+    os.environ[_LAKECTL_CREDENTIALS_ACCESS_TOKEN] = auth_token.token
     os.environ[_LAKECTL_ENDPOINT_ENV] = client.config.host
     client.config.access_token = auth_token.token
     return client
@@ -300,6 +299,6 @@ class _BaseLakeFSObject:
                     _BaseLakeFSObject.__client = Client()
                 except NoAuthenticationFound:
                     host = os.getenv(_LAKECTL_ENDPOINT_ENV)
-                    _BaseLakeFSObject.__client = from_aws_role(host = host) 
-                
+                    _BaseLakeFSObject.__client = from_aws_role(host = host)
+
             return _BaseLakeFSObject.__client

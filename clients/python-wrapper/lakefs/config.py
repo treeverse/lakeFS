@@ -27,7 +27,7 @@ class ClientConfig(Configuration):
     1. Provided kwargs to __init__ func (should contain necessary credentials as defined in lakefs_sdk.Configuration)
     2. Use LAKECTL_SERVER_ENDPOINT_URL, LAKECTL_ACCESS_KEY_ID and LAKECTL_ACCESS_SECRET_KEY if set
     3. Try to read ~/.lakectl.yaml if exists
-    4. Try and use IAM role from current machine. LAKECTL_SERVER_ENDPOINT_URL & AWS_PROFILE should be set (works only with enterprise/cloud)
+    4. Use IAM role from current machine. LAKECTL_SERVER_ENDPOINT_URL & AWS_PROFILE must be set (for enterprise/cloud)
 
     This class also encapsulates the required lakectl configuration for authentication and used to unmarshall the
     lakectl yaml file.
@@ -83,9 +83,9 @@ class ClientConfig(Configuration):
         if len(self.username) > 0 and len(self.password) > 0:
             found = True
 
-        self.access_token = access_token_env if access_token_env is not None  else  ""  
+        self.access_token = access_token_env if access_token_env is not None  else  "" 
         if len(self.access_token) > 0:
             found = True
-            
+
         if not found:
             raise NoAuthenticationFound
