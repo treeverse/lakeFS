@@ -30,7 +30,6 @@ from .config import (
     _LAKECTL_CREDENTIALS_ACCESS_TOKEN
 )
 
-
 if TYPE_CHECKING:
     import boto3
 
@@ -239,7 +238,6 @@ def from_aws_role(
     if session is None:
         session = boto3.Session()
         
-
     client = Client(**kwargs)
     lakefs_host = urlparse(client.config.host).hostname
     identity_token = _get_identity_token(session, lakefs_host, presign_expiry=presigned_ttl,
@@ -303,7 +301,9 @@ class _BaseLakeFSObject:
                 try:
                     _BaseLakeFSObject.__client = Client()
                 except NoAuthenticationFound:
-                    host = os.getenv(_LAKECTL_ENDPOINT_ENV) 
+                    host = os.getenv(_LAKECTL_ENDPOINT_ENV)
+                    print('got host' , host) 
+
                     _BaseLakeFSObject.__client = from_aws_role(host = host) 
                 
             return _BaseLakeFSObject.__client
