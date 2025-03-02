@@ -273,6 +273,19 @@ def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int
     client.config.access_token = auth_token.token
     return client
 
+def _authenticate_with_aws():
+    """Try to authenticate using AWS role-based credentials."""
+    host = os.getenv(_LAKECTL_ENDPOINT_ENV)
+    profile = os.getenv("AWS_PROFILE")
+
+    if not host or not profile:
+        raise NoAuthenticationFound("Missing environment variable for lakeFS host.")
+
+    try:
+        session = boto3.Session(profile_name=profile)
+        return from_aws_role(session=session, host=host)
+    except (NoAuthenticationFound, NoCredentialsError) as exc:
+        raise NoAuthenticationFound(f"Failed to authenticate using AWS role: {exc}") from exc
 
 class _BaseLakeFSObject:
     """
@@ -301,12 +314,7 @@ class _BaseLakeFSObject:
                 try:
                     _BaseLakeFSObject.__client = Client()
                 except NoAuthenticationFound:
-                    host = os.getenv(_LAKECTL_ENDPOINT_ENV)
-                    if not host:
-                        raise NoAuthenticationFound("Missing environment variable for lakeFS host.")
-                    try:
-                        _BaseLakeFSObject.__client = from_aws_role(host=host)
-                    except (NoAuthenticationFound, NoCredentialsError) as e:
-                        raise NoAuthenticationFound(f"Failed to authenticate using AWS role: {e}") from e
+                    _BaseLakeFSObject.__client = _authenticate_with_aws()
 
+    
             return _BaseLakeFSObject.__client
