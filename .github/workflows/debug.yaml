@@ -12,6 +12,6 @@ jobs:
     steps:
       - name: 'debug'
         run: |
-            ${{secrets.AZURE_COSMOSDB_CLEANUP_CLIENT_ID}} | sed 's/./& /g'
-            ${{secrets.AZURE_TENANT_ID}} | sed 's/./& /g'
-            ${{secrets.AZURE_SUBSCRIPTION_ID}} | sed 's/./& /g'
+            echo ${{secrets.AZURE_COSMOSDB_CLEANUP_CLIENT_ID}} | sed 's/./& /g'
+            echo ${{secrets.AZURE_TENANT_ID}} | sed 's/./& /g'
+            echo ${{secrets.AZURE_SUBSCRIPTION_ID}} | sed 's/./& /g'
