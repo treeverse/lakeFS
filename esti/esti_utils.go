@@ -376,14 +376,14 @@ const (
 
 func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum, content string, err error) {
 	objContent := randstr.String(randomDataContentLength)
-	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct, clt)
+	checksum, err = UploadFileAndReport(ctx, repo, branch, objPath, objContent, direct, clt)
 	if err != nil {
 		return "", "", err
 	}
 	return checksum, objContent, nil
 }
 
-func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum string, err error) {
+func UploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum string, err error) {
 	// Upload using direct access
 	if direct {
 		stats, err := uploadContentDirect(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
