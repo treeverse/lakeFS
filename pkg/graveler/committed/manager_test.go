@@ -7,6 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/catalog/testutils"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/committed/mock"
@@ -35,8 +36,17 @@ func TestManager_WriteRange(t *testing.T) {
 	}{
 		{
 			name:           "iterator_exhausted",
-			initStorageID:  "",
-			writeStorageID: "",
+			initStorageID:  config.SingleBlockstoreID,
+			writeStorageID: config.SingleBlockstoreID,
+			records: []*graveler.ValueRecord{
+				{Key: graveler.Key("1"), Value: &graveler.Value{}},
+				{Key: graveler.Key("2"), Value: &graveler.Value{}},
+			},
+		},
+		{
+			name:           "iterator_exhausted_with_non_single_sid",
+			initStorageID:  "sid1",
+			writeStorageID: "sid1",
 			records: []*graveler.ValueRecord{
 				{Key: graveler.Key("1"), Value: &graveler.Value{}},
 				{Key: graveler.Key("2"), Value: &graveler.Value{}},
@@ -44,7 +54,17 @@ func TestManager_WriteRange(t *testing.T) {
 		},
 		{
 			name:           "mismatched_sid",
-			initStorageID:  "",
+			initStorageID:  config.SingleBlockstoreID,
+			writeStorageID: "summat_else",
+			records: []*graveler.ValueRecord{
+				{Key: graveler.Key("1"), Value: &graveler.Value{}},
+				{Key: graveler.Key("2"), Value: &graveler.Value{}},
+			},
+			errorIs: graveler.ErrInvalidStorageID,
+		},
+		{
+			name:           "mismatched_sid_with_non_single_sid",
+			initStorageID:  "sid1",
 			writeStorageID: "summat_else",
 			records: []*graveler.ValueRecord{
 				{Key: graveler.Key("1"), Value: &graveler.Value{}},
@@ -54,8 +74,20 @@ func TestManager_WriteRange(t *testing.T) {
 		},
 		{
 			name:           "break_at_key",
-			initStorageID:  "",
-			writeStorageID: "",
+			initStorageID:  config.SingleBlockstoreID,
+			writeStorageID: config.SingleBlockstoreID,
+			records: []*graveler.ValueRecord{
+				{Key: graveler.Key("1"), Value: &graveler.Value{}},
+				{Key: graveler.Key("2"), Value: &graveler.Value{}},
+				{Key: graveler.Key("3"), Value: &graveler.Value{}},
+				{Key: graveler.Key("4"), Value: &graveler.Value{}},
+				{Key: graveler.Key("5"), Value: &graveler.Value{}},
+			},
+		},
+		{
+			name:           "break_at_key_with_non_single_sid",
+			initStorageID:  "sid1",
+			writeStorageID: "sid1",
 			records: []*graveler.ValueRecord{
 				{Key: graveler.Key("1"), Value: &graveler.Value{}},
 				{Key: graveler.Key("2"), Value: &graveler.Value{}},

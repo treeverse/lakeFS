@@ -27,7 +27,7 @@ func TestStorageIDForRepositoryIterator(t *testing.T) {
 			name:               "no storage id",
 			repoNames:          []string{"a", "b", "c"},
 			bcStorageID:        "foo",
-			storageIDs:         []string{"", "", ""},
+			storageIDs:         []string{config.SingleBlockstoreID, config.SingleBlockstoreID, config.SingleBlockstoreID},
 			expectedStorageIDs: []string{"foo", "foo", "foo"},
 		},
 		{
@@ -40,7 +40,7 @@ func TestStorageIDForRepositoryIterator(t *testing.T) {
 		{
 			name:               "mixed storage id",
 			repoNames:          []string{"a", "b", "c"},
-			storageIDs:         []string{"bar", "", "qux"},
+			storageIDs:         []string{"bar", config.SingleBlockstoreID, "qux"},
 			bcStorageID:        "foo",
 			expectedStorageIDs: []string{"bar", "foo", "qux"},
 		},
@@ -52,10 +52,10 @@ func TestStorageIDForRepositoryIterator(t *testing.T) {
 			// prepare data
 			for i, repoId := range repos {
 				_, err := r.CreateRepository(context.Background(), graveler.RepositoryID(repoId), graveler.Repository{
+					StorageID:        graveler.StorageID(tc.storageIDs[i]),
 					StorageNamespace: "s3://foo",
 					CreationDate:     time.Now(),
 					DefaultBranchID:  "main",
-					StorageID:        graveler.StorageID(tc.storageIDs[i]),
 				})
 				testutil.Must(t, err)
 			}
@@ -82,6 +82,7 @@ func TestRepositoryIterator(t *testing.T) {
 	// prepare data
 	for _, repoId := range repos {
 		_, err := r.CreateRepository(context.Background(), repoId, graveler.Repository{
+			StorageID:        "sid",
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
