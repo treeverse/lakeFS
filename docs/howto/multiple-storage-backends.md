@@ -1,10 +1,10 @@
 ---
-title: Multi-storage Backend Support
+title: Multiple Storage Backends
 description: How to manage data across multiple storage systems with lakeFS 
 parent: How-To
 ---
 
-# Multi-storage Backend Support
+# Multi-Storage Backend Support
 
 lakeFS Enterprise
 {: .label .label-purple }
