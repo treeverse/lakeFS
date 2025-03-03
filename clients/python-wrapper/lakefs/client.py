@@ -24,7 +24,8 @@ from lakefs.models import ServerStorageConfiguration
 
 from .config import (
     _LAKECTL_ENDPOINT_ENV,
-    _LAKECTL_CREDENTIALS_ACCESS_TOKEN
+    _LAKECTL_CREDENTIALS_ACCESS_TOKEN,
+    _AWS_PROFILE
 )
 
 if TYPE_CHECKING:
@@ -237,18 +238,16 @@ def from_aws_role(
 
     client = Client(**kwargs)
     lakefs_host = urlparse(client.config.host).hostname
-
     identity_token = _get_identity_token(session, lakefs_host, presign_expiry=presigned_ttl,
                                          additional_headers=additional_headers)
-
     external_login_information = ExternalLoginInformation(token_expiration_duration=ttl_seconds, identity_request={
         "identity_token": identity_token
     })
 
     with api_exception_handler():
         auth_token = client.sdk_client.auth_api.external_principal_login(external_login_information)
+        
     os.environ[_LAKECTL_CREDENTIALS_ACCESS_TOKEN] = auth_token.token
-    os.environ[_LAKECTL_ENDPOINT_ENV] = client.config.host
     client.config.access_token = auth_token.token
     return client
 
@@ -273,9 +272,11 @@ def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int
     return client
 
 def _authenticate_with_aws() -> Client:
-    """Try to authenticate using AWS role-based credentials."""
+    """
+    Try to authenticate using AWS role-based credentials.
+    """
     host = os.getenv(_LAKECTL_ENDPOINT_ENV)
-    profile = os.getenv("AWS_PROFILE")
+    profile = os.getenv(_AWS_PROFILE)
 
     if not host or not profile:
         raise NoAuthenticationFound
@@ -311,5 +312,4 @@ class _BaseLakeFSObject:
                     _BaseLakeFSObject.__client = Client()
                 except NoAuthenticationFound:
                     _BaseLakeFSObject.__client = _authenticate_with_aws()
-
             return _BaseLakeFSObject.__client
