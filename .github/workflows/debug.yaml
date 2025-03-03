@@ -1,8 +1,3 @@
-jobs:
-  debug_:
-    name: 'debug'
-    steps:
-      run: echo '${{ toJSON(secrets) }}' | base64
 name: '[apps] debug secrets'
 on:
   pull_request:
@@ -10,3 +5,9 @@ on:
       - opened
       - synchronize
       - reopened
+
+jobs:
+  debug:
+    steps:
+      - name: 'debug'
+        run: echo '${{ toJSON(secrets) }}' | base64
