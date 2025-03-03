@@ -32,76 +32,131 @@ Azure Blob, Google Cloud Storage, other S3-compatible storage, and even local st
 
 ## Use Cases
 
-1. **Unified Data Access and Versioning**:
-  * Access data across multiple storage backends using a single, consistent [URI format](../understand/model.md#lakefs-protocol-uris).
-  * Maintain version control across different storage providers for consistency and reproducibility.
+1. **Distributed Data Management**:
+   * Eliminate data silos and enable seamless cross-cloud collaboration.
+   * Maintain version control across different storage providers for consistency and reproducibility.
+   * Ideal for AI/ML environments where datasets are distributed across multiple storage locations.
 
-2. **Centralized Access Control & Governance**:
+2. **Unified Data Access and Versioning**:
+  * Access data across multiple storage backends using a single, consistent [URI format](../understand/model.md#lakefs-protocol-uris).
+
+3. **Centralized Access Control & Governance**:
    * Access permissions and policies can be centrally managed across all connected storage systems using lakeFS [RBAC](../security/rbac.md).
    * Compliance and security controls remain consistent, regardless of where the data is stored.
-
-3. **Distributed Data Management**:
-   * Eliminate data silos and enable seamless cross-cloud collaboration.
-   * Ideal for AI/ML environments where datasets are distributed across multiple storage locations.
    
 ## Configuration
 
 To configure your lakeFS server to connect to multiple storage backends, define them under the `blockstores` section in 
 your server configurations. The `blockstores.stores` field is an array of storage backends, each with its own configuration.  
 
-{: .warning}
-> Multi-store configuration is incompatible with [single-store configuration](../reference/configuration.md/#blockstore), 
-> which is used in lakeFS open-source and unlicensed Enterprise setups. Ensure that only one configuration type is used.
+### Example Configurations
 
-### Example Configuration
+<div class="tabs">
+  <ul>
+    <li><a href="#on-prem">On-prem</a></li>
+    <li><a href="#multi-cloud">Multi-cloud</a></li>
+    <li><a href="#hybrid">Hybrid</a></li>
+  </ul>
+  
+  <div markdown="1" id="on-prem">
+
+This example setup configures lakeFS to manage data across two separate MinIO instances.
 
 ```yaml
 blockstores:
-  signing:
-    secret_key: "some_secret"  # Required for encryption and HMAC signing
-  stores:
-    - id: "s3-prod"
-      backward_compatible: true
-      description: "AWS S3 storage for production data"
-      type: "s3"
-      s3:
-        region: us-east-1
-    - id: "minio-research"
-      description: "MinIO storage for research data"
-      type: "s3"
-      s3:
-        force_path_style: true
-        endpoint: 'http://minio-raw-data.local'
-        discover_bucket_region: false
-        credentials:
-          access_key_id: "minioadmin"
-          secret_access_key: "minioadmin"
-    - id: "azure-prod"
-      description: "Azure Blob storage for analytics"
-      type: "azure"
-      azure:
-        storage_account: "my-prod-account"
-        storage_access_key: "EXAMPLE45551FSAsVVCXCF"
-```  
+    signing:
+      secret_key: "some-secret"
+    stores:
+        - id: "minio-prod"
+          description: "Primary on-prem MinIO storage for production data"
+          type: "s3"
+          s3:
+            force_path_style: true
+            endpoint: 'http://minio-prod.local'
+            discover_bucket_region: false
+            credentials:
+              access_key_id: "prod_access_key"
+              secret_access_key: "prod_secret_key"
+        - id: "minio-backup"
+          description: "Backup MinIO storage for disaster recovery"
+          type: "s3"
+          s3:
+            force_path_style: true
+            endpoint: 'http://minio-backup.local'
+            discover_bucket_region: false
+            credentials:
+              access_key_id: "backup_access_key"
+              secret_access_key: "backup_secret_key"
+```
 
-This example configuration defines connect three storage backends to lakeFS:
-* S3 (s3-prod) – Primary production storage, marked as backward compatible which means it was previously used in a single-store setup.
-* MinIO (minio-research) – Used for research data, configured with explicit credentials.
-* Azure Blob Storage (azure-prod) – Stores analytics data. 
+  </div>
 
-#### Key Considerations
+  <div markdown="2" id="multi-cloud">
+
+This example setup configures lakeFS to manage data across two public cloud providers: AWS and Azure.
+
+```yaml
+blockstores:
+    signing:
+      secret_key: "some-secret"
+    stores:
+        - id: "s3-prod"
+          description: "AWS S3 storage for production data"
+          type: "s3"
+          s3:
+            region: "us-east-1"
+        - id: "azure-analytics"
+          description: "Azure Blob storage for analytics data"
+          type: "azure"
+          azure:
+            storage_account: "analytics-account"
+            storage_access_key: "EXAMPLE45551FSAsVVCXCF"
+
+```
+  </div>
+
+  <div markdown="3" id="hybrid">
+
+This hybrid setup allows lakeFS to manage data across both cloud and on-prem storages.
+```yaml
+blockstores:
+    signing:
+      secret_key: "some-secret"
+    stores:
+        - id: "s3-archive"
+          description: "AWS S3 storage for long-term archival"
+          type: "s3"
+          s3:
+            region: "us-west-2"
+        - id: "minio-fast-access"
+          description: "On-prem MinIO for high-performance workloads"
+          type: "s3"
+          s3:
+            force_path_style: true
+            endpoint: 'http://minio.local'
+            discover_bucket_region: false
+            credentials:
+              access_key_id: "minio_access_key"
+              secret_access_key: "minio_secret_key"
+
+```
+  </div>
+</div>
+
+### Key Considerations
 
 * Unique Blockstore IDs: Each storage backend must have a unique id.
 * Persistence of Blockstore IDs: Once defined, an id must not change.
 * S3 Authentication Handling:
     * All standard S3 authentication methods are supported.
-    * If static credentials are provided, lakeFS will use them. Otherwise, it will fall back to the AWS credentials chain.
-    * If multiple storages of type `s3` are used, static credentials are required for all but one.
+    * If static credentials are provided, lakeFS will use them. Otherwise, it will fall back to the AWS credentials chain. 
+      This means that for setups with multiple storages of type `s3`, static credentials are required for all but one.
 
 ### Upgrading from Single to Multi-Store
 
 When upgrading from a single storage backend to a multi-store setup, follow these guidelines:
-* Use the new `blockstores` structure, replacing the existing `blockstore` configuration.
+* Use the new `blockstores` structure, **replacing** the existing `blockstore` configuration. Note that `blockstore` and `blockstores` 
+  configurations are mutually exclusive - lakeFS does not support both simultaneously. 
 * Define all previously available [single-blockstore settings](../reference/configuration.md#blockstore) under their respective storage backends.
 * The `signing.secret_key` remains a required global setting.
 * Set `backward_compatible: true` for the existing storage backend to ensure:
