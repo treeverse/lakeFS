@@ -246,7 +246,7 @@ def from_aws_role(
 
     with api_exception_handler():
         auth_token = client.sdk_client.auth_api.external_principal_login(external_login_information)
-        
+
     os.environ[_LAKECTL_CREDENTIALS_ACCESS_TOKEN] = auth_token.token
     client.config.access_token = auth_token.token
     return client
