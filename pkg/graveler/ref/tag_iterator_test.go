@@ -19,6 +19,7 @@ func TestTagIterator(t *testing.T) {
 	tags := []graveler.TagID{"a", "aa", "b", "c", "e", "d", "f", "g"}
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
