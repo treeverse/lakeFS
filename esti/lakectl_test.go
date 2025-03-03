@@ -102,7 +102,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 	// Trying to delete again
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" repo delete lakefs://"+repoName2+" -y", false, "lakectl_repo_delete_not_found", vars)
 
-	// Create repository with sample data
+	// Create repository with sample Data
 	repoName3 := GenerateUniqueRepositoryName()
 	storage3 := GenerateUniqueStorageNamespace(repoName3)
 	vars = map[string]string{
@@ -110,7 +110,7 @@ func TestLakectlBasicRepoActions(t *testing.T) {
 		"STORAGE": storage3,
 		"BRANCH":  mainBranch,
 	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName3+" "+storage3+" --sample-data", false, "lakectl_repo_create_sample", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName3+" "+storage3+" --sample-Data", false, "lakectl_repo_create_sample", vars)
 }
 
 func TestLakectlRepoCreateWithStorageID(t *testing.T) {
@@ -616,20 +616,20 @@ func TestLakectlFsDownload(t *testing.T) {
 	}
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 
-	// upload some data
+	// upload some Data
 	const totalObjects = 5
 	for i := 0; i < totalObjects; i++ {
-		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
+		vars["FILE_PATH"] = fmt.Sprintf("Data/ro/ro_1k.%d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
 	t.Run("single", func(t *testing.T) {
-		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
+		src := "lakefs://" + repoName + "/" + mainBranch + "/Data/ro/ro_1k.0"
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src, false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download: "+src)
 	})
 
 	t.Run("single_with_dest", func(t *testing.T) {
-		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
+		src := "lakefs://" + repoName + "/" + mainBranch + "/Data/ro/ro_1k.0"
 		dest := t.TempDir()
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" "+dest, false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download: "+src)
@@ -647,7 +647,7 @@ func TestLakectlFsDownload(t *testing.T) {
 			require.NoError(t, os.Chdir(currDir))
 		}()
 
-		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
+		src := "lakefs://" + repoName + "/" + mainBranch + "/Data/ro/ro_1k.0"
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" ./", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download: "+src)
 		require.Contains(t, sanitizedResult, dest+"/ro_1k.0")
@@ -655,11 +655,11 @@ func TestLakectlFsDownload(t *testing.T) {
 
 	t.Run("single_with_recursive_flag", func(t *testing.T) {
 		dest := t.TempDir()
-		RunCmdAndVerifyFailure(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0 "+dest+" --recursive", false, "No objects in path: lakefs://${REPO}/${BRANCH}/data/ro/ro_1k.0/\nError executing command.\n", vars)
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs download lakefs://"+repoName+"/"+mainBranch+"/Data/ro/ro_1k.0 "+dest+" --recursive", false, "No objects in Path: lakefs://${REPO}/${BRANCH}/Data/ro/ro_1k.0/\nError executing command.\n", vars)
 	})
 
 	t.Run("directory", func(t *testing.T) {
-		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data --recursive", false, false, map[string]string{})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/Data --recursive", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
@@ -673,7 +673,7 @@ func TestLakectlFsDownload(t *testing.T) {
 
 	t.Run("directory_with_dest", func(t *testing.T) {
 		dest := t.TempDir()
-		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data "+dest+" --recursive", false, false, map[string]string{})
+		sanitizedResult := runCmd(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/Data "+dest+" --recursive", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.0")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.1")
 		require.Contains(t, sanitizedResult, "download ro/ro_1k.2")
@@ -686,7 +686,7 @@ func TestLakectlFsDownload(t *testing.T) {
 	})
 
 	t.Run("directory_without_recursive", func(t *testing.T) {
-		RunCmdAndVerifyFailure(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/data", false, "download failed: request failed: 404 Not Found\nError executing command.\n", map[string]string{})
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs download --parallelism 1 lakefs://"+repoName+"/"+mainBranch+"/Data", false, "download failed: request failed: 404 Not Found\nError executing command.\n", map[string]string{})
 	})
 }
 
@@ -701,19 +701,19 @@ func TestLakectlFsUpload(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 
 	t.Run("single_file", func(t *testing.T) {
-		vars["FILE_PATH"] = "data/ro/ro_1k.0"
+		vars["FILE_PATH"] = "Data/ro/ro_1k.0"
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
 	})
 	t.Run("single_file_with_separator", func(t *testing.T) {
-		vars["FILE_PATH"] = "data/ro/ro_1k.0_sep/"
-		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "target path is not a valid URI\nError executing command.\n", vars)
+		vars["FILE_PATH"] = "Data/ro/ro_1k.0_sep/"
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "target Path is not a valid URI\nError executing command.\n", vars)
 	})
 	t.Run("single_file_with_recursive", func(t *testing.T) {
-		vars["FILE_PATH"] = "data/ro/ro_1k.0"
+		vars["FILE_PATH"] = "Data/ro/ro_1k.0"
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
 	})
 	t.Run("dir", func(t *testing.T) {
-		vars["FILE_PATH"] = "data/ro/"
+		vars["FILE_PATH"] = "Data/ro/"
 		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
 
 		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
@@ -726,18 +726,18 @@ func TestLakectlFsUpload(t *testing.T) {
 		require.Contains(t, sanitizedResult, "Removed: 0")
 	})
 	t.Run("exist_dir", func(t *testing.T) {
-		vars["FILE_PATH"] = "data/ro/"
+		vars["FILE_PATH"] = "Data/ro/"
 		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
 		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
 		require.Contains(t, sanitizedResult, "Upload Summary:")
 		require.Contains(t, sanitizedResult, "No changes")
 	})
 	t.Run("dir_without_recursive", func(t *testing.T) {
-		vars["FILE_PATH"] = "data/ro/"
-		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "target path is not a valid URI\nError executing command.\n", vars)
+		vars["FILE_PATH"] = "Data/ro/"
+		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "target Path is not a valid URI\nError executing command.\n", vars)
 	})
 	t.Run("dir_without_recursive_to_file", func(t *testing.T) {
-		vars["FILE_PATH"] = "data/ro/1.txt"
+		vars["FILE_PATH"] = "Data/ro/1.txt"
 		RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "read files/: is a directory", vars)
 	})
 }
@@ -804,19 +804,19 @@ func TestLakectlFsPresign(t *testing.T) {
 	}
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 
-	// upload some data
+	// upload some Data
 	const totalObjects = 2
 	for i := 0; i < totalObjects; i++ {
-		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
+		vars["FILE_PATH"] = fmt.Sprintf("Data/ro/ro_1k.%d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
 
 	goldenFile := "lakectl_fs_presign"
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs presign lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, goldenFile, map[string]string{
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs presign lakefs://"+repoName+"/"+mainBranch+"/Data/ro/ro_1k.0", false, goldenFile, map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
-		"PATH":    "data/ro",
+		"PATH":    "Data/ro",
 		"FILE":    "ro_1k.0",
 	})
 }
@@ -831,10 +831,10 @@ func TestLakectlFsStat(t *testing.T) {
 	}
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 
-	// upload some data
+	// upload some Data
 	const totalObjects = 2
 	for i := 0; i < totalObjects; i++ {
-		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
+		vars["FILE_PATH"] = fmt.Sprintf("Data/ro/ro_1k.%d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 	}
 
@@ -847,21 +847,21 @@ func TestLakectlFsStat(t *testing.T) {
 				goldenFile = "lakectl_stat_pre_sign_with_expiry"
 			}
 		}
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, goldenFile, map[string]string{
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat lakefs://"+repoName+"/"+mainBranch+"/Data/ro/ro_1k.0", false, goldenFile, map[string]string{
 			"REPO":    repoName,
 			"STORAGE": storage,
 			"BRANCH":  mainBranch,
-			"PATH":    "data/ro",
+			"PATH":    "Data/ro",
 			"FILE":    "ro_1k.0",
 		})
 	})
 
 	t.Run("no_presign", func(t *testing.T) {
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign=false lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.0", false, "lakectl_stat_default", map[string]string{
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign=false lakefs://"+repoName+"/"+mainBranch+"/Data/ro/ro_1k.0", false, "lakectl_stat_default", map[string]string{
 			"REPO":    repoName,
 			"STORAGE": storage,
 			"BRANCH":  mainBranch,
-			"PATH":    "data/ro",
+			"PATH":    "Data/ro",
 			"FILE":    "ro_1k.0",
 		})
 	})
@@ -875,11 +875,11 @@ func TestLakectlFsStat(t *testing.T) {
 		if config.BlockstoreType == "s3" {
 			goldenFile = "lakectl_stat_pre_sign_with_expiry"
 		}
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign lakefs://"+repoName+"/"+mainBranch+"/data/ro/ro_1k.1", false, goldenFile, map[string]string{
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs stat --pre-sign lakefs://"+repoName+"/"+mainBranch+"/Data/ro/ro_1k.1", false, goldenFile, map[string]string{
 			"REPO":    repoName,
 			"STORAGE": storage,
 			"BRANCH":  mainBranch,
-			"PATH":    "data/ro",
+			"PATH":    "Data/ro",
 			"FILE":    "ro_1k.1",
 		})
 	})
@@ -887,7 +887,7 @@ func TestLakectlFsStat(t *testing.T) {
 
 func TestLakectlImport(t *testing.T) {
 	// TODO(barak): generalize test to work all supported object stores
-	const IngestTestBucketPath = "s3://esti-system-testing-data/ingest-test-data/"
+	const IngestTestBucketPath = "s3://esti-system-testing-Data/ingest-test-Data/"
 	skipOnSchemaMismatch(t, IngestTestBucketPath)
 
 	repoName := GenerateUniqueRepositoryName()
@@ -899,7 +899,7 @@ func TestLakectlImport(t *testing.T) {
 		"OBJECTS": "10",
 	}
 
-	const from = "s3://lakectl-ingest-test-data"
+	const from = "s3://lakectl-ingest-test-Data"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/to/", false, "lakectl_import", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" import --no-progress --from "+from+" --to lakefs://"+repoName+"/"+mainBranch+"/too/ --message \"import too\"", false, "lakectl_import_with_message", vars)
@@ -927,10 +927,10 @@ func TestLakectlCherryPick(t *testing.T) {
 	branchVars["DEST_BRANCH"] = "branch2"
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+branch2+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
 
-	// upload some data
+	// upload some Data
 	vars["BRANCH"] = branch1
 	for i := 1; i <= 3; i++ {
-		vars["FILE_PATH"] = fmt.Sprintf("data/%d", i)
+		vars["FILE_PATH"] = fmt.Sprintf("Data/%d", i)
 		commitMessage := fmt.Sprintf("commit %d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+branch1+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 
@@ -944,7 +944,7 @@ func TestLakectlCherryPick(t *testing.T) {
 
 	vars["BRANCH"] = branch2
 	for i := 3; i <= 5; i++ {
-		vars["FILE_PATH"] = fmt.Sprintf("data/%d", i)
+		vars["FILE_PATH"] = fmt.Sprintf("Data/%d", i)
 		commitMessage := fmt.Sprintf("commit %d", i)
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+repoName+"/"+branch2+"/"+vars["FILE_PATH"], false, "lakectl_fs_upload", vars)
 
@@ -988,7 +988,7 @@ func TestLakectlBisect(t *testing.T) {
 	r := strings.NewReplacer("{lakectl}", Lakectl(), "{repo}", repoName, "{storage}", storage, "{branch}", "main")
 	runCmd(t, r.Replace("{lakectl} repo create lakefs://{repo} {storage}"), false, false, nil)
 
-	// generate to test data
+	// generate to test Data
 	for i := 0; i < 5; i++ {
 		obj := fmt.Sprintf("file%d", i)
 		runCmd(t, r.Replace("{lakectl} fs upload -s files/ro_1k lakefs://{repo}/{branch}/")+obj, false, false, nil)
@@ -1060,7 +1060,7 @@ func TestLakectlAbuse(t *testing.T) {
 	fromFile := ""
 	const totalObjects = 5
 	for i := 0; i < totalObjects; i++ {
-		vars["FILE_PATH"] = fmt.Sprintf("data/ro/ro_1k.%d", i)
+		vars["FILE_PATH"] = fmt.Sprintf("Data/ro/ro_1k.%d", i)
 		fromFile = fromFile + vars["FILE_PATH"] + "\n"
 		runCmd(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
 	}

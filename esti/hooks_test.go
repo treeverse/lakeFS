@@ -46,13 +46,13 @@ func TestHooksSuccess(t *testing.T) {
 	require.NoError(t, err, "failed to commit initial content")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	webhookData, err := responseWithTimeout(server, 1*time.Minute) // pre-commit action triggered on action upload, flush buffer
+	webhookData, err := ResponseWithTimeout(server, 1*time.Minute) // pre-commit action triggered on action upload, flush buffer
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on pre commit serving")
-	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on pre commit serving")
+	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCommitEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
+	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit Data")
 	appendRes(preCommitEvent)
 
 	t.Run("commit merge test", func(t *testing.T) {
@@ -98,13 +98,13 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	require.NoError(t, err, "failed to commit initial content")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
-	webhookData, err := responseWithTimeout(server, 1*time.Minute)
+	webhookData, err := ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on pre commit serving")
-	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on pre commit serving")
+	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCommitEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
+	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit Data")
 	appendRes(preCommitEvent)
 	commitRecord := commitResp.JSON201
 	require.Equal(t, webhookEventInfo{
@@ -119,17 +119,17 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		CommitMessage: commitRecord.Message,
 		Metadata:      commitRecord.Metadata.AdditionalProperties,
 	}, preCommitEvent)
-	require.NotNil(t, webhookData.queryParams)
-	require.Contains(t, webhookData.queryParams, "check_env_vars")
-	require.Equal(t, []string{"this_is_actions_var"}, webhookData.queryParams["check_env_vars"])
+	require.NotNil(t, webhookData.QueryParams)
+	require.Contains(t, webhookData.QueryParams, "check_env_vars")
+	require.Equal(t, []string{"this_is_actions_var"}, webhookData.QueryParams["check_env_vars"])
 
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on post commit serving")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on post commit serving")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCommitEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&postCommitEvent), "reading post-commit data")
+	require.NoError(t, decoder.Decode(&postCommitEvent), "reading post-commit Data")
 	appendRes(postCommitEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:     postCommitEvent.EventTime,
@@ -148,17 +148,17 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, apigen.MergeIntoBranchJSONRequestBody{})
 	require.NoError(t, err)
 
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, mergeResp.StatusCode())
-	require.NoError(t, webhookData.err, "failed to merge branches")
+	require.NoError(t, webhookData.Err, "failed to merge branches")
 	mergeRef := mergeResp.JSON200.Reference
 	t.Log("Merged successfully", mergeRef)
 
 	require.NoError(t, err, "error on pre commit serving")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preMergeEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preMergeEvent), "reading pre-merge data")
+	require.NoError(t, decoder.Decode(&preMergeEvent), "reading pre-merge Data")
 	appendRes(preMergeEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:     preMergeEvent.EventTime,
@@ -175,12 +175,12 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	}, preMergeEvent)
 
 	// Testing post-merge hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postMergeEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&postMergeEvent), "reading post-merge data")
+	require.NoError(t, decoder.Decode(&postMergeEvent), "reading post-merge Data")
 	appendRes(postMergeEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:     postMergeEvent.EventTime,
@@ -226,13 +226,13 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string) {
 	commitID := resp.JSON200.CommitId
 
 	// Testing pre-create branch hook response
-	webhookData, err := responseWithTimeout(server, 1*time.Minute)
+	webhookData, err := ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on pre create branch")
-	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on pre create branch")
+	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCreateBranchEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preCreateBranchEvent), "reading pre-create branch data")
+	require.NoError(t, decoder.Decode(&preCreateBranchEvent), "reading pre-create branch Data")
 	appendRes(preCreateBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    preCreateBranchEvent.EventTime,
@@ -246,13 +246,13 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string) {
 	}, preCreateBranchEvent)
 
 	// Testing post-create branch hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on post create branch")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on post create branch")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCreateBranchEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&postCreateBranchEvent), "reading post-create branch data")
+	require.NoError(t, decoder.Decode(&postCreateBranchEvent), "reading post-create branch Data")
 	appendRes(postCreateBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postCreateBranchEvent.EventTime,
@@ -272,13 +272,13 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string) {
 	require.Equal(t, http.StatusNoContent, deleteBranchResp.StatusCode())
 
 	// Testing pre-delete branch hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on pre delete branch")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on pre delete branch")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preDeleteBranchEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preDeleteBranchEvent), "reading pre-delete branch data")
+	require.NoError(t, decoder.Decode(&preDeleteBranchEvent), "reading pre-delete branch Data")
 	appendRes(preDeleteBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    preDeleteBranchEvent.EventTime,
@@ -291,13 +291,13 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string) {
 	}, preDeleteBranchEvent)
 
 	// Testing post-delete branch hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on post delete branch")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on post delete branch")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postDeleteBranchEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&postDeleteBranchEvent), "reading post-delete branch data")
+	require.NoError(t, decoder.Decode(&postDeleteBranchEvent), "reading post-delete branch Data")
 	appendRes(postDeleteBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postDeleteBranchEvent.EventTime,
@@ -327,13 +327,13 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string) {
 	require.Equal(t, http.StatusCreated, createTagResp.StatusCode())
 
 	// Testing pre-create tag hook response
-	webhookData, err := responseWithTimeout(server, 1*time.Minute)
+	webhookData, err := ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on pre create tag")
-	decoder := json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on pre create tag")
+	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCreateTagEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preCreateTagEvent), "reading pre-create tag data")
+	require.NoError(t, decoder.Decode(&preCreateTagEvent), "reading pre-create tag Data")
 	appendRes(preCreateTagEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    preCreateTagEvent.EventTime,
@@ -347,13 +347,13 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string) {
 	}, preCreateTagEvent)
 
 	// Testing post-create tag hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on post create tag")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on post create tag")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCreateTagEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&postCreateTagEvent), "reading post-create tag data")
+	require.NoError(t, decoder.Decode(&postCreateTagEvent), "reading post-create tag Data")
 	appendRes(postCreateTagEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postCreateTagEvent.EventTime,
@@ -373,13 +373,13 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string) {
 	require.Equal(t, http.StatusNoContent, deleteTagResp.StatusCode())
 
 	// Testing pre-delete tag hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on pre delete tag")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on pre delete tag")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preDeleteTagEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preDeleteTagEvent), "reading pre-delete tag data")
+	require.NoError(t, decoder.Decode(&preDeleteTagEvent), "reading pre-delete tag Data")
 	appendRes(preDeleteTagEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    preDeleteTagEvent.EventTime,
@@ -393,13 +393,13 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string) {
 	}, preDeleteTagEvent)
 
 	// Testing post-delete tag hook response
-	webhookData, err = responseWithTimeout(server, 1*time.Minute)
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.NoError(t, webhookData.err, "error on post delete tag")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.data))
+	require.NoError(t, webhookData.Err, "error on post delete tag")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postDeleteTagEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&postDeleteTagEvent), "reading post-delete tag data")
+	require.NoError(t, decoder.Decode(&postDeleteTagEvent), "reading post-delete tag Data")
 	appendRes(postDeleteTagEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postDeleteTagEvent.EventTime,

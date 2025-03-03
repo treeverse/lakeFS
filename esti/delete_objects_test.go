@@ -63,7 +63,7 @@ func TestDeleteObjects_Viewer(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	// setup data
+	// setup Data
 	const filename = "delete-me"
 	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, filename, nil)
 

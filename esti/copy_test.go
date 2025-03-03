@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	s3CopyDataPath    = "s3://esti-system-testing-data/copy-test-data/"
-	gsCopyDataPath    = "gs://esti-system-testing-data/copy-test-data/"
+	s3CopyDataPath    = "s3://esti-system-testing-Data/copy-test-Data/"
+	gsCopyDataPath    = "gs://esti-system-testing-Data/copy-test-Data/"
 	azureCopyDataPath = "https://esti.blob.core.windows.net/esti-system-testing-data/copy-test-data/"
 	azureAbortAccount = "esti4multipleaccounts"
 	largeObject       = "squash.tar"
@@ -59,7 +59,7 @@ func TestCopyObject(t *testing.T) {
 		require.NoError(t, err, "failed to copy")
 		require.NotNil(t, copyResp.JSON201)
 
-		// Verify the creation path, date and physical address are different
+		// Verify the creation Path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
@@ -183,7 +183,7 @@ func TestCopyObject(t *testing.T) {
 		require.NoError(t, err, "failed to copy")
 		require.NotNil(t, copyResp.JSON201)
 
-		// Verify the creation path, date and physical address are different
+		// Verify the creation Path, date and physical address are different
 		copyStat := copyResp.JSON201
 		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)

@@ -23,7 +23,7 @@ func objectFound(ctx context.Context, repo, ref, path string) (bool, error) {
 	if err == nil && res.HTTPResponse.StatusCode == http.StatusOK {
 		return true, nil
 	}
-	// err is not really an objects.GetObjectNotFound, scan for its message
+	// Err is not really an objects.GetObjectNotFound, scan for its message
 	if res != nil && res.HTTPResponse.StatusCode == http.StatusNotFound {
 		return false, nil
 	}

@@ -55,7 +55,7 @@ func doMergeAndListIteration(t *testing.T, logger logging.Logger, ctx context.Co
 	const addedFiles = 10
 	for i := 0; i < addedFiles; i++ {
 		p := fmt.Sprintf("%d.txt", i)
-		logger.WithFields(logging.Fields{"iteration": iteration, "path": p}).Info("Upload content to branch")
+		logger.WithFields(logging.Fields{"iteration": iteration, "Path": p}).Info("Upload content to branch")
 		checksum, content := UploadFileRandomData(ctx, t, repo, branch, p, nil)
 		checksums[checksum] = content
 	}

@@ -56,7 +56,7 @@ type tableSchema struct {
 type hiveTableSpec struct {
 	Name             string      `yaml:"name"`
 	Type             string      `yaml:"type"`
-	Path             string      `yaml:"path"`
+	Path             string      `yaml:"Path"`
 	PartitionColumns []string    `yaml:"partition_columns"`
 	Schema           tableSchema `yaml:"schema"`
 }
@@ -159,7 +159,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 		testData.SymlinkActionPath:   renderTplFileAsStr(t, testData, tmplDir, testData.SymlinkActionPath),
 	}
 
-	// upload all files (hook, lua, table data)
+	// upload all files (hook, lua, table Data)
 	commit := uploadAndCommitObjects(t, ctx, repo, mainBranch, tablePaths, hookFiles)
 
 	// wait until actions finish running
@@ -220,7 +220,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 		})
 		require.NoErrorf(t, err, "getting symlink file content bucket=%s key=%s", storageURL.Host, symlinkFileKey)
 		body, err := io.ReadAll(objRes.Body)
-		require.NoError(t, err, "fail reading object data")
+		require.NoError(t, err, "fail reading object Data")
 		require.NoError(t, objRes.Body.Close())
 
 		for _, addr := range strings.Split(string(body), "\n") {
@@ -252,7 +252,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 
 // TestAWSCatalogExport will verify that symlinks are exported correctly and then in a sequential test verify that the glue exporter works well.
 // The setup in this test includes:
-// Symlinks export: lua script, table in _lakefs_tables, action file, mock table data in CSV form
+// Symlinks export: lua script, table in _lakefs_tables, action file, mock table Data in CSV form
 // Glue export: lua script, table in _lakefs_tables, action file
 func TestAWSCatalogExport(t *testing.T) {
 	// skip if blockstore is not not s3
@@ -323,7 +323,7 @@ func TestAWSCatalogExport(t *testing.T) {
 		t.Logf("commit id %s symlinks prefix %s", commitID, symlinkPrefix)
 	})
 	t.Run("glue_exporter", func(t *testing.T) {
-		// override commit ID to make the export table point to the previous commit of data
+		// override commit ID to make the export table point to the previous commit of Data
 		testData.OverrideCommitID = commitID
 		headCommit := uploadAndCommitObjects(t, ctx, repo, mainBranch, map[string]string{
 			testData.GlueScriptPath: renderTplFileAsStr(t, testData, tmplDir, testData.GlueScriptPath),
@@ -494,7 +494,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 
 	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
 	require.NoError(t, err)
-	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(tmplDir, "Data", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -503,7 +503,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			uploadResp, err := UploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf), nil)
+			uploadResp, err := UploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "Data/"), string(buf), nil)
 			if err != nil {
 				return err
 			}
@@ -548,7 +548,7 @@ func TestDeltaCatalogImportExport(t *testing.T) {
 	blockstore := setupCatalogExportTestByStorageType(t, testData)
 	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
 	require.NoError(t, err)
-	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(tmplDir, "Data", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -557,7 +557,7 @@ func TestDeltaCatalogImportExport(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			uploadToPhysicalAddress(t, ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf))
+			uploadToPhysicalAddress(t, ctx, repo, mainBranch, strings.TrimPrefix(path, "Data/"), string(buf))
 		}
 		return nil
 	})
@@ -586,7 +586,7 @@ func uploadToPhysicalAddress(t *testing.T, ctx context.Context, repo, branch, ob
 	t.Helper()
 	physicalAddress, err := url.Parse(getStorageNamespace(t, ctx, repo))
 	require.NoError(t, err)
-	physicalAddress = physicalAddress.JoinPath("data", objPath)
+	physicalAddress = physicalAddress.JoinPath("Data", objPath)
 
 	adapter, err := NewAdapter(physicalAddress.Scheme)
 	require.NoError(t, err)
@@ -636,7 +636,7 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 
 	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
 	require.NoError(t, err)
-	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
+	err = fs.WalkDir(tmplDir, "Data", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -645,7 +645,7 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			uploadResp, err := UploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf), nil)
+			uploadResp, err := UploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "Data/"), string(buf), nil)
 			if err != nil {
 				return err
 			}

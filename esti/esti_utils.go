@@ -39,6 +39,13 @@ import (
 
 type ArrayFlags []string
 
+type HookResponse struct {
+	Path        string
+	Err         error
+	Data        []byte
+	QueryParams map[string][]string
+}
+
 var (
 	logger      logging.Logger
 	client      apigen.ClientWithResponsesInterface
@@ -121,7 +128,7 @@ func DeleteAllRepositories(ctx context.Context, client apigen.ClientWithResponse
 	for _, id := range repositoriesToDelete {
 		resp, err := client.DeleteRepositoryWithResponse(ctx, id, &apigen.DeleteRepositoryParams{})
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, err: %w", id, err))
+			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, Err: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
 			errs = multierror.Append(errs, fmt.Errorf("delete repository: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
@@ -160,7 +167,7 @@ func DeleteAllGroups(ctx context.Context, client apigen.ClientWithResponsesInter
 	for _, id := range groupsToDelete {
 		resp, err := client.DeleteGroupWithResponse(ctx, id)
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, err: %w", id, err))
+			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, Err: %w", id, err))
 		} else if resp.StatusCode() != http.StatusNoContent {
 			errs = multierror.Append(errs, fmt.Errorf("delete group: %s, status %s: %w", id, resp.Status(), errWrongStatusCode))
 		}
@@ -631,4 +638,14 @@ func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref s
 	err := backoff.Retry(listFunc, bo)
 	require.NoError(t, err)
 	return runs
+}
+
+// ResponseWithTimeout wait for webhook response
+func ResponseWithTimeout(s *WebhookServer, timeout time.Duration) (*HookResponse, error) {
+	select {
+	case res := <-s.respCh:
+		return &res, nil
+	case <-time.After(timeout):
+		return nil, ErrWebhookTimeout
+	}
 }

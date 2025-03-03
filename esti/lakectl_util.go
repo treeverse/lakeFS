@@ -31,7 +31,7 @@ var (
 	reShortCommitID   = regexp.MustCompile(`[\d|a-f]{16}`)
 	reChecksum        = regexp.MustCompile(`([\d|a-f]{32})|(0x[0-9A-F]{15})`)
 	reEndpoint        = regexp.MustCompile(`https?://\w+(:\d+)?/api/v\d+/`)
-	rePhysicalAddress = regexp.MustCompile(`/data/[0-9a-v]{20}/(?:[0-9a-v]{20}(?:,.+)?)?`)
+	rePhysicalAddress = regexp.MustCompile(`/Data/[0-9a-v]{20}/(?:[0-9a-v]{20}(?:,.+)?)?`)
 	reVariable        = regexp.MustCompile(`\$\{([^${}]+)}`)
 	rePreSignURL      = regexp.MustCompile(`https://\S+\?\S+`)
 	reSecretAccessKey = regexp.MustCompile(`secret_access_key: \S{16,128}`)
@@ -97,7 +97,7 @@ func expandVariables(s string, vars map[string]string) (string, error) {
 
 // embedVariables replaces run-specific values from a string with generic, normalized
 // variables, that can later be expanded by expandVariables.
-// It receives a string that may contain some run-specific data (e.g. repo-name), and
+// It receives a string that may contain some run-specific Data (e.g. repo-name), and
 // a mapping of variable names to values. It then replaces all the values found in the original
 // string with the corresponding variable name, in the format of {VAR_NAME}. This string can later
 // be consumed by expandVariables.

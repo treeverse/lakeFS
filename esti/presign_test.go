@@ -55,7 +55,7 @@ func TestPreSign(t *testing.T) {
 	objContent := randstr.String(randomDataContentLength)
 	_, err = uploadFileAndReport(ctx, repo, mainBranch, "foo/bar", objContent, false, nil)
 	if err != nil {
-		t.Errorf("could no upload data file")
+		t.Errorf("could no upload Data file")
 	}
 
 	t.Run("preSignStat", func(t *testing.T) {
@@ -107,7 +107,7 @@ func TestPreSign(t *testing.T) {
 
 	t.Run("preSignGetMetaRangeAndRange", func(t *testing.T) {
 		// get a metarange from main
-		UploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930", nil)
+		UploadFileRandomData(ctx, t, repo, mainBranch, "some/random/Path/43543985430548930", nil)
 		commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 			Message: "committing just to get a meta range!",
 		})
@@ -135,7 +135,7 @@ func TestPreSign(t *testing.T) {
 		record := iter.Value()
 		gv, err := committed.UnmarshalValue(record.Value)
 		if err != nil {
-			t.Error("could not read range data")
+			t.Error("could not read range Data")
 		}
 		rangeId := committed.ID(gv.Identity)
 

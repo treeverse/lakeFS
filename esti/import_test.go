@@ -24,8 +24,8 @@ import (
 const (
 	defaultExpectedContentLength = 1024
 
-	s3ImportPath       = "s3://esti-system-testing-data/import-test-data/"
-	gsImportPath       = "gs://esti-system-testing-data/import-test-data/"
+	s3ImportPath       = "s3://esti-system-testing-Data/import-test-Data/"
+	gsImportPath       = "gs://esti-system-testing-Data/import-test-Data/"
 	azureImportPath    = "https://esti.blob.core.windows.net/esti-system-testing-data/import-test-data/"
 	importTargetPrefix = "imported/new-prefix/"
 	importBranchBase   = "ingestion"
@@ -72,7 +72,7 @@ func setupImportByBlockstoreType(t testing.TB) (string, string, int) {
 
 func setupLocalImportPath(t testing.TB) string {
 	const dirPerm = 0o755
-	importDir := filepath.Join(t.TempDir(), "import-test-data") + "/"
+	importDir := filepath.Join(t.TempDir(), "import-test-Data") + "/"
 	if err := os.Mkdir(importDir, dirPerm); err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func TestImport(t *testing.T) {
 			Type:        catalog.ImportPathTypePrefix,
 		}}
 		_ = testImportNew(t, ctx, repoName, branch, paths, metadata, false)
-		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-data/", branch, importFilesToCheck, expectedContentLength)
+		verifyImportObjects(t, ctx, repoName, importTargetPrefix+"import-test-Data/", branch, importFilesToCheck, expectedContentLength)
 	})
 
 	t.Run("several_paths", func(t *testing.T) {
