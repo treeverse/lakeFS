@@ -49,6 +49,10 @@ Azure Blob, Google Cloud Storage, other S3-compatible storage, and even local st
 To configure your lakeFS server to connect to multiple storage backends, define them under the `blockstores` section in 
 your server configurations. The `blockstores.stores` field is an array of storage backends, each with its own configuration.  
 
+{: .note}
+> If you're upgrading from a single-store setup, refer to the [upgrade guidelines](#upgrading-from-single-to-multi-store)
+> to ensure a smooth transition.
+
 ### Example Configurations
 
 <div class="tabs">
@@ -163,6 +167,18 @@ When upgrading from a single storage backend to a multi-store setup, follow thes
   * Existing repositories continue using the original storage backend.
   * Newly created repositories default to this backend unless explicitly assigned a different one, to ensure a non-breaking upgrade process. 
 
+### Adding or Removing a Storage Backend
+
+To add a storage backend, update the server configuration with the new storage entry and restart the server.
+
+To remove a storage backend:
+* Delete all repositories associated with the storage backend.
+* Remove the storage entry from the configuration.
+* Restart the server.
+
+{: .warning}
+> Repositories linked to a removed storage backend will result in unexpected behavior. Ensure all necessary cleanup is done before removal.
+
 ### Common Configuration Errors & Fixes
 
 | Issue                                                               | Cause | Solution                                                 |
@@ -170,7 +186,6 @@ When upgrading from a single storage backend to a multi-store setup, follow thes
 | Blockstore ID conflicts                                             | Duplicate `id` values in `stores` | Ensure each storage backend has a unique ID              |
 | Missing `backward_compatible`                                       | Upgrade from single to multi-store without setting the flag | Add `backward_compatible: true` for the existing storage |
 | Unsupported configurations in OSS or unlicensed Enterprise accounts | Using multi-store features in an unsupported setup | Contact us to start using the feature                    |
-
 
 ## Creating repositories  
 
@@ -185,17 +200,6 @@ How to check a repo’s storage backend in UI/API.
 
 ## Listing connected storages 
 
-## Adding or removing a storage backend
-We use the configurations for it. go change configurations and restart the server.
-
-#### Add
-
-#### Remove
-
-* Before removing a connected storage, you need to make sure that you delete the repositories created on it. otherwise it will lead
-  undefined behaviour.
-  We use the configurations for it. go change configurations and restart the server.
-
 
 TODO: 
 * add to https://docs.lakefs.io/understand/architecture.html#object-storage for msb discoverability
@@ -203,6 +207,7 @@ TODO:
 * local storage in intro - clarify
 * contact us - what main? add to cta in begining and in problems table 
 * Consider calling the feature - Distributed data management
+* reference from enterprise docs page and other places?
 
 * Make sure configuration reference has the new configurations
   Configuration Parameters
