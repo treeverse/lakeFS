@@ -909,7 +909,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	readOnlyRepo := createReadOnlyRepositoryByName(ctx, t, "tests3copyobjectdestreadonly")
 	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
 
-	requireBlockstoreType(t, block.BlockstoreTypeS3)
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	destPath := gatewayTestPrefix + "dest-file"
 
 	// upload data
@@ -979,7 +979,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 }
 
 func TestS3ReadObjectRedirect(t *testing.T) {
-	requireBlockstoreType(t, block.BlockstoreTypeS3)
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	const (
 		contents = "the quick brown fox jumps over the lazy dog"
 		goodPath = "main/exists.txt"
