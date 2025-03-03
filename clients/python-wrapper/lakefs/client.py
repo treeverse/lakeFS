@@ -5,21 +5,28 @@ Handles authentication against the lakeFS server and wraps the underlying lakefs
 """
 
 from __future__ import annotations
-
+import os
 import base64
 import json
 from threading import Lock
 from typing import Optional
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse, parse_qs
+import boto3.session
 
 import lakefs_sdk
 from lakefs_sdk import ExternalLoginInformation
 from lakefs_sdk.client import LakeFSClient
 
 from lakefs.config import ClientConfig
-from lakefs.exceptions import NotAuthorizedException, ServerException, api_exception_handler
+from lakefs.exceptions import NotAuthorizedException, ServerException, NoAuthenticationFound, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
+
+from .config import (
+    _LAKECTL_ENDPOINT_ENV,
+    _LAKECTL_CREDENTIALS_ACCESS_TOKEN,
+    _AWS_PROFILE
+)
 
 if TYPE_CHECKING:
     import boto3
@@ -229,7 +236,7 @@ def _get_identity_token(
 
 
 def from_aws_role(
-        session: boto3.Session,
+        session: boto3.Session = None,
         ttl_seconds: int = 3600,
         presigned_ttl: int = 60,
         additional_headers: dict[str, str] = None,
@@ -243,6 +250,8 @@ def from_aws_role(
     :param kwargs: The arguments to pass to the client.
     :return: A lakeFS client.
     """
+    if session is None:
+        session = boto3.Session()
 
     client = Client(**kwargs)
     lakefs_host = urlparse(client.config.host).hostname
@@ -255,6 +264,7 @@ def from_aws_role(
     with api_exception_handler():
         auth_token = client.sdk_client.auth_api.external_principal_login(external_login_information)
 
+    os.environ[_LAKECTL_CREDENTIALS_ACCESS_TOKEN] = auth_token.token
     client.config.access_token = auth_token.token
     return client
 
@@ -278,6 +288,18 @@ def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int
     client.config.access_token = auth_token.token
     return client
 
+def _authenticate_with_aws() -> Client:
+    """
+    Try to authenticate using AWS role-based credentials.
+    """
+    host = os.getenv(_LAKECTL_ENDPOINT_ENV)
+    profile = os.getenv(_AWS_PROFILE)
+
+    if not host or not profile:
+        raise NoAuthenticationFound
+
+    session = boto3.Session(profile_name=profile)
+    return from_aws_role(session=session, host=host)
 
 class _BaseLakeFSObject:
     """
@@ -303,5 +325,8 @@ class _BaseLakeFSObject:
 
         with _BaseLakeFSObject.__mutex:
             if _BaseLakeFSObject.__client is None:
-                _BaseLakeFSObject.__client = Client()
+                try:
+                    _BaseLakeFSObject.__client = Client()
+                except NoAuthenticationFound:
+                    _BaseLakeFSObject.__client = _authenticate_with_aws()
             return _BaseLakeFSObject.__client
