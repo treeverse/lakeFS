@@ -18,8 +18,10 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/cenkalti/backoff/v4"
 	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-multierror"
@@ -68,6 +70,7 @@ var (
 
 	errNotVerified     = errors.New("lakeFS failed")
 	errWrongStatusCode = errors.New("wrong status code")
+	errRunResultsSize  = errors.New("run results size")
 )
 
 func (i *ArrayFlags) String() string {
@@ -390,7 +393,7 @@ func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent 
 		return stats.Checksum, nil
 	}
 	// Upload using API
-	resp, err := uploadContent(ctx, repo, branch, objPath, objContent, clt)
+	resp, err := UploadContent(ctx, repo, branch, objPath, objContent, clt)
 	if err != nil {
 		return "", err
 	}
@@ -459,7 +462,7 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 	}
 }
 
-func uploadContent(ctx context.Context, repo, branch, objPath, objContent string, clt apigen.ClientWithResponsesInterface) (*apigen.UploadObjectResponse, error) {
+func UploadContent(ctx context.Context, repo, branch, objPath, objContent string, clt apigen.ClientWithResponsesInterface) (*apigen.UploadObjectResponse, error) {
 	if clt == nil {
 		clt = client
 	}
@@ -477,6 +480,8 @@ func uploadContent(ctx context.Context, repo, branch, objPath, objContent string
 	if err != nil {
 		return nil, fmt.Errorf("close form file: %w", err)
 	}
+
+	fmt.Println("call UploadObjectWithBodyWithResponse")
 	return clt.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)
@@ -553,8 +558,8 @@ func isBlockstoreType(requiredTypes ...string) *string {
 	return &blockstoreType
 }
 
-// requireBlockstoreType Skips test if blockstore type doesn't match the required type
-func requireBlockstoreType(t testing.TB, requiredTypes ...string) {
+// RequireBlockstoreType Skips test if blockstore type doesn't match the required type
+func RequireBlockstoreType(t testing.TB, requiredTypes ...string) {
 	if blockstoreType := isBlockstoreType(requiredTypes...); blockstoreType != nil {
 		t.Skipf("Required blockstore types: %v, got: %s", requiredTypes, *blockstoreType)
 	}
@@ -598,4 +603,32 @@ func GravelerIterator(data []byte) (*sstable.Iterator, error) {
 	// wrap it in a Graveler iterator
 	dummyDeref := func() error { return nil }
 	return sstable.NewIterator(iter, dummyDeref), nil
+}
+
+func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int, clt apigen.ClientWithResponsesInterface) *apigen.ActionRunList {
+	const MaxIntervalSecs = 5
+	const MaxElapsedSecs = 30
+
+	if clt == nil {
+		clt = client
+	}
+	var runs *apigen.ActionRunList
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = MaxIntervalSecs * time.Second
+	bo.MaxElapsedTime = MaxElapsedSecs * time.Second
+	listFunc := func() error {
+		runsResp, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
+			Commit: apiutil.Ptr(ref),
+		})
+		require.NoError(t, err)
+		runs = runsResp.JSON200
+		require.NotNil(t, runs)
+		if len(runs.Results) == l {
+			return nil
+		}
+		return fmt.Errorf("size: %d: %w", len(runs.Results), errRunResultsSize)
+	}
+	err := backoff.Retry(listFunc, bo)
+	require.NoError(t, err)
+	return runs
 }

@@ -202,7 +202,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		require.NoError(t, err)
 		vars["PREFIX"] = "dir_marker/"
 		vars["LOCAL_DIR"] = dataDir
-		_, err = uploadContent(context.Background(), vars["REPO"], vars["BRANCH"], vars["PREFIX"], "", nil)
+		_, err = UploadContent(context.Background(), vars["REPO"], vars["BRANCH"], vars["PREFIX"], "", nil)
 		require.NoError(t, err)
 		runCmd(t, Lakectl()+" commit lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+" --allow-empty-message -m \" \"", false, false, vars)
 		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
@@ -626,7 +626,7 @@ func TestLakectlLocal_commit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.presign {
 				// Skip due to bug on Azure https://github.com/treeverse/lakeFS/issues/6426
-				requireBlockstoreType(t, block.BlockstoreTypeS3, block.BlockstoreTypeGS)
+				RequireBlockstoreType(t, block.BlockstoreTypeS3, block.BlockstoreTypeGS)
 			}
 			dataDir, err := os.MkdirTemp(tmpDir, "")
 			require.NoError(t, err)
