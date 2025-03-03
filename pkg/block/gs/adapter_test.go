@@ -12,7 +12,7 @@ import (
 )
 
 func newAdapter() *gs.Adapter {
-	return gs.NewAdapter(client)
+	return gs.NewAdapter(client, nil)
 }
 
 func TestAdapter(t *testing.T) {
