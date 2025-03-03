@@ -307,8 +307,9 @@ class _BaseLakeFSObject:
 
         with _BaseLakeFSObject.__mutex:
             if _BaseLakeFSObject.__client is None:
-                _BaseLakeFSObject.__client = Client()
-            if _BaseLakeFSObject.__client is None:
-                _BaseLakeFSObject.__client = _authenticate_with_aws()
+                try:
+                    _BaseLakeFSObject.__client = Client()
+                except NoAuthenticationFound:
+                    _BaseLakeFSObject.__client = _authenticate_with_aws()
 
             return _BaseLakeFSObject.__client
