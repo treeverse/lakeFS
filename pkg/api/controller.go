@@ -1886,17 +1886,16 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storageCfg, _ := c.getStorageConfigs()
+	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
 	writeResponse(w, r, http.StatusOK, storageCfg)
 }
 
 func (c *Controller) getStorageConfigs() (*apigen.StorageConfig, apigen.StorageConfigList) {
-	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
-	if storageCfg == nil {
-		storageCfg = &apigen.StorageConfig{}
-	}
 	storageCfgList := c.getStorageConfigList()
-	return storageCfg, storageCfgList
+	if len(storageCfgList) == 1 && swag.StringValue(storageCfgList[0].BlockstoreId) == config.SingleBlockstoreID {
+		return &storageCfgList[0], apigen.StorageConfigList{}
+	}
+	return nil, storageCfgList
 }
 
 func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, error) {
@@ -1915,6 +1914,7 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 		info.DefaultNamespacePrefix = *defaultNamespacePrefix
 	}
 	return &apigen.StorageConfig{
+		BlockstoreId:                     swag.String(storage.ID()),
 		BlockstoreDescription:            swag.String(storage.BlockstoreDescription()),
 		BlockstoreType:                   storage.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,
@@ -1936,7 +1936,6 @@ func (c *Controller) getStorageConfigList() apigen.StorageConfigList {
 			c.Logger.WithError(err).Error("no storage config found for id: %s", id)
 			continue
 		}
-		info.BlockstoreId = swag.String(id)
 		configList = append(configList, *info)
 	}
 	return configList
