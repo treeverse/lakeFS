@@ -7,7 +7,6 @@ import pytest
 
 import lakefs_sdk.api
 
-from lakefs import StoredObject
 from lakefs.client import SINGLE_STORAGE_ID
 from lakefs.object import ReadModes
 from tests.utests.common import get_test_client, expect_exception_context

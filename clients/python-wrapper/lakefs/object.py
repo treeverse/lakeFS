@@ -58,7 +58,8 @@ class LakeFSIOBase(_BaseLakeFSObject, IO):
         self._pos = 0
         super().__init__(client)
         # must be set after super().__init__ to ensure the client is properly initialized.
-        self._pre_sign = pre_sign if pre_sign is not None else self._client.storage_config_by_id(obj.storage_id()).pre_sign_support
+        self._pre_sign = pre_sign if pre_sign is not None \
+            else self._client.storage_config_by_id(obj.storage_id()).pre_sign_support
 
     @property
     def mode(self) -> str:
@@ -687,7 +688,7 @@ class StoredObject(_BaseLakeFSObject):
 
     def storage_id(self) -> str:
         """
-        Return the Stat object representing this object
+        Return the storage ID associated with this object
         """
         if self._storage_id is None:
             with api_exception_handler(_io_exception_handler):

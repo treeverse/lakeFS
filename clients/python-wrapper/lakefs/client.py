@@ -32,14 +32,15 @@ class ServerConfiguration:
     Represent a lakeFS server's configuration
     """
     _conf: lakefs_sdk.Config
-    _storage_conf: dict[str, ServerStorageConfiguration] = dict()
+    _storage_conf: dict[str, ServerStorageConfiguration] = {}
 
     def __init__(self, client: Optional[Client] = None):
         try:
             self._conf = client.sdk_client.config_api.get_config()
             if self._conf.storage_config_list is not None:
                 for storage in self._conf.storage_config_list:
-                    self._storage_conf[storage.blockstore_id] = ServerStorageConfiguration(**self._conf.storage_config.dict())
+                    self._storage_conf[storage.blockstore_id] = ServerStorageConfiguration(
+                        **self._conf.storage_config.dict())
             if self._conf.storage_config is not None:
                 self._storage_conf[SINGLE_STORAGE_ID] = ServerStorageConfiguration(**self._conf.storage_config.dict())
 
@@ -58,11 +59,14 @@ class ServerConfiguration:
     @property
     def storage_config(self) -> ServerStorageConfiguration:
         """
-        Returns the lakeFS server storage configuration
+        Returns the default lakeFS server storage configuration
         """
         return self.storage_config_by_id()
-    
+
     def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
+        """
+        Returns the lakeFS server storage configuration by ID
+        """
         return self._storage_conf[storage_id]
 
 class Client:
@@ -112,6 +116,9 @@ class Client:
         return self.storage_config_by_id()
 
     def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
+        """
+        Returns lakeFS SDK storage config object, defaults to a single storage ID.
+        """
         if self._server_conf is None:
             self._server_conf = ServerConfiguration(self)
         return self._server_conf.storage_config_by_id(storage_id)
