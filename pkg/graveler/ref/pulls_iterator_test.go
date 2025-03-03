@@ -20,6 +20,7 @@ func TestPullsIterator(t *testing.T) {
 	now := time.Now().UTC()
 
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://foo",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",

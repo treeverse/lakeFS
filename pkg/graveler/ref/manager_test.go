@@ -173,6 +173,7 @@ func TestManager_GetRepository(t *testing.T) {
 		branchID := graveler.BranchID("weird-branch")
 
 		repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
+			StorageID:        "sid",
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  branchID,
@@ -213,6 +214,7 @@ func TestManager_ListRepositories(t *testing.T) {
 	repoIDs := []graveler.RepositoryID{"a", "aa", "b", "c", "e", "d"}
 	for _, repoId := range repoIDs {
 		_, err := r.CreateRepository(context.Background(), repoId, graveler.Repository{
+			StorageID:        "sid",
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
@@ -271,6 +273,7 @@ func TestManager_DeleteRepository(t *testing.T) {
 
 	t.Run("repo_exists", func(t *testing.T) {
 		repository, err := r.CreateRepository(ctx, repoID, graveler.Repository{
+			StorageID:        "sid",
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "weird-branch",
@@ -321,6 +324,7 @@ func TestManager_DeleteRepository(t *testing.T) {
 
 		// Create after delete
 		_, err = r.CreateRepository(ctx, repoID, graveler.Repository{
+			StorageID:        "sid",
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "weird-branch",
@@ -343,6 +347,7 @@ func TestManager_DeleteRepository(t *testing.T) {
 func TestManager_GetBranch(t *testing.T) {
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -371,6 +376,7 @@ func TestManager_CreateBranch(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -434,6 +440,7 @@ func TestManager_CreateBranch(t *testing.T) {
 func TestManager_SetBranch(t *testing.T) {
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -478,6 +485,7 @@ func TestManager_BranchUpdate(t *testing.T) {
 		commitID2 = "c2"
 	)
 	repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -542,6 +550,7 @@ func TestManager_DeleteBranch(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -563,6 +572,7 @@ func TestManager_DeleteBranch(t *testing.T) {
 func TestManager_ListBranches(t *testing.T) {
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -635,6 +645,7 @@ func TestManager_GetTag(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -669,6 +680,7 @@ func TestManager_CreateTag(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -713,6 +725,7 @@ func TestManager_DeleteTag(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -733,6 +746,7 @@ func TestManager_ListTags(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -769,6 +783,7 @@ func TestManager_AddCommit(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -813,6 +828,7 @@ func TestManager_Log(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -887,6 +903,7 @@ func TestManager_LogGraph(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -1045,6 +1062,7 @@ func TestManager_GetCommitByPrefix(t *testing.T) {
 	r, _ := testRefManagerWithAddressProvider(t, provider)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -1108,6 +1126,7 @@ func TestManager_ListCommits(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -1174,6 +1193,7 @@ func TestManager_DeleteExpiredImports(t *testing.T) {
 	r, store := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -1240,6 +1260,7 @@ func TestManager_GetRepositoryMetadata(t *testing.T) {
 		repoID = "repo1"
 	)
 	repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -1266,6 +1287,7 @@ func TestManager_SetRepositoryMetadata(t *testing.T) {
 		key    = "test_key"
 	)
 	repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -1324,6 +1346,7 @@ func TestManager_SetRepositoryMetadata(t *testing.T) {
 func TestManager_GetPullRequest(t *testing.T) {
 	r, store := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -1370,6 +1393,7 @@ func TestManager_GetPullRequest(t *testing.T) {
 func TestManager_DeletePullRequest(t *testing.T) {
 	r, store := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -1411,6 +1435,7 @@ func TestManager_DeletePullRequest(t *testing.T) {
 func TestManager_UpdatePullRequest(t *testing.T) {
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
