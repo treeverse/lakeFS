@@ -1365,6 +1365,7 @@ func TestGraveler_CreateBranch(t *testing.T) {
 func TestGraveler_UpdateBranch(t *testing.T) {
 	gravel := newGraveler(t, nil, &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake([]graveler.ValueRecord{{Key: graveler.Key("foo/one"), Value: &graveler.Value{}}})},
 		&testutil.RefsFake{Branch: &graveler.Branch{}, UpdateErr: kv.ErrPredicateFailed}, nil, nil)
+	testutil.ShortenBranchUpdateBackOff(gravel.(*graveler.Graveler))
 	_, err := gravel.UpdateBranch(context.Background(), repository, "", "")
 	require.ErrorIs(t, err, graveler.ErrTooManyTries)
 
