@@ -31,7 +31,7 @@ import csv
 from pathlib import PosixPath
 from io import StringIO
 
-from lakefs
+import lakefs
 from google.cloud import storage
 from google.cloud import aiplatform
 
@@ -43,18 +43,10 @@ img_dataset = 'datasets/my-images/'
 # Vertex configuration
 import_bucket = 'underlying-gcs-bucket'
 
-# lakeFS client with connection details
-client = Client(
-    host="https://lakefs.example.com",
-    username="AKIAIOSFODNN7EXAMPLE",
-    password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-)
-
-
 # produce import file for Vertex's SDK
 buf = StringIO()
 csv_writer = csv.writer(buf)
-for obj in lakesf.repository(lakefs_repo).ref(lakefs_ref).objects(prefix=img_dataset):
+for obj in lakefs.repository(lakefs_repo).ref(lakefs_ref).objects(prefix=img_dataset):
     p = PosixPath(obj.path)
     csv_writer.writerow((obj.physical_address, p.parent.name))
 
