@@ -25,8 +25,6 @@ in multiple locations.
 With a multi-store setup, lakeFS can connect to and manage any combination of supported storage systems, including AWS S3,
 Azure Blob, Google Cloud Storage, other S3-compatible storage, and even local storages. 
 
-**ADD a diagram**
-
 {: .note}
 > Multi-storage backends support is available from version X of lakeFS Enterprise.
 
@@ -50,7 +48,7 @@ To configure your lakeFS server to connect to multiple storage backends, define 
 your server configurations. The `blockstores.stores` field is an array of storage backends, each with its own configuration.  
 
 {: .note}
-> If you're upgrading from a single-store setup, refer to the [upgrade guidelines](#upgrading-from-single-to-multi-store)
+> If you're upgrading from a single-store lakeFS setup, refer to the [upgrade guidelines](#upgrading-from-single-to-multi-store)
 > to ensure a smooth transition.
 
 ### Example Configurations
@@ -187,34 +185,39 @@ To remove a storage backend:
 | Missing `backward_compatible`                                       | Upgrade from single to multi-store without setting the flag | Add `backward_compatible: true` for the existing storage |
 | Unsupported configurations in OSS or unlicensed Enterprise accounts | Using multi-store features in an unsupported setup | Contact us to start using the feature                    |
 
-## Creating repositories  
+## Working with Repositories  
 
-constraint: a single repo is associated with a single backend.
+After setting up lakeFS Enterprise to connect with multiple storage backends, this section explains how to use these 
+connected storages when working with lakeFS.
+
+With multiple storage backends configured, lakeFS repositories are now linked to a specific storage backend. Together with
+the repository's storage namespace, this defines the exact location in the underlying storage where the repository's data 
+is stored.
+
+The choice of storage backend impacts the following lakeFS operations:
 
 ### Creating a Repository
-Behavior for single vs. multi-blockstore installations.
-API, CLI, and UI changes.
+
+In a multi-store setup, users must specify a storage ID when creating a repository. This can be done using the following methods:
+* API
+* CLI
+* UI
+* High-level Python SDK
+
+Notes:
+* In multi-store setups where a storage backend is marked as `backward_compatible = true`, repository creation requests 
+with an empty storage ID will default to this storage.
+* If no storage backend is marked as `backward_compatible`, repository creation requests without a storage ID will fail.
+* Each repository is associated with a single backend and uses a single location as its underlying storage.
 
 ### Viewing Repository Details
-How to check a repo’s storage backend in UI/API.
 
-## Listing connected storages 
+To determine which storage backend is associated with a repository:
+* API – The list repositories response includes the storage ID.
+* UI – Available in the repository settings page.
 
+### Importing Data into a Repository
 
-TODO: 
-* add to https://docs.lakefs.io/understand/architecture.html#object-storage for msb discoverability
-* Understand the status storage combinations of non self-managed s3 compatible 
-* local storage in intro - clarify
-* contact us - what main? add to cta in begining and in problems table 
-* Consider calling the feature - Distributed data management
-* reference from enterprise docs page and other places?
-
-* Make sure configuration reference has the new configurations
-  Configuration Parameters
-- **`signing.secret_key`** – A required, cryptographically secure string used for encryption and signing storage-related API operations.
-- **`stores`** – A list of configured storage backends, each defined by:
-    - **`id`** – A unique identifier for the storage backend.
-    - **`backward_compatible`** – Enables backward compatibility for upgrading from a single-store setup. Defaults to `false`.
-    - **`description`** – A short description of the backend’s purpose.
-    - **`type`** – The storage provider type (`s3`, `azure`, `gcs`, or `local`).
-    - **Provider-specific settings** – Each backend type requires different parameters (see below).
+Importing data into a repository is supported for storage locations that meet the following conditions:
+* The credentials used for the backing blockstore allow access to the storage location.
+* The storage location is in the same region as the repository's backend.
