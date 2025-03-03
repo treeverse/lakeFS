@@ -106,7 +106,7 @@ func uploadAndCommitObjects(t *testing.T, ctx context.Context, repo, branch stri
 	t.Helper()
 	for _, objects := range objectsGroups {
 		for path, obj := range objects {
-			resp, err := uploadContent(ctx, repo, branch, path, obj)
+			resp, err := UploadContent(ctx, repo, branch, path, obj, nil)
 			require.NoError(t, err)
 			require.Equal(t, http.StatusCreated, resp.StatusCode())
 		}
@@ -163,7 +163,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	commit := uploadAndCommitObjects(t, ctx, repo, mainBranch, tablePaths, hookFiles)
 
 	// wait until actions finish running
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, commit.Id, 1)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, commit.Id, 1, nil)
 	require.Equal(t, "completed", runs.Results[0].Status, "symlink action result not finished")
 
 	// list symlink.txt files from blockstore
@@ -256,7 +256,7 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 // Glue export: lua script, table in _lakefs_tables, action file
 func TestAWSCatalogExport(t *testing.T) {
 	// skip if blockstore is not not s3
-	requireBlockstoreType(t, block.BlockstoreTypeS3)
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	// skip if the following args are not provided
 	accessKeyID := viper.GetString("aws_access_key_id")
 	secretAccessKey := viper.GetString("aws_secret_access_key")
@@ -331,7 +331,7 @@ func TestAWSCatalogExport(t *testing.T) {
 		})
 
 		// wait for action to finish
-		runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+		runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1, nil)
 		require.Equal(t, "completed", runs.Results[0].Status, "glue action result not finished")
 
 		// create glue client
@@ -503,7 +503,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			uploadResp, err := uploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf))
+			uploadResp, err := UploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf), nil)
 			if err != nil {
 				return err
 			}
@@ -517,7 +517,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 		"_lakefs_actions/delta_export.yaml": renderTplFileAsStr(t, testData, tmplDir, fmt.Sprintf("%s/_lakefs_actions/delta_export.yaml", blockstore)),
 	})
 
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1, nil)
 	run := runs.Results[0]
 	require.Equal(t, "completed", run.Status)
 
@@ -536,7 +536,7 @@ func TestDeltaCatalogImportExport(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	requireBlockstoreType(t, block.BlockstoreTypeS3)
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
 	testData := &exportHooksTestData{
@@ -567,7 +567,7 @@ func TestDeltaCatalogImportExport(t *testing.T) {
 		"_lakefs_actions/delta_export.yaml": renderTplFileAsStr(t, testData, tmplDir, fmt.Sprintf("%s/_lakefs_actions/delta_export.yaml", blockstore)),
 	})
 
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1, nil)
 	run := runs.Results[0]
 	require.Equal(t, "completed", run.Status)
 
@@ -619,7 +619,7 @@ func getStorageNamespace(t *testing.T, ctx context.Context, repo string) string 
 }
 
 func TestDeltaCatalogExportAbfss(t *testing.T) {
-	requireBlockstoreType(t, block.BlockstoreTypeAzure)
+	RequireBlockstoreType(t, block.BlockstoreTypeAzure)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -645,7 +645,7 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			uploadResp, err := uploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf))
+			uploadResp, err := UploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf), nil)
 			if err != nil {
 				return err
 			}
@@ -659,7 +659,7 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 		"_lakefs_actions/delta_export.yaml": renderTplFileAsStr(t, testData, tmplDir, "azure_adls/_lakefs_actions/delta_export.yaml"),
 	})
 
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, headCommit.Id, 1, nil)
 	run := runs.Results[0]
 	require.Equal(t, "completed", run.Status)
 

@@ -61,25 +61,25 @@ hooks:
 ## Request body schema
 Upon execution, a webhook will send a request containing a JSON object with the following fields:
 
-| Field               | Description                                                       | Type   |
-|---------------------|-------------------------------------------------------------------|--------|
-| event_type          | Type of the event that triggered the _Action_                     | string |
-| event_time          | Time of the event that triggered the _Action_ (RFC3339 formatted) | string |
-| action_name         | Containing _Hook_ Action's Name                                   | string |
-| hook_id             | ID of the _Hook_                                                  | string |
-| repository_id       | ID of the Repository                                              | string |
-| branch_id[^1]       | ID of the Branch                                                  | string |
-| source_ref          | Reference to the source on which the event was triggered          | string |
-| commit_message[^2]  | The message for the commit (or merge) that is taking place        | string |
-| committer[^2]       | Name of the committer                                             | string |
-| commit_metadata[^2] | The metadata for the commit that is taking place                  | string |
-| commit_id[^2,^4]    | The ID of the commit that is being created              | string |
-| tag_id[^3]          | The ID of the created/deleted tag                                 | string |
+| Field               | Description                                                                | Type   |
+|---------------------|----------------------------------------------------------------------------|--------|
+| event_type          | Type of the event that triggered the _Action_                              | string |
+| event_time          | Time of the event that triggered the _Action_ (RFC3339 formatted)          | string |
+| action_name         | Containing _Hook_ Action's Name                                            | string |
+| hook_id             | ID of the _Hook_                                                           | string |
+| repository_id       | ID of the Repository                                                       | string |
+| branch_id[^1]       | ID of the Branch                                                           | string |
+| source_ref          | Reference to the source on which the event was triggered                   | string |
+| commit_message[^2]  | The message for the commit (or merge) that is taking place                 | string |
+| committer[^2]       | Name of the committer                                                      | string |
+| commit_metadata[^2] | The metadata for the commit that is taking place                           | string |
+| commit_id[^3]       | The ID of the commit that is being created                                 | string |
+| tag_id              | The ID of the created/deleted tag (available for Tag events)               | string |
+| merge_source        | The source branch/tag/ref on merge (available for Merge events)            | string |
 
-[^1]: N\A for Tag events  
-[^2]: N\A for Tag and Create/Delete Branch events  
-[^3]: Applicable only for Tag events
-[^4]: Applicable to commit/merge events. For merges, this represents the merge commit ID to be created if the merge operation succeeds.
+[^1]: N/A for Tag events 
+[^2]: N/A for Tag and Create/Delete Branch events  
+[^3]: Available for Commit/Merge events only. In Merge, this represents the merge commit ID to be created if the merge operation succeeds.
 
 Example:
 ```json

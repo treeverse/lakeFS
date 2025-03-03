@@ -18,6 +18,20 @@ const (
 	DefaultAuthAPIHealthCheckTimeout = 20 * time.Second
 	DefaultAuthSecret                = "THIS_MUST_BE_CHANGED_IN_PRODUCTION"   // #nosec
 	DefaultSigningSecretKey          = "OVERRIDE_THIS_SIGNING_SECRET_DEFAULT" // #nosec
+	// storage blockstore values
+	DefaultBlockstoreLocalPath                        = "~/lakefs/data/block" // #nosec
+	DefaultBlockstoreS3Region                         = "us-east-1"           // #nosec
+	DefaultBlockstoreS3MaxRetries                     = 5
+	DefaultBlockstoreS3DiscoverBucketRegion           = true
+	DefaultBlockstoreS3PreSignedExpiry                = 15 * time.Minute
+	DefaultBlockstoreS3WebIdentitySessionExpiryWindow = 5 * time.Minute
+	DefaultBlockstoreS3DisablePreSignedUI             = true
+	DefaultBlockstoreGSS3Endpoint                     = "https://storage.googleapis.com" // #nosec
+	DefaultBlockstoreGSPreSignedExpiry                = 15 * time.Minute
+	DefaultBlockstoreGSDisablePreSignedUI             = true
+	DefaultBlockstoreAzureTryTimeout                  = 10 * time.Minute
+	DefaultBlockstoreAzurePreSignedExpiry             = 15 * time.Minute
+	DefaultBlockstoreAzureDisablePreSignedUI          = true
 )
 
 //nolint:mnd
@@ -93,22 +107,22 @@ func setBaseDefaults(cfgType string) {
 	// blockstore defaults
 	viper.SetDefault("blockstore.signing.secret_key", DefaultSigningSecretKey)
 
-	viper.SetDefault("blockstore.local.path", "~/lakefs/data/block")
+	viper.SetDefault("blockstore.local.path", DefaultBlockstoreLocalPath)
 
-	viper.SetDefault("blockstore.s3.region", "us-east-1")
-	viper.SetDefault("blockstore.s3.max_retries", 5)
-	viper.SetDefault("blockstore.s3.discover_bucket_region", true)
-	viper.SetDefault("blockstore.s3.pre_signed_expiry", 15*time.Minute)
-	viper.SetDefault("blockstore.s3.web_identity.session_expiry_window", 5*time.Minute)
-	viper.SetDefault("blockstore.s3.disable_pre_signed_ui", true)
+	viper.SetDefault("blockstore.s3.region", DefaultBlockstoreS3Region)
+	viper.SetDefault("blockstore.s3.max_retries", DefaultBlockstoreS3MaxRetries)
+	viper.SetDefault("blockstore.s3.discover_bucket_region", DefaultBlockstoreS3DiscoverBucketRegion)
+	viper.SetDefault("blockstore.s3.pre_signed_expiry", DefaultBlockstoreS3PreSignedExpiry)
+	viper.SetDefault("blockstore.s3.web_identity.session_expiry_window", DefaultBlockstoreS3WebIdentitySessionExpiryWindow)
+	viper.SetDefault("blockstore.s3.disable_pre_signed_ui", DefaultBlockstoreS3DisablePreSignedUI)
 
-	viper.SetDefault("blockstore.gs.s3_endpoint", "https://storage.googleapis.com")
-	viper.SetDefault("blockstore.gs.pre_signed_expiry", 15*time.Minute)
-	viper.SetDefault("blockstore.gs.disable_pre_signed_ui", true)
+	viper.SetDefault("blockstore.gs.s3_endpoint", DefaultBlockstoreGSS3Endpoint)
+	viper.SetDefault("blockstore.gs.pre_signed_expiry", DefaultBlockstoreGSPreSignedExpiry)
+	viper.SetDefault("blockstore.gs.disable_pre_signed_ui", DefaultBlockstoreGSDisablePreSignedUI)
 
-	viper.SetDefault("blockstore.azure.try_timeout", 10*time.Minute)
-	viper.SetDefault("blockstore.azure.pre_signed_expiry", 15*time.Minute)
-	viper.SetDefault("blockstore.azure.disable_pre_signed_ui", true)
+	viper.SetDefault("blockstore.azure.try_timeout", DefaultBlockstoreAzureTryTimeout)
+	viper.SetDefault("blockstore.azure.pre_signed_expiry", DefaultBlockstoreAzurePreSignedExpiry)
+	viper.SetDefault("blockstore.azure.disable_pre_signed_ui", DefaultBlockstoreAzureDisablePreSignedUI)
 
 	viper.SetDefault("stats.enabled", true)
 	viper.SetDefault("stats.address", "https://stats.lakefs.io")

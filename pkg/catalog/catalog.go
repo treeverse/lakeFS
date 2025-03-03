@@ -353,6 +353,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 
 	storeLimiter := kv.NewStoreLimiter(cfg.KVStore, limiter)
 	addressProvider := ident.NewHexAddressProvider()
+
 	refManager := ref.NewRefManager(
 		ref.ManagerConfig{
 			Executor:                         executor,
@@ -363,7 +364,9 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 			CommitCacheConfig:                ref.CacheConfig(baseCfg.Graveler.CommitCache),
 			MaxBatchDelay:                    baseCfg.Graveler.MaxBatchDelay,
 			BranchApproximateOwnershipParams: makeBranchApproximateOwnershipParams(baseCfg.Graveler.BranchOwnership),
-		})
+		},
+		cfg.Config.StorageConfig(),
+	)
 	gcManager := retention.NewGarbageCollectionManager(tierFSParams.Adapter, refManager, baseCfg.Committed.BlockStoragePrefix)
 	settingManager := settings.NewManager(refManager, cfg.KVStore)
 	if cfg.SettingsManagerOption != nil {
@@ -419,9 +422,14 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 	sstableMetaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 	storageIDs := cfg.Config.StorageConfig().GetStorageIDs()
 	for _, sID := range storageIDs {
-		sstableManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg, committed.StorageID(sID))
-		sstableManagers[graveler.StorageID(sID)] = sstableManager
-		closers = append(closers, sstableManager)
+		sstableRangeManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, rangeFS, hashAlg, committed.StorageID(sID))
+		sstableManagers[graveler.StorageID(sID)] = sstableRangeManager
+		closers = append(closers, sstableRangeManager)
+
+		storage := cfg.Config.StorageConfig().GetStorageByID(sID)
+		if storage.IsBackwardsCompatible() {
+			sstableManagers[config.SingleBlockstoreID] = sstableRangeManager
+		}
 
 		sstableMetaManager := sstable.NewPebbleSSTableRangeManager(pebbleSSTableCache, metaRangeFS, hashAlg, committed.StorageID(sID))
 		closers = append(closers, sstableMetaManager)
@@ -429,13 +437,16 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 		sstableMetaRangeManager, err := committed.NewMetaRangeManager(
 			committedParams,
 			sstableMetaManager,
-			sstableManager,
+			sstableRangeManager,
 			graveler.StorageID(sID),
 		)
 		if err != nil {
 			return nil, nil, fmt.Errorf("create SSTable-based metarange manager: %w", err)
 		}
 		sstableMetaRangeManagers[graveler.StorageID(sID)] = sstableMetaRangeManager
+		if storage.IsBackwardsCompatible() {
+			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
+		}
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, committedParams)
 	return committedManager, closers, nil

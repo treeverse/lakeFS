@@ -45,6 +45,8 @@ type HookRecord struct {
 	PreRunID string
 	// Exists only in tag actions.
 	TagID TagID
+	// Exists only in merge actions. Contains the requested source to merge from (branch/tag/ref) as requested in the merge request
+	MergeSource Ref
 }
 
 type HooksHandler interface {

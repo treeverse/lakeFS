@@ -80,7 +80,7 @@ func TestCopyObject(t *testing.T) {
 
 	// Copying different accounts takes more time and allows us to abort the copy in the middle
 	t.Run("copy_large_size_file_abort", func(t *testing.T) {
-		requireBlockstoreType(t, block.BlockstoreTypeAzure)
+		RequireBlockstoreType(t, block.BlockstoreTypeAzure)
 		importPath := strings.Replace(azureCopyDataPath, "esti", azureAbortAccount, 1)
 		const ingestionBranch = "test-copy-abort"
 		_ = testImportNew(t, ctx, repo, ingestionBranch,
@@ -130,8 +130,8 @@ func TestCopyObject(t *testing.T) {
 
 	t.Run("read-only repository", func(t *testing.T) {
 		name := strings.ToLower(t.Name())
-		storageNamespace := generateUniqueStorageNamespace(name)
-		repoName := makeRepositoryName(name)
+		storageNamespace := GenerateUniqueStorageNamespace(name)
+		repoName := MakeRepositoryName(name)
 		resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 			DefaultBranch:    apiutil.Ptr(mainBranch),
 			Name:             repoName,
@@ -139,7 +139,7 @@ func TestCopyObject(t *testing.T) {
 			ReadOnly:         swag.Bool(true),
 		})
 		require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
-		require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+		require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 			"create repository '%s', storage '%s'", name, storageNamespace)
 		defer tearDownTest(repoName)
 

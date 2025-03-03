@@ -902,9 +902,9 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 
 	if numRecords > 0 {
 		test.GarbageCollectionManager.EXPECT().
-			GetUncommittedLocation(gomock.Any(), gomock.Any()).
+			GetUncommittedLocation(gomock.Any(), gomock.Any(), gomock.Any()).
 			MinTimes(1).
-			DoAndReturn(func(runID string, sn graveler.StorageNamespace) (string, error) {
+			DoAndReturn(func(runID string, storageID graveler.StorageID, sn graveler.StorageNamespace) (string, error) {
 				return fmt.Sprintf("%s/retention/gc/uncommitted/%s/uncommitted/", "_lakefs", runID), nil
 			})
 	}

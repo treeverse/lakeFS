@@ -1067,7 +1067,7 @@ class Setup {
 }
 
 class Config {
-    async getStorageConfig() {
+    async getStorageConfigs() {
         const response = await apiRequest('/config', {
             method: 'GET',
         });
@@ -1080,17 +1080,17 @@ class Config {
             return storageCfg;
         };
 
-        let cfg, storageCfg;
         switch (response.status) {
-            case 200:
-                cfg = await response.json();
-                storageCfg = cfg['storage_config']
-                if (storageCfg) {
-                    return parseBlockstoreConfig(storageCfg);
-                } else {
-                    const storageCfgList = cfg['storage_config_list'];
+            case 200: {
+                const cfg = await response.json();
+                const storageCfgList = cfg['storage_config_list'];
+                if (storageCfgList?.length > 1) {
                     return storageCfgList.map(storageCfg => parseBlockstoreConfig(storageCfg));
+                } else {
+                    const storageCfg = cfg['storage_config']
+                    return [parseBlockstoreConfig(storageCfg)];
                 }
+            }
             case 409:
                 throw new Error('Conflict');
             default:

@@ -13,10 +13,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 //go:embed action_files/*.yaml
@@ -68,34 +66,12 @@ func TestHooksSuccess(t *testing.T) {
 	})
 
 	t.Log("check runs are sorted in descending order")
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, "", 13)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", 13, nil)
 	require.Equal(t, len(runs.Results), len(hooksTestData.data))
 	for i, run := range runs.Results {
 		valIdx := len(hooksTestData.data) - (i + 1)
 		require.Equal(t, hooksTestData.data[valIdx].EventType, run.EventType)
 	}
-}
-
-func waitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int) *apigen.ActionRunList {
-	var runs *apigen.ActionRunList
-	bo := backoff.NewExponentialBackOff()
-	bo.MaxInterval = 5 * time.Second
-	bo.MaxElapsedTime = 30 * time.Second
-	listFunc := func() error {
-		runsResp, err := client.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
-			Commit: apiutil.Ptr(ref),
-		})
-		require.NoError(t, err)
-		runs = runsResp.JSON200
-		require.NotNil(t, runs)
-		if len(runs.Results) == l {
-			return nil
-		}
-		return fmt.Errorf("run results size: %d", len(runs.Results))
-	}
-	err := backoff.Retry(listFunc, bo)
-	require.NoError(t, err)
-	return runs
 }
 
 func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
@@ -111,7 +87,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	ref := string(createBranchResp.Body)
 	t.Log("Branch created", ref)
 
-	resp, err := uploadContent(ctx, repo, branch, "somefile", "")
+	resp, err := UploadContent(ctx, repo, branch, "somefile", "", nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
@@ -191,6 +167,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		ActionName:    "Test Pre Merge",
 		HookID:        "test_webhook",
 		RepositoryID:  repo,
+		MergeSource:   branch,
 		BranchID:      mainBranch,
 		Committer:     commitRecord.Committer,
 		CommitMessage: fmt.Sprintf("Merge '%s' into '%s'", branch, mainBranch),
@@ -212,6 +189,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 		ActionName:    "Test Post Merge",
 		HookID:        "test_webhook",
 		RepositoryID:  repo,
+		MergeSource:   branch,
 		BranchID:      mainBranch,
 		CommitID:      mergeRef,
 		Committer:     commitRecord.Committer,
@@ -219,7 +197,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string) {
 	}, postMergeEvent)
 
 	t.Log("List repository runs", mergeRef)
-	runs := waitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2, nil)
 	eventType := map[string]bool{
 		"pre-merge":  true,
 		"post-merge": true,
@@ -457,7 +435,7 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		require.NoError(t, err)
 
 		action := doc.String()
-		resp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action)
+		resp, err := UploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action, nil)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}
@@ -473,6 +451,7 @@ type webhookEventInfo struct {
 	HookID        string            `json:"hook_id"`
 	RepositoryID  string            `json:"repository_id"`
 	BranchID      string            `json:"branch_id"`
+	MergeSource   string            `json:"merge_source"`
 	SourceRef     string            `json:"source_ref"`
 	TagID         string            `json:"tag_id"`
 	CommitID      string            `json:"commit_id"`

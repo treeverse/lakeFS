@@ -20,13 +20,13 @@ func TestIdentity(t *testing.T) {
 	})
 	require.NoError(t, err, "failed creating branch1")
 
-	checksum, objContent, err := uploadFileRandomDataAndReport(ctx, repo, branch1, objPath, false)
+	checksum, objContent, err := uploadFileRandomDataAndReport(ctx, repo, branch1, objPath, false, nil)
 	require.NoError(t, err, "failed uploading file")
 	commitResp, err := client.CommitWithResponse(ctx, repo, branch1, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "commit on branch1",
 	})
 	require.NoError(t, err, "failed to commit changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+	require.NoErrorf(t, VerifyResponse(commitResp.HTTPResponse, commitResp.Body),
 		"failed to commit changes repo %s branch %s", repo, mainBranch)
 
 	// upload the same content again to a different branch
@@ -36,7 +36,7 @@ func TestIdentity(t *testing.T) {
 	})
 	require.NoError(t, err, "failed creating branch2")
 
-	checksumNew, err := uploadFileAndReport(ctx, repo, branch2, objPath, objContent, false)
+	checksumNew, err := UploadFileAndReport(ctx, repo, branch2, objPath, objContent, false, nil)
 	require.NoError(t, err)
 	require.Equal(t, checksum, checksumNew, "Same file uploaded to committed branch, expected no checksum difference")
 

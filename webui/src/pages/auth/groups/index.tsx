@@ -196,7 +196,9 @@ const GroupsContainer = () => {
                     elements.push(<FormattedDate dateValue={group.creation_date}/>)
 
                     return elements;
-                }}/>
+                }}
+                firstFixedCol={true}
+            />
 
             <Paginator
                 nextPage={nextPage}
