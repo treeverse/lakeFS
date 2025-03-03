@@ -10,26 +10,41 @@ lakeFS Enterprise
 {: .label .label-purple }
 
 {: .note}
-> Multi-storage backend support is only available for licensed [lakeFS Enterprise]({% link enterprise/index.md %}) customers.
+> Multi-storage backend support is only available for licensed [lakeFS Enterprise]({% link enterprise/index.md %}) customers.<br>
 > Contact us to get started!   
-
-Multi-storage backend support in lakeFS Enterprise enables seamless data management across multiple storage systems — 
-on-premises, across public clouds, or in hybrid environments. This feature makes lakeFS a unified data management platform
-for all organizational data assets, which is especially critical in AI/ML workflows that rely on diverse datasets stored
-in multiple locations.
-
-With a multi-store setup, lakeFS can connect to and manage any combination of supported storage systems, including AWS S3,
-Azure Blob, Google Cloud Storage, other S3-compatible storage, and even local storage. This enables **unified data access** 
-using the [lakefs protocol URI](../understand/model.md#lakefs-protocol-uris) while maintaining **centralized access control**
-and governance across all backends.
-
-ADD a diagram
-
-Multi-storage backends support is available from version X of lakeFS Enterprise.
 
 {% include toc.html %}
 
-## Configuring Multiple Storage Backends
+## What is Multi-storage Backend Support? 
+
+lakeFS multi-storage backend support enables seamless data management across multiple storage systems — 
+on-premises, across public clouds, or hybrid environments. This capability makes lakeFS a unified data management platform
+for all organizational data assets, which is especially critical in AI/ML environments that rely on diverse datasets stored
+in multiple locations.
+
+With a multi-store setup, lakeFS can connect to and manage any combination of supported storage systems, including AWS S3,
+Azure Blob, Google Cloud Storage, other S3-compatible storage, and even local storages. 
+
+**ADD a diagram**
+
+{: .note}
+> Multi-storage backends support is available from version X of lakeFS Enterprise.
+
+## Use Cases
+
+1. **Unified Data Access and Versioning**:
+  * Access data across multiple storage backends using a single, consistent [URI format](../understand/model.md#lakefs-protocol-uris).
+  * Maintain version control across different storage providers for consistency and reproducibility.
+
+2. **Centralized Access Control & Governance**:
+   * Access permissions and policies can be centrally managed across all connected storage systems using lakeFS [RBAC](../security/rbac.md).
+   * Compliance and security controls remain consistent, regardless of where the data is stored.
+
+3. **Distributed Data Consolidation**:
+   * Eliminate data silos and enable seamless cross-cloud collaboration.
+   * Ideal for AI/ML environments where datasets are distributed across multiple storage locations.
+   
+## How to configure multiple storage backends
 
 To configure your lakeFS server to connect to multiple storage backends, define them under the `blockstores` section in 
 your server configuration.
@@ -152,7 +167,7 @@ created without specifying a storage id default to it.
 
 Example: Blockstore ID conflicts, missing backward_compatible, unsupported configs in OSS.
 
-## Managing repositories with multiple storage backends 
+## Creating repositories  
 
 constraint: a single repo is associated with a single backend.
 
@@ -181,3 +196,4 @@ TODO:
 * add to https://docs.lakefs.io/understand/architecture.html#object-storage for msb discoverability
 * Make sure configuration reference has the new configurations
 * Understand the status storage combinations of non self-managed s3 compatible 
+* local storage in intro - clarify 
