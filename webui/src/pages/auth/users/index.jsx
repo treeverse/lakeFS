@@ -207,11 +207,10 @@ const UsersIndexPage = () => {
     const [refresh, setRefresh] = useState(false);
     const [usersList, setUsersList] = useState([]);
     const router = useRouter();
-    const prefix = (router.query.prefix) ? router.query.prefix : "";
     const after = (router.query.after) ? router.query.after : "";
-    const { results, loading, error, nextPage } = useAPIWithPagination( async () => {
-        return auth.listUsers(prefix, after);
-    }, [refresh, prefix, after]);
+    const { results, loading, error, nextPage } =  useAPIWithPagination( () => {
+        return auth.listUsers('', after);
+    }, [after, refresh]);
 
     useEffect(() => {
         setUsersList(results);

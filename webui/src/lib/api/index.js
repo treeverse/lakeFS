@@ -1,5 +1,5 @@
 export const API_ENDPOINT = '/api/v1';
-export const DEFAULT_LISTING_AMOUNT = 10; // TODO-change back to 100!!!!!!!!!!
+export const DEFAULT_LISTING_AMOUNT = 100; // TODO- make it 10 to check the pagination
 export const MAX_LISTING_AMOUNT = 1000;
 
 export const SETUP_STATE_INITIALIZED = "initialized";
@@ -542,7 +542,6 @@ class Branches {
     }
 
     async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        console.log("in list")
         const query = qs({prefix, after, amount});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches?` + query);
         if (response.status !== 200) {
