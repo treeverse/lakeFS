@@ -39,6 +39,13 @@ import (
 
 type ArrayFlags []string
 
+type HookResponse struct {
+	Path        string
+	Err         error
+	Data        []byte
+	QueryParams map[string][]string
+}
+
 var (
 	logger      logging.Logger
 	client      apigen.ClientWithResponsesInterface
@@ -631,4 +638,14 @@ func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref s
 	err := backoff.Retry(listFunc, bo)
 	require.NoError(t, err)
 	return runs
+}
+
+// ResponseWithTimeout wait for webhook response
+func ResponseWithTimeout(s *WebhookServer, timeout time.Duration) (*HookResponse, error) {
+	select {
+	case res := <-s.respCh:
+		return &res, nil
+	case <-time.After(timeout):
+		return nil, ErrWebhookTimeout
+	}
 }

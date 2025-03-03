@@ -3,7 +3,6 @@ package esti
 import (
 	"bytes"
 	"context"
-	"embed"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -36,9 +35,6 @@ import (
 	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 )
-
-//go:embed all:export_hooks_files
-var exportHooksFiles embed.FS
 
 const catalogExportTestMaxElapsed = 30 * time.Second
 
@@ -275,7 +271,7 @@ func TestAWSCatalogExport(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	tmplDir, _ := fs.Sub(exportHooksFiles, "export_hooks_files/glue")
+	tmplDir, _ := fs.Sub(ExportHooksFiles, "export_hooks_files/glue")
 	testData := &exportHooksTestData{
 		Branch:              mainBranch,
 		SymlinkActionPath:   "_lakefs_actions/symlink_export.yaml",
@@ -492,7 +488,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 	}
 	blockstore := setupCatalogExportTestByStorageType(t, testData)
 
-	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
+	tmplDir, err := fs.Sub(ExportHooksFiles, "export_hooks_files/delta")
 	require.NoError(t, err)
 	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -546,7 +542,7 @@ func TestDeltaCatalogImportExport(t *testing.T) {
 		LakeFSSecretAccessKey: secretAccessKey,
 	}
 	blockstore := setupCatalogExportTestByStorageType(t, testData)
-	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
+	tmplDir, err := fs.Sub(ExportHooksFiles, "export_hooks_files/delta")
 	require.NoError(t, err)
 	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -634,7 +630,7 @@ func TestDeltaCatalogExportAbfss(t *testing.T) {
 		AzureAccessKey:        viper.GetString("azure_storage_access_key"),
 	}
 
-	tmplDir, err := fs.Sub(exportHooksFiles, "export_hooks_files/delta")
+	tmplDir, err := fs.Sub(ExportHooksFiles, "export_hooks_files/delta")
 	require.NoError(t, err)
 	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
