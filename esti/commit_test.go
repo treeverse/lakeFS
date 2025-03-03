@@ -34,10 +34,10 @@ func TestCommitSingle(t *testing.T) {
 	getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to get object")
 	require.NoErrorf(t, VerifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
-		"failed to get object repo %s branch %s Path %s", repo, mainBranch, objPath)
+		"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath)
 
 	body := string(getObjResp.Body)
-	require.Equalf(t, objContent, body, "Path: %s, expected: %s, actual:%s", objPath, objContent, body)
+	require.Equalf(t, objContent, body, "path: %s, expected: %s, actual:%s", objPath, objContent, body)
 }
 
 // genNames generates n consecutive filenames starting with prefix.
@@ -53,7 +53,7 @@ type Upload struct {
 	Repo, Branch, Path string
 }
 
-// upload uploads random file Data for uploads.
+// upload uploads random file data for uploads.
 func upload(ctx context.Context, uploads chan Upload) error {
 	for u := range uploads {
 		_, _, err := uploadFileRandomDataAndReport(ctx, u.Repo, u.Branch, u.Path, false, nil)
@@ -216,9 +216,9 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 	getObjResp, err := client.GetObjectWithResponse(ctx, repoName, mainBranch, &apigen.GetObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to get object")
 	require.NoErrorf(t, VerifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
-		"failed to get object repo %s branch %s Path %s", repoName, mainBranch, objPath)
+		"failed to get object repo %s branch %s path %s", repoName, mainBranch, objPath)
 
 	body := string(getObjResp.Body)
-	require.Equalf(t, objContent, body, "Path: %s, expected: %s, actual:%s", objPath, objContent, body)
+	require.Equalf(t, objContent, body, "path: %s, expected: %s, actual:%s", objPath, objContent, body)
 
 }

@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	filePath1  = "Path/to/file1.txt"
-	filePath2  = "Path/to/other/file2.txt"
+	filePath1  = "path/to/file1.txt"
+	filePath2  = "path/to/other/file2.txt"
 	testBranch = "test"
 )
 
@@ -63,19 +63,19 @@ func TestLakectlDiffPrefix(t *testing.T) {
 	uploadFiles(t, repoName, testBranch, filesForDiffTest)
 	commit(t, repoName, testBranch, "adding test files to "+testBranch)
 
-	runDiffAndExpect(t, repoName, testBranch, "Path/to/", &ExpectedDiff{
+	runDiffAndExpect(t, repoName, testBranch, "path/to/", &ExpectedDiff{
 		added:   []string{filePath1, filePath2},
 		deleted: []string{},
 	})
-	runDiffAndExpect(t, repoName, testBranch, "Path/to/o", &ExpectedDiff{
+	runDiffAndExpect(t, repoName, testBranch, "path/to/o", &ExpectedDiff{
 		added:   []string{filePath2},
 		deleted: []string{},
 	})
-	runDiffAndExpect(t, repoName, testBranch, "Path/to/f", &ExpectedDiff{
+	runDiffAndExpect(t, repoName, testBranch, "path/to/f", &ExpectedDiff{
 		added:   []string{filePath1},
 		deleted: []string{},
 	})
-	runDiffAndExpect(t, repoName, testBranch, "Path/to/x", &ExpectedDiff{
+	runDiffAndExpect(t, repoName, testBranch, "path/to/x", &ExpectedDiff{
 		added:   []string{},
 		deleted: []string{},
 	})

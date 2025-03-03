@@ -28,11 +28,11 @@ type ObjectStats struct {
 
 // ClientAdapter abstracts operations on a backing store.
 type ClientAdapter interface {
-	// Upload uploads Data from contents to physicalAddress and returns stored stats.
+	// Upload uploads data from contents to physicalAddress and returns stored stats.
 	// Returned MTime may be zero.
 	Upload(ctx context.Context, physicalAddress *url.URL, contents io.ReadSeeker) (ObjectStats, error)
 
-	// Download returns a Reader to download Data from physicalAddress.  The Close method
+	// Download returns a Reader to download data from physicalAddress.  The Close method
 	// of that Reader can return errors!
 	Download(ctx context.Context, physicalAddress *url.URL) (io.ReadCloser, error)
 }

@@ -190,7 +190,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 
 	localCreateTestData(t, vars, objects)
 
-	t.Run("clone object Path", func(t *testing.T) {
+	t.Run("clone object path", func(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 		vars["PATH"] = "lakefs://" + repoName + "/" + mainBranch + "/" + objects[0]
@@ -213,7 +213,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+tmpDir, false, "lakectl_local_list", vars)
 	})
 
-	t.Run("clone existing Path", func(t *testing.T) {
+	t.Run("clone existing path", func(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 		vars["LOCAL_DIR"] = dataDir
@@ -234,7 +234,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/ "+tmpDir, false, "lakectl_local_clone_non_empty", vars)
 	})
 
-	t.Run("clone new Path", func(t *testing.T) {
+	t.Run("clone new path", func(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 		vars["LOCAL_DIR"] = dataDir
@@ -242,7 +242,7 @@ func TestLakectlLocal_clone(t *testing.T) {
 		RunCmdAndVerifyContainsText(t, Lakectl()+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
 		localVerifyDirContents(t, dataDir, []string{})
 
-		// Add new files to Path
+		// Add new files to path
 		localCreateTestData(t, vars, []string{vars["PREFIX"] + "nodiff.txt"})
 		require.NoError(t, os.Mkdir(filepath.Join(dataDir, vars["PREFIX"]), fileutil.DefaultDirectoryMask))
 		fd, err = os.Create(filepath.Join(dataDir, "test1.txt"))
@@ -292,7 +292,7 @@ func TestLakectlLocal_posix_permissions(t *testing.T) {
 		RunCmdAndVerifyContainsText(t, lakectl+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
 		localVerifyDirContents(t, dataDir, []string{})
 
-		// Add new files to Path
+		// Add new files to path
 		localCreateTestData(t, vars, []string{
 			vars["PREFIX"] + uri.PathSeparator + "with-diff.txt",
 			vars["PREFIX"] + uri.PathSeparator + "no-diff.txt",
@@ -341,14 +341,14 @@ func TestLakectlLocal_posix_permissions(t *testing.T) {
 		require.NoError(t, err)
 		commitMessage = "remove empty folder"
 		res = runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
-		require.Contains(t, res, fmt.Sprintf("delete remote Path: %s/", emptyDirName))
+		require.Contains(t, res, fmt.Sprintf("delete remote path: %s/", emptyDirName))
 
 		res = runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
 		require.Contains(t, res, "No diff found")
 		require.NotContains(t, res, emptyDirName)
 	})
 
-	t.Run("existing posix Path", func(t *testing.T) {
+	t.Run("existing posix path", func(t *testing.T) {
 		dataDir, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 		vars["LOCAL_DIR"] = dataDir
@@ -359,7 +359,7 @@ func TestLakectlLocal_posix_permissions(t *testing.T) {
 		RunCmdAndVerifyContainsText(t, lakectl+" local clone lakefs://"+repoName+"/"+mainBranch+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX}/ to ${LOCAL_DIR}.", vars)
 		localVerifyDirContents(t, dataDir, []string{})
 
-		// Add new files to Path
+		// Add new files to path
 		contents := []string{
 			vars["PREFIX"] + uri.PathSeparator + "with-diff.txt",
 			vars["PREFIX"] + uri.PathSeparator + "subdir1" + uri.PathSeparator + "no-diff.txt",
@@ -376,7 +376,7 @@ func TestLakectlLocal_posix_permissions(t *testing.T) {
 		res := runCmd(t, lakectl+" local commit "+dataDir+" -m \""+commitMessage+"\"", false, false, vars)
 		require.Contains(t, res, fmt.Sprintf("upload %s", emptyDirName))
 
-		// clone Path to a new local dir
+		// clone path to a new local dir
 		dataDir2, err := os.MkdirTemp(tmpDir, "")
 		require.NoError(t, err)
 		vars["LOCAL_DIR"] = dataDir2
@@ -458,7 +458,7 @@ func TestLakectlLocal_pull(t *testing.T) {
 			create := append(base, deleted)
 			localCreateTestData(t, vars, create)
 			expected := localExtractRelativePathsByPrefix(t, tt.prefix, create)
-			// Pull changes and verify Data
+			// Pull changes and verify data
 			tasks := local.Tasks{
 				Downloaded: uint64(len(expected)),
 			}
@@ -466,7 +466,7 @@ func TestLakectlLocal_pull(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local pull "+dataDir, false, expectedStr, vars)
 			localVerifyDirContents(t, dataDir, expected)
 
-			// Modify Data
+			// Modify data
 			vars["FILE_PATH"] = modified[0]
 			runCmd(t, Lakectl()+" fs upload -s files/ro_1k_other lakefs://"+vars["REPO"]+"/"+vars["BRANCH"]+"/"+vars["FILE_PATH"], false, false, vars)
 			runCmd(t, Lakectl()+" fs rm lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+deleted, false, false, vars)
@@ -475,7 +475,7 @@ func TestLakectlLocal_pull(t *testing.T) {
 				return s == deleted
 			})
 
-			// Pull changes and verify Data
+			// Pull changes and verify data
 			tasks = local.Tasks{
 				Downloaded: uint64(len(localExtractRelativePathsByPrefix(t, tt.prefix, modified))),
 				Removed:    uint64(len(localExtractRelativePathsByPrefix(t, tt.prefix, []string{deleted}))),
@@ -758,7 +758,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
 		"REF":     mainBranch,
-		"PREFIX":  "test-Data",
+		"PREFIX":  "test-data",
 	}
 
 	runCmd(t, fmt.Sprintf("%s repo create lakefs://%s %s", Lakectl(), repoName, storage), false, false, vars)
@@ -775,7 +775,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			name:              "uncommitted_changes_-_none",
 			uncommittedRemote: []string{},
 			uncommittedLocal: []string{
-				"test.Data",
+				"test.data",
 			},
 			expectFailure:   false,
 			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
@@ -787,10 +787,10 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 				"otherPrefix/a",
 			},
 			uncommittedLocal: []string{
-				"test.Data",
+				"test.data",
 			},
 			expectFailure:   true,
-			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local Path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
+			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
 			withForceFlag:   false,
 		},
 		{
@@ -799,7 +799,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 				fmt.Sprintf("%s/a", vars["PREFIX"]),
 			},
 			uncommittedLocal: []string{
-				"test.Data",
+				"test.data",
 			},
 			expectFailure:   false,
 			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
@@ -811,10 +811,10 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 				"zzz/a",
 			},
 			uncommittedLocal: []string{
-				"test.Data",
+				"test.data",
 			},
 			expectFailure:   true,
-			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local Path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
+			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
 			withForceFlag:   false,
 		},
 		{
@@ -823,10 +823,10 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 				fmt.Sprintf("%s0", vars["PREFIX"]),
 			},
 			uncommittedLocal: []string{
-				"test.Data",
+				"test.data",
 			},
 			expectFailure:   true,
-			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local Path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
+			expectedMessage: "Branch ${BRANCH} contains uncommitted changes outside of local path '${LOCAL_DIR}'.\nTo proceed, use the --force flag.",
 			withForceFlag:   false,
 		},
 		{
@@ -835,7 +835,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 				"otherPrefix/a",
 			},
 			uncommittedLocal: []string{
-				"test.Data",
+				"test.data",
 			},
 			expectFailure:   false,
 			expectedMessage: "Commit for branch \"${BRANCH}\" completed",
@@ -904,22 +904,22 @@ func TestLakectlLocal_interrupted(t *testing.T) {
 	}{
 		{
 			action: "clone",
-			expectedmessage: `Latest clone operation was interrupted, local Data may be incomplete.
+			expectedmessage: `Latest clone operation was interrupted, local data may be incomplete.
 Use "lakectl local checkout..." to sync with the remote or run "lakectl local clone..." with a different directory to sync with the remote.`,
 		},
 		{
 			action: "checkout",
-			expectedmessage: `Latest checkout operation was interrupted, local Data may be incomplete.
+			expectedmessage: `Latest checkout operation was interrupted, local data may be incomplete.
 Use "lakectl local checkout..." to sync with the remote.`,
 		},
 		{
 			action: "commit",
-			expectedmessage: `Latest commit operation was interrupted, Data may be incomplete.
+			expectedmessage: `Latest commit operation was interrupted, data may be incomplete.
 Use "lakectl local commit..." to commit your latest changes or "lakectl local pull... --force" to sync with the remote.`,
 		},
 		{
 			action: "pull",
-			expectedmessage: `Latest pull operation was interrupted, local Data may be incomplete.
+			expectedmessage: `Latest pull operation was interrupted, local data may be incomplete.
 Use "lakectl local pull... --force" to sync with the remote.`,
 		},
 	}

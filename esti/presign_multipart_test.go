@@ -195,7 +195,7 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 		var parts []apigen.UploadPart
 		for i := 0; i < numberOfParts; i++ {
 			startTime := time.Now()
-			// random Data - all parts except the last one should be at least >= MinUploadPartSize
+			// random data - all parts except the last one should be at least >= MinUploadPartSize
 			n, err := rand.Int(rand.Reader, big.NewInt(1<<20))
 			require.NoError(t, err)
 			var partSize int64

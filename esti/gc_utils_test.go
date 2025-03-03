@@ -73,7 +73,7 @@ func runCommand(cmdName string, cmd *exec.Cmd) error {
 	}).Info, cmdErrs)
 	handlePipe(stderrPipe, logger.WithFields(logging.Fields{
 		"source": cmdName,
-		"std":    "Err",
+		"std":    "err",
 	}).Info, cmdErrs)
 
 	err = cmd.Start()
@@ -94,7 +94,7 @@ func runCommand(cmdName string, cmd *exec.Cmd) error {
 
 type sparkSubmitConfig struct {
 	sparkVersion string
-	// localJar is a local Path to a jar that contains the main class.
+	// localJar is a local path to a jar that contains the main class.
 	localJar string
 	// entryPoint is the class name to run
 	entryPoint      string

@@ -39,7 +39,7 @@ const (
 	numUploads           = 100
 	randomDataPathLength = 1020
 	branch               = "main"
-	gatewayTestPrefix    = branch + "/Data/"
+	gatewayTestPrefix    = branch + "/data/"
 )
 
 func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
@@ -93,7 +93,7 @@ func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
 	defer DeleteRepositoryIfAskedTo(ctx, readOnlyRepo)
 
 	minioClient := newMinioClient(t, credentials.NewStaticV4)
-	content := "some random Data"
+	content := "some random data"
 	contentReader := strings.NewReader(content)
 
 	path := gatewayTestPrefix + "test"
@@ -131,7 +131,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 
 	for _, sig := range sigs {
 		t.Run("Sig"+sig.Name, func(t *testing.T) {
-			// Use the same sequence of Path names to test each sig.
+			// Use the same sequence of path names to test each sig.
 			r := rand.New(rand.NewSource(17))
 
 			type Object struct {
@@ -176,7 +176,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 			for i := 0; i < numUploads; i++ {
 				objects <- Object{
 					Content: testutil.RandomString(r, randomDataContentLength),
-					// lakeFS supports _any_ Path, even if its
+					// lakeFS supports _any_ path, even if its
 					// byte sequence is not legal UTF-8 string.
 					Path: gatewayTestPrefix + testutil.RandomString(r, randomDataPathLength-len(gatewayTestPrefix)),
 				}
@@ -579,7 +579,7 @@ func TestS3ReadObject(t *testing.T) {
 		defer func() { _ = res.Close() }()
 		got, err := io.ReadAll(res)
 		if err == nil {
-			t.Fatalf("Successfully read \"%s\" from nonexistent Path %s", got, s3ObjPath)
+			t.Fatalf("Successfully read \"%s\" from nonexistent path %s", got, s3ObjPath)
 		}
 		s3ErrorResponse := minio.ToErrorResponse(err)
 		expectedErrorCode := gtwerrors.Codes[gtwerrors.ErrNoSuchVersion].Code
@@ -596,7 +596,7 @@ func TestS3ReadObject(t *testing.T) {
 		defer func() { _ = res.Close() }()
 		got, err := io.ReadAll(res)
 		if err == nil {
-			t.Errorf("Successfully read \"%s\" from nonexistent Path %s", got, badPath)
+			t.Errorf("Successfully read \"%s\" from nonexistent path %s", got, badPath)
 		}
 		s3ErrorResponse := minio.ToErrorResponse(err)
 		if s3ErrorResponse.StatusCode != 404 {
@@ -684,7 +684,7 @@ func getOrCreatePathToLargeObject(t *testing.T, ctx context.Context, s3lakefsCli
 	r := rand.New(rand.NewSource(17))
 	objContent := testutil.NewRandomReader(r, largeDataContentLength)
 
-	// upload Data
+	// upload data
 	_, err := s3lakefsClient.PutObject(ctx, repo, s3Path, objContent, largeDataContentLength,
 		minio.PutObjectOptions{})
 	require.NoError(t, err)
@@ -748,7 +748,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 		t.Fatalf("Read uploaded object: %s", err)
 	}
 	if uploadedCRC == 0 {
-		t.Fatal("Impossibly bad luck: uploaded Data with CRC64 == 0!")
+		t.Fatal("Impossibly bad luck: uploaded data with CRC64 == 0!")
 	}
 
 	copiedReader, err := s3lakefsClient.GetObject(ctx, repo, srcPath, minio.GetObjectOptions{})
@@ -782,7 +782,7 @@ func TestS3CopyObject(t *testing.T) {
 	destPath := gatewayTestPrefix + "dest-file"
 	userMetadata := map[string]string{"X-Amz-Meta-Key1": "value1", "X-Amz-Meta-Key2": "value2"}
 
-	// upload Data
+	// upload data
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
 	_, err := s3lakefsClient.PutObject(ctx, repo, srcPath, strings.NewReader(objContent), int64(len(objContent)),
 		minio.PutObjectOptions{
@@ -819,11 +819,11 @@ func TestS3CopyObject(t *testing.T) {
 		}
 		require.Equal(t, objContent, content.String())
 
-		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: "Data/source-file"})
+		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: "data/source-file"})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON200)
 
-		resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: "Data/dest-file"})
+		resp, err = client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: "data/dest-file"})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON200)
 
@@ -865,12 +865,12 @@ func TestS3CopyObject(t *testing.T) {
 		// compere files content
 		require.Equal(t, contents.String(), objContent)
 
-		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: "Data/source-file"})
+		resp, err := client.StatObjectWithResponse(ctx, repo, mainBranch, &apigen.StatObjectParams{Path: "data/source-file"})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON200)
 		sourceObjectStats := resp.JSON200
 
-		resp, err = client.StatObjectWithResponse(ctx, destRepo, mainBranch, &apigen.StatObjectParams{Path: "Data/dest-file"})
+		resp, err = client.StatObjectWithResponse(ctx, destRepo, mainBranch, &apigen.StatObjectParams{Path: "data/dest-file"})
 		if err != nil {
 			t.Fatalf("client.StatObject(%s): %s", destPath, err)
 		}
@@ -912,7 +912,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	destPath := gatewayTestPrefix + "dest-file"
 
-	// upload Data
+	// upload data
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
 
 	t.Run("malformed dest", func(t *testing.T) {
@@ -924,7 +924,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 			},
 			minio.CopySrcOptions{
 				Bucket: repo,
-				Object: "main/Data/not-found",
+				Object: "main/data/not-found",
 			})
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "The specified bucket does not exist")
@@ -933,12 +933,12 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	t.Run("source not found", func(t *testing.T) {
 		// Create object in lakeFS with wrong physical address
 		getResp, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &apigen.GetPhysicalAddressParams{
-			Path: "Data/not-found",
+			Path: "data/not-found",
 		})
 		require.NoError(t, err)
 		require.NotNil(t, getResp.JSON200)
 		linkResp, err := client.LinkPhysicalAddressWithResponse(ctx, repo, mainBranch, &apigen.LinkPhysicalAddressParams{
-			Path: "Data/not-found",
+			Path: "data/not-found",
 		}, apigen.LinkPhysicalAddressJSONRequestBody{
 			Checksum:  "12345",
 			SizeBytes: 10,
@@ -957,7 +957,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 			},
 			minio.CopySrcOptions{
 				Bucket: repo,
-				Object: "main/Data/not-found",
+				Object: "main/data/not-found",
 			})
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "NoSuchKey")
@@ -971,7 +971,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 			},
 			minio.CopySrcOptions{
 				Bucket: repo,
-				Object: "not-a-branch/Data/not-found",
+				Object: "not-a-branch/data/not-found",
 			})
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "read-only")

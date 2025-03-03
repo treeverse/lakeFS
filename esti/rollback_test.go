@@ -49,11 +49,11 @@ func TestResetAll(t *testing.T) {
 	getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to get object")
 	require.NoErrorf(t, VerifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
-		"failed to get object repo %s branch %s Path %s", repo, mainBranch, objPath)
+		"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath)
 
 	// assert file content
 	body := string(getObjResp.Body)
-	require.Equal(t, objContent, body, fmt.Sprintf("Path: %s, expected: %s, actual:%s", objPath, objContent, body))
+	require.Equal(t, objContent, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, body))
 }
 
 func TestHardReset(t *testing.T) {
@@ -157,11 +157,11 @@ func TestResetPath(t *testing.T) {
 	getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: objPath1})
 	require.NoError(t, err, "failed to get object")
 	require.NoErrorf(t, VerifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
-		"failed to get object repo %s branch %s Path %s", repo, mainBranch, objPath1)
+		"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath1)
 
 	// assert file1 content
 	body := string(getObjResp.Body)
-	require.Equal(t, objContent1, body, fmt.Sprintf("Path: %s, expected: %s, actual:%s", objPath1, objContent1, body))
+	require.Equal(t, objContent1, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath1, objContent1, body))
 
 	// assert file2 doesn't exists
 	f, err = objectFound(ctx, repo, mainBranch, objPath2)
@@ -223,11 +223,11 @@ func TestResetObject(t *testing.T) {
 	getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: objPath1})
 	require.NoError(t, err, "failed to get object")
 	require.NoErrorf(t, VerifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
-		"failed to get object repo %s branch %s Path %s", repo, mainBranch, objPath1)
+		"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath1)
 
 	// assert file content
 	body := string(getObjResp.Body)
-	require.Equal(t, objContent1, body, fmt.Sprintf("Path: %s, expected: %s, actual:%s", objPath1, objContent1, body))
+	require.Equal(t, objContent1, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath1, objContent1, body))
 
 	// assert file2 doesn't exists
 	f, err = objectFound(ctx, repo, mainBranch, objPath2)
@@ -289,9 +289,9 @@ func TestRevert(t *testing.T) {
 	getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: objPath2})
 	require.NoError(t, err, "failed to get object")
 	require.NoErrorf(t, VerifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
-		"failed to get object repo %s branch %s Path %s", repo, mainBranch, objPath2)
+		"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath2)
 
 	// assert file2 content
 	body := string(getObjResp.Body)
-	require.Equal(t, objContent2, body, fmt.Sprintf("Path: %s, expected: %s, actual:%s", objPath2, objContent2, body))
+	require.Equal(t, objContent2, body, fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath2, objContent2, body))
 }
