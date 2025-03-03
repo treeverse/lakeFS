@@ -3,7 +3,6 @@ package esti
 import (
 	"bytes"
 	"context"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -16,9 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
-
-//go:embed action_files/*.yaml
-var actionsPath embed.FS
 
 type hooksValidationData struct {
 	data []*webhookEventInfo
@@ -422,7 +418,7 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		URL: server.BaseURL(),
 	}
 
-	actionsDir, _ := fs.Sub(actionsPath, "action_files")
+	actionsDir, _ := fs.Sub(ActionsPath, "action_files")
 	ents, _ := fs.Glob(actionsDir, "*.yaml")
 	for _, ent := range ents {
 		buf, err := fs.ReadFile(actionsDir, ent)
