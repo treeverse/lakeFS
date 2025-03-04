@@ -21,9 +21,9 @@ from lakefs_sdk.client import LakeFSClient
 from lakefs.config import ClientConfig, _LAKECTL_ENDPOINT_ENV, _LAKECTL_CREDENTIALS_ACCESS_TOKEN, _LAKECTL_YAML_PATH
 from lakefs.exceptions import NotAuthorizedException, ServerException, NoAuthenticationFound, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
+from botocore.exceptions import NoCredentialsError
 
-
-DEFAULT_REGION = 'us-east-1'
+DEFAULT_REGION = "us-east-1"
 SINGLE_STORAGE_ID = ""
 
 class ServerConfiguration:
@@ -318,7 +318,8 @@ class _BaseLakeFSObject:
                         host = _check_for_host()
                         session = boto3.Session()
                         _BaseLakeFSObject.__client = from_aws_role(host = host, session = session)
+                    except NoCredentialsError as cred_err:
+                        raise NoAuthenticationFound("No authentication credentials found") from cred_err
                     except Exception as auth_error:
                         raise auth_error from e
-
             return _BaseLakeFSObject.__client
