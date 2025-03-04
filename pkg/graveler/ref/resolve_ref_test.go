@@ -18,6 +18,7 @@ func TestResolveRawRef(t *testing.T) {
 
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -279,6 +280,7 @@ func TestResolveRef_SameDate(t *testing.T) {
 	r, _ := testRefManager(t)
 	ctx := context.Background()
 	repository, err := r.CreateRepository(ctx, "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",
@@ -350,6 +352,7 @@ func TestResolveRef_DereferenceWithGraph(t *testing.T) {
 	*/
 	r, _ := testRefManager(t)
 	repository, err := r.CreateRepository(context.Background(), "repo1", graveler.Repository{
+		StorageID:        "sid",
 		StorageNamespace: "s3://",
 		CreationDate:     time.Now(),
 		DefaultBranchID:  "main",

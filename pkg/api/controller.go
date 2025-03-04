@@ -1892,10 +1892,10 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 
 func (c *Controller) getStorageConfigs() (*apigen.StorageConfig, apigen.StorageConfigList) {
 	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
-	if storageCfg == nil {
-		storageCfg = &apigen.StorageConfig{}
-	}
 	storageCfgList := c.getStorageConfigList()
+	if len(storageCfgList) == 1 && swag.StringValue(storageCfgList[0].BlockstoreId) == config.SingleBlockstoreID {
+		storageCfgList = apigen.StorageConfigList{}
+	}
 	return storageCfg, storageCfgList
 }
 
@@ -1915,6 +1915,7 @@ func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, 
 		info.DefaultNamespacePrefix = *defaultNamespacePrefix
 	}
 	return &apigen.StorageConfig{
+		BlockstoreId:                     swag.String(storage.ID()),
 		BlockstoreDescription:            swag.String(storage.BlockstoreDescription()),
 		BlockstoreType:                   storage.BlockstoreType(),
 		BlockstoreNamespaceValidityRegex: info.ValidityRegex,

@@ -240,6 +240,7 @@ const RepositoriesPage = () => {
     const allowSampleRepoCreation = pluginManager.repoCreationForm.allowSampleRepoCreationFunc(storageConfigs);
     const createSampleRepoButtonCallback = useCallback(async () => {
         if (loading) return;
+        // note that this is only called on a single storage config server
         if (!err && storageConfigs.length && storageConfigs[0]?.blockstore_type === LOCAL_BLOCKSTORE_TYPE) {
             const sampleRepo = {
                 name: LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME,

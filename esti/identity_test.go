@@ -36,7 +36,7 @@ func TestIdentity(t *testing.T) {
 	})
 	require.NoError(t, err, "failed creating branch2")
 
-	checksumNew, err := uploadFileAndReport(ctx, repo, branch2, objPath, objContent, false, nil)
+	checksumNew, err := UploadFileAndReport(ctx, repo, branch2, objPath, objContent, false, nil)
 	require.NoError(t, err)
 	require.Equal(t, checksum, checksumNew, "Same file uploaded to committed branch, expected no checksum difference")
 

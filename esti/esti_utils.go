@@ -39,6 +39,13 @@ import (
 
 type ArrayFlags []string
 
+type HookResponse struct {
+	Path        string
+	Err         error
+	Data        []byte
+	QueryParams map[string][]string
+}
+
 var (
 	logger      logging.Logger
 	client      apigen.ClientWithResponsesInterface
@@ -376,14 +383,14 @@ const (
 
 func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum, content string, err error) {
 	objContent := randstr.String(randomDataContentLength)
-	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct, clt)
+	checksum, err = UploadFileAndReport(ctx, repo, branch, objPath, objContent, direct, clt)
 	if err != nil {
 		return "", "", err
 	}
 	return checksum, objContent, nil
 }
 
-func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum string, err error) {
+func UploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum string, err error) {
 	// Upload using direct access
 	if direct {
 		stats, err := uploadContentDirect(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
@@ -631,4 +638,14 @@ func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref s
 	err := backoff.Retry(listFunc, bo)
 	require.NoError(t, err)
 	return runs
+}
+
+// ResponseWithTimeout wait for webhook response
+func ResponseWithTimeout(s *WebhookServer, timeout time.Duration) (*HookResponse, error) {
+	select {
+	case res := <-s.respCh:
+		return &res, nil
+	case <-time.After(timeout):
+		return nil, ErrWebhookTimeout
+	}
 }
