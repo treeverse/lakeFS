@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"testing"
 	"text/template"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -44,8 +43,6 @@ hooks:
       timeout : {{.Timeout}}
 `))
 
-const hooksTimeout = 2 * time.Second
-
 func TestHooksTimeout(t *testing.T) {
 	hookFailToCommit(t, "timeout")
 }
@@ -78,7 +75,7 @@ func createAction(t *testing.T, ctx context.Context, repo, branch, path string, 
 	err := tmp.Execute(&doc, docData)
 	require.NoError(t, err)
 	content := doc.String()
-	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+uuid.NewString(), content)
+	uploadResp, err := UploadContent(ctx, repo, branch, "_lakefs_actions/"+uuid.NewString(), content, nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")

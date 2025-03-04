@@ -40,7 +40,6 @@ var localCheckoutCmd = &cobra.Command{
 
 func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, confirmByFlag bool) {
 	client := getClient()
-	syncFlags := getSyncFlags(cmd, client)
 	idx, err := local.ReadIndex(localPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -54,6 +53,7 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 		DieErr(err)
 	}
 
+	syncFlags := getSyncFlags(cmd, client, remote.Repository)
 	currentBase := remote.WithRef(idx.AtHead)
 	diffs := local.Undo(localDiff(cmd.Context(), client, currentBase, idx.LocalPath()))
 	sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(checkoutOperation))

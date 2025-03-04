@@ -1891,14 +1891,12 @@ func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) getStorageConfigs() (*apigen.StorageConfig, apigen.StorageConfigList) {
-	storageCfgList := c.getStorageConfigList()
-	if len(storageCfgList) > 1 {
-		// non-empty storage-config-list, return empty storage-config
-		return &apigen.StorageConfig{}, storageCfgList
-	} else {
-		storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
-		return storageCfg, storageCfgList
+	storageCfg, _ := c.getStorageConfig(config.SingleBlockstoreID)
+	if storageCfg == nil {
+		storageCfg = &apigen.StorageConfig{}
 	}
+	storageCfgList := c.getStorageConfigList()
+	return storageCfg, storageCfgList
 }
 
 func (c *Controller) getStorageConfig(storageID string) (*apigen.StorageConfig, error) {
@@ -1985,7 +1983,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 }
 
 func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, body apigen.CreateRepositoryJSONRequestBody, params apigen.CreateRepositoryParams) {
-	storageID := swag.StringValue(body.StorageId)
+	storageID := config.GetActualStorageID(c.Config.StorageConfig(), swag.StringValue(body.StorageId))
 	storageNamespace := body.StorageNamespace
 
 	if !c.authorize(w, r, permissions.Node{
@@ -3720,8 +3718,12 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	// TODO (gilo): ObjectPointer init - add StorageID here
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
 	presignedURL, _, err := c.BlockAdapter.GetPreSignedURL(ctx, block.ObjectPointer{
+		StorageID:      repo.StorageID,
 		Identifier:     gcRunMetadata.CommitsCSVLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, block.PreSignModeRead)

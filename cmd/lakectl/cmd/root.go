@@ -216,25 +216,53 @@ func withSyncFlags(cmd *cobra.Command) {
 	withNoProgress(cmd)
 }
 
+func getStorageConfigOrDie(ctx context.Context, client *apigen.ClientWithResponses, repositoryID string) *apigen.StorageConfig {
+	confResp, err := client.GetConfigWithResponse(ctx)
+	DieOnErrorOrUnexpectedStatusCode(confResp, err, http.StatusOK)
+	if confResp.JSON200 == nil {
+		Die("Bad response from server for GetConfig", 1)
+	}
+
+	storageConfigList := confResp.JSON200.StorageConfigList
+	if storageConfigList != nil && len(*storageConfigList) > 1 {
+		repoResp, errRepo := client.GetRepositoryWithResponse(ctx, repositoryID)
+		DieOnErrorOrUnexpectedStatusCode(repoResp, errRepo, http.StatusOK)
+		if repoResp.JSON200 == nil {
+			Die("Bad response from server for GetRepository", 1)
+		}
+		storageID := repoResp.JSON200.StorageId
+
+		// find the storage config for the repository
+		for _, storageConfig := range *storageConfigList {
+			if swag.StringValue(storageConfig.BlockstoreId) == swag.StringValue(storageID) {
+				return &storageConfig
+			}
+		}
+
+		Die("Storage config not found for repo "+repositoryID, 1)
+	}
+
+	storageConfig := confResp.JSON200.StorageConfig
+	if storageConfig == nil {
+		Die("Bad response from server for GetConfig", 1)
+	}
+	return storageConfig
+}
+
 type PresignMode struct {
 	Enabled   bool
 	Multipart bool
 }
 
-func getServerPreSignMode(ctx context.Context, client *apigen.ClientWithResponses) PresignMode {
-	resp, err := client.GetConfigWithResponse(ctx)
-	DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
-	if resp.JSON200 == nil {
-		Die("Bad response from server", 1)
-	}
-	storageConfig := resp.JSON200.StorageConfig
+func getServerPreSignMode(ctx context.Context, client *apigen.ClientWithResponses, repositoryID string) PresignMode {
+	storageConfig := getStorageConfigOrDie(ctx, client, repositoryID)
 	return PresignMode{
 		Enabled:   storageConfig.PreSignSupport,
 		Multipart: swag.BoolValue(storageConfig.PreSignMultipartUpload),
 	}
 }
 
-func getPresignMode(cmd *cobra.Command, client *apigen.ClientWithResponses) PresignMode {
+func getPresignMode(cmd *cobra.Command, client *apigen.ClientWithResponses, repositoryID string) PresignMode {
 	// use flags if set
 	presignFlag := cmd.Flags().Lookup(presignFlagName)
 	var presignMode PresignMode
@@ -245,7 +273,7 @@ func getPresignMode(cmd *cobra.Command, client *apigen.ClientWithResponses) Pres
 	// if presign flag is not set, use server config
 	// if presign flag is set, check if server supports multipart upload
 	if !presignFlag.Changed || presignMode.Enabled {
-		presignMode = getServerPreSignMode(cmd.Context(), client)
+		presignMode = getServerPreSignMode(cmd.Context(), client, repositoryID)
 	}
 	return presignMode
 }
@@ -258,7 +286,7 @@ func getNoProgressMode(cmd *cobra.Command) bool {
 	return Must(cmd.Flags().GetBool(noProgressBarFlagName))
 }
 
-func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.SyncFlags {
+func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses, repositoryID string) local.SyncFlags {
 	parallelism := Must(cmd.Flags().GetInt(parallelismFlagName))
 	if parallelism < 1 {
 		DieFmt("Invalid value for parallelism (%d), minimum is 1.\n", parallelism)
@@ -268,7 +296,7 @@ func getSyncFlags(cmd *cobra.Command, client *apigen.ClientWithResponses) local.
 		parallelism = cfg.Options.Parallelism
 	}
 
-	presignMode := getPresignMode(cmd, client)
+	presignMode := getPresignMode(cmd, client, repositoryID)
 	return local.SyncFlags{
 		Parallelism:      parallelism,
 		Presign:          presignMode.Enabled,
