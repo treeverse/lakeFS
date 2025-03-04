@@ -15,16 +15,9 @@ import (
 	"time"
 )
 
-type hookResponse struct {
-	path        string
-	err         error
-	data        []byte
-	queryParams map[string][]string
-}
-
 type WebhookServer struct {
 	s      *http.Server
-	respCh chan hookResponse
+	respCh chan HookResponse
 	port   int
 	host   string
 }
@@ -43,7 +36,7 @@ func (s *WebhookServer) Server() *http.Server {
 
 func StartWebhookServer() (*WebhookServer, error) {
 	const channelSize = 10
-	respCh := make(chan hookResponse, channelSize)
+	respCh := make(chan HookResponse, channelSize)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/pre-commit", hookHandlerFunc(respCh))
 	mux.HandleFunc("/post-commit", hookHandlerFunc(respCh))
@@ -88,7 +81,7 @@ func StartWebhookServer() (*WebhookServer, error) {
 	}, nil
 }
 
-func timeoutHandlerFunc(_ chan hookResponse) func(http.ResponseWriter, *http.Request) {
+func timeoutHandlerFunc(_ chan HookResponse) func(http.ResponseWriter, *http.Request) {
 	const timeout = 2 * hooksTimeout
 	return func(writer http.ResponseWriter, req *http.Request) {
 		select {
@@ -101,35 +94,26 @@ func timeoutHandlerFunc(_ chan hookResponse) func(http.ResponseWriter, *http.Req
 	}
 }
 
-func failHandlerFunc(_ chan hookResponse) func(http.ResponseWriter, *http.Request) {
+func failHandlerFunc(_ chan HookResponse) func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, _ *http.Request) {
 		writer.WriteHeader(http.StatusInternalServerError)
 		_, _ = io.WriteString(writer, "Failed")
 	}
 }
 
-func hookHandlerFunc(respCh chan hookResponse) func(http.ResponseWriter, *http.Request) {
+func hookHandlerFunc(respCh chan HookResponse) func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		data, err := io.ReadAll(request.Body)
 		if err != nil {
-			respCh <- hookResponse{path: request.URL.Path, err: err}
+			respCh <- HookResponse{Path: request.URL.Path, Err: err}
 			_, _ = io.WriteString(writer, "Failed")
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		time.Sleep(1 * time.Second) // Added sleep to differentiate between event timestamps
-		respCh <- hookResponse{path: request.URL.Path, data: data, queryParams: request.URL.Query()}
+		respCh <- HookResponse{Path: request.URL.Path, Data: data, QueryParams: request.URL.Query()}
 		_, _ = io.WriteString(writer, "OK")
 		writer.WriteHeader(http.StatusOK)
-	}
-}
-
-func responseWithTimeout(s *WebhookServer, timeout time.Duration) (*hookResponse, error) {
-	select {
-	case res := <-s.respCh:
-		return &res, nil
-	case <-time.After(timeout):
-		return nil, ErrWebhookTimeout
 	}
 }

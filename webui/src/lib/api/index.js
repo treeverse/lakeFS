@@ -1084,7 +1084,7 @@ class Config {
             case 200: {
                 const cfg = await response.json();
                 const storageCfgList = cfg['storage_config_list'];
-                if (storageCfgList) {
+                if (storageCfgList?.length > 1) {
                     return storageCfgList.map(storageCfg => parseBlockstoreConfig(storageCfg));
                 } else {
                     const storageCfg = cfg['storage_config']

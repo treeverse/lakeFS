@@ -102,9 +102,9 @@ Please note that the diffs are from the source branch state at the time of mount
 everest diff <mount_directory>
 
 #Example output:
-# - removed cats/persian/cute.jpg
-# ~ modified dogs/golden_retrievers/cute.jpg
-# + added birds/parrot/cute.jpg
+# - removed datasets/pets/cats/persian/cute.jpg
+# ~ modified datasets/pets/dogs/golden_retrievers/cute.jpg
+# + added datasets/pets/birds/parrot/cute.jpg
 ```
 
 ### Commit Command (write-mode only)
@@ -205,9 +205,9 @@ rm ./pets/cats/persian/cute.jpg
 
 # Check the changes
 everest diff ./pets
-# - removed cats/persian/cute.jpg
-# ~ modified dogs/golden_retrievers/cute.jpg
-# + added birds/parrot/cute.jpg
+# - removed datasets/pets/cats/persian/cute.jpg
+# ~ modified datasets/pets/dogs/golden_retrievers/cute.jpg
+# + added datasets/pets/birds/parrot/cute.jpg
 
 # Commit the changes to the original lakeFS branch
 everest commit ./pets

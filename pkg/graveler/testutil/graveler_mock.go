@@ -2,7 +2,9 @@ package testutil
 
 import (
 	"testing"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/golang/mock/gomock"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/mock"
@@ -36,4 +38,10 @@ func InitGravelerTest(t *testing.T) *GravelerTest {
 	test.Sut = graveler.NewGraveler(test.CommittedManager, test.StagingManager, test.RefManager, test.GarbageCollectionManager, test.ProtectedBranchesManager, nil)
 
 	return test
+}
+
+// ShortenBranchUpdateBackOff upgrade graveler branch update back-off to shorten test duration
+func ShortenBranchUpdateBackOff(g *graveler.Graveler) {
+	const updateRetryDuration = 200 * time.Millisecond
+	g.BranchUpdateBackOff = backoff.NewConstantBackOff(updateRetryDuration)
 }
