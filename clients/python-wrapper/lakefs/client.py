@@ -247,6 +247,8 @@ def _check_for_host():
 
     endpoint_env = os.getenv(_LAKECTL_ENDPOINT_ENV)
     host = endpoint_env if endpoint_env is not None else server
+    if host is None or host == "":
+        raise NoAuthenticationFound
     return host
     
 def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int = 3600, **kwargs) -> Client:
