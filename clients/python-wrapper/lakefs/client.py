@@ -18,10 +18,10 @@ import lakefs_sdk
 from lakefs_sdk import ExternalLoginInformation
 from lakefs_sdk.client import LakeFSClient
 
+from botocore.exceptions import NoCredentialsError
 from lakefs.config import ClientConfig, _LAKECTL_ENDPOINT_ENV, _LAKECTL_CREDENTIALS_ACCESS_TOKEN, _LAKECTL_YAML_PATH
 from lakefs.exceptions import NotAuthorizedException, ServerException, NoAuthenticationFound, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
-from botocore.exceptions import NoCredentialsError
 
 DEFAULT_REGION = "us-east-1"
 SINGLE_STORAGE_ID = ""
