@@ -54,7 +54,7 @@ func TestMultipartUpload(t *testing.T) {
 
 	completedParts := uploadMultipartParts(t, ctx, svc, logger, resp, parts, 0)
 
-	if isBlockstoreType(block.BlockstoreTypeS3) == nil {
+	if IsBlockstoreType(block.BlockstoreTypeS3) == nil {
 		// Object should have Last-Modified time at around time of MPU creation.  Ensure
 		// lakeFS fails the test if it fakes it by using the current time.
 		time.Sleep(2 * timeResolution)

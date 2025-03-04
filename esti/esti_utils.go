@@ -555,9 +555,9 @@ func listRepositories(t *testing.T, ctx context.Context) []apigen.Repository {
 	return listedRepos
 }
 
-// isBlockstoreType returns nil if the blockstore type is one of requiredTypes, or the actual
+// IsBlockstoreType returns nil if the blockstore type is one of requiredTypes, or the actual
 // type of the blockstore.
-func isBlockstoreType(requiredTypes ...string) *string {
+func IsBlockstoreType(requiredTypes ...string) *string {
 	blockstoreType := viper.GetString(config.BlockstoreTypeKey)
 	if slices.Contains(requiredTypes, blockstoreType) {
 		return nil
@@ -567,7 +567,7 @@ func isBlockstoreType(requiredTypes ...string) *string {
 
 // RequireBlockstoreType Skips test if blockstore type doesn't match the required type
 func RequireBlockstoreType(t testing.TB, requiredTypes ...string) {
-	if blockstoreType := isBlockstoreType(requiredTypes...); blockstoreType != nil {
+	if blockstoreType := IsBlockstoreType(requiredTypes...); blockstoreType != nil {
 		t.Skipf("Required blockstore types: %v, got: %s", requiredTypes, *blockstoreType)
 	}
 }
