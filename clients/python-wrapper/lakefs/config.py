@@ -68,6 +68,9 @@ class ClientConfig(Configuration):
                 self.server = ClientConfig.Server(**data["server"])
                 self.credentials = ClientConfig.Credentials(**data["credentials"])
             found = True
+        except KeyError:
+            self.credentials = ClientConfig.Credentials(access_key_id="", secret_access_key="")
+
         except FileNotFoundError:  # File not found, fallback to env variables
             self.server = ClientConfig.Server(endpoint_url="")
             self.credentials = ClientConfig.Credentials(access_key_id="", secret_access_key="")

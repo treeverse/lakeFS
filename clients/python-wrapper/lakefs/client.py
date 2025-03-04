@@ -248,10 +248,8 @@ def from_aws_role(
     external_login_information = ExternalLoginInformation(token_expiration_duration=ttl_seconds, identity_request={
         "identity_token": identity_token
     })
-
     with api_exception_handler():
         auth_token = client.sdk_client.auth_api.external_principal_login(external_login_information)
-
     os.environ[_LAKECTL_CREDENTIALS_ACCESS_TOKEN] = auth_token.token
     client.config.access_token = auth_token.token
     return client
@@ -265,7 +263,7 @@ def _check_for_host():
         server = ClientConfig.Server(endpoint_url="")
 
     endpoint_env = os.getenv(_LAKECTL_ENDPOINT_ENV)
-    host = endpoint_env if endpoint_env is not None else server
+    host = endpoint_env if endpoint_env is not None else server.endpoint_url
     if host is None or host == "":
         raise NoAuthenticationFound
     return host
