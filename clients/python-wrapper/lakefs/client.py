@@ -267,7 +267,7 @@ def _check_for_host():
     if host is None or host == "":
         raise NoAuthenticationFound
     return host
-    
+
 def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int = 3600, **kwargs) -> Client:
     """
     Authenticate against lakeFS using a code received from an identity provider
@@ -320,5 +320,5 @@ class _BaseLakeFSObject:
                         _BaseLakeFSObject.__client = from_aws_role(host = host, session = session)
                     except Exception as auth_error:
                         raise auth_error from e
- 
+
             return _BaseLakeFSObject.__client
