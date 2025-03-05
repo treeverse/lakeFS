@@ -10,6 +10,7 @@ import base64
 import json
 from threading import Lock
 from typing import Optional
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse, parse_qs
 import boto3
 import yaml
@@ -18,11 +19,14 @@ import lakefs_sdk
 from lakefs_sdk import ExternalLoginInformation
 from lakefs_sdk.client import LakeFSClient
 
-from botocore.exceptions import NoCredentialsError
 from lakefs.config import ClientConfig, _LAKECTL_ENDPOINT_ENV, _LAKECTL_CREDENTIALS_ACCESS_TOKEN, _LAKECTL_YAML_PATH
 from lakefs.exceptions import NotAuthorizedException, ServerException, NoAuthenticationFound, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
 
+if TYPE_CHECKING:
+    import boto3
+    from botocore.exceptions import NoCredentialsError
+    
 DEFAULT_REGION = "us-east-1"
 SINGLE_STORAGE_ID = ""
 
