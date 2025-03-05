@@ -177,6 +177,11 @@ To remove a storage backend:
 {: .warning}
 > Repositories linked to a removed storage backend will result in unexpected behavior. Ensure all necessary cleanup is done before removal.
 
+### Listing Connected Storage Backends
+
+The [Get Config](https://docs.lakefs.io/reference/api.html#/config/getConfig) API endpoint now returns a list of storage
+configurations. In multi-store setups, this is the recommended method to list connected storage backends and view their details.
+
 ### Common Configuration Errors & Fixes
 
 | Issue                                                               | Cause | Solution                                                 |
