@@ -35,7 +35,7 @@ Azure Blob, Google Cloud Storage, other S3-compatible storage, and even local st
    * Maintain version control across different storage providers for consistency and reproducibility.
    * Ideal for AI/ML environments where datasets are distributed across multiple storage locations.
 
-2. **Unified Data Access and Versioning**:
+2. **Unified Data Access**:
   * Access data across multiple storage backends using a single, consistent [URI format](../understand/model.md#lakefs-protocol-uris).
 
 3. **Centralized Access Control & Governance**:
@@ -191,33 +191,48 @@ After setting up lakeFS Enterprise to connect with multiple storage backends, th
 connected storages when working with lakeFS.
 
 With multiple storage backends configured, lakeFS repositories are now linked to a specific storage backend. Together with
-the repository's storage namespace, this defines the exact location in the underlying storage where the repository's data 
-is stored.
+the repository's [storage namespace](../understand/model.md#concepts-unique-to-lakefs), this defines the exact location in
+the underlying storage where the repository's data is stored.
 
 The choice of storage backend impacts the following lakeFS operations:
 
 ### Creating a Repository
 
 In a multi-store setup, users must specify a storage ID when creating a repository. This can be done using the following methods:
-* API
-* CLI
-* UI
-* High-level Python SDK
+* API: Use the `storage_id` parameter in the [Create Repository endpoint](https://docs.lakefs.io/reference/api.html#/repositories/createRepository).  
+* CLI: Use the `storage-id` flag with the [repo create](../reference/cli.md#lakectl-repo-create) command:
+```bash
+lakectl repo create lakefs://my-repo s3://my-bucket --storage-id my-storage
+```
+**Note**: The `--storage-id` flag is currently hidden in the CLI. 
+* UI: Select a storage backend from the dropdown menu.
+![create repo with storage id](../assets/img/msb/msb_create_repo_ui.png)
+* High-level Python SDK: TODO
 
-Notes:
-* In multi-store setups where a storage backend is marked as `backward_compatible = true`, repository creation requests 
-with an empty storage ID will default to this storage.
+**Important notes:**
+* In multi-store setups where a storage backend is marked as `backward_compatible = true`, repository creation requests
+without a storage ID will default to this storage.
 * If no storage backend is marked as `backward_compatible`, repository creation requests without a storage ID will fail.
-* Each repository is associated with a single backend and uses a single location as its underlying storage.
+* Each repository is associated with a single backend and uses a single location.
 
 ### Viewing Repository Details
 
-To determine which storage backend is associated with a repository:
-* API – The list repositories response includes the storage ID.
-* UI – Available in the repository settings page.
+To check which storage backend is associated with a repository:
+* API – The [List Repositories](https://docs.lakefs.io/reference/api.html#/repositories/listRepositories) response includes the storage ID.
+* UI – The storage ID is displayed in the repository settings page.
+![repo settings](../assets/img/msb/msb_repo_settings_ui.png)
 
 ### Importing Data into a Repository
 
-Importing data into a repository is supported for storage locations that meet the following conditions:
-* The credentials used for the backing blockstore allow access to the storage location.
+Importing data into a repository is supported when the following conditions are met:
+* The credentials used for the repository's backing blockstore allow access to the storage location.
 * The storage location is in the same region as the repository's backend.
+
+## Limitations 
+
+The following clients do not currently support working with multiple storage backends. However, we are actively working 
+to bridge this gap: 
+* [Spark-based GC](../howto/garbage-collection/index.md)
+* [Spark client](../reference/spark-client.md)
+* [lakeFS Hadoop FileSystem](../integrations/spark.md#lakefs-hadoop-filesystem)
+* [Everest](../reference/mount.md)
