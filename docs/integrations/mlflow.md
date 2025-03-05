@@ -10,7 +10,7 @@ parent: Integrations
 assisting practitioners and teams in handling the complexities of ML processes. It focuses on the full lifecycle of machine
 learning projects, ensuring that each phase is manageable, traceable, and reproducible.
 
-MLflow comprises multiple core components, and lakeFS seamlessly integrates with the [MLflow Tracking](https://mlflow.org/docs/latest/tracking.html#tracking)
+MLflow comprises multiple core components, and lakeFS seamlessly integrates with the [MLflow Tracking](https://mlflow.org/docs/latest/tracking)
 component. MLflow tracking enables experiment tracking that accounts for both inputs and outputs, allowing for visualization
 and comparison of experiment results.
 
@@ -19,7 +19,7 @@ and comparison of experiment results.
 ## Benefits of integrating MLflow with lakeFS 
 
 Integrating MLflow with lakeFS offers several advantages that enhance the machine learning workflow:
-1. **Experiment Reproducibility**: By leveraging MLflow's [input logging](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_input)
+1. **Experiment Reproducibility**: By leveraging MLflow's [input logging](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.html#mlflow.log_input)
 capabilities alongside lakeFS's data versioning, you can precisely track the specific dataset version used in each experiment
 run. This ensures that experiments remain reproducible over time, even as datasets evolve.
 2. **Parallel Experiments with Zero Data Copy**: lakeFS enables efficient [branching](../understand/model.md#branches) without
@@ -40,10 +40,10 @@ allows you to safely make changes to your input dataset without duplicating it. 
 to your MLflow experiment runs. 
 2. **Read datasets from the experiment branch**: Conduct your experiments by reading data directly from the dedicated 
 branch. We recommend to read the dataset from the head commit of the branch to ensure precise version tracking.
-3. **Create an MLflow Dataset pointing to lakeFS**: Use MLflow's [Dataset](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow.data.dataset.Dataset)
-ensuring that the [dataset source](https://mlflow.org/docs/latest/python_api/mlflow.data.html#mlflow.data.dataset_source.DatasetSource)
+3. **Create an MLflow Dataset pointing to lakeFS**: Use MLflow's [Dataset](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.data.html#mlflow.data.dataset.Dataset)
+ensuring that the [dataset source](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.data.html#mlflow.data.dataset_source.DatasetSource)
 points to lakeFS. 
-4. **Log your input**: Use MLflow's [log_input](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.log_input) 
+4. **Log your input**: Use MLflow's [log_input](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.html#mlflow.log_input) 
 function to log the versioned dataset stored in lakeFS.    
 5. **Commit dataset changes**: Machine learning development is inherently iterative. When you make changes to your input dataset,
 commit them to the experiment branch in lakeFS with a meaningful commit message. During an experiment run, load the dataset
