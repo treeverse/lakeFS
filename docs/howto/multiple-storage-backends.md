@@ -22,8 +22,12 @@ on-premises, across public clouds, or hybrid environments. This capability makes
 for all organizational data assets, which is especially critical in AI/ML environments that rely on diverse datasets stored
 in multiple locations.
 
-With a multi-store setup, lakeFS can connect to and manage any combination of supported storage systems, including AWS S3,
-Azure Blob, Google Cloud Storage, other S3-compatible storage, and even local storages. 
+With a multi-store setup, lakeFS can connect to and manage any combination of supported storage systems, including:
+* AWS S3
+* Azure Blob
+* Google Cloud Storage
+* other S3-compatible storage
+* local storage 
 
 {: .note}
 > Multi-storage backends support is available from version v1.51.0 of lakeFS Enterprise.
@@ -156,13 +160,16 @@ blockstores:
     * If static credentials are provided, lakeFS will use them. Otherwise, it will fall back to the AWS credentials chain. 
       This means that for setups with multiple storages of type `s3`, static credentials are required for all but one.
 
+{: .warning}
+> Changing a storage ID is not supported and may result in unexpected behavior. Ensure IDs remain consistent once configured.
+
 ### Upgrading from a single storage backend to Multiple Storage backends
 
 When upgrading from a single storage backend to a multi-store setup, follow these guidelines:
 * Use the new `blockstores` structure, **replacing** the existing `blockstore` configuration. Note that `blockstore` and `blockstores` 
   configurations are mutually exclusive - lakeFS does not support both simultaneously. 
 * Define all previously available [single-blockstore settings](../reference/configuration.md#blockstore) under their respective storage backends.
-* The `signing.secret_key` remains a required global setting.
+* The `signing.secret_key` is a required setting global to all connected stores.
 * Set `backward_compatible: true` for the existing storage backend to ensure:
   * Existing repositories continue using the original storage backend.
   * Newly created repositories default to this backend unless explicitly assigned a different one, to ensure a non-breaking upgrade process. 
@@ -177,11 +184,11 @@ To remove a storage backend:
 * Restart the server.
 
 {: .warning}
-> Repositories linked to a removed storage backend will result in unexpected behavior. Ensure all necessary cleanup is done before removal.
+> lakeFS will fail to start if there are repositories linked to a removed storage backend. Ensure all necessary cleanup is completed before removing a storage backend.
 
 ### Listing Connected Storage Backends
 
-The [Get Config](https://docs.lakefs.io/reference/api.html#/config/getConfig) API endpoint now returns a list of storage
+The [Get Config](https://docs.lakefs.io/reference/api.html#/config/getConfig) API endpoint returns a list of storage
 configurations. In multi-store setups, this is the recommended method to list connected storage backends and view their details.
 
 ### Troubleshooting
@@ -247,12 +254,13 @@ Importing data into a repository is supported when the following conditions are 
 ### Unsupported storage backends
 
 Multi-storage backend support has been validated on:
-* Self-managed S3-compatible object storage (e.g., MinIO)
+* Self-managed S3-compatible object storage (MinIO)
 * Amazon S3
 * Local storage
 
 {: .note}
-> **Note:** Other untested combinations may still work. You are encouraged to try them and share feedback.
+> **Note:** Other storage backends may work but have not been officially tested. If you're interested in exploring 
+> additional configurations, please reach [contact us](https://lakefs.io/contact-sales/).
 
 ### Unsupported clients
 
