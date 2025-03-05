@@ -220,7 +220,7 @@ lakectl repo create lakefs://my-repo s3://my-bucket --storage-id my-storage
 ```python
 import lakefs
 
-repo = lakefs.Repository("example-repo", client=clt).create(storage_namespace="s3://storage-bucket/repos/example-repo", storage_id="my-storage-id")
+repo = lakefs.Repository("example-repo").create(storage_namespace="s3://storage-bucket/repos/example-repo", storage_id="my-storage-id")
 ```
 
 **Important notes:**
