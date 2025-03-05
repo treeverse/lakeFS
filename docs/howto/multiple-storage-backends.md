@@ -64,40 +64,40 @@ For a complete list of available options, refer to the [server configuration ref
   
   <div markdown="1" id="on-prem">
 
-This example setup configures lakeFS to manage data across two separate MinIO instances.
+This example setup configures lakeFS to manage data across two separate MinIO instances:
 
 ```yaml
 blockstores:
-    signing:
-      secret_key: "some-secret"
+  signing:
+    secret_key: "some-secret"
     stores:
-        - id: "minio-prod"
-          description: "Primary on-prem MinIO storage for production data"
-          type: "s3"
-          s3:
-            force_path_style: true
-            endpoint: 'http://minio-prod.local'
-            discover_bucket_region: false
-            credentials:
-              access_key_id: "prod_access_key"
-              secret_access_key: "prod_secret_key"
-        - id: "minio-backup"
-          description: "Backup MinIO storage for disaster recovery"
-          type: "s3"
-          s3:
-            force_path_style: true
-            endpoint: 'http://minio-backup.local'
-            discover_bucket_region: false
-            credentials:
-              access_key_id: "backup_access_key"
-              secret_access_key: "backup_secret_key"
+      - id: "minio-prod"
+        description: "Primary on-prem MinIO storage for production data"
+        type: "s3"
+        s3:
+          force_path_style: true
+          endpoint: 'http://minio-prod.local'
+          discover_bucket_region: false
+          credentials:
+            access_key_id: "prod_access_key"
+            secret_access_key: "prod_secret_key"
+      - id: "minio-backup"
+        description: "Backup MinIO storage for disaster recovery"
+        type: "s3"
+        s3:
+          force_path_style: true
+          endpoint: 'http://minio-backup.local'
+          discover_bucket_region: false
+          credentials:
+            access_key_id: "backup_access_key"
+            secret_access_key: "backup_secret_key"
 ```
 
   </div>
 
   <div markdown="2" id="multi-cloud">
 
-This example setup configures lakeFS to manage data across two public cloud providers: AWS and Azure.
+This example setup configures lakeFS to manage data across two public cloud providers: AWS and Azure:
 
 ```yaml
 blockstores:
@@ -156,7 +156,7 @@ blockstores:
     * If static credentials are provided, lakeFS will use them. Otherwise, it will fall back to the AWS credentials chain. 
       This means that for setups with multiple storages of type `s3`, static credentials are required for all but one.
 
-### Upgrading from Single to Multi-Store
+### Upgrading from a single storage backend to Multiple Storage backends
 
 When upgrading from a single storage backend to a multi-store setup, follow these guidelines:
 * Use the new `blockstores` structure, **replacing** the existing `blockstore` configuration. Note that `blockstore` and `blockstores` 
@@ -184,7 +184,7 @@ To remove a storage backend:
 The [Get Config](https://docs.lakefs.io/reference/api.html#/config/getConfig) API endpoint now returns a list of storage
 configurations. In multi-store setups, this is the recommended method to list connected storage backends and view their details.
 
-### Common Configuration Errors & Fixes
+### Troubleshooting
 
 | Issue                                                               | Cause | Solution                                                 |
 |---------------------------------------------------------------------|-------|----------------------------------------------------------|
@@ -214,7 +214,14 @@ lakectl repo create lakefs://my-repo s3://my-bucket --storage-id my-storage
 **Note**: The `--storage-id` flag is currently hidden in the CLI. 
 * UI: Select a storage backend from the dropdown menu.
 ![create repo with storage id](../assets/img/msb/msb_create_repo_ui.png)
-* High-level Python SDK: TODO
+* [High-level Python SDK](https://docs.lakefs.io/integrations/python.html#using-the-lakefs-sdk): Starting from version 
+0.9.0 of the SDK, you can use `kwargs` to pass `storage_id` dynamically when calling the 
+[create repository method](https://pydocs-lakefs.lakefs.io/lakefs.repository.html#lakefs.repository.Repository.create):
+```python
+import lakefs
+
+repo = lakefs.Repository("example-repo", client=clt).create(storage_namespace="s3://storage-bucket/repos/example-repo", storage_id="my-storage-id")
+```
 
 **Important notes:**
 * In multi-store setups where a storage backend is marked as `backward_compatible = true`, repository creation requests
@@ -243,9 +250,6 @@ Multi-storage backend support has been validated on:
 * Self-managed S3-compatible object storage (e.g., MinIO)
 * Amazon S3
 * Local storage
-
-While this feature is designed to support any blockstore combination, testing for Azure and GCS in multi-store setups is 
-still in progress.
 
 {: .note}
 > **Note:** Other untested combinations may still work. You are encouraged to try them and share feedback.
