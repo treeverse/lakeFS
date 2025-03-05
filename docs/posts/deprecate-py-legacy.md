@@ -21,14 +21,13 @@ Ever since we released lakeFS 1.0, we have supported these two SDKs to program f
 
 Before lakeFS 1.0 we would publish only:
 
-- [`lakefs-client`, a legacy older version of the lakeFS HTTP
-  API][pypi-lakefs-legacy].  This too was auto-generated.  However it cannot
-  provide interface guarantees.  **At no time could this client ever provide
-  forward- or backward- compatibility at the source code level.**  
+- [`lakefs-client`, a legacy older version of the lakeFS HTTP API][pypi-lakefs-legacy].
+  This too was auto-generated. However it can't provide interface guarantees.
+  **At no time could this client ever provide forward- or backward- compatibility at the source code level.**  
 
 We have continued to publish `lakefs-client` since the 1.0 release, in order
 to provide continued support for existing users of this legacy Python SDK
-client.  But there are better alternatives, and its continued presence only
+client. But there are better alternatives, and its continued presence only
 confuses our users.
 
 ## FAQ

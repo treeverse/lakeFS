@@ -13,7 +13,7 @@ redirect_from:
 {% include toc_2-3.html %}
 
 {: .warning }
-> If your project is currently using the [legacy Python lakefs-client][legacy-pypi], please be aware that this version has been [deprecated][legacy-deprecated].
+> If your project is currently using the [legacy Python `lakefs-client`][legacy-pypi], please be aware that this version has been [deprecated][legacy-deprecated].
 > As of release v1.44.0, it's no longer supported for new updates or features.
 
 **High Level Python SDK**  <span class="badge mr-1">New</span>
