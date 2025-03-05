@@ -18,7 +18,7 @@ The server itself is stateless, meaning you can easily add more instances to han
 
 ### Object Storage
 
-lakeFS manages data stored on object stores. Those supported include: 
+lakeFS manages data stored on various object storage platforms, including: 
 
 - AWS S3
 - Google Cloud Storage
@@ -28,8 +28,8 @@ lakeFS manages data stored on object stores. Those supported include:
 - Ceph
 - Any other S3-compatible storage
 
-lakeFS Enterprise offers a [multiple storage backend support](../howto/multiple-storage-backends.md) which allows managing 
-data stored across multiple storage locations: on-prem, hybrid, or multi-cloud. 
+With [lakeFS Enterprise](../enterprise), you can leverage [multiple storage backend support](../howto/multiple-storage-backends.md)
+to manage data across multiple storage locations, including on-prem, hybrid, and multi-cloud environments.
 
 ### Metadata Storage
 
