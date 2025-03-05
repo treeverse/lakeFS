@@ -26,7 +26,7 @@ With a multi-store setup, lakeFS can connect to and manage any combination of su
 Azure Blob, Google Cloud Storage, other S3-compatible storage, and even local storages. 
 
 {: .note}
-> Multi-storage backends support is available from version X of lakeFS Enterprise.
+> Multi-storage backends support is available from version v1.51.0 of lakeFS Enterprise.
 
 ## Use Cases
 
