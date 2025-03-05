@@ -44,11 +44,13 @@ Azure Blob, Google Cloud Storage, other S3-compatible storage, and even local st
    
 ## Configuration
 
-To configure your lakeFS server to connect to multiple storage backends, define them under the `blockstores` section in 
-your server configurations. The `blockstores.stores` field is an array of storage backends, each with its own configuration.  
+To configure your lakeFS server to connect to multiple storage backends, define them under the `blockstores`
+section in your server configurations. The `blockstores.stores` field is an array of storage backends, each with its own configuration.  
+
+For a complete list of available options, refer to the [server configuration reference](../reference/configuration.md#blockstores).   
 
 {: .note}
-> If you're upgrading from a single-store lakeFS setup, refer to the [upgrade guidelines](#upgrading-from-single-to-multi-store)
+> **Note:** If you're upgrading from a single-store lakeFS setup, refer to the [upgrade guidelines](#upgrading-from-single-to-multi-store)
 > to ensure a smooth transition.
 
 ### Example Configurations
@@ -234,6 +236,21 @@ Importing data into a repository is supported when the following conditions are 
 * The storage location is in the same region as the repository's backend.
 
 ## Limitations 
+
+### Unsupported storage backends
+
+Multi-storage backend support has been validated on:
+* Self-managed S3-compatible object storage (e.g., MinIO)
+* Amazon S3
+* Local storage
+
+While this feature is designed to support any blockstore combination, testing for Azure and GCS in multi-store setups is 
+still in progress.
+
+{: .note}
+> **Note:** Other untested combinations may still work. You are encouraged to try them and share feedback.
+
+### Unsupported clients
 
 The following clients do not currently support working with multiple storage backends. However, we are actively working 
 to bridge this gap: 
