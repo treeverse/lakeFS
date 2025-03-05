@@ -8,13 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
-
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/graveler/committed"
 )
 
 func matchPreSignedURLContent(t *testing.T, preSignedURL, content string) {
