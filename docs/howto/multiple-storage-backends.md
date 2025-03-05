@@ -11,7 +11,7 @@ lakeFS Enterprise
 
 {: .note}
 > Multi-storage backend support is only available for licensed [lakeFS Enterprise]({% link enterprise/index.md %}) customers.<br>
-> Contact us to get started!   
+> [Contact us](https://lakefs.io/contact-sales/) to get started!   
 
 {% include toc.html %}
 

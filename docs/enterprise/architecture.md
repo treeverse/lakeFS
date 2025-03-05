@@ -34,7 +34,6 @@ it is separated by ports for security reasons.
 [6] SSO IdP - Identity provider (e.g. Azure AD, Okta, JumpCloud). fluffy
 implements SAML and Oauth2 protocols.
 
-
 For more details and pricing, please [contact sales](https://lakefs.io/contact-sales/).
 
 
