@@ -217,7 +217,7 @@ In a multi-storage setup, users must specify a storage ID when creating a reposi
 
 #### API
 
-Use the `storage_id` parameter in the [Create Repository endpoint](https://docs.lakefs.io/reference/api.html#/repositories/createRepository).
+Use the `storage_id` parameter in the [Create Repository endpoint](../reference/api.md#/repositories/createRepository).
 
 #### CLI
 
@@ -257,7 +257,7 @@ To check which storage backend is associated with a repository:
 
 #### API
 
-The [List Repositories](https://docs.lakefs.io/reference/api.html#/repositories/listRepositories) response includes the storage ID.
+The [List Repositories](../reference/api.md#/repositories/listRepositories) response includes the storage ID.
 
 #### UI
 
