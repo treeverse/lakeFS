@@ -79,6 +79,35 @@ func getLakeFSJSONResponse(l *lua.State, server *http.Server, request *http.Requ
 func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *http.Server) {
 	clientOpen := func(l *lua.State) int {
 		lua.NewLibrary(l, []lua.RegistryFunction{
+			{Name: "update_object_user_metadata", Function: func(state *lua.State) int {
+				repo := lua.CheckString(l, 1)
+				branch := lua.CheckString(l, 2)
+				objPath := lua.CheckString(l, 3)
+				metadata, err := util.PullStringTable(l, 4)
+				check(l, err)
+
+				data, err := json.Marshal(map[string]interface{}{
+					"set": metadata,
+				})
+				check(l, err)
+
+				reqURL, err := url.JoinPath("/repositories", repo, "branches", branch, "objects/stat/user_metadata")
+				check(l, err)
+
+				req, err := newLakeFSJSONRequest(ctx, user, http.MethodPut, reqURL, data)
+				check(l, err)
+
+				// query params
+				q := req.URL.Query()
+				q.Add("path", objPath)
+				req.URL.RawQuery = q.Encode()
+
+				rr := httptest.NewRecorder()
+				server.Handler.ServeHTTP(rr, req)
+				l.PushInteger(rr.Code)
+				l.PushString(rr.Body.String())
+				return 2
+			}},
 			{Name: "create_tag", Function: func(state *lua.State) int {
 				repo := lua.CheckString(l, 1)
 				data, err := json.Marshal(map[string]string{
