@@ -1,12 +1,12 @@
-/*#cc-main {*/
-/*    --cc-btn-primary-bg: #279890;*/
-/*    --cc-btn-primary-border-color: #279890;*/
-/*    --cc-btn-primary-hover-bg: #fff;*/
-/*    --cc-btn-primary-hover-color: #279890;*/
-/*    --cc-btn-primary-hover-border-color: #279890;*/
-/*    --cc-font-family: "GalanoGrotesque-Medium";*/
-/*    --cc-toggle-on-bg: var(--cc-btn-primary-bg);*/
-/*}*/
+#cc-main {
+    --cc-btn-primary-bg: #279890;
+    --cc-btn-primary-border-color: #279890;
+    --cc-btn-primary-hover-bg: #fff;
+    --cc-btn-primary-hover-color: #279890;
+    --cc-btn-primary-hover-border-color: #279890;
+    --cc-font-family: "GalanoGrotesque-Medium";
+    --cc-toggle-on-bg: var(--cc-btn-primary-bg);
+}
 
 h2.cm__title {
     margin-top: 0 !important;
