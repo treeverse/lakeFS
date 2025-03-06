@@ -329,7 +329,6 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 {: .ref-list }
 
 ## lakeFS Enterprise
-{: .no_toc}
 
 This section provides configuration references exclusive to [lakeFS Enterprise](../enterprise), and serves as a complement
 to the general configuration [reference](#reference) above.
