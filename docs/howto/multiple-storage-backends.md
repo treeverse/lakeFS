@@ -215,11 +215,22 @@ The choice of storage backend impacts the following lakeFS operations:
 
 In a multi-storage setup, users must specify a storage ID when creating a repository. This can be done using the following methods:
 
-#### API
+<div class="tabs">
+  <ul>
+    <li><a href="#ui">UI</a></li>
+    <li><a href="#cli">CLI</a></li>
+    <li><a href="#api">API</a></li>
+    <li><a href="#hl-sdk">High-level Python SDK</a></li>
+  </ul>
 
-Use the `storage_id` parameter in the [Create Repository endpoint](../reference/api.md#/repositories/createRepository).
+  <div markdown="1" id="ui">
 
-#### CLI
+Select a storage backend from the dropdown menu.
+![create repo with storage id](../assets/img/msb/msb_create_repo_ui.png)
+ 
+  </div>
+
+  <div markdown="2" id="cli">
 
 Use the `--storage-id` flag with the [repo create](../reference/cli.md#lakectl-repo-create) command:
 
@@ -227,14 +238,17 @@ Use the `--storage-id` flag with the [repo create](../reference/cli.md#lakectl-r
 lakectl repo create lakefs://my-repo s3://my-bucket --storage-id my-storage
 ```
 
-**Note**: The `--storage-id` flag is currently hidden in the CLI. 
+**Note**: The `--storage-id` flag is currently hidden in the CLI.
 
-#### UI
+  </div>
 
-Select a storage backend from the dropdown menu.
-![create repo with storage id](../assets/img/msb/msb_create_repo_ui.png)
+ <div markdown="3" id="api">
 
-#### High-level Python SDK
+Use the `storage_id` parameter in the [Create Repository endpoint](../reference/api.md#/repositories/createRepository).
+
+  </div>
+
+  <div markdown="4" id="hl-sdk">
 
 Starting from version 0.9.0 of the [High-level Python SDK](https://docs.lakefs.io/integrations/python.html#using-the-lakefs-sdk),
 you can use `kwargs` to pass `storage_id` dynamically when calling the [create repository method](https://pydocs-lakefs.lakefs.io/lakefs.repository.html#lakefs.repository.Repository.create):
@@ -244,6 +258,9 @@ import lakefs
 
 repo = lakefs.Repository("example-repo").create(storage_namespace="s3://storage-bucket/repos/example-repo", storage_id="my-storage-id")
 ```
+  </div>
+
+</div>
 
 **Important notes:**
 * In multi-storage setups where a storage backend is marked as `backward_compatible: true`, repository creation requests
@@ -255,14 +272,25 @@ without a storage ID will default to this storage.
 
 To check which storage backend is associated with a repository:
 
-#### API
+<div class="tabs">
+  <ul>
+    <li><a href="#ui">UI</a></li>
+    <li><a href="#api">API</a></li>
+  </ul>
 
-The [List Repositories](../reference/api.md#/repositories/listRepositories) response includes the storage ID.
-
-#### UI
+  <div markdown="1" id="ui">
 
 The storage ID is displayed under "Storage" in the repository settings page.
 ![repo settings](../assets/img/msb/msb_repo_settings_ui.png)
+
+  </div>
+
+  <div markdown="2" id="api">
+
+Use the [List Repositories](../reference/api.md#/repositories/listRepositories) endpoint. Its response includes the storage ID.
+
+  </div>
+</div>
 
 ### Importing Data into a Repository
 
