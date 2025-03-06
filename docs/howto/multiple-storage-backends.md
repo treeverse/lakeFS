@@ -10,7 +10,7 @@ lakeFS Enterprise
 {: .label .label-purple }
 
 {: .note}
-> Multi-storage backend support is only available for licensed [lakeFS Enterprise]({% link enterprise/index.md %}) customers.<br>
+> Multi-storage backend support is only available to licensed [lakeFS Enterprise]({% link enterprise/index.md %}) customers.
 > [Contact us](https://info.lakefs.io/thanks-msb) to get started!   
 
 {% include toc.html %}
@@ -169,7 +169,7 @@ When upgrading from a single storage backend to a multi-storage setup, follow th
 * Define all previously available [single-blockstore settings](../reference/configuration.md#blockstore) under their respective storage backends.
 * The `signing.secret_key` is a required setting global to all connected stores.
 * Set `backward_compatible: true` for the existing storage backend to ensure:
-  * Existing repositories continue using the original storage backend.
+  * Existing repositories continue to use the original storage backend.
   * Newly created repositories default to this backend unless explicitly assigned a different one, to ensure a non-breaking upgrade process.
   * **This setting is mandatory** — lakeFS will not function if it is unset.  
   * **Do not remove this setting** as long as you need to support repositories created before the upgrade.
