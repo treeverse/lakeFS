@@ -20,26 +20,26 @@
 <!-- Start of hs embed code -->
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/8040338.js"></script>
 <!-- End of hs embed Code -->
-<!--<script id="cr-script">-->
-<!--    (function() {-->
-<!--        if (typeof window === 'undefined') return;-->
-<!--        if (typeof window.signals !== 'undefined') return;-->
-<!--        var script = document.createElement('script');-->
-<!--        script.src = 'https://cdn.cr-relay.com/v1/site/ca91ce7f-9534-48ec-98f4-ed031dda98c7/signals.js';-->
-<!--        script.async = true;-->
-<!--        window.signals = Object.assign(-->
-<!--            [],-->
-<!--            ['page', 'identify', 'form'].reduce(function (acc, method){-->
-<!--                acc[method] = function () {-->
-<!--                    signals.push([method, arguments]);-->
-<!--                    return signals;-->
-<!--                };-->
-<!--                return acc;-->
-<!--            }, {})-->
-<!--        );-->
-<!--        document.head.appendChild(script);-->
-<!--    })();-->
-<!--</script>-->
+<script id="cr-script">
+    (function() {
+        if (typeof window === 'undefined') return;
+        if (typeof window.signals !== 'undefined') return;
+        var script = document.createElement('script');
+        script.src = 'https://cdn.cr-relay.com/v1/site/ca91ce7f-9534-48ec-98f4-ed031dda98c7/signals.js';
+        script.async = true;
+        window.signals = Object.assign(
+            [],
+            ['page', 'identify', 'form'].reduce(function (acc, method){
+                acc[method] = function () {
+                    signals.push([method, arguments]);
+                    return signals;
+                };
+                return acc;
+            }, {})
+        );
+        document.head.appendChild(script);
+    })();
+</script>
 
 <!--<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@v3.0.0/dist/cookieconsent.css">-->
 <!--<link rel="stylesheet" href="{{ site.baseurl }}/assets/css/cookieconsent.css" />-->
