@@ -40,7 +40,7 @@ func newLakeFSRequest(ctx context.Context, user *model.User, method, reqURL stri
 	}
 
 	var body io.Reader
-	if data == nil {
+	if data != nil {
 		body = bytes.NewReader(data)
 	}
 
