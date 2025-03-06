@@ -38,7 +38,6 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 2. [Transactional Mirroring]({% link howto/mirroring.md %}) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
 3. [Multiple Storage Backends]({% link howto/multiple-storage-backends.md %}) - allows managing data stored across multiple storage locations: on-prem, hybrid, or multi-cloud.        
 
-<br>
 
 | Feature                                   | OSS       | Enterprise     |
 |------------------------------------------------|-----------|-----------|
