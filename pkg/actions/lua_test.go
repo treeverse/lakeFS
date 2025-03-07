@@ -32,9 +32,7 @@ func newLuaActionHook(t *testing.T, server *http.Server, address string, netHTTP
 
 	actionConfig := actions.Config{
 		Enabled: true,
-		Lua: actions.ConfigLua{
-			NetHTTPEnabled: netHTTPEnabled,
-		},
+		Lua:     struct{ NetHTTPEnabled bool }{NetHTTPEnabled: netHTTPEnabled},
 	}
 
 	h, err := actions.NewLuaHook(
@@ -559,7 +557,7 @@ type testLakeFSServer struct {
 	lastRequest map[string]any
 }
 
-func (s *testLakeFSServer) UpdateObjectUserMetadata(w http.ResponseWriter, r *http.Request, body apigen.UpdateObjectUserMetadataJSONRequestBody, repository, branch string, params apigen.UpdateObjectUserMetadataParams) {
+func (s *testLakeFSServer) UpdateObjectUserMetadata(w http.ResponseWriter, _ *http.Request, body apigen.UpdateObjectUserMetadataJSONRequestBody, repository, branch string, params apigen.UpdateObjectUserMetadataParams) {
 	if s.shouldFail {
 		s.lastRequest = nil
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
