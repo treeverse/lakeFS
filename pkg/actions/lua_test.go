@@ -3,6 +3,7 @@ package actions_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,10 +16,11 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/go-chi/chi/v5"
-	"github.com/google/go-cmp/cmp"
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -483,7 +485,7 @@ func TestLuaRun_LakeFS(t *testing.T) {
 local code, resp = lakefs.update_object_user_metadata("repo", "branch", "path/to/object", {key="value", key2="value2"})
 print(code .. " " .. resp)
 `,
-			ExpectedOutput: `201`,
+			ExpectedOutput: "201",
 			ExpectedRequest: map[string]any{
 				"repository": "repo",
 				"branch":     "branch",
@@ -512,10 +514,158 @@ print(code .. " " .. resp)
 			Name: "update_object_user_metadata-fail",
 			Script: `local lakefs = require("lakefs")
 local code, resp = lakefs.update_object_user_metadata("repo", "branch", "object", {key="value"})
-print(code .. " " .. resp)
+print(code, resp)
 `,
 			ShouldFail:     true,
-			ExpectedOutput: "400 " + http.StatusText(http.StatusBadRequest),
+			ExpectedOutput: "400",
+		},
+		{
+			Name: "create_tag",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.create_tag("repo", "main", "tag1")
+print(code, resp.id, resp.commit_id)
+`,
+			ExpectedOutput: "201\ttag1\tmain",
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"body":       apigen.CreateTagJSONRequestBody{Id: "tag1", Ref: "main"},
+			},
+		},
+		{
+			Name: "create_tag-fail",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.create_tag("repo", "main", "tag1")
+print(code, resp)
+`,
+			ShouldFail:     true,
+			ExpectedOutput: "400",
+		},
+		{
+			Name: "diff_refs",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.diff_refs("repo", "main", "branch1", "after", "prefix", "delim", 100)
+print(code, resp)
+`,
+			ExpectedOutput: "200\ttable:",
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"leftRef":    "main",
+				"rightRef":   "branch1",
+				"params": apigen.DiffRefsParams{
+					After:     apiutil.Ptr[apigen.PaginationAfter]("after"),
+					Amount:    apiutil.Ptr[apigen.PaginationAmount](100),
+					Prefix:    apiutil.Ptr[apigen.PaginationPrefix]("prefix"),
+					Delimiter: apiutil.Ptr[apigen.PaginationDelimiter]("delim"),
+				},
+			},
+		},
+		{
+			Name: "diff_refs-fail",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.diff_refs("repo", "main", "branch1")
+print(code, resp)
+`,
+			ShouldFail:     true,
+			ExpectedOutput: "400",
+		},
+		{
+			Name: "list_objects",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.list_objects("repo", "main", "after", "prefix", "delim", 100, true)
+print(code, resp)
+`,
+			ExpectedOutput: "200\ttable:",
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"ref":        "main",
+				"params": apigen.ListObjectsParams{
+					After:        apiutil.Ptr[apigen.PaginationAfter]("after"),
+					Amount:       apiutil.Ptr[apigen.PaginationAmount](100),
+					Prefix:       apiutil.Ptr[apigen.PaginationPrefix]("prefix"),
+					Delimiter:    apiutil.Ptr[apigen.PaginationDelimiter]("delim"),
+					UserMetadata: apiutil.Ptr(true),
+				},
+			},
+		},
+		{
+			Name: "list_objects-fail",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.list_objects("repo", "main")
+print(code, resp)
+`,
+			ShouldFail:     true,
+			ExpectedOutput: "400",
+		},
+		{
+			Name: "get_object",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.get_object("repo", "main", "path/to/object")
+print(code, resp)
+`,
+			ExpectedOutput: "200\tobject content",
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"ref":        "main",
+				"params":     apigen.GetObjectParams{Path: "path/to/object"},
+			},
+		},
+		{
+			Name: "get_object-fail",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.get_object("repo", "main", "path/to/object")
+print(code, resp)
+`,
+			ShouldFail:     true,
+			ExpectedOutput: "400",
+		},
+		{
+			Name: "stat_object",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.stat_object("repo", "main", "path/to/object")
+print(code, resp)
+`,
+			ExpectedOutput: "200\t" + `{"checksum":"cksum1","metadata":{"key1":"value1"},"mtime":0,"path":"path/to/object","path_type":"","physical_address":"addr1","size_bytes":100}`,
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"ref":        "main",
+				"params":     apigen.StatObjectParams{Path: "path/to/object"},
+			},
+		},
+		{
+			Name: "stat_object-fail",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.stat_object("repo", "main", "path/to/object")
+print(code, resp)
+`,
+			ShouldFail:     true,
+			ExpectedOutput: "400",
+		},
+		{
+			Name: "diff_branch",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.diff_branch("repo", "branch1", "after", 100, "prefix", "delim")
+print(code, resp)
+`,
+			ExpectedOutput: "200\ttable:",
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"branch":     "branch1",
+				"params": apigen.DiffBranchParams{
+					After:     apiutil.Ptr[apigen.PaginationAfter]("after"),
+					Amount:    apiutil.Ptr[apigen.PaginationAmount](100),
+					Prefix:    apiutil.Ptr[apigen.PaginationPrefix]("prefix"),
+					Delimiter: apiutil.Ptr[apigen.PaginationDelimiter]("delim"),
+				},
+			},
+		},
+		{
+			Name: "diff_branch-fail",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.diff_branch("repo", "branch1")
+print(code, resp)
+`,
+			ShouldFail:     true,
+			ExpectedOutput: "400",
 		},
 	}
 
@@ -535,14 +685,14 @@ print(code .. " " .. resp)
 				return
 			}
 			if err != nil {
-				t.Fatalf("unexpected error running hook: %v", err)
+				t.Fatalf("Error running hook: %s", err)
 			}
 
 			// match the code and response
 			if !strings.Contains(output, tt.ExpectedOutput) {
-				t.Fatalf("expected output\n%s\n------- got\n%s\n-------", tt.ExpectedOutput, output)
+				t.Fatalf("Expected output\n%s\n------- got\n%s\n-------", tt.ExpectedOutput, output)
 			}
-			if diff := cmp.Diff(tt.ExpectedRequest, lakeFSServer.lastRequest); diff != "" {
+			if diff := deep.Equal(tt.ExpectedRequest, lakeFSServer.lastRequest); diff != nil {
 				t.Fatalf("Unexpected request (diff): %s", diff)
 			}
 		})
@@ -560,7 +710,7 @@ type testLakeFSServer struct {
 func (s *testLakeFSServer) UpdateObjectUserMetadata(w http.ResponseWriter, _ *http.Request, body apigen.UpdateObjectUserMetadataJSONRequestBody, repository, branch string, params apigen.UpdateObjectUserMetadataParams) {
 	if s.shouldFail {
 		s.lastRequest = nil
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	s.lastRequest = map[string]any{
@@ -570,4 +720,162 @@ func (s *testLakeFSServer) UpdateObjectUserMetadata(w http.ResponseWriter, _ *ht
 		"body":       body,
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (s *testLakeFSServer) CreateTag(w http.ResponseWriter, _ *http.Request, body apigen.CreateTagJSONRequestBody, repository string) {
+	if s.shouldFail {
+		s.lastRequest = nil
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"test error"}`))
+		return
+	}
+	s.lastRequest = map[string]any{
+		"repository": repository,
+		"body":       body,
+	}
+	resp := apigen.Ref{
+		Id:       body.Id,
+		CommitId: body.Ref,
+	}
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func (s *testLakeFSServer) DiffRefs(w http.ResponseWriter, _ *http.Request, repository, leftRef, rightRef string, params apigen.DiffRefsParams) {
+	if s.shouldFail {
+		s.lastRequest = nil
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"test error"}`))
+		return
+	}
+	s.lastRequest = map[string]any{
+		"repository": repository,
+		"leftRef":    leftRef,
+		"rightRef":   rightRef,
+		"params":     params,
+	}
+	resp := apigen.DiffList{
+		Pagination: apigen.Pagination{
+			HasMore:    false,
+			MaxPerPage: 100,
+			Results:    1,
+		},
+		Results: []apigen.Diff{
+			{
+				Path: "file1",
+				Type: "changed",
+			},
+		},
+	}
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func (s *testLakeFSServer) ListObjects(w http.ResponseWriter, _ *http.Request, repository, ref string, params apigen.ListObjectsParams) {
+	if s.shouldFail {
+		s.lastRequest = nil
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"test error"}`))
+		return
+	}
+	s.lastRequest = map[string]any{
+		"repository": repository,
+		"ref":        ref,
+		"params":     params,
+	}
+	resp := apigen.ObjectStatsList{
+		Pagination: apigen.Pagination{
+			HasMore:    false,
+			MaxPerPage: 100,
+			Results:    1,
+		},
+		Results: []apigen.ObjectStats{
+			{
+				Path:            "file1",
+				PhysicalAddress: "addr1",
+				Checksum:        "cksum1",
+				SizeBytes:       apiutil.Ptr(int64(100)),
+				Metadata: &apigen.ObjectUserMetadata{
+					AdditionalProperties: map[string]string{
+						"key1": "value1",
+					},
+				},
+			},
+		},
+	}
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func (s *testLakeFSServer) GetObject(w http.ResponseWriter, _ *http.Request, repository, ref string, params apigen.GetObjectParams) {
+	if s.shouldFail {
+		s.lastRequest = nil
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	s.lastRequest = map[string]any{
+		"repository": repository,
+		"ref":        ref,
+		"params":     params,
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("object content"))
+}
+
+func (s *testLakeFSServer) StatObject(w http.ResponseWriter, _ *http.Request, repository, ref string, params apigen.StatObjectParams) {
+	if s.shouldFail {
+		s.lastRequest = nil
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	s.lastRequest = map[string]any{
+		"repository": repository,
+		"ref":        ref,
+		"params":     params,
+	}
+	resp := apigen.ObjectStats{
+		Path:            params.Path,
+		PhysicalAddress: "addr1",
+		Checksum:        "cksum1",
+		SizeBytes:       apiutil.Ptr(int64(100)),
+		Metadata: &apigen.ObjectUserMetadata{
+			AdditionalProperties: map[string]string{
+				"key1": "value1",
+			},
+		},
+	}
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func (s *testLakeFSServer) DiffBranch(w http.ResponseWriter, _ *http.Request, repository, branch string, params apigen.DiffBranchParams) {
+	if s.shouldFail {
+		s.lastRequest = nil
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"test error"}`))
+		return
+	}
+	s.lastRequest = map[string]any{
+		"repository": repository,
+		"branch":     branch,
+		"params":     params,
+	}
+	resp := apigen.DiffList{
+		Pagination: apigen.Pagination{
+			HasMore:    false,
+			MaxPerPage: 100,
+			NextOffset: "",
+			Results:    1,
+		},
+		Results: []apigen.Diff{
+			{
+				Path:      "file1",
+				PathType:  "object",
+				Type:      "changed",
+				SizeBytes: apiutil.Ptr(int64(200)),
+			},
+		},
+	}
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(resp)
 }

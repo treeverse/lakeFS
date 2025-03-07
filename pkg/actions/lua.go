@@ -13,7 +13,6 @@ import (
 
 	"github.com/Shopify/go-lua"
 	"github.com/spf13/viper"
-
 	lualibs "github.com/treeverse/lakefs/pkg/actions/lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
 	"github.com/treeverse/lakefs/pkg/actions/lua/lakefs"
