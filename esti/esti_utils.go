@@ -500,7 +500,7 @@ func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPa
 	return checksum, content
 }
 
-func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []apigen.ObjectStats {
+func ListRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []apigen.ObjectStats {
 	t.Helper()
 	const amount = 5
 	var entries []apigen.ObjectStats
