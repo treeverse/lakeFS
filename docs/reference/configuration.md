@@ -162,7 +162,7 @@ Configuration section when using `database.type="local"`
 
 #### blockstore.local
 
-* `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
+* `blockstore.local.path` `(string: "~/lakefs/data/block")` - When using the local Block Adapter, which directory to store files in
 * `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
 * `blockstore.local.import_hidden` `(bool: false)` - When enabled import will scan and import any file or folder that starts with a dot character.
 * `blockstore.local.allowed_external_prefixes` `([]string: [])` - List of absolute path prefixes used to match any access for external location (ex: /var/data/). Empty list mean no access to external location.
