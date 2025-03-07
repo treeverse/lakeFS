@@ -31,27 +31,23 @@ Create a new branch: A function-based ContainerOp that creates a branch called `
 from kfp import components
 
 def create_branch(repo_name, branch_name, source_branch):
-   import lakefs_client
-   from lakefs_client import models
-   from lakefs_client.client import LakeFSClient
-
-   # lakeFS credentials and endpoint
-   configuration = lakefs_client.Configuration()
-   configuration.username = 'AKIAIOSFODNN7EXAMPLE'
-   configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-   configuration.host = 'https://lakefs.example.com'
-   client = LakeFSClient(configuration)
-
-   client.branches.create_branch(repository=repo_name, branch_creation=models.BranchCreation(name=branch_name, source=source_branch))
+   import lakefs
+   from lakefs.client import Client
+   client = Client(
+      host="https://lakefs.example.com",
+      username="AKIAIOSFODNN7EXAMPLE",
+      password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+   )
+   lakefs.repository(repo_name, client=client).branch(branch_name).create(source_reference=source_branch)
 
 # Convert the function to a lakeFS pipeline step.
 create_branch_op = components.func_to_container_op(
    func=create_branch,
-   packages_to_install=['lakefs_client==<lakeFS version>']) # Type in the lakeFS version you are using
+   packages_to_install=['lakefs'])
 ```
 
 You can invoke any lakeFS operation supported by lakeFS OpenAPI. For example, you could implement a commit and merge function-based ContainerOps.
-Check out the full API [reference](https://docs.lakefs.io/reference/api.html).
+Check out the [Python documentation](python) and the full [API reference](../reference/api).
 
 ### Non-function-based ContainerOps
 
