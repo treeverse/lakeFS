@@ -47,7 +47,7 @@ create_branch_op = components.func_to_container_op(
 ```
 
 You can invoke any lakeFS operation supported by lakeFS OpenAPI. For example, you could implement a commit and merge function-based ContainerOps.
-Check out the [Python documentation](python) and the full [API reference](../reference/api).
+Check out the [Python documentation](python.md) and the full [API reference](../reference/api.md).
 
 ### Non-function-based ContainerOps
 
