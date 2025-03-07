@@ -13,82 +13,62 @@ import (
 	"testing"
 	"time"
 
-	nanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/go-cmp/cmp"
 	"github.com/treeverse/lakefs/pkg/actions"
+	"github.com/treeverse/lakefs/pkg/api"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func TestNewLuaHook(t *testing.T) {
-	mockStatsCollector := NewActionStatsMockCollector()
-	_, err := actions.NewLuaHook(
-		actions.ActionHook{
-			ID:          "myHook",
-			Type:        actions.HookTypeLua,
-			Description: "na",
-			Properties: map[string]interface{}{
-				"script": "print(tostring(1 + 2))",
-			},
-		},
-		&actions.Action{
-			Name:        "",
-			Description: "",
-			On:          nil,
-			Hooks:       nil,
-		},
-		actions.Config{
-			Enabled: true,
-			Lua: struct {
-				NetHTTPEnabled bool
-			}{
-				NetHTTPEnabled: true,
-			},
-		},
-		nil, "", &mockStatsCollector)
-	if err != nil {
-		t.Errorf("unexpedcted error: %v", err)
-	}
-}
+func newLuaActionHook(t *testing.T, server *http.Server, address string, netHTTPEnabled bool, script string) actions.Hook {
+	t.Helper()
 
-func TestLuaRun(t *testing.T) {
 	mockStatsCollector := NewActionStatsMockCollector()
+
+	actionConfig := actions.Config{
+		Enabled: true,
+		Lua: actions.ConfigLua{
+			NetHTTPEnabled: netHTTPEnabled,
+		},
+	}
+
 	h, err := actions.NewLuaHook(
 		actions.ActionHook{
-			ID:          "myHook",
+			ID:          "hook-" + t.Name(),
 			Type:        actions.HookTypeLua,
-			Description: "na",
+			Description: t.Name() + " hook description",
 			Properties: map[string]interface{}{
-				"script": "print(tostring(350 * 239))",
+				"script": script,
 			},
 		},
-		&actions.Action{
-			Name:        "",
-			Description: "",
-			On:          nil,
-			Hooks:       nil,
-		},
-		actions.Config{
-			Enabled: true,
-			Lua: struct {
-				NetHTTPEnabled bool
-			}{
-				NetHTTPEnabled: true,
-			},
-		},
-		nil, "", &mockStatsCollector)
+		&actions.Action{},
+		actionConfig,
+		server,
+		address,
+		&mockStatsCollector)
 	if err != nil {
-		t.Errorf("unexpedcted error: %v", err)
+		t.Fatalf("unexpected error: %s", err)
 	}
-	out := &bytes.Buffer{}
-	// load a user
+	return h
+}
+
+func runHook(h actions.Hook) (string, error) {
+	var out bytes.Buffer
+
+	// load a user on context
 	ctx := context.Background()
 	ctx = auth.WithUser(ctx, &model.User{
 		CreatedAt: time.Time{},
 		Username:  "user1",
 	})
-	err = h.Run(ctx, graveler.HookRecord{
+
+	// run the hook
+	err := h.Run(ctx, graveler.HookRecord{
 		RunID:     "abc123",
 		EventType: graveler.EventTypePreCreateBranch,
 		Repository: &graveler.RepositoryRecord{
@@ -103,67 +83,39 @@ func TestLuaRun(t *testing.T) {
 		Commit: graveler.Commit{
 			Version: 1,
 		},
-		CommitID: "123456789",
-		PreRunID: "3498032432",
-		TagID:    "",
-	}, out)
+		CommitID:    "123456789",
+		PreRunID:    "3498032432",
+		TagID:       "tag1",
+		MergeSource: "merge-source",
+	}, &out)
 	if err != nil {
-		t.Errorf("unexpected error running hook: %v", err)
+		return "", err
 	}
-	output := out.String()
-	expected := "83650"
+	return out.String(), nil
+}
+
+func TestNewLuaHook(t *testing.T) {
+	const script = "print(tostring(1 + 2))"
+	_ = newLuaActionHook(t, nil, "", true, script)
+}
+
+func TestLuaRun(t *testing.T) {
+	const script = "print(tostring(350 * 239))"
+	h := newLuaActionHook(t, nil, "", true, script)
+	output, err := runHook(h)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+	const expected = "83650"
 	if !strings.Contains(output, expected) {
 		t.Errorf("expected output\n%s\n------- got\n%s-------", expected, output)
 	}
 }
 
 func TestLuaRun_NetHttpDisabled(t *testing.T) {
-	mockStatsCollector := NewActionStatsMockCollector()
-	h, err := actions.NewLuaHook(
-		actions.ActionHook{
-			ID:          "myHook",
-			Type:        actions.HookTypeLua,
-			Description: "na",
-			Properties: map[string]interface{}{
-				"script": `local http = require("net/http")`,
-			},
-		},
-		&actions.Action{
-			Name:        "",
-			Description: "",
-			On:          nil,
-			Hooks:       nil,
-		},
-		actions.Config{Enabled: true},
-		nil, "", &mockStatsCollector)
-	if err != nil {
-		t.Errorf("unexpedcted error: %v", err)
-	}
-	out := &bytes.Buffer{}
-	ctx := context.Background()
-	ctx = auth.WithUser(ctx, &model.User{
-		CreatedAt: time.Time{},
-		Username:  "user1",
-	})
-	err = h.Run(ctx, graveler.HookRecord{
-		RunID:     "abc123",
-		EventType: graveler.EventTypePreCreateBranch,
-		Repository: &graveler.RepositoryRecord{
-			RepositoryID: "example123",
-			Repository: &graveler.Repository{
-				StorageNamespace: "local://foo/bar",
-				CreationDate:     time.Time{},
-			},
-		},
-		SourceRef: "abc123",
-		BranchID:  "my-branch",
-		Commit: graveler.Commit{
-			Version: 1,
-		},
-		CommitID: "123456789",
-		PreRunID: "3498032432",
-		TagID:    "",
-	}, out)
+	const script = `local http = require("net/http")`
+	h := newLuaActionHook(t, nil, "", false, script)
+	_, err := runHook(h)
 	const expectedErr = "module 'net/http' not found"
 	if err == nil || !strings.Contains(err.Error(), expectedErr) {
 		t.Fatalf("Error=%v, expected: '%s'", err, expectedErr)
@@ -273,52 +225,8 @@ print(code .. " " .. body .. " " .. status)
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			mockStatsCollector := NewActionStatsMockCollector()
-			h, err := actions.NewLuaHook(
-				actions.ActionHook{
-					ID:   "myLuaHook",
-					Type: actions.HookTypeLua,
-					Properties: map[string]interface{}{
-						"script": tt.Script,
-					},
-				},
-				&actions.Action{},
-				actions.Config{
-					Enabled: true,
-					Lua: struct {
-						NetHTTPEnabled bool
-					}{
-						NetHTTPEnabled: true,
-					},
-				},
-				nil, "", &mockStatsCollector)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			out := &bytes.Buffer{}
-			ctx := auth.WithUser(context.Background(), &model.User{
-				Username: "user1",
-			})
-			runID := nanoid.Must(20)
-			err = h.Run(ctx, graveler.HookRecord{
-				RunID:     runID,
-				EventType: graveler.EventTypePreCreateBranch,
-				Repository: &graveler.RepositoryRecord{
-					RepositoryID: "example123",
-					Repository: &graveler.Repository{
-						StorageNamespace: "local://foo/bar",
-						CreationDate:     time.Time{},
-					},
-				},
-				SourceRef: "abc123",
-				BranchID:  "my-branch",
-				Commit: graveler.Commit{
-					Version: 1,
-				},
-				CommitID: "123456789",
-				PreRunID: "3498032432",
-				TagID:    "",
-			}, out)
+			h := newLuaActionHook(t, nil, "", true, tt.Script)
+			output, err := runHook(h)
 			if tt.ExpectedErr {
 				if err == nil {
 					t.Fatal("Expected error - got none.")
@@ -331,7 +239,6 @@ print(code .. " " .. body .. " " .. status)
 			if err != nil {
 				t.Fatalf("unexpected error running hook: %v", err)
 			}
-			output := out.String()
 			if !strings.Contains(output, tt.Expected) {
 				t.Fatalf("expected output\n%s\n------- got\n%s-------", tt.Expected, output)
 			}
@@ -395,65 +302,13 @@ func TestLuaRunTable(t *testing.T) {
 		// read input
 		data, err := os.ReadFile(testCase.Input)
 		if err != nil {
-			t.Errorf("could not load fixture %s: %v", testCase.Input, err)
+			t.Fatalf("could not load fixture %s: %v", testCase.Input, err)
 		}
 		script := string(data)
 
 		t.Run(testCase.Name, func(t *testing.T) {
-			mockStatsCollector := NewActionStatsMockCollector()
-			h, err := actions.NewLuaHook(
-				actions.ActionHook{
-					ID:   "myHook",
-					Type: actions.HookTypeLua,
-					Properties: map[string]interface{}{
-						"script": script,
-					},
-				},
-				&actions.Action{
-					Name:        "",
-					Description: "",
-					On:          nil,
-					Hooks:       nil,
-				},
-				actions.Config{
-					Enabled: true,
-					Lua: struct {
-						NetHTTPEnabled bool
-					}{
-						NetHTTPEnabled: true,
-					},
-				},
-				nil, "", &mockStatsCollector)
-			if err != nil {
-				t.Errorf("unexpedcted error: %v", err)
-			}
-			out := &bytes.Buffer{}
-			// load a user
-			ctx := context.Background()
-			ctx = auth.WithUser(ctx, &model.User{
-				CreatedAt: time.Time{},
-				Username:  "user1",
-			})
-			err = h.Run(ctx, graveler.HookRecord{
-				RunID:     "abc123",
-				EventType: graveler.EventTypePreCreateBranch,
-				Repository: &graveler.RepositoryRecord{
-					RepositoryID: "example123",
-					Repository: &graveler.Repository{
-						StorageNamespace: "local://foo/bar",
-						CreationDate:     time.Time{},
-					},
-				},
-				SourceRef: "abc123",
-				BranchID:  "my-branch",
-				Commit: graveler.Commit{
-					Version: 1,
-				},
-				CommitID:    "123456789",
-				PreRunID:    "3498032432",
-				TagID:       "tag1",
-				MergeSource: "merge-source",
-			}, out)
+			h := newLuaActionHook(t, nil, "", true, script)
+			output, err := runHook(h)
 			if testCase.Error != "" {
 				if !strings.Contains(err.Error(), testCase.Error) {
 					t.Errorf("expected error to contain: '%v', got: %v", testCase.Error, err)
@@ -462,7 +317,6 @@ func TestLuaRunTable(t *testing.T) {
 				t.Errorf("unexpected error running hook: %v", err)
 			}
 			if testCase.Output != "" {
-				output := out.String()
 				expectedOutBytes, err := os.ReadFile(testCase.Output)
 				if err != nil {
 					t.Errorf("could not load fixture %s: %v", testCase.Output, err)
@@ -598,4 +452,124 @@ func TestDescendArgs(t *testing.T) {
 			t.Fatalf("expected just value for 'key', got '%s'", secureString)
 		}
 	})
+}
+
+// TestLuaRun_LakeFS tests the lakefs Lua module.
+func TestLuaRun_LakeFS(t *testing.T) {
+	// testing server for lakefs api, we use the request validator middleware to validate the requests
+	lakeFSServer := &testLakeFSServer{}
+	swagger, err := apigen.GetSwagger()
+	if err != nil {
+		t.Fatalf("failed to load swagger spec: %s", err)
+	}
+	router := chi.NewRouter()
+	router.Use(api.OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
+		AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
+	}))
+
+	handler := apigen.HandlerFromMuxWithBaseURL(lakeFSServer, router, "/api/v1")
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	tests := []struct {
+		Name            string
+		Script          string
+		ShouldFail      bool
+		ExpectedErr     bool
+		ExpectedOutput  string
+		ExpectedRequest map[string]any
+	}{
+		{
+			Name: "update_object_user_metadata",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.update_object_user_metadata("repo", "branch", "path/to/object", {key="value", key2="value2"})
+print(code .. " " .. resp)
+`,
+			ExpectedOutput: `201`,
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"branch":     "branch",
+				"params": apigen.UpdateObjectUserMetadataParams{
+					Path: "path/to/object",
+				},
+				"body": apigen.UpdateObjectUserMetadataJSONRequestBody{
+					Set: apigen.ObjectUserMetadata{
+						AdditionalProperties: map[string]string{
+							"key":  "value",
+							"key2": "value2",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "update_object_user_metadata-no_meta",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.update_object_user_metadata("repo", "branch", "object", nil)
+print(code .. " " .. resp)
+`,
+			ExpectedErr: true,
+		},
+		{
+			Name: "update_object_user_metadata-fail",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.update_object_user_metadata("repo", "branch", "object", {key="value"})
+print(code .. " " .. resp)
+`,
+			ShouldFail:     true,
+			ExpectedOutput: "400 " + http.StatusText(http.StatusBadRequest),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			lakeFSServer.shouldFail = tt.ShouldFail
+			h := newLuaActionHook(t, ts.Config, ts.URL, true, tt.Script)
+			output, err := runHook(h)
+
+			if tt.ExpectedErr {
+				if err == nil {
+					t.Fatal("Expected error - got none.")
+				}
+				if !strings.Contains(err.Error(), tt.ExpectedOutput) {
+					t.Fatalf("Error '%s' expected to contain '%s'", err.Error(), tt.ExpectedOutput)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error running hook: %v", err)
+			}
+
+			// match the code and response
+			if !strings.Contains(output, tt.ExpectedOutput) {
+				t.Fatalf("expected output\n%s\n------- got\n%s\n-------", tt.ExpectedOutput, output)
+			}
+			if diff := cmp.Diff(tt.ExpectedRequest, lakeFSServer.lastRequest); diff != "" {
+				t.Fatalf("Unexpected request (diff): %s", diff)
+			}
+		})
+	}
+}
+
+// testLakeFSServer is a test server for the lakefs api.
+// capture the last request and return a predefined response.
+type testLakeFSServer struct {
+	apigen.ServerInterface
+	shouldFail  bool
+	lastRequest map[string]any
+}
+
+func (s *testLakeFSServer) UpdateObjectUserMetadata(w http.ResponseWriter, r *http.Request, body apigen.UpdateObjectUserMetadataJSONRequestBody, repository, branch string, params apigen.UpdateObjectUserMetadataParams) {
+	if s.shouldFail {
+		s.lastRequest = nil
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+	s.lastRequest = map[string]any{
+		"repository": repository,
+		"branch":     branch,
+		"params":     params,
+		"body":       body,
+	}
+	w.WriteHeader(http.StatusCreated)
 }

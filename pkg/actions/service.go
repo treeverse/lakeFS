@@ -38,15 +38,19 @@ var (
 	ErrIfExprNotBool = errors.New("hook 'if' expression should evaluate to a boolean")
 )
 
+type ConfigLua struct {
+	NetHTTPEnabled bool
+}
+
+type ConfigEnv struct {
+	Enabled bool
+	Prefix  string
+}
+
 type Config struct {
 	Enabled bool
-	Lua     struct {
-		NetHTTPEnabled bool
-	}
-	Env struct {
-		Enabled bool
-		Prefix  string
-	}
+	Lua     ConfigLua
+	Env     ConfigEnv
 }
 
 // StoreService is an implementation of actions.Service that saves
