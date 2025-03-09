@@ -11,7 +11,7 @@
   },
   "commit_id": "123456789",
   "event_type": "pre-create-branch",
-  "hook_id": "myHook",
+  "hook_id": "hook-TestLuaRunTable/json_dump_action",
   "merge_source": "merge-source",
   "pre_run_id": "3498032432",
   "repository_id": "example123",
