@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/Shopify/go-lua"
@@ -212,6 +213,10 @@ func statObject(l *lua.State, ctx context.Context, user *model.User, server *htt
 	// query params
 	q := req.URL.Query()
 	q.Add("path", lua.CheckString(l, 3))
+	if !l.IsNone(4) {
+		userMetadata := strconv.FormatBool(l.ToBoolean(4))
+		q.Add("user_metadata", userMetadata)
+	}
 	req.URL.RawQuery = q.Encode()
 	rr := httptest.NewRecorder()
 	server.Handler.ServeHTTP(rr, req)
