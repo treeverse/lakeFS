@@ -42,7 +42,7 @@ This is different from creating a long-living test environment used as a staging
 
 ## Try it out! Creating Dev/Test Environments with lakeFS for ETL Testing
 
-lakeFS supports UI, CLI (`lakectl` commandline utility) and several clients for the [API]({% link reference/api.md %}) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
+lakeFS supports UI, CLI (`lakectl` command-line utility) and several clients for the [API]({% link reference/api.md %}) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
 
 There are two ways that you can try out lakeFS:
 
@@ -61,13 +61,13 @@ First, let us spin up a [playground](https://lakefs.cloud/) instance. Once you h
 ![sample repository]({{ site.baseurl }}/assets/img/iso_env_myrepo.png)
 
 
-Click on `my-repo` and notice that by default, the repo has a `main` branch created and `sample_data` preloaded to work with.
+Click on `my-repo` and notice that by default, the repository has a `main` branch created and `sample_data` preloaded to work with.
 
 
 ![main branch]({{ site.baseurl }}/assets/img/iso_env_sampledata.png)
 
 
-You can create a new branch (say, `test-env`) by going to the _Branches_ tab and clicking _Create Branch_. Once it is successful, you will see two branches under the repo: `main` and `test-env`.
+You can create a new branch (say, `test-env`) by going to the _Branches_ tab and clicking _Create Branch_. Once it is successful, you will see two branches under the repository: `main` and `test-env`.
 
 
 ![test-env branch]({{ site.baseurl }}/assets/img/iso_env_testenv_branch.png)
@@ -77,7 +77,7 @@ Now you can add, modify or delete objects under the `test-env` branch without af
 
 ### Trying out lakeFS with Docker and Jupyter Notebooks
 
-This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial provides a lakeFS environment, a Jupyter notebook, and Python lakefs_client API to demonstrate integration of lakeFS with [Spark]({% link integrations/spark.md %}). You can run this tutorial on your local machine.
+This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial provides a lakeFS environment, a Jupyter notebook, and Python SDK API to demonstrate integration of lakeFS with [Spark]({% link integrations/spark.md %}). You can run this tutorial on your local machine.
 
 Follow the tutorial video below to get started with the playground and Jupyter notebook, or follow the instructions on this page.
 <iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
@@ -92,19 +92,21 @@ Follow along the steps below to create dev/test environment with lakeFS.
 
 * Start by cloning the lakeFS samples Git repository:
 
-    ```bash
+```bash
 git clone https://github.com/treeverse/lakeFS-samples.git
-    ```
+```
 
-    ```bash
+```bash
 cd lakeFS-samples
-    ```
+```
 
-* Run following commands to download and run Docker container which includes Python, Spark, Jupyter Notebook, JDK, Hadoop binaries, lakeFS Python client and Airflow (Docker image size is around 4.5GB):
+* Run following commands to download and run Docker container which includes Python, Spark, Jupyter Notebook, JDK, Hadoop binaries, lakeFS Python SDK and Airflow (Docker image size is around 4.5GB):
 
-    ```bash
-git submodule init
-git submodule update
+```bash
+git submodule init && git submodule update
+```
+
+```bash
 docker compose up
 ```
 
@@ -112,37 +114,36 @@ Open the [local Jupyter Notebook](http://localhost:8888) and go to the `spark-de
 
 #### Configuring lakeFS Python Client
 
-Setup lakeFS access credentials for the lakeFS instance running. The defaults for these that the samples repo Docker Compose uses are shown here:
+Setup lakeFS access credentials for the lakeFS instance running. The defaults for these that the samples repository Docker Compose uses are shown here:
 
-```bash
-lakefsAccessKey = 'AKIAIOSFODNN7EXAMPLE'
-lakefsSecretKey = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-lakefsEndPoint = 'http://lakefs:8000'
+```
+lakefs_access_key = 'AKIAIOSFODNN7EXAMPLE'
+lakefs_secret_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
+lakefs_endpoint = 'http://lakefs:8000'
 ```
 
 Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored. 
 
-```bash
+```
 storageNamespace = 's3://example/' 
 ```
 
-You can use lakeFS through the UI, API or `lakectl` commandline. For this use-case, we use python `lakefs_client` to run lakeFS core operations.
+You can use lakeFS through the UI, API or `lakectl` command-line. For this use-case, we use python `lakefs` to run lakeFS core operations.
 
-```bash
-import lakefs_client
-from lakefs_client import models
-from lakefs_client.client import LakeFSClient
+```python
+import lakefs
+from lakefs import Client
 
 # lakeFS credentials and endpoint
-configuration = lakefs_client.Configuration()
-configuration.username = lakefsAccessKey
-configuration.password = lakefsSecretKey
-configuration.host = lakefsEndPoint
-
-client = LakeFSClient(configuration)
+client = Client(
+    host=lakefs_endpoint,
+    username=lakefs_access_key,
+    password=lakefs_secret_key
+)
 ```
 
 lakeFS can be configured to work with Spark in two ways:
+
 * Access lakeFS using the [S3-compatible API][spark-s3a]
 * Access lakeFS using the [lakeFS-specific Hadoop FileSystem][hadoopfs]
 
@@ -150,27 +151,22 @@ lakeFS can be configured to work with Spark in two ways:
 
 To upload an object to the `my-repo`, use the following command.
 
-```bash
+```python
 import os
-contentToUpload = open('/data/lakefs_test.csv', 'rb')
-client.objects.upload_object(
-    repository="my-repo",
-    branch="main",
-    path=fileName, content=contentToUpload)
+import lakefs
+
+with open('/data/lakefs_test.csv', 'rb') as f:
+    lakefs.repository("my-repo", client=client).branch("main").object(filenName).upload(data=f.read())
 ```
 
 Once uploaded, commit the changes to the `main` branch and attach some metadata to the commit as well.
-```bash
-client.commits.commit(
-    repository="my-repo",
-    branch="main",
-    commit_creation=models.CommitCreation(
-        message='Added my first object!',
-        metadata={'using': 'python_api'}))
+
+```python
+lakefs.repository("my-repo", client=client).branch("main").commit(message="Added my first object!", metadata={'using': 'python'})
 ```
 
 In this example, we use lakeFS S3A gateway to read data from the storage bucket.
-```bash
+```python
 dataPath = f"s3a://my-repo/main/lakefs_test.csv"
 df = spark.read.csv(dataPath)
 df.show()
@@ -178,19 +174,15 @@ df.show()
 
 #### Create a Test Branch
 
-Let us start by creating a new branch `test-env` on the example repo `my-repo`.
+Let us start by creating a new branch `test-env` on the example repository `my-repo`.
 
-```bash
-client.branches.create_branch(
-    repository="my-repo",
-    branch_creation=models.BranchCreation(
-        name="test-env",
-        source="main"))
+```python
+lakefs.repository("my-repo", client=client).branch("test-env").create(source_reference="main")
 ```
 
-Now we can use Spark to write the csv file from `main` branch as a Parquet file to the `test-env` of our lakeFS repo. Suppose we accidentally write the dataframe back to "test-env" branch again, this time in append mode.
+Now we can use Spark to write the csv file from `main` branch as a Parquet file to the `test-env` of our lakeFS repository. Suppose we accidentally write the dataframe back to "test-env" branch again, this time in append mode.
 
-```bash
+```python
 df.write.mode('overwrite').parquet('s3a://my-repo/test-env/')
 df.write.mode('append').parquet('s3a://my-repo/test-env/')
 ```
