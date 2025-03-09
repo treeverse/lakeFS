@@ -516,9 +516,61 @@ Returns 2 values:
 
 Returns an object-wise diff of uncommitted changes on `branch_id`.
 
-### `lakefs/stat_object(repository_id, ref_id, path)`
+### `lakefs/stat_object(repository_id, ref_id, path[, user_metadata])`
 
 Returns a stat object for the given path under the given reference and repository.
+Returns 2 values:
+
+1. The HTTP status code returned by the lakeFS API
+2. The stat response object as a JSON string
+
+Parameters:
+
+- `repository_id`: The repository ID
+- `ref_id`: The reference to stat from (branch, tag, commit ID)
+- `path`: Path to the object to stat
+- `user_metadata`: (Optional) Boolean flag to include user metadata in response
+
+### `lakefs/update_object_user_metadata(repository_id, branch_id, path, metadata)`
+
+Update user metadata for an object.
+
+Parameters:
+
+- `repository_id`: The repository ID
+- `branch_id`: The branch containing the object
+- `path`: Path to the object to update
+- `metadata`: A table containing key-value pairs to set as user metadata
+
+Returns 2 values:
+
+1. The HTTP status code returned by the lakeFS API (204 on success)
+2. Empty on success, error on failure
+
+### `lakefs/commit(repository_id, branch_id, message [, options])`
+
+Commit changes to a branch.
+
+Parameters:
+
+- `repository_id`: The repository ID
+- `branch_id`: The branch to commit to
+- `message`: Commit message
+- `metadata`: (Optional) A table containing key-value pairs to attach as commit metadata
+- `options`: (Optional) A table containing key-value with commit options.
+  - `allow_empty`: Boolean flag to allow empty commits with no changes
+  - `metadata`: A table containing key-value pairs to attach as commit metadata.
+
+Returns 2 values:
+
+1. The HTTP status code returned by the lakeFS API
+2. A table containing the commit details:
+   - `id`: The commit ID
+   - `parents`: Array of parent commit IDs
+   - `committer`: The user who created the commit
+   - `message`: The commit message
+   - `creation_date`: Unix timestamp of commit creation
+
 
 ### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
 

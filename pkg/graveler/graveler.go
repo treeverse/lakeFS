@@ -543,6 +543,10 @@ type safeBranchWriteOptions struct {
 	MaxTries int
 }
 
+type ContextKey struct{}
+
+var ContextKeyNoHooks = ContextKey{}
+
 type CommitParams struct {
 	Committer string
 	Message   string
@@ -552,6 +556,8 @@ type CommitParams struct {
 	// SourceMetaRange - If exists, use it directly. Fail if branch has uncommitted changes
 	SourceMetaRange *MetaRangeID
 	AllowEmpty      bool
+	// NoHooks set to true will skip running hooks
+	NoHooks bool
 }
 
 // CommitOverrides is intended to be used by operations
@@ -2145,7 +2151,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 			commit.Parents = CommitParents{branch.CommitID}
 		}
 
-		if !repository.ReadOnly {
+		if !repository.ReadOnly && !params.NoHooks {
 			preRunID = g.hooks.NewRunID()
 			err = g.hooks.PreCommitHook(ctx, HookRecord{
 				RunID:      preRunID,
@@ -2214,7 +2220,7 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 
 	g.dropTokens(ctx, sealedToDrop...)
 
-	if !repository.ReadOnly {
+	if !repository.ReadOnly && !params.NoHooks {
 		postRunID := g.hooks.NewRunID()
 		err = g.hooks.PostCommitHook(ctx, HookRecord{
 			EventType:  EventTypePostCommit,

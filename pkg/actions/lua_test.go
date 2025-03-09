@@ -483,7 +483,7 @@ func TestLuaRun_LakeFS(t *testing.T) {
 			Name: "update_object_user_metadata",
 			Script: `local lakefs = require("lakefs")
 local code, resp = lakefs.update_object_user_metadata("repo", "branch", "path/to/object", {key="value", key2="value2"})
-print(code .. " " .. resp)
+print(code, resp)
 `,
 			ExpectedOutput: "201",
 			ExpectedRequest: map[string]any{
@@ -506,7 +506,7 @@ print(code .. " " .. resp)
 			Name: "update_object_user_metadata-no_meta",
 			Script: `local lakefs = require("lakefs")
 local code, resp = lakefs.update_object_user_metadata("repo", "branch", "object", nil)
-print(code .. " " .. resp)
+print(code, resp)
 `,
 			ExpectedErr: true,
 		},
@@ -673,7 +673,7 @@ print(code, resp)
 local code, resp = lakefs.commit("repo", "branch1", "commit message")
 print(code, resp)
 `,
-			ExpectedOutput: "200\ttable:",
+			ExpectedOutput: "201\ttable:",
 			ExpectedRequest: map[string]any{
 				"repository": "repo",
 				"branch":     "branch1",
@@ -684,10 +684,10 @@ print(code, resp)
 		{
 			Name: "commit-metadata",
 			Script: `local lakefs = require("lakefs")
-local code, resp = lakefs.commit("repo", "branch1", "commit message", {key="value"})
+local code, resp = lakefs.commit("repo", "branch1", "commit message", {metadata={key="value"}})
 print(code, resp)
 `,
-			ExpectedOutput: "200\ttable:",
+			ExpectedOutput: "201\ttable:",
 			ExpectedRequest: map[string]any{
 				"repository": "repo",
 				"branch":     "branch1",
@@ -697,6 +697,23 @@ print(code, resp)
 					Metadata: &apigen.CommitCreation_Metadata{
 						AdditionalProperties: map[string]string{"key": "value"},
 					},
+				},
+			},
+		},
+		{
+			Name: "commit-allow-empty",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.commit("repo", "branch1", "commit message", {allow_empty=true})
+print(code, resp)
+`,
+			ExpectedOutput: "201\ttable:",
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"branch":     "branch1",
+				"params":     apigen.CommitParams{},
+				"body": apigen.CommitJSONRequestBody{
+					Message:    "commit message",
+					AllowEmpty: apiutil.Ptr(true),
 				},
 			},
 		},
@@ -948,6 +965,6 @@ func (s *testLakeFSServer) Commit(w http.ResponseWriter, _ *http.Request, body a
 			AdditionalProperties: body.Metadata.AdditionalProperties,
 		}
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(resp)
 }

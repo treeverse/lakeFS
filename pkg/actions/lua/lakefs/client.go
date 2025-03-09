@@ -18,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -45,6 +46,9 @@ func newLakeFSRequest(ctx context.Context, user *model.User, method, reqURL stri
 		body = bytes.NewReader(data)
 	}
 
+	// Set no_hooks to true to disable recursive hooks
+	ctx = context.WithValue(ctx, graveler.ContextKeyNoHooks, true)
+
 	// Chi stores its routing information on the request context which breaks this sub-request's routing.
 	// We explicitly nullify any existing routing information before creating the new request
 	ctx = context.WithValue(ctx, chi.RouteCtxKey, nil)
@@ -71,8 +75,11 @@ func getLakeFSJSONResponse(l *lua.State, server *http.Server, request *http.Requ
 	rr := httptest.NewRecorder()
 	server.Handler.ServeHTTP(rr, request)
 	l.PushInteger(rr.Code)
+	if rr.Body.Len() == 0 {
+		return 1
+	}
 
-	var output interface{}
+	var output any
 	check(l, json.Unmarshal(rr.Body.Bytes(), &output))
 	return 1 + util.DeepPush(l, output)
 }
@@ -85,7 +92,7 @@ func updateObjectUserMetadata(l *lua.State, ctx context.Context, user *model.Use
 	metadata, err := util.PullStringTable(l, 4)
 	check(l, err)
 
-	data, err := json.Marshal(map[string]interface{}{
+	data, err := json.Marshal(map[string]any{
 		"set": metadata,
 	})
 	check(l, err)
@@ -101,11 +108,7 @@ func updateObjectUserMetadata(l *lua.State, ctx context.Context, user *model.Use
 	q.Add("path", objPath)
 	req.URL.RawQuery = q.Encode()
 
-	rr := httptest.NewRecorder()
-	server.Handler.ServeHTTP(rr, req)
-	l.PushInteger(rr.Code)
-	l.PushString(rr.Body.String())
-	return 2
+	return getLakeFSJSONResponse(l, server, req)
 }
 
 // createTag handles tag creation
@@ -257,22 +260,34 @@ func commitBranch(l *lua.State, ctx context.Context, user *model.User, server *h
 	branch := lua.CheckString(l, 2)
 	message := lua.CheckString(l, 3)
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"message": message,
 	}
 
-	// Handle optional metadata if provided (4th parameter)
+	// Handle optional parameters table if provided (4th parameter)
 	if !l.IsNone(4) {
-		metadata, err := util.PullStringTable(l, 4)
-		if err != nil {
-			check(l, err)
+		table, err := util.PullTable(l, 4)
+		check(l, err)
+		tableMap := table.(map[string]interface{})
+		// check if allow_empty is a boolean, error if not
+		if allowEmpty, ok := tableMap["allow_empty"]; ok {
+			if allowEmptyBool, ok := allowEmpty.(bool); ok {
+				data["allow_empty"] = allowEmptyBool
+			} else {
+				lua.Errorf(l, "allow_empty must be a boolean")
+				panic("unreachable")
+			}
 		}
-		data["metadata"] = metadata
-	}
 
-	// Handle optional source metadata flag (5th parameter)
-	if !l.IsNone(5) {
-		data["force_if_not_exists"] = l.ToBoolean(5)
+		// check if metadata is a table, error if not
+		if metadata, ok := tableMap["metadata"]; ok {
+			if metadataTable, ok := metadata.(map[string]any); ok {
+				data["metadata"] = metadataTable
+			} else {
+				lua.Errorf(l, "metadata must be a table")
+				panic("unreachable")
+			}
+		}
 	}
 
 	jsonData, err := json.Marshal(data)
