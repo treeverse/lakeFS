@@ -23,7 +23,7 @@ from lakefs.models import ServerStorageConfiguration
 
 if TYPE_CHECKING:
     import boto3
- 
+
 DEFAULT_REGION = "us-east-1"
 SINGLE_STORAGE_ID = ""
 

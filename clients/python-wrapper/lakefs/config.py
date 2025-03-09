@@ -84,7 +84,7 @@ class ClientConfig(Configuration):
         self.username = key_env if key_env is not None else self.credentials.access_key_id
         self.password = secret_env if secret_env is not None else self.credentials.secret_access_key
         self.access_token = access_token_env
-        
+
         if self.access_token is not None and len(self.host) > 0:
             found = True
 
