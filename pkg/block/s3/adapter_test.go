@@ -29,7 +29,7 @@ func getS3BlockAdapter(t *testing.T, opts []s3a.AdapterOption) *s3a.Adapter {
 	}
 	opts = append(opts, s3a.WithNowFactory(blocktest.NowMockDefault))
 
-	adapter, err := s3a.NewAdapter(context.Background(), s3params, opts...)
+	adapter, err := s3a.NewAdapter(context.Background(), s3params, nil, opts...)
 	if err != nil {
 		t.Fatal("cannot create s3 adapter: ", err)
 	}

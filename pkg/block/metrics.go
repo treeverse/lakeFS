@@ -4,8 +4,11 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
@@ -133,4 +136,60 @@ func (m *MetricsAdapter) GetRegion(ctx context.Context, storageID, storageNamesp
 
 func (m *MetricsAdapter) RuntimeStats() map[string]string {
 	return m.adapter.RuntimeStats()
+}
+
+type Histograms struct {
+	durationHistograms    *prometheus.HistogramVec
+	requestSizeHistograms *prometheus.HistogramVec
+}
+
+type AdapterMetricsHandler struct {
+	Histograms
+	metricsID *string
+}
+
+func InitHistograms(name string, withMetricsID bool) Histograms {
+	labelNames := []string{"operation", "error"}
+	if withMetricsID {
+		labelNames = append(labelNames, "metrics_id")
+	}
+	var durationHistograms = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name: name + "_operation_duration_seconds",
+			Help: "durations of outgoing " + name + " operations",
+		},
+		labelNames,
+	)
+	var requestSizeHistograms = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    name + "_operation_size_bytes",
+			Help:    "handled sizes of outgoing " + name + " operations",
+			Buckets: prometheus.ExponentialBuckets(1, 10, 10), //nolint: mnd
+		},
+		labelNames,
+	)
+
+	return Histograms{
+		durationHistograms:    durationHistograms,
+		requestSizeHistograms: requestSizeHistograms,
+	}
+}
+
+func BuildAdapterMetricsHandler(histograms Histograms, metricsID *string) AdapterMetricsHandler {
+	return AdapterMetricsHandler{
+		Histograms: histograms,
+		metricsID:  metricsID,
+	}
+}
+
+func (s AdapterMetricsHandler) ReportMetrics(operation string, start time.Time, sizeBytes *int64, err *error) {
+	isErrStr := strconv.FormatBool(*err != nil)
+	labels := []string{operation, isErrStr}
+	if s.metricsID != nil {
+		labels = append(labels, *s.metricsID)
+	}
+	s.durationHistograms.WithLabelValues(labels...).Observe(time.Since(start).Seconds())
+	if sizeBytes != nil {
+		s.requestSizeHistograms.WithLabelValues(labels...).Observe(float64(*sizeBytes))
+	}
 }
