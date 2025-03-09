@@ -19,6 +19,7 @@ _LAKECTL_ACCESS_KEY_ID_ENV = "LAKECTL_CREDENTIALS_ACCESS_KEY_ID"
 _LAKECTL_SECRET_ACCESS_KEY_ENV = "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"
 _LAKECTL_CREDENTIALS_ACCESS_TOKEN = "LAKECTL_CREDENTIALS_ACCESS_TOKEN"
 
+
 class ClientConfig(Configuration):
     """
     Configuration class for the SDK Client.
@@ -68,9 +69,8 @@ class ClientConfig(Configuration):
                 self.server = ClientConfig.Server(**data["server"])
                 self.credentials = ClientConfig.Credentials(**data["credentials"])
             found = True
-        except KeyError:
-            self.credentials = ClientConfig.Credentials(access_key_id="", secret_access_key="")
-
+        except KeyError:	# in case credentials or server is not elaborated
+            pass
         except FileNotFoundError:  # File not found, fallback to env variables
             self.server = ClientConfig.Server(endpoint_url="")
             self.credentials = ClientConfig.Credentials(access_key_id="", secret_access_key="")
@@ -83,11 +83,12 @@ class ClientConfig(Configuration):
         self.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
         self.username = key_env if key_env is not None else self.credentials.access_key_id
         self.password = secret_env if secret_env is not None else self.credentials.secret_access_key
-        if len(self.username) > 0 and len(self.password) > 0:
+        self.access_token = access_token_env
+        
+        if self.access_token is not None and len(self.host) > 0:
             found = True
 
-        self.access_token = access_token_env
-        if self.access_token is not None:
+        if len(self.username) > 0 and len(self.password) > 0:
             found = True
 
         if not found:
