@@ -15,9 +15,10 @@ The server itself is stateless, meaning you can easily add more instances to han
 ![Architecture]({{ site.baseurl }}/assets/img/architecture.png)
 
 {% include toc_2-3.html %}
+
 ### Object Storage
 
-lakeFS stores data in object stores. Those supported include: 
+lakeFS manages data stored on various object storage platforms, including: 
 
 - AWS S3
 - Google Cloud Storage
@@ -25,6 +26,10 @@ lakeFS stores data in object stores. Those supported include:
 - MinIO
 - NetApp StorageGRID
 - Ceph
+- Any other S3-compatible storage
+
+With [lakeFS Enterprise](../enterprise), you can leverage [multiple storage backend support](../howto/multiple-storage-backends.md)
+to manage data across multiple storage locations, including on-prem, hybrid, and multi-cloud environments.
 
 ### Metadata Storage
 
