@@ -483,7 +483,7 @@ func TestLuaRun_LakeFS(t *testing.T) {
 			Name: "update_object_user_metadata",
 			Script: `local lakefs = require("lakefs")
 local code, resp = lakefs.update_object_user_metadata("repo", "branch", "path/to/object", {key="value", key2="value2"})
-print(code .. " " .. resp)
+print(code, resp)
 `,
 			ExpectedOutput: "201",
 			ExpectedRequest: map[string]any{
@@ -506,7 +506,7 @@ print(code .. " " .. resp)
 			Name: "update_object_user_metadata-no_meta",
 			Script: `local lakefs = require("lakefs")
 local code, resp = lakefs.update_object_user_metadata("repo", "branch", "object", nil)
-print(code .. " " .. resp)
+print(code, resp)
 `,
 			ExpectedErr: true,
 		},
@@ -662,6 +662,65 @@ print(code, resp)
 			Name: "diff_branch-fail",
 			Script: `local lakefs = require("lakefs")
 local code, resp = lakefs.diff_branch("repo", "branch1")
+print(code, resp)
+`,
+			ShouldFail:     true,
+			ExpectedOutput: "400",
+		},
+		{
+			Name: "commit",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.commit("repo", "branch1", "commit message")
+print(code, resp)
+`,
+			ExpectedOutput: "201\ttable:",
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"branch":     "branch1",
+				"params":     apigen.CommitParams{},
+				"body":       apigen.CommitJSONRequestBody{Message: "commit message"},
+			},
+		},
+		{
+			Name: "commit-metadata",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.commit("repo", "branch1", "commit message", {metadata={key="value"}})
+print(code, resp)
+`,
+			ExpectedOutput: "201\ttable:",
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"branch":     "branch1",
+				"params":     apigen.CommitParams{},
+				"body": apigen.CommitJSONRequestBody{
+					Message: "commit message",
+					Metadata: &apigen.CommitCreation_Metadata{
+						AdditionalProperties: map[string]string{"key": "value"},
+					},
+				},
+			},
+		},
+		{
+			Name: "commit-allow-empty",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.commit("repo", "branch1", "commit message", {allow_empty=true})
+print(code, resp)
+`,
+			ExpectedOutput: "201\ttable:",
+			ExpectedRequest: map[string]any{
+				"repository": "repo",
+				"branch":     "branch1",
+				"params":     apigen.CommitParams{},
+				"body": apigen.CommitJSONRequestBody{
+					Message:    "commit message",
+					AllowEmpty: apiutil.Ptr(true),
+				},
+			},
+		},
+		{
+			Name: "commit-fail",
+			Script: `local lakefs = require("lakefs")
+local code, resp = lakefs.commit("repo", "branch1", "commit message")
 print(code, resp)
 `,
 			ShouldFail:     true,
@@ -877,5 +936,35 @@ func (s *testLakeFSServer) DiffBranch(w http.ResponseWriter, _ *http.Request, re
 		},
 	}
 	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func (s *testLakeFSServer) Commit(w http.ResponseWriter, _ *http.Request, body apigen.CommitJSONRequestBody, repository, branch string, params apigen.CommitParams) {
+	if s.shouldFail {
+		s.lastRequest = nil
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"test error"}`))
+		return
+	}
+	s.lastRequest = map[string]any{
+		"repository": repository,
+		"branch":     branch,
+		"params":     params,
+		"body":       body,
+	}
+	resp := apigen.Commit{
+		Id:           "commit1",
+		Message:      body.Message,
+		Committer:    "tester",
+		CreationDate: time.Now().Unix(),
+		MetaRangeId:  "meta1",
+		Parents:      []string{"parent1"},
+	}
+	if body.Metadata != nil {
+		resp.Metadata = &apigen.Commit_Metadata{
+			AdditionalProperties: body.Metadata.AdditionalProperties,
+		}
+	}
+	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(resp)
 }
