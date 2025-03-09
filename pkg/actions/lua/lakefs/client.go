@@ -273,7 +273,7 @@ func commitBranch(l *lua.State, ctx context.Context, user *model.User, server *h
 	jsonData, err := json.Marshal(data)
 	check(l, err)
 
-	reqURL, err := url.JoinPath("/repositories", repo, "branches", branch, "commit")
+	reqURL, err := url.JoinPath("/repositories", repo, "branches", branch, "commits")
 	check(l, err)
 
 	req, err := newLakeFSJSONRequest(ctx, user, http.MethodPost, reqURL, jsonData)
