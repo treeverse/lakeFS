@@ -25,23 +25,15 @@ Since the lakeFS API supports exporting the underlying GCS address of versioned 
 
 # Requirements:
 # google-cloud-aiplatform>=1.31.0
-# lakefs-client>=0.107.0
+# lakefs>=1.0.0
 
 import csv
 from pathlib import PosixPath
 from io import StringIO
 
-import lakefs_client
-from lakefs_client.client import LakeFSClient
+import lakefs
 from google.cloud import storage
 from google.cloud import aiplatform
-
-# lakeFS connection details
-configuration = lakefs_client.Configuration()
-configuration.username = 'AKIAIOSFODNN7EXAMPLE'
-configuration.password = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
-configuration.host = 'https://lakefs.example.com/'
-client = LakeFSClient(configuration)
 
 # Dataset configuration
 lakefs_repo = 'my-repository'
@@ -54,19 +46,12 @@ import_bucket = 'underlying-gcs-bucket'
 # produce import file for Vertex's SDK
 buf = StringIO()
 csv_writer = csv.writer(buf)
-has_more = True
-next_offset = ""
-while has_more:
-    files = client.objects_api.list_objects(
-        lakefs_repo, lakefs_ref, prefix=img_dataset, after=next_offset)
-    for r in files.get('results'):
-        p = PosixPath(r.path)
-        csv_writer.writerow((r.physical_address, p.parent.name))
-    has_more = files.get('pagination').get('has_more')
-    next_offset = files.get('pagination').get('next_offset')
+for obj in lakefs.repository(lakefs_repo).ref(lakefs_ref).objects(prefix=img_dataset):
+    p = PosixPath(obj.path)
+    csv_writer.writerow((obj.physical_address, p.parent.name))
 
 # spit out CSV
-print('generated path and labels CSV')
+print('Generated path and labels CSV')
 buf.seek(0)
 
 # Write it to storage
@@ -76,9 +61,9 @@ blob = bucket.blob(f'vertex/imports/{lakefs_repo}/{lakefs_ref}/labels.csv')
 with blob.open('w') as out:
     out.write(buf.read())
 
-print(f'wrote csv to gs: gs://{import_bucket}/vertex/imports/{lakefs_repo}/{lakefs_ref}/labels.csv')
+print(f'Wrote CSV to gs://{import_bucket}/vertex/imports/{lakefs_repo}/{lakefs_ref}/labels.csv')
 
-# import in vertex, as dataset
+# import in Vertex, as dataset
 print('Importing dataset...')
 ds = aiplatform.ImageDataset.create(
     display_name=f'{lakefs_repo}_{lakefs_ref}_imgs',
@@ -146,7 +131,6 @@ To consume the symlink-ed files, we can read them normally from the mount:
 ```python
 with open('/gcs/my-bucket/exports/my-repo/branches/main/datasets/images/001.jpg') as f:
     image_data = f.read()
-
 ```
 
 Previously exported commits are also readable, if we exported them in the past:
@@ -155,7 +139,6 @@ Previously exported commits are also readable, if we exported them in the past:
 commit_id = 'abcdef123deadbeef567'
 with open(f'/gcs/my-bucket/exports/my-repo/commits/{commit_id}/datasets/images/001.jpg') as f:
     image_data = f.read()
-
 ```
 
 ### Considerations when using lakeFS with Cloud Storage Fuse

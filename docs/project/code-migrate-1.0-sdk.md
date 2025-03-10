@@ -75,7 +75,8 @@ Here are the newly added or updated operations:
 
 ### Introduction
 
-If you are using the lakeFS client for Java or for any other JVM-based language, be aware that the current package is not stable with respect to minor version upgrades. Transitioning from `io.lakefs:lakefs-client` to `io.lakefs:sdk` will necessitate rewriting your API calls to fit the new design paradigm.
+If you are using the lakeFS client for Java or for any other JVM-based language, be aware that the current package is not stable with respect to minor version upgrades.
+Transitioning from `io.lakefs:lakefs-client` to `io.lakefs:sdk` will necessitate rewriting your API calls to fit the new design paradigm.
 
 
 ### Problem with the Old Style
@@ -130,7 +131,8 @@ For an illustrative example of the transition between styles, you can view the c
 
 ### Introduction
 
-If you are using the lakeFS client for Python, be aware that the current package is not stable with respect to minor version upgrades. Transitioning from `lakefs-client` to `lakefs-sdk` will necessitate rewriting your API calls.
+If you continue using the Python `lakefs-client` package for lakeFS, it's important to note that the package has reached its end of support with minor version updates.
+You need to switch from `lakefs-client` to `lakefs-sdk`, which will require rewriting your API calls.
 
 ### Here's a breakdown of the changes:
 
@@ -141,18 +143,21 @@ If you are using the lakeFS client for Python, be aware that the current package
 3. **`get_object`** **API call**: The return value of `client.get_object(...)` is a `bytearray` containing the content of the object.
 4. `**client.{operation}_api**`**:** The `lakefs-client` package’s `LakeFSClient` class’s deprecation-marked operations (`client.{operation}`) will no longer be available in the `lakefs-sdk` package’s `LakeFSClient` class. In their place, the `client.{operation}_api` should be used.
 5. **Minimum Python Version**: 3.7
-6. **Fetching results from response objects**: Instead of fetching the required results properties from a dictionary using `response_result.get_property(prop_name)`, the response objects will include domain specific entities, thus referring to the properties in the `results` of the response - `response_result.prop_name`. For example, instead of:
+6. **Fetching results from response objects**: Instead of fetching the required results properties from a dictionary using `response_result.get_property(prop_name)`, the response objects will include domain specific entities, thus referring to the properties in the `results` of the response - `response_result.prop_name`.
 
-```python
-response = lakefs_client.branches.diff_branch(repository='repo', branch='main')
-diff = response.results[0] # 'results' is a 'DiffList' object
-path = diff.get_property('path') # 'diff' is a dictionary
-```
+   For example, instead of:
 
-You should use:
+   ```python
+   response = lakefs_client.branches.diff_branch(repository='repo', branch='main')
+   diff = response.results[0] # 'results' is a 'DiffList' object
+   path = diff.get_property('path') # 'diff' is a dictionary
+   ```
 
-```python
-response = lakefs_client.branches_api.diff_branch(repository='repo', branch='main')
-diff = response.results[0] # 'results' is a 'DiffList' object
-path = diff.path # 'diff' is a 'Diff' object
-```
+   You should use:
+
+   ```python
+   response = lakefs_client.branches_api.diff_branch(repository='repo', branch='main')
+   diff = response.results[0] # 'results' is a 'DiffList' object
+   path = diff.path # 'diff' is a 'Diff' object
+   ```
+
