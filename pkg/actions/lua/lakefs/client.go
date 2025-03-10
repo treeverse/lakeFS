@@ -18,7 +18,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/version"
 )
 
@@ -45,9 +44,6 @@ func newLakeFSRequest(ctx context.Context, user *model.User, method, reqURL stri
 	if data != nil {
 		body = bytes.NewReader(data)
 	}
-
-	// Set no_hooks to true to disable recursive hooks
-	ctx = context.WithValue(ctx, graveler.ContextKeyNoHooks, true)
 
 	// Chi stores its routing information on the request context which breaks this sub-request's routing.
 	// We explicitly nullify any existing routing information before creating the new request

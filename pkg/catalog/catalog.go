@@ -1294,17 +1294,12 @@ func (c *Catalog) Commit(ctx context.Context, repositoryID, branch, message, com
 		return nil, err
 	}
 
-	noHooks := false
-	if _, ok := ctx.Value(graveler.ContextKeyNoHooks).(bool); ok {
-		noHooks = true
-	}
 	p := graveler.CommitParams{
 		Committer:  committer,
 		Message:    message,
 		Date:       date,
 		Metadata:   map[string]string(metadata),
 		AllowEmpty: allowEmpty,
-		NoHooks:    noHooks,
 	}
 	if sourceMetarange != nil {
 		x := graveler.MetaRangeID(*sourceMetarange)
