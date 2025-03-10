@@ -1,63 +1,130 @@
-import React, {createContext, useCallback, useEffect, useState} from "react";
-import {Outlet} from "react-router-dom";
-import { useOutletContext } from "react-router-dom";
+import React, {createContext, useCallback, useEffect, useMemo, useState} from "react";
+import {Outlet, useOutletContext} from "react-router-dom";
 
 import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
 
-import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
+import {useAPI} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
 import useUser from "../../../lib/hooks/user";
 import {ConfirmationButton} from "../../../lib/components/modals";
 import {EntityActionModal} from "../../../lib/components/auth/forms";
 import {Paginator} from "../../../lib/components/pagination";
-import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
 import {
     ActionGroup,
     ActionsBar,
+    AlertError,
     Checkbox,
     DataTable,
-    AlertError,
     FormattedDate,
     Loading,
-    RefreshButton,
-    useDebouncedState
+    RefreshButton
 } from "../../../lib/components/controls";
 import validator from "validator/es";
-import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from "../validation";
-import { resolveUserDisplayName } from "../../../lib/utils";
+import {disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE} from "../validation";
+import {resolveUserDisplayName} from "../../../lib/utils";
 import {SearchIcon} from "@primer/octicons-react";
 import InputGroup from "react-bootstrap/InputGroup";
-import Form from "react-bootstrap/Form";
+import {allUsersFromLakeFS} from "../../../lib/components/auth/users";
+import {useRouter} from "../../../lib/hooks/router";
 
+const DEFAULT_DEBOUNCE_MS = 300;
+const DEFAULT_LISTING_AMOUNT = 100;
+const DECIMAL_RADIX = 10;
 const USER_NOT_FOUND = "unknown";
 export const GetUserEmailByIdContext = createContext();
 
 
-const UsersContainer = ({refresh, setRefresh}) => {
+const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     const { user } = useUser();
     const currentUser = user;
 
     const router = useRouter();
-    const after = (router.query.after) ? router.query.after : "";
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [showInvite, setShowInvite] = useState(false);
-    const prefix = (router.query.prefix) ? router.query.prefix : "";
 
-    useEffect(() => { setSelected([]); }, [refresh, after]);
+    const routerSearchPrefix = (router.query.searchPrefix) ? router.query.searchPrefix : "";
+    const routerUserIdxFromAllUsers = (router.query.userIdxFromAllUsers)
+        ? parseInt(router.query.userIdxFromAllUsers, DECIMAL_RADIX) : 0;
+    const routerHasMorePages = (router.query.hasMorePages) ? router.query.hasMorePages : "false";
+
+    const [searchInput, setSearchInput] = useState(routerSearchPrefix);
+    const [searchPrefix, setSearchPrefix] = useState(routerSearchPrefix);
+    const [prevSearchPrefix, setPrevSearchPrefix] = useState(searchPrefix);
+    const [prevAllUsersLen, setPrevAllUsersLen] = useState(0);
+    const [userIdxFromAllUsers, setUserIdxFromAllUsers] = useState(routerUserIdxFromAllUsers);
+    const [hasMorePages, setHasMorePages] = useState(routerHasMorePages);
+    const [filteredUsers, setFilteredUsers] = useState([]);
+
+
+    useEffect(() => { setSelected([]); }, [refresh]);
 
     const authCapabilities = useAPI(() => auth.getAuthCapabilities());
 
-    const [searchPrefix, setSearchPrefix] = useDebouncedState(
-        prefix,
-        (search) => router.push({pathname: '/auth/users', query: {prefix: search}})
-    );
+    useEffect(() => {
+        if (searchInput !== searchPrefix) {
+            // Update the search prefix if the user hasn't typed for 300ms.
+            const handler = setTimeout(() => {
+                setPrevSearchPrefix(searchPrefix);
+                setSearchPrefix(searchInput);
+                setUserIdxFromAllUsers(0);
+            }, DEFAULT_DEBOUNCE_MS);
+            return () => clearTimeout(handler);
+        }
+    }, [searchInput]);
 
-    const { results, loading, error, nextPage } = useAPIWithPagination( () => {
-        return auth.listUsers(prefix, after);
-    }, [refresh, prefix, after]);
+    const handleChange = (e) => { setSearchInput(e.target.value); };
+
+    useEffect(() => {
+        if (allUsers) {
+            if (prevAllUsersLen === 0) {
+                setPrevAllUsersLen(allUsers.length)
+            }
+
+            let filtered;
+            const toFilterByPrevFilteredUsers = prevAllUsersLen === allUsers.length && filteredUsers.length > 0
+                && searchPrefix.startsWith(prevSearchPrefix) && searchPrefix.length > prevSearchPrefix.length
+
+            if (toFilterByPrevFilteredUsers) {
+                filtered = filteredUsers.filter((user) =>
+                    resolveUserDisplayName(user).toLowerCase().startsWith(searchPrefix.toLowerCase())
+                );
+            } else {
+                filtered = allUsers.filter((user) =>
+                    resolveUserDisplayName(user).toLowerCase().startsWith(searchPrefix.toLowerCase())
+                );
+            }
+
+            setFilteredUsers(filtered);
+            setHasMorePages(((userIdxFromAllUsers + DEFAULT_LISTING_AMOUNT) < filtered.length) ? "true" : "false");
+            setPrevAllUsersLen(allUsers.length)
+        }
+    }, [allUsers, searchPrefix]);
+
+    const paginatedResults = useMemo(() => {
+        setHasMorePages(((userIdxFromAllUsers + DEFAULT_LISTING_AMOUNT) < filteredUsers.length) ? "true" : "false");
+        return filteredUsers.slice(userIdxFromAllUsers, userIdxFromAllUsers + DEFAULT_LISTING_AMOUNT);
+    }, [filteredUsers, userIdxFromAllUsers]);
+
+    useEffect(() => {
+        router.push({
+            pathname: "/auth/users",
+            query: { ...router.query, searchPrefix, userIdxFromAllUsers, hasMorePages }
+        });
+    }, [searchPrefix, userIdxFromAllUsers, hasMorePages]);
+
+
+    const userIdxFromAllUsersFromRouterForPagination = router.query.userIdxFromAllUsers
+        ? parseInt(router.query.userIdxFromAllUsers, DECIMAL_RADIX) : 0;
+    const hasMorePagesFromRouterForPagination = router.query.hasMorePages === "true";
+
+    const after = userIdxFromAllUsersFromRouterForPagination === 0
+        ? "" : String(userIdxFromAllUsersFromRouterForPagination);
+    const nextPage = hasMorePagesFromRouterForPagination
+        ? String(userIdxFromAllUsersFromRouterForPagination + DEFAULT_LISTING_AMOUNT) : null;
 
     if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
@@ -80,16 +147,15 @@ const UsersContainer = ({refresh, setRefresh}) => {
                 <ActionGroup orientation="right">
                     <InputGroup>
                         <Form.Control
-                            placeholder="Find a user..."
                             autoFocus
-                            value={searchPrefix}
-                            onChange={event => setSearchPrefix(event.target.value)}
+                            placeholder="Search users..."
+                            value={searchInput}
+                            onChange={handleChange}
                         />
                         <InputGroup.Text>
                             <SearchIcon/>
                         </InputGroup.Text>
                     </InputGroup>
-
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
@@ -120,8 +186,8 @@ const UsersContainer = ({refresh, setRefresh}) => {
                 onHide={() => setShowInvite(false)}
                 onAction={async (userEmail) => {
                     if (!validator.isEmail(userEmail)) {
-                    throw new Error("Invalid email address");
-                }
+                        throw new Error("Invalid email address");
+                    }
                     await auth.createUser(userEmail, true);
                     setSelected([]);
                     setShowInvite(false);
@@ -133,7 +199,7 @@ const UsersContainer = ({refresh, setRefresh}) => {
             />
 
             <DataTable
-                results={results}
+                results={paginatedResults}
                 headers={['', 'User ID', 'Created At']}
                 keyFn={user => user.id}
                 rowFn={user => [
@@ -152,12 +218,14 @@ const UsersContainer = ({refresh, setRefresh}) => {
             />
 
             <Paginator
-                nextPage={nextPage}
                 after={after}
-                onPaginate={after => {
-                    const query = {after};
-                    if (router.query.prefix) query.prefix = router.query.prefix;
-                    router.push({pathname: '/auth/users', query})
+                nextPage={nextPage}
+                onPaginate={(newOffset) => {
+                    if (newOffset === "") {
+                        setUserIdxFromAllUsers(0);
+                    } else {
+                        setUserIdxFromAllUsers(parseInt(newOffset, DECIMAL_RADIX));
+                    }
                 }}
             />
         </>
@@ -192,12 +260,15 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
 }
 
 export const UsersPage = () => {
-    const { setActiveTab, refresh, setRefresh } = useOutletContext();
+    const { setActiveTab, refresh, setRefresh, allUsers, loading, error } = useOutletContext();
     useEffect(() => setActiveTab("users"), [setActiveTab]);
     return (
         <UsersContainer
             refresh={refresh}
             setRefresh={setRefresh}
+            allUsers={allUsers}
+            loading={loading}
+            error={error}
         />
     );
 };
@@ -205,19 +276,13 @@ export const UsersPage = () => {
 const UsersIndexPage = () => {
     const [setActiveTab] = useOutletContext();
     const [refresh, setRefresh] = useState(false);
-    const [usersList, setUsersList] = useState([]);
-    const router = useRouter();
-    const after = (router.query.after) ? router.query.after : "";
-    const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listUsers('', after);
-    }, [after, refresh]);
 
-    useEffect(() => {
-        setUsersList(results);
-    }, [results, refresh]);
+    const { response: allUsers, loading, error } = useAPI(() => {
+        return allUsersFromLakeFS(resolveUserDisplayName);
+    }, [refresh]);
 
     const getUserEmailById = useCallback((id) => {
-        const userRecord = usersList.find(user => user.id === id);
+        const userRecord = allUsers?.find(user => user.id === id);
         // return something, so we don't completely break the state
         // this can help us track down issues later on
         if (!userRecord) {
@@ -225,11 +290,11 @@ const UsersIndexPage = () => {
         }
 
         return userRecord.email || userRecord.id;
-    }, [usersList]);
+    }, [allUsers]);
 
     return (
         <GetUserEmailByIdContext.Provider value={getUserEmailById}>
-            <Outlet context={{setActiveTab, refresh, loading, error, nextPage, setRefresh, usersList, getUserEmailById}} />
+            <Outlet context={{ setActiveTab, refresh, setRefresh, allUsers, loading, error, getUserEmailById }} />
         </GetUserEmailByIdContext.Provider>
     )
 }
