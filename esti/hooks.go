@@ -59,7 +59,8 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string) {
 	})
 
 	t.Log("check runs are sorted in descending order")
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", 13, nil)
+	const expectedRunCount = 13
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", expectedRunCount, nil)
 	require.Equal(t, len(runs.Results), len(htd.data))
 	for i, run := range runs.Results {
 		valIdx := len(htd.data) - (i + 1)
@@ -190,7 +191,8 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, htd *hooksV
 	}, postMergeEvent)
 
 	t.Log("List repository runs", mergeRef)
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, mergeRef, 2, nil)
+	const expectedRunCount = 2
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, mergeRef, expectedRunCount, nil)
 	eventType := map[string]bool{
 		"pre-merge":  true,
 		"post-merge": true,
@@ -434,7 +436,8 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 	}
 
 	// wait 8 seconds to let the actions cache expire.
-	time.Sleep(8 * time.Second)
+	const cacheExpireTime = 8 * time.Second
+	time.Sleep(cacheExpireTime) // nolint:gomnd
 }
 
 type webhookEventInfo struct {
