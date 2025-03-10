@@ -17,7 +17,7 @@ _LAKECTL_YAML_PATH = os.path.join(Path.home(), ".lakectl.yaml")
 _LAKECTL_ENDPOINT_ENV = "LAKECTL_SERVER_ENDPOINT_URL"
 _LAKECTL_ACCESS_KEY_ID_ENV = "LAKECTL_CREDENTIALS_ACCESS_KEY_ID"
 _LAKECTL_SECRET_ACCESS_KEY_ENV = "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"
-_LAKECTL_CREDENTIALS_ACCESS_TOKEN = "LAKECTL_CREDENTIALS_ACCESS_TOKEN"
+_SESSION_TOKEN = "SESSION_TOKEN"
 
 
 class ClientConfig(Configuration):
@@ -78,7 +78,7 @@ class ClientConfig(Configuration):
         endpoint_env = os.getenv(_LAKECTL_ENDPOINT_ENV)
         key_env = os.getenv(_LAKECTL_ACCESS_KEY_ID_ENV)
         secret_env = os.getenv(_LAKECTL_SECRET_ACCESS_KEY_ENV)
-        access_token_env = os.getenv(_LAKECTL_CREDENTIALS_ACCESS_TOKEN)
+        access_token_env = os.getenv(_SESSION_TOKEN)
 
         self.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
         self.username = key_env if key_env is not None else self.credentials.access_key_id
