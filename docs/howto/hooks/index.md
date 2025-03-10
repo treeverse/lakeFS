@@ -132,20 +132,21 @@ For example, lakeFS will search and execute all the matching Action files with t
 
 ## Supported Events
 
-| Event                | Description                                                                    |
-|----------------------|--------------------------------------------------------------------------------|
-| `pre-commit`         | Runs when the commit occurs, before the commit is finalized                    |
-| `post-commit`        | Runs after the commit is finalized                                             |
-| `pre-merge`          | Runs on the source branch when the merge occurs, before the merge is finalized |
-| `post-merge`         | Runs on the merge result, after the merge is finalized                         |
-| `pre-create-branch`  | Runs on the source branch prior to creating a new branch                       |
-| `post-create-branch` | Runs on the new branch after the branch was created                            |
-| `pre-delete-branch`  | Runs prior to deleting a branch                                                |
-| `post-delete-branch` | Runs after the branch was deleted                                              |
-| `pre-create-tag`     | Runs prior to creating a new tag                                               |
-| `post-create-tag`    | Runs after the tag was created                                                 |
-| `pre-delete-tag`     | Runs prior to deleting a tag                                                   |
-| `post-delete-tag`    | Runs after the tag was deleted                                                 |
+| Event                | Description                                                                       |
+|----------------------|-----------------------------------------------------------------------------------|
+| `prepare-commit`     | Runs before the commit occurs; branch modification will be included in the commit |
+| `pre-commit`         | Runs when the commit occurs, before the commit is finalized                       |
+| `post-commit`        | Runs after the commit is finalized                                                |
+| `pre-merge`          | Runs on the source branch when the merge occurs, before the merge is finalized    |
+| `post-merge`         | Runs on the merge result, after the merge is finalized                            |
+| `pre-create-branch`  | Runs on the source branch prior to creating a new branch                          |
+| `post-create-branch` | Runs on the new branch after the branch was created                               |
+| `pre-delete-branch`  | Runs prior to deleting a branch                                                   |
+| `post-delete-branch` | Runs after the branch was deleted                                                 |
+| `pre-create-tag`     | Runs prior to creating a new tag                                                  |
+| `post-create-tag`    | Runs after the tag was created                                                    |
+| `pre-delete-tag`     | Runs prior to deleting a tag                                                      |
+| `post-delete-tag`    | Runs after the tag was deleted                                                    |
 
 lakeFS Actions are handled per repository and cannot be shared between repositories.
 A failure of any Hook under any Action of a `pre-*` event will result in aborting the lakeFS operation that is taking place.

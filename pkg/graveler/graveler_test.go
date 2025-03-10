@@ -33,6 +33,14 @@ type Hooks struct {
 
 var ErrGravelerUpdate = errors.New("test update error")
 
+func (h *Hooks) PrepareCommitHook(_ context.Context, record graveler.HookRecord) error {
+	h.Called = true
+	h.RepositoryID = record.Repository.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.BranchID = record.BranchID
+	return h.Err
+}
+
 func (h *Hooks) PreCommitHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = true
 	h.RepositoryID = record.Repository.RepositoryID
