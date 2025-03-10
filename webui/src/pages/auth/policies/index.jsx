@@ -17,11 +17,15 @@ import {
     Loading,
     RefreshButton,
     Warning,
+    useDebouncedState,
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
 import {Link} from "../../../lib/components/nav";
 import { disallowPercentSign, INVALID_POLICY_ID_ERROR_MESSAGE } from "../validation";
+import InputGroup from "react-bootstrap/InputGroup";
+import { Form } from "react-bootstrap";
+import {SearchIcon} from "@primer/octicons-react";
 
 
 const PoliciesContainer = () => {
@@ -33,9 +37,16 @@ const PoliciesContainer = () => {
 
     const router = useRouter();
     const after = (router.query.after) ? router.query.after : "";
-    const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listPolicies("", after);
-    }, [after, refresh]);
+    const prefix = (router.query.prefix) ? router.query.prefix : "";
+
+    const [searchPrefix, setSearchPrefix] = useDebouncedState(
+        prefix,
+        (search) => router.push({ pathname: '/auth/policies', query: {prefix: search} })
+    );
+
+    const { results, loading, error, nextPage } = useAPIWithPagination(() => {
+        return auth.listPolicies(prefix, after);
+    }, [refresh, prefix, after]);
 
     useEffect(() => { setSelected([]); }, [after, refresh]);
 
@@ -70,6 +81,18 @@ const PoliciesContainer = () => {
                     </ConfirmationButton>
                 </ActionGroup>
                 <ActionGroup orientation="right">
+                    <InputGroup>
+                        <Form.Control
+                            placeholder="Find a Policy..."
+                            autoFocus
+                            value={searchPrefix}
+                            onChange={e => setSearchPrefix(e.target.value)}
+                        />
+                        <InputGroup.Text>
+                            <SearchIcon/>
+                        </InputGroup.Text>
+                    </InputGroup>
+
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
@@ -126,7 +149,11 @@ const PoliciesContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => router.push({pathname: '/auth/policies', query: {after}})}
+                onPaginate={after => {
+                    const query = {after};
+                    if (router.query.prefix) query.prefix = router.query.prefix;
+                    router.push({pathname: '/auth/policies', query})
+                }}
             />
         </>
     );
