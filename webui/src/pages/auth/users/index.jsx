@@ -88,11 +88,11 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
 
             if (toFilterByPrevFilteredUsers) {
                 filtered = filteredUsers.filter((user) =>
-                    resolveUserDisplayName(user).toLowerCase().startsWith(searchPrefix.toLowerCase())
+                    resolveUserDisplayName(user).startsWith(searchPrefix)
                 );
             } else {
                 filtered = allUsers.filter((user) =>
-                    resolveUserDisplayName(user).toLowerCase().startsWith(searchPrefix.toLowerCase())
+                    resolveUserDisplayName(user).startsWith(searchPrefix)
                 );
             }
 
