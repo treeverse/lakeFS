@@ -17,6 +17,7 @@ _LAKECTL_YAML_PATH = os.path.join(Path.home(), ".lakectl.yaml")
 _LAKECTL_ENDPOINT_ENV = "LAKECTL_SERVER_ENDPOINT_URL"
 _LAKECTL_ACCESS_KEY_ID_ENV = "LAKECTL_CREDENTIALS_ACCESS_KEY_ID"
 _LAKECTL_SECRET_ACCESS_KEY_ENV = "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"
+# lakefs access token, used for authentication when logging in with an IAM role
 _SESSION_TOKEN = "SESSION_TOKEN"
 
 
@@ -66,11 +67,15 @@ class ClientConfig(Configuration):
         try:
             with open(_LAKECTL_YAML_PATH, encoding="utf-8") as fd:
                 data = yaml.load(fd, Loader=yaml.Loader)
-                self.server = ClientConfig.Server(**data["server"])
-                self.credentials = ClientConfig.Credentials(**data["credentials"])
-            found = True
-        except KeyError:	# in case credentials or server is not elaborated
-            pass
+                if "server" in data:
+                    self.server = ClientConfig.Server(**data["server"])
+                else:
+                    self.server = ClientConfig.Server(endpoint_url="")
+                if "credentials" in data:
+                    self.credentials = ClientConfig.Credentials(**data["credentials"])
+                    found = True
+                else:
+                    self.credentials = ClientConfig.Credentials(access_key_id="", secret_access_key="")
         except FileNotFoundError:  # File not found, fallback to env variables
             self.server = ClientConfig.Server(endpoint_url="")
             self.credentials = ClientConfig.Credentials(access_key_id="", secret_access_key="")
@@ -78,14 +83,13 @@ class ClientConfig(Configuration):
         endpoint_env = os.getenv(_LAKECTL_ENDPOINT_ENV)
         key_env = os.getenv(_LAKECTL_ACCESS_KEY_ID_ENV)
         secret_env = os.getenv(_LAKECTL_SECRET_ACCESS_KEY_ENV)
-        access_token_env = os.getenv(_SESSION_TOKEN)
 
         self.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
         self.username = key_env if key_env is not None else self.credentials.access_key_id
         self.password = secret_env if secret_env is not None else self.credentials.secret_access_key
-        self.access_token = access_token_env
+        self.access_token = os.getenv(_SESSION_TOKEN)
 
-        if self.access_token is not None and len(self.host) > 0:
+        if self.access_token is not None:
             found = True
 
         if len(self.username) > 0 and len(self.password) > 0:
