@@ -547,30 +547,6 @@ Returns 2 values:
 1. The HTTP status code returned by the lakeFS API (204 on success)
 2. Empty on success, error on failure
 
-### `lakefs/commit(repository_id, branch_id, message [, options])`
-
-Commit changes to a branch.
-
-Parameters:
-
-- `repository_id`: The repository ID
-- `branch_id`: The branch to commit to
-- `message`: Commit message
-- `options`: (Optional) A table containing key-value with commit options.
-  - `allow_empty`: Boolean flag to allow empty commits with no changes
-  - `metadata`: A table containing key-value pairs to attach as commit metadata.
-
-Returns 2 values:
-
-1. The HTTP status code returned by the lakeFS API
-2. A table containing the commit details:
-   - `id`: The commit ID
-   - `parents`: Array of parent commit IDs
-   - `committer`: The user who created the commit
-   - `message`: The commit message
-   - `creation_date`: Unix timestamp of commit creation
-
-
 ### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
 
 Generate glue table name.

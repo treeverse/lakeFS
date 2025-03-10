@@ -250,54 +250,6 @@ func diffBranch(l *lua.State, ctx context.Context, user *model.User, server *htt
 	return getLakeFSJSONResponse(l, server, req)
 }
 
-// commitBranch handles committing changes to a branch
-func commitBranch(l *lua.State, ctx context.Context, user *model.User, server *http.Server) int {
-	repo := lua.CheckString(l, 1)
-	branch := lua.CheckString(l, 2)
-	message := lua.CheckString(l, 3)
-
-	data := map[string]any{
-		"message": message,
-	}
-
-	// Handle optional parameters table if provided (4th parameter)
-	if !l.IsNone(4) {
-		table, err := util.PullTable(l, 4)
-		check(l, err)
-		tableMap := table.(map[string]interface{})
-		// check if allow_empty is a boolean, error if not
-		if allowEmpty, ok := tableMap["allow_empty"]; ok {
-			if allowEmptyBool, ok := allowEmpty.(bool); ok {
-				data["allow_empty"] = allowEmptyBool
-			} else {
-				lua.Errorf(l, "allow_empty must be a boolean")
-				panic("unreachable")
-			}
-		}
-
-		// check if metadata is a table, error if not
-		if metadata, ok := tableMap["metadata"]; ok {
-			if metadataTable, ok := metadata.(map[string]any); ok {
-				data["metadata"] = metadataTable
-			} else {
-				lua.Errorf(l, "metadata must be a table")
-				panic("unreachable")
-			}
-		}
-	}
-
-	jsonData, err := json.Marshal(data)
-	check(l, err)
-
-	reqURL, err := url.JoinPath("/repositories", repo, "branches", branch, "commits")
-	check(l, err)
-
-	req, err := newLakeFSJSONRequest(ctx, user, http.MethodPost, reqURL, jsonData)
-	check(l, err)
-
-	return getLakeFSJSONResponse(l, server, req)
-}
-
 // OpenClient opens a new lakeFS client with the given context, user and server
 func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *http.Server) {
 	clientOpen := func(l *lua.State) int {
@@ -322,9 +274,6 @@ func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *htt
 			}},
 			{Name: "diff_branch", Function: func(state *lua.State) int {
 				return diffBranch(l, ctx, user, server)
-			}},
-			{Name: "commit", Function: func(state *lua.State) int {
-				return commitBranch(l, ctx, user, server)
 			}},
 		})
 		return 1
