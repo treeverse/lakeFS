@@ -2093,7 +2093,6 @@ func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref R
 }
 
 func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, params CommitParams, opts ...SetOptionsFunc) (CommitID, error) {
-	var preRunID string
 	var commit Commit
 	var newCommitID CommitID
 	var storageNamespace StorageNamespace
@@ -2112,6 +2111,25 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		return "", ErrReadOnlyRepository
 	}
 	storageNamespace = repository.StorageNamespace
+
+	var preRunID string
+	if !repository.ReadOnly {
+		preRunID = g.hooks.NewRunID()
+		err = g.hooks.PreCommitHook(ctx, HookRecord{
+			RunID:      preRunID,
+			EventType:  EventTypePrepareCommit,
+			SourceRef:  branchID.Ref(),
+			Repository: repository,
+			BranchID:   branchID,
+		})
+		if err != nil {
+			return "", &HookAbortError{
+				EventType: EventTypePrepareCommit,
+				RunID:     preRunID,
+				Err:       err,
+			}
+		}
+	}
 
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {

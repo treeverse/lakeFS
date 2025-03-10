@@ -524,6 +524,10 @@ func (s *StoreService) ListRunTaskResults(ctx context.Context, repositoryID stri
 	return s.Store.ListRunTaskResults(ctx, repositoryID, runID, after)
 }
 
+func (s *StoreService) PrepareCommitHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
 func (s *StoreService) PreCommitHook(ctx context.Context, record graveler.HookRecord) error {
 	return s.Run(ctx, record)
 }
