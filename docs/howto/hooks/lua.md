@@ -556,7 +556,6 @@ Parameters:
 - `repository_id`: The repository ID
 - `branch_id`: The branch to commit to
 - `message`: Commit message
-- `metadata`: (Optional) A table containing key-value pairs to attach as commit metadata
 - `options`: (Optional) A table containing key-value with commit options.
   - `allow_empty`: Boolean flag to allow empty commits with no changes
   - `metadata`: A table containing key-value pairs to attach as commit metadata.
