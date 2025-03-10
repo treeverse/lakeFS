@@ -76,8 +76,6 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
         }
     }, [searchInput]);
 
-    const handleChange = (e) => { setSearchInput(e.target.value); };
-
     useEffect(() => {
         if (allUsers) {
             if (prevAllUsersLen === 0) {
@@ -148,9 +146,9 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
                     <InputGroup>
                         <Form.Control
                             autoFocus
-                            placeholder="Search users..."
+                            placeholder="Find a User..."
                             value={searchInput}
-                            onChange={handleChange}
+                            onChange={e => setSearchInput(e.target.value)}
                         />
                         <InputGroup.Text>
                             <SearchIcon/>
