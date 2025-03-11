@@ -983,6 +983,7 @@ func TestController_CommitHandler(t *testing.T) {
 			t.Fatalf("Commit to protected branch should be forbidden (403), got %s", resp.Status())
 		}
 	})
+
 	t.Run("read only repo", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", true)
@@ -1004,6 +1005,50 @@ func TestController_CommitHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, resp, err)
 	})
+
+	t.Run("commit hooks", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
+		testutil.MustDo(t, "create repository", err)
+
+		hooksHandler := &calledHooksHandler{}
+		deps.catalog.SetHooksHandler(hooksHandler)
+
+		err = deps.catalog.CreateEntry(ctx, repo, "main", catalog.DBEntry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil})
+		testutil.MustDo(t, "create entry", err)
+
+		resp, err := clt.CommitWithResponse(ctx, repo, "main", &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+			Message: "commit with hooks",
+		})
+		verifyResponseOK(t, resp, err)
+
+		require.Equal(t, []string{
+			"PrepareCommitHook (event=prepare-commit repo=" + repo + " branch=main)",
+			"PreCommitHook (event=pre-commit repo=" + repo + " branch=main)",
+			"PostCommitHook (event=post-commit repo=" + repo + " branch=main)",
+		}, hooksHandler.Called)
+	})
+}
+
+// calledHooksHandler is a test helper that records the order of hooks calls
+type calledHooksHandler struct {
+	graveler.HooksNoOp
+	Called []string
+}
+
+func (c *calledHooksHandler) PrepareCommitHook(_ context.Context, record graveler.HookRecord) error {
+	c.Called = append(c.Called, fmt.Sprintf("PrepareCommitHook (event=%s repo=%s branch=%s)", record.EventType, record.Repository.RepositoryID, record.BranchID))
+	return nil
+}
+
+func (c *calledHooksHandler) PreCommitHook(_ context.Context, record graveler.HookRecord) error {
+	c.Called = append(c.Called, fmt.Sprintf("PreCommitHook (event=%s repo=%s branch=%s)", record.EventType, record.Repository.RepositoryID, record.BranchID))
+	return nil
+}
+
+func (c *calledHooksHandler) PostCommitHook(_ context.Context, record graveler.HookRecord) error {
+	c.Called = append(c.Called, fmt.Sprintf("PostCommitHook (event=%s repo=%s branch=%s)", record.EventType, record.Repository.RepositoryID, record.BranchID))
+	return nil
 }
 
 func TestController_CreateRepositoryHandler(t *testing.T) {
