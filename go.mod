@@ -14,7 +14,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/getkin/kin-openapi v0.53.0
 	github.com/go-chi/chi/v5 v5.0.10
-	github.com/go-openapi/swag v0.23.0
+	github.com/go-openapi/swag v0.19.14
 	github.com/go-test/deep v1.1.0
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/mock v1.6.0

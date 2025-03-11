@@ -1,4 +1,4 @@
-import "https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@v3.1.0/dist/cookieconsent.umd.js";
+import "https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@v3.0.0/dist/cookieconsent.umd.js";
 
 window.addEventListener('load', function() {
   CookieConsent.run({
@@ -79,4 +79,4 @@ window.addEventListener('load', function() {
       },
     },
   });
-})
+});
