@@ -18,7 +18,7 @@ _LAKECTL_ENDPOINT_ENV = "LAKECTL_SERVER_ENDPOINT_URL"
 _LAKECTL_ACCESS_KEY_ID_ENV = "LAKECTL_CREDENTIALS_ACCESS_KEY_ID"
 _LAKECTL_SECRET_ACCESS_KEY_ENV = "LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"
 # lakefs access token, used for authentication when logging in with an IAM role
-_SESSION_TOKEN = "SESSION_TOKEN"
+_LAKECTL_SESSION_TOKEN = "LAKECTL_SESSION_TOKEN"
 
 
 class ClientConfig(Configuration):
@@ -87,7 +87,7 @@ class ClientConfig(Configuration):
         self.host = endpoint_env if endpoint_env is not None else self.server.endpoint_url
         self.username = key_env if key_env is not None else self.credentials.access_key_id
         self.password = secret_env if secret_env is not None else self.credentials.secret_access_key
-        self.access_token = os.getenv(_SESSION_TOKEN)
+        self.access_token = os.getenv(_LAKECTL_SESSION_TOKEN)
 
         if self.access_token is not None:
             found = True
