@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/Shopify/go-lua"
@@ -70,196 +71,209 @@ func getLakeFSJSONResponse(l *lua.State, server *http.Server, request *http.Requ
 	rr := httptest.NewRecorder()
 	server.Handler.ServeHTTP(rr, request)
 	l.PushInteger(rr.Code)
+	if rr.Body.Len() == 0 {
+		return 1
+	}
 
-	var output interface{}
+	var output any
 	check(l, json.Unmarshal(rr.Body.Bytes(), &output))
 	return 1 + util.DeepPush(l, output)
 }
 
+// updateObjectUserMetadata handles updating object metadata
+func updateObjectUserMetadata(l *lua.State, ctx context.Context, user *model.User, server *http.Server) int {
+	repo := lua.CheckString(l, 1)
+	branch := lua.CheckString(l, 2)
+	objPath := lua.CheckString(l, 3)
+	metadata, err := util.PullStringTable(l, 4)
+	check(l, err)
+
+	data, err := json.Marshal(map[string]any{
+		"set": metadata,
+	})
+	check(l, err)
+
+	reqURL, err := url.JoinPath("/repositories", repo, "branches", branch, "objects/stat/user_metadata")
+	check(l, err)
+
+	req, err := newLakeFSJSONRequest(ctx, user, http.MethodPut, reqURL, data)
+	check(l, err)
+
+	// query params
+	q := req.URL.Query()
+	q.Add("path", objPath)
+	req.URL.RawQuery = q.Encode()
+
+	return getLakeFSJSONResponse(l, server, req)
+}
+
+// createTag handles tag creation
+func createTag(l *lua.State, ctx context.Context, user *model.User, server *http.Server) int {
+	repo := lua.CheckString(l, 1)
+	data, err := json.Marshal(map[string]string{
+		"ref": lua.CheckString(l, 2),
+		"id":  lua.CheckString(l, 3),
+	})
+	check(l, err)
+	reqURL, err := url.JoinPath("/repositories", repo, "tags")
+	check(l, err)
+	req, err := newLakeFSJSONRequest(ctx, user, http.MethodPost, reqURL, data)
+	check(l, err)
+	return getLakeFSJSONResponse(l, server, req)
+}
+
+// diffRefs handles comparing two refs
+func diffRefs(l *lua.State, ctx context.Context, user *model.User, server *http.Server) int {
+	repo := lua.CheckString(l, 1)
+	leftRef := lua.CheckString(l, 2)
+	rightRef := lua.CheckString(l, 3)
+	reqURL, err := url.JoinPath("/repositories", repo, "refs", leftRef, "diff", rightRef)
+	check(l, err)
+	req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
+	check(l, err)
+	// query params
+	q := req.URL.Query()
+	if !l.IsNone(4) {
+		q.Add("after", lua.CheckString(l, 4))
+	}
+	if !l.IsNone(5) {
+		q.Add("prefix", lua.CheckString(l, 5))
+	}
+	if !l.IsNone(6) {
+		q.Add("delimiter", lua.CheckString(l, 6))
+	}
+	if !l.IsNone(7) {
+		q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 7)))
+	}
+	req.URL.RawQuery = q.Encode()
+	return getLakeFSJSONResponse(l, server, req)
+}
+
+// listObjects handles listing objects in a ref
+func listObjects(l *lua.State, ctx context.Context, user *model.User, server *http.Server) int {
+	repo := lua.CheckString(l, 1)
+	ref := lua.CheckString(l, 2)
+	reqURL, err := url.JoinPath("/repositories", repo, "refs", ref, "objects/ls")
+	check(l, err)
+	req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
+	check(l, err)
+	// query params
+	q := req.URL.Query()
+	if !l.IsNone(3) {
+		q.Add("after", lua.CheckString(l, 3))
+	}
+	if !l.IsNone(4) {
+		q.Add("prefix", lua.CheckString(l, 4))
+	}
+	if !l.IsNone(5) {
+		q.Add("delimiter", lua.CheckString(l, 5))
+	}
+	if !l.IsNone(6) {
+		q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 6)))
+	}
+	if !l.IsNone(7) {
+		withUserMetadata := "false"
+		if l.ToBoolean(7) {
+			withUserMetadata = "true"
+		}
+		q.Add("user_metadata", withUserMetadata)
+	}
+	req.URL.RawQuery = q.Encode()
+	return getLakeFSJSONResponse(l, server, req)
+}
+
+// getObject handles retrieving an object
+func getObject(l *lua.State, ctx context.Context, user *model.User, server *http.Server) int {
+	repo := lua.CheckString(l, 1)
+	ref := lua.CheckString(l, 2)
+	reqURL, err := url.JoinPath("/repositories", repo, "refs", ref, "objects")
+	check(l, err)
+	req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
+	check(l, err)
+	// query params
+	q := req.URL.Query()
+	q.Add("path", lua.CheckString(l, 3))
+	req.URL.RawQuery = q.Encode()
+	rr := httptest.NewRecorder()
+	server.Handler.ServeHTTP(rr, req)
+	l.PushInteger(rr.Code)
+	l.PushString(rr.Body.String())
+	return 2
+}
+
+// statObject handles retrieving object stats
+func statObject(l *lua.State, ctx context.Context, user *model.User, server *http.Server) int {
+	repo := lua.CheckString(l, 1)
+	ref := lua.CheckString(l, 2)
+	reqURL, err := url.JoinPath("/repositories", repo, "refs", ref, "objects", "stat")
+	check(l, err)
+	req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
+	check(l, err)
+	// query params
+	q := req.URL.Query()
+	q.Add("path", lua.CheckString(l, 3))
+	if !l.IsNone(4) {
+		userMetadata := strconv.FormatBool(l.ToBoolean(4))
+		q.Add("user_metadata", userMetadata)
+	}
+	req.URL.RawQuery = q.Encode()
+	rr := httptest.NewRecorder()
+	server.Handler.ServeHTTP(rr, req)
+	l.PushInteger(rr.Code)
+	l.PushString(rr.Body.String())
+	return 2
+}
+
+// diffBranch handles comparing a branch
+func diffBranch(l *lua.State, ctx context.Context, user *model.User, server *http.Server) int {
+	repo := lua.CheckString(l, 1)
+	branch := lua.CheckString(l, 2)
+	reqURL, err := url.JoinPath("/repositories", repo, "branches", branch, "diff")
+	check(l, err)
+	req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
+	check(l, err)
+	// query params
+	q := req.URL.Query()
+	if !l.IsNone(3) {
+		q.Add("after", lua.CheckString(l, 3))
+	}
+	if !l.IsNone(4) {
+		q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 4)))
+	}
+	if !l.IsNone(5) {
+		q.Add("prefix", lua.CheckString(l, 5))
+	}
+	if !l.IsNone(6) {
+		q.Add("delimiter", lua.CheckString(l, 6))
+	}
+	req.URL.RawQuery = q.Encode()
+	return getLakeFSJSONResponse(l, server, req)
+}
+
+// OpenClient opens a new lakeFS client with the given context, user and server
 func OpenClient(l *lua.State, ctx context.Context, user *model.User, server *http.Server) {
 	clientOpen := func(l *lua.State) int {
 		lua.NewLibrary(l, []lua.RegistryFunction{
 			{Name: "update_object_user_metadata", Function: func(state *lua.State) int {
-				repo := lua.CheckString(l, 1)
-				branch := lua.CheckString(l, 2)
-				objPath := lua.CheckString(l, 3)
-				metadata, err := util.PullStringTable(l, 4)
-				check(l, err)
-
-				data, err := json.Marshal(map[string]interface{}{
-					"set": metadata,
-				})
-				check(l, err)
-
-				reqURL, err := url.JoinPath("/repositories", repo, "branches", branch, "objects/stat/user_metadata")
-				check(l, err)
-
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodPut, reqURL, data)
-				check(l, err)
-
-				// query params
-				q := req.URL.Query()
-				q.Add("path", objPath)
-				req.URL.RawQuery = q.Encode()
-
-				rr := httptest.NewRecorder()
-				server.Handler.ServeHTTP(rr, req)
-				l.PushInteger(rr.Code)
-				l.PushString(rr.Body.String())
-				return 2
+				return updateObjectUserMetadata(l, ctx, user, server)
 			}},
 			{Name: "create_tag", Function: func(state *lua.State) int {
-				repo := lua.CheckString(l, 1)
-				data, err := json.Marshal(map[string]string{
-					"ref": lua.CheckString(l, 2),
-					"id":  lua.CheckString(l, 3),
-				})
-				if err != nil {
-					check(l, err)
-				}
-				reqURL, err := url.JoinPath("/repositories", repo, "tags")
-				if err != nil {
-					check(l, err)
-				}
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodPost, reqURL, data)
-				if err != nil {
-					check(l, err)
-				}
-				return getLakeFSJSONResponse(l, server, req)
+				return createTag(l, ctx, user, server)
 			}},
 			{Name: "diff_refs", Function: func(state *lua.State) int {
-				repo := lua.CheckString(l, 1)
-				leftRef := lua.CheckString(l, 2)
-				rightRef := lua.CheckString(l, 3)
-				reqURL, err := url.JoinPath("/repositories", repo, "refs", leftRef, "diff", rightRef)
-				if err != nil {
-					check(l, err)
-				}
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
-				if err != nil {
-					check(l, err)
-				}
-				// query params
-				q := req.URL.Query()
-				if !l.IsNone(4) {
-					q.Add("after", lua.CheckString(l, 4))
-				}
-				if !l.IsNone(5) {
-					q.Add("prefix", lua.CheckString(l, 5))
-				}
-				if !l.IsNone(6) {
-					q.Add("delimiter", lua.CheckString(l, 6))
-				}
-				if !l.IsNone(7) {
-					q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 7)))
-				}
-				req.URL.RawQuery = q.Encode()
-				return getLakeFSJSONResponse(l, server, req)
+				return diffRefs(l, ctx, user, server)
 			}},
 			{Name: "list_objects", Function: func(state *lua.State) int {
-				repo := lua.CheckString(l, 1)
-				ref := lua.CheckString(l, 2)
-				reqURL, err := url.JoinPath("/repositories", repo, "refs", ref, "objects/ls")
-				if err != nil {
-					check(l, err)
-				}
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
-				if err != nil {
-					check(l, err)
-				}
-				// query params
-				q := req.URL.Query()
-				if !l.IsNone(3) {
-					q.Add("after", lua.CheckString(l, 3))
-				}
-				if !l.IsNone(4) {
-					q.Add("prefix", lua.CheckString(l, 4))
-				}
-				if !l.IsNone(5) {
-					q.Add("delimiter", lua.CheckString(l, 5))
-				}
-				if !l.IsNone(6) {
-					q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 6)))
-				}
-				if !l.IsNone(7) {
-					withUserMetadata := "false"
-					if l.ToBoolean(7) {
-						withUserMetadata = "true"
-					}
-					q.Add("user_metadata", withUserMetadata)
-				}
-				req.URL.RawQuery = q.Encode()
-				return getLakeFSJSONResponse(l, server, req)
+				return listObjects(l, ctx, user, server)
 			}},
 			{Name: "get_object", Function: func(state *lua.State) int {
-				repo := lua.CheckString(l, 1)
-				ref := lua.CheckString(l, 2)
-				reqURL, err := url.JoinPath("/repositories", repo, "refs", ref, "objects")
-				if err != nil {
-					check(l, err)
-				}
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
-				if err != nil {
-					check(l, err)
-				}
-				// query params
-				q := req.URL.Query()
-				q.Add("path", lua.CheckString(l, 3))
-				req.URL.RawQuery = q.Encode()
-				rr := httptest.NewRecorder()
-				server.Handler.ServeHTTP(rr, req)
-				l.PushInteger(rr.Code)
-				l.PushString(rr.Body.String())
-				return 2
+				return getObject(l, ctx, user, server)
 			}},
 			{Name: "stat_object", Function: func(state *lua.State) int {
-				repo := lua.CheckString(l, 1)
-				ref := lua.CheckString(l, 2)
-				reqURL, err := url.JoinPath("/repositories", repo, "refs", ref, "objects", "stat")
-				if err != nil {
-					check(l, err)
-				}
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
-				if err != nil {
-					check(l, err)
-				}
-				// query params
-				q := req.URL.Query()
-				q.Add("path", lua.CheckString(l, 3))
-				req.URL.RawQuery = q.Encode()
-				rr := httptest.NewRecorder()
-				server.Handler.ServeHTTP(rr, req)
-				l.PushInteger(rr.Code)
-				l.PushString(rr.Body.String())
-				return 2
+				return statObject(l, ctx, user, server)
 			}},
 			{Name: "diff_branch", Function: func(state *lua.State) int {
-				repo := lua.CheckString(l, 1)
-				branch := lua.CheckString(l, 2)
-				reqURL, err := url.JoinPath("/repositories", repo, "branches", branch, "diff")
-				if err != nil {
-					check(l, err)
-				}
-				req, err := newLakeFSJSONRequest(ctx, user, http.MethodGet, reqURL, nil)
-				if err != nil {
-					check(l, err)
-				}
-				// query params
-				q := req.URL.Query()
-				if !l.IsNone(3) {
-					q.Add("after", lua.CheckString(l, 3))
-				}
-				if !l.IsNone(4) {
-					q.Add("amount", fmt.Sprintf("%d", lua.CheckInteger(l, 4)))
-				}
-				if !l.IsNone(5) {
-					q.Add("prefix", lua.CheckString(l, 5))
-				}
-				if !l.IsNone(6) {
-					q.Add("delimiter", lua.CheckString(l, 6))
-				}
-				req.URL.RawQuery = q.Encode()
-				return getLakeFSJSONResponse(l, server, req)
+				return diffBranch(l, ctx, user, server)
 			}},
 		})
 		return 1
