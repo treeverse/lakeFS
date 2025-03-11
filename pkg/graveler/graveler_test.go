@@ -3,6 +3,7 @@ package graveler_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"strconv"
 	"testing"
 	"time"
@@ -19,8 +20,8 @@ import (
 )
 
 type Hooks struct {
-	Called           bool
-	Err              error
+	Called           []string
+	Errs             map[string]error
 	RunID            string
 	RepositoryID     graveler.RepositoryID
 	StorageNamespace graveler.StorageNamespace
@@ -34,63 +35,63 @@ type Hooks struct {
 var ErrGravelerUpdate = errors.New("test update error")
 
 func (h *Hooks) PrepareCommitHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PrepareCommitHook")
 	h.RepositoryID = record.Repository.RepositoryID
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.BranchID = record.BranchID
-	return h.Err
+	return h.Errs["PrepareCommitHook"]
 }
 
 func (h *Hooks) PreCommitHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PreCommitHook")
 	h.RepositoryID = record.Repository.RepositoryID
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.BranchID = record.BranchID
 	h.Commit = record.Commit
-	return h.Err
+	return h.Errs["PreCommitHook"]
 }
 
 func (h *Hooks) PostCommitHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PostCommitHook")
 	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
 	h.Commit = record.Commit
-	return h.Err
+	return h.Errs["PostCommitHook"]
 }
 
 func (h *Hooks) PreMergeHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PreMergeHook")
 	h.RepositoryID = record.Repository.RepositoryID
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.BranchID = record.BranchID
 	h.SourceRef = record.SourceRef
 	h.Commit = record.Commit
-	return h.Err
+	return h.Errs["PreMergeHook"]
 }
 
 func (h *Hooks) PostMergeHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PostMergeHook")
 	h.RepositoryID = record.Repository.RepositoryID
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.BranchID = record.BranchID
 	h.SourceRef = record.SourceRef
 	h.CommitID = record.CommitID
 	h.Commit = record.Commit
-	return h.Err
+	return h.Errs["PostMergeHook"]
 }
 
 func (h *Hooks) PreCreateTagHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PreCreateTagHook")
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.RepositoryID = record.Repository.RepositoryID
 	h.CommitID = record.CommitID
 	h.TagID = record.TagID
-	return h.Err
+	return h.Errs["PreCreateTagHook"]
 }
 
 func (h *Hooks) PostCreateTagHook(_ context.Context, record graveler.HookRecord) {
-	h.Called = true
+	h.Called = append(h.Called, "PostCreateTagHook")
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.RepositoryID = record.Repository.RepositoryID
 	h.CommitID = record.CommitID
@@ -98,32 +99,32 @@ func (h *Hooks) PostCreateTagHook(_ context.Context, record graveler.HookRecord)
 }
 
 func (h *Hooks) PreDeleteTagHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PreDeleteTagHook")
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.RepositoryID = record.Repository.RepositoryID
 	h.TagID = record.TagID
-	return h.Err
+	return h.Errs["PreDeleteTagHook"]
 }
 
 func (h *Hooks) PostDeleteTagHook(_ context.Context, record graveler.HookRecord) {
-	h.Called = true
+	h.Called = append(h.Called, "PostDeleteTagHook")
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.RepositoryID = record.Repository.RepositoryID
 	h.TagID = record.TagID
 }
 
 func (h *Hooks) PreCreateBranchHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PreCreateBranchHook")
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
 	h.SourceRef = record.SourceRef
-	return h.Err
+	return h.Errs["PreCreateBranchHook"]
 }
 
 func (h *Hooks) PostCreateBranchHook(_ context.Context, record graveler.HookRecord) {
-	h.Called = true
+	h.Called = append(h.Called, "PostCreateBranchHook")
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
@@ -132,15 +133,15 @@ func (h *Hooks) PostCreateBranchHook(_ context.Context, record graveler.HookReco
 }
 
 func (h *Hooks) PreDeleteBranchHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PreDeleteBranchHook")
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
-	return h.Err
+	return h.Errs["PreDeleteBranchHook"]
 }
 
 func (h *Hooks) PostDeleteBranchHook(_ context.Context, record graveler.HookRecord) {
-	h.Called = true
+	h.Called = append(h.Called, "PostDeleteBranchHook")
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
@@ -2190,7 +2191,9 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 			// setup
 			ctx := context.Background()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
-			h := &Hooks{Err: tt.err}
+			h := &Hooks{Errs: map[string]error{
+				"PreCommitHook": tt.err,
+			}}
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
@@ -2213,10 +2216,11 @@ func TestGraveler_PreCommitHook(t *testing.T) {
 			if err != nil && !errors.As(err, &hookErr) {
 				t.Fatalf("Commit err=%v, expected HookAbortError", err)
 			}
-			if (tt.hook && !tt.readOnlyRepo) != h.Called {
-				t.Fatalf("Commit invalid pre-hook call, %t expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+			called := slices.Contains(h.Called, "PrepareCommitHook")
+			if (tt.hook && !tt.readOnlyRepo) != called {
+				t.Fatalf("Commit invalid pre-hook call, %v expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
-			if !h.Called {
+			if !called {
 				return
 			}
 			if h.RepositoryID != repo.RepositoryID {
@@ -2308,7 +2312,9 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 			// setup
 			ctx := context.Background()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
-			h := &Hooks{Err: tt.err}
+			h := &Hooks{Errs: map[string]error{
+				"PreMergeHook": tt.err,
+			}}
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
@@ -2341,10 +2347,11 @@ func TestGraveler_PreMergeHook(t *testing.T) {
 				t.Fatalf("Wrong CommitParents order, expected: (%s, %s), got: (%s, %s)", destinationCommitID, expectedCommitID, parents[0], parents[1])
 			}
 			// verify that calls made until the first error
-			if (tt.hook && !tt.readOnlyRepo) != h.Called {
-				t.Fatalf("Merge hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+			called := slices.Contains(h.Called, "PreMergeHook")
+			if (tt.hook && !tt.readOnlyRepo) != called {
+				t.Fatalf("Merge hook h.Called=%v, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
-			if !h.Called {
+			if !called {
 				return
 			}
 			if h.RepositoryID != repository.RepositoryID {
@@ -2466,7 +2473,9 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 			// setup
 			ctx := context.Background()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
-			h := &Hooks{Err: tt.err}
+			h := &Hooks{Errs: map[string]error{
+				"PreCreateTagHook": tt.err,
+			}}
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
@@ -2487,10 +2496,11 @@ func TestGraveler_PreCreateTagHook(t *testing.T) {
 			}
 
 			// verify that calls made until the first error
-			if (tt.hook && !tt.readOnlyRepo) != h.Called {
-				t.Fatalf("Pre-create tag hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+			called := slices.Contains(h.Called, "PreCreateTagHook")
+			if (tt.hook && !tt.readOnlyRepo) != called {
+				t.Fatalf("Pre-create tag hook h.Called=%v, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
-			if !h.Called {
+			if !called {
 				return
 			}
 			if h.RepositoryID != repository.RepositoryID {
@@ -2557,7 +2567,9 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 			expected := expectedCommitID
 			refManager.TagCommitID = &expected
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
-			h := &Hooks{Err: tt.err}
+			h := &Hooks{Errs: map[string]error{
+				"PreDeleteTagHook": tt.err,
+			}}
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
@@ -2577,10 +2589,11 @@ func TestGraveler_PreDeleteTagHook(t *testing.T) {
 			}
 
 			// verify that calls made until the first error
-			if (tt.hook && !tt.readOnlyRepo) != h.Called {
-				t.Fatalf("Pre delete Tag hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+			called := slices.Contains(h.Called, "PreDeleteTagHook")
+			if (tt.hook && !tt.readOnlyRepo) != called {
+				t.Fatalf("Pre delete Tag hook h.Called=%v, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
-			if !h.Called {
+			if !called {
 				return
 			}
 			if h.RepositoryID != repository.RepositoryID {
@@ -2647,7 +2660,9 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 			// setup
 			ctx := context.Background()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
-			h := &Hooks{Err: tt.err}
+			h := &Hooks{Errs: map[string]error{
+				"PreCreateBranchHook": tt.err,
+			}}
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
@@ -2673,10 +2688,11 @@ func TestGraveler_PreCreateBranchHook(t *testing.T) {
 			}
 
 			// verify that calls made until the first error
-			if (tt.hook && !tt.readOnlyRepo) != h.Called {
-				t.Fatalf("Pre-create branch hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+			called := slices.Contains(h.Called, "PreCreateBranchHook")
+			if (tt.hook && !tt.readOnlyRepo) != called {
+				t.Fatalf("Pre-create branch hook h.Called=%v, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
-			if !h.Called {
+			if !called {
 				return
 			}
 			if h.RepositoryID != repository.RepositoryID {
@@ -2750,7 +2766,9 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 			// setup
 			ctx := context.Background()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
-			h := &Hooks{Err: tt.err}
+			h := &Hooks{Errs: map[string]error{
+				"PreDeleteBranchHook": tt.err,
+			}}
 			if tt.hook {
 				g.SetHooksHandler(h)
 			}
@@ -2770,10 +2788,11 @@ func TestGraveler_PreDeleteBranchHook(t *testing.T) {
 			}
 
 			// verify that calls made until the first error
-			if (tt.hook && !tt.readOnlyRepo) != h.Called {
-				t.Fatalf("Pre-delete branch hook h.Called=%t, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+			called := slices.Contains(h.Called, "PreDeleteBranchHook")
+			if (tt.hook && !tt.readOnlyRepo) != called {
+				t.Fatalf("Pre-delete branch hook h.Called=%v, expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
-			if !h.Called {
+			if !called {
 				return
 			}
 			if h.RepositoryID != repository.RepositoryID {
@@ -3002,7 +3021,8 @@ func TestGraveler_Revert(t *testing.T) {
 					},
 				},
 				StagingManager: &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(
-					[]graveler.ValueRecord{{}})}},
+					[]graveler.ValueRecord{{}})},
+			},
 			revertArgs: args{
 				branchID:     "b1",
 				ref:          graveler.Ref("c2"),
@@ -3055,7 +3075,8 @@ func TestGraveler_Revert(t *testing.T) {
 					},
 				},
 				StagingManager: &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(
-					[]graveler.ValueRecord{{}})}},
+					[]graveler.ValueRecord{{}})},
+			},
 			revertArgs: args{
 				branchID:     "b1",
 				ref:          graveler.Ref("c2"),
