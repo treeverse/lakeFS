@@ -21,17 +21,14 @@ type hooksValidationData struct {
 	mu   sync.RWMutex
 }
 
-func (h *hooksValidationData) appendRes(info webhookEventInfo) {
+func (h *hooksValidationData) appendRes(info *webhookEventInfo) {
 	h.mu.Lock()
-	h.data = append(h.data, &info)
+	h.data = append(h.data, info)
 	h.mu.Unlock()
 }
 
 func HooksSuccessTest(ctx context.Context, t *testing.T, repo string) {
-	var htd = hooksValidationData{
-		data: make([]*webhookEventInfo, 0),
-		mu:   sync.RWMutex{},
-	}
+	var hvd hooksValidationData
 	parseAndUploadActions(t, ctx, repo, mainBranch)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
@@ -46,29 +43,29 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string) {
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCommitEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
-	htd.appendRes(preCommitEvent)
+	hvd.appendRes(&preCommitEvent)
 
 	t.Run("commit merge test", func(t *testing.T) {
-		testCommitMerge(t, ctx, repo, &htd)
+		testCommitMerge(t, ctx, repo, &hvd)
 	})
 	t.Run("create delete branch test", func(t *testing.T) {
-		testCreateDeleteBranch(t, ctx, repo, &htd)
+		testCreateDeleteBranch(t, ctx, repo, &hvd)
 	})
 	t.Run("create delete tag test", func(t *testing.T) {
-		testCreateDeleteTag(t, ctx, repo, &htd)
+		testCreateDeleteTag(t, ctx, repo, &hvd)
 	})
 
 	t.Log("check runs are sorted in descending order")
 	const expectedRunCount = 13
 	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", expectedRunCount, nil)
-	require.Equal(t, len(runs.Results), len(htd.data))
+	require.Equal(t, len(runs.Results), len(hvd.data))
 	for i, run := range runs.Results {
-		valIdx := len(htd.data) - (i + 1)
-		require.Equal(t, htd.data[valIdx].EventType, run.EventType)
+		valIdx := len(hvd.data) - (i + 1)
+		require.Equal(t, hvd.data[valIdx].EventType, run.EventType)
 	}
 }
 
-func testCommitMerge(t *testing.T, ctx context.Context, repo string, htd *hooksValidationData) {
+func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData) {
 	const branch = "feature-1"
 
 	t.Log("Create branch", branch)
@@ -99,7 +96,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, htd *hooksV
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCommitEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
-	htd.appendRes(preCommitEvent)
+	hvd.appendRes(&preCommitEvent)
 	commitRecord := commitResp.JSON201
 	require.Equal(t, webhookEventInfo{
 		EventTime:     preCommitEvent.EventTime,
@@ -124,7 +121,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, htd *hooksV
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCommitEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&postCommitEvent), "reading post-commit data")
-	htd.appendRes(postCommitEvent)
+	hvd.appendRes(&postCommitEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:     postCommitEvent.EventTime,
 		SourceRef:     commitResp.JSON201.Id,
@@ -153,7 +150,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, htd *hooksV
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preMergeEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preMergeEvent), "reading pre-merge data")
-	htd.appendRes(preMergeEvent)
+	hvd.appendRes(&preMergeEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:     preMergeEvent.EventTime,
 		SourceRef:     commitRecord.Id,
@@ -175,7 +172,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, htd *hooksV
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postMergeEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&postMergeEvent), "reading post-merge data")
-	htd.appendRes(postMergeEvent)
+	hvd.appendRes(&postMergeEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:     postMergeEvent.EventTime,
 		SourceRef:     mergeResp.JSON200.Reference,
@@ -206,7 +203,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, htd *hooksV
 	}
 }
 
-func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, htd *hooksValidationData) {
+func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData) {
 	const testBranch = "test_branch_delete"
 	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   testBranch,
@@ -228,7 +225,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, htd 
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCreateBranchEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preCreateBranchEvent), "reading pre-create branch data")
-	htd.appendRes(preCreateBranchEvent)
+	hvd.appendRes(&preCreateBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    preCreateBranchEvent.EventTime,
 		SourceRef:    mainBranch,
@@ -248,7 +245,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, htd 
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCreateBranchEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&postCreateBranchEvent), "reading post-create branch data")
-	htd.appendRes(postCreateBranchEvent)
+	hvd.appendRes(&postCreateBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postCreateBranchEvent.EventTime,
 		SourceRef:    mainBranch,
@@ -274,7 +271,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, htd 
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preDeleteBranchEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preDeleteBranchEvent), "reading pre-delete branch data")
-	htd.appendRes(preDeleteBranchEvent)
+	hvd.appendRes(&preDeleteBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    preDeleteBranchEvent.EventTime,
 		SourceRef:    commitID,
@@ -293,7 +290,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, htd 
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postDeleteBranchEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&postDeleteBranchEvent), "reading post-delete branch data")
-	htd.appendRes(postDeleteBranchEvent)
+	hvd.appendRes(&postDeleteBranchEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postDeleteBranchEvent.EventTime,
 		SourceRef:    commitID,
@@ -305,7 +302,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, htd 
 	}, postDeleteBranchEvent)
 }
 
-func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, htd *hooksValidationData) {
+func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData) {
 	const tagID = "tag_test_hooks"
 
 	resp, err := client.GetBranchWithResponse(ctx, repo, mainBranch)
@@ -329,7 +326,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, htd *ho
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCreateTagEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preCreateTagEvent), "reading pre-create tag data")
-	htd.appendRes(preCreateTagEvent)
+	hvd.appendRes(&preCreateTagEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    preCreateTagEvent.EventTime,
 		SourceRef:    commitID,
@@ -349,7 +346,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, htd *ho
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCreateTagEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&postCreateTagEvent), "reading post-create tag data")
-	htd.appendRes(postCreateTagEvent)
+	hvd.appendRes(&postCreateTagEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postCreateTagEvent.EventTime,
 		SourceRef:    commitID,
@@ -375,7 +372,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, htd *ho
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preDeleteTagEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preDeleteTagEvent), "reading pre-delete tag data")
-	htd.appendRes(preDeleteTagEvent)
+	hvd.appendRes(&preDeleteTagEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    preDeleteTagEvent.EventTime,
 		SourceRef:    commitID,
@@ -395,7 +392,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, htd *ho
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postDeleteTagEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&postDeleteTagEvent), "reading post-delete tag data")
-	htd.appendRes(postDeleteTagEvent)
+	hvd.appendRes(&postDeleteTagEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:    postDeleteTagEvent.EventTime,
 		SourceRef:    commitID,
