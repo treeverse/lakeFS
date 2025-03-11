@@ -483,7 +483,7 @@ func TestLuaRun_LakeFS(t *testing.T) {
 			Name: "update_object_user_metadata",
 			Script: `local lakefs = require("lakefs")
 local code, resp = lakefs.update_object_user_metadata("repo", "branch", "path/to/object", {key="value", key2="value2"})
-print(code .. " " .. resp)
+print(code, resp)
 `,
 			ExpectedOutput: "201",
 			ExpectedRequest: map[string]any{
@@ -506,7 +506,7 @@ print(code .. " " .. resp)
 			Name: "update_object_user_metadata-no_meta",
 			Script: `local lakefs = require("lakefs")
 local code, resp = lakefs.update_object_user_metadata("repo", "branch", "object", nil)
-print(code .. " " .. resp)
+print(code, resp)
 `,
 			ExpectedErr: true,
 		},
