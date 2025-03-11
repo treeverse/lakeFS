@@ -67,15 +67,9 @@ class ClientConfig(Configuration):
         try:
             with open(_LAKECTL_YAML_PATH, encoding="utf-8") as fd:
                 data = yaml.load(fd, Loader=yaml.Loader)
-                if "server" in data:
-                    self.server = ClientConfig.Server(**data["server"])
-                else:
-                    self.server = ClientConfig.Server(endpoint_url="")
-                if "credentials" in data:
-                    self.credentials = ClientConfig.Credentials(**data["credentials"])
-                    found = True
-                else:
-                    self.credentials = ClientConfig.Credentials(access_key_id="", secret_access_key="")
+                self.server = ClientConfig.Server(**data["server"]) if "server" in data else ClientConfig.Server(endpoint_url="")
+                self.credentials = ClientConfig.Credentials(**data["credentials"]) if "credentials" in data else ClientConfig.Credentials(access_key_id="", secret_access_key="")
+                found = True
         except FileNotFoundError:  # File not found, fallback to env variables
             self.server = ClientConfig.Server(endpoint_url="")
             self.credentials = ClientConfig.Credentials(access_key_id="", secret_access_key="")
@@ -89,10 +83,7 @@ class ClientConfig(Configuration):
         self.password = secret_env if secret_env is not None else self.credentials.secret_access_key
         self.access_token = os.getenv(_LAKECTL_SESSION_TOKEN)
 
-        if self.access_token is not None:
-            found = True
-
-        if len(self.username) > 0 and len(self.password) > 0:
+        if self.access_token is not None or len(self.username) > 0 and len(self.password) > 0:
             found = True
 
         if not found:
