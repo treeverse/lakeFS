@@ -2093,6 +2093,7 @@ func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref R
 }
 
 func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, params CommitParams, opts ...SetOptionsFunc) (CommitID, error) {
+	var preRunID string
 	var commit Commit
 	var newCommitID CommitID
 	var storageNamespace StorageNamespace
@@ -2111,7 +2112,6 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		return "", ErrReadOnlyRepository
 	}
 	storageNamespace = repository.StorageNamespace
-	var preRunID string
 	if !repository.ReadOnly {
 		prepareRunID := g.hooks.NewRunID()
 		err = g.hooks.PrepareCommitHook(ctx, HookRecord{
