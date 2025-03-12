@@ -1,12 +1,15 @@
 package testutil
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/ory/dockertest/v3/docker"
 
 	"github.com/ory/dockertest/v3"
 )
@@ -82,6 +85,26 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return nil
 	})
 	if err != nil {
+		// Fetch logs from the container
+		var (
+			stdout bytes.Buffer
+			stderr bytes.Buffer
+		)
+
+		if err := dockerPool.Client.Logs(docker.LogsOptions{
+			Container:    resource.Container.ID,
+			OutputStream: &stdout,
+			ErrorStream:  &stderr,
+			Stdout:       true,
+			Stderr:       true,
+			Follow:       false,
+		}); err != nil {
+			log.Printf("Error in cosmosdb emulator logs: %s", err)
+		} else {
+			log.Printf("Cosmosdb emulator logs (stdout): %s", stdout.String())
+			log.Printf("Cosmosdb emulator logs (stderr): %s", stderr.String())
+		}
+
 		defer closer()
 		return "", nil, fmt.Errorf("could not connect to cosmosdb emulator at %s: %w", cosmosdbLocalURI, err)
 	}
