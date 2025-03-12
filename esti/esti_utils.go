@@ -264,6 +264,30 @@ func CleanupUser(t testing.TB, ctx context.Context, client apigen.ClientWithResp
 	require.Equal(t, http.StatusNoContent, resp.StatusCode())
 }
 
+func DeletePolicy(t testing.TB, ctx context.Context, client apigen.ClientWithResponsesInterface, policyName string) {
+	getResp, err := client.GetPolicyWithResponse(ctx, policyName)
+	require.NoError(t, err)
+	if getResp.StatusCode() == http.StatusNotFound { // skip if already deleted
+		return
+	}
+	require.NotNil(t, getResp.JSON200)
+	resp, err := client.DeletePolicyWithResponse(ctx, policyName)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode())
+}
+
+func DeleteGroup(t testing.TB, ctx context.Context, client apigen.ClientWithResponsesInterface, groupName string) {
+	getResp, err := client.GetGroupWithResponse(ctx, groupName)
+	require.NoError(t, err)
+	if getResp.StatusCode() == http.StatusNotFound { // skip if already deleted
+		return
+	}
+	require.NotNil(t, getResp.JSON200)
+	resp, err := client.DeleteGroupWithResponse(ctx, groupName)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode())
+}
+
 // skipOnSchemaMismatch matches the rawURL schema to the current tested storage namespace schema
 func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	t.Helper()

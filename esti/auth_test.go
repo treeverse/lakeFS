@@ -36,6 +36,9 @@ func TestAdminPermissions(t *testing.T) {
 	// creating a new group should succeed
 	require.NoError(t, err, "Admin failed while creating group")
 	require.Equal(t, http.StatusCreated, resCreateGroup.StatusCode(), "Admin unexpectedly failed to create group")
+	defer func() {
+		DeleteGroup(t, ctx, client, gname)
+	}()
 	groupID := resCreateGroup.JSON201.Id
 
 	// setting a group ACL should succeed
@@ -52,6 +55,9 @@ func TestAdminPermissions(t *testing.T) {
 	})
 	require.NoError(t, err, "Admin failed while creating user")
 	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
+	defer func() {
+		CleanupUser(t, ctx, client, uid)
+	}()
 
 	// adding group to user should succeed
 	resAddGroup, err := client.AddGroupMembershipWithResponse(ctx, groupID, uid)
@@ -285,10 +291,11 @@ func TestCreatePolicy(t *testing.T) {
 		t.Skip("Unsupported in basic auth configuration")
 	}
 
+	const validPolicy = "ValidPolicyID"
 	t.Run("valid_policy", func(t *testing.T) {
 		resp, err := client.CreatePolicyWithResponse(ctx, apigen.CreatePolicyJSONRequestBody{
 			CreationDate: apiutil.Ptr(time.Now().Unix()),
-			Id:           "ValidPolicyID",
+			Id:           validPolicy,
 			Statement: []apigen.Statement{
 				{
 					Action:   []string{"fs:ReadObject"},
@@ -299,6 +306,9 @@ func TestCreatePolicy(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp.JSON201, "wrong response: %s", resp.Status())
+		defer func() {
+			DeletePolicy(t, ctx, client, validPolicy)
+		}()
 	})
 
 	t.Run("invalid_policy_action", func(t *testing.T) {
@@ -416,6 +426,9 @@ func TestUpdatePolicy(t *testing.T) {
 	if response.JSON201 == nil {
 		t.Fatal("Failed to create test policy", response.Status())
 	}
+	defer func() {
+		DeletePolicy(t, ctx, client, existingPolicyID)
+	}()
 
 	t.Run("unknown", func(t *testing.T) {
 		const policyID = "UnknownPolicy"

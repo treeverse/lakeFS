@@ -16,6 +16,7 @@ import (
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 func objectFound(ctx context.Context, repo, ref, path string) (bool, error) {
@@ -78,7 +79,7 @@ func TestDeleteObjectsReadOnlyRepository(t *testing.T) {
 	ctx := context.Background()
 	name := strings.ToLower(t.Name())
 	storageNamespace := GenerateUniqueStorageNamespace(name)
-	repoName := MakeRepositoryName(name)
+	repoName := testutil.UniqueName()
 	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             repoName,
