@@ -2138,6 +2138,107 @@ func TestGravelerDelete(t *testing.T) {
 	}
 }
 
+func TestGraveler_PrepareCommitHook(t *testing.T) {
+	// prepare graveler
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const expectedCommitID = graveler.CommitID("expectedCommitId")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		CommitID: expectedCommitID,
+		Branch:   &graveler.Branch{CommitID: expectedCommitID},
+		Commits:  map[graveler.CommitID]*graveler.Commit{expectedCommitID: {MetaRangeID: expectedRangeID}},
+	}
+	// tests
+	errSomethingBad := errors.New("something bad")
+	const commitBranchID = "branchID"
+	const commitCommitter = "committer"
+	const commitMessage = "message"
+	commitMetadata := graveler.Metadata{"key1": "val1"}
+	tests := []struct {
+		name         string
+		hook         bool
+		err          error
+		readOnlyRepo bool
+	}{
+		{
+			name:         "without hook",
+			hook:         false,
+			err:          nil,
+			readOnlyRepo: false,
+		},
+		{
+			name:         "hook no error",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: false,
+		},
+		{
+			name:         "hook read only repo",
+			hook:         true,
+			err:          nil,
+			readOnlyRepo: true,
+		},
+		{
+			name:         "hook error",
+			hook:         true,
+			err:          errSomethingBad,
+			readOnlyRepo: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+			h := &Hooks{Errs: map[string]error{
+				"PreCommitHook": tt.err,
+			}}
+			if tt.hook {
+				g.SetHooksHandler(h)
+			}
+			repo := repository
+			if tt.readOnlyRepo {
+				repo = repositoryRO
+			}
+			// call commit
+			_, err := g.Commit(ctx, repo, commitBranchID, graveler.CommitParams{
+				Committer: commitCommitter,
+				Message:   commitMessage,
+				Metadata:  commitMetadata,
+			}, graveler.WithForce(tt.readOnlyRepo))
+
+			// check err composition
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("Commit err=%v, expected=%v", err, tt.err)
+			}
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("Commit err=%v, expected HookAbortError", err)
+			}
+			called := slices.Contains(h.Called, "PrepareCommitHook")
+			if (tt.hook && !tt.readOnlyRepo) != called {
+				t.Fatalf("Commit invalid pre-hook call, %v expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+			}
+			if !called {
+				return
+			}
+			if h.RepositoryID != repo.RepositoryID {
+				t.Errorf("Hook repository '%s', expected '%s'", h.RepositoryID, repo.RepositoryID)
+			}
+			if h.BranchID != commitBranchID {
+				t.Errorf("Hook branch '%s', expected '%s'", h.BranchID, commitBranchID)
+			}
+			if h.Commit.Message != commitMessage {
+				t.Errorf("Hook commit message '%s', expected '%s'", h.Commit.Message, commitMessage)
+			}
+			if diff := deep.Equal(h.Commit.Metadata, commitMetadata); diff != nil {
+				t.Error("Hook commit metadata diff:", diff)
+			}
+		})
+	}
+}
+
 func TestGraveler_PreCommitHook(t *testing.T) {
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
