@@ -168,7 +168,7 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 	ctx := context.Background()
 	name := strings.ToLower(t.Name())
 	storageNamespace := GenerateUniqueStorageNamespace(name)
-	repoName := MakeRepositoryName(name)
+	repoName := GenerateUniqueRepositoryName()
 	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             repoName,
