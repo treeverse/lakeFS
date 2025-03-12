@@ -15,7 +15,8 @@ import {
     FormattedDate,
     Loading,
     RefreshButton,
-    useDebouncedState
+    useDebouncedState,
+    SearchInput
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
@@ -23,9 +24,6 @@ import {EntityActionModal} from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
 import {useAuthOutletContext} from "../../../lib/components/auth/layout";
-import InputGroup from "react-bootstrap/InputGroup";
-import { Form } from "react-bootstrap";
-import {SearchIcon} from "@primer/octicons-react";
 
 interface PermissionTypes {
     Read: string;
@@ -106,8 +104,8 @@ const GroupsContainer = () => {
     const [refresh, setRefresh] = useState(false);
 
     const router = useRouter();
-    const after = (router.query.after) ? router.query.after : "";
     const prefix = (router.query.prefix) ? router.query.prefix : "";
+    const after = (router.query.after) ? router.query.after : "";
 
     const lc = useLoginConfigContext();
     const simplified = lc.RBAC === 'simplified';
@@ -158,18 +156,11 @@ const GroupsContainer = () => {
                     </ConfirmationButton>
                 </ActionGroup>
                 <ActionGroup orientation="right">
-                    <InputGroup>
-                        <Form.Control
-                            placeholder="Find a Group..."
-                            autoFocus
-                            value={searchPrefix}
-                            onChange={e => setSearchPrefix(e.target.value)}
-                        />
-                        <InputGroup.Text>
-                            <SearchIcon/>
-                        </InputGroup.Text>
-                    </InputGroup>
-
+                    <SearchInput
+                        searchPrefix={searchPrefix}
+                        setSearchPrefix={setSearchPrefix}
+                        placeholder="Find a Group..."
+                    />
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
@@ -227,11 +218,7 @@ const GroupsContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => {
-                    const query = {after};
-                    if (router.query.prefix) query.prefix = router.query.prefix;
-                    router.push({pathname: '/auth/groups', query})
-                }}
+                onPaginate={(after) => router.push({pathname: "/auth/groups", query: {prefix, after}})}
             />
         </>
     );

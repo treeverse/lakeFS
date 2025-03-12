@@ -500,3 +500,19 @@ export const GrayOut = ({children}) =>
 
 export const WrapIf = ({enabled, Component, children}) => (
     enabled ? <Component>{children}</Component> : children);
+
+export const SearchInput = ({searchPrefix, setSearchPrefix, placeholder}) => {
+    return (
+        <InputGroup>
+            <Form.Control
+                autoFocus
+                placeholder={placeholder}
+                value={searchPrefix}
+                onChange={(e) => setSearchPrefix(e.target.value)}
+            />
+            <InputGroup.Text>
+                <SearchIcon />
+            </InputGroup.Text>
+        </InputGroup>
+    );
+};

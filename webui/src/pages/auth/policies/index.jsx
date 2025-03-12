@@ -18,14 +18,12 @@ import {
     RefreshButton,
     Warning,
     useDebouncedState,
+    SearchInput
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
 import {Link} from "../../../lib/components/nav";
 import { disallowPercentSign, INVALID_POLICY_ID_ERROR_MESSAGE } from "../validation";
-import InputGroup from "react-bootstrap/InputGroup";
-import { Form } from "react-bootstrap";
-import {SearchIcon} from "@primer/octicons-react";
 
 
 const PoliciesContainer = () => {
@@ -36,8 +34,8 @@ const PoliciesContainer = () => {
     const [createModalError, setCreateModalError] = useState(null);
 
     const router = useRouter();
-    const after = (router.query.after) ? router.query.after : "";
     const prefix = (router.query.prefix) ? router.query.prefix : "";
+    const after = (router.query.after) ? router.query.after : "";
 
     const [searchPrefix, setSearchPrefix] = useDebouncedState(
         prefix,
@@ -81,18 +79,11 @@ const PoliciesContainer = () => {
                     </ConfirmationButton>
                 </ActionGroup>
                 <ActionGroup orientation="right">
-                    <InputGroup>
-                        <Form.Control
-                            placeholder="Find a Policy..."
-                            autoFocus
-                            value={searchPrefix}
-                            onChange={e => setSearchPrefix(e.target.value)}
-                        />
-                        <InputGroup.Text>
-                            <SearchIcon/>
-                        </InputGroup.Text>
-                    </InputGroup>
-
+                    <SearchInput
+                        searchPrefix={searchPrefix}
+                        setSearchPrefix={setSearchPrefix}
+                        placeholder="Find a Policy..."
+                    />
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
@@ -149,11 +140,7 @@ const PoliciesContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => {
-                    const query = {after};
-                    if (router.query.prefix) query.prefix = router.query.prefix;
-                    router.push({pathname: '/auth/policies', query})
-                }}
+                onPaginate={(after) => router.push({pathname: "/auth/policies", query: {prefix, after}})}
             />
         </>
     );
