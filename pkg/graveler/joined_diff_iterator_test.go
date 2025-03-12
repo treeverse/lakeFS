@@ -456,12 +456,6 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 			}
 			require.NoError(t, it.Err())
 			// verify that what we produced is what we got from the iterator
-			for i := range got {
-				println("got", got[i].Key.String())
-			}
-			for i := range tt.wantValue {
-				println("want", tt.wantValue[i].Key.String())
-			}
 			if diff := deep.Equal(got, tt.wantValue); diff != nil {
 				t.Fatal("JoinedDiffIterator iterator found diff:", diff)
 			}
