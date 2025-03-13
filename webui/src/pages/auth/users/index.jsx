@@ -2,9 +2,6 @@ import React, {createContext, useCallback, useEffect, useState} from "react";
 import {Outlet, useOutletContext} from "react-router-dom";
 
 import Button from "react-bootstrap/Button";
-import Form from "react-bootstrap/Form";
-import InputGroup from "react-bootstrap/InputGroup";
-import {SearchIcon} from "@primer/octicons-react";
 
 import {useAPI} from "../../../lib/hooks/api";
 import {auth} from "../../../lib/api";
@@ -22,6 +19,7 @@ import {
     FormattedDate,
     Loading,
     RefreshButton,
+    SearchInput,
     useDebouncedState
 } from "../../../lib/components/controls";
 import validator from "validator/es";
@@ -95,17 +93,11 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
                                                     setRefresh(!refresh);
                                                 })}}/>
                 <ActionGroup orientation="right">
-                    <InputGroup>
-                        <Form.Control
-                            autoFocus
-                            placeholder="Find a User..."
-                            value={searchPrefix}
-                            onChange={e => setSearchPrefix(e.target.value)}
-                        />
-                        <InputGroup.Text>
-                            <SearchIcon/>
-                        </InputGroup.Text>
-                    </InputGroup>
+                    <SearchInput
+                        searchPrefix={searchPrefix}
+                        setSearchPrefix={setSearchPrefix}
+                        placeholder="Find a User..."
+                    />
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
