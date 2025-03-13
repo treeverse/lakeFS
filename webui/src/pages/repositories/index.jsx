@@ -136,6 +136,7 @@ const GetStarted = ({allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyR
 const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo, createRepoError }) => {
 
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
+        console.log("search", search)
         return repositories.list(search, after);
     }, [refresh, search, after]);
     useEffect(() => {
