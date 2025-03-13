@@ -27,11 +27,11 @@ func (h *hooksValidationData) appendRes(info *webhookEventInfo) {
 	h.mu.Unlock()
 }
 
-func HooksSuccessTest(ctx context.Context, t *testing.T, repo string) {
+func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClient apigen.ClientWithResponsesInterface) {
 	var hvd hooksValidationData
 	server := StartWebhookServer(t)
 	defer func() { _ = server.Server().Shutdown(ctx) }()
-	parseAndUploadActions(t, ctx, repo, mainBranch, server)
+	parseAndUploadActions(t, ctx, repo, mainBranch, server, lakeFSClient)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
@@ -407,7 +407,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 	}, postDeleteTagEvent)
 }
 
-func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch string, server *WebhookServer) {
+func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch string, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
 	t.Helper()
 	// render actions based on templates
 	docData := struct {
@@ -429,7 +429,7 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		require.NoError(t, err)
 
 		action := doc.String()
-		resp, err := UploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action, nil)
+		resp, err := UploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action, lakeFSClient)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}
