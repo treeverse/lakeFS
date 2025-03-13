@@ -8,10 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
+	"testing"
 	"time"
 )
 
@@ -34,7 +34,8 @@ func (s *WebhookServer) Server() *http.Server {
 	return s.s
 }
 
-func StartWebhookServer() (*WebhookServer, error) {
+func StartWebhookServer(t testing.TB) *WebhookServer {
+	t.Helper()
 	const channelSize = 10
 	respCh := make(chan HookResponse, channelSize)
 	mux := http.NewServeMux()
@@ -54,11 +55,11 @@ func StartWebhookServer() (*WebhookServer, error) {
 	mux.HandleFunc("/fail", failHandlerFunc(respCh))
 	listener, err := net.Listen("tcp", ":0") //nolint:gosec
 	if err != nil {
-		return nil, err
+		t.Fatal(err)
 	}
 
 	port := listener.Addr().(*net.TCPAddr).Port
-	fmt.Println("Using port:", port)
+	t.Log("Using port:", port)
 	s := &http.Server{
 		ReadHeaderTimeout: time.Minute,
 		Handler:           mux,
@@ -69,7 +70,7 @@ func StartWebhookServer() (*WebhookServer, error) {
 	}
 	go func() {
 		if err = s.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("listen: %s\n", err)
+			t.Logf("listen: %s", err)
 		}
 	}()
 
@@ -78,7 +79,7 @@ func StartWebhookServer() (*WebhookServer, error) {
 		respCh: respCh,
 		port:   port,
 		host:   host,
-	}, nil
+	}
 }
 
 func timeoutHandlerFunc(_ chan HookResponse) func(http.ResponseWriter, *http.Request) {
