@@ -34,12 +34,12 @@ const PoliciesContainer = () => {
     const [createModalError, setCreateModalError] = useState(null);
 
     const router = useRouter();
-    const prefix = (router.query.prefix) ? router.query.prefix : "";
-    const after = (router.query.after) ? router.query.after : "";
+    const prefix = router.query.prefix ? router.query.prefix : "";
+    const after = router.query.after ? router.query.after : "";
 
     const [searchPrefix, setSearchPrefix] = useDebouncedState(
         prefix,
-        (search) => router.push({ pathname: '/auth/policies', query: {prefix: search} })
+        search => router.push({ pathname: '/auth/policies', query: {prefix: search} })
     );
 
     const { results, loading, error, nextPage } = useAPIWithPagination(() => {
