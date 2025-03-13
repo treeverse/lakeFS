@@ -84,7 +84,9 @@ func isEventSupported(event graveler.EventType) bool {
 		graveler.EventTypePreCreateTag,
 		graveler.EventTypePostCreateTag,
 		graveler.EventTypePreDeleteTag,
-		graveler.EventTypePostDeleteTag:
+		graveler.EventTypePostDeleteTag,
+		graveler.EventTypePreRevert,
+		graveler.EventTypePostRevert:
 		return true
 	}
 	return false

@@ -1,0 +1,12 @@
+name: Test Post Revert
+description: a test action description
+on:
+  post-revert:
+    branches:
+
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for post-revert works
+    properties:
+      url: "{{.URL}}/post-revert"
