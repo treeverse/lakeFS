@@ -29,7 +29,9 @@ func (h *hooksValidationData) appendRes(info *webhookEventInfo) {
 
 func HooksSuccessTest(ctx context.Context, t *testing.T, repo string) {
 	var hvd hooksValidationData
-	parseAndUploadActions(t, ctx, repo, mainBranch)
+	server := StartWebhookServer(t)
+	defer func() { _ = server.Server().Shutdown(ctx) }()
+	parseAndUploadActions(t, ctx, repo, mainBranch, server)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
@@ -46,13 +48,13 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string) {
 	hvd.appendRes(&preCommitEvent)
 
 	t.Run("commit merge test", func(t *testing.T) {
-		testCommitMerge(t, ctx, repo, &hvd)
+		testCommitMerge(t, ctx, repo, &hvd, server)
 	})
 	t.Run("create delete branch test", func(t *testing.T) {
-		testCreateDeleteBranch(t, ctx, repo, &hvd)
+		testCreateDeleteBranch(t, ctx, repo, &hvd, server)
 	})
 	t.Run("create delete tag test", func(t *testing.T) {
-		testCreateDeleteTag(t, ctx, repo, &hvd)
+		testCreateDeleteTag(t, ctx, repo, &hvd, server)
 	})
 
 	t.Log("check runs are sorted in descending order")
@@ -65,7 +67,7 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string) {
 	}
 }
 
-func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData) {
+func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer) {
 	const branch = "feature-1"
 
 	t.Log("Create branch", branch)
@@ -203,7 +205,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	}
 }
 
-func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData) {
+func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer) {
 	const testBranch = "test_branch_delete"
 	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   testBranch,
@@ -302,7 +304,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd 
 	}, postDeleteBranchEvent)
 }
 
-func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData) {
+func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer) {
 	const tagID = "tag_test_hooks"
 
 	resp, err := client.GetBranchWithResponse(ctx, repo, mainBranch)
@@ -405,7 +407,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 	}, postDeleteTagEvent)
 }
 
-func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch string) {
+func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch string, server *WebhookServer) {
 	t.Helper()
 	// render actions based on templates
 	docData := struct {

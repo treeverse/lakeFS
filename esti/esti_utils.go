@@ -51,7 +51,6 @@ var (
 	client      apigen.ClientWithResponsesInterface
 	endpointURL string
 	svc         *s3.Client
-	server      *WebhookServer
 
 	metaClientJarPath  string
 	sparkImageTag      string
