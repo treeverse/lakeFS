@@ -170,7 +170,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
             <Paginator
                 nextPage={nextPage}
                 after={afterForPagination}
-                onPaginate={(after) => router.push({pathname: "/auth/users", query: {...router.query, prefix, after}})}
+                onPaginate={after => router.push({pathname: '/auth/users', query: {...router.query, prefix, after}})}
             />
         </>
     );
