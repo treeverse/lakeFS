@@ -86,23 +86,19 @@ func GetCosmosDBInstance() (string, func(), error) {
 	})
 	if err != nil {
 		// Fetch logs from the container
-		var (
-			stdout bytes.Buffer
-			stderr bytes.Buffer
-		)
+		var containerOut bytes.Buffer
 
 		if err := dockerPool.Client.Logs(docker.LogsOptions{
 			Container:    resource.Container.ID,
-			OutputStream: &stdout,
-			ErrorStream:  &stderr,
+			OutputStream: &containerOut,
+			ErrorStream:  &containerOut,
 			Stdout:       true,
 			Stderr:       true,
 			Follow:       false,
 		}); err != nil {
 			log.Printf("Error in cosmosdb emulator logs: %s", err)
 		} else {
-			log.Printf("Cosmosdb emulator logs (stdout): %s", stdout.String())
-			log.Printf("Cosmosdb emulator logs (stderr): %s", stderr.String())
+			log.Printf("CosmosDB emulator output: %s", containerOut.String())
 		}
 
 		defer closer()
