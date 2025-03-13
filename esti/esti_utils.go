@@ -381,7 +381,7 @@ const (
 	largeDataContentLength = 6 << 20
 )
 
-func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum, content string, err error) {
+func UploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum, content string, err error) {
 	objContent := randstr.String(randomDataContentLength)
 	checksum, err = UploadFileAndReport(ctx, repo, branch, objPath, objContent, direct, clt)
 	if err != nil {
@@ -495,7 +495,7 @@ func UploadContent(ctx context.Context, repo, branch, objPath, objContent string
 }
 
 func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, clt apigen.ClientWithResponsesInterface) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, false, clt)
+	checksum, content, err := UploadFileRandomDataAndReport(ctx, repo, branch, objPath, false, clt)
 	require.NoError(t, err, "failed to upload file", repo, branch, objPath)
 	return checksum, content
 }
