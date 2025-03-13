@@ -1,0 +1,12 @@
+name: Test Prepare Commit
+description: a test action description
+on:
+  prepare-commit:
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for prepare-commit works
+    properties:
+      url: "{{.URL}}/prepare-commit"
+      query_params:
+        check_env_vars: "{{"{{ ENV.LAKEFSACTION_VAR }}"}}"

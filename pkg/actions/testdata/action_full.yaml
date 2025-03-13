@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - stage
+  prepare-commit:
+    branches:
+      - feature-*
   pre-commit:
     branches:
       - feature-*
