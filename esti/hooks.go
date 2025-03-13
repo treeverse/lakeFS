@@ -30,6 +30,7 @@ func (h *hooksValidationData) appendRes(info *webhookEventInfo) {
 func HooksSuccessTest(ctx context.Context, t *testing.T, repo string) {
 	var hvd hooksValidationData
 	server := StartWebhookServer(t)
+	defer func() { _ = server.Server().Shutdown(ctx) }()
 	parseAndUploadActions(t, ctx, repo, mainBranch, server)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
