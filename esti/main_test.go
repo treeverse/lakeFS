@@ -54,13 +54,6 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	var err error
-	server, err = StartWebhookServer()
-	if err != nil {
-		logger.WithError(err).Fatal("start webhook server")
-	}
-	defer func() { _ = server.Server().Close() }()
-
 	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
 }
