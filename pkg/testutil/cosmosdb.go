@@ -44,6 +44,21 @@ func GetCosmosDBInstance() (string, func(), error) {
 	cosmosdbLocalURI = "https://localhost:" + resource.GetPort("8081/tcp")
 	// set cleanup
 	closer := func() {
+		// Fetch logs from the container
+		var containerOut bytes.Buffer
+		if err := dockerPool.Client.Logs(docker.LogsOptions{
+			Container:    resource.Container.ID,
+			OutputStream: &containerOut,
+			ErrorStream:  &containerOut,
+			Stdout:       true,
+			Stderr:       true,
+			Follow:       false,
+		}); err != nil {
+			log.Printf("Error in cosmosdb emulator logs: %s", err)
+		} else {
+			log.Printf("CosmosDB emulator output: %s", containerOut.String())
+		}
+
 		err = dockerPool.Purge(resource)
 		if err != nil {
 			fmt.Println("could not kill cosmosdb local container :%w", err)
@@ -85,22 +100,6 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return nil
 	})
 	if err != nil {
-		// Fetch logs from the container
-		var containerOut bytes.Buffer
-
-		if err := dockerPool.Client.Logs(docker.LogsOptions{
-			Container:    resource.Container.ID,
-			OutputStream: &containerOut,
-			ErrorStream:  &containerOut,
-			Stdout:       true,
-			Stderr:       true,
-			Follow:       false,
-		}); err != nil {
-			log.Printf("Error in cosmosdb emulator logs: %s", err)
-		} else {
-			log.Printf("CosmosDB emulator output: %s", containerOut.String())
-		}
-
 		defer closer()
 		return "", nil, fmt.Errorf("could not connect to cosmosdb emulator at %s: %w", cosmosdbLocalURI, err)
 	}
