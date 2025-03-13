@@ -19,6 +19,7 @@ func TestBranchSimpleIterator(t *testing.T) {
 	repo := &graveler.RepositoryRecord{
 		RepositoryID: "repo1",
 		Repository: &graveler.Repository{
+			StorageID:        "sid",
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",
@@ -96,6 +97,7 @@ func TestBranchByCommitIterator(t *testing.T) {
 	repo := &graveler.RepositoryRecord{
 		RepositoryID: "repo1",
 		Repository: &graveler.Repository{
+			StorageID:        "sid",
 			StorageNamespace: "s3://foo",
 			CreationDate:     time.Now(),
 			DefaultBranchID:  "main",

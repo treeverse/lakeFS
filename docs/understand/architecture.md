@@ -15,9 +15,10 @@ The server itself is stateless, meaning you can easily add more instances to han
 ![Architecture]({{ site.baseurl }}/assets/img/architecture.png)
 
 {% include toc_2-3.html %}
+
 ### Object Storage
 
-lakeFS stores data in object stores. Those supported include: 
+lakeFS manages data stored on various object storage platforms, including: 
 
 - AWS S3
 - Google Cloud Storage
@@ -25,6 +26,10 @@ lakeFS stores data in object stores. Those supported include:
 - MinIO
 - NetApp StorageGRID
 - Ceph
+- Any other S3-compatible storage
+
+With [lakeFS Enterprise](../enterprise), you can leverage [multiple storage backend support](../howto/multiple-storage-backends.md)
+to manage data across multiple storage locations, including on-prem, hybrid, and multi-cloud environments.
 
 ### Metadata Storage
 
@@ -93,7 +98,7 @@ Some data applications benefit from deeper integrations with lakeFS to support d
 ### OpenAPI Generated SDKs
 
 OpenAPI specification can be used to generate lakeFS clients for many programming languages.
-For example, the [Python lakefs-client](https://pypi.org/project/lakefs-client/) or the [Java client](https://central.sonatype.com/artifact/io.lakefs/api-client) are published with every new lakeFS release.
+For example, the [Python lakefs-sdk](https://pypi.org/project/lakefs-sdk/) or the [Java client](https://central.sonatype.com/artifact/io.lakefs/api-client) are published with every new lakeFS release.
 
 ### lakectl
 

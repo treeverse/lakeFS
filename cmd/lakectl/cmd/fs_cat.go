@@ -18,7 +18,7 @@ var fsCatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := MustParsePathURI("path URI", args[0])
 		client := getClient()
-		preSignMode := getPresignMode(cmd, client)
+		preSignMode := getPresignMode(cmd, client, pathURI.Repository)
 
 		var err error
 		var body io.ReadCloser

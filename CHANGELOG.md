@@ -1,5 +1,16 @@
 # Changelog
 
+# v1.51.0
+
+:new: What's new:
+- Hook pre/post merge include merge source (#8703)
+- Switch to use openapi generator v7.0.1.2 (#8710)
+- lakectl: Add storage ID to repo list (#8756)
+
+:bug: Bugs fixed:
+- WebUI: Fix overflowed values in modals (#8640)
+- WebUI: Fix overflowed policy name error (#8705)
+
 # v1.50.0
 
 :new: What's new:

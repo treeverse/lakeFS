@@ -23,17 +23,17 @@ func TestCommitSingle(t *testing.T) {
 	defer tearDownTest(repo)
 
 	const objPath = "1.txt"
-	_, objContent := uploadFileRandomData(ctx, t, repo, mainBranch, objPath)
+	_, objContent := UploadFileRandomData(ctx, t, repo, mainBranch, objPath, nil)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "singleCommit",
 	})
 	require.NoError(t, err, "failed to commit changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+	require.NoErrorf(t, VerifyResponse(commitResp.HTTPResponse, commitResp.Body),
 		"failed to commit changes repo %s branch %s", repo, mainBranch)
 
 	getObjResp, err := client.GetObjectWithResponse(ctx, repo, mainBranch, &apigen.GetObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to get object")
-	require.NoErrorf(t, verifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
+	require.NoErrorf(t, VerifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
 		"failed to get object repo %s branch %s path %s", repo, mainBranch, objPath)
 
 	body := string(getObjResp.Body)
@@ -56,7 +56,7 @@ type Upload struct {
 // upload uploads random file data for uploads.
 func upload(ctx context.Context, uploads chan Upload) error {
 	for u := range uploads {
-		_, _, err := uploadFileRandomDataAndReport(ctx, u.Repo, u.Branch, u.Path, false)
+		_, _, err := uploadFileRandomDataAndReport(ctx, u.Repo, u.Branch, u.Path, false, nil)
 		if err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 		Message: "mixedOrderCommit1",
 	})
 	require.NoError(t, err, "failed to commit changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+	require.NoErrorf(t, VerifyResponse(commitResp.HTTPResponse, commitResp.Body),
 		"failed to commit changes repo %s branch %s", repo, mainBranch)
 
 	names2 := genNames(size, "run1/foo")
@@ -127,7 +127,7 @@ func TestCommitInMixedOrder(t *testing.T) {
 		Message: "mixedOrderCommit2",
 	})
 	require.NoError(t, err, "failed to commit second set of changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+	require.NoErrorf(t, VerifyResponse(commitResp.HTTPResponse, commitResp.Body),
 		"failed to commit second set of changes repo %s branch %s", repo, mainBranch)
 }
 
@@ -137,19 +137,19 @@ func TestCommitWithTombstone(t *testing.T) {
 	defer tearDownTest(repo)
 	origObjPathLow := "objb.txt"
 	origObjPathHigh := "objc.txt"
-	uploadFileRandomData(ctx, t, repo, mainBranch, origObjPathLow)
-	uploadFileRandomData(ctx, t, repo, mainBranch, origObjPathHigh)
+	UploadFileRandomData(ctx, t, repo, mainBranch, origObjPathLow, nil)
+	UploadFileRandomData(ctx, t, repo, mainBranch, origObjPathHigh, nil)
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "First commit",
 	})
 	require.NoError(t, err, "failed to commit changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+	require.NoErrorf(t, VerifyResponse(commitResp.HTTPResponse, commitResp.Body),
 		"failed to commit changes repo %s branch %s", repo, mainBranch)
 
 	tombstoneObjPath := "obja.txt"
 	newObjPath := "objd.txt"
-	uploadFileRandomData(ctx, t, repo, mainBranch, tombstoneObjPath)
-	uploadFileRandomData(ctx, t, repo, mainBranch, newObjPath)
+	UploadFileRandomData(ctx, t, repo, mainBranch, tombstoneObjPath, nil)
+	UploadFileRandomData(ctx, t, repo, mainBranch, newObjPath, nil)
 
 	// Turning tombstoneObjPath to tombstone
 	resp, err := client.DeleteObjectWithResponse(ctx, repo, mainBranch, &apigen.DeleteObjectParams{Path: tombstoneObjPath})
@@ -160,15 +160,15 @@ func TestCommitWithTombstone(t *testing.T) {
 		Message: "Commit with tombstone",
 	})
 	require.NoError(t, err, "failed to commit changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+	require.NoErrorf(t, VerifyResponse(commitResp.HTTPResponse, commitResp.Body),
 		"failed to commit changes repo %s branch %s", repo, mainBranch)
 }
 
 func TestCommitReadOnlyRepo(t *testing.T) {
 	ctx := context.Background()
 	name := strings.ToLower(t.Name())
-	storageNamespace := generateUniqueStorageNamespace(name)
-	repoName := makeRepositoryName(name)
+	storageNamespace := GenerateUniqueStorageNamespace(name)
+	repoName := MakeRepositoryName(name)
 	resp, err := client.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
 		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             repoName,
@@ -176,7 +176,7 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 		ReadOnly:         swag.Bool(true),
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
-	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+	require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, storageNamespace)
 	defer tearDownTest(repoName)
 
@@ -202,7 +202,7 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 		Force: swag.Bool(true),
 	}, w.FormDataContentType(), &b)
 	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
-	err = verifyResponse(uploadResp.HTTPResponse, uploadResp.Body)
+	err = VerifyResponse(uploadResp.HTTPResponse, uploadResp.Body)
 	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
 
 	commitResp, err = client.CommitWithResponse(ctx, repoName, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
@@ -210,12 +210,12 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 		Force:   swag.Bool(true),
 	})
 	require.NoError(t, err, "failed to commit changes")
-	require.NoErrorf(t, verifyResponse(commitResp.HTTPResponse, commitResp.Body),
+	require.NoErrorf(t, VerifyResponse(commitResp.HTTPResponse, commitResp.Body),
 		"failed to commit changes repo %s branch %s", repoName, mainBranch)
 
 	getObjResp, err := client.GetObjectWithResponse(ctx, repoName, mainBranch, &apigen.GetObjectParams{Path: objPath})
 	require.NoError(t, err, "failed to get object")
-	require.NoErrorf(t, verifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
+	require.NoErrorf(t, VerifyResponse(getObjResp.HTTPResponse, getObjResp.Body),
 		"failed to get object repo %s branch %s path %s", repoName, mainBranch, objPath)
 
 	body := string(getObjResp.Body)

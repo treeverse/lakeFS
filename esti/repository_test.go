@@ -31,16 +31,16 @@ func TestRepositoryBasicOps(t *testing.T) {
 	// delete repositories
 	for _, repo := range repos {
 		resp, err := client.DeleteRepositoryWithResponse(ctx, repo, &apigen.DeleteRepositoryParams{})
-		require.NoErrorf(t, err, "failed to delete repository %s, storage %s", repo)
+		require.NoErrorf(t, err, "failed to delete repository %s", repo)
 		require.Equal(t, http.StatusNoContent, resp.StatusCode())
 	}
 }
 
 func TestRepositoryCreateSampleRepo(t *testing.T) {
 	ctx := context.Background()
-	name := generateUniqueRepositoryName()
-	storageNamespace := generateUniqueStorageNamespace(name)
-	name = makeRepositoryName(name)
+	name := GenerateUniqueRepositoryName()
+	storageNamespace := GenerateUniqueStorageNamespace(name)
+	name = MakeRepositoryName(name)
 	logger.WithFields(logging.Fields{
 		"repository":        name,
 		"storage_namespace": storageNamespace,
@@ -53,7 +53,7 @@ func TestRepositoryCreateSampleRepo(t *testing.T) {
 		SampleData:       swag.Bool(true),
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, storageNamespace)
-	require.NoErrorf(t, verifyResponse(resp.HTTPResponse, resp.Body),
+	require.NoErrorf(t, VerifyResponse(resp.HTTPResponse, resp.Body),
 		"create repository '%s', storage '%s'", name, storageNamespace)
 	_, err = client.GetRepositoryWithResponse(ctx, name)
 	require.NoErrorf(t, err, "failed to get repository '%s'", name)

@@ -21,7 +21,7 @@ const CompareBranchesActionsBar = (
                 compareReference={compareReference}
                 baseSelectURL={baseSelectURL}
                 withCommits={true}
-                />
+            />
         </ActionGroup>
 
         <ActionGroup orientation="right">
@@ -105,7 +105,17 @@ const MergeButton = ({repo, onDone, source, dest, disabled = false}) => {
                 <Modal.Body>
                     <Form className="mb-2">
                         <Form.Group controlId="message" className="mb-3">
-                            <Form.Control type="text" placeholder="Commit Message (Optional)" ref={textRef}/>
+                            <Form.Control
+                                type="text"
+                                placeholder="Commit Message (Optional)"
+                                ref={textRef}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        onSubmit();
+                                    }
+                                }}
+                            />
                         </Form.Group>
 
                         <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>

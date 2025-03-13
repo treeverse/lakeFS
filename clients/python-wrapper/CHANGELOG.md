@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.9.0
+
+:new: What's new:
+
+- Support storage ids (#8742)
+
 ## v0.8.0
 
 :new: What's new:

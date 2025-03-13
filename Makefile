@@ -8,7 +8,7 @@ UID_GID := $(shell id -u):$(shell id -g)
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
 # https://openapi-generator.tech
-OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.1
+OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.2
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)

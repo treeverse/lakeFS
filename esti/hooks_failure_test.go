@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"testing"
 	"text/template"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -44,8 +43,6 @@ hooks:
       timeout : {{.Timeout}}
 `))
 
-const hooksTimeout = 2 * time.Second
-
 func TestHooksTimeout(t *testing.T) {
 	hookFailToCommit(t, "timeout")
 }
@@ -59,7 +56,7 @@ func TestHooksFail(t *testing.T) {
 	})
 }
 
-func createAction(t *testing.T, ctx context.Context, repo, branch, path string, tmp *template.Template) {
+func createAction(t *testing.T, ctx context.Context, repo, branch, path string, tmp *template.Template, server *WebhookServer) {
 	t.Helper()
 
 	// render actions based on templates
@@ -78,7 +75,7 @@ func createAction(t *testing.T, ctx context.Context, repo, branch, path string, 
 	err := tmp.Execute(&doc, docData)
 	require.NoError(t, err)
 	content := doc.String()
-	uploadResp, err := uploadContent(ctx, repo, branch, "_lakefs_actions/"+uuid.NewString(), content)
+	uploadResp, err := UploadContent(ctx, repo, branch, "_lakefs_actions/"+uuid.NewString(), content, nil)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, uploadResp.StatusCode())
 	logger.WithField("branch", branch).Info("Commit initial content")
@@ -88,7 +85,8 @@ func hookFailToCreateBranch(t *testing.T, path string) {
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const branch = "feature-1"
-
+	server := StartWebhookServer(t)
+	defer func() { _ = server.Server().Shutdown(ctx) }()
 	logger.WithField("branch", branch).Info("Create branch")
 	resp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   branch,
@@ -97,7 +95,7 @@ func hookFailToCreateBranch(t *testing.T, path string) {
 	require.NoError(t, err, "failed to create branch")
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
-	createAction(t, ctx, repo, branch, path, actionPreCreateBranchTmpl)
+	createAction(t, ctx, repo, branch, path, actionPreCreateBranchTmpl, server)
 
 	logger.WithField("branch", "test_branch").Info("Create branch - expect failure")
 	resp, err = client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
@@ -111,6 +109,8 @@ func hookFailToCreateBranch(t *testing.T, path string) {
 func hookFailToCommit(t *testing.T, path string) {
 	ctx, logger, repo := setupTest(t)
 	defer tearDownTest(repo)
+	server := StartWebhookServer(t)
+	defer func() { _ = server.Server().Shutdown(ctx) }()
 	const branch = "feature-1"
 
 	logger.WithField("branch", branch).Info("Create branch")
@@ -124,7 +124,7 @@ func hookFailToCommit(t *testing.T, path string) {
 	logger.WithField("branchRef", ref).Info("Branch created")
 	logger.WithField("branch", branch).Info("Upload initial content")
 
-	createAction(t, ctx, repo, branch, path, actionPreCommitTmpl)
+	createAction(t, ctx, repo, branch, path, actionPreCommitTmpl, server)
 
 	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
