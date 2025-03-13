@@ -14,7 +14,9 @@ import {
     AlertError,
     FormattedDate,
     Loading,
-    RefreshButton
+    RefreshButton,
+    useDebouncedState,
+    SearchInput
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 import {Link} from "../../../lib/components/nav";
@@ -102,14 +104,22 @@ const GroupsContainer = () => {
     const [refresh, setRefresh] = useState(false);
 
     const router = useRouter();
+    const prefix = (router.query.prefix) ? router.query.prefix : "";
     const after = (router.query.after) ? router.query.after : "";
+
     const lc = useLoginConfigContext();
     const simplified = lc.RBAC === 'simplified';
+
+    const [searchPrefix, setSearchPrefix] = useDebouncedState(
+        prefix,
+        (search) => router.push({ pathname: '/auth/groups', query: {prefix: search} })
+    );
+
     const { results, loading, error, nextPage } =  useAPIWithPagination(async () => {
-        const groups = await auth.listGroups("", after);
+        const groups = await auth.listGroups(prefix, after);
         const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: simplified && await getACLMaybe(group.id)})));
         return {...groups, results: enrichedResults};
-    }, [after, refresh, lc.RBAC]);
+    }, [lc.RBAC, refresh, prefix, after]);
 
     useEffect(() => {
         setSelected([]);
@@ -146,6 +156,11 @@ const GroupsContainer = () => {
                     </ConfirmationButton>
                 </ActionGroup>
                 <ActionGroup orientation="right">
+                    <SearchInput
+                        searchPrefix={searchPrefix}
+                        setSearchPrefix={setSearchPrefix}
+                        placeholder="Find a Group..."
+                    />
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
@@ -203,7 +218,7 @@ const GroupsContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => router.push({pathname: '/auth/groups', query: {after}, params: {}})}
+                onPaginate={(after) => router.push({pathname: "/auth/groups", query: {prefix, after}})}
             />
         </>
     );
