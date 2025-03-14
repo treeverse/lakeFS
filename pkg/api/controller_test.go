@@ -4169,6 +4169,7 @@ func testUniqueRepoName() string {
 }
 
 func TestController_Revert(t *testing.T) {
+	t.Parallel()
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 	// setup env
@@ -4260,6 +4261,23 @@ func TestController_Revert(t *testing.T) {
 			t.Errorf("Revert should fail with 403 forbidden for read-only repository, got (status code: %d): %s", revertResp.StatusCode(), revertResp.Body)
 		}
 		revertResp, err = clt.RevertBranchWithResponse(ctx, readOnlyRepository, "main", apigen.RevertBranchJSONRequestBody{Ref: "main", Force: swag.Bool(true)})
+		verifyResponseOK(t, revertResp, err)
+	})
+
+	t.Run("no changes", func(t *testing.T) {
+		logCommits, err := clt.LogCommitsWithResponse(ctx, repo, "main", &apigen.LogCommitsParams{})
+		verifyResponseOK(t, logCommits, err)
+		results := logCommits.JSON200.Results
+		emptyCommit := results[len(results)-1]
+		revertResp, err := clt.RevertBranchWithResponse(ctx, repo, "main", apigen.RevertBranchJSONRequestBody{Ref: emptyCommit.Id})
+		require.NoError(t, err)
+		require.NotNil(t, revertResp.JSON400)
+		require.Contains(t, revertResp.JSON400.Message, "no change")
+
+		// With allow empty
+		revertResp, err = clt.RevertBranchWithResponse(ctx, repo, "main", apigen.RevertBranchJSONRequestBody{
+			Ref:        emptyCommit.Id,
+			AllowEmpty: apiutil.Ptr(true)})
 		verifyResponseOK(t, revertResp, err)
 	})
 }
