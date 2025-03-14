@@ -551,7 +551,7 @@ func TestGravelerRevert(t *testing.T) {
 		test.RefManager.EXPECT().ResolveRawRef(ctx, repository, rawRefCommit4).Times(1).Return(&graveler.ResolvedRef{Type: graveler.ReferenceTypeCommit, BranchRecord: graveler.BranchRecord{Branch: &graveler.Branch{CommitID: commit4ID}}}, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit2ID).Times(1).Return(&commit2, nil)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit4ID).Times(1).Return(&commit4, nil)
-		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageID, repository.StorageNamespace, mr1ID, mr4ID, mr2ID, graveler.MergeStrategyNone, []graveler.SetOptionsFunc{}).Times(1).Return(mr3ID, nil)
+		test.CommittedManager.EXPECT().Merge(ctx, repository.StorageID, repository.StorageNamespace, mr1ID, mr4ID, mr2ID, graveler.MergeStrategyNone, gomock.Any()).Times(1).Return(mr3ID, nil)
 		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
 			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
 				branchTest := &graveler.Branch{StagingToken: stagingToken4, CommitID: commit1ID, SealedTokens: []graveler.StagingToken{stagingToken1, stagingToken2, stagingToken3}}
