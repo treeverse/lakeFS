@@ -56,7 +56,7 @@ type Upload struct {
 // upload uploads random file data for uploads.
 func upload(ctx context.Context, uploads chan Upload) error {
 	for u := range uploads {
-		_, _, err := uploadFileRandomDataAndReport(ctx, u.Repo, u.Branch, u.Path, false, nil)
+		_, _, err := UploadFileRandomDataAndReport(ctx, u.Repo, u.Branch, u.Path, false, nil)
 		if err != nil {
 			return err
 		}
