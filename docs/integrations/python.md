@@ -568,6 +568,37 @@ s3 = boto3.client('s3',
 
 The client is now configured to operate on your lakeFS installation.
 
+#### Configuring Boto3 S3 Client with Checksum Settings
+
+In newer versions of Boto3, when connecting to **lakeFS** using **HTTPS**,
+you might encounter an **AccessDenied** error on upload,
+while the lakeFS logs display an error `encoding/hex: invalid byte: U+0053 'S'`. 
+
+To avoid this issue, explicitly configure the Boto3 client with the following checksum settings:
+- `request_checksum_calculation: 'when_required'`
+- `response_checksum_validation: 'when_required'`
+
+Example of how to configure it:
+
+```python
+import boto3
+from botocore.config import Config
+
+# Configure checksum settings
+config = Config(
+    request_checksum_calculation='when_required',
+    response_checksum_validation='when_required'
+)
+
+s3_client = boto3.client(
+    's3',
+    endpoint_url='https://lakefs.example.com',
+    aws_access_key_id='AKIAIOSFODNN7EXAMPLE',
+    aws_secret_access_key='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    config=config,
+)
+```
+
 ### Usage Examples
 
 #### Put an object into lakeFS
