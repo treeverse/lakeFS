@@ -14,7 +14,9 @@ var bisectResetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := BisectRemove()
 		if os.IsNotExist(err) {
-			Die("No active bisect session", 1)
+			// Should not be an error exit code when no active session
+			Warning("No active bisect session")
+			return
 		}
 		if err != nil {
 			DieErr(err)

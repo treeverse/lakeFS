@@ -7,14 +7,14 @@ import (
 )
 
 const userInfoTemplate = `User ID:          {{.UserID|yellow}}
-{{if .Email}}Email:            {{.Email|blue}}
-{{end}}Creation Date:    {{.CreationDate|date}}
+Email:            {{if .Email}}{{.Email|blue}}{{end}}
+Creation Date:    {{.CreationDate|date}}
 `
 
 var identityCmd = &cobra.Command{
 	Use:               "identity",
 	Short:             "Show identity info",
-	Long:              "Show the info of the user cofigurated in lakectl",
+	Long:              "Show the info of the configured user in lakectl",
 	Example:           "lakectl identity",
 	Args:              cobra.ExactArgs(0),
 	ValidArgsFunction: ValidArgsRepository,
