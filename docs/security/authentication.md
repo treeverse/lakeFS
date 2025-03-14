@@ -42,7 +42,7 @@ Authorization: Basic <base64 encoded access_key_id:secret_access_key>
 For example, assuming my access_key_id is `my_access_key_id` and my secret_access_key is `my_secret_access_key`, we'd send the following header with every request:
 
 ```text
-Authorization: Basic bXlfYWNjZXNzX2tleV9pZDpteV9hY2Nlc3Nfc2VjcmV0X2tleQ==
+Authorization: Basic bXlfYWNjZXNzX2tleV9pZDpteV9zZWNyZXRfYWNjZXNzX2tleQ==
 ```
 
 
