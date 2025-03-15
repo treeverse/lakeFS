@@ -39,8 +39,8 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	logger := logging.ContextUnavailable()
 	viper.AddConfigPath(".")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
-	viper.SetEnvPrefix(strings.ToUpper(params.Name))
-	viper.SetConfigName(strings.ToLower(params.Name))
+	viper.SetEnvPrefix("ESTI")
+	viper.SetConfigName("esti")
 	viper.AutomaticEnv()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -119,8 +119,8 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 		viper.Set("access_key_id", credentialsWithSecret.AccessKeyId)
 		viper.Set("secret_access_key", credentialsWithSecret.SecretAccessKey)
 	} else {
-		viper.Set("access_key_id", params.AdminAccessKeyID)
-		viper.Set("secret_access_key", params.AdminSecretAccessKey)
+		viper.SetDefault("access_key_id", params.AdminAccessKeyID)
+		viper.SetDefault("secret_access_key", params.AdminSecretAccessKey)
 	}
 
 	key := viper.GetString("access_key_id")
@@ -139,21 +139,32 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	return logger, client, svc, endpointURL
 }
 
-func SetupTestS3Client(endpoint, key, secret string, forcePathStyle bool) (*s3.Client, error) {
+func SetupTestS3Client(endpoint, key, secret string, forcePathStyle bool, opts ...func(*s3.Options)) (*s3.Client, error) {
 	if !strings.HasPrefix(endpoint, "http") {
 		endpoint = "http://" + endpoint
+	}
+	// create a custom error to know if a redirect happened
+	// Return http.ErrUseLastResponse on redirect request,
+	// From documentation: As a special case, if CheckRedirect returns ErrUseLastResponse,
+	// then the most recent response is returned with its body unclosed, along with a nil error.
+	// Not that AWS SDK does not respect this special error case and returns an error regardless
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
 	}
 	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion("us-east-1"),
 		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(key, secret, "")),
+		awsconfig.WithHTTPClient(client),
 	)
 	if err != nil {
 		return nil, err
 	}
-	svc := s3.NewFromConfig(cfg, func(options *s3.Options) {
+	svc := s3.NewFromConfig(cfg, append(opts, func(options *s3.Options) {
 		options.BaseEndpoint = aws.String(endpoint)
 		options.UsePathStyle = forcePathStyle
-	})
+	})...)
 	return svc, nil
 }
 
