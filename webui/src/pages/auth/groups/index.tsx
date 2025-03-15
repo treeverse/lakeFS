@@ -104,15 +104,15 @@ const GroupsContainer = () => {
     const [refresh, setRefresh] = useState(false);
 
     const router = useRouter();
-    const prefix = (router.query.prefix) ? router.query.prefix : "";
-    const after = (router.query.after) ? router.query.after : "";
+    const prefix = router.query.prefix ? router.query.prefix : "";
+    const after = router.query.after ? router.query.after : "";
 
     const lc = useLoginConfigContext();
     const simplified = lc.RBAC === 'simplified';
 
     const [searchPrefix, setSearchPrefix] = useDebouncedState(
         prefix,
-        (search) => router.push({ pathname: '/auth/groups', query: {prefix: search} })
+        search => router.push({ pathname: '/auth/groups', query: {prefix: search} })
     );
 
     const { results, loading, error, nextPage } =  useAPIWithPagination(async () => {
@@ -218,7 +218,7 @@ const GroupsContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={(after) => router.push({pathname: "/auth/groups", query: {prefix, after}})}
+                onPaginate={after => router.push({pathname: "/auth/groups", query: {prefix, after}})}
             />
         </>
     );
