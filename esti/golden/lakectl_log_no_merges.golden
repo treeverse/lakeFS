@@ -1,12 +1,12 @@
 
 ID:            <COMMIT_ID>
-Author:        esti
+Author:        ${AUTHOR}
 Date:          <DATE> <TIME> <TZ>
 
 	${SECOND_MESSAGE}
 
 ID:            <COMMIT_ID>
-Author:        esti
+Author:        ${AUTHOR}
 Date:          <DATE> <TIME> <TZ>
 
 	${MESSAGE}

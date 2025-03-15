@@ -39,8 +39,8 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	logger := logging.ContextUnavailable()
 	viper.AddConfigPath(".")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
-	viper.SetEnvPrefix(strings.ToUpper(params.Name))
-	viper.SetConfigName(strings.ToLower(params.Name))
+	viper.SetEnvPrefix("ESTI")
+	viper.SetConfigName("esti")
 	viper.AutomaticEnv()
 
 	viper.SetDefault("setup_lakefs", true)
@@ -119,8 +119,8 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 		viper.Set("access_key_id", credentialsWithSecret.AccessKeyId)
 		viper.Set("secret_access_key", credentialsWithSecret.SecretAccessKey)
 	} else {
-		viper.Set("access_key_id", params.AdminAccessKeyID)
-		viper.Set("secret_access_key", params.AdminSecretAccessKey)
+		viper.SetDefault("access_key_id", params.AdminAccessKeyID)
+		viper.SetDefault("secret_access_key", params.AdminSecretAccessKey)
 	}
 
 	key := viper.GetString("access_key_id")
