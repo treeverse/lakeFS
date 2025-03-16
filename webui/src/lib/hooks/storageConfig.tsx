@@ -1,12 +1,19 @@
-import React, { createContext, FC, useContext, useEffect, useState, } from "react";
+import React, {
+    createContext,
+    FC,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
 
-import { config } from "../api";
+import {config} from "../api";
 import useUser from "./user";
 
 type StorageConfigContextType = {
     error: Error | null;
     loading: boolean;
     configs: [StorageConfigType] | null;
+    refresh: () => void;
 };
 
 type StorageConfigType = {
@@ -24,23 +31,46 @@ const storageConfigInitialState: StorageConfigContextType = {
     error: null,
     loading: true,
     configs: null,
+    refresh: () => {
+    },
 };
 
-const StorageConfigContext = createContext<StorageConfigContextType>(storageConfigInitialState);
+const StorageConfigContext = createContext<StorageConfigContextType>(
+    storageConfigInitialState,
+);
 
 const useStorageConfigs = () => useContext(StorageConfigContext);
 
-const StorageConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
+const StorageConfigProvider: FC<{ children: React.ReactNode }> = ({
+                                                                      children,
+                                                                  }) => {
     const {user} = useUser();
-    const [storageConfig, setStorageConfig] = useState<StorageConfigContextType>(storageConfigInitialState);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [storageConfig, setStorageConfig] = useState<StorageConfigContextType>({
+        ...storageConfigInitialState,
+        refresh: () => setRefreshTrigger((prev) => prev + 1),
+    });
 
     useEffect(() => {
-        config.getStorageConfigs()
-            .then(configs =>
-                setStorageConfig({configs, loading: false, error: null}))
+        config
+            .getStorageConfigs()
+            .then((configs) =>
+                setStorageConfig((prev) => ({
+                    ...prev,
+                    configs,
+                    loading: false,
+                    error: null,
+                })),
+            )
             .catch((error) =>
-                setStorageConfig({configs: null, loading: false, error}));
-    }, [user]);
+                setStorageConfig((prev) => ({
+                    ...prev,
+                    configs: null,
+                    loading: false,
+                    error,
+                })),
+            );
+    }, [user, refreshTrigger]);
 
     return (
         <StorageConfigContext.Provider value={storageConfig}>
@@ -49,4 +79,4 @@ const StorageConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     );
 };
 
-export { StorageConfigProvider, useStorageConfigs };
+export {StorageConfigProvider, useStorageConfigs};
