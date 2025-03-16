@@ -37,25 +37,25 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     const { user } = useUser();
     const currentUser = user;
 
+    const router = useRouter();
+    const prefix = router.query.prefix ? router.query.prefix : "";
+    const parsedAfterToInt = parseInt(router.query.after, DECIMAL_RADIX);
+    const after = isNaN(parsedAfterToInt) ? 0 : parsedAfterToInt;
+
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
     const [showCreate, setShowCreate] = useState(false);
     const [showInvite, setShowInvite] = useState(false);
-
-    const router = useRouter();
-    const prefix = router.query.prefix ? router.query.prefix : "";
-    const after = router.query.after ? parseInt(router.query.after, DECIMAL_RADIX) : 0;
     const [paginationData, setPaginationData] = useState(
         { hasMorePages: false, paginatedFilteredUsers: []});
-
     const [searchPrefix, setSearchPrefix] = useDebouncedState(
         prefix,
         search => {
-            return router.push({ pathname: '/auth/users', query: { ...router.query, prefix: search, after: 0 }});
+            return navigateToUsersPage(search, 0);
         }
     );
 
-    useEffect(() => { setSelected([]); }, [refresh]);
+    useEffect(() => { setSelected([]); }, [refresh, after]);
 
     const authCapabilities = useAPI(() => auth.getAuthCapabilities());
 
@@ -64,15 +64,18 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     useEffect(() => {
         if (allUsers) {
             const filtered = allUsers.filter((user) => resolveUserDisplayName(user).startsWith(prefix));
-            setPaginationData({
-                hasMorePages: (after + DEFAULT_LISTING_AMOUNT) < filtered.length,
-                paginatedFilteredUsers: filtered.slice(after, after + DEFAULT_LISTING_AMOUNT)
-            });
+            const hasMorePages = after + DEFAULT_LISTING_AMOUNT < filtered.length;
+            const paginatedFilteredUsers = filtered.slice(after, after + DEFAULT_LISTING_AMOUNT);
+            setPaginationData({ hasMorePages, paginatedFilteredUsers });
         }
     }, [allUsers, prefix, after]);
 
     const afterForPagination = after === 0 ? "" : String(after);
     const nextPage = paginationData.hasMorePages ? String(after + DEFAULT_LISTING_AMOUNT) : null;
+
+    function navigateToUsersPage(prefix, after) {
+        return router.push({ pathname: "/auth/users", query: { prefix, after } });
+    }
 
     if (error) return <AlertError error={error}/>;
     if (loading) return <Loading/>;
@@ -162,7 +165,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
             <Paginator
                 nextPage={nextPage}
                 after={afterForPagination}
-                onPaginate={after => router.push({pathname: '/auth/users', query: {...router.query, prefix, after}})}
+                onPaginate={after => { return navigateToUsersPage(prefix, after); }}
             />
         </>
     );
