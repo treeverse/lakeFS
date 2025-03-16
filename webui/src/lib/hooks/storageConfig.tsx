@@ -1,10 +1,4 @@
-import React, {
-    createContext,
-    FC,
-    useContext,
-    useEffect,
-    useState,
-} from "react";
+import React, {createContext, FC, useContext, useEffect, useState} from "react";
 
 import {config} from "../api";
 import useUser from "./user";
@@ -35,15 +29,11 @@ const storageConfigInitialState: StorageConfigContextType = {
     },
 };
 
-const StorageConfigContext = createContext<StorageConfigContextType>(
-    storageConfigInitialState,
-);
+const StorageConfigContext = createContext<StorageConfigContextType>(storageConfigInitialState);
 
 const useStorageConfigs = () => useContext(StorageConfigContext);
 
-const StorageConfigProvider: FC<{ children: React.ReactNode }> = ({
-                                                                      children,
-                                                                  }) => {
+const StorageConfigProvider: FC<{ children: React.ReactNode }> = ({children}) => {
     const {user} = useUser();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [storageConfig, setStorageConfig] = useState<StorageConfigContextType>({
@@ -52,23 +42,12 @@ const StorageConfigProvider: FC<{ children: React.ReactNode }> = ({
     });
 
     useEffect(() => {
-        config
-            .getStorageConfigs()
+        config.getStorageConfigs()
             .then((configs) =>
-                setStorageConfig((prev) => ({
-                    ...prev,
-                    configs,
-                    loading: false,
-                    error: null,
-                })),
+                setStorageConfig((prev) => ({...prev, configs, loading: false, error: null})),
             )
             .catch((error) =>
-                setStorageConfig((prev) => ({
-                    ...prev,
-                    configs: null,
-                    loading: false,
-                    error,
-                })),
+                setStorageConfig((prev) => ({...prev, configs: null, loading: false, error})),
             );
     }, [user, refreshTrigger]);
 
