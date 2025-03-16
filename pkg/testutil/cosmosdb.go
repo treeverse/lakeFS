@@ -32,6 +32,8 @@ func GetCosmosDBInstance() (string, func(), error) {
 		Tag:        "latest",
 		Env: []string{
 			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100",
+			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false",
+			"AZURE_COSMOS_EMULATOR_ARGS=/DisableRateLimiting /NoExport /NoUI /EnablePreview",
 		},
 		ExposedPorts: []string{CosmosDBLocalPort},
 	}
