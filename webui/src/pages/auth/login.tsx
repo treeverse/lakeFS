@@ -8,6 +8,7 @@ import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../l
 import {AlertError} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
+import {useNavigate} from "react-router-dom";
 
 interface LoginConfig {
     login_url: string;
@@ -22,6 +23,7 @@ interface LoginConfig {
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
+    const navigate = useNavigate();
     const [loginError, setLoginError] = useState(null);
     const { next } = router.query;
     const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
@@ -35,9 +37,10 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                         <Form onSubmit={async (e) => {
                             e.preventDefault()
                             try {
-                                await auth.login(e.target.username.value, e.target.password.value)
                                 setLoginError(null);
-                                router.push(next ? next : '/');
+                                await auth.login(e.target.username.value, e.target.password.value)
+                                router.push(next || '/');
+                                navigate(0);
                             } catch(err) {
                                 if (err instanceof AuthenticationError && err.status === 401) {
                                     const contents = {__html: `${loginConfig.login_failed_message}` ||
