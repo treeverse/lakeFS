@@ -32,7 +32,7 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 	server := StartWebhookServer(t)
 	defer func() { _ = server.Server().Shutdown(ctx) }()
 	parseAndUploadActions(t, ctx, repo, mainBranch, server, lakeFSClient)
-	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+	commitResp, err := lakeFSClient.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
 	require.NoError(t, err, "failed to commit initial content")
@@ -48,13 +48,13 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 	hvd.appendRes(&preCommitEvent)
 
 	t.Run("commit merge test", func(t *testing.T) {
-		testCommitMerge(t, ctx, repo, &hvd, server)
+		testCommitMerge(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
 	t.Run("create delete branch test", func(t *testing.T) {
-		testCreateDeleteBranch(t, ctx, repo, &hvd, server)
+		testCreateDeleteBranch(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
 	t.Run("create delete tag test", func(t *testing.T) {
-		testCreateDeleteTag(t, ctx, repo, &hvd, server)
+		testCreateDeleteTag(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
 
 	t.Log("check runs are sorted in descending order")
@@ -67,11 +67,11 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 	}
 }
 
-func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer) {
+func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
 	const branch = "feature-1"
 
 	t.Log("Create branch", branch)
-	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+	createBranchResp, err := lakeFSClient.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   branch,
 		Source: mainBranch,
 	})
@@ -85,7 +85,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
 	t.Log("Commit content", branch)
-	commitResp, err := client.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
+	commitResp, err := lakeFSClient.CommitWithResponse(ctx, repo, branch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Initial content",
 	})
 	require.NoError(t, err, "failed to commit initial content")
@@ -138,7 +138,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 		Metadata:      commitRecord.Metadata.AdditionalProperties,
 	}, postCommitEvent)
 
-	mergeResp, err := client.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, apigen.MergeIntoBranchJSONRequestBody{})
+	mergeResp, err := lakeFSClient.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, apigen.MergeIntoBranchJSONRequestBody{})
 	require.NoError(t, err)
 
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
@@ -205,16 +205,16 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	}
 }
 
-func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer) {
+func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
 	const testBranch = "test_branch_delete"
-	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+	createBranchResp, err := lakeFSClient.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   testBranch,
 		Source: mainBranch,
 	})
 	require.NoError(t, err, "failed to create branch")
 	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
 
-	resp, err := client.GetBranchWithResponse(ctx, repo, mainBranch)
+	resp, err := lakeFSClient.GetBranchWithResponse(ctx, repo, mainBranch)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode())
 	commitID := resp.JSON200.CommitId
@@ -260,7 +260,7 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd 
 	}, postCreateBranchEvent)
 
 	// Delete branch
-	deleteBranchResp, err := client.DeleteBranchWithResponse(ctx, repo, testBranch, &apigen.DeleteBranchParams{})
+	deleteBranchResp, err := lakeFSClient.DeleteBranchWithResponse(ctx, repo, testBranch, &apigen.DeleteBranchParams{})
 
 	require.NoError(t, err, "failed to delete branch")
 	require.Equal(t, http.StatusNoContent, deleteBranchResp.StatusCode())
@@ -304,15 +304,15 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd 
 	}, postDeleteBranchEvent)
 }
 
-func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer) {
+func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
 	const tagID = "tag_test_hooks"
 
-	resp, err := client.GetBranchWithResponse(ctx, repo, mainBranch)
+	resp, err := lakeFSClient.GetBranchWithResponse(ctx, repo, mainBranch)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode())
 	commitID := resp.JSON200.CommitId
 
-	createTagResp, err := client.CreateTagWithResponse(ctx, repo, apigen.CreateTagJSONRequestBody{
+	createTagResp, err := lakeFSClient.CreateTagWithResponse(ctx, repo, apigen.CreateTagJSONRequestBody{
 		Id:  tagID,
 		Ref: commitID,
 	})
@@ -361,7 +361,7 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 	}, postCreateTagEvent)
 
 	// Delete tag
-	deleteTagResp, err := client.DeleteTagWithResponse(ctx, repo, tagID, &apigen.DeleteTagParams{})
+	deleteTagResp, err := lakeFSClient.DeleteTagWithResponse(ctx, repo, tagID, &apigen.DeleteTagParams{})
 
 	require.NoError(t, err, "failed to delete tag")
 	require.Equal(t, http.StatusNoContent, deleteTagResp.StatusCode())
