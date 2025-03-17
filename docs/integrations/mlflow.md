@@ -192,7 +192,7 @@ and its source are best accessed programmatically.
 
 1. Obtain the Run ID: Navigate to the MLflow UI and copy the Run ID of the experiment you're interested in.
 
-![mlflow run](../assets/img/mlflow_inspect_experiment_run.png)
+![mlflow run](../assets/img/mlflow_experiment_run.png)
 
 2. Extract Dataset Information Using MLflow's Python SDK:
 
