@@ -59,7 +59,7 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 
 	t.Log("check runs are sorted in descending order")
 	const expectedRunCount = 13
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", expectedRunCount, nil)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", expectedRunCount, lakeFSClient)
 	require.Equal(t, len(runs.Results), len(hvd.data))
 	for i, run := range runs.Results {
 		valIdx := len(hvd.data) - (i + 1)
@@ -80,7 +80,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	ref := string(createBranchResp.Body)
 	t.Log("Branch created", ref)
 
-	resp, err := UploadContent(ctx, repo, branch, "somefile", "", nil)
+	resp, err := UploadContent(ctx, repo, branch, "somefile", "", lakeFSClient)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, resp.StatusCode())
 
@@ -191,7 +191,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 
 	t.Log("List repository runs", mergeRef)
 	const expectedRunCount = 2
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, mergeRef, expectedRunCount, nil)
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, mergeRef, expectedRunCount, lakeFSClient)
 	eventType := map[string]bool{
 		"pre-merge":  true,
 		"post-merge": true,
