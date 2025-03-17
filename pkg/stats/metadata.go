@@ -27,7 +27,7 @@ type MetadataProvider interface {
 	GetMetadata(context.Context) (map[string]string, error)
 }
 
-func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType string, metadataProvider MetadataProvider, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
+func NewMetadata(ctx context.Context, logger logging.Logger, metadataProvider MetadataProvider, cfg *config.BaseConfig) *Metadata {
 	res := &Metadata{}
 	authMetadata, err := metadataProvider.GetMetadata(ctx)
 	if err != nil {
@@ -39,13 +39,18 @@ func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType stri
 		}
 		res.Entries = append(res.Entries, MetadataEntry{Name: k, Value: v})
 	}
-	if cloudMetadataProvider != nil {
-		cloudMetadata := cloudMetadataProvider.GetMetadata()
-		for k, v := range cloudMetadata {
-			res.Entries = append(res.Entries, MetadataEntry{Name: k, Value: v})
+
+	cloudMetadataProviders := BuildMetadataProviders(logger, cfg)
+	for _, provider := range cloudMetadataProviders {
+		if provider != nil {
+			cloudMetadata := provider.GetMetadata()
+			for k, v := range cloudMetadata {
+				res.Entries = append(res.Entries, MetadataEntry{Name: k, Value: v})
+			}
 		}
 	}
-	res.Entries = append(res.Entries, MetadataEntry{Name: BlockstoreTypeKey, Value: blockstoreType})
+
+	res.Entries = append(res.Entries, MetadataEntry{Name: BlockstoreTypeKey, Value: cfg.Blockstore.Type})
 	return res
 }
 
@@ -55,7 +60,12 @@ func (n *noopMetadataProvider) GetMetadata() map[string]string {
 	return nil
 }
 
-func BuildMetadataProvider(logger logging.Logger, c *config.BaseConfig) cloud.MetadataProvider {
+func BuildMetadataProviders(logger logging.Logger, c *config.BaseConfig) []cloud.MetadataProvider {
+	provider := buildMetadataProvider(logger, c)
+	return []cloud.MetadataProvider{provider}
+}
+
+func buildMetadataProvider(logger logging.Logger, c *config.BaseConfig) cloud.MetadataProvider {
 	switch c.Blockstore.Type {
 	case block.BlockstoreTypeGS:
 		return gcp.NewMetadataProvider(logger)

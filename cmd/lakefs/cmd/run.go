@@ -190,14 +190,13 @@ var runCmd = &cobra.Command{
 			authenticationService = authentication.NewDummyService()
 		}
 
-		cloudMetadataProvider := stats.BuildMetadataProvider(logger, baseCfg)
 		blockstoreType := baseCfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
-		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, authMetadataManager, baseCfg)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
@@ -307,7 +306,6 @@ var runCmd = &cobra.Command{
 			authMetadataManager,
 			migrator,
 			bufferedCollector,
-			cloudMetadataProvider,
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),

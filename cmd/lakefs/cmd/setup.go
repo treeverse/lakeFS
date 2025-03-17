@@ -78,8 +78,7 @@ var setupCmd = &cobra.Command{
 		logger := logging.FromContext(ctx)
 		authMetadataManage := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		authService = NewAuthService(ctx, cfg, logger, kvStore, authMetadataManage)
-		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.Blockstore.Type, authMetadataManage, cloudMetadataProvider)
+		metadata := stats.NewMetadata(ctx, logger, authMetadataManage, cfg)
 
 		credentials, err := setupLakeFS(ctx, cfg, authMetadataManage, authService, userName, accessKeyID, secretAccessKey, noCheck)
 		if err != nil {

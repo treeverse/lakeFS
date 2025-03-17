@@ -112,24 +112,39 @@ type Controller struct {
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(
+	cfg config.Config,
+	catalog *catalog.Catalog,
+	authenticator auth.Authenticator,
+	authService auth.Service,
+	authenticationService authentication.Service,
+	blockAdapter block.Adapter,
+	metadataManager auth.MetadataManager,
+	migrator Migrator,
+	collector stats.Collector,
+	actions actionsHandler,
+	auditChecker AuditChecker,
+	logger logging.Logger,
+	sessionStore sessions.Store,
+	pathProvider upload.PathProvider,
+	usageReporter stats.UsageReporterOperations,
+) *Controller {
 	return &Controller{
-		Config:                cfg,
-		Catalog:               catalog,
-		Authenticator:         authenticator,
-		Auth:                  authService,
-		Authentication:        authenticationService,
-		BlockAdapter:          blockAdapter,
-		MetadataManager:       metadataManager,
-		Migrator:              migrator,
-		Collector:             collector,
-		CloudMetadataProvider: cloudMetadataProvider,
-		Actions:               actions,
-		AuditChecker:          auditChecker,
-		Logger:                logger,
-		sessionStore:          sessionStore,
-		PathProvider:          pathProvider,
-		usageReporter:         usageReporter,
+		Config:          cfg,
+		Catalog:         catalog,
+		Authenticator:   authenticator,
+		Auth:            authService,
+		Authentication:  authenticationService,
+		BlockAdapter:    blockAdapter,
+		MetadataManager: metadataManager,
+		Migrator:        migrator,
+		Collector:       collector,
+		Actions:         actions,
+		AuditChecker:    auditChecker,
+		Logger:          logger,
+		sessionStore:    sessionStore,
+		PathProvider:    pathProvider,
+		usageReporter:   usageReporter,
 	}
 }
 
@@ -5155,7 +5170,9 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	if c.Config.GetBaseConfig().Auth.UIConfig.RBAC == config.AuthRBACExternal {
+	baseConfig := c.Config.GetBaseConfig()
+
+	if baseConfig.Auth.UIConfig.RBAC == config.AuthRBACExternal {
 		// nothing to do - users are managed elsewhere
 		writeResponse(w, r, http.StatusOK, apigen.CredentialsWithSecret{})
 		return
@@ -5163,18 +5180,18 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 
 	var cred *model.Credential
 	if body.Key == nil {
-		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config.GetBaseConfig(), c.MetadataManager, body.Username)
+		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, baseConfig, c.MetadataManager, body.Username)
 	} else {
-		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config.GetBaseConfig(), c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
+		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, baseConfig, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataManager, c.CloudMetadataProvider)
-	c.Collector.SetInstallationID(meta.InstallationID)
-	c.Collector.CollectMetadata(meta)
+	metadata := stats.NewMetadata(ctx, c.Logger, c.MetadataManager, baseConfig)
+	c.Collector.SetInstallationID(metadata.InstallationID)
+	c.Collector.CollectMetadata(metadata)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
 
 	response := apigen.CredentialsWithSecret{
