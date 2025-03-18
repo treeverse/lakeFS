@@ -5189,7 +5189,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	metadata := stats.NewMetadata(ctx, c.Logger, c.MetadataManager, baseConfig)
+	metadata := stats.NewMetadata(ctx, c.Logger, c.MetadataManager, baseConfig.StorageConfig())
 	c.Collector.SetInstallationID(metadata.InstallationID)
 	c.Collector.CollectMetadata(metadata)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})

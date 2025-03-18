@@ -196,7 +196,7 @@ var runCmd = &cobra.Command{
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
-		metadata := stats.NewMetadata(ctx, logger, authMetadataManager, baseCfg)
+		metadata := stats.NewMetadata(ctx, logger, authMetadataManager, baseCfg.StorageConfig())
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 

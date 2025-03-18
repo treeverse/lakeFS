@@ -105,7 +105,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 			os.Exit(1)
 		}
 
-		metadata := stats.NewMetadata(ctx, logger, authMetadataManager, cfg)
+		metadata := stats.NewMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 
 		ctx, cancelFn := context.WithCancel(ctx)
 		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats),
