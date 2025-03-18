@@ -198,23 +198,30 @@ func TestController_GetRepoHandler(t *testing.T) {
 		}
 	})
 
-	for _, isBareRepo := range []bool{false, true} {
-		t.Run(fmt.Sprintf("use same storage namespace twice, isBareRepo=%v", isBareRepo), func(t *testing.T) {
-			name := testUniqueRepoName()
-			resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
-				Name:             name,
-				StorageNamespace: onBlock(deps, name),
-			})
-			verifyResponseOK(t, resp, err)
-
-			resp, err = clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{Bare: &isBareRepo}, apigen.CreateRepositoryJSONRequestBody{
-				Name:             name + "_2",
-				StorageNamespace: onBlock(deps, name),
-			})
-			require.NoError(t, err)
-			require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+	t.Run("use same storage namespace", func(t *testing.T) {
+		name := testUniqueRepoName()
+		storageNamespace := onBlock(deps, name)
+		resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+			Name:             name,
+			StorageNamespace: storageNamespace,
 		})
-	}
+		verifyResponseOK(t, resp, err)
+
+		// create a non-bare repository with the same storage namespace should fail
+		resp, err = clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{Bare: apiutil.Ptr(false)}, apigen.CreateRepositoryJSONRequestBody{
+			Name:             testUniqueRepoName(),
+			StorageNamespace: storageNamespace,
+		})
+		require.NoError(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
+
+		// create a bare repository with the same storage namespace should succeed
+		resp, err = clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{Bare: apiutil.Ptr(true)}, apigen.CreateRepositoryJSONRequestBody{
+			Name:             testUniqueRepoName(),
+			StorageNamespace: storageNamespace,
+		})
+		verifyResponseOK(t, resp, err)
+	})
 }
 
 func testCommitEntries(t *testing.T, ctx context.Context, cat *catalog.Catalog, deps *dependencies, params commitEntriesParams) string {
@@ -4277,7 +4284,8 @@ func TestController_Revert(t *testing.T) {
 		// With allow empty
 		revertResp, err = clt.RevertBranchWithResponse(ctx, repo, "main", apigen.RevertBranchJSONRequestBody{
 			Ref:        emptyCommit.Id,
-			AllowEmpty: apiutil.Ptr(true)})
+			AllowEmpty: apiutil.Ptr(true),
+		})
 		verifyResponseOK(t, revertResp, err)
 	})
 }
