@@ -2047,6 +2047,25 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 		defaultBranch = "main"
 	}
 
+	// create a bare repository is plumbing request, we don't need to check for the storage namespace
+	if swag.BoolValue(params.Bare) {
+		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
+		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
+		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, storageID, storageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		response := apigen.Repository{
+			CreationDate:     repo.CreationDate.Unix(),
+			DefaultBranch:    repo.DefaultBranch,
+			Id:               repo.Name,
+			StorageId:        swag.String(repo.StorageID),
+			StorageNamespace: repo.StorageNamespace,
+		}
+		writeResponse(w, r, http.StatusCreated, response)
+		return
+	}
+
 	if !swag.BoolValue(body.ReadOnly) {
 		if err := c.ensureStorageNamespace(ctx, storageID, storageNamespace); err != nil {
 			var (
@@ -2076,24 +2095,6 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 			writeError(w, r, http.StatusBadRequest, fmt.Errorf("failed to create repository: %w", retErr))
 			return
 		}
-	}
-
-	if swag.BoolValue(params.Bare) {
-		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
-		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
-		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, storageID, storageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
-		if c.handleAPIError(ctx, w, r, err) {
-			return
-		}
-		response := apigen.Repository{
-			CreationDate:     repo.CreationDate.Unix(),
-			DefaultBranch:    repo.DefaultBranch,
-			Id:               repo.Name,
-			StorageId:        swag.String(repo.StorageID),
-			StorageNamespace: repo.StorageNamespace,
-		}
-		writeResponse(w, r, http.StatusCreated, response)
-		return
 	}
 
 	newRepo, err := c.Catalog.CreateRepository(ctx, body.Name, storageID, storageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
