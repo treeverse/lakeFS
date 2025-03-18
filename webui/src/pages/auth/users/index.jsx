@@ -39,8 +39,8 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
 
     const router = useRouter();
     const prefix = router.query.prefix ? router.query.prefix : "";
-    const parsedAfterToInt = parseInt(router.query.after, DECIMAL_RADIX);
-    const after = isNaN(parsedAfterToInt) ? 0 : parsedAfterToInt;
+    const afterParsedToInt = parseInt(router.query.after, DECIMAL_RADIX);
+    const after = isNaN(afterParsedToInt) ? 0 : afterParsedToInt;
 
     const [selected, setSelected] = useState([]);
     const [deleteError, setDeleteError] = useState(null);
