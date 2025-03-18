@@ -45,16 +45,12 @@ func NewMetadata(ctx context.Context, logger logging.Logger, metadataProvider Me
 			appendOrUpdateEntry(res, BlockstoreTypeKey, adapterCfg.BlockstoreType())
 
 			provider := buildMetadataProvider(logger, adapterCfg)
-			if provider != nil {
-				cloudMetadata := provider.GetMetadata()
-				if cloudMetadata == nil {
-					cloudMetadata = getErrorMetadata()
-				}
-				for k, v := range cloudMetadata {
-					appendOrUpdateEntry(res, k, v)
-				}
-			} else {
-
+			cloudMetadata := provider.GetMetadata()
+			if cloudMetadata == nil {
+				cloudMetadata = getErrorMetadata()
+			}
+			for k, v := range cloudMetadata {
+				appendOrUpdateEntry(res, k, v)
 			}
 		}
 	}
