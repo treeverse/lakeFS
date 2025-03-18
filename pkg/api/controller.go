@@ -2048,7 +2048,8 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 
 	// create a bare repository is plumbing request, we don't need to check for the storage namespace
-	if swag.BoolValue(params.Bare) {
+	createBareRepo := swag.BoolValue(params.Bare)
+	if createBareRepo {
 		// create a bare repository. This is useful in conjunction with refs-restore to create a copy
 		// of another repository by e.g. copying the _lakefs/ directory and restoring its refs
 		repo, err := c.Catalog.CreateBareRepository(ctx, body.Name, storageID, storageNamespace, defaultBranch, swag.BoolValue(body.ReadOnly))
@@ -2860,12 +2861,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
-	case err != nil:
+	default:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
-
-	default:
-		return false
 	}
 
 	return true
