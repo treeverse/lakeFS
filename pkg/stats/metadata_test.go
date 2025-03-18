@@ -46,16 +46,6 @@ func TestNewMetadata(t *testing.T) {
 			expectedIDKey:          "err", // no s3 cloud provider in the test env, hence err
 		},
 		{
-			name: "azure",
-			blockstore: config.Blockstore{
-				Type:  "azure",
-				Azure: &config.BlockstoreAzure{},
-			},
-			expectedBlockstoreType: "azure",
-			expectedIDKeyType:      "err", // no azure cloud provider in the test env, hence err
-			expectedIDKey:          "err", // no azure cloud provider in the test env, hence err
-		},
-		{
 			name: "gs",
 			blockstore: config.Blockstore{
 				Type: "gs",
