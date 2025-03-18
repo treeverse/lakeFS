@@ -208,7 +208,7 @@ func TestController_GetRepoHandler(t *testing.T) {
 		verifyResponseOK(t, resp, err)
 
 		// create a non-bare repository with the same storage namespace should fail
-		resp, err = clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{Bare: swag.Bool(false)}, apigen.CreateRepositoryJSONRequestBody{
+		resp, err = clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{Bare: apiutil.Ptr(false)}, apigen.CreateRepositoryJSONRequestBody{
 			Name:             testUniqueRepoName(),
 			StorageNamespace: storageNamespace,
 		})
@@ -216,7 +216,7 @@ func TestController_GetRepoHandler(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode())
 
 		// create a bare repository with the same storage namespace should succeed
-		resp, err = clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{Bare: swag.Bool(true)}, apigen.CreateRepositoryJSONRequestBody{
+		resp, err = clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{Bare: apiutil.Ptr(true)}, apigen.CreateRepositoryJSONRequestBody{
 			Name:             testUniqueRepoName(),
 			StorageNamespace: storageNamespace,
 		})
