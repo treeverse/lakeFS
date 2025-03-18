@@ -88,23 +88,6 @@ func (n *noopMetadataProvider) GetMetadata() map[string]string {
 	}
 }
 
-//func buildMetadataProviders(logger logging.Logger, storageConfig config.StorageConfig) []cloud.MetadataProvider {
-//	providers := make([]cloud.MetadataProvider, 0)
-//	for _, id := range storageConfig.GetStorageIDs() {
-//		if adapter := storageConfig.GetStorageByID(id); adapter != nil {
-//			provider := buildMetadataProvider(logger, adapter)
-//			if provider != nil {
-//				providers = append(providers, provider)
-//			}
-//		}
-//	}
-//	if len(providers) == 0 {
-//		// ensure we always return at least one provider
-//		providers = append(providers, &noopMetadataProvider{})
-//	}
-//	return providers
-//}
-
 func buildMetadataProvider(logger logging.Logger, c config.AdapterConfig) cloud.MetadataProvider {
 	switch c.BlockstoreType() {
 	case block.BlockstoreTypeGS:
