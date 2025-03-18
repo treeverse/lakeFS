@@ -1,12 +1,15 @@
 package testutil
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/ory/dockertest/v3/docker"
 
 	"github.com/ory/dockertest/v3"
 )
@@ -29,6 +32,8 @@ func GetCosmosDBInstance() (string, func(), error) {
 		Tag:        "latest",
 		Env: []string{
 			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100",
+			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false",
+			"AZURE_COSMOS_EMULATOR_ARGS=/DisableRateLimiting /NoExport /NoUI /EnablePreview",
 		},
 		ExposedPorts: []string{CosmosDBLocalPort},
 	}
@@ -41,6 +46,21 @@ func GetCosmosDBInstance() (string, func(), error) {
 	cosmosdbLocalURI = "https://localhost:" + resource.GetPort("8081/tcp")
 	// set cleanup
 	closer := func() {
+		// Fetch logs from the container
+		var containerOut bytes.Buffer
+		if err := dockerPool.Client.Logs(docker.LogsOptions{
+			Container:    resource.Container.ID,
+			OutputStream: &containerOut,
+			ErrorStream:  &containerOut,
+			Stdout:       true,
+			Stderr:       true,
+			Follow:       false,
+		}); err != nil {
+			log.Printf("Error in cosmosdb emulator logs: %s", err)
+		} else {
+			log.Printf("CosmosDB emulator output: %s", containerOut.String())
+		}
+
 		err = dockerPool.Purge(resource)
 		if err != nil {
 			fmt.Println("could not kill cosmosdb local container :%w", err)
@@ -59,6 +79,14 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return "", nil, fmt.Errorf("joining urls: %w", err)
 	}
 
+	const clientTimeout = 5 * time.Second
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
+		},
+		Timeout: clientTimeout,
+	}
+
 	dockerPool.MaxWait = maxWait
 	log.Printf("Waiting up to %v for emulator to start", dockerPool.MaxWait)
 	// Note: this hangs for macOS users, and fails. See https://github.com/treeverse/lakeFS/issues/8476
@@ -66,9 +94,6 @@ func GetCosmosDBInstance() (string, func(), error) {
 		// waiting for cosmosdb container to be ready by issuing an HTTP get request with
 		// exponential backoff retry. The response is not really meaningful for that case
 		// and so is ignored
-		client := http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
-		}}
 		resp, err := client.Get(p)
 		if err != nil {
 			return err
