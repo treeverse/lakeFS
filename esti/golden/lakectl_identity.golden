@@ -1,2 +1,3 @@
-User ID:          esti
+User ID:          ${AUTHOR}
+Email:            ${EMAIL}
 Creation Date:    <DATE> <TIME> <TZ>

@@ -150,10 +150,12 @@ func TestLakectlPreSignUpload(t *testing.T) {
 func TestLakectlCommit(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
+	author, _ := GetAuthor(t)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
+		"AUTHOR":  author,
 	}
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_404", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
@@ -172,6 +174,7 @@ func TestLakectlCommit(t *testing.T) {
 	commitMessage := "esti_lakectl:TestCommit"
 	vars["MESSAGE"] = commitMessage
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
+	vars["AUTHOR"] = GetCommitter(t)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_with_commit", vars)
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \"esti_lakectl:should fail\"", false, "lakectl_commit_no_change", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_with_commit", vars)
@@ -235,16 +238,17 @@ func TestLakectlBranchAndTagValidation(t *testing.T) {
 func TestLakectlMerge(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
+	author, _ := GetAuthor(t)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
+		"AUTHOR":  author,
 	}
-	filePath1 := "file1"
 
 	// create repo with 'main' branch
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
-	// upload 'file1' and commit
+	// upload file and commit
 	vars["FILE_PATH"] = filePath1
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+filePath1, false, "lakectl_fs_upload", vars)
 	commitMessage := "first commit to main"
@@ -310,6 +314,7 @@ func TestLakectlMerge(t *testing.T) {
 			if tc.Squash {
 				golden = "lakectl_merge_with_squashed_commit"
 			}
+			vars["AUTHOR"] = GetCommitter(t)
 			RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log --amount 1 lakefs://"+repoName+"/"+destBranch, false, golden, vars)
 		})
 	}
@@ -405,10 +410,12 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
+	author, _ := GetAuthor(t)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
+		"AUTHOR":  author,
 	}
 
 	featureBranch := "feature"
@@ -450,16 +457,19 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+featureBranch+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_merge_success", branchVars)
 
 	// log the commits without merges
+	vars["AUTHOR"] = GetCommitter(t)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges", false, "lakectl_log_no_merges", vars)
 }
 
 func TestLakectlLogNoMergesAndAmount(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
+	author, _ := GetAuthor(t)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
+		"AUTHOR":  author,
 	}
 
 	featureBranch := "feature"
@@ -501,6 +511,7 @@ func TestLakectlLogNoMergesAndAmount(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+featureBranch+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_merge_success", branchVars)
 
 	// log the commits without merges
+	vars["AUTHOR"] = GetCommitter(t)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges --amount=2", false, "lakectl_log_no_merges_amount", vars)
 }
 
@@ -511,6 +522,7 @@ func TestLakectlAnnotate(t *testing.T) {
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
+		"AUTHOR":  fmt.Sprintf("%-20s", GetCommitter(t)), // WA to the formatting of the annotate command output - support variable length author
 	}
 
 	// create fresh repo with 'main' branch
@@ -599,9 +611,10 @@ func TestLakectlAuthUsers(t *testing.T) {
 
 // testing without user email for now, since it is a pain to config esti with a mail
 func TestLakectlIdentity(t *testing.T) {
-	userId := "mike"
+	author, email := GetAuthor(t)
 	vars := map[string]string{
-		"ID": userId,
+		"AUTHOR": author,
+		"EMAIL":  email,
 	}
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" identity", false, "lakectl_identity", vars)
 }
@@ -983,10 +996,14 @@ func TestLakectlBisect(t *testing.T) {
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
+		"AUTHOR":  GetCommitter(t),
 	}
 
 	r := strings.NewReplacer("{lakectl}", Lakectl(), "{repo}", repoName, "{storage}", storage, "{branch}", "main")
 	runCmd(t, r.Replace("{lakectl} repo create lakefs://{repo} {storage}"), false, false, nil)
+
+	// Reset bisect state in case of re-run
+	runCmd(t, Lakectl()+" bisect reset", false, false, nil)
 
 	// generate to test data
 	for i := 0; i < 5; i++ {
@@ -995,6 +1012,8 @@ func TestLakectlBisect(t *testing.T) {
 		commit := fmt.Sprintf("commit%d", i)
 		runCmd(t, r.Replace("{lakectl} commit lakefs://{repo}/{branch} -m ")+commit, false, false, nil)
 	}
+	RunCmdAndVerifySuccessWithFile(t, r.Replace("{lakectl} bisect reset"), false,
+		"lakectl_bisect_reset_not_started", vars)
 	RunCmdAndVerifyFailureWithFile(t, r.Replace("{lakectl} bisect good"), false,
 		"lakectl_bisect_good_invalid", vars)
 	RunCmdAndVerifyFailureWithFile(t, r.Replace("{lakectl} bisect bad"), false,
