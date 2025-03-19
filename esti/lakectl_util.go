@@ -282,7 +282,7 @@ func normalizeSecretAccessKey(output string) string {
 	return reSecretAccessKey.ReplaceAllString(output, "secret_access_key: <SECRET_ACCESS_KEY>")
 }
 
-func getCommitter(t testing.TB) string {
+func GetCommitter(t testing.TB) string {
 	t.Helper()
 	userResp, err := client.GetCurrentUserWithResponse(context.Background())
 	require.NoError(t, err)
@@ -295,7 +295,7 @@ func getCommitter(t testing.TB) string {
 	return committer
 }
 
-func getAuthor(t testing.TB) (string, string) {
+func GetAuthor(t testing.TB) (string, string) {
 	t.Helper()
 	userResp, err := client.GetCurrentUserWithResponse(context.Background())
 	require.NoError(t, err)

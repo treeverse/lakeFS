@@ -150,7 +150,7 @@ func TestLakectlPreSignUpload(t *testing.T) {
 func TestLakectlCommit(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
-	author, _ := getAuthor(t)
+	author, _ := GetAuthor(t)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -174,7 +174,7 @@ func TestLakectlCommit(t *testing.T) {
 	commitMessage := "esti_lakectl:TestCommit"
 	vars["MESSAGE"] = commitMessage
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \""+commitMessage+"\"", false, "lakectl_commit", vars)
-	vars["AUTHOR"] = getCommitter(t)
+	vars["AUTHOR"] = GetCommitter(t)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_with_commit", vars)
 	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+mainBranch+" -m \"esti_lakectl:should fail\"", false, "lakectl_commit_no_change", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, "lakectl_log_with_commit", vars)
@@ -238,7 +238,7 @@ func TestLakectlBranchAndTagValidation(t *testing.T) {
 func TestLakectlMerge(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
-	author, _ := getAuthor(t)
+	author, _ := GetAuthor(t)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -314,7 +314,7 @@ func TestLakectlMerge(t *testing.T) {
 			if tc.Squash {
 				golden = "lakectl_merge_with_squashed_commit"
 			}
-			vars["AUTHOR"] = getCommitter(t)
+			vars["AUTHOR"] = GetCommitter(t)
 			RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log --amount 1 lakefs://"+repoName+"/"+destBranch, false, golden, vars)
 		})
 	}
@@ -410,7 +410,7 @@ func TestLakectlMergeAndStrategies(t *testing.T) {
 func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
-	author, _ := getAuthor(t)
+	author, _ := GetAuthor(t)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -457,14 +457,14 @@ func TestLakectlLogNoMergesWithCommitsAndMerges(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+featureBranch+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_merge_success", branchVars)
 
 	// log the commits without merges
-	vars["AUTHOR"] = getCommitter(t)
+	vars["AUTHOR"] = GetCommitter(t)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges", false, "lakectl_log_no_merges", vars)
 }
 
 func TestLakectlLogNoMergesAndAmount(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()
 	storage := GenerateUniqueStorageNamespace(repoName)
-	author, _ := getAuthor(t)
+	author, _ := GetAuthor(t)
 	vars := map[string]string{
 		"REPO":    repoName,
 		"STORAGE": storage,
@@ -511,7 +511,7 @@ func TestLakectlLogNoMergesAndAmount(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" merge lakefs://"+repoName+"/"+featureBranch+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_merge_success", branchVars)
 
 	// log the commits without merges
-	vars["AUTHOR"] = getCommitter(t)
+	vars["AUTHOR"] = GetCommitter(t)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch+" --no-merges --amount=2", false, "lakectl_log_no_merges_amount", vars)
 }
 
@@ -522,7 +522,7 @@ func TestLakectlAnnotate(t *testing.T) {
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
-		"AUTHOR":  fmt.Sprintf("%-20s", getCommitter(t)), // WA to the formatting of the annotate command output - support variable length author
+		"AUTHOR":  fmt.Sprintf("%-20s", GetCommitter(t)), // WA to the formatting of the annotate command output - support variable length author
 	}
 
 	// create fresh repo with 'main' branch
@@ -611,7 +611,7 @@ func TestLakectlAuthUsers(t *testing.T) {
 
 // testing without user email for now, since it is a pain to config esti with a mail
 func TestLakectlIdentity(t *testing.T) {
-	author, email := getAuthor(t)
+	author, email := GetAuthor(t)
 	vars := map[string]string{
 		"AUTHOR": author,
 		"EMAIL":  email,
@@ -996,7 +996,7 @@ func TestLakectlBisect(t *testing.T) {
 		"REPO":    repoName,
 		"STORAGE": storage,
 		"BRANCH":  mainBranch,
-		"AUTHOR":  getCommitter(t),
+		"AUTHOR":  GetCommitter(t),
 	}
 
 	r := strings.NewReplacer("{lakectl}", Lakectl(), "{repo}", repoName, "{storage}", storage, "{branch}", "main")
