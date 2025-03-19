@@ -14,6 +14,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 )
 
 type hooksValidationData struct {
@@ -40,7 +41,6 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 
 	webhookData, err := ResponseWithTimeout(server, 1*time.Minute) // pre-commit action triggered on action upload, flush buffer
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on pre commit serving")
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCommitEvent webhookEventInfo
@@ -56,14 +56,19 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 	t.Run("create delete tag test", func(t *testing.T) {
 		testCreateDeleteTag(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
+	t.Run("revert branch test", func(t *testing.T) {
+		testRevertBranch(t, ctx, repo, &hvd, server)
+	})
 
 	t.Log("check runs are sorted in descending order")
-	const expectedRunCount = 13
-	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", expectedRunCount, lakeFSClient)
-	require.Equal(t, len(runs.Results), len(hvd.data))
+	runs := WaitForListRepositoryRunsLen(ctx, t, repo, "", len(hvd.data), lakeFSClient)
 	for i, run := range runs.Results {
 		valIdx := len(hvd.data) - (i + 1)
 		require.Equal(t, hvd.data[valIdx].EventType, run.EventType)
+		expectedTime, err := time.Parse(time.RFC3339, hvd.data[valIdx].EventTime)
+		require.NoError(t, err)
+		run.StartTime = run.StartTime.Add(time.Duration(-run.StartTime.Nanosecond())) // Remove nanoseconds
+		require.True(t, expectedTime.Equal(run.StartTime), "bad start time. expected: %s actual: %s", expectedTime.String(), run.StartTime.String())
 	}
 }
 
@@ -93,12 +98,10 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 
 	webhookData, err := ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on pre commit serving")
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCommitEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
-	hvd.appendRes(&preCommitEvent)
 	commitRecord := commitResp.JSON201
 	require.Equal(t, webhookEventInfo{
 		EventTime:     preCommitEvent.EventTime,
@@ -112,18 +115,17 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 		CommitMessage: commitRecord.Message,
 		Metadata:      commitRecord.Metadata.AdditionalProperties,
 	}, preCommitEvent)
+	hvd.appendRes(&preCommitEvent)
 	require.NotNil(t, webhookData.QueryParams)
 	require.Contains(t, webhookData.QueryParams, "check_env_vars")
 	require.Equal(t, []string{"this_is_actions_var"}, webhookData.QueryParams["check_env_vars"])
 
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on post commit serving")
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCommitEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&postCommitEvent), "reading post-commit data")
-	hvd.appendRes(&postCommitEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:     postCommitEvent.EventTime,
 		SourceRef:     commitResp.JSON201.Id,
@@ -137,6 +139,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 		CommitMessage: commitRecord.Message,
 		Metadata:      commitRecord.Metadata.AdditionalProperties,
 	}, postCommitEvent)
+	hvd.appendRes(&postCommitEvent)
 
 	mergeResp, err := lakeFSClient.MergeIntoBranchWithResponse(ctx, repo, branch, mainBranch, apigen.MergeIntoBranchJSONRequestBody{})
 	require.NoError(t, err)
@@ -152,7 +155,6 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preMergeEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&preMergeEvent), "reading pre-merge data")
-	hvd.appendRes(&preMergeEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:     preMergeEvent.EventTime,
 		SourceRef:     commitRecord.Id,
@@ -166,15 +168,14 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 		CommitMessage: fmt.Sprintf("Merge '%s' into '%s'", branch, mainBranch),
 		CommitID:      mergeRef,
 	}, preMergeEvent)
+	hvd.appendRes(&preMergeEvent)
 
 	// Testing post-merge hook response
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postMergeEvent webhookEventInfo
 	require.NoError(t, decoder.Decode(&postMergeEvent), "reading post-merge data")
-	hvd.appendRes(&postMergeEvent)
 	require.Equal(t, webhookEventInfo{
 		EventTime:     postMergeEvent.EventTime,
 		SourceRef:     mergeResp.JSON200.Reference,
@@ -188,6 +189,7 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 		Committer:     commitRecord.Committer,
 		CommitMessage: fmt.Sprintf("Merge '%s' into '%s'", branch, mainBranch),
 	}, postMergeEvent)
+	hvd.appendRes(&postMergeEvent)
 
 	t.Log("List repository runs", mergeRef)
 	const expectedRunCount = 2
@@ -222,7 +224,6 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd 
 	// Testing pre-create branch hook response
 	webhookData, err := ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on pre create branch")
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCreateBranchEvent webhookEventInfo
@@ -242,7 +243,6 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd 
 	// Testing post-create branch hook response
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on post create branch")
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCreateBranchEvent webhookEventInfo
@@ -268,7 +268,6 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd 
 	// Testing pre-delete branch hook response
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on pre delete branch")
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preDeleteBranchEvent webhookEventInfo
@@ -287,7 +286,6 @@ func testCreateDeleteBranch(t *testing.T, ctx context.Context, repo string, hvd 
 	// Testing post-delete branch hook response
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on post delete branch")
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postDeleteBranchEvent webhookEventInfo
@@ -323,7 +321,6 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 	// Testing pre-create tag hook response
 	webhookData, err := ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on pre create tag")
 	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preCreateTagEvent webhookEventInfo
@@ -343,7 +340,6 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 	// Testing post-create tag hook response
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on post create tag")
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCreateTagEvent webhookEventInfo
@@ -369,7 +365,6 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 	// Testing pre-delete tag hook response
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on pre delete tag")
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var preDeleteTagEvent webhookEventInfo
@@ -389,7 +384,6 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 	// Testing post-delete tag hook response
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-
 	require.NoError(t, webhookData.Err, "error on post delete tag")
 	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postDeleteTagEvent webhookEventInfo
@@ -405,6 +399,85 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 		CommitID:     commitID,
 		TagID:        tagID,
 	}, postDeleteTagEvent)
+}
+
+func testRevertBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer) {
+	const branch = "revert-branch-test"
+
+	t.Log("Create branch", branch)
+	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: mainBranch,
+	})
+	require.NoError(t, err, "failed to create branch")
+	require.Equal(t, http.StatusCreated, createBranchResp.StatusCode())
+	ref := string(createBranchResp.Body)
+	t.Log("Branch created", ref)
+
+	const paginationAmount = 2
+	logAmount := apigen.PaginationAmount(paginationAmount)
+	logResp, err := client.LogCommitsWithResponse(ctx, repo, branch, &apigen.LogCommitsParams{
+		Amount: &logAmount,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, logResp.JSON200)
+	commits := logResp.JSON200.Results
+	require.Equal(t, int(logAmount), len(commits))
+
+	revertCommitID := commits[len(commits)-1].Id
+	revertResp, err := client.RevertBranchWithResponse(ctx, repo, branch, apigen.RevertBranchJSONRequestBody{
+		Ref:        revertCommitID,
+		AllowEmpty: apiutil.Ptr(true),
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, revertResp.StatusCode())
+
+	getCommitResp, err := client.GetCommitWithResponse(ctx, repo, branch)
+	require.NoError(t, err)
+	require.NotNil(t, getCommitResp.JSON200)
+	newCommit := getCommitResp.JSON200
+
+	webhookData, err := ResponseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+	require.NoError(t, webhookData.Err, "error on pre revert serving")
+	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
+	var preRevertEvent webhookEventInfo
+	require.NoError(t, decoder.Decode(&preRevertEvent), "reading pre-commit data")
+	require.Equal(t, webhookEventInfo{
+		EventTime:     preRevertEvent.EventTime,
+		SourceRef:     branch,
+		EventType:     "pre-revert",
+		ActionName:    "Test Pre Revert",
+		HookID:        "test_webhook",
+		RepositoryID:  repo,
+		BranchID:      branch,
+		Committer:     newCommit.Committer,
+		CommitMessage: newCommit.Message,
+		Metadata:      newCommit.Metadata.AdditionalProperties,
+	}, preRevertEvent)
+	hvd.appendRes(&preRevertEvent)
+	require.NotNil(t, webhookData.QueryParams)
+
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+	require.NoError(t, webhookData.Err, "error on post revert serving")
+	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
+	var postRevertEvent webhookEventInfo
+	require.NoError(t, decoder.Decode(&postRevertEvent), "reading post-revert data")
+	require.Equal(t, webhookEventInfo{
+		EventTime:     postRevertEvent.EventTime,
+		SourceRef:     newCommit.Id,
+		EventType:     "post-revert",
+		ActionName:    "Test Post Revert",
+		HookID:        "test_webhook",
+		RepositoryID:  repo,
+		BranchID:      branch,
+		CommitID:      newCommit.Id,
+		Committer:     newCommit.Committer,
+		CommitMessage: newCommit.Message,
+		Metadata:      newCommit.Metadata.AdditionalProperties,
+	}, postRevertEvent)
+	hvd.appendRes(&postRevertEvent)
 }
 
 func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch string, server *WebhookServer, lakeFSClient apigen.ClientWithResponsesInterface) {
