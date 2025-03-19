@@ -298,7 +298,8 @@ func tearDownTest(repoName string) {
 }
 
 func createRepositoryForTest(ctx context.Context, t testing.TB) string {
-	return createRepositoryUnique(ctx, t)
+	name := strings.ToLower(t.Name())
+	return createRepositoryByName(ctx, t, name)
 }
 
 func createRepositoryByName(ctx context.Context, t testing.TB, name string) string {
@@ -631,7 +632,7 @@ func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref s
 		if len(runs.Results) == l {
 			return nil
 		}
-		return fmt.Errorf("run result size: %d, expected: %d: %w", len(runs.Results), l, errRunResultsSize)
+		return fmt.Errorf("size: %d: %w", len(runs.Results), errRunResultsSize)
 	}
 	err := backoff.Retry(listFunc, bo)
 	require.NoError(t, err)

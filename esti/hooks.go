@@ -426,7 +426,8 @@ func testRevertBranch(t *testing.T, ctx context.Context, repo string, hvd *hooks
 	ref := string(createBranchResp.Body)
 	t.Log("Branch created", ref)
 
-	logAmount := apigen.PaginationAmount(2)
+	const paginationAmount = 2
+	logAmount := apigen.PaginationAmount(paginationAmount)
 	logResp, err := client.LogCommitsWithResponse(ctx, repo, branch, &apigen.LogCommitsParams{
 		Amount: &logAmount,
 	})
