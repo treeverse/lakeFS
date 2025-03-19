@@ -51,6 +51,8 @@ func StartWebhookServer(t testing.TB) *WebhookServer {
 	mux.HandleFunc("/post-create-tag", hookHandlerFunc(respCh))
 	mux.HandleFunc("/pre-delete-tag", hookHandlerFunc(respCh))
 	mux.HandleFunc("/post-delete-tag", hookHandlerFunc(respCh))
+	mux.HandleFunc("/pre-revert", hookHandlerFunc(respCh))
+	mux.HandleFunc("/post-revert", hookHandlerFunc(respCh))
 	mux.HandleFunc("/timeout", timeoutHandlerFunc(respCh))
 	mux.HandleFunc("/fail", failHandlerFunc(respCh))
 	listener, err := net.Listen("tcp", ":0") //nolint:gosec
