@@ -42,7 +42,7 @@ storage, resulting in cost savings.
 
 ## **lakeFS Mount**: Efficiently expose lakeFS Data as a local directory
 
-⚠️ lakeFS Mount is currently in preview. There is no installation required, please [contact us](https://info.lakefs.io/thanks-lakefs-mounts) to get access.
+⚠️ lakeFS Mount requires no installation, please [contact us](https://info.lakefs.io/thanks-lakefs-mounts) to get access.
 {: .note }
 
 #### Prerequisites:
