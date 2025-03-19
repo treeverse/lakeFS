@@ -47,8 +47,7 @@ func TestCosmosDB(t *testing.T) {
 			},
 		}, &azcosmos.CreateContainerOptions{ThroughputProperties: &throughput})
 		if err != nil {
-			print(resp2.RawResponse)
-			t.Fatalf("creating container: %v", err)
+			t.Fatalf("creating container: %v, raw response: %v", err, resp2.RawResponse)
 		}
 
 		store, err := kv.Open(ctx, kvparams.Config{CosmosDB: testParams, Type: cosmosdb.DriverName})
@@ -106,8 +105,7 @@ func TestMain(m *testing.M) {
 		&azcosmos.CreateDatabaseOptions{ThroughputProperties: &throughput},
 	)
 	if err != nil {
-		print(resp.RawResponse)
-		log.Fatalf("creating database: %v", err)
+		log.Fatalf("creating database: %v, raw response: %v", err, resp.RawResponse)
 	}
 
 	code := m.Run()

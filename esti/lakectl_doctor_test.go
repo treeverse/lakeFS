@@ -3,6 +3,7 @@ package esti
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -13,7 +14,7 @@ import (
 func TestLakectlDoctor(t *testing.T) {
 	accessKeyID := viper.GetString("access_key_id")
 	secretAccessKey := viper.GetString("secret_access_key")
-	endPointURL := viper.GetString("endpoint_url") + apiutil.BaseURL
+	endPointURL := strings.TrimSuffix(viper.GetString("endpoint_url"), "/") + apiutil.BaseURL
 	u, err := url.Parse(endpointURL)
 	require.NoError(t, err)
 	vars := map[string]string{

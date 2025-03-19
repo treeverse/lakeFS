@@ -2074,7 +2074,7 @@ Show identity info
 #### Synopsis
 {:.no_toc}
 
-Show the info of the user cofigurated in lakectl
+Show the info of the configured user in lakectl
 
 ```
 lakectl identity [flags]

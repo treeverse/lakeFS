@@ -13,25 +13,23 @@ redirect_from:
 {% include toc_2-3.html %}
 
 {: .warning }
-> If you are still using the [legacy Python `lakefs-client`][legacy-pypi], it's
-> time to upgrade!  This client is [deprecated][legacy-deprecated] and will be removed
-> soon.
+> If your project is currently using the [legacy Python `lakefs-client`][legacy-pypi], please be aware that this version has been [deprecated][legacy-deprecated].
+> As of release v1.44.0, it's no longer supported for new updates or features.
 
 **High Level Python SDK**  <span class="badge mr-1">New</span>
 We've just released a new High Level Python SDK library, and we're super excited to tell you about it! Continue reading to get the
 full story!
 Though our previous SDK client is still supported and maintained, we highly recommend using the new High Level SDK.
 **For previous Python SDKs follow these links:**
-[lakefs-sdk](https://pydocs-sdk.lakefs.io)
 [legacy-sdk](https://pydocs.lakefs.io) (Deprecated)
 {: .note }
 
-There are three primary ways to work with lakeFS from Python:
+Overview of lakeFS integration approaches using Python:
 
-* [Use Boto](#using-boto) to perform **object operations** through the **lakeFS S3 gateway**.
 * [Use the High Level lakeFS SDK](#using-the-lakefs-sdk) to perform **object operations**, **versioning** and other **lakeFS-specific operations**.
-* [Using lakefs-spec](#using-lakefs-spec-for-higher-level-file-operations) to
-perform high-level file operations through a file-system-like API.
+* [Use the generated lakefs-sdk](https://pydocs-sdk.lakefs.io) for direct API access based on the OpenAPI specification of lakeFS.
+* [Use Boto](#using-boto) to perform **object operations** through the **lakeFS S3 gateway**.
+* [Using lakefs-spec](#using-lakefs-spec-for-higher-level-file-operations) to perform high-level file operations through a file-system-like API.
 
 ## Using the lakeFS SDK
 
@@ -68,6 +66,7 @@ clt = Client(
 You can use TLS with a CA that is not trusted on the host by configuring the
 client with a CA cert bundle file.  It should contain concatenated CA
 certificates in PEM format:
+
 ```python
 clt = Client(
     host="http://localhost:8000",
@@ -136,12 +135,12 @@ print(repo)
 ```
 
 #### Output
+
 ```
 {id: 'example-repo', creation_date: 1697815536, default_branch: 'main', storage_namespace: 's3://storage-bucket/repos/example-repo'}
 ```
 
 #### List repositories
-
 
 ```python
 import lakefs
@@ -153,6 +152,7 @@ for repo in lakefs.repositories():
 ```
 
 #### Output
+
 ```
 Listing repositories:
 {id: 'example-repo', creation_date: 1697815536, default_branch: 'main', storage_namespace: 's3://storage-bucket/repos/example-repo'}
@@ -171,6 +171,7 @@ print("experiment2 ref:", branch2.get_commit().id)
 ```
 
 #### Output
+
 ```
 experiment1 ref: 7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859
 experiment2 ref: 7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859
@@ -187,6 +188,7 @@ for branch in lakefs.repository("example-repo").branches():
 ```
 
 #### Output
+
 ```
 experiment1
 experiment2
@@ -209,6 +211,7 @@ print(obj.stat())
 ```
 
 #### Output
+
 ```
 {'path': 'text/sample_data.txt', 'physical_address': 's3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfk4fnl531fa6k90pg', 'physical_address_expiry': None, 'checksum': '4a09d10820234a95bb548f14e4435bba', 'size_bytes': 15, 'mtime': 1701865289, 'metadata': {}, 'content_type': 'text/plain'}
 ```
@@ -219,6 +222,7 @@ print(obj.reader(mode='r').read())
 ```
 
 #### Output
+
 ```
 This is my object data
 ```
@@ -250,6 +254,7 @@ print(obj.stat())
 ```
 
 #### Output
+
 ```
 {'path': 'csv/sample_data.csv', 'physical_address': 's3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfk4fnl531fa6k90pg', 'physical_address_expiry': None, 'checksum': 'f181262c138901a74d47652d5ea72295', 'size_bytes': 88, 'mtime': 1701865939, 'metadata': {}, 'content_type': 'text/csv'}
 ```
@@ -262,6 +267,7 @@ print(obj.stat())
 ```
 
 #### Output
+
 ```
 {'path': 'raw/file1.data', 'physical_address': 's3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfltvnl531fa6k90q0', 'physical_address_expiry': None, 'checksum': '0ef432f8eb0305f730b0c57bbd7a6b08', 'size_bytes': 18, 'mtime': 1701866323, 'metadata': {}, 'content_type': 'application/octet-stream'}
 ```
@@ -292,6 +298,7 @@ print(ref.get_commit())
 ```
 
 #### Output
+
 ```
 {'id': 'c4666db80d2a984b4eab8ce02b6a60830767eba53995c26350e0ad994e15fedb', 'parents': ['a7a092a5a32a2cd97f22abcc99414f6283d29f6b9dd2725ce89f90188c5901e5'], 'committer': 'admin', 'message': 'Add some data!', 'creation_date': 1701866838, 'meta_range_id': '999bedeab1b740f83d2cf8c52548d55446f9038c69724d399adc4438412cade2', 'metadata': {'using': 'python_sdk'}}
 
@@ -304,6 +311,7 @@ print(len(list(branch1.uncommitted())))
 ```
 
 #### Output
+
 ```
 0
 ```
@@ -319,6 +327,7 @@ for diff in main.diff(other_ref=branch1):
 ```
 
 #### Output
+
 ```
 {'type': 'added', 'path': 'text/sample_data.txt', 'path_type': 'object', 'size_bytes': 15}
 {'type': 'added', 'path': 'csv/sample_data.csv', 'path_type': 'object', 'size_bytes': 88}
@@ -341,6 +350,7 @@ print(len(list(main.diff(other_ref=branch1))))
 ```
 
 #### Output
+
 ```
 0
 ```
@@ -357,6 +367,7 @@ for row in csv.reader(obj.reader(mode='r')):
 ```
 
 #### Output
+
 ```
 ['ID', 'Name', 'Email']
 ['1', 'Alice', 'alice@example.com']
@@ -405,6 +416,7 @@ print(f"imported a total of {status.ingested_objects} objects!")
 ```
 
 #### Output
+
 ```
 imported a total of 25478 objects!
 ```
@@ -432,6 +444,7 @@ print(branch.object("new_object").exists())
 ```
 
 #### Output
+
 ```
 0
 True
@@ -492,7 +505,8 @@ see the [API reference](https://lakefs-spec.org/latest/reference/lakefs_spec/).
 
 ### Integrations with popular data science packages
 
-A number of Python data science projects support fsspec, with [pandas](https://pandas.pydata.org/) being a prominent example. Reading a Parquet file from a lakeFS repository into a Pandas data frame for analysis is very easy, demonstrated on the quickstart repository sample data:
+A number of Python data science projects support fsspec, with [pandas](https://pandas.pydata.org/) being a prominent example.
+Reading a Parquet file from a lakeFS repository into a Pandas data frame for analysis is very easy, demonstrated on the quickstart repository sample data:
 
 ```python
 import pandas as pd
@@ -553,6 +567,37 @@ s3 = boto3.client('s3',
 ```
 
 The client is now configured to operate on your lakeFS installation.
+
+#### Configuring Boto3 S3 Client with Checksum Settings
+
+In newer versions of Boto3, when connecting to **lakeFS** using **HTTPS**,
+you might encounter an **AccessDenied** error on upload,
+while the lakeFS logs display an error `encoding/hex: invalid byte: U+0053 'S'`. 
+
+To avoid this issue, explicitly configure the Boto3 client with the following checksum settings:
+- `request_checksum_calculation: 'when_required'`
+- `response_checksum_validation: 'when_required'`
+
+Example of how to configure it:
+
+```python
+import boto3
+from botocore.config import Config
+
+# Configure checksum settings
+config = Config(
+    request_checksum_calculation='when_required',
+    response_checksum_validation='when_required'
+)
+
+s3_client = boto3.client(
+    's3',
+    endpoint_url='https://lakefs.example.com',
+    aws_access_key_id='AKIAIOSFODNN7EXAMPLE',
+    aws_secret_access_key='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    config=config,
+)
+```
 
 ### Usage Examples
 

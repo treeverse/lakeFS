@@ -477,9 +477,9 @@ A set of utilities to aide in writing user friendly hooks.
 ### `hook/fail(message)`
 
 Will abort the current hook's execution with the given message. This is similar to using `error()`, but is typically used to separate
-generic runtime errors (an API call that returned an unexpected response) and explict failure of the calling hook.
+generic runtime errors (an API call that returned an unexpected response) and explicit failure of the calling hook.
 
-When called, errors will appear without a stacktrace, and the error message will be directly the one given as `message`.
+When called, errors will appear without a stack-trace, and the error message will be directly the one given as `message`.
 
 ```lua
 > hook = require("hook")
@@ -496,7 +496,7 @@ API, will automatically use user A's identity for authorization and auditing pur
 
 Create a new tag for the given reference
 
-### `lakefs/diff_refs(repository_id, lef_reference_id, right_reference_id [, after, prefix, delimiter, amount])`
+### `lakefs/diff_refs(repository_id, left_reference_id, right_reference_id [, after, prefix, delimiter, amount])`
 
 Returns an object-wise diff between `left_reference_id` and `right_reference_id`.
 
@@ -510,15 +510,42 @@ If delimiter is empty, will default to a recursive listing. Otherwise, common pr
 Returns 2 values:
 
 1. The HTTP status code returned by the lakeFS API
-1. The content of the specified object as a lua string
+1. The content of the specified object as a Lua string
 
 ### `lakefs/diff_branch(repository_id, branch_id [, after, amount, prefix, delimiter])`
 
 Returns an object-wise diff of uncommitted changes on `branch_id`.
 
-### `lakefs/stat_object(repository_id, ref_id, path)`
+### `lakefs/stat_object(repository_id, ref_id, path[, user_metadata])`
 
 Returns a stat object for the given path under the given reference and repository.
+Returns 2 values:
+
+1. The HTTP status code returned by the lakeFS API
+2. The stat response object as a JSON string
+
+Parameters:
+
+- `repository_id`: The repository ID
+- `ref_id`: The reference to stat from (branch, tag, commit ID)
+- `path`: Path to the object to stat
+- `user_metadata`: (Optional) Boolean flag to include user metadata in response
+
+### `lakefs/update_object_user_metadata(repository_id, branch_id, path, metadata)`
+
+Update user metadata for an object.
+
+Parameters:
+
+- `repository_id`: The repository ID
+- `branch_id`: The branch containing the object
+- `path`: Path to the object to update
+- `metadata`: A table containing key-value pairs to set as user metadata
+
+Returns 2 values:
+
+1. The HTTP status code returned by the lakeFS API (204 on success)
+2. Empty on success, error on failure
 
 ### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
 
@@ -800,7 +827,7 @@ The return value is a table with mapping of table names to registration request 
 
 **Note: (Azure users)** Databricks catalog external locations is supported only for ADLS Gen2 storage accounts.  
 When exporting Delta tables using the `lakefs/catalogexport/delta_exporter.export_delta_log` function, the `path_transformer` must be  
-used to convert the paths scheme to `abfss`. The built-in `azure` lua library provides this functionality with `transformPathToAbfss`.
+used to convert the paths scheme to `abfss`. The built-in `azure` Lua library provides this functionality with `transformPathToAbfss`.
 
 Parameters:
 

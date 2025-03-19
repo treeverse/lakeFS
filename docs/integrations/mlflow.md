@@ -98,6 +98,7 @@ with mlflow.start_run() as run:
     mlflow.log_input(dataset, context="training")
     mlflow.set_tag("lakefs_repo", repo_id)
     mlflow.set_tag("lakefs_branch", branch_id) 
+    mlflow.set_tag("lakefs_commit", head_commit_id) 
 
 # Inspect run's dataset
 logged_run = mlflow.get_run(run.info.run_id) # 
@@ -161,7 +162,8 @@ print(f"Dataset source URI: {dataset.source.path}")
 with mlflow.start_run() as run:
     mlflow.log_input(dataset, context="training")
     mlflow.set_tag("lakefs_repo", repo_id)
-    mlflow.set_tag("lakefs_branch", branch_id) # Log the branch id, to have a friendly lakeFS reference to search the input dataset in 
+    mlflow.set_tag("lakefs_branch", branch_id) # Log the branch id, to have a friendly lakeFS reference to search the input dataset in
+    mlflow.set_tag("lakefs_commit", head_commit_id)
 
 # Inspect run's dataset
 logged_run = mlflow.get_run(run.info.run_id) # 
@@ -190,7 +192,7 @@ and its source are best accessed programmatically.
 
 1. Obtain the Run ID: Navigate to the MLflow UI and copy the Run ID of the experiment you're interested in.
 
-![mlflow run](../assets/img/mlflow_inspect_experiment_run.png)
+![mlflow run](../assets/img/mlflow_experiment_run.png)
 
 2. Extract Dataset Information Using MLflow's Python SDK:
 
@@ -217,7 +219,7 @@ Output
 ```text
 Run ID: c0f8fbb1b63748abaa0a6479115e272c Dataset name: boat-images
 Run ID: c0f8fbb1b63748abaa0a6479115e272c Dataset source URI: {"path": "s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
-Run ID: c0f8fbb1b63748abaa0a6479115e272c tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'my-repo'}
+Run ID: c0f8fbb1b63748abaa0a6479115e272c tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'my-repo', 'lakefs_commit': '3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3'}
 ```
 
 Notes:

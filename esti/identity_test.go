@@ -20,7 +20,7 @@ func TestIdentity(t *testing.T) {
 	})
 	require.NoError(t, err, "failed creating branch1")
 
-	checksum, objContent, err := uploadFileRandomDataAndReport(ctx, repo, branch1, objPath, false, nil)
+	checksum, objContent, err := UploadFileRandomDataAndReport(ctx, repo, branch1, objPath, false, nil)
 	require.NoError(t, err, "failed uploading file")
 	commitResp, err := client.CommitWithResponse(ctx, repo, branch1, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "commit on branch1",
