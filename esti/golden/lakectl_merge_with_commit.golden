@@ -1,6 +1,6 @@
 
 ID:            <COMMIT_ID>
-Author:        esti
+Author:        ${AUTHOR}
 Date:          <DATE> <TIME> <TZ>
 Merge:         <COMMIT_ID>, <COMMIT_ID>
 

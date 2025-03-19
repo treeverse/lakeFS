@@ -1,13 +1,13 @@
 
 ID:            <COMMIT_ID>
-Author:        esti
+Author:        ${AUTHOR}
 Date:          <DATE> <TIME> <TZ>
 Meta Range ID: <COMMIT_ID>
 
 	commit4
 
 ID:            <COMMIT_ID>
-Author:        esti
+Author:        ${AUTHOR}
 Date:          <DATE> <TIME> <TZ>
 Meta Range ID: <COMMIT_ID>
 
