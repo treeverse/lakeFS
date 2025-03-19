@@ -580,6 +580,21 @@ func (s *StoreService) PostDeleteBranchHook(ctx context.Context, record graveler
 	s.asyncRun(ctx, record)
 }
 
+func (s *StoreService) PreRevertHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *StoreService) PostRevertHook(ctx context.Context, record graveler.HookRecord) error {
+	// update pre-commit with commit ID if needed
+	err := s.UpdateCommitID(ctx, record.Repository, record.PreRunID, record.CommitID.String())
+	if err != nil {
+		return err
+	}
+
+	s.asyncRun(ctx, record)
+	return nil
+}
+
 func (s *StoreService) NewRunID() string {
 	return s.idGen.NewRunID()
 }
