@@ -148,21 +148,21 @@ func (h *Hooks) PostDeleteBranchHook(_ context.Context, record graveler.HookReco
 }
 
 func (h *Hooks) PreRevertHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PreRevertHook")
 	h.RepositoryID = record.Repository.RepositoryID
 	h.StorageNamespace = record.Repository.StorageNamespace
 	h.BranchID = record.BranchID
 	h.Commit = record.Commit
-	return h.Err
+	return h.Errs["PreRevertHook"]
 }
 
 func (h *Hooks) PostRevertHook(_ context.Context, record graveler.HookRecord) error {
-	h.Called = true
+	h.Called = append(h.Called, "PostRevertHook")
 	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
 	h.Commit = record.Commit
-	return h.Err
+	return h.Errs["PostRevertHook"]
 }
 
 func (h *Hooks) NewRunID() string {
