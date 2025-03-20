@@ -1,6 +1,6 @@
 [package]
 name = "lakefs_sdk"
-version = "0.1.0-SNAPSHOT"
+version = "1.52.0"
 authors = ["services@treeverse.io"]
 description = "lakeFS HTTP API"
 license = "Apache 2.0"

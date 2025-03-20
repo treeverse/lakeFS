@@ -4,7 +4,7 @@ apply plugin: 'java'
 apply plugin: 'com.diffplug.spotless'
 
 group = 'io.lakefs'
-version = '0.1.0-SNAPSHOT'
+version = '1.52.0'
 
 buildscript {
     repositories {

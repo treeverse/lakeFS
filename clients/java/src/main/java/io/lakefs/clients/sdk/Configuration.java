@@ -15,7 +15,7 @@ package io.lakefs.clients.sdk;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 public class Configuration {
-    public static final String VERSION = "0.1.0-SNAPSHOT";
+    public static final String VERSION = "1.52.0";
 
     private static ApiClient defaultApiClient = new ApiClient();
 

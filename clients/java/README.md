@@ -39,7 +39,7 @@ Add this dependency to your project's POM:
 <dependency>
   <groupId>io.lakefs</groupId>
   <artifactId>sdk</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>1.52.0</version>
   <scope>compile</scope>
 </dependency>
 ```
@@ -55,7 +55,7 @@ Add this dependency to your project's build file:
   }
 
   dependencies {
-     implementation "io.lakefs:sdk:0.1.0-SNAPSHOT"
+     implementation "io.lakefs:sdk:1.52.0"
   }
 ```
 
@@ -69,7 +69,7 @@ mvn clean package
 
 Then manually install the following JARs:
 
-* `target/sdk-0.1.0-SNAPSHOT.jar`
+* `target/sdk-1.52.0.jar`
 * `target/lib/*.jar`
 
 ## Getting Started

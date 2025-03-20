@@ -2,7 +2,7 @@ lazy val root = (project in file(".")).
   settings(
     organization := "io.lakefs",
     name := "sdk",
-    version := "0.1.0-SNAPSHOT",
+    version := "1.52.0",
     scalaVersion := "2.11.4",
     scalacOptions ++= Seq("-feature"),
     javacOptions in compile ++= Seq("-Xlint:deprecation"),

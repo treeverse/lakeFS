@@ -148,7 +148,7 @@ public class ApiClient {
         json = new JSON();
 
         // Set default User-Agent.
-        setUserAgent("lakefs-java-sdk/0.1.0-SNAPSHOT-v1");
+        setUserAgent("lakefs-java-sdk/1.52.0-v1");
 
         authentications = new HashMap<String, Authentication>();
     }
