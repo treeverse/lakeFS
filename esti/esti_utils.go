@@ -487,7 +487,6 @@ func UploadContent(ctx context.Context, repo, branch, objPath, objContent string
 		return nil, fmt.Errorf("close form file: %w", err)
 	}
 
-	fmt.Println("call UploadObjectWithBodyWithResponse")
 	return clt.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)
