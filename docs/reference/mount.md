@@ -22,7 +22,7 @@ This functionality is currently in limited support and is a Read-Only file syste
 {: .note }
 
 **Note**
-Everest mount supports writing to the file system for NFS (the default protocol for MacOS) starting version 0.1.0!
+Everest mount supports writing to the file system for both NFS and FUSE protocols starting version 0.2.0!
 [Everest mount write mode semantics](mount-write-mode-semantics.md).
 {: .note }
 
@@ -44,7 +44,6 @@ Everest mount supports writing to the file system for NFS (the default protocol 
 
 Currently, the implemented protocols are `nfs` and `fuse`.
 - NFS V3 (Network File System) is supported on macOS.
-- FUSE is supported on Linux (no root required)- only read-only mode is supported at the moment.
 
 ## Authentication with lakeFS
 
