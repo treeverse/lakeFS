@@ -598,6 +598,11 @@ func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
+		print("Using config file from flag: ", cfgFile, "\n")
+	} else if envCfgFile, exists := os.LookupEnv("LAKECTL_CONFIG_FILE"); exists && envCfgFile != "" {
+		// Use config file from the env variable.
+		viper.SetConfigFile(envCfgFile)
+		print("Using config file from env variable: ", envCfgFile, "\n")
 	} else {
 		// Find home directory.
 		home, err := os.UserHomeDir()
@@ -609,6 +614,7 @@ func initConfig() {
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".lakectl")
+		print("Using config file from home directory: ", home, "/.lakectl.yaml\n")
 	}
 	viper.SetEnvPrefix("LAKECTL")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
