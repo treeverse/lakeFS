@@ -17,7 +17,7 @@ redirect_from:
 
 {% include toc.html %}
 
-Like other version control systems, lakeFS allows you to configure _Actions_ to trigger when [predefined events](#supported-events) occur. There are numerous uses for Actions, including: 
+Like other version control systems, lakeFS allows you to configure _Actions_ to trigger when [predefined events](#supported-events) occur. There are numerous uses for Actions, including:
 
 1. Format Validator:
    A webhook that checks new files to ensure they are of a set of allowed data formats.
@@ -35,7 +35,7 @@ For step-by-step examples of hooks in action check out the [lakeFS Quickstart]({
 
 ## Overview
 
-An _action_ defines one or more _hooks_ to execute. lakeFS supports three types of hook: 
+An _action_ defines one or more _hooks_ to execute. lakeFS supports three types of hook:
 
 1. [Lua](./lua.html) - uses an embedded Lua VM
 1. [Webhook](./webhooks.html) - makes a REST call to an external URL
@@ -45,10 +45,10 @@ An _action_ defines one or more _hooks_ to execute. lakeFS supports three types 
 
 ## Configuration
 
-There are two parts to configuration an Action: 
+There are two parts to configuration an Action:
 
 1. Create an Action file and upload it to the lakeFS repository
-2. Configure the hook(s) that you specified in the Action file. How these are configured will depend on the type of hook. 
+2. Configure the hook(s) that you specified in the Action file. How these are configured will depend on the type of hook.
 
 ### Action files
 
@@ -62,17 +62,17 @@ By default, when `if` is empty or omitted, the step will run only if no error oc
 
 #### Action File schema
 
-| Property              | Description                                                                                                                                                                                                              | Data Type  | Required | Default Value                                                           |
-|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
-| `name               ` | Identifes the Action file                                                                                                                                                                                                | String     | no       | Action filename                                                         |
-| `on                 ` | List of events that will trigger the hooks                                                                                                                                                                               | List       | yes      |                                                                         |
-| `on<event>.branches ` | Glob pattern list of branches that triggers the hooks                                                                                                                                                                    | List       | no       | **Not applicable to Tag events.** If empty, Action runs on all branches |
-| `hooks              ` | List of hooks to be executed                                                                                                                                                                                             | List       | yes      |                                                                         |
-| `hook.id            ` | ID of the hook, must be unique within the action.                                                                                                                                                                        | String     | yes      |                                                                         |
-| `hook.type          ` | Type of the hook ([types](#supported-events))                                                                                                                                                                            | String     | yes      |                                                                         |
-| `hook.description   ` | Description for the hook                                                                                                                                                                                                 | String     | no       |                                                                         |
-| `hook.if            ` | Expression that will be evaluated before execute the hook                                                                                                                                                                | String     | no       | No value is the same as evaluate `success()`                            |
-| `hook.properties    ` | Hook's specific configuration, see [Lua](./lua.md#action-file-lua-hook-properties), [WebHook](./webhooks.md#action-file-webhook-properties), and [Airflow](./airflow.md#action-file-airflow-hook-properties) for details | Dictionary | true     |                                                                         |
+| Property             | Description                                                                                                                                                                                                              | Data Type  | Required | Default Value                                                           |
+|----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|----------|-------------------------------------------------------------------------|
+| `name`               | Identifes the Action file                                                                                                                                                                                                | String     | no       | Action filename                                                         |
+| `on`                 | List of events that will trigger the hooks                                                                                                                                                                               | List       | yes      |                                                                         |
+| `on<event>.branches` | Glob pattern list of branches that triggers the hooks                                                                                                                                                                    | List       | no       | **Not applicable to Tag events.** If empty, Action runs on all branches |
+| `hooks`              | List of hooks to be executed                                                                                                                                                                                             | List       | yes      |                                                                         |
+| `hook.id`            | ID of the hook, must be unique within the action.                                                                                                                                                                        | String     | yes      |                                                                         |
+| `hook.type`          | Type of the hook ([types](#supported-events))                                                                                                                                                                            | String     | yes      |                                                                         |
+| `hook.description`   | Description for the hook                                                                                                                                                                                                 | String     | no       |                                                                         |
+| `hook.if`            | Expression that will be evaluated before execute the hook                                                                                                                                                                | String     | no       | No value is the same as evaluate `success()`                            |
+| `hook.properties`    | Hook's specific configuration, see [Lua](./lua.md#action-file-lua-hook-properties), [WebHook](./webhooks.md#action-file-webhook-properties), and [Airflow](./airflow.md#action-file-airflow-hook-properties) for details | Dictionary | true     |                                                                         |
 
 #### Example Action File
 
@@ -117,7 +117,6 @@ hooks:
 Use `lakectl actions validate <path>` to validate your action files locally.
 {: .note }
 
-
 ### Uploading Action files
 
 Action files should be uploaded with the prefix `_lakefs_actions/` to the lakeFS repository.
@@ -126,28 +125,32 @@ in the repository branch where the action occurred.
 A failure to parse an Action file will result with a failing Run.
 
 For example, lakeFS will search and execute all the matching Action files with the prefix `lakefs://example-repo/feature-1/_lakefs_actions/` on:
+
 1. Commit to `feature-1` branch on `example-repo` repository.
 1. Merge to `main` branch from `feature-1` branch on `repo1` repository.
 
-
 ## Supported Events
 
-| Event                | Description                                                                    |
-|----------------------|--------------------------------------------------------------------------------|
-| `pre-commit`         | Runs when the commit occurs, before the commit is finalized                    |
-| `post-commit`        | Runs after the commit is finalized                                             |
-| `pre-merge`          | Runs on the source branch when the merge occurs, before the merge is finalized |
-| `post-merge`         | Runs on the merge result, after the merge is finalized                         |
-| `pre-create-branch`  | Runs on the source branch prior to creating a new branch                       |
-| `post-create-branch` | Runs on the new branch after the branch was created                            |
-| `pre-delete-branch`  | Runs prior to deleting a branch                                                |
-| `post-delete-branch` | Runs after the branch was deleted                                              |
-| `pre-revert-branch`  | Runs prior to performing a revert operation on a branch                        |
-| `post-revert-branch` | Runs after performing a revert operation on a branch                           |
-| `pre-create-tag`     | Runs prior to creating a new tag                                               |
-| `post-create-tag`    | Runs after the tag was created                                                 |
-| `pre-delete-tag`     | Runs prior to deleting a tag                                                   |
-| `post-delete-tag`    | Runs after the tag was deleted                                                 |
+| Event                | Description                                                                                      |
+|----------------------|--------------------------------------------------------------------------------------------------|
+| `prepare-commit`     | (EXPERIMENTAL) Runs before the commit occurs; branch modification will be included in the commit |
+| `pre-commit`         | Runs when the commit occurs, before the commit is finalized                                      |
+| `post-commit`        | Runs after the commit is finalized                                                               |
+| `pre-merge`          | Runs on the source branch when the merge occurs, before the merge is finalized                   |
+| `post-merge`         | Runs on the merge result, after the merge is finalized                                           |
+| `pre-create-branch`  | Runs on the source branch prior to creating a new branch                                         |
+| `post-create-branch` | Runs on the new branch after the branch was created                                              |
+| `pre-delete-branch`  | Runs prior to deleting a branch                                                                  |
+| `post-delete-branch` | Runs after the branch was deleted                                                                |
+| `pre-revert-branch`  | Runs prior to performing a revert operation on a branch                                          |
+| `post-revert-branch` | Runs after performing a revert operation on a branch                                             |
+| `pre-create-tag`     | Runs prior to creating a new tag                                                                 |
+| `post-create-tag`    | Runs after the tag was created                                                                   |
+| `pre-delete-tag`     | Runs prior to deleting a tag                                                                     |
+| `post-delete-tag`    | Runs after the tag was deleted                                                                   |
+
+**Note:** The `prepare-commit` hook is experimental. During its execution (between `prepare-commit` and `pre-commit`), other changes may be applied to the branch as there is no branch-level locking mechanism at this point. If you need to verify or validate the content that will be committed, use the `pre-commit` hook instead, as it provides a consistent view of the changes that will be included in the commit.
+{: .note }
 
 lakeFS Actions are handled per repository and cannot be shared between repositories.
 A failure of any Hook under any Action of a `pre-*` event will result in aborting the lakeFS operation that is taking place.
@@ -167,10 +170,10 @@ All executed Hooks (each with `hook_run_id`) exist in the context of that Run (`
 The [lakeFS API]({% link reference/api.md %}) and [lakectl][lakectl-actions] expose the results of executions per repository, branch, commit, and specific Action.
 The endpoint also allows to download the execution log of any executed Hook under each Run for observability.
 
-
 ## Result Files
 
 The metadata section of lakeFS repository with each Run contains two types of files:
+
 1. `_lakefs/actions/log/<runID>/<hookRunID>.log` - Execution log of the specific Hook run.
 1. `_lakefs/actions/log/<runID>/run.manifest` - Manifest with all Hooks execution for the run with their results and additional metadata.
 

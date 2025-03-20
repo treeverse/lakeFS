@@ -10,6 +10,7 @@ import (
 type EventType string
 
 const (
+	EventTypePrepareCommit    EventType = "prepare-commit"
 	EventTypePreCommit        EventType = "pre-commit"
 	EventTypePostCommit       EventType = "post-commit"
 	EventTypePreMerge         EventType = "pre-merge"
@@ -52,6 +53,7 @@ type HookRecord struct {
 }
 
 type HooksHandler interface {
+	PrepareCommitHook(ctx context.Context, record HookRecord) error
 	PreCommitHook(ctx context.Context, record HookRecord) error
 	PostCommitHook(ctx context.Context, record HookRecord) error
 	PreMergeHook(ctx context.Context, record HookRecord) error
@@ -71,6 +73,10 @@ type HooksHandler interface {
 }
 
 type HooksNoOp struct{}
+
+func (h *HooksNoOp) PrepareCommitHook(context.Context, HookRecord) error {
+	return nil
+}
 
 func (h *HooksNoOp) PreCommitHook(context.Context, HookRecord) error {
 	return nil

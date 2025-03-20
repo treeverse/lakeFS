@@ -2112,7 +2112,35 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
+
+	// fill commit information, except the commit's parents as they are set in the branch update
+	commit = NewCommit()
+	if params.Date != nil {
+		commit.CreationDate = time.Unix(*params.Date, 0)
+	}
+	commit.Committer = params.Committer
+	commit.Message = params.Message
+	commit.Metadata = params.Metadata
+
 	storageNamespace = repository.StorageNamespace
+	if !repository.ReadOnly {
+		prepareRunID := g.hooks.NewRunID()
+		err = g.hooks.PrepareCommitHook(ctx, HookRecord{
+			RunID:      prepareRunID,
+			EventType:  EventTypePrepareCommit,
+			SourceRef:  branchID.Ref(),
+			Repository: repository,
+			BranchID:   branchID,
+			Commit:     commit,
+		})
+		if err != nil {
+			return "", &HookAbortError{
+				EventType: EventTypePrepareCommit,
+				RunID:     prepareRunID,
+				Err:       err,
+			}
+		}
+	}
 
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
@@ -2133,15 +2161,6 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	}
 
 	err = g.retryBranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
-		// fill commit information - use for pre-commit and after adding the commit information used by commit
-		commit = NewCommit()
-
-		if params.Date != nil {
-			commit.CreationDate = time.Unix(*params.Date, 0)
-		}
-		commit.Committer = params.Committer
-		commit.Message = params.Message
-		commit.Metadata = params.Metadata
 		if branch.CommitID != "" {
 			commit.Parents = CommitParents{branch.CommitID}
 		}
