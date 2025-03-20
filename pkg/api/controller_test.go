@@ -5812,6 +5812,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			perm := &auth.MissingPermissions{}
 			result := auth.CheckPermissions(ctx, tc.node, tc.username, tc.policies, perm)
+			fmt.Println("perm audit: ", perm.String())
 			require.Equal(t, tc.expected, result)
 		})
 	}
