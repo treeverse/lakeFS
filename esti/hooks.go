@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"path"
 	"sync"
 	"testing"
 	"text/template"
@@ -37,14 +38,24 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 		Message: "Initial content",
 	})
 	require.NoError(t, err, "failed to commit initial content")
-	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode(), "failed to commit initial content: %q", commitResp)
 
+	// prepare-commit action triggered on action upload, flush buffer
 	webhookData, err := ResponseWithTimeout(server, 1*time.Minute) // pre-commit action triggered on action upload, flush buffer
 	require.NoError(t, err)
-	require.NoError(t, webhookData.Err, "error on pre commit serving")
-	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
+	require.NoError(t, webhookData.Err, "prepare-commit serving")
+	var prepareCommitEvent webhookEventInfo
+	err = json.Unmarshal(webhookData.Data, &prepareCommitEvent)
+	require.NoError(t, err, "reading prepare-commit data")
+	hvd.appendRes(&prepareCommitEvent)
+
+	// pre-commit action triggered on action upload, flush buffer
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+	require.NoError(t, webhookData.Err, "pre-commit serving")
 	var preCommitEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
+	err = json.Unmarshal(webhookData.Data, &preCommitEvent)
+	require.NoError(t, err, "reading pre-commit data")
 	hvd.appendRes(&preCommitEvent)
 
 	t.Run("commit merge test", func(t *testing.T) {
@@ -96,12 +107,35 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	require.NoError(t, err, "failed to commit initial content")
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
+	// prepare-commit action
 	webhookData, err := ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-	require.NoError(t, webhookData.Err, "error on pre commit serving")
-	decoder := json.NewDecoder(bytes.NewReader(webhookData.Data))
+	require.NoError(t, webhookData.Err, "prepare-commit serving")
+	var prepareCommitEvent webhookEventInfo
+	err = json.Unmarshal(webhookData.Data, &prepareCommitEvent)
+	require.NoError(t, err, "reading prepare-commit data")
+	require.Equal(t, webhookEventInfo{
+		EventTime:     prepareCommitEvent.EventTime,
+		SourceRef:     branch,
+		EventType:     "prepare-commit",
+		ActionName:    "Test Prepare Commit",
+		HookID:        "test_webhook",
+		RepositoryID:  repo,
+		BranchID:      branch,
+		Committer:     commitResp.JSON201.Committer,
+		CommitMessage: commitResp.JSON201.Message,
+		Metadata:      commitResp.JSON201.Metadata.AdditionalProperties,
+	}, prepareCommitEvent)
+	hvd.appendRes(&prepareCommitEvent)
+
+	// pre-commit action
+	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
+	require.NoError(t, err)
+	require.NoError(t, webhookData.Err, "pre-commit serving")
 	var preCommitEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preCommitEvent), "reading pre-commit data")
+	err = json.Unmarshal(webhookData.Data, &preCommitEvent)
+	require.NoError(t, err, "reading pre-commit data")
+
 	commitRecord := commitResp.JSON201
 	require.Equal(t, webhookEventInfo{
 		EventTime:     preCommitEvent.EventTime,
@@ -123,9 +157,10 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
 	require.NoError(t, webhookData.Err, "error on post commit serving")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postCommitEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&postCommitEvent), "reading post-commit data")
+	err = json.Unmarshal(webhookData.Data, &postCommitEvent)
+	require.NoError(t, err, "reading post-commit data")
+
 	require.Equal(t, webhookEventInfo{
 		EventTime:     postCommitEvent.EventTime,
 		SourceRef:     commitResp.JSON201.Id,
@@ -152,9 +187,10 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	t.Log("Merged successfully", mergeRef)
 
 	require.NoError(t, err, "error on pre commit serving")
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
+
 	var preMergeEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&preMergeEvent), "reading pre-merge data")
+	err = json.Unmarshal(webhookData.Data, &preMergeEvent)
+	require.NoError(t, err, "reading pre-merge data")
 	require.Equal(t, webhookEventInfo{
 		EventTime:     preMergeEvent.EventTime,
 		SourceRef:     commitRecord.Id,
@@ -173,9 +209,9 @@ func testCommitMerge(t *testing.T, ctx context.Context, repo string, hvd *hooksV
 	// Testing post-merge hook response
 	webhookData, err = ResponseWithTimeout(server, 1*time.Minute)
 	require.NoError(t, err)
-	decoder = json.NewDecoder(bytes.NewReader(webhookData.Data))
 	var postMergeEvent webhookEventInfo
-	require.NoError(t, decoder.Decode(&postMergeEvent), "reading post-merge data")
+	err = json.Unmarshal(webhookData.Data, &postMergeEvent)
+	require.NoError(t, err, "reading post-merge data")
 	require.Equal(t, webhookEventInfo{
 		EventTime:     postMergeEvent.EventTime,
 		SourceRef:     mergeResp.JSON200.Reference,
@@ -502,14 +538,17 @@ func parseAndUploadActions(t *testing.T, ctx context.Context, repo, branch strin
 		require.NoError(t, err)
 
 		action := doc.String()
-		resp, err := UploadContent(ctx, repo, branch, "_lakefs_actions/"+ent, action, lakeFSClient)
+		resp, err := UploadContent(ctx, repo, branch, path.Join("_lakefs_actions", ent), action, lakeFSClient)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusCreated, resp.StatusCode())
 	}
 
 	// wait 8 seconds to let the actions cache expire.
 	const cacheExpireTime = 8 * time.Second
-	time.Sleep(cacheExpireTime) // nolint:gomnd
+	select {
+	case <-ctx.Done():
+	case <-time.After(cacheExpireTime):
+	}
 }
 
 type webhookEventInfo struct {
