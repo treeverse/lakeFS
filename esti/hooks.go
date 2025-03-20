@@ -68,7 +68,7 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 		testCreateDeleteTag(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
 	t.Run("revert branch test", func(t *testing.T) {
-		testRevertBranch(t, ctx, repo, &hvd, server)
+		testRevertBranch(t, ctx, repo, &hvd, server, lakeFSClient)
 	})
 
 	t.Log("check runs are sorted in descending order")
@@ -437,11 +437,11 @@ func testCreateDeleteTag(t *testing.T, ctx context.Context, repo string, hvd *ho
 	}, postDeleteTagEvent)
 }
 
-func testRevertBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer) {
+func testRevertBranch(t *testing.T, ctx context.Context, repo string, hvd *hooksValidationData, server *WebhookServer, lakefsClient apigen.ClientWithResponsesInterface) {
 	const branch = "revert-branch-test"
 
 	t.Log("Create branch", branch)
-	createBranchResp, err := client.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
+	createBranchResp, err := lakefsClient.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   branch,
 		Source: mainBranch,
 	})
@@ -452,7 +452,7 @@ func testRevertBranch(t *testing.T, ctx context.Context, repo string, hvd *hooks
 
 	const paginationAmount = 2
 	logAmount := apigen.PaginationAmount(paginationAmount)
-	logResp, err := client.LogCommitsWithResponse(ctx, repo, branch, &apigen.LogCommitsParams{
+	logResp, err := lakefsClient.LogCommitsWithResponse(ctx, repo, branch, &apigen.LogCommitsParams{
 		Amount: &logAmount,
 	})
 	require.NoError(t, err)
@@ -461,14 +461,14 @@ func testRevertBranch(t *testing.T, ctx context.Context, repo string, hvd *hooks
 	require.Equal(t, int(logAmount), len(commits))
 
 	revertCommitID := commits[len(commits)-1].Id
-	revertResp, err := client.RevertBranchWithResponse(ctx, repo, branch, apigen.RevertBranchJSONRequestBody{
+	revertResp, err := lakefsClient.RevertBranchWithResponse(ctx, repo, branch, apigen.RevertBranchJSONRequestBody{
 		Ref:        revertCommitID,
 		AllowEmpty: apiutil.Ptr(true),
 	})
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, revertResp.StatusCode())
 
-	getCommitResp, err := client.GetCommitWithResponse(ctx, repo, branch)
+	getCommitResp, err := lakefsClient.GetCommitWithResponse(ctx, repo, branch)
 	require.NoError(t, err)
 	require.NotNil(t, getCommitResp.JSON200)
 	newCommit := getCommitResp.JSON200
