@@ -37,7 +37,7 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 		Message: "Initial content",
 	})
 	require.NoError(t, err, "failed to commit initial content")
-	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
+	require.Equal(t, http.StatusCreated, commitResp.StatusCode(), "failed to commit initial content")
 
 	webhookData, err := ResponseWithTimeout(server, 1*time.Minute) // pre-commit action triggered on action upload, flush buffer
 	require.NoError(t, err)
