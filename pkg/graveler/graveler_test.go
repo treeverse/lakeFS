@@ -2236,7 +2236,7 @@ func TestGraveler_PrepareCommitHook(t *testing.T) {
 			}
 			called := slices.Contains(h.Called, "PrepareCommitHook")
 			if (tt.hook && !tt.readOnlyRepo) != called {
-				t.Fatalf("Commit invalid pre-hook call, %v expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+				t.Fatalf("Commit invalid prepare-commit hook call, %v expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
 			if !called {
 				return
