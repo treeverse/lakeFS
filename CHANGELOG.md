@@ -1,5 +1,24 @@
 # Changelog
 
+# v1.52.0
+
+:new: What's new:
+- Added Lua Action support for `update_object_user_metadata` (#8771)
+- Hooks: Enhanced Lua `stat_object` to get metadata (#8777)
+- Added search functionality for Groups and Policies in Web UI (#8783)
+- Added search functionality for Users in Web UI (#8784)
+- Added Python client support working with session token from env (#8738)
+- Actions: Added pre-post revert hooks (#8804)
+- Actions: Added prepare-commit hook (#8788)
+
+:bug: Bugs fixed:
+
+- Fixed Web UI Merge Dialog - Enter Should Submit (#8781)
+- Fixed Web UI Auth Error after first login (#8806)
+- Fixed: Revert with allow empty commit (#8803)
+- Fixed: Create bare repository now skips storage namespace check (#8816)
+- Fixed lakeFS Lua package to properly post data in request (#8768)
+
 # v1.51.0
 
 :new: What's new:
