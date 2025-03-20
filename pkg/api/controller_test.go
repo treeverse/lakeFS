@@ -5729,6 +5729,93 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 	}
 }
 
+func TestCheckPermissions_multipleResources(t *testing.T) {
+	ctx := context.Background()
+	testCases := []struct {
+		name     string
+		node     permissions.Node
+		username string
+		policies []*model.Policy
+		expected auth.CheckResult
+	}{
+		{
+			name: "delete first resource's repo",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:DeleteRepository",
+					Resource: "arn:lakefs:fs:::repository/repo1",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:DeleteRepository"},
+							Resource: "arn:lakefs:fs:::repository/repo1 , arn:lakefs:fs:::repository/repo2",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
+			},
+			expected: auth.CheckAllow,
+		},
+		{
+			name: "delete second resource's repo",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:DeleteRepository",
+					Resource: "arn:lakefs:fs:::repository/repo2",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:DeleteRepository"},
+							Resource: "arn:lakefs:fs:::repository/repo1,arn:lakefs:fs:::repository/repo2",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
+			},
+			expected: auth.CheckAllow,
+		},
+		{
+			name: "delete second resource's repo, unpermitted",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:DeleteRepository",
+					Resource: "arn:lakefs:fs:::repository/repo2",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:DeleteRepository"},
+							Resource: "arn:lakefs:fs:::repository/repo1,arn:lakefs:fs:::repository/repo2",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expected: auth.CheckDeny,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			perm := &auth.MissingPermissions{}
+			result := auth.CheckPermissions(ctx, tc.node, tc.username, tc.policies, perm)
+			require.Equal(t, tc.expected, result)
+		})
+	}
+}
 func TestController_CreatePullRequest(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
