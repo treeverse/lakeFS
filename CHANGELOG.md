@@ -7,7 +7,6 @@
 - Hooks: Enhanced Lua `stat_object` to get metadata (#8777)
 - Added search functionality for Groups and Policies in Web UI (#8783)
 - Added search functionality for Users in Web UI (#8784)
-- Added Python client support working with session token from env (#8738)
 - Actions: Added pre-post revert hooks (#8804)
 - Actions: Added prepare-commit hook (#8788)
 
