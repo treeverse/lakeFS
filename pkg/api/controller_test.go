@@ -5753,7 +5753,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 					Statement: []model.Statement{
 						{
 							Action:   []string{"fs:DeleteRepository"},
-							Resource: "arn:lakefs:fs:::repository/repo1 , arn:lakefs:fs:::repository/repo2",
+							Resource: "arn:lakefs:fs:::repository/repo1,arn:lakefs:fs:::repository/repo2",
 							Effect:   model.StatementEffectAllow,
 						},
 					},

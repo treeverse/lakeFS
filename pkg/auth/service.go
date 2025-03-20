@@ -1169,7 +1169,11 @@ func (n *MissingPermissions) String() string {
 	return UserNotAllowed
 }
 func splitResource(resource string) []string {
-	return strings.Split(resource, ",")
+	parts := strings.Split(resource, ",")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+	return parts
 }
 
 func CheckPermissions(ctx context.Context, node permissions.Node, username string, policies []*model.Policy, permAudit *MissingPermissions) CheckResult {
