@@ -110,7 +110,7 @@ func (m *metaRangeManager) NewMetaRangeIterator(ctx context.Context, ns graveler
 	if err != nil {
 		return nil, fmt.Errorf("manage metarange %s: %w", metaRangeID, err)
 	}
-	return NewIterator(ctx, m.rangeManager, StorageID(m.storageID), Namespace(ns), rangesIt), nil
+	return NewIterator(ctx, m.rangeManager, Namespace(ns), rangesIt), nil
 }
 
 func (m *metaRangeManager) GetMetaRangeURI(ctx context.Context, id graveler.MetaRangeID) (string, error) {
