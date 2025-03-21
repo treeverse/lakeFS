@@ -19,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -33,7 +32,24 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-func Serve(cfg config.Config, catalog *catalog.Catalog, middlewareAuthenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, gatewayDomains []string, snippets []params.CodeSnippet, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) http.Handler {
+func Serve(
+	cfg config.Config,
+	catalog *catalog.Catalog,
+	authenticator auth.Authenticator,
+	authService auth.Service,
+	authenticationService authentication.Service,
+	blockAdapter block.Adapter,
+	metadataManager auth.MetadataManager,
+	migrator Migrator,
+	collector stats.Collector,
+	actions actionsHandler,
+	auditChecker AuditChecker,
+	logger logging.Logger,
+	gatewayDomains []string,
+	snippets []params.CodeSnippet,
+	pathProvider upload.PathProvider,
+	usageReporter stats.UsageReporterOperations,
+) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
 	if err != nil {
@@ -53,10 +69,10 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, middlewareAuthenticator 
 			cfg.GetBaseConfig().Logging.AuditLogLevel,
 			cfg.GetBaseConfig().Logging.TraceRequestHeaders,
 			cfg.GetBaseConfig().IsAdvancedAuth()),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
+		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
 		MetricsMiddleware(swagger),
 	)
-	controller := NewController(cfg, catalog, middlewareAuthenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, cloudMetadataProvider, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter)
+	controller := NewController(cfg, catalog, authenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
 	r.Mount("/_health", httputil.ServeHealth())

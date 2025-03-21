@@ -27,7 +27,7 @@ type MetadataProvider interface {
 	GetMetadata(context.Context) (map[string]string, error)
 }
 
-func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType string, metadataProvider MetadataProvider, cloudMetadataProvider cloud.MetadataProvider) *Metadata {
+func NewMetadata(ctx context.Context, logger logging.Logger, metadataProvider MetadataProvider, storageConfig config.StorageConfig) *Metadata {
 	res := &Metadata{}
 	authMetadata, err := metadataProvider.GetMetadata(ctx)
 	if err != nil {
@@ -39,28 +39,57 @@ func NewMetadata(ctx context.Context, logger logging.Logger, blockstoreType stri
 		}
 		res.Entries = append(res.Entries, MetadataEntry{Name: k, Value: v})
 	}
-	if cloudMetadataProvider != nil {
-		cloudMetadata := cloudMetadataProvider.GetMetadata()
-		for k, v := range cloudMetadata {
-			res.Entries = append(res.Entries, MetadataEntry{Name: k, Value: v})
+
+	for _, id := range storageConfig.GetStorageIDs() {
+		if adapterCfg := storageConfig.GetStorageByID(id); adapterCfg != nil {
+			appendOrUpdateEntry(res, BlockstoreTypeKey, adapterCfg.BlockstoreType())
+
+			provider := buildMetadataProvider(logger, adapterCfg)
+			cloudMetadata := provider.GetMetadata()
+			if cloudMetadata == nil {
+				cloudMetadata = getErrorMetadata()
+			}
+			for k, v := range cloudMetadata {
+				appendOrUpdateEntry(res, k, v)
+			}
 		}
 	}
-	res.Entries = append(res.Entries, MetadataEntry{Name: BlockstoreTypeKey, Value: blockstoreType})
+
 	return res
+}
+
+func appendOrUpdateEntry(metadata *Metadata, key, value string) {
+	for i, entry := range metadata.Entries {
+		if entry.Name == key {
+			metadata.Entries[i].Value = entry.Value + "," + value
+			return
+		}
+	}
+	metadata.Entries = append(metadata.Entries, MetadataEntry{Name: key, Value: value})
+}
+
+func getErrorMetadata() map[string]string {
+	return map[string]string{
+		cloud.IDKey:     "err",
+		cloud.IDTypeKey: "err",
+	}
 }
 
 type noopMetadataProvider struct{}
 
 func (n *noopMetadataProvider) GetMetadata() map[string]string {
-	return nil
+	return map[string]string{
+		cloud.IDKey:     "nil",
+		cloud.IDTypeKey: "nil",
+	}
 }
 
-func BuildMetadataProvider(logger logging.Logger, c *config.BaseConfig) cloud.MetadataProvider {
-	switch c.Blockstore.Type {
+func buildMetadataProvider(logger logging.Logger, c config.AdapterConfig) cloud.MetadataProvider {
+	switch c.BlockstoreType() {
 	case block.BlockstoreTypeGS:
 		return gcp.NewMetadataProvider(logger)
 	case block.BlockstoreTypeS3:
-		s3Params, err := c.Blockstore.BlockstoreS3Params()
+		s3Params, err := c.BlockstoreS3Params()
 		if err != nil {
 			logger.WithError(err).Warn("Failed to create S3 client for MetadataProvider")
 			return &noopMetadataProvider{}

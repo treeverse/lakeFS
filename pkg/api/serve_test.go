@@ -160,7 +160,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, "", nil)
 
 	authenticationService := authentication.NewDummyService()
-	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, nil, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)
+	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,
