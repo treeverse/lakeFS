@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
@@ -77,7 +78,7 @@ var setupCmd = &cobra.Command{
 
 		logger := logging.FromContext(ctx)
 		authMetadataManage := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
-		authService = NewAuthService(ctx, cfg, logger, kvStore, authMetadataManage)
+		authService = authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManage)
 		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
 		metadata := stats.NewMetadata(ctx, logger, cfg.Blockstore.Type, authMetadataManage, cloudMetadataProvider)
 
