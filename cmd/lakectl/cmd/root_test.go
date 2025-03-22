@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/swag"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/osinfo"
@@ -125,16 +125,26 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 			expectedURL:    "http://home-endpoint",
 		},
 		{
-			name: "env-only fallback",
+			name: "both --config flag and env var are set, flag should win",
 			setup: func(t *testing.T) func() {
-				t.Setenv("LAKECTL_SERVER_ENDPOINT_URL", "http://env-only")
-				cfgFile = ""
+				tmpFileFlag := filepath.Join(t.TempDir(), "config_flag.yaml")
+				flagContent := "server:\n  endpoint_url: \"http://from-flag\"\n"
+				require.NoError(t, os.WriteFile(tmpFileFlag, []byte(flagContent), 0644))
+
+				tmpFileEnv := filepath.Join(t.TempDir(), "config_env.yaml")
+				envContent := "server:\n  endpoint_url: \"http://from-env\"\n"
+				require.NoError(t, os.WriteFile(tmpFileEnv, []byte(envContent), 0644))
+
+				cfgFile = tmpFileFlag
+				t.Setenv("LAKECTL_CONFIG_FILE", tmpFileEnv)
+
 				return func() {
-					os.Unsetenv("LAKECTL_SERVER_ENDPOINT_URL")
+					cfgFile = ""
+					os.Unsetenv("LAKECTL_CONFIG_FILE")
 				}
 			},
-			expectedSource: "",
-			expectedURL:    "http://env-only",
+			expectedSource: "http://from-flag",
+			expectedURL:    "http://from-flag",
 		},
 	}
 
@@ -150,8 +160,8 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 			require.NoError(t, viper.Unmarshal(&cfg), "Failed to unmarshal config")
 
 			if tt.expectedSource != "" {
-				assert.Equal(t, tt.expectedSource, cfg.Server.EndpointURL.String(), "Unexpected endpoint URL")
-				assert.Equal(t, tt.expectedSource, cfg.Server.EndpointURL.String(), "Expected URL from file/env")
+				assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Unexpected endpoint URL")
+				assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Expected URL from file/env")
 			} else {
 				assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Expected URL from env var")
 			}
