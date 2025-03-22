@@ -3647,20 +3647,21 @@ func TestLogin(t *testing.T) {
 	claims, err := auth.VerifyToken(deps.authService.SecretStore().SharedSecret(), res.Token)
 	testutil.Must(t, err)
 	resultExpiry := swag.Int64Value(res.TokenExpiration)
-	if claims.ExpiresAt != resultExpiry {
-		t.Errorf("token expiry (%d) not equal to expiry result (%d)", claims.ExpiresAt, resultExpiry)
+	if claims.ExpiresAt.Unix() != resultExpiry {
+		t.Errorf("token expiry (%d) not equal to expiry result (%d)", claims.ExpiresAt.Time.Unix(), resultExpiry)
 	}
 
 	// login duration
 	loginDuration, err := time.ParseDuration(configureDuration)
 	testutil.Must(t, err)
-	tokenDuration := time.Duration(claims.ExpiresAt-claims.IssuedAt) * time.Second
+
+	tokenDuration := claims.ExpiresAt.Sub(claims.IssuedAt.Time)
 	if (tokenDuration - loginDuration).Abs() > time.Minute {
 		t.Errorf("token duration should be around %v got %v", loginDuration, tokenDuration)
 	}
 
 	// validate issued at
-	issueSince := time.Since(time.Unix(claims.IssuedAt, 0))
+	issueSince := time.Since(claims.IssuedAt.Time)
 	if issueSince > 5*time.Minute && issueSince < 0 {
 		t.Errorf("issue since %s expected last five minutes", issueSince)
 	}
