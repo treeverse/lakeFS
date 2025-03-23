@@ -128,6 +128,10 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			viper.Reset()
+
+			originalCfgFile := cfgFile
+			defer func() { cfgFile = originalCfgFile }()
+
 			cfgFile = ""
 
 			tt.setup(t)
