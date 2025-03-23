@@ -160,7 +160,6 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 			require.NoError(t, viper.Unmarshal(&cfg), "Failed to unmarshal config")
 
 			if tt.expectedSource != "" {
-				assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Unexpected endpoint URL")
 				assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Expected URL from file/env")
 			} else {
 				assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Expected URL from env var")
