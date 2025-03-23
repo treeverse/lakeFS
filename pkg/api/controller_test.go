@@ -5720,10 +5720,7 @@ func TestCheckPermissions_UnpermittedRequests(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			perm := &auth.MissingPermissions{}
-			result := auth.CheckPermissions(ctx, tc.node, tc.username, tc.policies, perm)
-			fmt.Println("expected:\n" + tc.expected)
-			fmt.Println("got:\n" + perm.String())
-			fmt.Println(result)
+			_ = auth.CheckPermissions(ctx, tc.node, tc.username, tc.policies, perm)
 			require.Equal(t, tc.expected, perm.String())
 		})
 	}
