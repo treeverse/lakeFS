@@ -5753,7 +5753,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 					Statement: []model.Statement{
 						{
 							Action:   []string{"fs:ReadRepository"},
-							Resource: "[arn:lakefs:fs:::repository/repo1,arn:lakefs:fs:::repository/repo2]",
+							Resource: "[arn:lakefs:fs:::repository/repo1/*,arn:lakefs:fs:::repository/repo2/*]",
 							Effect:   model.StatementEffectAllow,
 						},
 					},
@@ -5790,7 +5790,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
 					Action:   "fs:ReadRepository",
-					Resource: "arn:lakefs:fs:::repository/repo2/*",
+					Resource: "arn:lakefs:fs:::repository/repo2",
 				},
 			},
 			username: "user1",
