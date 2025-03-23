@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/go-openapi/swag"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/osinfo"
@@ -63,6 +66,95 @@ func TestLakectlUnixPerm(t *testing.T) {
 			} else {
 				require.False(t, cfg.Experimental.Local.POSIXPerm.Enabled)
 			}
+		})
+	}
+}
+
+func TestInitConfig_LoadingScenarios(t *testing.T) {
+	type setupFn func(t *testing.T) (cleanup func())
+
+	tests := []struct {
+		name        string
+		setup       setupFn
+		expectedURL string
+	}{
+		{
+			name: "using --config flag",
+			setup: func(t *testing.T) func() {
+				tmpFile := filepath.Join(t.TempDir(), "config.yaml")
+				content := "server:\n  endpoint_url: \"http://flag-endpoint\"\n"
+				require.NoError(t, os.WriteFile(tmpFile, []byte(content), 0644))
+				cfgFile = tmpFile
+				return func() {
+					cfgFile = ""
+				}
+			},
+			expectedURL: "http://flag-endpoint",
+		},
+		{
+			name: "using LAKECTL_CONFIG_FILE env var",
+			setup: func(t *testing.T) func() {
+				tmpFile := filepath.Join(t.TempDir(), "env_config.yaml")
+				content := "server:\n  endpoint_url: \"http://env-endpoint\"\n"
+				require.NoError(t, os.WriteFile(tmpFile, []byte(content), 0644))
+				t.Setenv("LAKECTL_CONFIG_FILE", tmpFile)
+				cfgFile = ""
+				return func() {
+					os.Unsetenv("LAKECTL_CONFIG_FILE")
+				}
+			},
+			expectedURL: "http://env-endpoint",
+		},
+		{
+			name: "using home directory default",
+			setup: func(t *testing.T) func() {
+				homeDir := t.TempDir()
+				tmpFile := filepath.Join(homeDir, ".lakectl.yaml")
+				content := "server:\n  endpoint_url: \"http://home-endpoint\"\n"
+				require.NoError(t, os.WriteFile(tmpFile, []byte(content), 0644))
+				t.Setenv("HOME", homeDir)
+				cfgFile = ""
+				return func() {
+					os.Unsetenv("HOME")
+				}
+			},
+			expectedURL: "http://home-endpoint",
+		},
+		{
+			name: "both --config flag and env var are set, flag should win",
+			setup: func(t *testing.T) func() {
+				tmpFileFlag := filepath.Join(t.TempDir(), "config_flag.yaml")
+				flagContent := "server:\n  endpoint_url: \"http://from-flag\"\n"
+				require.NoError(t, os.WriteFile(tmpFileFlag, []byte(flagContent), 0644))
+
+				tmpFileEnv := filepath.Join(t.TempDir(), "config_env.yaml")
+				envContent := "server:\n  endpoint_url: \"http://from-env\"\n"
+				require.NoError(t, os.WriteFile(tmpFileEnv, []byte(envContent), 0644))
+
+				cfgFile = tmpFileFlag
+				t.Setenv("LAKECTL_CONFIG_FILE", tmpFileEnv)
+
+				return func() {
+					cfgFile = ""
+					os.Unsetenv("LAKECTL_CONFIG_FILE")
+				}
+			},
+			expectedURL: "http://from-flag",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfgFile = ""
+			viper.Reset()
+
+			cleanup := tt.setup(t)
+			defer cleanup()
+
+			initConfig()
+			require.NoError(t, viper.Unmarshal(&cfg), "Failed to unmarshal config")
+
+			assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Unexpected endpoint URL")
 		})
 	}
 }
