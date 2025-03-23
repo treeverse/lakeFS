@@ -7,9 +7,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/cache"
 )
 
-type CredentialSetFn func() (*model.Credential, error)
-type UserSetFn func() (*model.User, error)
-type UserPoliciesSetFn func() ([]*model.Policy, error)
+type (
+	CredentialSetFn     func() (*model.Credential, error)
+	UserSetFn           func() (*model.User, error)
+	UserPoliciesSetFn   func() ([]*model.Policy, error)
+	ExternalPrincipalFn func() (*model.ExternalPrincipal, error)
+)
 
 type UserKey struct {
 	id         string
@@ -22,6 +25,7 @@ type Cache interface {
 	GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error)
 	GetUser(key UserKey, setFn UserSetFn) (*model.User, error)
 	GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*model.Policy, error)
+	GetExternalPrincipal(key string, setFn ExternalPrincipalFn) (*model.ExternalPrincipal, error)
 }
 
 type LRUCache struct {
@@ -63,6 +67,14 @@ func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*m
 	return v.([]*model.Policy), nil
 }
 
+func (c *LRUCache) GetExternalPrincipal(key string, setFn ExternalPrincipalFn) (*model.ExternalPrincipal, error) {
+	v, err := c.policyCache.GetOrSet(key, func() (interface{}, error) { return setFn() })
+	if err != nil {
+		return nil, err
+	}
+	return v.(*model.ExternalPrincipal), nil
+}
+
 // DummyCache dummy cache that doesn't cache
 type DummyCache struct{}
 
@@ -75,5 +87,9 @@ func (d *DummyCache) GetUser(_ UserKey, setFn UserSetFn) (*model.User, error) {
 }
 
 func (d *DummyCache) GetUserPolicies(_ string, setFn UserPoliciesSetFn) ([]*model.Policy, error) {
+	return setFn()
+}
+
+func (d *DummyCache) GetExternalPrincipal(_ string, setFn ExternalPrincipalFn) (*model.ExternalPrincipal, error) {
 	return setFn()
 }
