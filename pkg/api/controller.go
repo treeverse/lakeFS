@@ -5430,7 +5430,6 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
