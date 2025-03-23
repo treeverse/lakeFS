@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"slices"
-
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/routers"
 	"github.com/getkin/kin-openapi/routers/legacy"
@@ -388,17 +386,6 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	claims, err := auth.VerifyToken(authService.SecretStore().SharedSecret(), tokenString)
 	// make sure audience is set correctly for login token
 	if err != nil {
-		return nil, ErrAuthenticatingRequest
-	}
-
-	audience, err := claims.GetAudience()
-	if err != nil {
-		return nil, ErrAuthenticatingRequest
-	}
-
-	// Check if audience contains LoginAudience
-	audienceMatches := slices.Contains(audience, auth.LoginAudience)
-	if !audienceMatches {
 		return nil, ErrAuthenticatingRequest
 	}
 
