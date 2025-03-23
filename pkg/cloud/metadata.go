@@ -15,6 +15,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/aws-sdk-go/aws"
 )
 
 var (
@@ -23,45 +24,32 @@ var (
 	cloudDetected bool
 	once          sync.Once
 
-	// AWS SDK initialization
-	awsOnce      sync.Once
-	awsStsClient *sts.Client
-	awsInitErr   error
-
 	// ErrNotInCloud is returned when the code is not running in the respective cloud provider
 	ErrNotInCloud = errors.New("not running in cloud provider")
 )
 
-// initAWSClient initializes the AWS STS client once
-func initAWSClient() {
-	awsOnce.Do(func() {
-		ctx := context.Background()
-		cfg, err := config.LoadDefaultConfig(ctx)
-		if err != nil {
-			awsInitErr = err
-			return
-		}
-		awsStsClient = sts.NewFromConfig(cfg)
-	})
-}
-
 // getAWSAccountID retrieves AWS account ID using STS.
 func getAWSAccountID() (string, error) {
-	initAWSClient()
-	if awsInitErr != nil {
-		return "", awsInitErr
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return "", err
 	}
 
-	ctx := context.Background()
+	awsStsClient := sts.NewFromConfig(cfg)
 	resp, err := awsStsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
 		return "", err
 	}
-	return *resp.Account, nil
+	return aws.StringValue(resp.Account), nil
 }
 
 // getAzureSubscriptionID retrieves the Azure Subscription ID using the armsubscriptions package.
 func getAzureSubscriptionID() (string, error) {
+	if !checkAzureMetadata() {
+		return "", ErrNotInCloud
+	}
+
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return "", err
@@ -106,31 +94,28 @@ func checkAzureMetadata() bool {
 	if err != nil {
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return resp.StatusCode == http.StatusOK
 }
 
 // Detect runs the cloud detection logic and caches the result.
+// kept Google before AWS because they have AWS compatibility which I didn't want to fallback
 func Detect() {
-	// AWS Detection
-	if accountID, err := getAWSAccountID(); err == nil {
-		cloudType, cloudID, cloudDetected = "aws_account_id", accountID, true
-		return
+	detectionFunc := []struct {
+		cloud  string
+		detect func() (string, error)
+	}{
+		{cloud: "gcp_project_numerical_id", detect: getGCPProjectID},
+		{cloud: "aws_account_id", detect: getAWSAccountID},
+		{cloud: "azure_subscription_id", detect: getAzureSubscriptionID},
 	}
 
-	// Azure Detection
-	if checkAzureMetadata() {
-		if subscriptionID, err := getAzureSubscriptionID(); err == nil {
-			cloudType, cloudID, cloudDetected = "azure_subscription_id", subscriptionID, true
+	for _, df := range detectionFunc {
+		if id, err := df.detect(); err == nil {
+			cloudType, cloudID, cloudDetected = df.cloud, id, true
 			return
 		}
-	}
-
-	// Google Cloud Detection
-	if projectID, err := getGCPProjectID(); err == nil {
-		cloudType, cloudID, cloudDetected = "gcp_project_numerical_id", projectID, true
-		return
 	}
 
 	// No cloud detected
