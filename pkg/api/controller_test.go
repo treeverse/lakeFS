@@ -5743,7 +5743,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
-					Action:   "fs:DeleteRepository",
+					Action:   "fs:ReadRepository",
 					Resource: "arn:lakefs:fs:::repository/repo1",
 				},
 			},
@@ -5752,8 +5752,8 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 				{
 					Statement: []model.Statement{
 						{
-							Action:   []string{"fs:DeleteRepository"},
-							Resource: "arn:lakefs:fs:::repository/repo1,arn:lakefs:fs:::repository/repo2",
+							Action:   []string{"fs:ReadRepository"},
+							Resource: "[arn:lakefs:fs:::repository/repo1,arn:lakefs:fs:::repository/repo2]",
 							Effect:   model.StatementEffectAllow,
 						},
 					},
@@ -5766,7 +5766,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
-					Action:   "fs:DeleteRepository",
+					Action:   "fs:ReadRepository",
 					Resource: "arn:lakefs:fs:::repository/repo2",
 				},
 			},
@@ -5775,8 +5775,8 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 				{
 					Statement: []model.Statement{
 						{
-							Action:   []string{"fs:DeleteRepository"},
-							Resource: "arn:lakefs:fs:::repository/repo1,arn:lakefs:fs:::repository/repo2",
+							Action:   []string{"fs:ReadRepository"},
+							Resource: "[arn:lakefs:fs:::repository/repo1 ,arn:lakefs:fs:::repository/repo2]",
 							Effect:   model.StatementEffectAllow,
 						},
 					},
@@ -5789,7 +5789,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
-					Action:   "fs:DeleteRepository",
+					Action:   "fs:ReadRepository",
 					Resource: "arn:lakefs:fs:::repository/repo2",
 				},
 			},
@@ -5798,8 +5798,8 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 				{
 					Statement: []model.Statement{
 						{
-							Action:   []string{"fs:DeleteRepository"},
-							Resource: "arn:lakefs:fs:::repository/repo1,arn:lakefs:fs:::repository/repo2",
+							Action:   []string{"fs:ReadRepository"},
+							Resource: "[ arn:lakefs:fs:::repository/repo1 , arn:lakefs:fs:::repository/repo2 ]",
 							Effect:   model.StatementEffectDeny,
 						},
 					},
