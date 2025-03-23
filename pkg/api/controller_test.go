@@ -3646,11 +3646,10 @@ func TestLogin(t *testing.T) {
 	res := resp.JSON200
 	claims, err := auth.VerifyToken(deps.authService.SecretStore().SharedSecret(), res.Token)
 	testutil.Must(t, err)
-	resultExpiry := swag.Int64Value(res.TokenExpiration)
-	if claims.ExpiresAt.Unix() != resultExpiry {
-		t.Errorf("token expiry (%d) not equal to expiry result (%d)", claims.ExpiresAt.Time.Unix(), resultExpiry)
+	expiryTime := time.Unix(swag.Int64Value(res.TokenExpiration), 0)
+	if !claims.ExpiresAt.Equal(expiryTime) {
+		t.Errorf("token expiry (%s) not equal to expiry result (%s)", claims.ExpiresAt, expiryTime)
 	}
-
 	// login duration
 	loginDuration, err := time.ParseDuration(configureDuration)
 	testutil.Must(t, err)
