@@ -154,7 +154,7 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 			initConfig()
 			require.NoError(t, viper.Unmarshal(&cfg), "Failed to unmarshal config")
 
-			assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Expected endpoint URL")
+			assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Unexpected endpoint URL")
 		})
 	}
 }
