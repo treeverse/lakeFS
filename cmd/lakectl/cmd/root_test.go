@@ -74,10 +74,9 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 	type setupFn func(t *testing.T) (cleanup func())
 
 	tests := []struct {
-		name           string
-		setup          setupFn
-		expectedSource string
-		expectedURL    string
+		name        string
+		setup       setupFn
+		expectedURL string
 	}{
 		{
 			name: "using --config flag",
@@ -90,8 +89,7 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 					cfgFile = ""
 				}
 			},
-			expectedSource: "http://flag-endpoint",
-			expectedURL:    "http://flag-endpoint",
+			expectedURL: "http://flag-endpoint",
 		},
 		{
 			name: "using LAKECTL_CONFIG_FILE env var",
@@ -105,8 +103,7 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 					os.Unsetenv("LAKECTL_CONFIG_FILE")
 				}
 			},
-			expectedSource: "http://env-endpoint",
-			expectedURL:    "http://env-endpoint",
+			expectedURL: "http://env-endpoint",
 		},
 		{
 			name: "using home directory default",
@@ -121,8 +118,7 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 					os.Unsetenv("HOME")
 				}
 			},
-			expectedSource: "http://home-endpoint",
-			expectedURL:    "http://home-endpoint",
+			expectedURL: "http://home-endpoint",
 		},
 		{
 			name: "both --config flag and env var are set, flag should win",
@@ -143,8 +139,7 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 					os.Unsetenv("LAKECTL_CONFIG_FILE")
 				}
 			},
-			expectedSource: "http://from-flag",
-			expectedURL:    "http://from-flag",
+			expectedURL: "http://from-flag",
 		},
 	}
 
@@ -159,11 +154,7 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 			initConfig()
 			require.NoError(t, viper.Unmarshal(&cfg), "Failed to unmarshal config")
 
-			if tt.expectedSource != "" {
-				assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Expected URL from file/env")
-			} else {
-				assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Expected URL from env var")
-			}
+			assert.Equal(t, tt.expectedURL, cfg.Server.EndpointURL.String(), "Expected endpoint URL")
 		})
 	}
 }
