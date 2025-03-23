@@ -73,6 +73,51 @@ func TestParseARN(t *testing.T) {
 	}
 }
 
+func TestParseResources(t *testing.T) {
+	cases := []struct {
+		inputResource   string
+		outputResources []string
+	}{
+		{
+			inputResource:   "[arn:lakefs:repos::b:myrepo,arn:lakefs:repos::b:hisrepo]",
+			outputResources: []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"},
+		},
+		{
+			inputResource:   "[arn:lakefs:repos::b:myrepo,arn:lakefs:repos::b:hisrepo,arn:lakefs:repos::b:ourrepo]",
+			outputResources: []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo", "arn:lakefs:repos::b:ourrepo"},
+		},
+		{
+			inputResource:   "       arn:lakefs:repos::b:myrepo  ",
+			outputResources: []string{"       arn:lakefs:repos::b:myrepo  "},
+		},
+		{
+			inputResource:   "   [    arn:lakefs:repos::b:myrepo  ]",
+			outputResources: []string{"    arn:lakefs:repos::b:myrepo  "},
+		},
+		{
+			inputResource:   "   [    arn:lakefs:repos::b:myre\\,po  ]",
+			outputResources: []string{"    arn:lakefs:repos::b:myre,po  "},
+		},
+		{
+			inputResource:   "   [    arn:lakefs:repos::b:myre\\,po, arn:lakefs:repos::b\\,:myrepo ]",
+			outputResources: []string{"    arn:lakefs:repos::b:myre,po", " arn:lakefs:repos::b,:myrepo "},
+		},
+	}
+
+	for _, c := range cases {
+		got := auth.ParseResources(c.inputResource)
+		if len(got) != len(c.outputResources) {
+			t.Fatalf("expected %d resources, got %d for input: %s", len(c.outputResources), len(got), c.inputResource)
+		}
+		for i, expected := range c.outputResources {
+			if got[i] != expected {
+				t.Fatalf("expected resource %s at index %d, got %s for input: %s", expected, i, got[i], c.inputResource)
+			}
+		}
+	}
+
+}
+
 func TestArnMatch(t *testing.T) {
 	cases := []struct {
 		InputSource      string

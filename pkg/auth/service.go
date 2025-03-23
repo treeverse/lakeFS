@@ -1169,17 +1169,6 @@ func (n *MissingPermissions) String() string {
 	return UserNotAllowed
 }
 
-func splitResource(resource string) []string {
-	if strings.Contains(resource, "[") && strings.Contains(resource, "]") {
-		resources := strings.Split(resource, ",")
-		for i := range resources {
-			resources[i] = strings.Trim(resources[i], "[] ")
-		}
-		return resources
-	}
-	return []string{resource}
-}
-
 func CheckPermissions(ctx context.Context, node permissions.Node, username string, policies []*model.Policy, permAudit *MissingPermissions) CheckResult {
 	allowed := CheckNeutral
 	switch node.Type {
@@ -1188,7 +1177,7 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 		// check whether the permission is allowed, denied or natural (not allowed and not denied)
 		for _, policy := range policies {
 			for _, stmt := range policy.Statement {
-				resources := splitResource(stmt.Resource)
+				resources := ParseResources(stmt.Resource)
 				for _, resource := range resources {
 					resource = interpolateUser(resource, username)
 					if !ArnMatch(resource, node.Permission.Resource) {
