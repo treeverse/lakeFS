@@ -155,7 +155,7 @@ az storage blob download --container-name targetContainer --name example-repo/_l
 
 ## Python Script for Refs Management
 
-For more streamlined repository backup and restore operations, you can use the `lakefs-refs.py` script available in the [lakeFS repository](https://github.com/treeverse/lakeFS/tree/master/scripts/refs).
+For more streamlined repository backup and restore operations, you can use the `lakefs-refs.py` script available in the [lakeFS repository](https://github.com/treeverse/lakeFS/tree/master/scripts).
 
 ### Overview
 
@@ -184,7 +184,7 @@ Options:
 * `<repository-name>`: Name of the specific repository to dump
 * `--all`: Dump all repositories instead of a specific one
 * `--commit`: Commit any uncommitted changes before dumping
-* `--rm`: Delete repository after successful dump
+* `--rm`: Delete repository definition after successful dump
 * Authentication options (see below)
 
 #### Restore Repository References
