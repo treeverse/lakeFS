@@ -1051,12 +1051,6 @@ github.com/thanhpk/randstr v1.0.6 h1:psAOktJFD4vV9NEVb3qkhRSMvYh4ORRaj1+w/hn4B+o
 github.com/thanhpk/randstr v1.0.6/go.mod h1:M/H2P1eNLZzlDwAzpkkkUvoyNNMbzRGhESZuEQk3r0U=
 github.com/treeverse/delta-go v0.0.0-20240101152008-53c0d469272e h1:NDAQK8Ts73Nc5DwNoa8PAClgcO3gkx14AaPAeUKVVeA=
 github.com/treeverse/delta-go v0.0.0-20240101152008-53c0d469272e/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
-github.com/treeverse/lakefs/modules/block/factory v0.0.0-20250302084420-19657b3cf7f9 h1:eIfdLLml2xjPtRYXTMGMWj4CuhFI80rr0Gh6bQtE5cI=
-github.com/treeverse/lakefs/modules/block/factory v0.0.0-20250302084420-19657b3cf7f9/go.mod h1:6XHyF7R7y6PZauiaqkhMOWTdLMqKfpLLDJJZMP0Qvyk=
-github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250302084420-19657b3cf7f9 h1:bVRuruwnicd5bPKVCk1b0EzwQ0gEs/n+04or11dHsLc=
-github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250302084420-19657b3cf7f9/go.mod h1:QYXQ6JgYLOBZK787zPMYD6CLq43/Qt7aBHzOrSClOb8=
-github.com/treeverse/lakefs/webui v0.0.0-20250302084420-19657b3cf7f9 h1:YkfzdXBU26bPmsOMVizuLbRKcbldHY9n1VjIJO+MeHY=
-github.com/treeverse/lakefs/webui v0.0.0-20250302084420-19657b3cf7f9/go.mod h1:wYBH4vk8GMg/r2o3gqI3rrhv/6t2V4n/PV9tD/eYkHs=
 github.com/tsenart/vegeta/v12 v12.11.1 h1:Rbwe7Zxr7sJ+BDTReemeQalYPvKiSV+O7nwmUs20B3E=
 github.com/tsenart/vegeta/v12 v12.11.1/go.mod h1:swiFmrgpqj2llHURgHYFRFN0tfrIrlnspg01HjwOnSQ=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
