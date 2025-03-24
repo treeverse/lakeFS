@@ -4,7 +4,8 @@ import (
 	"context"
 )
 
-// MetadataProvider implements the GetMetadata method for collecting cloud environment metadata.
+// MetadataProvider collecting cloud environment metadata.
+// Implements the stats.MetadataProvider interface
 type MetadataProvider struct{}
 
 // NewMetadataProvider creates a new MetadataProvider
@@ -14,7 +15,6 @@ func NewMetadataProvider() *MetadataProvider {
 
 // GetMetadata returns cloud metadata information as a map
 // It returns the detected cloud type and a hashed version of the cloud ID
-// Implements the stats.MetadataProvider interface
 func (p *MetadataProvider) GetMetadata(ctx context.Context) (map[string]string, error) {
 	metadata := make(map[string]string)
 
