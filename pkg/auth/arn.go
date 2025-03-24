@@ -111,32 +111,34 @@ func ArnMatch(src, dst string) bool {
 }
 
 func ParseResources(resource string) []string {
-	trimmedResources := strings.TrimSpace(resource)
-	if trimmedResources[0] != '[' {
+	trimmed := strings.TrimSpace(resource)
+	if trimmed[0] != '[' || trimmed[len(trimmed)-1] != ']' {
 		return []string{resource}
 	}
 
 	var resources []string
-	runes := []rune(trimmedResources)
-	currentResource := ""
+	var current string
+	runes := []rune(trimmed)
 
 	for i := 0; i < len(runes); i++ {
 		letter := runes[i]
-		if letter == '[' {
+		switch letter {
+		case '[':
 			continue
-		}
-		if letter == '\\' {
+
+		case '\\':
 			i++
 			letter = runes[i]
-			currentResource += string(letter)
+			current += string(letter)
 			continue
-		}
-		if letter == ',' || letter == ']' {
-			resources = append(resources, currentResource)
-			currentResource = ""
+
+		case ',', ']':
+			resources = append(resources, current)
+			current = ""
 			continue
+		default:
+			current += string(letter)
 		}
-		currentResource += string(letter)
 	}
 	return resources
 }

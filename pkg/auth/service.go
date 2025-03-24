@@ -1179,10 +1179,16 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 			for _, stmt := range policy.Statement {
 				resources := ParseResources(stmt.Resource)
 				for _, resource := range resources {
+					fmt.Println(resource)
 					resource = interpolateUser(resource, username)
 					if !ArnMatch(resource, node.Permission.Resource) {
+						fmt.Println("inside", resource)
+						fmt.Println("inside", node.Permission.Resource)
+
 						continue
 					}
+					fmt.Println("matches", resource)
+
 					for _, action := range stmt.Action {
 						if !wildcard.Match(action, node.Permission.Action) {
 							continue // not a matching action
