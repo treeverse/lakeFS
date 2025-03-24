@@ -1140,3 +1140,48 @@ func TestLakectlAbuse(t *testing.T) {
 		})
 	}
 }
+
+func TestLakectlBranchList(t *testing.T) {
+	tempBranch := "temp"
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	branchVars := map[string]string{
+		"REPO":          repoName,
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   tempBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tempBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch list lakefs://"+repoName, false, "lakectl_branch_list", branchVars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch list lakefs://"+repoName+" --prefix="+tempBranch, false, "lakectl_branch_list_prefix", branchVars)
+}
+
+func TestLakectlRepoList(t *testing.T) {
+	repoName := "a" + GenerateUniqueRepositoryName()
+	repoName2 := "b" + GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	storage2 := GenerateUniqueStorageNamespace(repoName2)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	repoVars := map[string]string{
+		"REPO1":    repoName,
+		"REPO2":    repoName2,
+		"STORAGE1": storage,
+		"STORAGE2": storage2,
+		"BRANCH":   mainBranch,
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName2+" "+storage2, false, "lakectl_repo_create_2", repoVars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list --prefix=a", false, "lakectl_repo_list_prefix", repoVars)
+}

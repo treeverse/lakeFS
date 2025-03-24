@@ -1263,9 +1263,10 @@ lakectl branch list lakefs://my-repo
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
-      --amount int     number of results to return (default 100)
-  -h, --help           help for list
+      --after string    show results after this value (used for pagination)
+      --amount int      number of results to return (default 100)
+  -h, --help            help for list
+      --prefix string   show only branches with this prefix
 ```
 
 
@@ -2691,9 +2692,10 @@ lakectl repo list [flags]
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
-      --amount int     number of results to return (default 100)
-  -h, --help           help for list
+      --after string    show results after this value (used for pagination)
+      --amount int      number of results to return (default 100)
+  -h, --help            help for list
+      --prefix string   show results with this prefix
 ```
 
 

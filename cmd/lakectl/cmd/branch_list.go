@@ -17,9 +17,11 @@ var branchListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		amount := Must(cmd.Flags().GetInt("amount"))
 		after := Must(cmd.Flags().GetString("after"))
+		prefix := Must(cmd.Flags().GetString("prefix"))
 		u := MustParseRepoURI("repository URI", args[0])
 		client := getClient()
 		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &apigen.ListBranchesParams{
+			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
@@ -43,6 +45,7 @@ var branchListCmd = &cobra.Command{
 func init() {
 	branchListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
 	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
+	branchListCmd.Flags().String("prefix", "", "show only branches with this prefix")
 
 	branchCmd.AddCommand(branchListCmd)
 }
