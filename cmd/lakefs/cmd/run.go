@@ -28,7 +28,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
@@ -197,11 +196,7 @@ var runCmd = &cobra.Command{
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
-		metadataProviders := []stats.MetadataProvider{authMetadataManager, cloud.NewMetadataProvider()}
-		for _, p := range block.BuildMetadataProviders(cfg.StorageConfig()) {
-			metadataProviders = append(metadataProviders, p)
-		}
-		metadata := stats.NewMetadata(ctx, logger, metadataProviders)
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 

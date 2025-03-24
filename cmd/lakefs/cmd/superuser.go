@@ -12,8 +12,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
@@ -93,11 +91,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		}
 
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
-		metadataProviders := []stats.MetadataProvider{authMetadataManager, cloud.NewMetadataProvider()}
-		for _, p := range block.BuildMetadataProviders(cfg.StorageConfig()) {
-			metadataProviders = append(metadataProviders, p)
-		}
-		metadata := stats.NewMetadata(ctx, logger, metadataProviders)
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 
 		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
