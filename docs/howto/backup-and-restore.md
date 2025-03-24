@@ -5,7 +5,9 @@ parent: How-To
 ---
 
 # Backup and Restore Repository
+
 This section explains how to backup and restore lakeFS repository for different use-cases:
+
 1. Disaster Recovery: you want to backup the repository regularly so you can restore it in case of any disaster.  You'd also need to make sure to backup the repository's storage namespace to another, preferably geographically separate location.
 1. Migrate Repository: you want to migrate a repository from one environment to another lakeFS environment.
 1. Clone Repository: you want to clone a repository.
@@ -16,7 +18,8 @@ Refer to [Python Sample Notebooks](https://github.com/treeverse/lakeFS-samples/t
 {: .note}
 
 ## Commit Changes
-Backup process doesn’t backup uncommitted data, so make sure to commit any staged writes before running the backup. But this is an optional process.
+
+Backup process doesn't backup uncommitted data, so make sure to commit any staged writes before running the backup. But this is an optional process.
 
 You can manually commit the changes by using lakeFS UI or you can programatically commit any uncommitted changes. This Python example shows how to programatically loop through all branches in lakeFS and commit any uncommitted data but this might take a lot of time if you have many branches in the repo:
 
@@ -32,7 +35,9 @@ for branch in repo.branches():
 ```
 
 ## Backup Repository
+
 ### Dump Metadata
+
 Dump metadata/refs of the repository by using lakeFS API or CLI.
 
 * Example code to dump metadata by using lakeFS Python SDK (this process will create `_lakefs/refs_manifest.json` file in your storage namespace for the repository):
@@ -61,8 +66,8 @@ Shutdown lakeFS services immediately after dumping the metadata so nobody can ma
 {: .note}
 
 ### Copy Data to Backup Storage Location
-Copy the repository’s storage namespace to another, preferably geographically separate location. Copy command depends on the type of object storage and the tool that you use.
 
+Copy the repository's storage namespace to another, preferably geographically separate location. Copy command depends on the type of object storage and the tool that you use.
 
 * Example S3 command:
 
@@ -79,9 +84,10 @@ azcopy copy 'https://source-storage-account-name.blob.core.windows.net/sourceCon
 You can restart lakeFS services after copying the data to backup storage location.
 {: .note}
 
-
 ## Restore Repository
+
 ### Create a new Bare Repository
+
 Create a bare lakeFS repository with a new name if you want to clone the repository or use the same repository name if you want to migrate or restore the repository.
 
 * Python example to create a bare lakeFS repository using S3 storage:
@@ -109,6 +115,7 @@ lakectl repo create-bare lakefs://target-example-repo https://target-storage-acc
 ```
 
 ### Restore Metadata to new Repository
+
 Run restore_refs to load back all commits, tags and branches.
 
 * Python example to restore metadata to new repository. First download metadata(refs_manifest.json) file created by metadata dump process:
@@ -122,6 +129,7 @@ azcopy copy 'https://target-storage-account-name.blob.core.windows.net/targetCon
 ```
 
 Then read refs_manifest.json file and restore metadata to new repository:
+
 ```python
 with open('./refs_manifest.json') as file:
     refs_manifest_json = json.load(file)
@@ -144,3 +152,55 @@ az storage blob download --container-name targetContainer --name example-repo/_l
 
 **Note:** If you are running backups regularly, it is highly advised to test the restore process periodically to make sure that you are able to restore the repository in case of disaster.
 {: .note}
+
+## Python Script for Refs Management
+
+For more streamlined repository backup and restore operations, you can use the `lakefs-refs.py` script available in the [lakeFS repository](https://github.com/treeverse/lakeFS/tree/master/scripts/refs).
+
+### Overview
+
+The `lakefs-refs.py` script automates the backup and restore procedures described in this document. It handles all the necessary steps to dump and restore lakeFS repository references, making the process simpler and less error-prone for repository migration and backup purposes.
+
+### Prerequisites
+
+Install the required dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Usage Examples
+
+#### Dump Repository References
+
+The script provides an easy way to dump repository metadata:
+
+```bash
+python lakefs-refs.py dump <repository-name> [--all] [--commit] [--rm] [--endpoint-url <url>] [--access-key-id <key>] [--secret-access-key <secret>]
+```
+
+Options:
+
+* `<repository-name>`: Name of the specific repository to dump
+* `--all`: Dump all repositories instead of a specific one
+* `--commit`: Commit any uncommitted changes before dumping
+* `--rm`: Delete repository after successful dump
+* Authentication options (see below)
+
+#### Restore Repository References
+
+For restoring repository metadata from manifest files:
+
+```bash
+python lakefs-refs.py restore <manifest-file> [<manifest-file2> ...] [--ignore-storage-id] [--endpoint-url <url>] [--access-key-id <key>] [--secret-access-key <secret>]
+```
+
+Options:
+
+* `<manifest-file>`: One or more manifest files to restore
+* `--ignore-storage-id`: Create repository without storage_id (useful when migrating to a different storage backend)
+* Authentication options (see below)
+
+### Authentication
+
+The script uses the same authentication method as `lakectl`, supporting authentication via command line parameters, environment variables (`LAKECTL_*`), or the `~/.lakectl.yaml` configuration file.
