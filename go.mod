@@ -96,7 +96,6 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/puzpuzpuz/xsync v1.5.2
-	github.com/treeverse/lakefs/webui v0.0.0-20250302084420-19657b3cf7f9
 	go.uber.org/ratelimit v0.3.0
 )
 
