@@ -2,10 +2,10 @@ package factory
 
 import (
 	"github.com/treeverse/lakefs/pkg/auth"
-	ossconfig "github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func AdditionalAuthenticators(_ ossconfig.Config, _ logging.Logger) auth.ChainAuthenticator {
+func AdditionalAuthenticators(_ config.Config, _ logging.Logger, _ auth.Service) auth.ChainAuthenticator {
 	return auth.ChainAuthenticator{}
 }

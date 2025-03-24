@@ -2,6 +2,7 @@ go 1.23
 
 use (
 	.
+	./modules/authentication/factory
 	./modules/block/factory
 	./modules/config/factory
 	./webui
