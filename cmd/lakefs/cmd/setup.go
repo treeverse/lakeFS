@@ -10,6 +10,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
+	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
@@ -76,11 +78,15 @@ var setupCmd = &cobra.Command{
 		defer kvStore.Close()
 
 		logger := logging.FromContext(ctx)
-		authMetadataManage := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
-		authService = NewAuthService(ctx, cfg, logger, kvStore, authMetadataManage)
-		metadata := stats.NewMetadata(ctx, logger, cfg.Blockstore.Type, authMetadataManage)
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+		authService = NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		metadataProviders := []stats.MetadataProvider{authMetadataManager, cloud.NewMetadataProvider()}
+		for _, p := range block.BuildMetadataProviders(cfg.StorageConfig()) {
+			metadataProviders = append(metadataProviders, p)
+		}
+		metadata := stats.NewMetadata(ctx, logger, metadataProviders)
 
-		credentials, err := setupLakeFS(ctx, cfg, authMetadataManage, authService, userName, accessKeyID, secretAccessKey, noCheck)
+		credentials, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, userName, accessKeyID, secretAccessKey, noCheck)
 		if err != nil {
 			fmt.Printf("Setup failed: %s\n", err)
 			os.Exit(1)

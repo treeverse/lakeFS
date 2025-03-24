@@ -122,8 +122,8 @@ func Detect() {
 	cloudType, cloudID, cloudDetected = "", "", false
 }
 
-// GetMetadata returns the detected cloud type, cloud ID (hashed), and detection status.
-func GetMetadata() (string, string, bool) {
+// GetHashedInformation returns the detected cloud type, cloud ID (hashed), and detection status.
+func GetHashedInformation() (string, string, bool) {
 	once.Do(Detect)
 	if !cloudDetected {
 		return "", "", false

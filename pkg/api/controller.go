@@ -34,6 +34,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -5168,7 +5169,13 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataManager)
+	// collect metadata
+	metadataProviders := []stats.MetadataProvider{c.MetadataManager, cloud.NewMetadataProvider()}
+	for _, p := range block.BuildMetadataProviders(c.Config.GetBaseConfig().StorageConfig()) {
+		metadataProviders = append(metadataProviders, p)
+	}
+	meta := stats.NewMetadata(ctx, c.Logger, metadataProviders)
+
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
