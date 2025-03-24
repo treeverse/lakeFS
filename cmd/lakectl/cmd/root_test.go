@@ -83,9 +83,8 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 			setup: func(t *testing.T) {
 				t.Helper()
 				const content = "server:\n  endpoint_url: \"http://flag-endpoint\"\n"
-				path := filepath.Join(t.TempDir(), "config.yaml")
-				require.NoError(t, os.WriteFile(path, []byte(content), 0644))
-				cfgFile = path
+				cfgFile = filepath.Join(t.TempDir(), "config.yaml")
+				require.NoError(t, os.WriteFile(cfgFile, []byte(content), 0644))
 			},
 			expectedURL: "http://flag-endpoint",
 		},
@@ -118,13 +117,12 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 				const flagContent = "server:\n  endpoint_url: \"http://from-flag\"\n"
 				const envContent = "server:\n  endpoint_url: \"http://from-env\"\n"
 
-				flagPath := filepath.Join(t.TempDir(), "flag.yaml")
+				cfgFile = filepath.Join(t.TempDir(), "flag.yaml")
 				envPath := filepath.Join(t.TempDir(), "env.yaml")
 
-				require.NoError(t, os.WriteFile(flagPath, []byte(flagContent), 0644))
+				require.NoError(t, os.WriteFile(cfgFile, []byte(flagContent), 0644))
 				require.NoError(t, os.WriteFile(envPath, []byte(envContent), 0644))
 
-				cfgFile = flagPath
 				t.Setenv("LAKECTL_CONFIG_FILE", envPath)
 			},
 			expectedURL: "http://from-flag",
