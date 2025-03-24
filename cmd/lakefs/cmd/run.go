@@ -18,6 +18,7 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -278,6 +279,9 @@ var runCmd = &cobra.Command{
 
 			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
+
+		additionalAuthenticators := authenticationfactory.AdditionalAuthenticators(cfg, logger)
+		middlewareAuthenticator = append(middlewareAuthenticator, additionalAuthenticators)
 
 		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
 		defer auditChecker.Close()
