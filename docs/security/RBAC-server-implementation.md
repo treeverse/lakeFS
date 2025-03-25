@@ -50,16 +50,16 @@ In order to implement RBAC so that it will work with lakeFS follow theses steps:
    The endpoints descriptions, inputs and outputs are described in the authentication.yaml spec(add the link!!!!!!!!!!!!!!!!)
    under the tag "users" in the "tags" in the spec.
    Implement these APIs:
-   1. GET /auth/users - Anna - check again
-   2. POST /auth/users - Anna - check again
-   3. GET /auth/users/{userId}
-   4. DELETE /auth/users/{userId}
-   5. PUT /auth/users/{userId}/password
-   6. PUT /auth/users/{userId}/friendly_name
-   7. GET /auth/users/{userId}/groups
+   1. GET /auth/users - Anna - done
+   2. POST /auth/users - Anna - done
+   3. GET /auth/users/{userId} - Anna - done
+   4. DELETE /auth/users/{userId} - Anna - done
+   5. PUT /auth/users/{userId}/password - Anna - didn't do because service and controller dont use this func.
+   6. PUT /auth/users/{userId}/friendly_name - Anna - didn't do because controller dont use this func.
+   7. GET /auth/users/{userId}/groups - Anna - done
    8. GET /auth/users/{userId}/policies
    9. PUT /auth/users/{userId}/policies/{policyId}
-   10. DELETE /auth/users/{userId}/policies/{policyId}
+   10. DELETE /auth/users/{userId}/policies/{policyId} - Anna - done
 
 3. Groups: 
    The endpoints descriptions, inputs and outputs are described in the authentication.yaml spec(add the link!!!!!!!!!!!!!!!!)

@@ -273,7 +273,7 @@ components:
           type: string
         id:
           type: string
-          description: A unique identifier of the user.
+          description: A unique identifier of the group.
 
     GroupList:
       type: object
@@ -417,7 +417,8 @@ paths:
                 the username unique key that in the User object.
                 From the UserList -> results array for each User object, Internaly we convert the username in the User object to Id param.
                 Also we save the  creation date. also friendly_name, email  which you passed which you can pass as empty.
-                webui shows the user in this hirarchy
+                webui displays the user in this hirarchy if he has a an email param it will show user's email, 
+                if diesn't have email, it will display a friendly name if he has it and if not it will display the user id (username).
                 the function name that should implement this endpoint should be named "listUsers".
                 To check with Guy about the other params!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     get:
@@ -505,6 +506,13 @@ paths:
         schema:
           type: string
     get:
+      description: This endpoint outputs the details for a specific user.
+                  In the webui
+                  this endpoint is triggered for a group after clicking on Administration ->
+                  Users -> someGroupId. The input is a unique userId that corresponds to existing user ID in your
+                  lists list as a path param. and the output is the User object. where do we use it in the webui????????????
+                  lakefs internal uses the outputs of these params creation_date, email and id (that was created from the username param) for the user.
+                  the function name that should implement this endpoint should be named "getGroup".
       tags:
         - auth
         - users
@@ -524,6 +532,13 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      description: This endpoint deletes a user.
+                  In the webui
+                  this endpoint is triggered for a user after clicking on Administration ->
+                  Users then selecting the user you would like to delete and pressing on 'Delete Selected'.
+                  The input is a unique userId (username) that corresponds to existing user ID in your
+                  users list as a path param. no output if was deleted successfuly.
+                  the function name that should implement this endpoint should be named "deleteUser".
       tags:
         - auth
         - users
@@ -1167,6 +1182,13 @@ paths:
         schema:
           type: string
     get:
+      description: This endpoint lists of the groups that a specific user is attached to in lakeFS.
+                  In the webui
+                  you will find this page that is triggered from this endpoint for each user under Administration ->
+                  Users -> someUserID. The input is the unique userId and pagination parameters and the output is the Pagination object
+                  and the list of results. The results list should be sorted by the "name" property that in the
+                  Group object in the results array in the GroupList object.
+                  the function name that should implement this endpoint should be named "listUserGroups".
       tags:
         - auth
         - users
@@ -1255,6 +1277,13 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      description: This endpoint detaches a policy from a user.
+                  In the webui
+                  this endpoint is triggered for a policy after clicking on Administration ->
+                  Users -> someUserId -> Directly Attached Policies. now in the table in the rightmost column the 
+                  click on the "Detach" button and after confirmation it will be detached.
+                  The input is a unique policyId and unique userId. no output if was detached successfuly.
+                  the function name that should implement this endpoint should be named "detachPolicyFromUser".
       tags:
         - auth
         - users
