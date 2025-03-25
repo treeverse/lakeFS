@@ -25,7 +25,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	authparams "github.com/treeverse/lakefs/pkg/auth/params"
-	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -266,22 +265,10 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
-		middlewareAuthenticator := auth.ChainAuthenticator{
-			auth.NewBuiltinAuthenticator(authService),
+		authenticatorChain, err := authenticationfactory.BuildAuthenticatorChain(cfg, logger, authService)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create authentication chain")
 		}
-
-		// remote authenticator setup
-		if baseCfg.Auth.RemoteAuthenticator.Enabled {
-			remoteAuthenticator, err := authremote.NewAuthenticator(authremote.AuthenticatorConfig(baseCfg.Auth.RemoteAuthenticator), authService, logger)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create remote authenticator")
-			}
-
-			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
-		}
-
-		additionalAuthenticators := authenticationfactory.BuildAuthenticatorChain(cfg, logger, authService)
-		middlewareAuthenticator = append(middlewareAuthenticator, additionalAuthenticators)
 
 		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
 		defer auditChecker.Close()
@@ -304,7 +291,7 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
-			middlewareAuthenticator,
+			authenticatorChain,
 			authService,
 			authenticationService,
 			blockStore,
@@ -335,7 +322,7 @@ var runCmd = &cobra.Command{
 		cookieAuthConfig := api.CookieAuthConfig(baseCfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
-			middlewareAuthenticator,
+			authenticatorChain,
 			authService,
 			&oidcConfig,
 			&cookieAuthConfig,
