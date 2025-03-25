@@ -4,15 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
+	"github.com/csimplestring/delta-go/storage"
+	"gocloud.dev/blob"
 	"regexp"
 
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	delta "github.com/csimplestring/delta-go"
 	"github.com/csimplestring/delta-go/action"
-	"github.com/csimplestring/delta-go/storage"
-	deltaStore "github.com/csimplestring/delta-go/store"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
 )
 
@@ -27,6 +26,7 @@ var errUnimplementedProvided = errors.New("unimplemented provider")
 type DeltaClient struct {
 	accessProvider AccessProvider
 	ctx            context.Context
+	m              *blob.URLMux
 }
 
 func newDeltaTableMetadata(meta *action.Metadata) map[string]any {
@@ -41,8 +41,8 @@ func newDeltaTableMetadata(meta *action.Metadata) map[string]any {
 	}
 }
 
-func (dc *DeltaClient) fetchS3Table(repo, ref, prefix string, awsProps *storage.AWSProperties) (map[int64][]string, map[string]any, error) {
-	table, err := dc.getS3DeltaTable(repo, ref, prefix, awsProps)
+func (dc *DeltaClient) fetchS3Table(repo, ref, prefix string) (map[int64][]string, map[string]any, error) {
+	table, err := dc.getS3DeltaTable(repo, ref, prefix)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -69,19 +69,10 @@ func (dc *DeltaClient) getTableMetadata(log delta.Log) (map[string]any, error) {
 	return newDeltaTableMetadata(m), nil
 }
 
-func (dc *DeltaClient) getS3DeltaTable(repo, ref, prefix string, awsProps *storage.AWSProperties) (delta.Log, error) {
+func (dc *DeltaClient) getS3DeltaTable(repo, ref, prefix string) (delta.Log, error) {
 	config := delta.Config{StoreType: string(s3StorageType)}
 	u := fmt.Sprintf("lakefs://%s/%s/%s", repo, ref, prefix)
-	parsedURL, err := url.Parse(u)
-	if err != nil {
-		return nil, err
-	}
-	s3LogStore, err := deltaStore.NewS3CompatLogStore(awsProps, parsedURL)
-	if err != nil {
-		return nil, err
-	}
-	store := deltaStore.Store(s3LogStore)
-	return delta.ForTableWithStore(u, config, &delta.SystemClock{}, &store)
+	return delta.ForTableWithMux(u, config, &delta.SystemClock{}, dc.m)
 }
 
 func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
@@ -117,9 +108,9 @@ func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
 
 func (dc *DeltaClient) fetchTableLog(repo, ref, prefix string) (map[int64][]string, map[string]any, error) {
 	ap, _ := dc.accessProvider.GetAccessProperties()
-	switch access := ap.(type) {
+	switch ap.(type) {
 	case AWSInfo:
-		return dc.fetchS3Table(repo, ref, prefix, &access.AWSProps)
+		return dc.fetchS3Table(repo, ref, prefix)
 	default:
 		return nil, nil, errUnimplementedProvided
 	}
@@ -194,7 +185,7 @@ func newS3DeltaClient(l *lua.State, ctx context.Context, lakeFSAddr string) *Del
 		awsProps.Region = lua.CheckString(l, 3)
 	}
 
-	storage.RegisterS3CompatBucketURLOpener("lakefs", &awsProps)
-
-	return &DeltaClient{accessProvider: AWSInfo{AWSProps: awsProps}, ctx: ctx}
+	mux := new(blob.URLMux)
+	storage.RegisterS3CompatBucketURLOpener("lakefs", &awsProps, mux)
+	return &DeltaClient{accessProvider: AWSInfo{AWSProps: awsProps}, ctx: ctx, m: mux}
 }
