@@ -1150,7 +1150,7 @@ func groupIDOrDisplayName(group Group) string {
 	return group.Name
 }
 
-func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
+func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, isAdvancedAuth, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	var cache Cache
 	if cacheConf.Enabled {
 		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
@@ -1163,6 +1163,7 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, externalPr
 		cache:                     cache,
 		logger:                    logger,
 		externalPrincipalsEnabled: externalPrincipalseEnabled,
+		isAdvancedAuth:            isAdvancedAuth,
 	}, nil
 }
 
