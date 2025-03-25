@@ -12,7 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-var errSimplifiedOrExternalAuth = errors.New(`cannot set auth.ui_config.rbac to non-simplified without setting an external auth service`)
+var errSimplifiedOrExternalAuth = errors.New("cannot set auth.ui_config.rbac to non-simplified without setting an external auth service")
 
 func checkAuthModeSupport(baseCfg config.BaseConfig) error {
 	if baseCfg.IsAuthBasic() { // Basic mode
