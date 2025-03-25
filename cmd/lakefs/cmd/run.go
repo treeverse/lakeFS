@@ -56,11 +56,6 @@ type Shutter interface {
 	Shutdown(context.Context) error
 }
 
-var (
-	errAuthNoEndpoint = errors.New("cannot set auth.ui_config.rbac to non-basic without setting an external auth service endpoint")
-	errInvalidAuth    = errors.New("invalid auth configuration")
-)
-
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
