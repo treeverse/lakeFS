@@ -2135,7 +2135,7 @@ func TestAPIService_RequestIDPropagation(t *testing.T) {
 	}))
 	secretStore := crypt.NewSecretStore([]byte("secret"))
 	cacheParams := authparams.ServiceCache{}
-	service, err := auth.NewAPIAuthService(innerServer.URL, "token", true, secretStore, cacheParams, logging.ContextUnavailable())
+	service, err := auth.NewAPIAuthService(innerServer.URL, "token", true, true, secretStore, cacheParams, logging.ContextUnavailable())
 	if err != nil {
 		t.Fatal(err)
 	}
