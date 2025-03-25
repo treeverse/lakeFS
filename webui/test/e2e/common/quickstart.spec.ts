@@ -26,7 +26,8 @@ test.describe("Quickstart", () => {
         await repositoriesPage.createRepository(QUICKSTART_REPO_NAME, true);
         // validate the redirect to the relevant repository page
         const repositoryPage = new RepositoryPage(page);
-        await expect(repositoryPage.readOnlyIndicatorLocator).toBeVisible();
+        const repoHeaderLink = repositoryPage.breadcrumbsLocator.getByRole("link", {name: QUICKSTART_REPO_NAME, exact: true});
+        await expect(repoHeaderLink).toBeVisible();
     });
 
     test("view and query parquet object", async ({page}) => {
