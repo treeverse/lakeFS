@@ -46,7 +46,7 @@ In order to implement RBAC so that it will work with lakeFS follow theses steps:
    4. GET /auth/users/{userId}/credentials/{accessKeyId} - Anna - done
    5. GET /auth/credentials/{accessKeyId} - Anna - didn't do!!!!!!
 
-2. Users: - Anna - later!!!!!
+2. Users: 
    The endpoints descriptions, inputs and outputs are described in the authentication.yaml spec(add the link!!!!!!!!!!!!!!!!)
    under the tag "users" in the "tags" in the spec.
    Implement these APIs:

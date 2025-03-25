@@ -149,6 +149,7 @@ components:
         encryptedPassword:
           type: string
           format: byte
+          description: you can pass it empty.
         source:
           type: string
           description: Can be "internal".
@@ -183,24 +184,24 @@ components:
           description: A unique identifier for the user. For password-based authentication, it is the email.
         email:
           type: string
-          description: The email that will be passes will be a string equal to the username. The email is reffered 
-                      from the username.
+          description: If passed  the email  will be passes will be a string equal to the 
+                      username. The email is refered from the username.
         friendlyName:
           type: string
-          description: Hard-coded to nil pointer.
+          description: If passed it Passed as nil .
         source:
           type: string
-          description: Hard-coded to "internal".
+          description: If passed it Passed as "internal".
         encryptedPassword:
           type: string
           format: byte
-          description: Hard-coded to nil pointer.
+          description: If passed it Passed as nil .
         external_id:
           type: string
-          description: Hard-coded to nil pointer.
+          description: If passed it Passed as nil .
         invite:
           type: boolean
-          description: If true, send an invitation by email. Otherwise, only create the user.
+          description: If passed and true, send an invitation by email. Otherwise, only create the user.
 
     Credentials:
       type: object
@@ -298,7 +299,7 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
-          description: The array should be sorted by the username property in the user object.
+          description: The array should be sorted by the username property in the User object.
           items:
             $ref: "#/components/schemas/User"
 
@@ -411,11 +412,14 @@ paths:
   /auth/users:
     description: This endpoint outputs a list of all the users in this lakeFS server. In the webui
                 the you will find this page that is triggered from this endpoint under Administration ->
-                Users. The input is the pagination parameters and the rest of the params are never passed.
+                Users. The input is the pagination parameters and the rest params???????????????????
                 and the output is the Pagination object and the list of results. The results list should be sorted by 
                 the username unique key that in the User object.
+                From the UserList -> results array for each User object, Internaly we convert the username in the User object to Id param.
+                Also we save the  creation date. also friendly_name, email  which you passed which you can pass as empty.
+                webui shows the user in this hirarchy
                 the function name that should implement this endpoint should be named "listUsers".
-                In the webui this endpoint is called in the Administrator -> Users in order to see all the lakeFS users.
+                To check with Guy about the other params!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     get:
       tags:
         - auth
@@ -456,10 +460,12 @@ paths:
       description: This endpoint is used to create a new user to lakeFS. In the webui
                   you can create new users in 2 ways 1. Go to Administration ->
                   Users and click on Invite User 2. Go to Administration -> Users and click on Create API User. 
-                  The input is passed to the request body and the output is a User object. Note that most of
-                  the params in the objects are not required. We will pass to your server a request body with 
+                  The input is passed to the request body and the output is a User object.
+                  We will pass to your server a request body with 
                   the key Content-Type=application/json in the header.
                   the function name that should implement this endpoint should be named "createUser".
+                  This function is also being called in the setup phase when creating the admin user with "admin" 
+                  username, source="internal" .
       tags:
         - auth
         - users
@@ -472,7 +478,8 @@ paths:
               $ref: "#/components/schemas/UserCreation"
       responses:
         201:
-          description: user
+          description: make sure the username is equal to the username that was passed in the input. 
+                      We don't use the rest params.
           content:
             application/json:
               schema:
