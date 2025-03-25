@@ -168,7 +168,7 @@ test.describe("Quickstart", () => {
         }
 
         await validateRow("Repository name", QUICKSTART_REPO_NAME);
-        await validateRow("Storage namespace", "lakefs://" + QUICKSTART_REPO_NAME);
+        await validateRow("Storage namespace", "local://" + QUICKSTART_REPO_NAME);
         await validateRow("Default branch", "main");
     });
 });
