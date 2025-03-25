@@ -18,6 +18,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 )
 
+// Cloud provider constants
+const (
+	GCPCloud   = "gcp_project_numerical_id"
+	AWSCloud   = "aws_account_id"
+	AzureCloud = "azure_subscription_id"
+)
+
 var (
 	cloudType     string
 	cloudID       string
@@ -26,10 +33,33 @@ var (
 
 	// ErrNotInCloud is returned when the code is not running in the respective cloud provider
 	ErrNotInCloud = errors.New("not running in cloud provider")
+
+	// detectorsRegistry holds all registered cloud detectors
+	detectorsRegistry = make(map[string]DetectorFunc)
+	// detectorOrder preserves registration order
+	detectorOrder = []string{}
 )
 
-// getAWSAccountID retrieves AWS account ID using STS.
-func getAWSAccountID() (string, error) {
+// DetectorFunc is a function type that detects a cloud provider and returns its ID
+type DetectorFunc func() (string, error)
+
+// RegisterDetector registers a new cloud detector with the given name
+func RegisterDetector(name string, detector DetectorFunc) {
+	// Only add to order list if it's not already there
+	if _, exists := detectorsRegistry[name]; !exists {
+		detectorOrder = append(detectorOrder, name)
+	}
+	detectorsRegistry[name] = detector
+}
+
+// Reset clears all registered detectors, mainly used for testing
+func Reset() {
+	detectorsRegistry = make(map[string]DetectorFunc)
+	detectorOrder = []string{}
+}
+
+// GetAWSAccountID retrieves AWS account ID using STS.
+func GetAWSAccountID() (string, error) {
 	ctx := context.Background()
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
@@ -44,8 +74,8 @@ func getAWSAccountID() (string, error) {
 	return aws.StringValue(resp.Account), nil
 }
 
-// getAzureSubscriptionID retrieves the Azure Subscription ID using the armsubscriptions package.
-func getAzureSubscriptionID() (string, error) {
+// GetAzureSubscriptionID retrieves the Azure Subscription ID using the armsubscriptions package.
+func GetAzureSubscriptionID() (string, error) {
 	if !checkAzureMetadata() {
 		return "", ErrNotInCloud
 	}
@@ -73,8 +103,8 @@ func getAzureSubscriptionID() (string, error) {
 	return "", fmt.Errorf("no Azure subscription found: %w", ErrNotInCloud)
 }
 
-// getGCPProjectID retrieves the GCP numerical project ID.
-func getGCPProjectID() (string, error) {
+// GetGCPProjectID retrieves the GCP numerical project ID.
+func GetGCPProjectID() (string, error) {
 	if !metadata.OnGCE() {
 		return "", ErrNotInCloud
 	}
@@ -99,21 +129,22 @@ func checkAzureMetadata() bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-// Detect runs the cloud detection logic and caches the result.
-// kept Google before AWS because they have AWS compatibility which I didn't want to fallback
-func Detect() {
-	detectionFunc := []struct {
-		cloud  string
-		detect func() (string, error)
-	}{
-		{cloud: "gcp_project_numerical_id", detect: getGCPProjectID},
-		{cloud: "aws_account_id", detect: getAWSAccountID},
-		{cloud: "azure_subscription_id", detect: getAzureSubscriptionID},
-	}
+// init registers the built-in cloud detectors
+// maintained the original order: GCP first, then AWS, then Azure
+func init() {
+	RegisterDetector(GCPCloud, GetGCPProjectID)
+	RegisterDetector(AWSCloud, GetAWSAccountID)
+	RegisterDetector(AzureCloud, GetAzureSubscriptionID)
+}
 
-	for _, df := range detectionFunc {
-		if id, err := df.detect(); err == nil {
-			cloudType, cloudID, cloudDetected = df.cloud, id, true
+// Detect runs the cloud detection logic and caches the result.
+// Detectors are tried in registration order
+func Detect() {
+	// Iterate through detectors in the order they were registered
+	for _, name := range detectorOrder {
+		detector := detectorsRegistry[name]
+		if id, err := detector(); err == nil {
+			cloudType, cloudID, cloudDetected = name, id, true
 			return
 		}
 	}
@@ -125,13 +156,21 @@ func Detect() {
 // GetHashedInformation returns the detected cloud type, cloud ID (hashed), and detection status.
 func GetHashedInformation() (string, string, bool) {
 	once.Do(Detect)
+	return GetHashedInformationCached()
+}
+
+// GetHashedInformationCached returns the detected cloud type, cloud ID (hashed), and detection status.
+func GetHashedInformationCached() (string, string, bool) {
 	if !cloudDetected {
 		return "", "", false
 	}
 
-	// Hash the cloud ID
-	s := md5.Sum([]byte(cloudID)) //nolint:gosec
-	hashedID := hex.EncodeToString(s[:])
-
+	hashedID := hashCloudID(cloudID)
 	return cloudType, hashedID, cloudDetected
+}
+
+// hashCloudID hashes the cloud ID to protect sensitive information
+func hashCloudID(cloudID string) string {
+	s := md5.Sum([]byte(cloudID)) //nolint:gosec
+	return hex.EncodeToString(s[:])
 }
