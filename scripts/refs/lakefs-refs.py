@@ -64,6 +64,7 @@ def load_config_from_lakectl():
     
     return result
 
+
 def create_lakefs_client(endpoint_url=None, access_key_id=None, secret_access_key=None):
     """
     Create a lakeFS client with the provided credentials.
@@ -111,15 +112,13 @@ def paginate_results(api_call, **kwargs):
         after = result.pagination.next_offset
 
 
-def dump_repository(repo_name, endpoint_url=None, access_key_id=None, secret_access_key=None, commit=False, delete_after_dump=False):
+def dump_repository(client, repo_name, commit=False, delete_after_dump=False):
     """
     Backup a lakeFS repository by committing changes and dumping metadata.
     
     Args:
+        client: LakeFSClient instance
         repo_name: Name of the repository to backup
-        endpoint_url: lakeFS API endpoint URL
-        access_key_id: lakeFS access key ID
-        secret_access_key: lakeFS secret access key
         commit: If True, commit uncommitted changes before dumping
         delete_after_dump: If True, delete the repository after successful dump
     
@@ -127,11 +126,8 @@ def dump_repository(repo_name, endpoint_url=None, access_key_id=None, secret_acc
         bool: True if backup was successful, False otherwise
     """
     try:
-        # Initialize client with provided credentials
-        lakefs_client = create_lakefs_client(endpoint_url, access_key_id, secret_access_key)
-        
         # Get repository info to extract storage namespace
-        repo_info = lakefs_client.repositories_api.get_repository(repo_name)
+        repo_info = client.repositories_api.get_repository(repo_name)
         storage_namespace = repo_info.storage_namespace
         default_branch = repo_info.default_branch
         storage_id = repo_info.storage_id
@@ -141,10 +137,10 @@ def dump_repository(repo_name, endpoint_url=None, access_key_id=None, secret_acc
             # Get all branches
             print(f"Checking for uncommitted changes in repository: {repo_name}")
             
-            for branch in paginate_results(lakefs_client.branches_api.list_branches, repository=repo_name):
+            for branch in paginate_results(client.branches_api.list_branches, repository=repo_name):
                 branch_id = branch.id
                 # Get uncommitted changes
-                uncommitted = lakefs_client.branches_api.diff_branch(
+                uncommitted = client.branches_api.diff_branch(
                     repository=repo_name,
                     branch=branch_id,
                 )
@@ -152,7 +148,7 @@ def dump_repository(repo_name, endpoint_url=None, access_key_id=None, secret_acc
                 # If there are uncommitted changes, commit them
                 if uncommitted.results:
                     print(f"Found {len(uncommitted.results)} uncommitted changes in branch {branch_id}")
-                    lakefs_client.commits_api.commit(
+                    client.commits_api.commit(
                         repository=repo_name,
                         branch=branch_id,
                         commit_creation={
@@ -166,7 +162,7 @@ def dump_repository(repo_name, endpoint_url=None, access_key_id=None, secret_acc
         
         # Dump repository metadata
         print(f"Dumping repository metadata...")
-        refs_manifest = lakefs_client.internal_api.dump_refs(repo_name)
+        refs_manifest = client.internal_api.dump_refs(repo_name)
         
         # Create repository manifest with repository info and refs
         repository_manifest = {
@@ -195,7 +191,7 @@ def dump_repository(repo_name, endpoint_url=None, access_key_id=None, secret_acc
         # Delete repository if requested
         if delete_after_dump:
             print(f"Deleting repository: {repo_name}")
-            lakefs_client.repositories_api.delete_repository(repo_name)
+            client.repositories_api.delete_repository(repo_name)
             print(f"Repository deleted successfully")
         
         return True
@@ -205,14 +201,12 @@ def dump_repository(repo_name, endpoint_url=None, access_key_id=None, secret_acc
         return False
 
 
-def dump_all_repositories(endpoint_url=None, access_key_id=None, secret_access_key=None, commit=False, delete_after_dump=False):
+def dump_all_repositories(client, commit=False, delete_after_dump=False):
     """
     Backup all lakeFS repositories by committing changes and dumping metadata.
     
     Args:
-        endpoint_url: lakeFS API endpoint URL
-        access_key_id: lakeFS access key ID
-        secret_access_key: lakeFS secret access key
+        client: LakeFSClient instance
         commit: If True, commit uncommitted changes before dumping
         delete_after_dump: If True, delete each repository after successful dump
     
@@ -220,18 +214,15 @@ def dump_all_repositories(endpoint_url=None, access_key_id=None, secret_access_k
         bool: True if all backups were successful, False otherwise
     """
     try:
-        # Initialize client with provided credentials
-        lakefs_client = create_lakefs_client(endpoint_url, access_key_id, secret_access_key)
-        
         # Get all repositories
         print("Fetching all repositories...")
         repos_found = False
         success = True
         
-        for repo in paginate_results(lakefs_client.repositories_api.list_repositories):
+        for repo in paginate_results(client.repositories_api.list_repositories):
             repos_found = True
             print(f"\nProcessing repository: {repo.id}")
-            if not dump_repository(repo.id, endpoint_url, access_key_id, secret_access_key, commit, delete_after_dump):
+            if not dump_repository(client, repo.id, commit, delete_after_dump):
                 success = False
                 print(f"Failed to dump repository: {repo.id}")
         
@@ -245,24 +236,19 @@ def dump_all_repositories(endpoint_url=None, access_key_id=None, secret_access_k
         return False
 
 
-def restore_repository(manifest_file, endpoint_url=None, access_key_id=None, secret_access_key=None, ignore_storage_id=False):
+def restore_repository(client, manifest_file, ignore_storage_id=False):
     """
     Restore a lakeFS repository from a manifest file.
     
     Args:
+        client: LakeFSClient instance
         manifest_file: Path to the manifest file
-        endpoint_url: lakeFS API endpoint URL
-        access_key_id: lakeFS access key ID
-        secret_access_key: lakeFS secret access key
         ignore_storage_id: If True, create repository without storage_id
     
     Returns:
         bool: True if restore was successful, False otherwise
     """
     try:
-        # Initialize client with provided credentials
-        lakefs_client = create_lakefs_client(endpoint_url, access_key_id, secret_access_key)
-        
         # Read the manifest file
         with open(manifest_file, 'r') as f:
             manifest = json.load(f)
@@ -287,11 +273,11 @@ def restore_repository(manifest_file, endpoint_url=None, access_key_id=None, sec
         if not ignore_storage_id:
             repo_creation["storage_id"] = storage_id
         
-        lakefs_client.repositories_api.create_repository(repo_creation, bare=True)
+        client.repositories_api.create_repository(repo_creation, bare=True)
         print(f"Created repository: {repo_name}")
         
         # Restore refs
-        lakefs_client.internal_api.restore_refs(repo_name, refs_data)
+        client.internal_api.restore_refs(repo_name, refs_data)
         print(f"Restored refs for repository: {repo_name}")
         
         return True
@@ -327,21 +313,24 @@ def main():
     
     args = parser.parse_args()
     
+    # Create lakeFS client once
+    client = create_lakefs_client(
+        endpoint_url=args.endpoint_url,
+        access_key_id=args.access_key_id,
+        secret_access_key=args.secret_access_key
+    )
+    
     if args.command == 'dump':
         if args.all:
             success = dump_all_repositories(
-                endpoint_url=args.endpoint_url,
-                access_key_id=args.access_key_id,
-                secret_access_key=args.secret_access_key,
+                client=client,
                 commit=args.commit,
                 delete_after_dump=args.rm
             )
         else:
             success = dump_repository(
-                args.repository,
-                endpoint_url=args.endpoint_url,
-                access_key_id=args.access_key_id,
-                secret_access_key=args.secret_access_key,
+                client=client,
+                repo_name=args.repository,
                 commit=args.commit,
                 delete_after_dump=args.rm
             )
@@ -349,10 +338,8 @@ def main():
         success = True
         for manifest in args.manifests:
             if not restore_repository(
-                manifest,
-                endpoint_url=args.endpoint_url,
-                access_key_id=args.access_key_id,
-                secret_access_key=args.secret_access_key,
+                client=client,
+                manifest_file=manifest,
                 ignore_storage_id=args.ignore_storage_id
             ):
                 success = False
