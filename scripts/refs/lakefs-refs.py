@@ -24,14 +24,14 @@ from lakefs_sdk.client import LakeFSClient
 def load_config_from_lakectl():
     """
     Load configuration from ~/.lakectl.yaml if it exists.
-    Falls back to environment variables if config file not found or values missing.
+    Environment variables override values from the config file.
     
     Returns:
         dict: Configuration with endpoint_url, access_key_id, and secret_access_key if found, empty dict otherwise
     """
     result = {}
     
-    # Try loading from config file first (lowest priority)
+    # Try loading from config file first
     config_path = os.path.expanduser("~/.lakectl.yaml")
     if os.path.exists(config_path):
         try:
@@ -49,7 +49,7 @@ def load_config_from_lakectl():
         except Exception as e:
             print(f"Warning: Failed to load config from {config_path}: {str(e)}")
     
-    # Check environment variables and use as fallback (medium priority)
+    # Environment variables override config file values
     env_access_key = os.environ.get('LAKECTL_CREDENTIALS_ACCESS_KEY_ID')
     if env_access_key:
         result['access_key_id'] = env_access_key
@@ -79,36 +79,15 @@ def create_lakefs_client(endpoint_url=None, access_key_id=None, secret_access_ke
     # Load config from lakectl.yaml if available
     config = load_config_from_lakectl()
     
-    # Create configuration with provided credentials if available
-    if config:
-        configuration = lakefs_sdk.Configuration()
-        
-        # Command line arguments have highest priority
-        if endpoint_url:
-            configuration.host = endpoint_url
-        elif 'endpoint_url' in config:
-            configuration.host = config['endpoint_url']
-        
-        if access_key_id and secret_access_key:
-            configuration.username = access_key_id
-            configuration.password = secret_access_key
-        elif 'access_key_id' in config and 'secret_access_key' in config:
-            configuration.username = config['access_key_id']
-            configuration.password = config['secret_access_key']
-        
-        return LakeFSClient(configuration=configuration)
+    # Create configuration
+    configuration = lakefs_sdk.Configuration()
     
-    # If no config available, use command line arguments if provided
-    if endpoint_url or (access_key_id and secret_access_key):
-        configuration = lakefs_sdk.Configuration()
-        if endpoint_url:
-            configuration.host = endpoint_url
-        if access_key_id and secret_access_key:
-            configuration.username = access_key_id
-            configuration.password = secret_access_key
-        return LakeFSClient(configuration=configuration)
+    # Set credentials with priority: command line args > config file > default
+    configuration.host = endpoint_url or config.get('endpoint_url')
+    configuration.username = access_key_id or config.get('access_key_id')
+    configuration.password = secret_access_key or config.get('secret_access_key')
     
-    return LakeFSClient()
+    return LakeFSClient(configuration=configuration)
 
 
 def paginate_results(api_call, **kwargs):
