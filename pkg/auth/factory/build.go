@@ -67,6 +67,7 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 	apiService, err := auth.NewAPIAuthService(
 		baseCfg.Auth.API.Endpoint,
 		baseCfg.Auth.API.Token.SecureValue(),
+		baseCfg.IsAdvancedAuth(),
 		baseCfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
 		secretStore,
 		authparams.ServiceCache(baseCfg.Auth.Cache),
