@@ -57,6 +57,7 @@ func TestAction_ReadAction(t *testing.T) {
 func validateActionFull(t *testing.T, act *actions.Action) {
 	t.Helper()
 	require.Contains(t, act.On, graveler.EventTypePreMerge)
+	require.Contains(t, act.On, graveler.EventTypePrepareCommit)
 	require.Contains(t, act.On, graveler.EventTypePreCommit)
 	require.Contains(t, act.On, graveler.EventTypePostCommit)
 	require.NotContains(t, act.On, graveler.EventTypePostMerge)
@@ -70,6 +71,14 @@ func TestAction_Match(t *testing.T) {
 		want    bool
 		wantErr bool
 	}{
+		{
+			name: "prepare-commit main - on prepare-commit x",
+			on: map[graveler.EventType]*actions.ActionOn{
+				graveler.EventTypePrepareCommit: {Branches: []string{"main"}},
+			},
+			spec: actions.MatchSpec{EventType: graveler.EventTypePrepareCommit, BranchID: "x"},
+			want: false,
+		},
 		{
 			name:    "none - on pre-merge without branch",
 			on:      map[graveler.EventType]*actions.ActionOn{},

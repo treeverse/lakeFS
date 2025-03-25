@@ -20,6 +20,8 @@ redirect_from:
 [lakeFS Cloud](https://lakefs.cloud) users enjoy a [managed garbage collection]({% link howto/garbage-collection/managed-gc.md %}) service, and do not need to run this Spark program.
 {: .tip }
 
+[lakeFS Enterprise]({% link enterprise/index.md %}) users can run a [stand alone GC program]({% link howto/garbage-collection/standalone-gc.md %}), indstead of this Spark program.
+{: .tip }
 
 By default, lakeFS keeps all your objects forever. This allows you to travel back in time to previous versions of your data.
 However, sometimes you may want to remove the objects from the underlying storage completely.
