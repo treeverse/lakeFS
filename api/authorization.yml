@@ -21,25 +21,35 @@ components:
       
   parameters:
     PaginationPrefix:
+      description: This value is being used in order to indicate the prefix of the items that lakeFS wants to get 
+                  in the result. I.e lakeFS expects all the items in the result will begin with this prefix.
       in: query
       name: prefix
-      description: return items prefixed with this value
       allowEmptyValue: true
       schema:
         type: string
+        default: ""
 
     PaginationAfter:
       in: query
       name: after
-      description: return items after this value
+      description: This value is being used in order to indicate the string from which will be returned the items. I.e 
+                  the items that will be returned will start with a string after this value in an ordered items list.
+                  It means that your items list that is being returned must be sorted based on the id. We use this 
+                  parameter in our paginator component which sets the last id as a string to the after parameter in
+                  order to ask from the server the next items for the next page that will include the items after
+                  this after value.
       allowEmptyValue: true
       schema:
         type: string
+        default: ""
 
     PaginationAmount:
+      description: This value is being used in order to indicate the server how many items to return so that lakeFS
+                  will show this amount of results in the current page.
       in: query
       name: amount
-      description: how many items to return
+      allowEmptyValue: true
       schema:
         type: integer
         minimum: -1
@@ -80,6 +90,7 @@ components:
 
   schemas:
     Pagination:
+      description: These parameters are required in order to for lakeFS to show the results with pagination in the page.
       type: object
       required:
         - has_more
@@ -92,7 +103,8 @@ components:
           description: Next page is available
         next_offset:
           type: string
-          description: Token used to retrieve the next page
+          description: A string that is used to retrieve the next page - in the next page will be shown all the results 
+                      that appear after the next_offset in the sorted result.
         results:
           type: integer
           minimum: 0
@@ -122,29 +134,35 @@ components:
     User:
       type: object
       required:
-        - name
         - username
         - creation_date
         - encryptedPassword
+        - source
       properties:
         username:
           type: string
-          description: a unique identifier for the user
+          description: a unique identifier for the user.
         creation_date:
           type: integer
           format: int64
           description: Unix Epoch in seconds
-        friendly_name:
-          type: string
-        email:
-          type: string
-        source:
-          type: string
         encryptedPassword:
           type: string
           format: byte
+        source:
+          type: string
+          description: Can be "internal".
+        friendly_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
         external_id:
           type: string
+          description: Not used.
+          nullable: true
+
     UserPassword:
       type: object
       required:
@@ -156,6 +174,8 @@ components:
 
     UserCreation:
       type: object
+      required:
+        - username
       properties:
         username:
           type: string
@@ -163,27 +183,30 @@ components:
           description: A unique identifier for the user. For password-based authentication, it is the email.
         email:
           type: string
+          description: The email that will be passes will be a string equal to the username. The email is reffered 
+                      from the username.
         friendlyName:
           type: string
+          description: Hard-coded to nil pointer.
         source:
           type: string
+          description: Hard-coded to "internal".
         encryptedPassword:
           type: string
           format: byte
+          description: Hard-coded to nil pointer.
         external_id:
           type: string
+          description: Hard-coded to nil pointer.
         invite:
           type: boolean
           description: If true, send an invitation by email. Otherwise, only create the user.
-      required:
-        - username
-
 
     Credentials:
       type: object
       required:
-        - creation_date
         - access_key_id
+        - creation_date
       properties:
         access_key_id:
           type: string
@@ -202,16 +225,17 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
+          description: An array of Credentials object sorted by access_key_id.
           items:
             $ref: "#/components/schemas/Credentials"
 
     CredentialsWithSecret:
+      description: looks like
       type: object
       required:
         - access_key_id
-        - creation_date
         - secret_access_key
-        - user_id
+        - creation_date
       properties:
         access_key_id:
           type: string
@@ -221,30 +245,34 @@ components:
           type: integer
           format: int64
           description: Unix Epoch in seconds
+        user_name:
+          type: string
+          description: A unique identifier for the user. In password-based authentication should be the email. 
+                      You don't need to include it in the response.
         user_id:
           type: integer
           format: int64
           deprecated: true
-        user_name:
-          type: string
-          description: A unique identifier for the user. In password-based authentication should be the email.
 
     Group:
+      description: Note that if you don't provide an id, lakeFS will convert the name you provide to the ID of the user.
       type: object
       required:
-        - creation_date
         - name
+        - creation_date
       properties:
-        id:
-          type: string
         name:
           type: string
-        description:
-          type: string
+          description: A unique identifier of the user with a readable name.
         creation_date:
           type: integer
           format: int64
-          description: Unix Epoch in seconds
+          description: Unix Epoch in seconds.
+        description:
+          type: string
+        id:
+          type: string
+          description: A unique identifier of the user.
 
     GroupList:
       type: object
@@ -256,6 +284,7 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
+          description: The results array must be sorted by the name property of the Group object.
           items:
             $ref: "#/components/schemas/Group"
 
@@ -269,6 +298,7 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
+          description: The array should be sorted by the username property in the user object.
           items:
             $ref: "#/components/schemas/User"
 
@@ -279,11 +309,13 @@ components:
       properties:
         id:
           type: string
+          description: the id is a unique identifier for the group and it is a readable group name
         description:
           type: string
 
     Statement:
       type: object
+      description: explanation about how the properties should look like can be found here. attachhhhh link!!!!!!!!!!!!
       required:
         - effect
         - resource
@@ -308,10 +340,12 @@ components:
       properties:
         name:
           type: string
+          description: a unique readable policy name.
         creation_date:
           type: integer
           format: int64
           description: Unix Epoch in seconds
+          nullable: true
         statement:
           type: array
           items:
@@ -319,7 +353,8 @@ components:
           minItems: 1
         acl:
           type: string
-          description: Access control list assigned to this policy (if exists)
+          description: This is for lakeFS internal usage only. Access control list assigned to this policy (if exists).
+          nullable: true
 
     PolicyList:
       type: object
@@ -331,6 +366,8 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
+          description: The results list should be sorted by the "name" property that in the
+                      Policy object.
           items:
             $ref: "#/components/schemas/Policy"
 
@@ -372,9 +409,17 @@ components:
 
 paths:
   /auth/users:
+    description: This endpoint outputs a list of all the users in this lakeFS server. In the webui
+                the you will find this page that is triggered from this endpoint under Administration ->
+                Users. The input is the pagination parameters and the rest of the params are never passed.
+                and the output is the Pagination object and the list of results. The results list should be sorted by 
+                the username unique key that in the User object.
+                the function name that should implement this endpoint should be named "listUsers".
+                In the webui this endpoint is called in the Administrator -> Users in order to see all the lakeFS users.
     get:
       tags:
         - auth
+        - users
       operationId: listUsers
       summary: list users
       parameters:
@@ -408,8 +453,16 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     post:
+      description: This endpoint is used to create a new user to lakeFS. In the webui
+                  you can create new users in 2 ways 1. Go to Administration ->
+                  Users and click on Invite User 2. Go to Administration -> Users and click on Create API User. 
+                  The input is passed to the request body and the output is a User object. Note that most of
+                  the params in the objects are not required. We will pass to your server a request body with 
+                  the key Content-Type=application/json in the header.
+                  the function name that should implement this endpoint should be named "createUser".
       tags:
         - auth
+        - users
       operationId: createUser
       summary: create user
       requestBody:
@@ -447,6 +500,7 @@ paths:
     get:
       tags:
         - auth
+        - users
       operationId: getUser
       summary: get user
       responses:
@@ -465,6 +519,7 @@ paths:
     delete:
       tags:
         - auth
+        - users
       operationId: deleteUser
       summary: delete user
       responses:
@@ -485,8 +540,10 @@ paths:
         schema:
           type: string
     put:
+      deprecated: true
       tags:
         - auth
+        - users
       operationId: updatePassword
       summary: update users password
       requestBody:
@@ -515,6 +572,7 @@ paths:
     put:
       tags:
         - auth
+        - users
       operationId: updateUserFriendlyName
       summary: update users friendly name
       requestBody:
@@ -540,8 +598,16 @@ paths:
 
   /auth/groups:
     get:
+      description: This endpoint lists of the groups in lakeFS.
+                  In the webui
+                  you will find this page that is triggered from this endpoint for each user under Administration ->
+                  Groups. The input is the pagination parameters and the output is the Pagination object
+                  and the list of results. The results list should be sorted by the "name" property that in the
+                  Group object in the results array in the GroupList object.
+                  the function name that should implement this endpoint should be named "listGroups".
       tags:
         - auth
+        - groups
       operationId: listGroups
       summary: list groups
       parameters:
@@ -559,9 +625,24 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
+
     post:
+      description: This endpoint is used to create a group in lakeFS.
+                  In the webui
+                  you will trigger this endpoint by clicking on Administration ->
+                  Groups -> Create Group. The input is passed to the request body and the output is a Group object. We will pass 
+                  to your server a request body with
+                  the key Content-Type=application/json in the header.
+                  Note that lakeFS will pass as input the id property as specified in GroupCreation as a unique readable group name.
+                  LaakeFS will get the Group object and expects the name property to be a unique readable group name and if the id
+                  property in the Group object wasn't specified it will store the name in the id field.
+                  the function name that should implement this endpoint should be named "createGroup".
+                  LakeFS calls to this endpoint in the setup stage. When it creates the admin user, it calles to this
+                  endpoint with the group IDs "Admins", "SuperUsers", "Developers" and "Viewers" and it expects
+
       tags:
         - auth
+        - groups
       operationId: createGroup
       summary: create group
       requestBody:
@@ -593,8 +674,19 @@ paths:
         schema:
           type: string
     get:
+      description: This endpoint outputs the details for a specific group.
+                  In the webui
+                  this endpoint is triggered for a group after clicking on Administration ->
+                  Groups -> someGroupId. The input is a unique groupId that corresponds to existing group ID in your
+                  groups list as a path param. and the output is the Group object. In the webui we will use the name
+                  property in the Group object and pass it to the ID property on lakeFS side so in the webui you will
+                  get only 3 params in the response "creation_date", "description" that can be empty and "id" which is the 
+                  name param in the Group object. LakeFS calls this endpoint with the "Admins" groupID in the setup phase in order to check that 
+                  the "Admins" group was created.
+                  the function name that should implement this endpoint should be named "getGroup".
       tags:
         - auth
+        - groups
       operationId: getGroup
       summary: get group
       responses:
@@ -611,8 +703,16 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
+      description: This endpoint deletes a group.
+                  In the webui
+                  this endpoint is triggered for a group after clicking on Administration ->
+                  Groups  then selecting the group a user would like to delete and pressing on 'Delete Selected'. 
+                  The input is a unique groupId that corresponds to existing group ID in your
+                  groups list as a path param. no output if was deleted successfuly. 
+                  the function name that should implement this endpoint should be named "deleteGroup".
       tags:
         - auth
+        - groups
       operationId: deleteGroup
       summary: delete group
       responses:
@@ -627,8 +727,18 @@ paths:
 
   /auth/policies:
     get:
+      description: This endpoint lists of the groups in lakeFS.
+                  In the webui
+                  you will find this page that is triggered from this endpoint in Administration ->
+                  Policies. The input is the pagination parameters and the output is the Pagination object
+                  and the list of results. The results list should be sorted by the "name" property that in the
+                  Policy object in the results array in the PolicyList object. LakeFS converts the "name" property of 
+                  the Policy object to "id" property in it's internal Policy object.
+                  the function name that should implement this endpoint should be named "listPolicies".
+
       tags:
         - auth
+        - policies
       operationId: listPolicies
       summary: list policies
       parameters:
@@ -647,8 +757,22 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     post:
+      description: This endpoint is used to create a policy in lakeFS.
+                  In the webui
+                  you will trigger this endpoint by clicking on Administration ->
+                  Policies -> Create Policy. The input is passed to the request body and the output is a Policy object. We will pass
+                  to your server a request body with
+                  the key Content-Type=application/json in the header.
+                  The output's parameters should be the same as the input's params.
+                  the function name that should implement this endpoint should be named "createPolicy".
+                  LakeFS calls to this endpoint in the setup stage. When it creates the admin user, it calles to this
+                  endpoint with some default policies needed to be created. The policies Id (names) that will be sent
+                  "FSFullAccess", "FSReadWriteAll", "FSReadAll", "RepoManagementFullAccess", "PRReadWriteAll", 
+                  "RepoManagementReadAll", "AuthFullAccess", "AuthManageOwnCredentials"
+
       tags:
         - auth
+        - policies
       operationId: createPolicy
       summary: create policy
       requestBody:
@@ -681,8 +805,16 @@ paths:
         schema:
           type: string
     get:
+      description: This endpoint outputs a specific policies's details.
+                  In the webui
+                  you will find this page that is triggered from this endpoint in Administration ->
+                  Policies -> somePolicyId. The input is the unique policyId and the output is the Policy object. 
+                  LakeFS converts the "name" property of
+                  the Policy object to "id" property in it's internal Policy object.
+                  the function name that should implement this endpoint should be named "getPolicy".
       tags:
         - auth
+        - policies
       operationId: getPolicy
       summary: get policy
       responses:
@@ -698,9 +830,20 @@ paths:
           $ref: "#/components/responses/NotFound"
         default:
           $ref: "#/components/responses/ServerError"
+
     put:
+      description: This endpoint is used to update a policy in lakeFS.
+                  In the webui
+                  you will trigger this endpoint by clicking on Administration ->
+                  Policies -> somePolicyId -> Edit. The input is the unique policyId(name) and passed to the request 
+                  body and the output is the updated Policy object (same body that was sent to this API). We will pass
+                  to your server a request body with
+                  the key Content-Type=application/json in the header.
+                  The output's parameters should be the same as in the input's body params.
+                  the function name that should implement this endpoint should be named "updatePolicy".
       tags:
         - auth
+        - policies
       operationId: updatePolicy
       summary: update policy
       requestBody:
@@ -722,9 +865,18 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
+
     delete:
+      description: This endpoint deletes a policy.
+                  In the webui
+                  this endpoint is triggered for a policy after clicking on Administration ->
+                  Policies then selecting the policy a user would like to delete and pressing on 'Delete Selected'.
+                  The input is a unique policyId that corresponds to existing policy ID in your
+                  policies list as a path param. no output if was deleted successfuly.
+                  the function name that should implement this endpoint should be named "deletePolicy".
       tags:
         - auth
+        - policies
       operationId: deletePolicy
       summary: delete policy
       responses:
@@ -745,8 +897,16 @@ paths:
         schema:
           type: string
     get:
+      description: This endpoint outputs for a specific group a list of the users that are attached to it.
+                  In the webui
+                  the you will find this page that is triggered from this endpoint for each user under Administration ->
+                  Groups -> someGroupId -> Group Membership tab. The input is the groupId and the pagination parameters and the output is the Pagination object
+                  and the list of results. The results list should be sorted by the "username" property that in the
+                  User object in the results array in the UserList object.
+                  the function name that should implement this endpoint should be named "listGroupMembers".
       tags:
         - auth
+        - groups
       operationId: listGroupMembers
       summary: list group members
       parameters:
@@ -778,8 +938,15 @@ paths:
         schema:
           type: string
     put:
+      description: This endpoint adds a specific user to a specific group.
+                  In the webui
+                  the you will find this page that is triggered from this endpoint for each user under Administration ->
+                  Groups -> someGroupId -> Group Membership tab -> Add members. The input is the groupId and the userId 
+                  (username) and there is no output when the user was addedd to the group succesfully. 
+                  the function name that should implement this endpoint should be named "addGroupMembership".
       tags:
         - auth
+        - groups
       operationId: addGroupMembership
       summary: add group membership
       responses:
@@ -793,8 +960,16 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     delete:
+      description: This endpoint deletes a specific user from a specific group.
+                  In the webui
+                  the you will find this page that is triggered from this endpoint for each user under Administration ->
+                  Groups -> someGroupId -> Group Membership tab.Then on the rightmost column in the table click on the 
+                  "Remove" button. The input is the groupId and the userId
+                  (username) and there is no output when the user was deleted from the group succesfully.
+                  the function name that should implement this endpoint should be named "deleteGroupMembership".
       tags:
         - auth
+        - groups
       operationId: deleteGroupMembership
       summary: delete group membership
       responses:
@@ -815,8 +990,20 @@ paths:
         schema:
           type: string
     get:
+      description: This endpoint outputs for a specific user's a list of his all access_key_id with it's creation_date. 
+                  In the UI, in the 
+                  Administration -> My Credentials page, this endpoint is being called with userId=admin. In the webui 
+                  the you will find this page that is triggered from this endpoint for each user under Administration -> 
+                  Users -> userId -> 
+                  Access Credentials. The input is the pagination parameters and the output is the Pagination object 
+                  and the list of results. The results list should be sorted by the "access_key_id" key that in the 
+                  Credentials object in the results array in the CredentialsList object.
+                  the function name that should implement this endpoint should be named "listUserCredentials".
+                  In the path parameter lakeFS pass a unique userId that corresponds to existing user ID in your
+                  users list.
       tags:
         - auth
+        - credentials
       parameters:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
@@ -838,6 +1025,17 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     post:
+      description: This endpoint creates new credentials for a specific user. lakeFs creates the Access Key ID and the
+                  Secret Access Key and passes it to the server. The input is the access_key and secret_key strings 
+                  that lakeFS creates for the user and the output is .....
+                  the function name that should implement this endpoint should be named "createCredentials".
+                  In the path parameter lakeFS pass a unique userId that corresponds to existing user ID in your
+                  users list. Note that if one of the parameters is empty, you should create random values for these
+                  2 parameters and save theses credentials for the user. When lakeFS firsts initialized, theses 
+                  2 credentials parameters should be created for the "admin" user with this specific userId. In the 
+                  webui this endpoint is triggered after clicking on the Create Access key under 
+                  Administration -> My Credentials for the admin user and under the Administration -> Users -> userId ->
+                  Access Credentials for some specific other user.
       parameters:
         - in: query
           name: access_key
@@ -849,6 +1047,7 @@ paths:
             type: string
       tags:
         - auth
+        - credentials
       operationId: createCredentials
       summary: create credentials
       responses:
@@ -880,8 +1079,17 @@ paths:
         schema:
           type: string
     delete:
+      description: This endpoint deletes credentials for a specific user. The inputs are the userId and accessKeyId and 
+                  the output is void.
+                  the function name that should implement this endpoint should be named "deleteCredentials".
+                  In the path parameter lakeFS pass a unique userId that corresponds to existing user ID in your
+                  users list. In the webUI you can trigger this endpoint by clicking on Administration -> My Credentials 
+                  for the admin user and under the Administration -> Users -> userId ->
+                  Access Credentials for some specific other user and then clicking on the "Revoke" button in the 
+                  right column in the table of access keys.
       tags:
         - auth
+        - credentials
       operationId: deleteCredentials
       summary: delete credentials
       responses:
@@ -895,8 +1103,10 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     get:
+      description: Why need it and how to trigger this endpoint in the webUI?????????????????????????????????????????
       tags:
         - auth
+        - credentials
       operationId: getCredentialsForUser
       summary: get credentials
       responses:
@@ -914,6 +1124,8 @@ paths:
           $ref: "#/components/responses/ServerError"
 
   /auth/credentials/{accessKeyId}:
+    description: Why need it and how to trigger this endpoint in the webUI?????????????????????????????????????????
+                if we do use it, document that the list should be sorted?
     parameters:
       - in: path
         name: accessKeyId
@@ -923,6 +1135,7 @@ paths:
     get:
       tags:
         - auth
+        - credentials
       operationId: getCredentials
       summary: get credentials
       responses:
@@ -949,6 +1162,7 @@ paths:
     get:
       tags:
         - auth
+        - users
       parameters:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
@@ -979,6 +1193,7 @@ paths:
     get:
       tags:
         - auth
+        - users
       parameters:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
@@ -1020,6 +1235,7 @@ paths:
     put:
       tags:
         - auth
+        - users
       operationId: attachPolicyToUser
       summary: attach policy to user
       responses:
@@ -1034,6 +1250,7 @@ paths:
     delete:
       tags:
         - auth
+        - users
       operationId: detachPolicyFromUser
       summary: detach policy from user
       responses:
@@ -1054,8 +1271,18 @@ paths:
         schema:
           type: string
     get:
+      description: This endpoint outputs the list of policies that are attached to a specific  group.
+                  In the webui
+                  you will find this page that is triggered from this endpoint in Administration ->
+                  Groups -> somePolicyId -> Attached Policies tab. The input is the unique groupId and the pagination 
+                  params and the output is a PolicyList object which has 2 things "pagination" for the pagination purpose 
+                  and "results". The results should be sorted by the "name" property.
+                  LakeFS converts the "name" property of
+                  the Policy object to "id" property in it's internal Policy object.
+                  the function name that should implement this endpoint should be named "listGroupPolicies".
       tags:
         - auth
+        - groups
       parameters:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
@@ -1089,8 +1316,15 @@ paths:
         schema:
           type: string
     put:
+      description: This endpoint attaches a policy to a specific group.
+                  In the webui
+                  you will find this page that is triggered from this endpoint in Administration ->
+                  Groups -> Attached Policies -> Attach Policy. The input is the unique groupId and policyId and no 
+                  output when attached successfuly.
+                  the function name that should implement this endpoint should be named "attachPolicyToGroup".
       tags:
         - auth
+        - groups
       operationId: attachPolicyToGroup
       summary: attach policy to group
       responses:
@@ -1104,8 +1338,16 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     delete:
+      description: This endpoint detaches a policy from a specific group.
+        In the webui
+        you will find this page that is triggered from this endpoint in Administration ->
+        Groups -> Attached Policies tab. Then on the rightmost column in the table you will see a button called "Remove". 
+        Click on that to delete.
+        The input is the unique groupId and policyId and no output when detached successfuly.
+        the function name that should implement this endpoint should be named "detachPolicyFromGroup".
       tags:
         - auth
+        - groups
       operationId: detachPolicyFromGroup
       summary: detach policy from group
       responses:
@@ -1120,6 +1362,7 @@ paths:
 
   /auth/tokenid/claim:
     post:
+      deprecated: true
       tags:
         - auth
       operationId: claimTokenId
