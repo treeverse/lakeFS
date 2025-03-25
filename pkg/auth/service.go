@@ -1177,7 +1177,11 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 		// check whether the permission is allowed, denied or natural (not allowed and not denied)
 		for _, policy := range policies {
 			for _, stmt := range policy.Statement {
-				resources := ParseResources(stmt.Resource)
+				resources, err := ParseResources(stmt.Resource)
+				if err != nil {
+					logging.FromContext(ctx).Error(err)
+					return CheckDeny
+				}
 				for _, resource := range resources {
 					resource = interpolateUser(resource, username)
 					if !ArnMatch(resource, node.Permission.Resource) {

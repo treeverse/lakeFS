@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/auth/wildcard"
@@ -110,35 +111,16 @@ func ArnMatch(src, dst string) bool {
 	return false
 }
 
-func ParseResources(resource string) []string {
+func ParseResources(resource string) ([]string, error) {
 	trimmed := strings.TrimSpace(resource)
 	if trimmed[0] != '[' || trimmed[len(trimmed)-1] != ']' {
-		return []string{resource}
+		return []string{resource}, nil
 	}
 
 	var resources []string
-	var current string
-	runes := []rune(trimmed)
-
-	for i := 0; i < len(runes); i++ {
-		letter := runes[i]
-		switch letter {
-		case '[':
-			continue
-
-		case '\\':
-			i++
-			letter = runes[i]
-			current += string(letter)
-			continue
-
-		case ',', ']':
-			resources = append(resources, current)
-			current = ""
-			continue
-		default:
-			current += string(letter)
-		}
+	err := json.Unmarshal([]byte(resource), &resources)
+	if err != nil {
+		return nil, err
 	}
-	return resources
+	return resources, nil
 }

@@ -79,11 +79,11 @@ func TestParseResources(t *testing.T) {
 		outputResources []string
 	}{
 		{
-			inputResource:   "[arn:lakefs:repos::b:myrepo,arn:lakefs:repos::b:hisrepo]",
+			inputResource:   "[\"arn:lakefs:repos::b:myrepo\",\"arn:lakefs:repos::b:hisrepo\"]",
 			outputResources: []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"},
 		},
 		{
-			inputResource:   "[arn:lakefs:repos::b:myrepo,arn:lakefs:repos::b:hisrepo,arn:lakefs:repos::b:ourrepo]",
+			inputResource:   "[\"arn:lakefs:repos::b:myrepo\",\"arn:lakefs:repos::b:hisrepo\",\"arn:lakefs:repos::b:ourrepo\"]",
 			outputResources: []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo", "arn:lakefs:repos::b:ourrepo"},
 		},
 		{
@@ -91,21 +91,21 @@ func TestParseResources(t *testing.T) {
 			outputResources: []string{"       arn:lakefs:repos::b:myrepo  "},
 		},
 		{
-			inputResource:   "   [    arn:lakefs:repos::b:myrepo  ]",
-			outputResources: []string{"    arn:lakefs:repos::b:myrepo  "},
+			inputResource:   "   [    \"arn:lakefs:repos::b:myrepo  \"  ]",
+			outputResources: []string{"arn:lakefs:repos::b:myrepo  "},
 		},
 		{
-			inputResource:   "   [    arn:lakefs:repos::b:myre\\,po  ]",
-			outputResources: []string{"    arn:lakefs:repos::b:myre,po  "},
+			inputResource:   "   [    \"arn:lakefs:repos::b:myre,po\"  ]",
+			outputResources: []string{"arn:lakefs:repos::b:myre,po"},
 		},
 		{
-			inputResource:   "   [    arn:lakefs:repos::b:myre\\,po, arn:lakefs:repos::b\\,:myrepo ]",
-			outputResources: []string{"    arn:lakefs:repos::b:myre,po", " arn:lakefs:repos::b,:myrepo "},
+			inputResource:   "   [\"    arn:lakefs:repos::b:myre,po\", \"arn:lakefs:repos::b,:myrepo\" ]",
+			outputResources: []string{"    arn:lakefs:repos::b:myre,po", "arn:lakefs:repos::b,:myrepo"},
 		},
 	}
 
 	for _, c := range cases {
-		got := auth.ParseResources(c.inputResource)
+		got, _ := auth.ParseResources(c.inputResource)
 		if len(got) != len(c.outputResources) {
 			t.Fatalf("expected %d resources, got %d for input: %s", len(c.outputResources), len(got), c.inputResource)
 		}
