@@ -24,6 +24,9 @@ test.describe("Quickstart", () => {
         const repositoriesPage = new RepositoriesPage(page);
         await repositoriesPage.goto();
         await repositoriesPage.createRepository(QUICKSTART_REPO_NAME, true);
+        // validate the redirect to the relevant repository page
+        const repositoryPage = new RepositoryPage(page);
+        await expect(repositoryPage.readOnlyIndicatorLocator).toBeVisible();
     });
 
     test("view and query parquet object", async ({page}) => {
@@ -164,7 +167,7 @@ test.describe("Quickstart", () => {
         }
 
         await validateRow("Repository name", QUICKSTART_REPO_NAME);
-        await validateRow("Storage namespace");
+        await validateRow("Storage namespace", "lakefs://" + QUICKSTART_REPO_NAME);
         await validateRow("Default branch", "main");
     });
 });
