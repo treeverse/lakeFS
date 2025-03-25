@@ -6,6 +6,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func AdditionalAuthenticators(_ config.Config, _ logging.Logger, _ auth.Service) auth.ChainAuthenticator {
+func BuildAuthenticatorChain(_ config.Config, _ logging.Logger, _ auth.Service) auth.ChainAuthenticator {
 	return auth.ChainAuthenticator{}
 }

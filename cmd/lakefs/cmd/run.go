@@ -280,7 +280,7 @@ var runCmd = &cobra.Command{
 			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
 		}
 
-		additionalAuthenticators := authenticationfactory.AdditionalAuthenticators(cfg, logger, authService)
+		additionalAuthenticators := authenticationfactory.BuildAuthenticatorChain(cfg, logger, authService)
 		middlewareAuthenticator = append(middlewareAuthenticator, additionalAuthenticators)
 
 		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
