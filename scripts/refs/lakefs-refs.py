@@ -184,8 +184,6 @@ def dump_repository(repo_name, endpoint_url=None, access_key_id=None, secret_acc
                     print(f"Committed changes in branch {branch_id}")
                 else:
                     print(f"No uncommitted changes in branch {branch_id}")
-        else:
-            pass
         
         # Dump repository metadata
         print(f"Dumping repository metadata...")
