@@ -38,9 +38,10 @@ type LRUCache struct {
 func NewLRUCache(size int, expiry, jitter time.Duration) *LRUCache {
 	jitterFn := cache.NewJitterFn(jitter)
 	return &LRUCache{
-		credentialsCache: cache.NewCache(size, expiry, jitterFn),
-		userCache:        cache.NewCache(size, expiry, jitterFn),
-		policyCache:      cache.NewCache(size, expiry, jitterFn),
+		credentialsCache:       cache.NewCache(size, expiry, jitterFn),
+		userCache:              cache.NewCache(size, expiry, jitterFn),
+		policyCache:            cache.NewCache(size, expiry, jitterFn),
+		externalPrincipalCache: cache.NewCache(size, expiry, jitterFn),
 	}
 }
 
