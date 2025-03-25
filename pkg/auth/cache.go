@@ -29,9 +29,10 @@ type Cache interface {
 }
 
 type LRUCache struct {
-	credentialsCache cache.Cache
-	userCache        cache.Cache
-	policyCache      cache.Cache
+	credentialsCache       cache.Cache
+	userCache              cache.Cache
+	policyCache            cache.Cache
+	externalPrincipalCache cache.Cache
 }
 
 func NewLRUCache(size int, expiry, jitter time.Duration) *LRUCache {
@@ -68,7 +69,7 @@ func (c *LRUCache) GetUserPolicies(userID string, setFn UserPoliciesSetFn) ([]*m
 }
 
 func (c *LRUCache) GetExternalPrincipal(key string, setFn ExternalPrincipalFn) (*model.ExternalPrincipal, error) {
-	v, err := c.policyCache.GetOrSet(key, func() (interface{}, error) { return setFn() })
+	v, err := c.externalPrincipalCache.GetOrSet(key, func() (interface{}, error) { return setFn() })
 	if err != nil {
 		return nil, err
 	}
