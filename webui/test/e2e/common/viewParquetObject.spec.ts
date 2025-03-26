@@ -38,10 +38,8 @@ test.describe("Object Viewer - Parquet File", () => {
             return;
         }
         await loginPage.doLogin(credentials.accessKeyId, credentials.secretAccessKey);
-        await repositoriesPage.goto();
-        await page.waitForURL(/.*\/repositories/);
-        await repositoriesPage.goToRepository(TEST_REPO_NAME);
         const repositoryPage = new RepositoryPage(page);
+        await repositoryPage.goto(TEST_REPO_NAME);
         await repositoryPage.clickObject(PARQUET_OBJECT_NAME);
         await expect(page.getByText("Loading...")).not.toBeVisible();
     });
