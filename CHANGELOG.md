@@ -4,7 +4,6 @@
 
 :new: What's new:
 - Added a lakectl flag to point to configurations file: `LAKECTL_CONFIG_FILE` (#8831)
-- Added improved timestamp retrieval in AuthService (#8843)
 - Added markdown files diff display to the webui (#8855)
 
 :bug: Bugs fixed:
