@@ -321,7 +321,7 @@ The migration process involves:
 * If using different storage backends, ensure proper access permissions to copy the data
 * The `--commit` flag can be used if you want to ensure all changes are committed before dumping
 * Make sure the new storage backend has sufficient space for all repository data
-* A lakeFS instance configured with a single storage type will not start if any repository's namespace uses a different storage type
+* A lakeFS instance configured with a single storage type will not start if repositories created on multiple storage setup still exist
 
 ## Working with Repositories  
 
