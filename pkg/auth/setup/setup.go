@@ -252,7 +252,7 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 }
 
 func CreateBaseGroups(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, ts time.Time) error {
-	if !cfg.IsAdvancedAuth() {
+	if !authService.IsAdvancedAuth() {
 		return nil
 	}
 	return CreateRBACBaseGroups(ctx, authService, ts)
