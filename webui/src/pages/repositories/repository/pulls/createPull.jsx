@@ -13,12 +13,10 @@ import {pulls as pullsAPI} from "../../../../lib/api";
 import CompareBranchesSelection from "../../../../lib/components/repository/compareBranchesSelection";
 import {DiffContext, WithDiffContext} from "../../../../lib/hooks/diffContext";
 
-const CreatePullForm = ({repo, reference, compare}) => {
+const CreatePullForm = ({repo, reference, compare, title, setTitle, description, setDescription}) => {
     const router = useRouter();
     let [loading, setLoading] = useState(false);
     let [error, setError] = useState(null);
-    let [title, setTitle] = useState("");
-    let [description, setDescription] = useState("");
 
     const {state: {results: diffResults, loading: diffLoading, error: diffError}} = useContext(DiffContext);
     const isEmptyDiff = (!diffLoading && !diffError && !!diffResults && diffResults.length === 0);
@@ -90,6 +88,9 @@ const CreatePullForm = ({repo, reference, compare}) => {
 const CreatePull = () => {
     const {repo, loading, error, reference, compare} = useRefs();
 
+    const [title, setTitle] = useState("");
+    const [description, setDescription] = useState("");
+
     if (loading) return <Loading/>;
     if (error) return <RepoError error={error}/>;
 
@@ -107,7 +108,15 @@ const CreatePull = () => {
             </ActionsBar>
             <h1 className="mt-3">Create Pull Request</h1>
             <div className="mt-4">
-                <CreatePullForm repo={repo} reference={reference} compare={compare}/>
+                <CreatePullForm
+                    repo={repo}
+                    reference={reference}
+                    compare={compare}
+                    title={title}
+                    setTitle={setTitle}
+                    description={description}
+                    setDescription={setDescription}
+                />
             </div>
             <hr className="mt-5 mb-4"/>
             <CompareBranches
