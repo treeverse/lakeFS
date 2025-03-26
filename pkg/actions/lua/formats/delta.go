@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/csimplestring/delta-go/storage"
-	"gocloud.dev/blob"
-
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	delta "github.com/csimplestring/delta-go"
 	"github.com/csimplestring/delta-go/action"
+	"github.com/csimplestring/delta-go/storage"
 	luautil "github.com/treeverse/lakefs/pkg/actions/lua/util"
+	"gocloud.dev/blob"
 )
 
 type storageType string
