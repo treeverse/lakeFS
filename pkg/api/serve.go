@@ -39,8 +39,8 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 		panic(err)
 	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
-	oidcConfig := OIDCConfig(cfg.GetAuthConfig().OIDC)
-	cookieAuthConfig := CookieAuthConfig(cfg.GetAuthConfig().CookieAuthVerification)
+	oidcConfig := OIDCConfig(cfg.AuthConfig().OIDC)
+	cookieAuthConfig := CookieAuthConfig(cfg.AuthConfig().CookieAuthVerification)
 	r := chi.NewRouter()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
@@ -63,7 +63,7 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.GetAuthConfig().LogoutRedirectURL))
+	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().LogoutRedirectURL))
 
 	// Configuration flag to control if the embedded UI is served
 	// or not and assign the correct handler for each case.

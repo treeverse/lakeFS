@@ -32,7 +32,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := loadConfig()
-		authConfig := cfg.GetAuthConfig()
+		authConfig := cfg.AuthConfig()
 		baseConfig := cfg.GetBaseConfig()
 		if authConfig.UIConfig.RBAC == config.AuthRBACExternal {
 			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")

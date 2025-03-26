@@ -25,8 +25,8 @@ func checkAuthModeSupport(baseCfg config.Auth) error {
 }
 
 func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) auth.Service {
-	authCfg := cfg.GetAuthConfig()
-	if err := checkAuthModeSupport(*cfg.GetAuthConfig()); err != nil {
+	authCfg := cfg.AuthConfig()
+	if err := checkAuthModeSupport(*cfg.AuthConfig()); err != nil {
 		logger.WithError(err).Fatal("Unsupported auth mode")
 	}
 

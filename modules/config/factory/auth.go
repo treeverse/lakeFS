@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+
 	"github.com/treeverse/lakefs/pkg/config"
 )
 
@@ -10,7 +11,7 @@ type ConfigWithAuth struct {
 	Auth              config.Auth `mapstructure:"auth"`
 }
 
-func (c *ConfigWithAuth) GetAuthConfig() *config.Auth {
+func (c *ConfigWithAuth) AuthConfig() *config.Auth {
 	return &c.Auth
 }
 

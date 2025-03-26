@@ -10,7 +10,7 @@ import (
 )
 
 func BuildAuthenticatorChain(c config.Config, logger logging.Logger, authService auth.Service) (auth.ChainAuthenticator, error) {
-	authConfig := c.GetAuthConfig()
+	authConfig := c.AuthConfig()
 
 	authenticators := auth.ChainAuthenticator{
 		auth.NewBuiltinAuthenticator(authService),

@@ -235,7 +235,7 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 		cred *model.Credential
 		err  error
 	)
-	authCfg := cfg.GetAuthConfig()
+	authCfg := cfg.AuthConfig()
 	if authCfg.IsAuthBasic() {
 		if cred, err = AddAdminUser(ctx, authService, adminUser, false); err != nil {
 			return nil, err

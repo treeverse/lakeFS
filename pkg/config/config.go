@@ -367,7 +367,7 @@ func GetActualStorageID(storageConfig StorageConfig, storageID string) string {
 type Config interface {
 	GetBaseConfig() *BaseConfig
 	StorageConfig() StorageConfig
-	GetAuthConfig() *Auth
+	AuthConfig() *Auth
 	Validate() error
 }
 

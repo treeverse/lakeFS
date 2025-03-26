@@ -106,7 +106,7 @@ var runCmd = &cobra.Command{
 		authService := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 		// initialize authentication service
 		var authenticationService authentication.Service
-		authCfg := cfg.GetAuthConfig()
+		authCfg := cfg.AuthConfig()
 		if authCfg.IsAuthenticationTypeAPI() {
 			authenticationService, err = authentication.NewAPIService(authCfg.AuthenticationAPI.Endpoint, authCfg.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), authCfg.AuthenticationAPI.ExternalPrincipalsEnabled)
 			if err != nil {
