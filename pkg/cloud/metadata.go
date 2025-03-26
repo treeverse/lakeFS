@@ -131,6 +131,8 @@ func checkAzureMetadata() bool {
 
 // init registers the built-in cloud detectors
 // maintained the original order: GCP first, then AWS, then Azure
+//
+//nolint:gochecknoinits
 func init() {
 	RegisterDetector(GCPCloud, GetGCPProjectID)
 	RegisterDetector(AWSCloud, GetAWSAccountID)
@@ -138,7 +140,8 @@ func init() {
 }
 
 // Detect runs the cloud detection logic and caches the result.
-// Detectors are tried in registration order
+// Detectors are tried in registration order, and the first one that succeeds is used.
+// Any error is ignored, and the next detector is tried.
 func Detect() {
 	// Iterate through detectors in the order they were registered
 	for _, name := range detectorOrder {

@@ -8,18 +8,18 @@ import (
 
 const MetadataBlockstoreTypeKey = "blockstore_type"
 
-// SingleTypeMetadataProvider is a metadata provider that reports a single blockstore type.
-type SingleTypeMetadataProvider struct {
+// BlockstoreTypeMetadataProvider is a metadata provider that reports a single blockstore type.
+type BlockstoreTypeMetadataProvider struct {
 	blockstoreType string
 }
 
 // GetMetadata returns metadata with a single blockstore type.
-func (p *SingleTypeMetadataProvider) GetMetadata(ctx context.Context) (map[string]string, error) {
+func (p *BlockstoreTypeMetadataProvider) GetMetadata(ctx context.Context) (map[string]string, error) {
 	return map[string]string{MetadataBlockstoreTypeKey: p.blockstoreType}, nil
 }
 
 // BuildMetadataProviders returns metadata providers for each unique blockstore type in the storage config.
-func BuildMetadataProviders(cfg config.StorageConfig) []*SingleTypeMetadataProvider {
+func BuildMetadataProviders(cfg config.StorageConfig) []*BlockstoreTypeMetadataProvider {
 	ids := cfg.GetStorageIDs()
 
 	uniqueTypes := make(map[string]struct{})
@@ -28,9 +28,9 @@ func BuildMetadataProviders(cfg config.StorageConfig) []*SingleTypeMetadataProvi
 		uniqueTypes[storage.BlockstoreType()] = struct{}{}
 	}
 
-	var providers []*SingleTypeMetadataProvider
+	var providers []*BlockstoreTypeMetadataProvider
 	for t := range uniqueTypes {
-		providers = append(providers, &SingleTypeMetadataProvider{blockstoreType: t})
+		providers = append(providers, &BlockstoreTypeMetadataProvider{blockstoreType: t})
 	}
 	return providers
 }
