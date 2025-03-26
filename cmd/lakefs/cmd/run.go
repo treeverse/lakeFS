@@ -19,11 +19,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
+	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -188,18 +188,9 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
-		authenticator := auth.ChainAuthenticator{
-			auth.NewBuiltinAuthenticator(authService),
-		}
-
-		// remote authenticator setup
-		if baseCfg.Auth.RemoteAuthenticator.Enabled {
-			remoteAuthenticator, err := authremote.NewAuthenticator(authremote.AuthenticatorConfig(baseCfg.Auth.RemoteAuthenticator), authService, logger)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create remote authenticator")
-			}
-
-			authenticator = append(authenticator, remoteAuthenticator)
+		middlewareAuthenticator, err := authenticationfactory.BuildAuthenticatorChain(cfg, logger, authService)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create authentication chain")
 		}
 
 		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
@@ -223,7 +214,7 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
-			authenticator,
+			middlewareAuthenticator,
 			authService,
 			authenticationService,
 			blockStore,
@@ -253,7 +244,7 @@ var runCmd = &cobra.Command{
 		cookieAuthConfig := api.CookieAuthConfig(baseCfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
-			authenticator,
+			middlewareAuthenticator,
 			authService,
 			&oidcConfig,
 			&cookieAuthConfig,
