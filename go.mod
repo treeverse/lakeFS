@@ -100,6 +100,7 @@ require (
 	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250302084420-19657b3cf7f9
 	github.com/treeverse/lakefs/webui v0.0.0-20250302084420-19657b3cf7f9
 	go.uber.org/ratelimit v0.3.0
+	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )
 
 require (
@@ -173,7 +174,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gonum.org/v1/gonum v0.9.3 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231127180814-3a041ad873d4 // indirect
@@ -259,4 +259,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20240101152008-53c0d469272e
+replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20250325160917-8c0ebb032f43
