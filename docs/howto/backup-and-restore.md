@@ -146,14 +146,14 @@ aws s3 cp s3://target-bucket-name/example-repo/_lakefs/refs_manifest.json - | la
 
 * [lakeFS CLI](https://docs.lakefs.io/reference/cli.html#lakectl-refs-restore) command to restore metadata to new repository using Azure storage:
 
-```
+```shell
 az storage blob download --container-name targetContainer --name example-repo/_lakefs/refs_manifest.json --account-name target-storage-account-name --account-key <target-storage-account-key> | lakectl refs-restore lakefs://target-example-repo --manifest -
 ```
 
 **Note:** If you are running backups regularly, it is highly advised to test the restore process periodically to make sure that you are able to restore the repository in case of disaster.
 {: .note}
 
-## Python Script for Refs Management
+## Python Helper Script for Backup and Restore
 
 For more streamlined repository backup and restore operations, you can use the `lakefs-refs.py` script available in the [lakeFS repository](https://github.com/treeverse/lakeFS/tree/master/scripts).
 

@@ -222,7 +222,7 @@ The migration process involves:
 
 #### Step-by-Step Guide
 
-Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup and Restore](backup-and-restore.md#python-script-for-refs-management).
+Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup and Restore](backup-and-restore.md#python-helper-script-for-backup-and-restore).
 
 1. **Dump Repository References**
 
@@ -305,7 +305,8 @@ Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup a
 
 5. **Restore Repositories**
 
-   Note: If you copied the data to a new location in step 4, make sure to update the storage namespace in the manifest files before restoring.
+   If you copied the data to a new location in step 4, make sure to update the storage namespace in the manifest files before restoring.
+   {: note}
 
    Use the `--ignore-storage-id` flag to ensure repositories are created without storage IDs in the single-storage environment:
 
