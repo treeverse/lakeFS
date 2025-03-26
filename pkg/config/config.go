@@ -701,7 +701,7 @@ func (c *BaseConfig) IsAuthTypeAPI() bool {
 func (c *BaseConfig) IsExternalPrincipalsEnabled() bool {
 	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
 	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
-	return c.IsAuthTypeAPI() && c.Auth.AuthenticationAPI.ExternalPrincipalsEnabled
+	return c.Auth.AuthenticationAPI.ExternalPrincipalsEnabled
 }
 
 // UseUILoginPlaceholders returns true if the UI should use placeholders for login
@@ -711,7 +711,7 @@ func (c *BaseConfig) UseUILoginPlaceholders() bool {
 }
 
 func (c *BaseConfig) IsAdvancedAuth() bool {
-	return c.IsAuthTypeAPI() && (c.Auth.UIConfig.RBAC == AuthRBACExternal || c.Auth.UIConfig.RBAC == AuthRBACInternal)
+	return c.Auth.UIConfig.RBAC == AuthRBACExternal || c.Auth.UIConfig.RBAC == AuthRBACInternal
 }
 
 func (c *BaseConfig) UISnippets() []apiparams.CodeSnippet {

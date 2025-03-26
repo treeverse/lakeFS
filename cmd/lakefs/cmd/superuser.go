@@ -78,6 +78,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 			authService, err = auth.NewAPIAuthService(
 				cfg.Auth.API.Endpoint,
 				cfg.Auth.API.Token.SecureValue(),
+				cfg.IsAdvancedAuth(),
 				cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
 				secretStore,
 				authparams.ServiceCache(cfg.Auth.Cache),

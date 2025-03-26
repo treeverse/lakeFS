@@ -51,7 +51,7 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 			logging.Fields{logging.ServiceNameFieldKey: LoggerServiceName},
 			cfg.GetBaseConfig().Logging.AuditLogLevel,
 			cfg.GetBaseConfig().Logging.TraceRequestHeaders,
-			cfg.GetBaseConfig().IsAdvancedAuth()),
+			authService.IsAdvancedAuth()),
 		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
 		MetricsMiddleware(swagger),
 	)

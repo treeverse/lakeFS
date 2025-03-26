@@ -102,6 +102,7 @@ type ServiceAndInviter interface {
 }
 
 type Service interface {
+	IsAdvancedAuth() bool
 	SecretStore() crypt.SecretStore
 	Cache() Cache
 
@@ -170,6 +171,11 @@ type APIAuthService struct {
 	logger                    logging.Logger
 	cache                     Cache
 	externalPrincipalsEnabled bool
+	isAdvancedAuth            bool // Using RBAC, not ACL
+}
+
+func (a *APIAuthService) IsAdvancedAuth() bool {
+	return a.isAdvancedAuth
 }
 
 func (a *APIAuthService) InviteUser(ctx context.Context, email string) error {
@@ -994,7 +1000,7 @@ func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger,
 }
 
 func (a *APIAuthService) IsExternalPrincipalsEnabled(_ context.Context) bool {
-	return a.externalPrincipalsEnabled
+	return a.isAdvancedAuth && a.externalPrincipalsEnabled
 }
 
 func (a *APIAuthService) CreateUserExternalPrincipal(ctx context.Context, userID, principalID string) error {
@@ -1074,7 +1080,7 @@ func (a *APIAuthService) ListUserExternalPrincipals(ctx context.Context, userID 
 	return principals, toPagination(resp.JSON200.Pagination), nil
 }
 
-func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
+func NewAPIAuthService(apiEndpoint, token string, isAdvancedAuth, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	if token == "" {
 		// when no token is provided, generate one.
 		// communicate with auth service always uses a token
@@ -1113,6 +1119,7 @@ func NewAPIAuthService(apiEndpoint, token string, externalPrincipalseEnabled boo
 		logger:                    logger,
 		cache:                     cache,
 		externalPrincipalsEnabled: externalPrincipalseEnabled,
+		isAdvancedAuth:            isAdvancedAuth,
 	}
 	return res, nil
 }
@@ -1143,7 +1150,7 @@ func groupIDOrDisplayName(group Group) string {
 	return group.Name
 }
 
-func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
+func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, isAdvancedAuth, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	var cache Cache
 	if cacheConf.Enabled {
 		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
@@ -1156,6 +1163,7 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, externalPr
 		cache:                     cache,
 		logger:                    logger,
 		externalPrincipalsEnabled: externalPrincipalseEnabled,
+		isAdvancedAuth:            isAdvancedAuth,
 	}, nil
 }
 
