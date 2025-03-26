@@ -9,6 +9,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const sampleRSAPrivateKey = `-----BEGIN RSA PRIVATE KEY-----
+MIICXwIBAAKBgQDN+wofEP/rjz8JaZz9vjuplDRoIMH0fEh2BMcbEkRLY9lbhNi/
+w0if+ytwRkH7i4thX43IQ4+EhlmbgIzzUXQfXdAct2vNbiiFy0FyNIlz67Yknt2q
+uHf2RgKGXu/vcMI7Dguyajo5mHwLiOoJ7ql86uNtquLiTvE5eLqd1gWRFQIDAQAB
+AoGBALeT2qRveTdPFsZjy1hWuEPd44s+Tr6AGfCdN3rIH/f1CJ5JWwglms+Cgmdx
+JpNy/gkNqYZnuDxLpQczXevpl4xXs5evn3mpeP668zLyzx0u6FJkS905MvOKF4vk
+O+4eAa/12dpV7vEpWiLtZc3n+h4Y4L7EEluGR6VvwEbS/5cNAkEA5t5lhgL+x6u6
+++hLOXZHg3bU7V5HfIdsoX8lAeZwgpvrcWzllZYoO7PQWaITM+ibcpjKQNCM3Jnx
+iDBkfuW5fwJBAORnFmxkwZXOxfH4DwK+oup9x34RVMHXI9Y12xy5MOgKb5vgRDeN
+el7m9DkyRYRo8TM4633gmTrFAx9Gogq5d2sCQQC6AqfjwJgMwmWmPzQUuSLHXkAS
+e+q2/9nbiLiFfmhaI0wgmC+mRVRnPep5vWchZKGSRF54uE82EmaTZwIhZ+/7AkEA
+sTXKkA8co77qlfKAswB2JrmwLoAD4uGpTGo8tux4pZBzR92ZEAEVEMzgcAAxL6q8
+eaGQFPpN6OsyoPGMiAWeQQJBAIJjzp5vKxYAA6OZuc9h7mTChqGZWE8xWhT0qUxY
+/nDqqxFYcBZ8BzD+Os3MF+Vnvewqmh4vZP69t8mVnuIF6Do=
+-----END RSA PRIVATE KEY-----`
+
 func TestGenerateJWTLogin(t *testing.T) {
 	secret := []byte("test-secret-key")
 	userID := "test-user"
@@ -148,8 +164,8 @@ func TestVerifyToken_Specifics(t *testing.T) {
 		require.NoError(t, err, "Should validate token with correct signing method")
 		require.Equal(t, userID, claims.Subject, "Subject in claims should match userID")
 
-		// Create a token with HS512 method
-		invalidMethodToken := jwt.NewWithClaims(jwt.SigningMethodHS512, LoginClaims{
+		// Create a token with RS256 method
+		invalidMethodToken := jwt.NewWithClaims(jwt.SigningMethodRS256, LoginClaims{
 			Issuer:    "auth",
 			ID:        uuid.NewString(),
 			Audience:  LoginAudience,
@@ -157,7 +173,12 @@ func TestVerifyToken_Specifics(t *testing.T) {
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
 		})
-		invalidMethodTokenString, err := invalidMethodToken.SignedString(secret)
+
+		// generate rsa key pair
+		rsaKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(sampleRSAPrivateKey))
+		require.NoError(t, err, "Failed to parse RSA private key")
+
+		invalidMethodTokenString, err := invalidMethodToken.SignedString(rsaKey)
 		require.NoError(t, err, "Failed to generate token with invalid signing method")
 
 		_, err = VerifyToken(secret, invalidMethodTokenString)
