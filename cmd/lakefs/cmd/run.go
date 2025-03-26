@@ -18,12 +18,11 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/crypt"
-	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -55,81 +54,6 @@ const (
 
 type Shutter interface {
 	Shutdown(context.Context) error
-}
-
-var (
-	errAuthNoEndpoint = errors.New("cannot set auth.ui_config.rbac to non-basic without setting an external auth service endpoint")
-	errInvalidAuth    = errors.New("invalid auth configuration")
-)
-
-func checkAuthModeSupport(cfg *config.BaseConfig) error {
-	if cfg.IsAuthBasic() { // Basic mode
-		return nil
-	}
-	if !cfg.IsAuthUISimplified() && !cfg.IsAdvancedAuth() {
-		return fmt.Errorf("%s: %w", cfg.Auth.UIConfig.RBAC, errInvalidAuth)
-	}
-	if !cfg.IsAuthTypeAPI() {
-		return errAuthNoEndpoint
-	}
-	return nil
-}
-
-func NewAuthService(ctx context.Context, cfg *config.BaseConfig, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) auth.Service {
-	if err := checkAuthModeSupport(cfg); err != nil {
-		logger.WithError(err).Fatal("Unsupported auth mode")
-	}
-
-	secretStore := crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey))
-	if cfg.IsAuthBasic() {
-		apiService := auth.NewBasicAuthService(
-			kvStore,
-			secretStore,
-			authparams.ServiceCache(cfg.Auth.Cache),
-			logger.WithField("service", "auth_service"),
-		)
-		// Check if migration needed
-		initialized, err := metadataManager.IsInitialized(ctx)
-		if err != nil {
-			logger.WithError(err).Fatal("failed to get lakeFS init status")
-		}
-		if initialized {
-			username, err := apiService.Migrate(ctx)
-			switch {
-			case errors.Is(err, auth.ErrMigrationNotPossible):
-				logger.WithError(err).Fatal(`
-cannot migrate existing user to basic auth mode!
-Please run "lakefs superuser -h" and follow the instructions on how to migrate an existing user
-`)
-			case err == nil:
-				if username != "" { // Print only in case of actual migration
-					logger.Infof("\nUser %s was migrated successfully!\n", username)
-				}
-			default:
-				logger.WithError(err).Fatal("basic auth migration failed")
-			}
-		}
-		return auth.NewMonitoredAuthService(apiService)
-	}
-
-	// Not Basic - using auth server
-	apiService, err := auth.NewAPIAuthService(
-		cfg.Auth.API.Endpoint,
-		cfg.Auth.API.Token.SecureValue(),
-		cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
-		secretStore,
-		authparams.ServiceCache(cfg.Auth.Cache),
-		logger.WithField("service", "auth_api"),
-	)
-	if err != nil {
-		logger.WithError(err).Fatal("failed to create authentication service")
-	}
-	if !cfg.Auth.API.SkipHealthCheck {
-		if err := apiService.CheckHealth(ctx, logger, cfg.Auth.API.HealthCheckTimeout); err != nil {
-			logger.WithError(err).Fatal("Auth API health check failed")
-		}
-	}
-	return auth.NewMonitoredAuthServiceAndInviter(apiService)
 }
 
 var runCmd = &cobra.Command{
@@ -178,7 +102,7 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService := NewAuthService(ctx, baseCfg, logger, kvStore, authMetadataManager)
+		authService := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 		// initialize authentication service
 		var authenticationService authentication.Service
 		if baseCfg.IsAuthenticationTypeAPI() {
@@ -221,7 +145,7 @@ var runCmd = &cobra.Command{
 		}
 		defer func() { _ = c.Close() }()
 
-		// usage report setup - default usage reporter is a no-op
+		// usage report setup - default usage reporter ids a no-op
 		usageReporter := stats.DefaultUsageReporter
 		if baseCfg.UsageReport.Enabled {
 			ur := stats.NewUsageReporter(metadata.InstallationID, kvStore)
@@ -353,7 +277,7 @@ var runCmd = &cobra.Command{
 			baseCfg.Logging.AuditLogLevel,
 			baseCfg.Logging.TraceRequestHeaders,
 			baseCfg.Gateways.S3.VerifyUnsupported,
-			baseCfg.IsAdvancedAuth(),
+			authService.IsAdvancedAuth(),
 		)
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 

@@ -4,5 +4,6 @@ use (
 	.
 	./modules/block/factory
 	./modules/config/factory
+	./modules/auth/factory
 	./webui
 )
