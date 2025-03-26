@@ -305,8 +305,8 @@ Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup a
 
 5. **Restore Repositories**
 
-   If you copied the data to a new location in step 4, make sure to update the storage namespace in the manifest files before restoring.
-   {: note}
+   {: .note}
+   > Note: If you copied the data to a new location in step 4, make sure to update the > storage namespace in the manifest files before restoring.
 
    Use the `--ignore-storage-id` flag to ensure repositories are created without storage IDs in the single-storage environment:
 
