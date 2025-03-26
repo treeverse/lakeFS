@@ -129,7 +129,7 @@ func (ra *Authenticator) AuthenticateUser(ctx context.Context, username, passwor
 	if err != nil {
 		return "", fmt.Errorf("get or create user: %w", err)
 	}
-	return user, nil
+	return user.Username, nil
 }
 
 func (ra *Authenticator) String() string {

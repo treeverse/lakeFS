@@ -189,7 +189,7 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
-		authenticatorChain, err := authenticationfactory.BuildAuthenticatorChain(cfg, logger, authService)
+		middlewareAuthenticator, err := authenticationfactory.BuildAuthenticatorChain(cfg, logger, authService)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create authentication chain")
 		}
@@ -215,7 +215,7 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
-			authenticatorChain,
+			middlewareAuthenticator,
 			authService,
 			authenticationService,
 			blockStore,
@@ -246,7 +246,7 @@ var runCmd = &cobra.Command{
 		cookieAuthConfig := api.CookieAuthConfig(baseCfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
-			authenticatorChain,
+			middlewareAuthenticator,
 			authService,
 			&oidcConfig,
 			&cookieAuthConfig,

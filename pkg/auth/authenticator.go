@@ -73,13 +73,13 @@ func (ba *BuiltinAuthenticator) String() string {
 }
 
 // GetOrCreateUser searches for the user by username, and if not found, creates a new user with the given username and
-// external user identifier.  It returns the username of the user.
+// external user identifier.  It returns the user.
 // This function is meant to be used by Authenticator implementations in the ChainAuthenticator.
-func GetOrCreateUser(ctx context.Context, authService Service, username, identifier, defaultUserGroup, source string) (string, error) {
-	log := logging.FromContext(ctx).WithField("input_username", username)
-	dbUsername := username
+func GetOrCreateUser(ctx context.Context, authService Service, friendlyName, identifier, defaultUserGroup, source string) (*model.User, error) {
+	log := logging.FromContext(ctx).WithField("input_username", friendlyName)
+	dbUsername := friendlyName
 
-	// if a user identifier is available, use it as the username
+	// if a user identifier is available, use it as the db username
 	if identifier != "" {
 		log = log.WithField("external_user_identifier", identifier)
 		dbUsername = identifier
@@ -88,10 +88,10 @@ func GetOrCreateUser(ctx context.Context, authService Service, username, identif
 	user, err := authService.GetUser(ctx, dbUsername)
 	if err == nil {
 		log.WithField("user", fmt.Sprintf("%+v", user)).Debug("Got existing user")
-		return user.Username, nil
+		return user, nil
 	}
 	if !errors.Is(err, ErrNotFound) {
-		return "", fmt.Errorf("get user %s: %w", dbUsername, err)
+		return nil, fmt.Errorf("get user %s: %w", dbUsername, err)
 	}
 
 	log.Info("first time remote authenticated user, creating them")
@@ -99,18 +99,18 @@ func GetOrCreateUser(ctx context.Context, authService Service, username, identif
 	newUser := &model.User{
 		CreatedAt:    time.Now().UTC(),
 		Username:     dbUsername,
-		FriendlyName: &username,
+		FriendlyName: &friendlyName,
 		Source:       source,
 	}
 
 	_, err = authService.CreateUser(ctx, newUser)
 	if err != nil {
-		return "", fmt.Errorf("create backing user for remote auth user %s: %w", newUser.Username, err)
+		return nil, fmt.Errorf("create backing user for remote auth user %s: %w", newUser.Username, err)
 	}
 
 	err = authService.AddUserToGroup(ctx, newUser.Username, defaultUserGroup)
 	if err != nil {
-		return "", fmt.Errorf("add newly created remote auth user %s to %s: %w", newUser.Username, defaultUserGroup, err)
+		return nil, fmt.Errorf("add newly created remote auth user %s to %s: %w", newUser.Username, defaultUserGroup, err)
 	}
-	return newUser.Username, nil
+	return newUser, nil
 }
