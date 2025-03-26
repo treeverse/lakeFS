@@ -218,7 +218,7 @@ The migration process involves:
 2. Deleting repositories in the multi-storage environment
 3. Configuring lakeFS with a single storage backend
 4. Copying repository data to the new single storage location (if needed)
-5. Restoring repositories to the new lakeFS instance
+5. Restoring repositories to the single storage environment
 
 #### Step-by-Step Guide
 
