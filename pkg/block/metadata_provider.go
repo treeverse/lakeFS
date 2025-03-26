@@ -2,35 +2,53 @@ package block
 
 import (
 	"context"
+	"slices"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/treeverse/lakefs/pkg/config"
 )
 
-const MetadataBlockstoreTypeKey = "blockstore_type"
+const (
+	MetadataBlockstoreTypeKey = "blockstore_type"
+	MetadataBlockstoreCount   = "blockstore_count"
+)
 
-// BlockstoreTypeMetadataProvider is a metadata provider that reports a single blockstore type.
-type BlockstoreTypeMetadataProvider struct {
-	blockstoreType string
+// MetadataProvider is a metadata provider that reports a single blockstore type.
+type MetadataProvider struct {
+	blockstoreType  string
+	blockstoreCount int
 }
 
-// GetMetadata returns metadata with a single blockstore type.
-func (p *BlockstoreTypeMetadataProvider) GetMetadata(ctx context.Context) (map[string]string, error) {
-	return map[string]string{MetadataBlockstoreTypeKey: p.blockstoreType}, nil
+// GetMetadata returns metadata with a blockstore type(s).
+// in case there is more than one blockstore - the count is also reported.
+func (p *MetadataProvider) GetMetadata(_ context.Context) (map[string]string, error) {
+	m := map[string]string{
+		MetadataBlockstoreTypeKey: p.blockstoreType,
+	}
+	if p.blockstoreCount > 1 {
+		m[MetadataBlockstoreCount] = strconv.Itoa(p.blockstoreCount)
+	}
+	return m, nil
 }
 
-// BuildMetadataProviders returns metadata providers for each unique blockstore type in the storage config.
-func BuildMetadataProviders(cfg config.StorageConfig) []*BlockstoreTypeMetadataProvider {
+// NewMetadataProvider returns metadata provider to report blockstore type(s) based on storage config.
+func NewMetadataProvider(cfg config.StorageConfig) *MetadataProvider {
 	ids := cfg.GetStorageIDs()
 
-	uniqueTypes := make(map[string]struct{})
+	var uniqueTypes []string
 	for _, id := range ids {
 		storage := cfg.GetStorageByID(id)
-		uniqueTypes[storage.BlockstoreType()] = struct{}{}
+		blockstoreType := storage.BlockstoreType()
+		if !slices.Contains(uniqueTypes, blockstoreType) {
+			uniqueTypes = append(uniqueTypes, blockstoreType)
+		}
 	}
+	sort.Strings(uniqueTypes)
 
-	var providers []*BlockstoreTypeMetadataProvider
-	for t := range uniqueTypes {
-		providers = append(providers, &BlockstoreTypeMetadataProvider{blockstoreType: t})
+	return &MetadataProvider{
+		blockstoreType:  strings.Join(uniqueTypes, ","),
+		blockstoreCount: len(ids),
 	}
-	return providers
 }

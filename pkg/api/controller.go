@@ -5170,9 +5170,10 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	}
 
 	// collect metadata
-	metadataProviders := []stats.MetadataProvider{c.MetadataManager, cloud.NewMetadataProvider()}
-	for _, p := range block.BuildMetadataProviders(c.Config.GetBaseConfig().StorageConfig()) {
-		metadataProviders = append(metadataProviders, p)
+	metadataProviders := []stats.MetadataProvider{
+		c.MetadataManager,
+		cloud.NewMetadataProvider(),
+		block.NewMetadataProvider(c.Config.GetBaseConfig().StorageConfig()),
 	}
 	meta := stats.NewMetadata(ctx, c.Logger, metadataProviders)
 

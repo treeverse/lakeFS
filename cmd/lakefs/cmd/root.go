@@ -180,10 +180,7 @@ func initStatsMetadata(ctx context.Context, logger logging.Logger, authMetadataM
 	metadataProviders := []stats.MetadataProvider{
 		authMetadataManager,
 		cloud.NewMetadataProvider(),
-	}
-	// Add block storage metadata providers
-	for _, p := range block.BuildMetadataProviders(storageConfig) {
-		metadataProviders = append(metadataProviders, p)
+		block.NewMetadataProvider(storageConfig),
 	}
 	return stats.NewMetadata(ctx, logger, metadataProviders)
 }
