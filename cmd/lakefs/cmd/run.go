@@ -188,7 +188,7 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
-		middlewareAuthenticator := auth.ChainAuthenticator{
+		authenticator := auth.ChainAuthenticator{
 			auth.NewBuiltinAuthenticator(authService),
 		}
 
@@ -199,7 +199,7 @@ var runCmd = &cobra.Command{
 				logger.WithError(err).Fatal("failed to create remote authenticator")
 			}
 
-			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
+			authenticator = append(authenticator, remoteAuthenticator)
 		}
 
 		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
@@ -223,7 +223,7 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
-			middlewareAuthenticator,
+			authenticator,
 			authService,
 			authenticationService,
 			blockStore,
@@ -253,7 +253,7 @@ var runCmd = &cobra.Command{
 		cookieAuthConfig := api.CookieAuthConfig(baseCfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
-			middlewareAuthenticator,
+			authenticator,
 			authService,
 			&oidcConfig,
 			&cookieAuthConfig,
