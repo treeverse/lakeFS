@@ -41,7 +41,7 @@ export class SetupPage {
     async goToLoginButton(): Promise<Page> {
         const pagePromise = this.page.context().waitForEvent("page");
         await this.goToLoginButtonLocator.click();
-        return await pagePromise;
+        return pagePromise;
     }
 
     async getCredentials(): Promise<LakeFSCredentials> {
