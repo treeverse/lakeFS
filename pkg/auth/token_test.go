@@ -1,6 +1,10 @@
 package auth
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"testing"
 	"time"
 
@@ -8,22 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
-
-const sampleRSAPrivateKey = `-----BEGIN RSA PRIVATE KEY-----
-MIICXwIBAAKBgQDN+wofEP/rjz8JaZz9vjuplDRoIMH0fEh2BMcbEkRLY9lbhNi/
-w0if+ytwRkH7i4thX43IQ4+EhlmbgIzzUXQfXdAct2vNbiiFy0FyNIlz67Yknt2q
-uHf2RgKGXu/vcMI7Dguyajo5mHwLiOoJ7ql86uNtquLiTvE5eLqd1gWRFQIDAQAB
-AoGBALeT2qRveTdPFsZjy1hWuEPd44s+Tr6AGfCdN3rIH/f1CJ5JWwglms+Cgmdx
-JpNy/gkNqYZnuDxLpQczXevpl4xXs5evn3mpeP668zLyzx0u6FJkS905MvOKF4vk
-O+4eAa/12dpV7vEpWiLtZc3n+h4Y4L7EEluGR6VvwEbS/5cNAkEA5t5lhgL+x6u6
-++hLOXZHg3bU7V5HfIdsoX8lAeZwgpvrcWzllZYoO7PQWaITM+ibcpjKQNCM3Jnx
-iDBkfuW5fwJBAORnFmxkwZXOxfH4DwK+oup9x34RVMHXI9Y12xy5MOgKb5vgRDeN
-el7m9DkyRYRo8TM4633gmTrFAx9Gogq5d2sCQQC6AqfjwJgMwmWmPzQUuSLHXkAS
-e+q2/9nbiLiFfmhaI0wgmC+mRVRnPep5vWchZKGSRF54uE82EmaTZwIhZ+/7AkEA
-sTXKkA8co77qlfKAswB2JrmwLoAD4uGpTGo8tux4pZBzR92ZEAEVEMzgcAAxL6q8
-eaGQFPpN6OsyoPGMiAWeQQJBAIJjzp5vKxYAA6OZuc9h7mTChqGZWE8xWhT0qUxY
-/nDqqxFYcBZ8BzD+Os3MF+Vnvewqmh4vZP69t8mVnuIF6Do=
------END RSA PRIVATE KEY-----`
 
 func TestGenerateJWTLogin(t *testing.T) {
 	secret := []byte("test-secret-key")
@@ -174,8 +162,26 @@ func TestVerifyToken_Specifics(t *testing.T) {
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
 		})
 
-		// generate rsa key pair
-		rsaKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(sampleRSAPrivateKey))
+		// generate private key and sign the JWT
+		// test will verify that this
+		const bitSize = 4096
+		privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
+		require.NoError(t, err, "Failed to generate RSA key pair")
+
+		// Get ASN.1 DER format
+		privateDER := x509.MarshalPKCS1PrivateKey(privateKey)
+
+		// pem.Block
+		privateBlock := pem.Block{
+			Type:    "RSA PRIVATE KEY",
+			Headers: nil,
+			Bytes:   privateDER,
+		}
+
+		// Private key in PEM format
+		privatePEM := pem.EncodeToMemory(&privateBlock)
+
+		rsaKey, err := jwt.ParseRSAPrivateKeyFromPEM(privatePEM)
 		require.NoError(t, err, "Failed to parse RSA private key")
 
 		invalidMethodTokenString, err := invalidMethodToken.SignedString(rsaKey)
