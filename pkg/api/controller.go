@@ -92,44 +92,42 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config                config.Config
-	Catalog               *catalog.Catalog
-	Authenticator         auth.Authenticator
-	Auth                  auth.Service
-	Authentication        authentication.Service
-	BlockAdapter          block.Adapter
-	MetadataManager       auth.MetadataManager
-	Migrator              Migrator
-	Collector             stats.Collector
-	CloudMetadataProvider cloud.MetadataProvider
-	Actions               actionsHandler
-	AuditChecker          AuditChecker
-	Logger                logging.Logger
-	sessionStore          sessions.Store
-	PathProvider          upload.PathProvider
-	usageReporter         stats.UsageReporterOperations
+	Config          config.Config
+	Catalog         *catalog.Catalog
+	Authenticator   auth.Authenticator
+	Auth            auth.Service
+	Authentication  authentication.Service
+	BlockAdapter    block.Adapter
+	MetadataManager auth.MetadataManager
+	Migrator        Migrator
+	Collector       stats.Collector
+	Actions         actionsHandler
+	AuditChecker    AuditChecker
+	Logger          logging.Logger
+	sessionStore    sessions.Store
+	PathProvider    upload.PathProvider
+	usageReporter   stats.UsageReporterOperations
 }
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
 	return &Controller{
-		Config:                cfg,
-		Catalog:               catalog,
-		Authenticator:         authenticator,
-		Auth:                  authService,
-		Authentication:        authenticationService,
-		BlockAdapter:          blockAdapter,
-		MetadataManager:       metadataManager,
-		Migrator:              migrator,
-		Collector:             collector,
-		CloudMetadataProvider: cloudMetadataProvider,
-		Actions:               actions,
-		AuditChecker:          auditChecker,
-		Logger:                logger,
-		sessionStore:          sessionStore,
-		PathProvider:          pathProvider,
-		usageReporter:         usageReporter,
+		Config:          cfg,
+		Catalog:         catalog,
+		Authenticator:   authenticator,
+		Auth:            authService,
+		Authentication:  authenticationService,
+		BlockAdapter:    blockAdapter,
+		MetadataManager: metadataManager,
+		Migrator:        migrator,
+		Collector:       collector,
+		Actions:         actions,
+		AuditChecker:    auditChecker,
+		Logger:          logger,
+		sessionStore:    sessionStore,
+		PathProvider:    pathProvider,
+		usageReporter:   usageReporter,
 	}
 }
 
@@ -5171,7 +5169,14 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataManager, c.CloudMetadataProvider)
+	// collect metadata
+	metadataProviders := []stats.MetadataProvider{
+		c.MetadataManager,
+		cloud.NewMetadataProvider(),
+		block.NewMetadataProvider(c.Config.GetBaseConfig().StorageConfig()),
+	}
+	meta := stats.NewMetadata(ctx, c.Logger, metadataProviders)
+
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})

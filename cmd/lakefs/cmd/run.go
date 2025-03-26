@@ -114,14 +114,13 @@ var runCmd = &cobra.Command{
 			authenticationService = authentication.NewDummyService()
 		}
 
-		cloudMetadataProvider := stats.BuildMetadataProvider(logger, baseCfg)
 		blockstoreType := baseCfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
-		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
@@ -189,7 +188,7 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
-		middlewareAuthenticator := auth.ChainAuthenticator{
+		authenticator := auth.ChainAuthenticator{
 			auth.NewBuiltinAuthenticator(authService),
 		}
 
@@ -200,7 +199,7 @@ var runCmd = &cobra.Command{
 				logger.WithError(err).Fatal("failed to create remote authenticator")
 			}
 
-			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
+			authenticator = append(authenticator, remoteAuthenticator)
 		}
 
 		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
@@ -224,14 +223,13 @@ var runCmd = &cobra.Command{
 		apiHandler := api.Serve(
 			cfg,
 			c,
-			middlewareAuthenticator,
+			authenticator,
 			authService,
 			authenticationService,
 			blockStore,
 			authMetadataManager,
 			migrator,
 			bufferedCollector,
-			cloudMetadataProvider,
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
@@ -255,7 +253,7 @@ var runCmd = &cobra.Command{
 		cookieAuthConfig := api.CookieAuthConfig(baseCfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
-			middlewareAuthenticator,
+			authenticator,
 			authService,
 			&oidcConfig,
 			&cookieAuthConfig,
