@@ -1,14 +1,14 @@
-import React, { FC, useCallback, useContext } from "react";
+import React, {FC, useCallback, useContext} from "react";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
-import {DownloadIcon} from "@primer/octicons-react";
 import {ClipboardButton} from "../../lib/components/controls";
-import { useRouter } from "../../lib/hooks/router";
+import {useRouter} from "../../lib/hooks/router";
 import noop from "lodash/noop";
-import { AppContext } from "../../lib/hooks/appContext";
+import {AppContext} from "../../lib/hooks/appContext";
+import {DownloadCredentialsButton} from "../../lib/components/auth/credentials";
 
 interface SetupCompleteProps {
     accessKeyId: string;
@@ -17,18 +17,11 @@ interface SetupCompleteProps {
 }
 
 export const SetupComplete: FC<SetupCompleteProps> = ({
-    accessKeyId,
-    secretAccessKey,
-    apiEndpoint,
-}) => {
+                                                          accessKeyId,
+                                                          secretAccessKey,
+                                                          apiEndpoint,
+                                                      }) => {
     const router = useRouter();
-    const downloadContent = 'data:application/octet-stream,' + encodeURIComponent(`# lakectl command line configuration - save under the filename $HOME/.lakectl.yaml
-credentials:
-    access_key_id: ${accessKeyId}
-    secret_access_key: ${secretAccessKey}
-server:
-    endpoint_url: ${window.location.protocol}//${window.location.host}${apiEndpoint}
-`);
     const {state} = useContext(AppContext);
     const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
 
@@ -47,46 +40,56 @@ server:
 
     return (
         <>
-        <Row>
-            <Col md={{offset: 3, span: 6}}>
-                <Card className="setup-widget">
-                    <Card.Body className="after-setup-card">
-                        <h2>You&apos;re all set!</h2>
-                        <Card.Text>
-                            Here are your credentials:<br/>
-                        </Card.Text>
-                        <div className="ms-2 row mt-4">
-                            <div className="col-4">Access Key ID:</div>
-                            <div className="col-8"><code>{accessKeyId}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant={buttonVariant} text={accessKeyId} tooltip="Copy"/></div>
-                        </div>
-                        <div className="ms-2 row mt-2">
-                            <div className="col-4">Secret Access Key:</div>
-                            <div className="col-8"><code>{secretAccessKey}</code> &#160;&#160;<ClipboardButton onSuccess={noop} onError={noop} className={"copy-button"} variant={buttonVariant} text={secretAccessKey} tooltip="Copy"/></div>
-                        </div>
-                        <Alert className="mt-4" variant="warning">
-                            This is the <strong>only</strong> time that the secret access keys can be viewed or downloaded. You cannot recover them later.
-                            <div className="mt-3 text-md-center">
-                                <a className="btn p-2 pl-3 pr-3 after-setup-btn"
-                                   style={{backgroundColor: '#808080'}}
-                                   href={downloadContent}
-                                   target="_blank" rel="noreferrer" download="lakectl.yaml"><DownloadIcon/> Download credentials
-                                </a>
+            <Row>
+                <Col md={{offset: 3, span: 6}}>
+                    <Card className="setup-widget">
+                        <Card.Body className="after-setup-card">
+                            <h2>You&apos;re all set!</h2>
+                            <Card.Text>
+                                Here are your credentials:<br/>
+                            </Card.Text>
+                            <div className="ms-2 row mt-4">
+                                <div className="col-4">Access Key ID:</div>
+                                <div className="col-8"><code>{accessKeyId}</code> &#160;&#160;<ClipboardButton
+                                    onSuccess={noop} onError={noop} className={"copy-button"} variant={buttonVariant}
+                                    text={accessKeyId} tooltip="Copy"/></div>
                             </div>
-                        </Alert>
-                        <h5>lakectl</h5>
-                        <div className="ms-2 mt-2">
-                            <a target="_blank" rel="noreferrer" 
-                               href="https://docs.lakefs.io/reference/cli.html">lakectl</a> is a CLI tool for working with lakeFS.
-                            <p className="mt-2">
-                            Download lakectl as part of the <a target="_blank" rel="noreferrer" href="https://github.com/treeverse/lakeFS/releases">lakeFS release package</a> and save the above credentials file as <code>~/.lakectl.yaml</code>.
-                            </p>
-                        </div>
-                        <div className="mt-3 text-md-center">
-                            <Button className="p-2 pl-3 pr-3 after-setup-btn" onClick={goToLoginHandler}>Go To Login</Button>
-                        </div>
-                    </Card.Body>
-                </Card>
-            </Col>
-        </Row></>
+                            <div className="ms-2 row mt-2">
+                                <div className="col-4">Secret Access Key:</div>
+                                <div className="col-8"><code>{secretAccessKey}</code> &#160;&#160;<ClipboardButton
+                                    onSuccess={noop} onError={noop} className={"copy-button"} variant={buttonVariant}
+                                    text={secretAccessKey} tooltip="Copy"/></div>
+                            </div>
+                            <Alert className="mt-4" variant="warning">
+                                This is the <strong>only</strong> time that the secret access keys can be viewed or
+                                downloaded. You cannot recover them later.
+                                <div className="mt-3 text-md-center">
+                                    <DownloadCredentialsButton
+                                        accessKeyId={accessKeyId}
+                                        secretAccessKey={secretAccessKey}
+                                        apiEndpoint={apiEndpoint}
+                                    />
+                                </div>
+                            </Alert>
+                            <h5>lakectl</h5>
+                            <div className="ms-2 mt-2">
+                                <a target="_blank" rel="noreferrer"
+                                   href="https://docs.lakefs.io/reference/cli.html">lakectl</a> is a CLI tool for
+                                working with lakeFS.
+                                <p className="mt-2">
+                                    Download lakectl as part of the <a target="_blank" rel="noreferrer"
+                                                                       href="https://github.com/treeverse/lakeFS/releases">lakeFS
+                                    release package</a> and save the above credentials file
+                                    as <code>~/.lakectl.yaml</code>.
+                                </p>
+                            </div>
+                            <div className="mt-3 text-md-center">
+                                <Button className="p-2 pl-3 pr-3 after-setup-btn" onClick={goToLoginHandler}>Go To
+                                    Login</Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row></>
     );
 }
