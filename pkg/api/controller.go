@@ -591,7 +591,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
-	tokenString, err := GenerateJWTLogin(secret, user.Username, loginTime, expires)
+	tokenString, err := auth.GenerateJWTLogin(secret, user.Username, loginTime, expires)
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
@@ -642,7 +642,7 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 	loginTime := time.Now()
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
-	tokenString, err := GenerateJWTLogin(secret, externalPrincipalIDInfo.UserID, loginTime, expires)
+	tokenString, err := auth.GenerateJWTLogin(secret, externalPrincipalIDInfo.UserID, loginTime, expires)
 	if err != nil {
 		c.Logger.WithField("user_id", externalPrincipalIDInfo.UserID).WithError(err).Error("failed to generate JWT")
 		writeError(w, r, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
@@ -672,7 +672,7 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 	}
 	now := time.Now()
 	expiresAt := now.Add(time.Duration(expiresInSec) * time.Second)
-	token, err := GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), user.Username, now, expiresAt)
+	token, err := auth.GenerateJWTLogin(c.Auth.SecretStore().SharedSecret(), user.Username, now, expiresAt)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -5430,7 +5430,6 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
 	writeResponse(w, r, http.StatusCreated, response)
 }
 

@@ -10,6 +10,7 @@ import (
 type EventType string
 
 const (
+	EventTypePrepareCommit    EventType = "prepare-commit"
 	EventTypePreCommit        EventType = "pre-commit"
 	EventTypePostCommit       EventType = "post-commit"
 	EventTypePreMerge         EventType = "pre-merge"
@@ -22,6 +23,8 @@ const (
 	EventTypePostCreateBranch EventType = "post-create-branch"
 	EventTypePreDeleteBranch  EventType = "pre-delete-branch"
 	EventTypePostDeleteBranch EventType = "post-delete-branch"
+	EventTypePreRevert        EventType = "pre-revert"
+	EventTypePostRevert       EventType = "post-revert"
 
 	UnixYear3000 = 32500915200
 )
@@ -50,6 +53,7 @@ type HookRecord struct {
 }
 
 type HooksHandler interface {
+	PrepareCommitHook(ctx context.Context, record HookRecord) error
 	PreCommitHook(ctx context.Context, record HookRecord) error
 	PostCommitHook(ctx context.Context, record HookRecord) error
 	PreMergeHook(ctx context.Context, record HookRecord) error
@@ -62,11 +66,17 @@ type HooksHandler interface {
 	PostCreateBranchHook(ctx context.Context, record HookRecord)
 	PreDeleteBranchHook(ctx context.Context, record HookRecord) error
 	PostDeleteBranchHook(ctx context.Context, record HookRecord)
+	PreRevertHook(ctx context.Context, record HookRecord) error
+	PostRevertHook(ctx context.Context, record HookRecord) error
 	// NewRunID TODO (niro): WA for now until KV feature complete
 	NewRunID() string
 }
 
 type HooksNoOp struct{}
+
+func (h *HooksNoOp) PrepareCommitHook(context.Context, HookRecord) error {
+	return nil
+}
 
 func (h *HooksNoOp) PreCommitHook(context.Context, HookRecord) error {
 	return nil
@@ -110,6 +120,14 @@ func (h *HooksNoOp) PreDeleteBranchHook(context.Context, HookRecord) error {
 }
 
 func (h *HooksNoOp) PostDeleteBranchHook(context.Context, HookRecord) {
+}
+
+func (h *HooksNoOp) PreRevertHook(context.Context, HookRecord) error {
+	return nil
+}
+
+func (h *HooksNoOp) PostRevertHook(context.Context, HookRecord) error {
+	return nil
 }
 
 func (h *HooksNoOp) NewRunID() string {

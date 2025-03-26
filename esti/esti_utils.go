@@ -487,7 +487,6 @@ func UploadContent(ctx context.Context, repo, branch, objPath, objContent string
 		return nil, fmt.Errorf("close form file: %w", err)
 	}
 
-	fmt.Println("call UploadObjectWithBodyWithResponse")
 	return clt.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)
@@ -632,7 +631,7 @@ func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref s
 		if len(runs.Results) == l {
 			return nil
 		}
-		return fmt.Errorf("size: %d: %w", len(runs.Results), errRunResultsSize)
+		return fmt.Errorf("size: %d: expected: %d, %w", len(runs.Results), l, errRunResultsSize)
 	}
 	err := backoff.Retry(listFunc, bo)
 	require.NoError(t, err)

@@ -474,7 +474,7 @@ func NewTestApiService(t *testing.T, withCache bool) (*mock.MockClientWithRespon
 		cacheParams.TTL = time.Minute
 		cacheParams.Jitter = time.Minute
 	}
-	s, err := auth.NewAPIAuthServiceWithClient(mockClient, true, secretStore, cacheParams, logging.ContextUnavailable())
+	s, err := auth.NewAPIAuthServiceWithClient(mockClient, true, true, secretStore, cacheParams, logging.ContextUnavailable())
 	if err != nil {
 		t.Fatalf("failed initiating API service with mock")
 	}
@@ -2135,7 +2135,7 @@ func TestAPIService_RequestIDPropagation(t *testing.T) {
 	}))
 	secretStore := crypt.NewSecretStore([]byte("secret"))
 	cacheParams := authparams.ServiceCache{}
-	service, err := auth.NewAPIAuthService(innerServer.URL, "token", true, secretStore, cacheParams, logging.ContextUnavailable())
+	service, err := auth.NewAPIAuthService(innerServer.URL, "token", true, true, secretStore, cacheParams, logging.ContextUnavailable())
 	if err != nil {
 		t.Fatal(err)
 	}
