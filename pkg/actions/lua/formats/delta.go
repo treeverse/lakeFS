@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+
 	"github.com/csimplestring/delta-go/storage"
 	"gocloud.dev/blob"
-	"regexp"
 
 	"github.com/Shopify/go-lua"
 	"github.com/aws/aws-sdk-go-v2/aws"
