@@ -41,6 +41,10 @@ func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf par
 	return res
 }
 
+func (s *AuthService) IsAdvancedAuth() bool {
+	return false
+}
+
 func (s *AuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix []byte, secondary bool) ([]proto.Message, *model.Paginator, error) {
 	var (
 		it    kv.MessageIterator
