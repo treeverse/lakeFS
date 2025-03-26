@@ -1,5 +1,0 @@
-Repository: lakefs://${REPO2}
-Repository '${REPO2}' created:
-storage namespace: ${STORAGE2}
-default branch: ${BRANCH}
-timestamp: <TIMESTAMP>

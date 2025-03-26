@@ -75,7 +75,6 @@ crash.log
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
-.sdkmanrc
 
 .eslintcache
 /clients/java/.openapi-generator/FILES

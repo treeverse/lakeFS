@@ -1159,29 +1159,37 @@ func TestLakectlBranchList(t *testing.T) {
 		"DEST_BRANCH":   tempBranch,
 	}
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tempBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", branchVars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch list lakefs://"+repoName, false, "lakectl_branch_list", branchVars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch list lakefs://"+repoName+" --prefix="+tempBranch, false, "lakectl_branch_list_prefix", branchVars)
+
+	t.Run("default", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch list lakefs://"+repoName, false, "lakectl_branch_list", branchVars)
+	})
+
+	t.Run("with prefix", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch list lakefs://"+repoName+" --prefix="+tempBranch, false, "lakectl_branch_list_prefix", branchVars)
+	})
 }
 
 func TestLakectlRepoList(t *testing.T) {
 	repoName := "a" + GenerateUniqueRepositoryName()
 	repoName2 := "b" + GenerateUniqueRepositoryName()
-	storage := GenerateUniqueStorageNamespace(repoName)
+	storage1 := GenerateUniqueStorageNamespace(repoName)
 	storage2 := GenerateUniqueStorageNamespace(repoName2)
-	vars := map[string]string{
+
+	repo1Vars := map[string]string{
 		"REPO":    repoName,
-		"STORAGE": storage,
+		"STORAGE": storage1,
 		"BRANCH":  mainBranch,
 	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage1, false, "lakectl_repo_create", repo1Vars)
 
-	repoVars := map[string]string{
-		"REPO1":    repoName,
-		"REPO2":    repoName2,
-		"STORAGE1": storage,
-		"STORAGE2": storage2,
-		"BRANCH":   mainBranch,
+	repo2Vars := map[string]string{
+		"REPO":    repoName2,
+		"STORAGE": storage2,
+		"BRANCH":  mainBranch,
 	}
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName2+" "+storage2, false, "lakectl_repo_create_2", repoVars)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list --prefix=a", false, "lakectl_repo_list_prefix", repoVars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName2+" "+storage2, false, "lakectl_repo_create", repo2Vars)
+
+	t.Run("with prefix", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list --prefix=b", false, "lakectl_repo_list_prefix", repo2Vars)
+	})
 }

@@ -1266,7 +1266,7 @@ lakectl branch list lakefs://my-repo
       --after string    show results after this value (used for pagination)
       --amount int      number of results to return (default 100)
   -h, --help            help for list
-      --prefix string   show only branches with this prefix
+      --prefix string   filter according to this prefix
 ```
 
 
@@ -2695,7 +2695,7 @@ lakectl repo list [flags]
       --after string    show results after this value (used for pagination)
       --amount int      number of results to return (default 100)
   -h, --help            help for list
-      --prefix string   show results with this prefix
+      --prefix string   filter according to this prefix
 ```
 
 
