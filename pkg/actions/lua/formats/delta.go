@@ -21,7 +21,7 @@ const (
 	s3StorageType storageType = "s3"
 )
 
-var errUnimplementedProvided = errors.New("unimplemented provider")
+var ErrUnimplementedProvided = errors.New("unimplemented provider")
 
 type DeltaClient struct {
 	accessProvider AccessProvider
@@ -112,7 +112,7 @@ func (dc *DeltaClient) fetchTableLog(repo, ref, prefix string) (map[int64][]stri
 	case AWSInfo:
 		return dc.fetchS3Table(repo, ref, prefix)
 	default:
-		return nil, nil, errUnimplementedProvided
+		return nil, nil, ErrUnimplementedProvided
 	}
 }
 
