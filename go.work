@@ -2,8 +2,8 @@ go 1.23
 
 use (
 	.
-	./modules/authentication/factory
 	./modules/auth/factory
+	./modules/authentication/factory
 	./modules/block/factory
 	./modules/config/factory
 	./webui
