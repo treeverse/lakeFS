@@ -74,6 +74,7 @@ docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
 docs/PolicyList.md
+docs/PolicyV2.md
 docs/PrepareGCUncommittedRequest.md
 docs/PrepareGCUncommittedResponse.md
 docs/PresignMultipartUpload.md
@@ -105,6 +106,7 @@ docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
 docs/Statement.md
+docs/StatementV2.md
 docs/StatsEvent.md
 docs/StatsEventsList.md
 docs/StorageConfig.md
@@ -209,6 +211,7 @@ lakefs_sdk/models/pagination.py
 lakefs_sdk/models/path_list.py
 lakefs_sdk/models/policy.py
 lakefs_sdk/models/policy_list.py
+lakefs_sdk/models/policy_v2.py
 lakefs_sdk/models/prepare_gc_uncommitted_request.py
 lakefs_sdk/models/prepare_gc_uncommitted_response.py
 lakefs_sdk/models/presign_multipart_upload.py
@@ -236,6 +239,7 @@ lakefs_sdk/models/setup_state.py
 lakefs_sdk/models/staging_location.py
 lakefs_sdk/models/staging_metadata.py
 lakefs_sdk/models/statement.py
+lakefs_sdk/models/statement_v2.py
 lakefs_sdk/models/stats_event.py
 lakefs_sdk/models/stats_events_list.py
 lakefs_sdk/models/storage_config.py
@@ -334,6 +338,7 @@ test/test_pagination.py
 test/test_path_list.py
 test/test_policy.py
 test/test_policy_list.py
+test/test_policy_v2.py
 test/test_prepare_gc_uncommitted_request.py
 test/test_prepare_gc_uncommitted_response.py
 test/test_presign_multipart_upload.py
@@ -365,6 +370,7 @@ test/test_staging_api.py
 test/test_staging_location.py
 test/test_staging_metadata.py
 test/test_statement.py
+test/test_statement_v2.py
 test/test_stats_event.py
 test/test_stats_events_list.py
 test/test_storage_config.py

@@ -188,6 +188,13 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_get_policy_v2(self) -> None:
+        """Test case for get_policy_v2
+
+        get policy with resources list  # noqa: E501
+        """
+        pass
+
     def test_get_user(self) -> None:
         """Test case for get_user
 

@@ -77,6 +77,7 @@ docs/Pagination.md
 docs/PathList.md
 docs/Policy.md
 docs/PolicyList.md
+docs/PolicyV2.md
 docs/PrepareGcUncommittedRequest.md
 docs/PrepareGcUncommittedResponse.md
 docs/PresignMultipartUpload.md
@@ -108,6 +109,7 @@ docs/StagingApi.md
 docs/StagingLocation.md
 docs/StagingMetadata.md
 docs/Statement.md
+docs/StatementV2.md
 docs/StatsEvent.md
 docs/StatsEventsList.md
 docs/StorageConfig.md
@@ -210,6 +212,7 @@ src/models/pagination.rs
 src/models/path_list.rs
 src/models/policy.rs
 src/models/policy_list.rs
+src/models/policy_v2.rs
 src/models/prepare_gc_uncommitted_request.rs
 src/models/prepare_gc_uncommitted_response.rs
 src/models/presign_multipart_upload.rs
@@ -236,6 +239,7 @@ src/models/setup_state.rs
 src/models/staging_location.rs
 src/models/staging_metadata.rs
 src/models/statement.rs
+src/models/statement_v2.rs
 src/models/stats_event.rs
 src/models/stats_events_list.rs
 src/models/storage_config.rs

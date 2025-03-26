@@ -32,6 +32,7 @@ import io.lakefs.clients.sdk.model.GroupList;
 import io.lakefs.clients.sdk.model.LoginInformation;
 import io.lakefs.clients.sdk.model.Policy;
 import io.lakefs.clients.sdk.model.PolicyList;
+import io.lakefs.clients.sdk.model.PolicyV2;
 import io.lakefs.clients.sdk.model.User;
 import io.lakefs.clients.sdk.model.UserCreation;
 import io.lakefs.clients.sdk.model.UserList;
@@ -360,6 +361,19 @@ public class AuthApiTest {
     public void getPolicyTest() throws ApiException {
         String policyId = null;
         Policy response = api.getPolicy(policyId)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * get policy with resources list
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getPolicyV2Test() throws ApiException {
+        String policyId = null;
+        PolicyV2 response = api.getPolicyV2(policyId)
                 .execute();
         // TODO: test validations
     }

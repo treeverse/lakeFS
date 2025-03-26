@@ -1244,6 +1244,24 @@ func serializePolicy(p *model.Policy) apigen.Policy {
 	}
 }
 
+func serializePolicyV2(p *model.Policy) apigen.PolicyV2 {
+	stmts := make([]apigen.StatementV2, 0, len(p.Statement))
+	for _, s := range p.Statement {
+		resourceV2, _ := auth.ParseResources(s.Resource)
+		stmts = append(stmts, apigen.StatementV2{
+			Action:   s.Action,
+			Effect:   s.Effect,
+			Resource: resourceV2,
+		})
+	}
+	createdAt := p.CreatedAt.Unix()
+	return apigen.PolicyV2{
+		Id:           p.DisplayName,
+		CreationDate: &createdAt,
+		Statement:    &stmts,
+	}
+}
+
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
 	if c.Config.GetBaseConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
@@ -1425,6 +1443,34 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 	}
 
 	response := serializePolicy(p)
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) GetPolicyV2(w http.ResponseWriter, r *http.Request, policyID string) {
+	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+		writeError(w, r, http.StatusNotImplemented, "Not implemented")
+		return
+	}
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.ReadPolicyAction,
+			Resource: permissions.PolicyArn(policyID),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "get_policy", r, "", "", "")
+	p, err := c.Auth.GetPolicy(ctx, policyID)
+	if errors.Is(err, auth.ErrNotFound) {
+		writeError(w, r, http.StatusNotFound, "policy not found")
+		return
+	}
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	response := serializePolicyV2(p)
 	writeResponse(w, r, http.StatusOK, response)
 }
 
