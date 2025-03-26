@@ -206,7 +206,7 @@ configurations. In multi-storage setups, this is the recommended method to list 
 | Missing `backward_compatible`                                       | Upgrade from single to multi-storage without setting the flag | Add `backward_compatible: true` for the existing storage |
 | Unsupported configurations in OSS or unlicensed Enterprise accounts | Using multi-storage features in an unsupported setup | Contact us to start using the feature                    |
 
-### Migrating from Multi-Storage Backend to Single Storage Backend
+### Migrating from Multiple Storage Backend to Single Storage Backend
 
 Once you upgrade to a multi-storage setup, you cannot simply revert back by changing the configuration from `blockstores` to `blockstore`. The internal repository metadata format changes to support multiple storage backends, and is not backward compatible with the single storage format. If you need to consolidate your data and revert from a multi-storage setup to a single storage backend, you'll need to perform a full migration by following these steps:
 
