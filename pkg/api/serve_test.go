@@ -3,6 +3,7 @@ package api_test
 import (
 	"context"
 	"fmt"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -111,8 +112,8 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
 
 	collector := &memCollector{}
-	cfg := &config.BaseConfig{}
-	cfg, err := config.NewConfig("", cfg)
+	cfg := &configfactory.ConfigWithAuth{}
+	baseCfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 	kvStore := kvtest.GetStore(ctx, t)
 	actionsStore := actions.NewActionsKVStore(kvStore)
@@ -120,7 +121,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	authService := auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	}, logging.FromContext(ctx))
-	meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+	meta := auth.NewKVMetadataManager("serve_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
 
 	// Do not validate invalid config (missing required fields).
 	c, err := catalog.New(ctx, catalog.Config{
@@ -148,7 +149,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	c.SetHooksHandler(actionsService)
 
 	authenticator := auth.NewBuiltinAuthenticator(authService)
-	kvParams, err := kvparams.NewConfig(&cfg.Database)
+	kvParams, err := kvparams.NewConfig(&baseCfg.Database)
 	testutil.Must(t, err)
 	migrator := kv.NewDatabaseMigrator(kvParams)
 
@@ -157,7 +158,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		_ = c.Close()
 	})
 
-	auditChecker := version.NewDefaultAuditChecker(cfg.Security.AuditCheckURL, "", nil)
+	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 
 	authenticationService := authentication.NewDummyService()
 	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)

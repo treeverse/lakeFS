@@ -25,10 +25,12 @@ var setupCmd = &cobra.Command{
 	Aliases: []string{"init"},
 	Short:   "Setup a new lakeFS instance with initial credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := loadConfig().GetBaseConfig()
+		cfg := loadConfig()
+		authConfig := cfg.GetAuthConfig()
+		baseConfig := cfg.GetBaseConfig()
 
 		ctx := cmd.Context()
-		kvParams, err := kvparams.NewConfig(&cfg.Database)
+		kvParams, err := kvparams.NewConfig(&baseConfig.Database)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "KV params: %s\n", err)
 			os.Exit(1)
@@ -41,7 +43,7 @@ var setupCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if cfg.Auth.UIConfig.RBAC == config.AuthRBACExternal {
+		if authConfig.UIConfig.RBAC == config.AuthRBACExternal {
 			// nothing to do - users are managed elsewhere
 			return
 		}
@@ -77,7 +79,7 @@ var setupCmd = &cobra.Command{
 		defer kvStore.Close()
 
 		logger := logging.FromContext(ctx)
-		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
 		authService = authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 
@@ -92,7 +94,7 @@ var setupCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)
-		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats),
+		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseConfig.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 		collector.Start(ctx)
 		defer collector.Close()
@@ -107,7 +109,7 @@ var setupCmd = &cobra.Command{
 	},
 }
 
-func setupLakeFS(ctx context.Context, cfg *config.BaseConfig, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string, noSetupCheck bool) (*model.Credential, error) {
+func setupLakeFS(ctx context.Context, cfg config.Config, metadataManager auth.MetadataManager, authService auth.Service, userName string, accessKeyID string, secretAccessKey string, noSetupCheck bool) (*model.Credential, error) {
 	var (
 		err            error
 		isCommPrefsSet = false

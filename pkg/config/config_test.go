@@ -23,7 +23,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func newConfigFromFile(fn string) (*config.BaseConfig, error) {
+func newConfigFromFile(fn string) (config.Config, error) {
 	viper.SetConfigFile(fn)
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -34,17 +34,17 @@ func newConfigFromFile(fn string) (*config.BaseConfig, error) {
 		return nil, err
 	}
 	err = cfg.Validate()
-	return cfg.GetBaseConfig(), err
+	return cfg, err
 }
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	cfg := &config.BaseConfig{}
-	cfg, err := config.NewConfig("", cfg)
+	cfg := &configfactory.ConfigWithAuth{}
+	baseCfg, err := config.NewConfig("", cfg)
 	testutil.Must(t, err)
 	// Don't validate, some tested configs don't have all required fields.
-	if cfg.ListenAddress != config.DefaultListenAddress {
-		t.Fatalf("expected listen addr '%s', got '%s'", config.DefaultListenAddress, cfg.ListenAddress)
+	if baseCfg.ListenAddress != config.DefaultListenAddress {
+		t.Fatalf("expected listen addr '%s', got '%s'", config.DefaultListenAddress, baseCfg.ListenAddress)
 	}
 }
 
@@ -52,10 +52,11 @@ func TestConfig_NewFromFile(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_config.yaml")
 		testutil.Must(t, err)
-		if c.ListenAddress != "0.0.0.0:8005" {
-			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.ListenAddress)
+		baseConfig := c.GetBaseConfig()
+		if baseConfig.ListenAddress != "0.0.0.0:8005" {
+			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", baseConfig.ListenAddress)
 		}
-		if diffs := deep.Equal([]string(c.Gateways.S3.DomainNames), []string{"s3.example.com", "gs3.example.com", "gcp.example.net"}); diffs != nil {
+		if diffs := deep.Equal([]string(baseConfig.Gateways.S3.DomainNames), []string{"s3.example.com", "gs3.example.com", "gcp.example.net"}); diffs != nil {
 			t.Fatalf("expected domain name s3.example.com, diffs %s", diffs)
 		}
 	})
@@ -95,7 +96,7 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	kvParams, err := kvparams.NewConfig(&c.Database)
+	kvParams, err := kvparams.NewConfig(&c.GetBaseConfig().Database)
 	testutil.Must(t, err)
 	if kvParams.Postgres.ConnectionString != dbString {
 		t.Errorf("got DB connection string %s, expected to override to %s", kvParams.Postgres.ConnectionString, dbString)

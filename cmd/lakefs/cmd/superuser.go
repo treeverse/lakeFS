@@ -31,8 +31,10 @@ To do that provide the user name as well as the access key ID to import.
 If the wrong user or credentials were chosen it is possible to delete the user and perform the action again.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := loadConfig().GetBaseConfig()
-		if cfg.Auth.UIConfig.RBAC == config.AuthRBACExternal {
+		cfg := loadConfig()
+		authConfig := cfg.GetAuthConfig()
+		baseConfig := cfg.GetBaseConfig()
+		if authConfig.UIConfig.RBAC == config.AuthRBACExternal {
 			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
 			os.Exit(1)
 		}
@@ -55,7 +57,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 
 		logger := logging.ContextUnavailable()
 		ctx := cmd.Context()
-		kvParams, err := kvparams.NewConfig(&cfg.Database)
+		kvParams, err := kvparams.NewConfig(&baseConfig.Database)
 		if err != nil {
 			fmt.Printf("KV params: %s\n", err)
 			os.Exit(1)
@@ -67,21 +69,21 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		}
 
 		var authService auth.Service
-		secretStore := crypt.NewSecretStore([]byte(cfg.Auth.Encrypt.SecretKey))
+		secretStore := crypt.NewSecretStore([]byte(authConfig.Encrypt.SecretKey))
 		authLogger := logger.WithField("service", "auth_api")
 		addToAdmins := true
 		switch {
-		case cfg.IsAuthBasic():
-			authService = auth.NewBasicAuthService(kvStore, secretStore, authparams.ServiceCache(cfg.Auth.Cache), authLogger)
+		case authConfig.IsAuthBasic():
+			authService = auth.NewBasicAuthService(kvStore, secretStore, authparams.ServiceCache(authConfig.Cache), authLogger)
 			addToAdmins = false
-		case cfg.IsAuthUISimplified() && cfg.IsAuthenticationTypeAPI(): // ACL server
+		case authConfig.IsAuthUISimplified() && authConfig.IsAuthenticationTypeAPI(): // ACL server
 			authService, err = auth.NewAPIAuthService(
-				cfg.Auth.API.Endpoint,
-				cfg.Auth.API.Token.SecureValue(),
-				cfg.IsAdvancedAuth(),
-				cfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
+				authConfig.API.Endpoint,
+				authConfig.API.Token.SecureValue(),
+				authConfig.IsAdvancedAuth(),
+				authConfig.AuthenticationAPI.ExternalPrincipalsEnabled,
 				secretStore,
-				authparams.ServiceCache(cfg.Auth.Cache),
+				authparams.ServiceCache(authConfig.Cache),
 				authLogger)
 			if err != nil {
 				fmt.Printf("Failed to initialize auth service: %s\n", err)
@@ -91,8 +93,8 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 			logger.Fatal("invalid auth mode for superuser command")
 		}
 
-		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
-		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, baseConfig.StorageConfig())
 
 		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
@@ -108,7 +110,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)
-		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(cfg.Stats),
+		collector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseConfig.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 		collector.Start(ctx)
 		defer collector.Close()

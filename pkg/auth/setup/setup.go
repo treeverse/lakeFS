@@ -156,10 +156,10 @@ func CreateRBACBaseGroups(ctx context.Context, authService auth.Service, ts time
 }
 
 // CreateAdminUser setup base groups, policies and create admin user
-func CreateAdminUser(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
+func CreateAdminUser(ctx context.Context, authService auth.Service, superuser *model.SuperuserConfiguration) (*model.Credential, error) {
 	// Set up the basic groups and policies
 	now := time.Now()
-	err := CreateBaseGroups(ctx, authService, cfg, now)
+	err := CreateBaseGroups(ctx, authService, now)
 	if err != nil {
 		return nil, err
 	}
@@ -214,11 +214,11 @@ func AddAdminUser(ctx context.Context, authService auth.Service, user *model.Sup
 	return creds, nil
 }
 
-func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, metadataManger auth.MetadataManager, username string) (*model.Credential, error) {
+func CreateInitialAdminUser(ctx context.Context, authService auth.Service, cfg config.Config, metadataManger auth.MetadataManager, username string) (*model.Credential, error) {
 	return CreateInitialAdminUserWithKeys(ctx, authService, cfg, metadataManger, username, nil, nil)
 }
 
-func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, metadataManager auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
+func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Service, cfg config.Config, metadataManager auth.MetadataManager, username string, accessKeyID *string, secretAccessKey *string) (*model.Credential, error) {
 	adminUser := &model.SuperuserConfiguration{
 		User: model.User{
 			CreatedAt: time.Now(),
@@ -235,23 +235,24 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 		cred *model.Credential
 		err  error
 	)
-	if cfg.IsAuthBasic() {
+	authCfg := cfg.GetAuthConfig()
+	if authCfg.IsAuthBasic() {
 		if cred, err = AddAdminUser(ctx, authService, adminUser, false); err != nil {
 			return nil, err
 		}
-	} else if cred, err = CreateAdminUser(ctx, authService, cfg, adminUser); err != nil {
+	} else if cred, err = CreateAdminUser(ctx, authService, adminUser); err != nil {
 		return nil, err
 	}
 
 	// update setup time with auth type used
-	if err = metadataManager.UpdateSetupTimestamp(ctx, time.Now(), cfg.Auth.UIConfig.RBAC); err != nil {
+	if err = metadataManager.UpdateSetupTimestamp(ctx, time.Now(), authCfg.UIConfig.RBAC); err != nil {
 		logging.FromContext(ctx).WithError(err).Error("Failed the update setup timestamp")
 	}
 
 	return cred, err
 }
 
-func CreateBaseGroups(ctx context.Context, authService auth.Service, cfg *config.BaseConfig, ts time.Time) error {
+func CreateBaseGroups(ctx context.Context, authService auth.Service, ts time.Time) error {
 	if !authService.IsAdvancedAuth() {
 		return nil
 	}
