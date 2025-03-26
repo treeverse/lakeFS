@@ -124,8 +124,13 @@ func (ra *Authenticator) AuthenticateUser(ctx context.Context, username, passwor
 		return "", err
 	}
 
+	dbUsername := username
+	// if the external authentication service provided an external user identifier, use it as the username
 	externalUserIdentifier := swag.StringValue(res.ExternalUserIdentifier)
-	user, err := auth.GetOrCreateUser(ctx, ra.AuthService, username, externalUserIdentifier, ra.Config.DefaultUserGroup, remoteAuthSource)
+	if externalUserIdentifier != "" {
+		dbUsername = externalUserIdentifier
+	}
+	user, err := auth.GetOrCreateUser(ctx, log, ra.AuthService, dbUsername, username, ra.Config.DefaultUserGroup, remoteAuthSource)
 	if err != nil {
 		return "", fmt.Errorf("get or create user: %w", err)
 	}
