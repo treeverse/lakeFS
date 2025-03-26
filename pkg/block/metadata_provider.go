@@ -34,6 +34,8 @@ func (p *MetadataProvider) GetMetadata(_ context.Context) (map[string]string, er
 }
 
 // NewMetadataProvider returns metadata provider to report blockstore type(s) based on storage config.
+// It reports the blockstore type(s) and the count of blockstores.
+// The blockstore type(s) are sorted and joined by comma.
 func NewMetadataProvider(cfg config.StorageConfig) *MetadataProvider {
 	ids := cfg.GetStorageIDs()
 
