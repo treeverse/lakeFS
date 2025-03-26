@@ -222,9 +222,11 @@ The migration process involves:
 
 #### Step-by-Step Guide
 
+Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup and Restore](backup-and-restore.md#python-script-for-refs-management).
+
 1. **Dump Repository References**
 
-   Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup and Restore](backup-and-restore.md#python-script-for-refs-management) to dump repository metadata:
+   To dump the repository metadata:
 
    ```bash
    # Dump a single repository
