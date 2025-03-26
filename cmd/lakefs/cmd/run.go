@@ -244,7 +244,7 @@ var runCmd = &cobra.Command{
 		cookieAuthConfig := api.CookieAuthConfig(baseCfg.Auth.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
-			authenticator,
+			middlewareAuthenticator,
 			authService,
 			&oidcConfig,
 			&cookieAuthConfig,
