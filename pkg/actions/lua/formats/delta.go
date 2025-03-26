@@ -26,7 +26,7 @@ var errUnimplementedProvided = errors.New("unimplemented provider")
 type DeltaClient struct {
 	accessProvider AccessProvider
 	ctx            context.Context
-	m              *blob.URLMux
+	mux            blob.URLMux
 }
 
 func newDeltaTableMetadata(meta *action.Metadata) map[string]any {
@@ -72,7 +72,7 @@ func (dc *DeltaClient) getTableMetadata(log delta.Log) (map[string]any, error) {
 func (dc *DeltaClient) getS3DeltaTable(repo, ref, prefix string) (delta.Log, error) {
 	config := delta.Config{StoreType: string(s3StorageType)}
 	u := fmt.Sprintf("lakefs://%s/%s/%s", repo, ref, prefix)
-	return delta.ForTableWithMux(u, config, &delta.SystemClock{}, dc.m)
+	return delta.ForTableWithMux(u, config, &delta.SystemClock{}, &dc.mux)
 }
 
 func (dc *DeltaClient) buildLog(table delta.Log) (map[int64][]string, error) {
@@ -185,7 +185,7 @@ func newS3DeltaClient(l *lua.State, ctx context.Context, lakeFSAddr string) *Del
 		awsProps.Region = lua.CheckString(l, 3)
 	}
 
-	mux := new(blob.URLMux)
-	storage.RegisterS3CompatBucketURLOpener("lakefs", &awsProps, mux)
-	return &DeltaClient{accessProvider: AWSInfo{AWSProps: awsProps}, ctx: ctx, m: mux}
+	client := &DeltaClient{accessProvider: AWSInfo{AWSProps: awsProps}, ctx: ctx}
+	storage.RegisterS3CompatBucketURLOpener("lakefs", &awsProps, &client.mux)
+	return client
 }
