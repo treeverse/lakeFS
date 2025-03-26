@@ -92,9 +92,8 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		}
 
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 
-		metadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.Blockstore.Type, authMetadataManager, metadataProvider)
 		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
 				CreatedAt: time.Now(),

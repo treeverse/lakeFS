@@ -77,12 +77,11 @@ var setupCmd = &cobra.Command{
 		defer kvStore.Close()
 
 		logger := logging.FromContext(ctx)
-		authMetadataManage := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
-		authService = authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManage)
-		cloudMetadataProvider := stats.BuildMetadataProvider(logger, cfg)
-		metadata := stats.NewMetadata(ctx, logger, cfg.Blockstore.Type, authMetadataManage, cloudMetadataProvider)
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, cfg.Installation.FixedID, cfg.Database.Type, kvStore)
+		authService = authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 
-		credentials, err := setupLakeFS(ctx, cfg, authMetadataManage, authService, userName, accessKeyID, secretAccessKey, noCheck)
+		credentials, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, userName, accessKeyID, secretAccessKey, noCheck)
 		if err != nil {
 			fmt.Printf("Setup failed: %s\n", err)
 			os.Exit(1)
