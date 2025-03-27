@@ -92,44 +92,42 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config                config.Config
-	Catalog               *catalog.Catalog
-	Authenticator         auth.Authenticator
-	Auth                  auth.Service
-	Authentication        authentication.Service
-	BlockAdapter          block.Adapter
-	MetadataManager       auth.MetadataManager
-	Migrator              Migrator
-	Collector             stats.Collector
-	CloudMetadataProvider cloud.MetadataProvider
-	Actions               actionsHandler
-	AuditChecker          AuditChecker
-	Logger                logging.Logger
-	sessionStore          sessions.Store
-	PathProvider          upload.PathProvider
-	usageReporter         stats.UsageReporterOperations
+	Config          config.Config
+	Catalog         *catalog.Catalog
+	Authenticator   auth.Authenticator
+	Auth            auth.Service
+	Authentication  authentication.Service
+	BlockAdapter    block.Adapter
+	MetadataManager auth.MetadataManager
+	Migrator        Migrator
+	Collector       stats.Collector
+	Actions         actionsHandler
+	AuditChecker    AuditChecker
+	Logger          logging.Logger
+	sessionStore    sessions.Store
+	PathProvider    upload.PathProvider
+	usageReporter   stats.UsageReporterOperations
 }
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
 	return &Controller{
-		Config:                cfg,
-		Catalog:               catalog,
-		Authenticator:         authenticator,
-		Auth:                  authService,
-		Authentication:        authenticationService,
-		BlockAdapter:          blockAdapter,
-		MetadataManager:       metadataManager,
-		Migrator:              migrator,
-		Collector:             collector,
-		CloudMetadataProvider: cloudMetadataProvider,
-		Actions:               actions,
-		AuditChecker:          auditChecker,
-		Logger:                logger,
-		sessionStore:          sessionStore,
-		PathProvider:          pathProvider,
-		usageReporter:         usageReporter,
+		Config:          cfg,
+		Catalog:         catalog,
+		Authenticator:   authenticator,
+		Auth:            authService,
+		Authentication:  authenticationService,
+		BlockAdapter:    blockAdapter,
+		MetadataManager: metadataManager,
+		Migrator:        migrator,
+		Collector:       collector,
+		Actions:         actions,
+		AuditChecker:    auditChecker,
+		Logger:          logger,
+		sessionStore:    sessionStore,
+		PathProvider:    pathProvider,
+		usageReporter:   usageReporter,
 	}
 }
 
@@ -5217,7 +5215,14 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataManager, c.CloudMetadataProvider)
+	// collect metadata
+	metadataProviders := []stats.MetadataProvider{
+		c.MetadataManager,
+		cloud.NewMetadataProvider(),
+		block.NewMetadataProvider(c.Config.GetBaseConfig().StorageConfig()),
+	}
+	meta := stats.NewMetadata(ctx, c.Logger, metadataProviders)
+
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
@@ -5446,7 +5451,7 @@ func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, re
 func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.CreatePullRequestJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.WritePullReqeustAction,
+			Action:   permissions.WritePullRequestAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5482,7 +5487,7 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadPullReqeustAction,
+			Action:   permissions.ReadPullRequestAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5514,7 +5519,7 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.UpdatePullRequestJSONRequestBody, repository string, pullRequestID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.WritePullReqeustAction,
+			Action:   permissions.WritePullRequestAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5552,7 +5557,7 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.WritePullReqeustAction,
+					Action:   permissions.WritePullRequestAction,
 					Resource: permissions.RepoArn(repository),
 				},
 			},

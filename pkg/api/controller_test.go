@@ -3597,7 +3597,7 @@ func TestController_SetupLakeFSHandler(t *testing.T) {
 
 			hasBlockStoreType := false
 			for _, ent := range deps.collector.Metadata[0].Entries {
-				if ent.Name == stats.BlockstoreTypeKey {
+				if ent.Name == block.MetadataBlockstoreTypeKey {
 					hasBlockStoreType = true
 					if ent.Value == "" {
 						t.Fatalf("Blockstorage key exists but with empty value: %s", deps.collector.Metadata[0].Entries)

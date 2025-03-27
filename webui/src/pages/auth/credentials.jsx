@@ -1,5 +1,5 @@
 import React, {useEffect} from "react";
-import { useOutletContext } from "react-router-dom";
+import {useOutletContext} from "react-router-dom";
 import {
     ActionGroup,
     ActionsBar,
@@ -16,11 +16,11 @@ import {resolveUserDisplayName} from "../../lib/utils";
 
 const CredentialsContainer = () => {
     const router = useRouter();
-    const { user } = useUser();
+    const {user} = useUser();
     const [refreshToken, setRefreshToken] = useState(false);
     const [createError, setCreateError] = useState(null);
     const [createdKey, setCreatedKey] = useState(null);
-    const { after } = router.query;
+    const {after} = router.query;
 
     const createKey = () => {
         return auth.createCredentials(user.id)
@@ -40,10 +40,13 @@ const CredentialsContainer = () => {
                     <ConfirmationButton
                         variant="success"
                         modalVariant="success"
-                        msg={<span>Create a new Access Key for user <strong>{resolveUserDisplayName(user)}</strong>?</span>}
+                        msg={
+                            <span>Create a new Access Key for user <strong>{resolveUserDisplayName(user)}</strong>?</span>}
                         onConfirm={hide => {
                             createKey()
-                                .then(key => { setCreatedKey(key) })
+                                .then(key => {
+                                    setCreatedKey(key)
+                                })
                                 .finally(hide);
                         }}>
                         Create Access Key
@@ -54,7 +57,9 @@ const CredentialsContainer = () => {
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
-                An access key-pair is the set of credentials used to access lakeFS. <a href="https://docs.lakefs.io/reference/authorization.html#authentication" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                An access key-pair is the set of credentials used to access lakeFS. <a
+                href="https://docs.lakefs.io/reference/authorization.html#authentication" target="_blank"
+                rel="noopener noreferrer">Learn more.</a>
             </div>
 
             {(!!createError) && <AlertError error={createError}/>}
@@ -62,7 +67,9 @@ const CredentialsContainer = () => {
             <CredentialsShowModal
                 credentials={createdKey}
                 show={(!!createdKey)}
-                onHide={() => { setCreatedKey(null) }}/>
+                onHide={() => {
+                    setCreatedKey(null)
+                }}/>
 
             {(!!user) && <CredentialsTable
                 userId={user.id}
