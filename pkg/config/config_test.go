@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/stretchr/testify/require"
 	"os"
 	"strings"
 	"testing"
@@ -74,6 +75,21 @@ func TestConfig_NewFromFile(t *testing.T) {
 		if !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("expected missing configuration file to fail, got %v", err)
 		}
+	})
+
+	t.Run("auth fixture", func(t *testing.T) {
+		t.Run("success", func(t *testing.T) {
+			_, err := newConfigFromFile("testdata/auth_fixture/basic_auth.yaml")
+			require.NoError(t, err)
+		})
+		t.Run("invalid auth", func(t *testing.T) {
+			_, err := newConfigFromFile("testdata/auth_fixture/invalid_auth.yaml")
+			require.Error(t, err)
+		})
+		t.Run("no auth", func(t *testing.T) {
+			_, err := newConfigFromFile("testdata/auth_fixture/no_auth.yaml")
+			require.Error(t, err)
+		})
 	})
 }
 
