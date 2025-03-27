@@ -5736,7 +5736,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 		expected auth.CheckResult
 	}{
 		{
-			name: "delete first resource's repo",
+			name: "read repo from first resource",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
@@ -5759,7 +5759,53 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 			expected: auth.CheckAllow,
 		},
 		{
-			name: "delete second resource's repo",
+			name: "read repo from first resource",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:ReadRepository",
+					Resource: "arn:lakefs:fs:::repository/repo3",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:ReadRepository"},
+							Resource: "[\"arn:lakefs:fs:::repository/repo1\",\"*\"]",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
+			},
+			expected: auth.CheckAllow,
+		},
+		{
+			name: "read repo from wildcard deny",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:ReadRepository",
+					Resource: "arn:lakefs:fs:::repository/repo3",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:ReadRepository"},
+							Resource: "[\"arn:lakefs:fs:::repository/repo1\",\"*\"]",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expected: auth.CheckDeny,
+		},
+		{
+			name: "read repo from second resource",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
@@ -5782,7 +5828,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 			expected: auth.CheckAllow,
 		},
 		{
-			name: "delete second resource's repo, unpermitted",
+			name: "read second resource, unpermitted",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
@@ -5809,7 +5855,6 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			perm := &auth.MissingPermissions{}
 			result := auth.CheckPermissions(ctx, tc.node, tc.username, tc.policies, perm)
-			fmt.Println("perm audit: ", perm.String())
 			require.Equal(t, tc.expected, result)
 		})
 	}

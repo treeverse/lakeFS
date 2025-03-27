@@ -1185,7 +1185,7 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 		// check whether the permission is allowed, denied or natural (not allowed and not denied)
 		for _, policy := range policies {
 			for _, stmt := range policy.Statement {
-				resources, err := ParseResources(stmt.Resource)
+				resources, err := ParsePolicyResourceAsList(stmt.Resource)
 				if err != nil {
 					logging.FromContext(ctx).Error(err)
 					return CheckDeny
