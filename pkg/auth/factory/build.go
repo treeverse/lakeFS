@@ -14,7 +14,7 @@ import (
 
 var errSimplifiedOrExternalAuth = errors.New("cannot set auth.ui_config.rbac to non-simplified without setting an external auth service")
 
-func checkAuthModeSupport(baseCfg config.BaseConfig) error {
+func checkAuthModeSupport(baseCfg config.Auth) error {
 	if baseCfg.IsAuthBasic() { // Basic mode
 		return nil
 	}
@@ -25,17 +25,17 @@ func checkAuthModeSupport(baseCfg config.BaseConfig) error {
 }
 
 func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) auth.Service {
-	baseCfg := cfg.GetBaseConfig()
-	if err := checkAuthModeSupport(*cfg.GetBaseConfig()); err != nil {
+	authCfg := cfg.AuthConfig()
+	if err := checkAuthModeSupport(*cfg.AuthConfig()); err != nil {
 		logger.WithError(err).Fatal("Unsupported auth mode")
 	}
 
-	secretStore := crypt.NewSecretStore([]byte(baseCfg.Auth.Encrypt.SecretKey))
-	if baseCfg.IsAuthBasic() {
+	secretStore := crypt.NewSecretStore([]byte(authCfg.Encrypt.SecretKey))
+	if authCfg.IsAuthBasic() {
 		apiService := auth.NewBasicAuthService(
 			kvStore,
 			secretStore,
-			authparams.ServiceCache(baseCfg.Auth.Cache),
+			authparams.ServiceCache(authCfg.Cache),
 			logger.WithField("service", "auth_service"),
 		)
 		// Check if migration needed
@@ -64,19 +64,19 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 
 	// Not Basic - using auth server
 	apiService, err := auth.NewAPIAuthService(
-		baseCfg.Auth.API.Endpoint,
-		baseCfg.Auth.API.Token.SecureValue(),
-		baseCfg.IsAdvancedAuth(),
-		baseCfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled,
+		authCfg.API.Endpoint,
+		authCfg.API.Token.SecureValue(),
+		authCfg.IsAdvancedAuth(),
+		authCfg.AuthenticationAPI.ExternalPrincipalsEnabled,
 		secretStore,
-		authparams.ServiceCache(baseCfg.Auth.Cache),
+		authparams.ServiceCache(authCfg.Cache),
 		logger.WithField("service", "auth_api"),
 	)
 	if err != nil {
 		logger.WithError(err).Fatal("failed to create authentication service")
 	}
-	if !baseCfg.Auth.API.SkipHealthCheck {
-		if err := apiService.CheckHealth(ctx, logger, baseCfg.Auth.API.HealthCheckTimeout); err != nil {
+	if !authCfg.API.SkipHealthCheck {
+		if err := apiService.CheckHealth(ctx, logger, authCfg.API.HealthCheckTimeout); err != nil {
 			logger.WithError(err).Fatal("Auth API health check failed")
 		}
 	}
