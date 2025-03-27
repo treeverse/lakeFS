@@ -31,7 +31,7 @@ responsibilities, granting appropriate access without configuring permissions pe
 
 Follow these steps to implement an RBAC server compatible with lakeFS.
 
-### Implementation
+### 1. Implementation
 
 To implement the RBAC server, you need to implement a subset of the APIs defined in the 
 [authentication.yaml specification](./authorization-yaml.md).
@@ -45,8 +45,8 @@ Not all APIs in the specification are required — only those listed below, grou
 Implement all APIs under these categories.
 
 {: .note}
-> For detailed descriptions of each API, including their input and output parameters, refer to each API in
-> the [authentication.yaml specification](./authorization-yaml.md).
+> For detailed descriptions of the different schemas and each API, including their input and output parameters, 
+> refer to each API in the [authentication.yaml specification](./authorization-yaml.md).
 
 #### Credentials APIs
 
@@ -76,8 +76,7 @@ Implement the following endpoints under the `users` tag in the
 
 #### Groups APIs
 
-Implement the following endpoints under the `groups` tag in the
-[authentication.yaml specification](./authorization-yaml.md):
+Implement the following endpoints under the `groups` tag:
 
 - `GET /auth/groups`
 - `POST /auth/groups`
@@ -93,8 +92,7 @@ Implement the following endpoints under the `groups` tag in the
 #### Policies APIs
 
 Details about the expected structure of policies can be found [here](./rbac.md).
-Implement the following endpoints under the `policies` tag in the
-[authentication.yaml specification](./authorization-yaml.md):
+Implement the following endpoints under the `policies` tag:
 
 - `GET /auth/policies`
 - `POST /auth/policies`
@@ -102,7 +100,7 @@ Implement the following endpoints under the `policies` tag in the
 - `PUT /auth/policies/{policyId}`
 - `DELETE /auth/policies/{policyId}`
 
-### LakeFS Configuration
+### 2. LakeFS Configuration
 
 Update your lakeFS configuration file (`config.yaml`) to include:
 
@@ -127,9 +125,9 @@ When lakeFS starts for the first time, it initializes users, groups, and policie
 the authorization method cannot change. If lakeFS starts without an RBAC server and later tries connecting to one, 
 it will fail to authenticate. You must re-initialize lakeFS from scratch to connect to a new RBAC server.
 
-### Running the Server
+### 3. Running the Server
 
-1. Start your RBAC server.
+1. Run your RBAC server.
 2. Run lakeFS with the updated configuration file:
 
 ```shell

@@ -413,12 +413,12 @@ components:
 
 paths:
   /auth/users:
-    description: Returns a list of all users in the lakeFS server. Accepts pagination parameters as input and returns a
-      Pagination object along with a list of users. The results must be sorted by the username property of
-      each User object. Internally, lakeFS converts the username value to the id field and stores the
-      creation_date, along with optional fields such as friendly_name and email. This endpoint should be
-      implemented in a function named listUsers.
     get:
+      description: Returns a list of all the users. Accepts pagination parameters as input and returns a
+        Pagination object along with a list of users. The results must be sorted by the username property of
+        each User object. Internally, lakeFS converts the username value to the id field and stores the
+        creation_date, along with optional fields such as friendly_name and email. This endpoint should be
+        implemented in a function named listUsers.
       tags:
         - auth
         - users
@@ -458,7 +458,7 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     post:
-      description: Creates a new user in lakeFS. The input is provided in the request body, and the response returns a
+      description: Creates a new user. The input is provided in the request body, and the response returns a
         User object. This endpoint is also used during the setup phase to create the initial admin user with
         username="admin" and source="internal". This endpoint should be implemented in a function named
         createUser.
@@ -474,7 +474,7 @@ paths:
               $ref: "#/components/schemas/UserCreation"
       responses:
         201:
-          description: The username in the response must match the `username` provided in the input.
+          description: The username in the response must match the username provided in the input.
           content:
             application/json:
               schema:
@@ -501,7 +501,7 @@ paths:
           type: string
     get:
       description: Returns the details of a specific user. Takes a unique userId as a path parameter, which must match
-        an existing user ID in your list. The response returns a User object. Internally, lakeFS uses the
+        an existing user ID. The response returns a User object. Internally, lakeFS uses the
         creation_date, email, and id (derived from the username) fields from the response. This endpoint
         should be implemented in a function named getUser.
       tags:
@@ -610,7 +610,7 @@ paths:
 
   /auth/groups:
     get:
-      description: Returns a list of groups in lakeFS. Accepts pagination parameters as input and returns a Pagination
+      description: Returns a list of groups. Accepts pagination parameters as input and returns a Pagination
         object along with a list of groups. The results must be sorted by the name property of each Group
         object in the GroupList response. This endpoint should be implemented in a function named listGroups.
       tags:
@@ -635,7 +635,7 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     post:
-      description: Creates a new group in lakeFS. The input is provided in the request body, and the response returns a
+      description: Creates a new group. The input is provided in the request body, and the response returns a
         Group object. lakeFS expects the name property to be a unique, human-readable group name.
         If the id field is not specified, lakeFS will use the name value as the id. lakeFS calls this endpoint
         during the setup stage to create initial groups, including "Admins", "SuperUsers", "Developers", and
@@ -675,7 +675,7 @@ paths:
           type: string
     get:
       description: Returns the details of a specific group. Takes a unique groupId as a path parameter, which must
-        match an existing group ID in your groups list. The response returns a Group object. Internally,
+        match an existing group ID. The response returns a Group object. Internally,
         lakeFS converts the name property in the Group object to the id used on the lakeFS side. During the
         setup phase, lakeFS calls this endpoint with the "Admins" group ID to verify that the group was
         created. This endpoint should be implemented in a function named getGroup.
@@ -698,8 +698,8 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
-      description: Deletes a group. Takes a unique groupId as a path parameter, which must match an existing group ID
-        in your groups list. No output is returned if the deletion is successful. This endpoint should be
+      description: Deletes a group. Takes a unique groupId as a path parameter, which must match an existing group ID. 
+        No output is returned if the deletion is successful. This endpoint should be
         implemented in a function named deleteGroup.
       tags:
         - auth
@@ -718,7 +718,7 @@ paths:
 
   /auth/policies:
     get:
-      description: Returns a list of policies in lakeFS. Accepts pagination parameters as input and returns a
+      description: Returns a list of policies. Accepts pagination parameters as input and returns a
         Pagination object along with a list of policies. The results must be sorted by the name property of
         each Policy object in the PolicyList response. lakeFS internally converts the name property of each
         Policy object to the id field. This endpoint should be implemented in a function named listPolicies.
@@ -744,7 +744,7 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     post:
-      description: Creates a new policy in lakeFS. The input is provided in the request body, and the response returns
+      description: Creates a new policy. The input is provided in the request body, and the response returns
         a Policy object. The response fields should match the input parameters. lakeFS calls this endpoint
         during the setup phase to create default policies required for operation. The policy IDs (names) that
         will be sent include "FSFullAccess", "FSReadWriteAll", "FSReadAll", "RepoManagementFullAccess",
@@ -786,7 +786,7 @@ paths:
           type: string
     get:
       description: Returns the details of a specific policy. Takes a unique policyId as input and returns a Policy
-        object. lakeFS converts the "name" property of the Policy object to the "id" property in its internal
+        object. lakeFS converts the name property of the Policy object to the id property in its internal
         Policy representation. This endpoint should be implemented in a function named getPolicy.
       tags:
         - auth
@@ -808,7 +808,7 @@ paths:
           $ref: "#/components/responses/ServerError"
 
     put:
-      description: Updates an existing policy in lakeFS. Takes a unique policyId (name) and a request body containing
+      description: Updates an existing policy. Takes a unique policyId (name) and a request body containing
         the updated policy details, and returns the updated Policy object. The response fields should match
         those provided in the request body. This endpoint should be implemented in a function named
         updatePolicy.
@@ -839,7 +839,7 @@ paths:
 
     delete:
       description: Deletes a policy. Takes a unique policyId as a path parameter, which must match an existing policy
-        ID in your policies list. No output is returned if the deletion is successful. This endpoint should be
+        ID. No output is returned if the deletion is successful. This endpoint should be
         implemented in a function named deletePolicy.
       tags:
         - auth
@@ -866,7 +866,7 @@ paths:
     get:
       description: Returns the list of users associated with a specific group. Takes the groupId and pagination
         parameters as input, and returns a Pagination object along with the list of users. The results must be
-        sorted by the `username` property of each User object in the UserList response. This endpoint should
+        sorted by the username property of each User object in the UserList response. This endpoint should
         be implemented in a function named listGroupMembers.
       tags:
         - auth
@@ -948,10 +948,9 @@ paths:
           type: string
     get:
       description: Returns a list of all access_key_ids and their creation dates for a specific user. Takes a unique
-        userId that matches an existing user in your users list along with pagination parameters. The response
-        includes a Pagination object and a list of results sorted by the access_key_id field in
-        Credentials object within the CredentialsList. This endpoint should be implemented in a function named
-        listUserCredentials.
+        userId that matches an existing user along with pagination parameters. The response includes a Pagination 
+        object and a list of results sorted by the access_key_id field in Credentials object within the CredentialsList. 
+        This endpoint should be implemented in a function named listUserCredentials.
       tags:
         - auth
         - credentials
@@ -979,9 +978,9 @@ paths:
       description: Creates new credentials for a specific user. The input might include access_key and secret_key, and
         the output is a CredentialsWithSecret object where the username field is required. If either the
         access_key or secret_key is empty, RBAC server should generate random values for both and save
-        them for the user. The path parameter includes a unique userId that matches an existing user in your
-        list. During lakeFS initialization, credentials must be created for the "admin" userId.
-        This endpoint should be implemented in a function named createCredentials.
+        them for the user. The path parameter includes a unique userId that matches an existing user. During lakeFS 
+        initialization, credentials must be created for the "admin" userId, and lakeFS will invoke this API to perform 
+        that action. This endpoint should be implemented in a function named createCredentials.
       parameters:
         - in: query
           name: access_key
@@ -1026,9 +1025,8 @@ paths:
           type: string
     delete:
       description: Deletes credentials for a specific user. Takes the userId and accessKeyId as input. The path
-        parameter includes a unique userId that matches an existing user in your users list. No output is
-        returned if the deletion is successful. This endpoint should be implemented in a function named
-        deleteCredentials.
+        parameter includes a unique userId that matches an existing user. No output is returned if the deletion is 
+        successful. This endpoint should be implemented in a function named deleteCredentials.
       tags:
         - auth
         - credentials
@@ -1046,12 +1044,13 @@ paths:
 
     get:
       description: Returns a specific user's credentials. Takes the user's userId and a specific accessKeyId associated
-        with that user as input. The output includes the user's access key id and creation date.
+        with that user as input. The output includes the user's access key id and creation date. This endpoint should 
+        be implemented in a function named getCredentialsForUser.
       tags:
         - auth
         - credentials
       operationId: getCredentialsForUser
-      summary: get credentials
+      summary: get credentials for a user
       responses:
         200:
           description: credentials
@@ -1067,10 +1066,6 @@ paths:
           $ref: "#/components/responses/ServerError"
 
   /auth/credentials/{accessKeyId}:
-    description: Returns the credentials details associated with a specific accessKeyId. The input is the accessKeyId,
-      and the output is a CredentialsWithSecret object containing all credential details.
-      Note that the previously required user_id is now deprecated, and the username is required instead, even
-      though it is not listed under the "required" section.
     parameters:
       - in: path
         name: accessKeyId
@@ -1078,6 +1073,11 @@ paths:
         schema:
           type: string
     get:
+      description: Returns the credentials details associated with a specific accessKeyId. The input is the accessKeyId,
+        and the output is a CredentialsWithSecret object containing all credential details.
+        Note that the previously required user_id is now deprecated, and the username is required instead, even
+        though it is not listed under the "required" label in this yaml. This endpoint should
+        be implemented in a function named getCredentials.
       tags:
         - auth
         - credentials
@@ -1105,7 +1105,7 @@ paths:
         schema:
           type: string
     get:
-      description: Returns the list of groups that a specific user is associated with in lakeFS. Takes a unique userId
+      description: Returns the list of groups that a specific user is associated with. Takes a unique userId
         and pagination parameters as input, and returns a Pagination object along with the list of results.
         The results must be sorted by the name property of each Group object in the GroupList. This endpoint
         should be implemented in a function named listUserGroups.
