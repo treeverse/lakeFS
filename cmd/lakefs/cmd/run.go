@@ -52,6 +52,7 @@ const (
 	mismatchedReposFlagName = "allow-mismatched-repos"
 )
 
+// test
 type Shutter interface {
 	Shutdown(context.Context) error
 }
