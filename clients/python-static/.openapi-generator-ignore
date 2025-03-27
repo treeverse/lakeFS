@@ -2,4 +2,3 @@
 git_push.sh
 .gitlab-ci.yml
 .github/
-.gitignore

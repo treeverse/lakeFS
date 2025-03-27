@@ -1,3 +1,4 @@
+.gitignore
 .travis.yml
 Gemfile
 Gemfile.lock
