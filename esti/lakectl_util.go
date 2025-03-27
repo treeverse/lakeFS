@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/go-openapi/swag"
 	"os"
 	"os/exec"
 	"regexp"
@@ -301,6 +302,6 @@ func GetAuthor(t testing.TB) (string, string) {
 	require.NoError(t, err)
 	require.NotNil(t, userResp.JSON200)
 	author := userResp.JSON200.User.Id
-	email := *userResp.JSON200.User.Email
+	email := swag.StringValue(userResp.JSON200.User.Email)
 	return author, email
 }
