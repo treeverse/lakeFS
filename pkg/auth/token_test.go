@@ -1,6 +1,10 @@
 package auth
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"testing"
 	"time"
 
@@ -148,8 +152,8 @@ func TestVerifyToken_Specifics(t *testing.T) {
 		require.NoError(t, err, "Should validate token with correct signing method")
 		require.Equal(t, userID, claims.Subject, "Subject in claims should match userID")
 
-		// Create a token with HS512 method
-		invalidMethodToken := jwt.NewWithClaims(jwt.SigningMethodHS512, LoginClaims{
+		// Create a token with RS256 method
+		invalidMethodToken := jwt.NewWithClaims(jwt.SigningMethodRS256, LoginClaims{
 			Issuer:    "auth",
 			ID:        uuid.NewString(),
 			Audience:  LoginAudience,
@@ -157,7 +161,30 @@ func TestVerifyToken_Specifics(t *testing.T) {
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
 		})
-		invalidMethodTokenString, err := invalidMethodToken.SignedString(secret)
+
+		// generate private key and sign the JWT
+		// test will verify that this
+		const bitSize = 4096
+		privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
+		require.NoError(t, err, "Failed to generate RSA key pair")
+
+		// Get ASN.1 DER format
+		privateDER := x509.MarshalPKCS1PrivateKey(privateKey)
+
+		// pem.Block
+		privateBlock := pem.Block{
+			Type:    "RSA PRIVATE KEY",
+			Headers: nil,
+			Bytes:   privateDER,
+		}
+
+		// Private key in PEM format
+		privatePEM := pem.EncodeToMemory(&privateBlock)
+
+		rsaKey, err := jwt.ParseRSAPrivateKeyFromPEM(privatePEM)
+		require.NoError(t, err, "Failed to parse RSA private key")
+
+		invalidMethodTokenString, err := invalidMethodToken.SignedString(rsaKey)
 		require.NoError(t, err, "Failed to generate token with invalid signing method")
 
 		_, err = VerifyToken(secret, invalidMethodTokenString)

@@ -56,7 +56,7 @@ func VerifyToken(secret []byte, tokenString string) (*LoginClaims, error) {
 	keyFn := func(token *jwt.Token) (any, error) { return secret, nil }
 	token, err := jwt.ParseWithClaims(tokenString, claims, keyFn,
 		jwt.WithExpirationRequired(),
-		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}),
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name, jwt.SigningMethodHS384.Name, jwt.SigningMethodHS512.Name}),
 	)
 	if err != nil || !token.Valid {
 		return nil, ErrInvalidToken
