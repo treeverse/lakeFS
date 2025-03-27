@@ -15,5 +15,6 @@ export class LoginPage {
         await this.page.getByPlaceholder("Access Key ID").fill(accessKeyId);
         await this.page.getByPlaceholder("Secret Access Key").fill(secretAccessKey);
         await this.page.getByRole("button", { name: "Login" }).click();
+        await this.page.waitForURL(/.*\/repositories/); // wait for redirect
     }
 }
