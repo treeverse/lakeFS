@@ -1,117 +1,146 @@
 ---
-title: Access Control Lists (ACLs) -Deprecated-
-description: Access control lists (ACLs) are one of the resource-based options that you can use to manage access to your repositories and objects. There are limits to managing permissions using ACLs.
+title: RBAC Server Implementation -Deprecated-
+description: Instructions for implementing an RBAC server to manage permissions in lakeFS OSS.
 parent: Security
-redirect_from:
-  - /reference/access-control-list.html
-  - /reference/access-control-lists.html
 ---
 
-# RBAC server implementation
+# RBAC Server Implementation
 
-## Table of Content
-TODO - add
+## Table of Contents
+
+- [Overview](#overview)
+- [What is RBAC?](#what-is-rbac)
+- [Setting Up the RBAC Server](#setting-up-the-rbac-server)
+   - [Implementation](#implementation)
+      - [Credentials APIs](#credentials-apis)
+      - [Users APIs](#users-apis)
+      - [Groups APIs](#groups-apis)
+      - [Policies APIs](#policies-apis)
+   - [LakeFS Configuration](#configuration)
+   - [Setup Considerations](#setup-considerations)
+   - [Running the Server](#running-the-server)
 
 ## Overview
 
-This document explains how to implement an RBAC server and configure it with lakeFS to enable RBAC capabilities.
-You can find an explanation of the RBAC model in lakeFS [here](./rbac.html). 
+This guide explains how to implement an **RBAC (Role-Based Access Control) server** and configure **lakeFS OSS** to 
+work with it.
+
+Contents:
+1. Required APIs for implementing an RBAC server.
+2. How to configure lakeFS OSS to connect to your RBAC server.
+3. How to run lakeFS OSS with your RBAC server.
+
+> For a detailed explanation of the RBAC model in lakeFS, see [RBAC in lakeFS](./rbac.md).
 
 ## What is RBAC?
 
-RBAC (Role-Based Access Control) in lakeFS is a permission management model that assigns access rights based on roles 
-rather than individual users. It simplifies access control by grouping permissions into predefined roles, 
-which consist of specific actions. Users are assigned roles based on their responsibilities, and access is granted 
-accordingly. This approach manages permissions at the role level instead of configuring access per user.
+Role-Based Access Control (RBAC) in lakeFS manages permissions based on roles rather than individual users. 
+Permissions are grouped into roles consisting of specific actions. Users are assigned roles aligned with their 
+responsibilities, granting appropriate access without configuring permissions per user.
 
+## Setting Up the RBAC Server
 
-//TODO - from here rephrase with GPT:
+Follow these steps to implement an RBAC server compatible with lakeFS.
 
-## Setting up the server
+### Implementation
 
-In order to implement RBAC so that it will work with lakeFS follow theses steps:
-1. ### Implementation
-   The header of each response must include the 'Content-Type' key and it's value should include the 'json' keyword.
-   You should implement some of the APIs from the authentication.yaml spec(add the link!!!!!!!!!!!!!!!!). In theses categories:
-   
-   Implement the endpoints that are listed here. All the rest APIs in the spec are internal so you don't need to implement them.
+To implement the RBAC server, you need to implement a subset of the APIs defined in the 
+[authentication.yaml specification](./authorization-yaml.md).
+Not all APIs in the specification are required — only those listed below, grouped into the following categories:
 
-1. Credentials:
-   The endpoints descriptions, inputs and outputs are described in the authentication.yaml spec(add the link!!!!!!!!!!!!!!!!) 
-   under the tag "credentials" in the "tags" in the spec.
-   Implement these APIs:
-   1. GET /auth/users/{userId}/credentials - Anna - done
-   2. POST /auth/users/{userId}/credentials - Anna - done
-   3. DELETE /auth/users/{userId}/credentials/{accessKeyId} - Anna - done
-   4. GET /auth/users/{userId}/credentials/{accessKeyId} - Anna - done
-   5. GET /auth/credentials/{accessKeyId} - Anna - didn't do!!!!!!
+- **Credentials**
+- **Users**
+- **Groups**
+- **Policies**
 
-2. Users: 
-   The endpoints descriptions, inputs and outputs are described in the authentication.yaml spec(add the link!!!!!!!!!!!!!!!!)
-   under the tag "users" in the "tags" in the spec.
-   Implement these APIs:
-   1. GET /auth/users - Anna - done
-   2. POST /auth/users - Anna - done
-   3. GET /auth/users/{userId} - Anna - done
-   4. DELETE /auth/users/{userId} - Anna - done
-   5. PUT /auth/users/{userId}/password - Anna - didn't do because service and controller dont use this func.
-   6. PUT /auth/users/{userId}/friendly_name - Anna - didn't do because controller dont use this func.
-   7. GET /auth/users/{userId}/groups - Anna - done
-   8. GET /auth/users/{userId}/policies
-   9. PUT /auth/users/{userId}/policies/{policyId}
-   10. DELETE /auth/users/{userId}/policies/{policyId} - Anna - done
+Implement all APIs under these categories.
 
-3. Groups: 
-   The endpoints descriptions, inputs and outputs are described in the authentication.yaml spec(add the link!!!!!!!!!!!!!!!!)
-   under the tag "groups" in the "tags" in the spec.
-   Implement these APIs:
-   1. GET /auth/groups - Anna - done
-   2. POST /auth/groups - Anna - done
-   3. GET /auth/groups/{groupId} - Anna - done
-   4. DELETE /auth/groups/{groupId} - Anna - done
-   5. GET /auth/groups/{groupId}/members - Anna - done
-   6. PUT /auth/groups/{groupId}/members/{userId} - Anna - done
-   7. DELETE /auth/groups/{groupId}/members/{userId} - Anna - done
-   8. GET /auth/groups/{groupId}/policies - Anna - done
-   9. PUT /auth/groups/{groupId}/policies/{policyId} - Anna - done
-   10. DELETE /auth/groups/{groupId}/policies/{policyId} - Anna - done
+> For detailed descriptions of each API, including their input and output parameters, refer to each API in
+> the [authentication.yaml specification](./authorization-yaml.md).
 
-4. Policies:
-   The endpoints descriptions, inputs and outputs are described in the authentication.yaml spec(add the link!!!!!!!!!!!!!!!!)
-   under the tag "policies" in the "tags" in the spec.
-   Implement these APIs:
-   1. GET /auth/policies - Anna - done
-   2. POST /auth/policies - Anna - done
-   3. GET /auth/policies/{policyId} - Anna - done
-   4. PUT /auth/policies/{policyId} - Anna - done
-   5. DELETE /auth/policies/{policyId} - Anna - done
+#### Credentials APIs
 
-2. ### Configuration
-   1. Configure the lakeFS config:
-      Add to your lakeFS config the following fields:
-      ```
-      auth:
-        encrypt:
-          secret_key: "some_string"
-        ui_config:
-          rbac: internal
-        api:
-          endpoint: {ENDPOINT_TO_YOUR_RBAC_SERVER} for example: http://localhost:9006/api/v1
-          token:
-      ```
-      {: .note }
-      > the auth.api.token parameter isn't required. If you don't specify it, lakeFS will use the 
-      > auth.encrypt.secret_key parameter as the token.
-      > If you do specify it, you can pass your JWT token as specified here or you can pass it as a environment
-      > variable: LAKEFS_AUTH_API_TOKEN
-2. ### Setup
-   In the first time lakeFS is geting up, it creates the first users and groups and policies. In lakeFS, once he 
-   completes the initialization to users, groups and policies, i.e the authorization method was set, it can't be
-   changed. It means that once lakeFS runs without the auth (RBAC) server and then tries to connect to this auth
-   (RBAC) server, he won't be able to enter to lakeFS. It means that you will have to start lakeFS from scratch.
-3. ### Running
-   1. Run your server 
-   2. Run lakeFS using the new config file
-      ```
-      .{LAKEFS_DIR}/lakefs -c {PATH_TO_YOUR_CONFIG_FILE} run
-      ```
+Implement the following endpoints under the `credentials` tag in the 
+[authentication.yaml specification](./authorization-yaml.md):
+
+- `GET /auth/users/{userId}/credentials`
+- `POST /auth/users/{userId}/credentials`
+- `DELETE /auth/users/{userId}/credentials/{accessKeyId}`
+- `GET /auth/users/{userId}/credentials/{accessKeyId}`
+- `GET /auth/credentials/{accessKeyId}`
+
+#### Users APIs
+
+Implement the following endpoints under the `users` tag in the
+[authentication.yaml specification](./authorization-yaml.md):
+
+- `GET /auth/users`
+- `POST /auth/users`
+- `GET /auth/users/{userId}`
+- `DELETE /auth/users/{userId}`
+- `PUT /auth/users/{userId}/friendly_name`
+- `GET /auth/users/{userId}/groups`
+- `GET /auth/users/{userId}/policies`
+- `PUT /auth/users/{userId}/policies/{policyId}`
+- `DELETE /auth/users/{userId}/policies/{policyId}`
+
+#### Groups APIs
+
+Implement the following endpoints under the `groups` tag in the
+[authentication.yaml specification](./authorization-yaml.md):
+
+- `GET /auth/groups`
+- `POST /auth/groups`
+- `GET /auth/groups/{groupId}`
+- `DELETE /auth/groups/{groupId}`
+- `GET /auth/groups/{groupId}/members`
+- `PUT /auth/groups/{groupId}/members/{userId}`
+- `DELETE /auth/groups/{groupId}/members/{userId}`
+- `GET /auth/groups/{groupId}/policies`
+- `PUT /auth/groups/{groupId}/policies/{policyId}`
+- `DELETE /auth/groups/{groupId}/policies/{policyId}`
+
+#### Policies APIs
+
+Details about the expected structure of policies can be found [here](./rbac.md).
+Implement the following endpoints under the `policies` tag in the
+[authentication.yaml specification](./authorization-yaml.md):
+
+- `GET /auth/policies`
+- `POST /auth/policies`
+- `GET /auth/policies/{policyId}`
+- `PUT /auth/policies/{policyId}`
+- `DELETE /auth/policies/{policyId}`
+
+### LakeFS Configuration
+
+Update your lakeFS configuration file (`config.yaml`) to include:
+
+```yaml
+auth:
+  encrypt:
+    secret_key: "some_string"
+  ui_config:
+    rbac: internal
+  api:
+    endpoint: {ENDPOINT_TO_YOUR_RBAC_SERVER} # e.g., http://localhost:9006/api/v1
+    token:
+```
+
+> **Note:** The `auth.api.token` parameter is optional. If unspecified, lakeFS uses the `auth.encrypt.secret_key` as 
+> the token. If specified, provide a JWT token directly or via the environment variable `LAKEFS_AUTH_API_TOKEN`.
+
+### Setup Considerations
+
+When lakeFS starts for the first time, it initializes users, groups, and policies. Once initialized, 
+the authorization method cannot change. If lakeFS starts without an RBAC server and later tries connecting to one, 
+it will fail to authenticate. You must re-initialize lakeFS from scratch to connect to a new RBAC server.
+
+### Running the Server
+
+1. Start your RBAC server.
+2. Run lakeFS with the updated configuration file:
+
+```shell
+./lakefs -c {PATH_TO_YOUR_CONFIG_FILE} run
+```

@@ -1,5 +1,5 @@
 export const API_ENDPOINT = '/api/v1';
-export const DEFAULT_LISTING_AMOUNT = 10;
+export const DEFAULT_LISTING_AMOUNT = 100;
 export const MAX_LISTING_AMOUNT = 1000;
 
 export const SETUP_STATE_INITIALIZED = "initialized";
