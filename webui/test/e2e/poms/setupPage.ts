@@ -32,7 +32,7 @@ export class SetupPage {
         await this.page.getByRole("button", { name: "Setup" }).click();
     }
 
-    async donwloadCredentialsButton(): Promise<Download> {
+    async downloadCredentialsButton(): Promise<Download> {
         const downloadPromise = this.page.waitForEvent("download");
         await this.downloadCredentialsButtonLocator.click();
         return downloadPromise;
@@ -41,8 +41,7 @@ export class SetupPage {
     async goToLoginButton(): Promise<Page> {
         const pagePromise = this.page.context().waitForEvent("page");
         await this.goToLoginButtonLocator.click();
-        const newPage = await pagePromise;
-        return newPage;
+        return pagePromise;
     }
 
     async getCredentials(): Promise<LakeFSCredentials> {

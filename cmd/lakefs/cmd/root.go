@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -12,11 +13,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv/local"
 	"github.com/treeverse/lakefs/pkg/kv/mem"
 	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/version"
 	"golang.org/x/exp/slices"
 )
@@ -169,4 +173,14 @@ func getHomeDir() string {
 		os.Exit(1)
 	}
 	return home
+}
+
+// initStatsMetadata initializes and returns stats metadata with all required providers
+func initStatsMetadata(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, storageConfig config.StorageConfig) *stats.Metadata {
+	metadataProviders := []stats.MetadataProvider{
+		authMetadataManager,
+		cloud.NewMetadataProvider(),
+		block.NewMetadataProvider(storageConfig),
+	}
+	return stats.NewMetadata(ctx, logger, metadataProviders)
 }
