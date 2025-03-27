@@ -1190,6 +1190,27 @@ components:
             type: string
           minItems: 1
 
+    StatementV2:
+      type: object
+      required:
+        - effect
+        - resource
+        - action
+      properties:
+        effect:
+          type: string
+          enum: [allow, deny]
+        resource:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        action:
+          type: array
+          items:
+            type: string
+          minItems: 1
+
     Policy:
       type: object
       required:
@@ -1206,6 +1227,24 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Statement"
+          minItems: 1
+
+    PolicyV2:
+      type: object
+      required:
+        - id
+        - statementV2
+      properties:
+        id:
+          type: string
+        creation_date:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+        statement:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatementV2"
           minItems: 1
 
     PolicyList:
@@ -2389,6 +2428,34 @@ paths:
       responses:
         204:
           description: policy deleted successfully
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+          
+  /auth/policiesV2/{policyId}:
+    parameters:
+      - in: path
+        name: policyId
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - auth
+      operationId: getPolicyV2
+      summary: get policy with resources list
+      responses:
+        200:
+          description: policyV2
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyV2"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

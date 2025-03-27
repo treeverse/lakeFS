@@ -53,6 +53,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**get_group**](docs/AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
 *AuthApi* | [**get_group_acl**](docs/AuthApi.md#get_group_acl) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 *AuthApi* | [**get_policy**](docs/AuthApi.md#get_policy) | **GET** /auth/policies/{policyId} | get policy
+*AuthApi* | [**get_policy_v2**](docs/AuthApi.md#get_policy_v2) | **GET** /auth/policiesV2/{policyId} | get policy with resources list
 *AuthApi* | [**get_user**](docs/AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
 *AuthApi* | [**list_group_members**](docs/AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 *AuthApi* | [**list_group_policies**](docs/AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
@@ -237,6 +238,7 @@ Class | Method | HTTP request | Description
  - [PathList](docs/PathList.md)
  - [Policy](docs/Policy.md)
  - [PolicyList](docs/PolicyList.md)
+ - [PolicyV2](docs/PolicyV2.md)
  - [PrepareGcUncommittedRequest](docs/PrepareGcUncommittedRequest.md)
  - [PrepareGcUncommittedResponse](docs/PrepareGcUncommittedResponse.md)
  - [PresignMultipartUpload](docs/PresignMultipartUpload.md)
@@ -264,6 +266,7 @@ Class | Method | HTTP request | Description
  - [StagingLocation](docs/StagingLocation.md)
  - [StagingMetadata](docs/StagingMetadata.md)
  - [Statement](docs/Statement.md)
+ - [StatementV2](docs/StatementV2.md)
  - [StatsEvent](docs/StatsEvent.md)
  - [StatsEventsList](docs/StatsEventsList.md)
  - [StorageConfig](docs/StorageConfig.md)

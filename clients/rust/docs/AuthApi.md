@@ -27,6 +27,7 @@ Method | HTTP request | Description
 [**get_group**](AuthApi.md#get_group) | **GET** /auth/groups/{groupId} | get group
 [**get_group_acl**](AuthApi.md#get_group_acl) | **GET** /auth/groups/{groupId}/acl | get ACL of group
 [**get_policy**](AuthApi.md#get_policy) | **GET** /auth/policies/{policyId} | get policy
+[**get_policy_v2**](AuthApi.md#get_policy_v2) | **GET** /auth/policiesV2/{policyId} | get policy with resources list
 [**get_user**](AuthApi.md#get_user) | **GET** /auth/users/{userId} | get user
 [**list_group_members**](AuthApi.md#list_group_members) | **GET** /auth/groups/{groupId}/members | list group members
 [**list_group_policies**](AuthApi.md#list_group_policies) | **GET** /auth/groups/{groupId}/policies | list group policies
@@ -682,6 +683,34 @@ Name | Type | Description  | Required | Notes
 ### Return type
 
 [**models::Policy**](Policy.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## get_policy_v2
+
+> models::PolicyV2 get_policy_v2(policy_id)
+get policy with resources list
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**policy_id** | **String** |  | [required] |
+
+### Return type
+
+[**models::PolicyV2**](PolicyV2.md)
 
 ### Authorization
 

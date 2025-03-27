@@ -877,6 +877,48 @@ paths:
       - auth
       x-content-type: application/json
       x-accepts: application/json
+  /auth/policiesV2/{policyId}:
+    get:
+      operationId: getPolicyV2
+      parameters:
+      - explode: false
+        in: path
+        name: policyId
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyV2'
+          description: policyV2
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: get policy with resources list
+      tags:
+      - auth
+      x-accepts: application/json
   /auth/groups/{groupId}/members:
     get:
       operationId: listGroupMembers
@@ -8912,6 +8954,36 @@ components:
       - effect
       - resource
       type: object
+    StatementV2:
+      example:
+        resource:
+        - resource
+        - resource
+        effect: allow
+        action:
+        - action
+        - action
+      properties:
+        effect:
+          enum:
+          - allow
+          - deny
+          type: string
+        resource:
+          items:
+            type: string
+          minItems: 1
+          type: array
+        action:
+          items:
+            type: string
+          minItems: 1
+          type: array
+      required:
+      - action
+      - effect
+      - resource
+      type: object
     Policy:
       example:
         statement:
@@ -8942,6 +9014,41 @@ components:
       required:
       - id
       - statement
+      type: object
+    PolicyV2:
+      example:
+        statement:
+        - resource:
+          - resource
+          - resource
+          effect: allow
+          action:
+          - action
+          - action
+        - resource:
+          - resource
+          - resource
+          effect: allow
+          action:
+          - action
+          - action
+        id: id
+        creation_date: 0
+      properties:
+        id:
+          type: string
+        creation_date:
+          description: Unix Epoch in seconds
+          format: int64
+          type: integer
+        statement:
+          items:
+            $ref: '#/components/schemas/StatementV2'
+          minItems: 1
+          type: array
+      required:
+      - id
+      - statementV2
       type: object
     PolicyList:
       example:

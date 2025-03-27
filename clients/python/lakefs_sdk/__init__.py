@@ -110,6 +110,7 @@ from lakefs_sdk.models.pagination import Pagination
 from lakefs_sdk.models.path_list import PathList
 from lakefs_sdk.models.policy import Policy
 from lakefs_sdk.models.policy_list import PolicyList
+from lakefs_sdk.models.policy_v2 import PolicyV2
 from lakefs_sdk.models.prepare_gc_uncommitted_request import PrepareGCUncommittedRequest
 from lakefs_sdk.models.prepare_gc_uncommitted_response import PrepareGCUncommittedResponse
 from lakefs_sdk.models.presign_multipart_upload import PresignMultipartUpload
@@ -137,6 +138,7 @@ from lakefs_sdk.models.setup_state import SetupState
 from lakefs_sdk.models.staging_location import StagingLocation
 from lakefs_sdk.models.staging_metadata import StagingMetadata
 from lakefs_sdk.models.statement import Statement
+from lakefs_sdk.models.statement_v2 import StatementV2
 from lakefs_sdk.models.stats_event import StatsEvent
 from lakefs_sdk.models.stats_events_list import StatsEventsList
 from lakefs_sdk.models.storage_config import StorageConfig
