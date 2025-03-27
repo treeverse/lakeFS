@@ -3,7 +3,7 @@ window.onload = function() {
     // Begin Swagger UI call region
     const ui = SwaggerUIBundle({
         url: "../assets/js/authorization.yml",
-        dom_id: '#swagger-ui-authorization',
+        dom_id: '#swagger-ui',
         deepLinking: true,
         validatorUrl: null,
         supportedSubmitMethods: [],
