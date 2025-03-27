@@ -12,7 +12,7 @@ OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.2
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
-PY_OPENAPI_GENERATOR=$(DOCKER) run -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python/scripts/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
+PY_OPENAPI_GENERATOR=$(DOCKER) run -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python-static/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
 GOLANGCI_LINT_VERSION=v1.63.4
 BUF_CLI_VERSION=v1.28.1
@@ -108,24 +108,21 @@ tools: ## Install tools
 	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
-client-python: sdk-python
-
-sdk-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
-	# remove the build folder as it also holds lakefs_sdk folder which keeps because we skip it during find
-	rm -rf clients/python/build; cd clients/python && \
-		find . -depth -name lakefs_sdk -prune -o ! \( -name Gemfile -or -name Gemfile.lock -or -name _config.yml -or -name .openapi-generator-ignore -or -name templates -or -name setup.mustache -or -name client.mustache -or -name requirements.mustache -or -name scripts -or -name pydantic.sh -or -name python-codegen-config.yaml \) -delete
+client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
+	rm -rf clients/python
+	mkdir -p clients/python
+	cp clients/python-static/openapi-generator-ignore clients/python/.openapi-generator-ignore
 	$(PY_OPENAPI_GENERATOR) generate \
-		--enable-post-process-file \
 		-i /mnt/$< \
 		-g python \
-		-t /mnt/clients/python/templates \
+		-t /mnt/clients/python-static/templates \
+		-c /mnt/clients/python-static/python-codegen-config.yaml \
+		--enable-post-process-file \
 		--package-name lakefs_sdk \
 		--http-user-agent "lakefs-python-sdk/$(PACKAGE_VERSION)" \
 		--git-user-id treeverse --git-repo-id lakeFS \
 		--additional-properties=infoName=Treeverse,infoEmail=services@treeverse.io,packageVersion=$(PACKAGE_VERSION),projectName=lakefs-sdk,packageUrl=https://github.com/treeverse/lakeFS/tree/master/clients/python \
-		-c /mnt/clients/python/python-codegen-config.yaml \
-		-o /mnt/clients/python \
-		--ignore-file-override /mnt/clients/python/.openapi-generator-ignore
+		-o /mnt/clients/python
 
 sdk-rust: api/swagger.yml  ## Generate SDK for Rust client - openapi generator version 7.1.0
 	rm -rf clients/rust
@@ -148,12 +145,12 @@ client-java: api/swagger.yml api/java-gen-ignore  ## Generate SDK for Java (and 
 		--additional-properties disallowAdditionalPropertiesIfNotPresent=false,useSingleRequestParameter=true,hideGenerationTimestamp=true,artifactVersion=$(PACKAGE_VERSION),parentArtifactId=lakefs-parent,parentGroupId=io.lakefs,parentVersion=0,groupId=io.lakefs,artifactId='sdk',artifactDescription='lakeFS OpenAPI Java client',artifactUrl=https://lakefs.io,apiPackage=io.lakefs.clients.sdk,modelPackage=io.lakefs.clients.sdk.model,mainPackage=io.lakefs.clients.sdk,developerEmail=services@treeverse.io,developerName='Treeverse lakeFS dev',developerOrganization='lakefs.io',developerOrganizationUrl='https://lakefs.io',licenseName=apache2,licenseUrl=http://www.apache.org/licenses/,scmConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmDeveloperConnection=scm:git:git@github.com:treeverse/lakeFS.git,scmUrl=https://github.com/treeverse/lakeFS \
 		-o /mnt/clients/java
 
-.PHONY: clients client-python sdk-python client-java
+.PHONY: clients client-python client-java
 clients: client-python client-java sdk-rust
 
 package-python: package-python-sdk package-python-wrapper
 
-package-python-sdk: sdk-python
+package-python-sdk: client-python
 	$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt -e HOME=/tmp/ -w /mnt/clients/python $(PYTHON_IMAGE) /bin/bash -c \
 		"python -m pip install build --user && python -m build --sdist --wheel --outdir dist/"
 
@@ -325,4 +322,4 @@ help:  ## Show Help menu
 gen: gen-ui gen-api gen-code clients gen-docs
 
 validate-clients-untracked-files:
-	scripts/verify_clients_untracked_files.sh	
+	scripts/verify_clients_untracked_files.sh
