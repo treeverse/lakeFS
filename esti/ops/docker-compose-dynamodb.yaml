@@ -27,10 +27,6 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
-    environment:
-      - ESTI_KV_MIGRATION=${ESTI_KV_MIGRATION:-none}
-      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
-      - LAKEFS_ROOT
 
 volumes:
   lakefs-code:
