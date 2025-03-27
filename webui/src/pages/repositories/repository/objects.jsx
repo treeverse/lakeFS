@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { useOutletContext } from "react-router-dom";
-import {CheckboxIcon, UploadIcon, XIcon} from "@primer/octicons-react";
+import { CheckboxIcon, UploadIcon, XIcon } from "@primer/octicons-react";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
-    ActionGroup,
-    ActionsBar,
-    AlertError,
-    Loading,
-    PrefixSearchWidget,
-    RefreshButton,
-    Warnings
+  ActionGroup,
+  ActionsBar,
+  AlertError,
+  Loading,
+  PrefixSearchWidget,
+  RefreshButton,
+  Warnings
 } from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
@@ -18,29 +18,29 @@ import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import { BsCloudArrowUp } from "react-icons/bs";
 
-import {humanSize, Tree} from "../../../lib/components/repository/tree";
-import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders} from "../../../lib/api";
-import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
-import {useRefs} from "../../../lib/hooks/repo";
-import {useRouter} from "../../../lib/hooks/router";
-import {RefTypeBranch} from "../../../constants";
+import { humanSize, Tree } from "../../../lib/components/repository/tree";
+import { objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders } from "../../../lib/api";
+import { useAPI, useAPIWithPagination } from "../../../lib/hooks/api";
+import { useRefs } from "../../../lib/hooks/repo";
+import { useRouter } from "../../../lib/hooks/router";
+import { RefTypeBranch } from "../../../constants";
 import {
-    ExecuteImportButton,
-    ImportDone,
-    ImportForm,
-    ImportPhase,
-    ImportProgress,
-    startImport
+  ExecuteImportButton,
+  ImportDone,
+  ImportForm,
+  ImportPhase,
+  ImportProgress,
+  startImport
 } from "../services/import_data";
 import { Box } from "@mui/material";
 import { RepoError } from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
-import {OverlayTrigger, ProgressBar} from "react-bootstrap";
+import { OverlayTrigger, ProgressBar } from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import { useSearchParams } from "react-router-dom";
 import { useStorageConfigs } from "../../../lib/hooks/storageConfig";
 import { getRepoStorageConfig } from "./utils";
-import {useDropzone} from "react-dropzone";
+import { useDropzone } from "react-dropzone";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -54,8 +54,8 @@ const ImportButton = ({ variant = "success", onClick, config }) => {
   const tip = config.import_support
     ? "Import data from a remote source"
     : config.blockstore_type === "local"
-    ? "Import is not enabled for local blockstore"
-    : "Unsupported for " + config.blockstore_type + " blockstore";
+      ? "Import is not enabled for local blockstore"
+      : "Unsupported for " + config.blockstore_type + " blockstore";
 
   return (
     <OverlayTrigger placement="bottom" overlay={<Tooltip>{tip}</Tooltip>}>
@@ -73,70 +73,70 @@ const ImportButton = ({ variant = "success", onClick, config }) => {
 };
 
 export const useInterval = (callback, delay) => {
-    const savedCallback = useRef();
+  const savedCallback = useRef();
 
-    useEffect(() => {
-        savedCallback.current = callback;
-    }, [callback]);
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
 
-    useEffect(() => {
-        function tick() {
-            savedCallback.current();
-        }
-        if (delay !== null) {
-            const id = setInterval(tick, delay);
-            return () => clearInterval(id);
-        }
-    }, [delay]);
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      const id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
 }
 
-const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onDone, onHide, show = false}) => {
-    const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
-    const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
-    const [isImportEnabled, setIsImportEnabled] = useState(false);
-    const [importError, setImportError] = useState(null);
-    const [metadataFields, setMetadataFields] = useState([])
-    const [importID, setImportID] = useState("")
+const ImportModal = ({ config, repoId, referenceId, referenceType, path = '', onDone, onHide, show = false }) => {
+  const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
+  const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
+  const [isImportEnabled, setIsImportEnabled] = useState(false);
+  const [importError, setImportError] = useState(null);
+  const [metadataFields, setMetadataFields] = useState([])
+  const [importID, setImportID] = useState("")
 
-    const sourceRef = useRef(null);
-    const destRef = useRef(null);
-    const commitMsgRef = useRef(null);
+  const sourceRef = useRef(null);
+  const destRef = useRef(null);
+  const commitMsgRef = useRef(null);
 
-    useInterval(() => {
-        if (importID !== "" && importPhase === ImportPhase.InProgress) {
-            const getState = async () => {
-                try {
-                    const importState = await imports.get(repoId, referenceId, importID);
-                    setNumberOfImportedObjects(importState.ingested_objects);
-                    if (importState.error) {
-                        throw importState.error;
-                    }
-                    if (importState.completed) {
-                        setImportPhase(ImportPhase.Completed);
-                        onDone();
-                    }
-                } catch (error) {
-                    setImportPhase(ImportPhase.Failed);
-                    setImportError(error);
-                    setIsImportEnabled(false);
-                }
-            };
-            getState()
+  useInterval(() => {
+    if (importID !== "" && importPhase === ImportPhase.InProgress) {
+      const getState = async () => {
+        try {
+          const importState = await imports.get(repoId, referenceId, importID);
+          setNumberOfImportedObjects(importState.ingested_objects);
+          if (importState.error) {
+            throw importState.error;
+          }
+          if (importState.completed) {
+            setImportPhase(ImportPhase.Completed);
+            onDone();
+          }
+        } catch (error) {
+          setImportPhase(ImportPhase.Failed);
+          setImportError(error);
+          setIsImportEnabled(false);
         }
-    }, 3000);
-    
-    if (!referenceId || referenceType !== RefTypeBranch) return <></>
-
-    let branchId = referenceId;
-    
-    const resetState = () => {
-        setImportError(null);
-        setImportPhase(ImportPhase.NotStarted);
-        setIsImportEnabled(false);
-        setNumberOfImportedObjects(0);
-        setMetadataFields([]);
-        setImportID("");
+      };
+      getState()
     }
+  }, 3000);
+
+  if (!referenceId || referenceType !== RefTypeBranch) return <></>
+
+  let branchId = referenceId;
+
+  const resetState = () => {
+    setImportError(null);
+    setImportPhase(ImportPhase.NotStarted);
+    setIsImportEnabled(false);
+    setNumberOfImportedObjects(0);
+    setMetadataFields([]);
+    setImportID("");
+  }
 
   const hide = () => {
     if (
@@ -148,79 +148,79 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
     onHide();
   };
 
-    const doImport = async () => {
-        setImportPhase(ImportPhase.InProgress);
-        try {
-            const metadata = {};
-            metadataFields.forEach(pair => metadata[pair.key] = pair.value)
-            setImportPhase(ImportPhase.InProgress)
-            await startImport(
-                setImportID,
-                destRef.current.value,
-                commitMsgRef.current.value,
-                sourceRef.current.value,
-                repoId,
-                branchId,
-                metadata
-            );
-        } catch (error) {
-            setImportPhase(ImportPhase.Failed);
-            setImportError(error);
-            setIsImportEnabled(false);
-        }
+  const doImport = async () => {
+    setImportPhase(ImportPhase.InProgress);
+    try {
+      const metadata = {};
+      metadataFields.forEach(pair => metadata[pair.key] = pair.value)
+      setImportPhase(ImportPhase.InProgress)
+      await startImport(
+        setImportID,
+        destRef.current.value,
+        commitMsgRef.current.value,
+        sourceRef.current.value,
+        repoId,
+        branchId,
+        metadata
+      );
+    } catch (error) {
+      setImportPhase(ImportPhase.Failed);
+      setImportError(error);
+      setIsImportEnabled(false);
     }
-    const pathStyle = {'minWidth': '25%'};
+  }
+  const pathStyle = { 'minWidth': '25%' };
 
-    return (
-        <>
-            <Modal show={show} onHide={hide} size="lg">
-                <Modal.Header closeButton>
-                    <Modal.Title>Import data from {config.blockstore_type}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {
+  return (
+    <>
+      <Modal show={show} onHide={hide} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Import data from {config.blockstore_type}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {
 
-                        <ImportForm
-                            config={config}
-                            repo={repoId}
-                            branch={branchId}
-                            pathStyle={pathStyle}
-                            sourceRef={sourceRef}
-                            destRef={destRef}
-                            updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
-                            path={path}
-                            commitMsgRef={commitMsgRef}
-                            metadataFields={metadataFields}
-                            setMetadataFields={setMetadataFields}
-                            err={importError}
-                            className={importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed ? '' : 'd-none'}
-                        />
-                    }
-                    {
-                        importPhase === ImportPhase.InProgress &&
-                        <ImportProgress numObjects={numberOfImportedObjects}/>
-                    }
-                    {
-                        importPhase === ImportPhase.Completed &&
-                        <ImportDone branch={branchId}
-                                    numObjects={numberOfImportedObjects}/>
-                    }
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={ async () => {
-                        if (importPhase === ImportPhase.InProgress && importID.length > 0) {
-                            await imports.delete(repoId, branchId, importID);
-                        }
-                        hide();
-                    }} hidden={importPhase === ImportPhase.Completed}>
-                        Cancel
-                    </Button>
+            <ImportForm
+              config={config}
+              repo={repoId}
+              branch={branchId}
+              pathStyle={pathStyle}
+              sourceRef={sourceRef}
+              destRef={destRef}
+              updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
+              path={path}
+              commitMsgRef={commitMsgRef}
+              metadataFields={metadataFields}
+              setMetadataFields={setMetadataFields}
+              err={importError}
+              className={importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed ? '' : 'd-none'}
+            />
+          }
+          {
+            importPhase === ImportPhase.InProgress &&
+            <ImportProgress numObjects={numberOfImportedObjects} />
+          }
+          {
+            importPhase === ImportPhase.Completed &&
+            <ImportDone branch={branchId}
+              numObjects={numberOfImportedObjects} />
+          }
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={async () => {
+            if (importPhase === ImportPhase.InProgress && importID.length > 0) {
+              await imports.delete(repoId, branchId, importID);
+            }
+            hide();
+          }} hidden={importPhase === ImportPhase.Completed}>
+            Cancel
+          </Button>
 
-                    <ExecuteImportButton
-                        importPhase={importPhase}
-                        importFunc={doImport}
-                        doneFunc={hide}
-                        isEnabled={isImportEnabled}/>
+          <ExecuteImportButton
+            importPhase={importPhase}
+            importFunc={doImport}
+            doneFunc={hide}
+            isEnabled={isImportEnabled} />
         </Modal.Footer>
       </Modal>
     </>
@@ -242,8 +242,8 @@ function extractChecksumFromResponse(parsedHeaders) {
   return null;
 }
 
-const uploadFile = async (config, repo, reference, path, file, onProgress) => {  
-  const fpath = destinationPath(path, file);  
+const uploadFile = async (config, repo, reference, path, file, onProgress) => {
+  const fpath = destinationPath(path, file);
   if (config.pre_sign_support_ui) {
     let additionalHeaders;
     if (config.blockstore_type === "azure") {
@@ -255,12 +255,12 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
       const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
       const checksum = extractChecksumFromResponse(parsedHeaders);
       await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
-    } catch(error) {
-       throw new Error(`Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ''}`);
+    } catch (error) {
+      throw new Error(`Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ''}`);
     }
   } else {
     await objects.upload(repo.id, reference.id, fpath, file, onProgress);
-    }
+  }
 };
 
 const destinationPath = (path, file) => {
@@ -271,12 +271,12 @@ const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }
   const fpath = destinationPath(path, file)
   let uploadIndicator = null;
   if (state && state.status === "uploading") {
-    uploadIndicator = <ProgressBar variant="success" now={state.percent}/>
+    uploadIndicator = <ProgressBar variant="success" now={state.percent} />
   } else if (state && state.status === "done") {
-    uploadIndicator = <strong><CheckboxIcon/></strong>
+    uploadIndicator = <strong><CheckboxIcon /></strong>
   } else if (!state && onRemove !== null) {
     uploadIndicator = (
-      <a  href="#" onClick={ e => {
+      <a href="#" onClick={e => {
         e.preventDefault()
         onRemove()
       }}>
@@ -307,7 +307,7 @@ const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }
   )
 };
 
-const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, show = false, disabled = false}) => {
+const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, show = false, disabled = false }) => {
   const initialState = {
     inProgress: false,
     error: null,
@@ -319,17 +319,23 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
   const [fileStates, setFileStates] = useState({});
   const [abortController, setAbortController] = useState(null)
   const onDrop = useCallback(acceptedFiles => {
+    if (uploadState.inProgress) return;
     setFiles([...acceptedFiles])
-  }, [files])
+  }, [files, uploadState.inProgress])
 
-  const { getRootProps, getInputProps, isDragAccept } = useDropzone({onDrop})
+  const { getRootProps, getInputProps, isDragAccept } = useDropzone({
+    onDrop,
+    disabled: uploadState.inProgress,
+    noClick: uploadState.inProgress,
+    noKeyboard: uploadState.inProgress
+  })
 
   if (!reference || reference.type !== RefTypeBranch) return <></>;
 
   const hide = () => {
     if (uploadState.inProgress) {
       if (abortController !== null) {
-          abortController.abort()
+        abortController.abort()
       } else {
         return
       }
@@ -356,19 +362,19 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
 
     const mapper = async (file) => {
       try {
-        setFileStates(next => ( {...next, [file.path]: {status: 'uploading', percent: 0}}))
+        setFileStates(next => ({ ...next, [file.path]: { status: 'uploading', percent: 0 } }))
         await uploadFile(config, repo, reference, currentPath, file, progress => {
-          setFileStates(next => ( {...next, [file.path]: {status: 'uploading', percent: progress}}))
+          setFileStates(next => ({ ...next, [file.path]: { status: 'uploading', percent: progress } }))
         })
       } catch (error) {
-        setFileStates(next => ( {...next, [file.path]: {status: 'error'}}))
+        setFileStates(next => ({ ...next, [file.path]: { status: 'error' } }))
         setUploadState({ ...initialState, error });
         throw error;
       }
-      setFileStates(next => ( {...next, [file.path]: {status: 'done'}}))
+      setFileStates(next => ({ ...next, [file.path]: { status: 'done' } }))
     }
 
-    setUploadState({...initialState,  inProgress: true });
+    setUploadState({ ...initialState, inProgress: true });
     try {
       await pMap(files, mapper, {
         concurrency: MAX_PARALLEL_UPLOADS,
@@ -419,58 +425,58 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
 
             <Form.Group controlId="path" className="mb-3">
               <Form.Text>Path</Form.Text>
-              <Form.Control disabled={uploadState.inProgress} defaultValue={currentPath} onChange={changeCurrentPath}/>
+              <Form.Control disabled={uploadState.inProgress} defaultValue={currentPath} onChange={changeCurrentPath} />
             </Form.Group>
 
             <Form.Group controlId="content" className="mb-3">
-              <div {...getRootProps({className: 'dropzone'})}>
-                  <input {...getInputProps()} />
-                  <div className={isDragAccept ? "file-drop-zone file-drop-zone-focus" : "file-drop-zone"}>
-                    Drag &apos;n&apos; drop files or folders here (or click to select)
-                  </div>
+              <div {...getRootProps({ className: 'dropzone', disabled: uploadState.inProgress })}>
+                <input {...getInputProps({ disabled: uploadState.inProgress })} />
+                <div className={isDragAccept ? "file-drop-zone file-drop-zone-focus" : "file-drop-zone"}>
+                  {uploadState.inProgress ? "Upload in progress..." : "Drag 'n' drop files or folders here (or click to select)"}
+                </div>
               </div>
               <aside className="mt-3">
                 {(files && files.length > 0) &&
-                  <h5>{files.length} File{files.length > 1 ? "s":""} to upload ({humanSize(files.reduce((a,f) => a + f.size ,0))})</h5>
+                  <h5>{files.length} File{files.length > 1 ? "s" : ""} to upload ({humanSize(files.reduce((a, f) => a + f.size, 0))})</h5>
                 }
                 {files && files.map(file =>
-                    <UploadCandidate
-                      key={file.path}
-                      config={config}
-                      repo={repo}
-                      reference={reference}
-                      file={file}
-                      path={currentPath}
-                      state={fileStates[file.path]}
-                      onRemove={!uploadState.inProgress ? onRemoveCandidate(file) : null}
-                    />
+                  <UploadCandidate
+                    key={file.path}
+                    config={config}
+                    repo={repo}
+                    reference={reference}
+                    file={file}
+                    path={currentPath}
+                    state={fileStates[file.path]}
+                    onRemove={!uploadState.inProgress ? onRemoveCandidate(file) : null}
+                  />
                 )}
               </aside>
             </Form.Group>
           </Form>
-        {(uploadState.error) ? (<AlertError error={uploadState.error}/>) : (<></>)}
-      </Modal.Body>
-    <Modal.Footer>
-        <Button variant="secondary" onClick={hide}>
+          {(uploadState.error) ? (<AlertError error={uploadState.error} />) : (<></>)}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={hide}>
             Cancel
-        </Button>
-        <Button variant="success" disabled={uploadState.inProgress || files.length < 1} onClick={() => {
+          </Button>
+          <Button variant="success" disabled={uploadState.inProgress || files.length < 1} onClick={() => {
             if (uploadState.inProgress) return;
             upload()
-        }}>
+          }}>
             {(uploadState.inProgress) ? 'Uploading...' : 'Upload'}
-        </Button>
-    </Modal.Footer>
-  </Modal>
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
-    <Button
-      variant={!config.import_support ? "success" : "light"}
-      disabled={disabled}
-      onClick={onClick}
+      <Button
+        variant={!config.import_support ? "success" : "light"}
+        disabled={disabled}
+        onClick={onClick}
       >
-      <UploadIcon /> Upload Object
-    </Button>
-  </>
+        <UploadIcon /> Upload Object
+      </Button>
+    </>
   );
 };
 
@@ -502,35 +508,35 @@ const TreeContainer = ({
   };
   const [deleteState, setDeleteState] = useState(initialState);
 
-    if (loading) return <Loading/>;
-    if (error) return <AlertError error={error}/>;
+  if (loading) return <Loading />;
+  if (error) return <AlertError error={error} />;
 
-    return (
-        <>
-            {deleteState.error && <AlertError error={deleteState.error} onDismiss={() => setDeleteState(initialState)}/>}
-            <Tree
-                config={{config}}
-                repo={repo}
-                reference={reference}
-                path={(path) ? path : ""}
-                showActions={true}
-                results={results}
-                after={after}
-                nextPage={nextPage}
-                onPaginate={onPaginate}
-                onUpload={onUpload}
-                onImport={onImport}
-                onDelete={entry => {
-                    objects
-                        .delete(repo.id, reference.id, entry.path)
-                        .catch(error => {
-                            setDeleteState({...initialState, error: error})
-                            throw error
-                        })
-                        .then(onRefresh)
-                }}
-            /></>
-    );
+  return (
+    <>
+      {deleteState.error && <AlertError error={deleteState.error} onDismiss={() => setDeleteState(initialState)} />}
+      <Tree
+        config={{ config }}
+        repo={repo}
+        reference={reference}
+        path={(path) ? path : ""}
+        showActions={true}
+        results={results}
+        after={after}
+        nextPage={nextPage}
+        onPaginate={onPaginate}
+        onUpload={onUpload}
+        onImport={onImport}
+        onDelete={entry => {
+          objects
+            .delete(repo.id, reference.id, entry.path)
+            .catch(error => {
+              setDeleteState({ ...initialState, error: error })
+              throw error
+            })
+            .then(onRefresh)
+        }}
+      /></>
+  );
 }
 
 const ReadmeContainer = ({
@@ -561,19 +567,19 @@ const ReadmeContainer = ({
   const fileExtension = getFileExtension(readmePath);
   const contentType = getContentType(response?.headers);
 
-    return (
-        <FileContents 
-            repoId={repo.id} 
-            reference={reference}
-            path={readmePath}
-            fileExtension={fileExtension}
-            contentType={contentType}
-            error={error}
-            loading={loading}
-            showFullNavigator={false}
-            presign={config.pre_sign_support_ui}
-        />
-    );
+  return (
+    <FileContents
+      repoId={repo.id}
+      reference={reference}
+      path={readmePath}
+      fileExtension={fileExtension}
+      contentType={contentType}
+      error={error}
+      loading={loading}
+      showFullNavigator={false}
+      presign={config.pre_sign_support_ui}
+    />
+  );
 }
 
 const NoGCRulesWarning = ({ repoId }) => {
@@ -775,20 +781,20 @@ const ObjectsBrowser = ({ config }) => {
 };
 
 const RepositoryObjectsPage = () => {
-    const {repo} = useRefs();
-    const {configs: storageConfigs, loading: configsLoading, error: configsError} = useStorageConfigs();
+  const { repo } = useRefs();
+  const { configs: storageConfigs, loading: configsLoading, error: configsError } = useStorageConfigs();
 
-    const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("objects"), [setActivePage]);
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("objects"), [setActivePage]);
 
-    if (configsLoading) return <Loading/>;
-    if (configsError) return <RepoError error={configsError}/>;
+  if (configsLoading) return <Loading />;
+  if (configsError) return <RepoError error={configsError} />;
 
-    const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(storageConfigs, repo);
-    if (configLoading) return <Loading/>;
-    if (configError) return <RepoError error={configError}/>;
+  const { storageConfig, loading: configLoading, error: configError } = getRepoStorageConfig(storageConfigs, repo);
+  if (configLoading) return <Loading />;
+  if (configError) return <RepoError error={configError} />;
 
-    return <ObjectsBrowser config={storageConfig}/>;
+  return <ObjectsBrowser config={storageConfig} />;
 };
 
 export default RepositoryObjectsPage;
