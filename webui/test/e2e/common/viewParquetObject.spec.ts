@@ -30,7 +30,7 @@ test.describe("Object Viewer - Parquet File", () => {
         await repositoriesPage.goto();
         await page.getByRole('button', { name: "admin" }).click();
         await page.getByRole("button", { name: "Logout" }).click();
-
+        await page.waitForURL(/.*\/auth\/login/); // wait for redirect after logout from / to /auth/login to avoid race conditions
         const loginPage = new LoginPage(page);
         const credentials = await getCredentials();
         if (!credentials) {
