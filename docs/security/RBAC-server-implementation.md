@@ -1,24 +1,12 @@
 ---
-title: RBAC Server Implementation -Deprecated-
+title: RBAC Server Implementation 
 description: Instructions for implementing an RBAC server to manage permissions in lakeFS OSS.
 parent: Security
 ---
 
 # RBAC Server Implementation
 
-## Table of Contents
-
-- [Overview](#overview)
-- [What is RBAC?](#what-is-rbac)
-- [Setting Up the RBAC Server](#setting-up-the-rbac-server)
-   - [Implementation](#implementation)
-      - [Credentials APIs](#credentials-apis)
-      - [Users APIs](#users-apis)
-      - [Groups APIs](#groups-apis)
-      - [Policies APIs](#policies-apis)
-   - [LakeFS Configuration](#configuration)
-   - [Setup Considerations](#setup-considerations)
-   - [Running the Server](#running-the-server)
+{% include toc_2-4.html %}
 
 ## Overview
 
@@ -30,6 +18,7 @@ Contents:
 2. How to configure lakeFS OSS to connect to your RBAC server.
 3. How to run lakeFS OSS with your RBAC server.
 
+{: .note}
 > For a detailed explanation of the RBAC model in lakeFS, see [RBAC in lakeFS](./rbac.md).
 
 ## What is RBAC?
@@ -55,6 +44,7 @@ Not all APIs in the specification are required — only those listed below, grou
 
 Implement all APIs under these categories.
 
+{: .note}
 > For detailed descriptions of each API, including their input and output parameters, refer to each API in
 > the [authentication.yaml specification](./authorization-yaml.md).
 
@@ -127,7 +117,8 @@ auth:
     token:
 ```
 
-> **Note:** The `auth.api.token` parameter is optional. If unspecified, lakeFS uses the `auth.encrypt.secret_key` as 
+{: .note}
+> The `auth.api.token` parameter is optional. If unspecified, lakeFS uses the `auth.encrypt.secret_key` as 
 > the token. If specified, provide a JWT token directly or via the environment variable `LAKEFS_AUTH_API_TOKEN`.
 
 ### Setup Considerations
