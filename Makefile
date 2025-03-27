@@ -111,7 +111,7 @@ tools: ## Install tools
 client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
 	rm -rf clients/python
 	mkdir -p clients/python
-	cp clients/python-static/openapi-generator-ignore clients/python/.openapi-generator-ignore
+	cp clients/python-static/.openapi-generator-ignore clients/python
 	$(PY_OPENAPI_GENERATOR) generate \
 		-i /mnt/$< \
 		-g python \
