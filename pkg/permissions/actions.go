@@ -71,8 +71,8 @@ const (
 	PrepareGarbageCollectionUncommittedAction = "retention:PrepareGarbageCollectionUncommitted"
 	GetBranchProtectionRulesAction            = "branches:GetBranchProtectionRules"
 	SetBranchProtectionRulesAction            = "branches:SetBranchProtectionRules"
-	ReadPullReqeustAction                     = "pr:ReadPullRequest"
-	WritePullReqeustAction                    = "pr:WritePullRequest"
+	ReadPullRequestAction                     = "pr:ReadPullRequest"
+	WritePullRequestAction                    = "pr:WritePullRequest"
 	ListPullRequestsAction                    = "pr:ListPullRequests"
 )
 
