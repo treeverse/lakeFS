@@ -5405,7 +5405,7 @@ func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, re
 func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.CreatePullRequestJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.WritePullReqeustAction,
+			Action:   permissions.WritePullRequestAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5441,7 +5441,7 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadPullReqeustAction,
+			Action:   permissions.ReadPullRequestAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5473,7 +5473,7 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.UpdatePullRequestJSONRequestBody, repository string, pullRequestID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.WritePullReqeustAction,
+			Action:   permissions.WritePullRequestAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5511,7 +5511,7 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.WritePullReqeustAction,
+					Action:   permissions.WritePullRequestAction,
 					Resource: permissions.RepoArn(repository),
 				},
 			},
