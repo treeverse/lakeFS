@@ -79,8 +79,9 @@ func TestConfig_NewFromFile(t *testing.T) {
 
 	t.Run("auth fixture", func(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
-			_, err := newConfigFromFile("testdata/auth_fixture/basic_auth.yaml")
+			c, err := newConfigFromFile("testdata/auth_fixture/basic_auth.yaml")
 			require.NoError(t, err)
+			require.Equal(t, "test value", c.AuthConfig().Encrypt.SecretKey.SecureValue())
 		})
 		t.Run("invalid auth", func(t *testing.T) {
 			_, err := newConfigFromFile("testdata/auth_fixture/invalid_auth.yaml")

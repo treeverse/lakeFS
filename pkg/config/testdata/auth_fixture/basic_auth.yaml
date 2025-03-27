@@ -19,4 +19,4 @@ blockstore:
 
 auth:
   encrypt:
-    secret_key: "required in config"
+    secret_key: "test value"
