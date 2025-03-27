@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/go-openapi/swag"
 	"os"
 	"os/exec"
 	"regexp"
@@ -15,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 )
