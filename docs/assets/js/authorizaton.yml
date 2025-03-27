@@ -448,7 +448,7 @@ paths:
             type: string
       responses:
         200:
-          description: User list
+          description: user list
           content:
             application/json:
               schema:
@@ -511,7 +511,7 @@ paths:
       summary: get user
       responses:
         200:
-          description: User
+          description: user
           content:
             application/json:
               schema:
@@ -533,7 +533,7 @@ paths:
       summary: delete user
       responses:
         204:
-          description: User deleted successfully.
+          description: user deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -563,7 +563,7 @@ paths:
               $ref: "#/components/schemas/UserPassword"
       responses:
         200:
-          description: Password updated successfully.
+          description: password updated succesfully
         400:
           $ref: "#/components/responses/ValidationError"
         401:
@@ -600,7 +600,7 @@ paths:
                   type: string
       responses:
         204:
-          description: Friendly name was successfully updated.
+          description: friendly name was successfully updated.
         400:
           $ref: "#/components/responses/ValidationError"
         401:
@@ -1036,7 +1036,7 @@ paths:
       summary: delete credentials
       responses:
         204:
-          description: Credentials deleted successfully.
+          description: credentials deleted successfully
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -1201,7 +1201,7 @@ paths:
       summary: attach policy to user
       responses:
         201:
-          description: Policy attached successfully.
+          description: policy attached successfully
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -1251,7 +1251,7 @@ paths:
       summary: list group policies
       responses:
         200:
-          description: Policy list
+          description: policy list
           content:
             application/json:
               schema:
@@ -1296,7 +1296,8 @@ paths:
 
     delete:
       description: Detaches a policy from a specific group. Takes a unique groupId and policyId as input. No output is
-        returned if the detachment is successful. This endpoint should be implemented in a function named detachPolicyFromGroup.
+        returned if the detachment is successful. This endpoint should be implemented in a function named
+        detachPolicyFromGroup.
       tags:
         - auth
         - groups
@@ -1304,7 +1305,7 @@ paths:
       summary: detach policy from group
       responses:
         204:
-          description: Policy detached successfully.
+          description: policy detached successfully
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
