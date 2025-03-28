@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/go-openapi/swag"
-
 	"github.com/go-test/deep"
 	"github.com/mitchellh/mapstructure"
 	"github.com/treeverse/lakefs/pkg/config"
