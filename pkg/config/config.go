@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -558,64 +557,13 @@ func UnmarshalKey(key string, rawVal any) error {
 func decoderConfig() viper.DecoderConfigOption {
 	hook := viper.DecodeHook(
 		mapstructure.ComposeDecodeHookFunc(
-			StringToStructHookFunc(),
-			StringToSliceWithBracketHookFunc(),
 			DecodeStrings,
 			mapstructure.StringToTimeDurationHookFunc(),
 			DecodeStringToMap(),
+			StringToStructHookFunc(),
+			StringToSliceWithBracketHookFunc(),
 		))
 	return hook
-}
-
-func StringToSliceWithBracketHookFunc() mapstructure.DecodeHookFunc {
-	return func(f reflect.Kind, t reflect.Kind, data interface{}) (interface{}, error) {
-		if f != reflect.String || t != reflect.Slice {
-			return data, nil
-		}
-
-		raw := data.(string)
-		if raw == "" {
-			return []string{}, nil
-		}
-		var slice []json.RawMessage
-		err := json.Unmarshal([]byte(raw), &slice)
-		if err != nil {
-			return data, nil
-		}
-
-		var strSlice []string
-		for _, v := range slice {
-			strSlice = append(strSlice, string(v))
-		}
-		return strSlice, nil
-	}
-}
-
-func StringToStructHookFunc() mapstructure.DecodeHookFunc {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-		if f.Kind() != reflect.String ||
-			(t.Kind() != reflect.Struct && !(t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct)) {
-			return data, nil
-		}
-		raw := data.(string)
-		var val reflect.Value
-		// Struct or the pointer to a struct
-		if t.Kind() == reflect.Struct {
-			val = reflect.New(t)
-		} else {
-			val = reflect.New(t.Elem())
-		}
-
-		if raw == "" {
-			return val, nil
-		}
-		var m map[string]interface{}
-		err := json.Unmarshal([]byte(raw), &m)
-		if err != nil {
-			return data, nil
-		}
-		return m, nil
-	}
 }
 
 func stringReverse(s string) string {
