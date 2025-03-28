@@ -560,6 +560,8 @@ func decoderConfig() viper.DecoderConfigOption {
 			DecodeStrings,
 			mapstructure.StringToTimeDurationHookFunc(),
 			DecodeStringToMap(),
+			StringToStructHookFunc(),
+			StringToSliceWithBracketHookFunc(),
 		))
 	return hook
 }
