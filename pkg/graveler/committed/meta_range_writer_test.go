@@ -52,7 +52,7 @@ func TestWriter_WriteRecords(t *testing.T) {
 
 	rangeManagerMeta := mock.NewMockRangeManager(ctrl)
 	rangeManagerMeta.EXPECT().GetWriter(gomock.Any(), gomock.Any(), gomock.Any()).Return(fakeMetaWriter, nil)
-	storageID := committed.StorageID("")
+	storageID := committed.StorageID("sid")
 	namespace := committed.Namespace("ns")
 	w := committed.NewGeneralMetaRangeWriter(ctx, rangeManager, rangeManagerMeta, &params, storageID, namespace, nil)
 
@@ -102,7 +102,7 @@ func TestWriter_OverlappingRanges(t *testing.T) {
 	defer ctrl.Finish()
 
 	rangeManager := mock.NewMockRangeManager(ctrl)
-	storageID := committed.StorageID("")
+	storageID := committed.StorageID("sid")
 	namespace := committed.Namespace("ns")
 	rng := committed.Range{MinKey: committed.Key("a"), MaxKey: committed.Key("g")}
 	rng2 := committed.Range{MinKey: committed.Key("c"), MaxKey: committed.Key("l")}
@@ -133,7 +133,7 @@ func TestWriter_RecordRangeAndClose(t *testing.T) {
 	rangeManagerMeta := mock.NewMockRangeManager(ctrl)
 	fakeMetaWriter := NewFakeRangeWriter(&committed.WriteResult{}, nil)
 
-	storageID := committed.StorageID("")
+	storageID := committed.StorageID("sid")
 	namespace := committed.Namespace("ns")
 	record := graveler.ValueRecord{Key: nil, Value: &graveler.Value{}}
 	rng := committed.Range{ID: "rng2-id", MinKey: committed.Key("a"), MaxKey: committed.Key("g"), Count: 4}

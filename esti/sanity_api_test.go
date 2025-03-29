@@ -14,7 +14,7 @@ func TestSanityAPI(t *testing.T) {
 	ctx, log, repo := setupTest(t)
 
 	log.Debug("list entries")
-	entries := listRepositoryObjects(ctx, t, repo, mainBranch)
+	entries := ListRepositoryObjects(ctx, t, repo, mainBranch, client)
 	require.Len(t, entries, 0, "expected no entries")
 
 	log.Debug("upload some files")
@@ -23,7 +23,7 @@ func TestSanityAPI(t *testing.T) {
 	contents := make([]string, numOfFiles)
 	for i := 0; i < numOfFiles; i++ {
 		paths[i] = fmt.Sprintf("file%d", i)
-		_, contents[i] = UploadFileRandomData(ctx, t, repo, mainBranch, paths[i])
+		_, contents[i] = UploadFileRandomData(ctx, t, repo, mainBranch, paths[i], nil)
 	}
 
 	log.Debug("verify upload content")
@@ -36,7 +36,7 @@ func TestSanityAPI(t *testing.T) {
 	}
 
 	log.Debug("list uncommitted files")
-	entries = listRepositoryObjects(ctx, t, repo, mainBranch)
+	entries = ListRepositoryObjects(ctx, t, repo, mainBranch, client)
 	require.Len(t, entries, numOfFiles, "repository should have files")
 
 	log.Debug("commit changes")
@@ -47,7 +47,7 @@ func TestSanityAPI(t *testing.T) {
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 
 	log.Debug("list files on main")
-	entries = listRepositoryObjects(ctx, t, repo, mainBranch)
+	entries = ListRepositoryObjects(ctx, t, repo, mainBranch, client)
 	require.Len(t, entries, numOfFiles, "repository should have files")
 
 	log.Debug("create 'branch1' based on 'main'")
@@ -79,7 +79,7 @@ func TestSanityAPI(t *testing.T) {
 		"match existing branches")
 
 	log.Debug("branch1 - change file0")
-	_, _ = UploadFileRandomData(ctx, t, repo, "branch1", "file0")
+	_, _ = UploadFileRandomData(ctx, t, repo, "branch1", "file0", nil)
 
 	log.Debug("branch1 - delete file1")
 	deleteResp, err := client.DeleteObjectWithResponse(ctx, repo, "branch1", &apigen.DeleteObjectParams{Path: "file1"})
@@ -87,10 +87,10 @@ func TestSanityAPI(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, deleteResp.StatusCode())
 
 	log.Debug("branch1 - add fileX")
-	_, _ = UploadFileRandomData(ctx, t, repo, "branch1", "fileX")
+	_, _ = UploadFileRandomData(ctx, t, repo, "branch1", "fileX", nil)
 
 	log.Debug("main - list files")
-	mainObjects := listRepositoryObjects(ctx, t, repo, "main")
+	mainObjects := ListRepositoryObjects(ctx, t, repo, "main", client)
 	mainPaths := make([]string, len(mainObjects))
 	for i, obj := range mainObjects {
 		mainPaths[i] = obj.Path
@@ -98,7 +98,7 @@ func TestSanityAPI(t *testing.T) {
 	require.EqualValues(t, mainPaths, paths)
 
 	log.Debug("branch1 - list objects")
-	branch1Objects := listRepositoryObjects(ctx, t, repo, "branch1")
+	branch1Objects := ListRepositoryObjects(ctx, t, repo, "branch1", client)
 	for i := range branch1Objects {
 		mainPaths[i] = branch1Objects[i].Path
 	}

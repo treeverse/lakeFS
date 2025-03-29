@@ -45,8 +45,8 @@ jobs:
       - name: Store generated code
         uses: actions/upload-artifact@v4
         with:
-            name: generated-code
-            path: /tmp/generated.tar.gz
+          name: generated-code
+          path: /tmp/generated.tar.gz
 
       - name: Build Spark direct-access client
         working-directory: clients/hadoopfs
@@ -178,6 +178,9 @@ jobs:
           - 1.49.0
           - 1.49.1
           - 1.50.0
+          - 1.51.0
+          - 1.52.0
+          - 1.53.0
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}
@@ -201,7 +204,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
-          cache: 'pip'
+          cache: "pip"
       - run: pip install -r ./test/spark/requirements.txt
 
       - name: Generate uniquifying value
@@ -253,7 +256,7 @@ jobs:
       matrix:
         # Removing a version from this list means the current lakeFS is no longer compatible with
         # that Hadoop lakeFS client version.
-        client_version: [ 0.1.10, 0.1.11, 0.1.12, 0.1.13, 0.1.14, 0.1.15, 0.2.1 ]
+        client_version: [0.1.10, 0.1.11, 0.1.12, 0.1.13, 0.1.14, 0.1.15, 0.2.1]
     runs-on: ubuntu-22.04
     env:
       CLIENT_VERSION: ${{ matrix.client_version }}
@@ -291,7 +294,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
-          cache: 'pip'
+          cache: "pip"
       - run: pip install -r ./test/spark/requirements.txt
 
       - name: Generate uniquifying value
@@ -336,13 +339,13 @@ jobs:
     runs-on: ubuntu-22.04
     if: ${{ always() && contains(needs.*.result, 'failure') }}
     steps:
-    - name: slack-send
-      uses: slackapi/slack-github-action@v1.23.0
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      with:
-        payload: |
-          {
-            "mrkdwn": true,
-            "text": "Compatibility tests failure in master branch: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          }
+      - name: slack-send
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          payload: |
+            {
+              "mrkdwn": true,
+              "text": "Compatibility tests failure in master branch: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }

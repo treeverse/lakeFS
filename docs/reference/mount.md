@@ -21,13 +21,18 @@ This functionality is currently in limited support and is a Read-Only file syste
 ⚠️ No installation is required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access to the Everest binary.
 {: .note }
 
+**Note**
+Everest mount supports writing to the file system for both NFS and FUSE protocols starting version 0.2.0!
+[Everest mount write mode semantics](mount-write-mode-semantics.md).
+{: .note }
+
 {% include toc.html %}
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU"></iframe>
 
 ## Use Cases
 
-* **Simplified Data Loading**: With lakeFS Mount, there's no need to write custom data loaders or use special SDKs. You can use your existing tools to read files directly from the filesystem.
+* **Simplified Data Loading**: With lakeFS Mount, there's no need to write custom data loaders or use special SDKs. You can use your existing tools to read and write files directly from the filesystem.
 * **Handle Large-scale Data Without changing Work Habits**: Seamlessly scale from a few local files to millions without changing your tools or workflow. Use the same code from early experimentation all the way to production.
 * **Enhanced Data Loading Efficiency**: lakeFS Mount supports billions of files and offers fast data fetching, making it ideal for optimizing GPU utilization and other performance-sensitive tasks.
 
@@ -37,9 +42,8 @@ This functionality is currently in limited support and is a Read-Only file syste
 
 ### OS and Protocol Support
 
-Currently the implemented protocols are `nfs` and `fuse`.
+Currently, the implemented protocols are `nfs` and `fuse`.
 - NFS V3 (Network File System) is supported on macOS.
-- FUSE is supported on Linux (no root required).
 
 ## Authentication with lakeFS
 
@@ -52,17 +56,16 @@ Searching for lakeFS credentials and server endpoint in the following order:
 ## Command Line Interface
 
 ### Mount Command
-
 The `mount` command is used to mount a lakeFS repository to a local directory, it does it in 2 steps:
 - Step 1: Starting a server that listens on a local address and serves the data from the remote lakeFS repository.
-- Step 2:  Running the required mount command on the OS level to connect the server to the local directory.
+- Step 2: Running the required mount command on the OS level to connect the server to the local directory.
 
 #### Tips:
-
 - Since the server runs in the background set `--log-output /some/file` to view the logs in a file.
-- Cache: Everest uses a local cache to store the data and metadata of the lakeFS repository. The optimal cache size is the size of the data you are going to read.
+- Cache: Everest uses a local cache to store the data and metadata of the lakeFS repository. The optimal cache size is the size of the data you are going to read/write.
 - Reusing Cache: between restarts of the same mount endpoint, set `--cache-dir` to make sure the cache is reused.
-- Mounted data consistency: When providing lakeFS URI mount endpoint `lakefs://<repo>/<ref>/<path>` the `<ref>` should be a specific commit ID. If a branch/tag is provided, Everest will use the HEAD commit instead.
+- Mounted data consistency (read-mode): When providing lakeFS URI mount endpoint `lakefs://<repo>/<ref>/<path>` the `<ref>` should be a specific commit ID. If a branch/tag is provided, Everest will use the HEAD commit instead.
+- When running mount in write-mode, the lakeFS URI must be a branch name, not a commit ID or a tag.
 
 #### Usage
 ```bash
@@ -79,19 +82,48 @@ Flags
 --log-level: Set logging level.
 --log-format: Set logging output format.
 --log-output: Set logging output(s).
+--write-mode: Enable write mode (default: false).
 ```
 
 ### Umount Command
 The `umount` command is used to unmount a currently mounted lakeFS repository.
 
 ```bash
-everest umount <data_directory>
+everest umount <mount_directory>
 ````
+
+### Diff Command (write-mode only)
+The `diff` command Show the diff between the source branch and the current mount directory. 
+If `<mount_directory>` not specified, the command searches for the mount directory in the current working directory and upwards based on `.everest` directory existence.
+Please note that the diffs are from the source branch state at the time of mounting and not the current state of the source branch, i.e., changes to the source branch from other operations will not be reflected in the diff result.
+
+```bash
+everest diff <mount_directory>
+
+#Example output:
+# - removed datasets/pets/cats/persian/cute.jpg
+# ~ modified datasets/pets/dogs/golden_retrievers/cute.jpg
+# + added datasets/pets/birds/parrot/cute.jpg
+```
+
+### Commit Command (write-mode only)
+The `commit` command commits the changes made in the mounted directory to the original lakeFS branch.
+If `<mount_directory>` not specified, the command searches for the mount directory in the current working directory and upwards based on `.everest` directory existence.
+The new commit will be merged to the original branch with the `source-wins` strategy.
+After the commit is successful, the mounted directory source commit will be updated to the HEAD of the latest commit at the source branch; that means that changes made to the source branch out of the mount scope will also be reflected in the mounted directory.
+
+**Note**
+⚠️ Writes to a mount directory during commit may be lost.
+{: .note }
+
+```bash
+everest commit <mount_directory> -m <optional_commit_message>
+```
 
 ### mount-server Command (Advanced)
 
 **Note**
-⚠️ The `mount-server` command is for advanced use cases and will only spin the server without calling OS mount command.
+ The `mount-server` command is for advanced use cases and will only spin the server without calling OS mount command.
 {: .note }
 
 The mount-server command starts a mount server manually. Generally, users would use the mount command which handles server operations automatically.
@@ -110,15 +142,34 @@ Flags
 --cache-size: Size of the local cache in bytes.
 --parallelism: Number of parallel downloads for metadata.
 --presign: Use presign for downloading.
+--write-mode: Enable write mode (default: false).
 ```
+
+### Partial Reads
+
+{: .d-inline-block }
+experimental
+{: .label .label-red }
+
+When reading large files, Everest can fetch from lakeFS only the parts actually accessed.
+This can be useful for streaming workloads or for applications handling file formats such as Parquet, m4a, zip, tar that do not need to read the entire file.
+
+To enable partial reads, pass the `--partial-reads` flag to the `mount` (or `mount-server`) command:
+
+```bash
+everest mount --partial-reads "lakefs://image-repo/main/datasets/pets/" "./pets"
+```
+
 
 ## Examples
 
+### Read-Only Mode (default)
+
 **Note**
-⚠️ For simplicity, the examples show `main` as the ref, Everest will always mount a specific commit ID, given a ref it will use the HEAD (e.g most recent commit).
+⚠️ For simplicity, the examples show `main` as the ref, Everest will always mount a specific commit ID when using read-only mode, given a ref it will use the HEAD (e.g the most recent commit).
 {: .note }
 
-#### Data Exploration
+##### Data Exploration
 Mount the lakeFS repository and explore data as if it's on the local filesystem.
 
 ```bash
@@ -127,16 +178,45 @@ ls -l "./pets/dogs/"
 find ./pets -name "*.small.jpg"
 open -a Preview "./pets/dogs/golden_retrievers/cute.jpg"
 everest umount "./pets"
-
 ```
-#### Working with Data Locally
+
+##### Working with Data Locally
 Mount the remote lakeFS server and use all familiar tools without changing the workflow.
 ```bash
-everest mount "lakefs://image-repo/main/datasets/pets/" "./pets"
-pytorch_train.py --input "./pets"
+everest mount lakefs://image-repo/main/datasets/pets/ ./pets
+pytorch_train.py --input ./pets
 duckdb "SELECT * FROM read_parquet('pets/labels.parquet')"
-everest umount "./pets"
+everest umount ./pets
 ```
+
+### Write Mode
+
+##### Changing Data Locally
+Mount the remote lakeFS server in write mode and change data locally.
+```bash
+everest mount lakefs://image-repo/main/datasets/pets/ ./pets --write-mode
+# Add a new file
+echo "new data" >> ./pets/birds/parrot/cute.jpg
+# Update an existing file
+echo "new data" >> ./pets/dogs/golden_retrievers/cute.jpg
+# Delete a file
+rm ./pets/cats/persian/cute.jpg
+
+# Check the changes
+everest diff ./pets
+# - removed datasets/pets/cats/persian/cute.jpg
+# ~ modified datasets/pets/dogs/golden_retrievers/cute.jpg
+# + added datasets/pets/birds/parrot/cute.jpg
+
+# Commit the changes to the original lakeFS branch
+everest commit ./pets
+
+everest diff ./pets
+# No changes
+
+everest umount ./pets
+```
+To learn more, read about [Mount Write Mode Semantics](mount-write-mode-semantics.md).
 
 [lakectl]: {% link reference/cli.md %}
 
@@ -146,14 +226,10 @@ everest umount "./pets"
 
 ### How do I get started with lakeFS Mount (Everest)?
 
-lakeFS Mount is avaialble for lakeFS Cloud and lakeFS Enterprise customers. Once your setup is complete, [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to access the lakeFS Mounts binary and follow the provided docs.
+lakeFS Mount is available for lakeFS Cloud and lakeFS Enterprise customers. Once your setup is complete, [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to access the lakeFS Mounts binary and follow the provided docs.
 
 * Want to try lakeFS Cloud? [Signup](https://lakefs.cloud/register) for a 30-day free trial.
 * Interested in lakeFS Enterprise? [Contact sales](https://lakefs.io/contact-sales/) for a 30-day free license.
-
-###  Can I write to lakeFS using lakeFS Mount?
-
-Currently, lakeFS Mount supports read-only file system operations. Write support is on our roadmap and will be added in the future.
 
 ### What operating systems are supported by lakeFS Mount?
 
@@ -163,7 +239,7 @@ lakeFS Mount supports Linux and MacOS. Windows support is on the roadmap.
 
 You can use lakeFS’s existing [Role-Based Access Control mechanism](../security/rbac.md), which includes repository and path-level policies. lakeFS Mount translates filesystem operations into lakeFS API operations and authorizes them based on these policies.
 
-The minimal RBAC permissions required for mounting a prefix from a lakeFS repository looks like this:
+The minimal RBAC permissions required for mounting a prefix from a lakeFS repository in read-only mode:
 ```json
 {
   "id": "MountPolicy",
@@ -179,11 +255,54 @@ The minimal RBAC permissions required for mounting a prefix from a lakeFS reposi
       "action": [
         "fs:ListObjects",
         "fs:ReadCommit",
+        "fs:ReadBranch",
+        "fs:ReadTag",
         "fs:ReadRepository"
-
       ],
       "effect": "allow",
       "resource": "arn:lakefs:fs:::repository/<repository-name>"
+    },
+    {
+      "action": ["fs:ReadConfig"],
+      "effect": "allow",
+      "resource": "*"
+    }
+  ]
+}
+```
+
+The minimal RBAC permissions required for mounting a prefix from a lakeFS repository in write mode:
+```json
+{
+  "id": "MountPolicy",
+  "statement": [
+    {
+      "action": [
+        "fs:ReadObject",
+        "fs:WriteObject",
+        "fs:DeleteObject"
+      ],
+      "effect": "allow",
+      "resource": "arn:lakefs:fs:::repository/<repository-name>/object/<prefix>/*"
+    },
+    {
+      "action": [
+        "fs:ListObjects",
+        "fs:ReadCommit",
+        "fs:ReadBranch",
+        "fs:ReadRepository",
+        "fs:CreateCommit",
+        "fs:CreateBranch",
+        "fs:DeleteBranch",
+        "fs:RevertBranch"
+      ],
+      "effect": "allow",
+      "resource": "arn:lakefs:fs:::repository/<repository-name>"
+    },
+    {
+      "action": ["fs:ReadConfig"],
+      "effect": "allow",
+      "resource": "*"
     }
   ]
 }
@@ -191,7 +310,7 @@ The minimal RBAC permissions required for mounting a prefix from a lakeFS reposi
 
 ### Does data pass through the lakeFS server when using lakeFS Mount?
 
-lakeFS Mount leverages  pre-signed URLs to read data directly from the underlying object store, meaning data doesn’t  pass through the lakeFS server. By default, presign is enabled. To disable it, use:
+lakeFS Mount leverages pre-signed URLs to read data directly from the underlying object store, meaning data doesn’t  pass through the lakeFS server. By default, presign is enabled. To disable it, use:
 ```shell
 everest mount <lakefs_uri> <mount_directory> --presign=false
 ```
@@ -231,13 +350,9 @@ While both lakectl local and lakeFS Mount enable working with lakeFS data locall
 
 ##### Use lakeFS Mount
 
-For read-only local data access. lakeFS Mount offers several benefits over lakectl local:
+For local data access, lakeFS Mount offers several benefits over lakectl local:
 * **Optimized selective data access**: The lazy prefetch strategy saves storage space and reduces latency by only fetching the required data.
 * **Reduced initial latency**: Start working on your data immediately without waiting for downloads.
-
-**Note**
-Write support for lakeFS Mount is on our roadmap.
-{: .note }
 
 <!-- END EXCLUDE FROM TOC -->
 

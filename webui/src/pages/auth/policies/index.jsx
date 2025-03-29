@@ -17,6 +17,8 @@ import {
     Loading,
     RefreshButton,
     Warning,
+    useDebouncedState,
+    SearchInput
 } from "../../../lib/components/controls";
 import {useRouter} from "../../../lib/hooks/router";
 import {useLoginConfigContext} from "../../../lib/hooks/conf";
@@ -32,10 +34,17 @@ const PoliciesContainer = () => {
     const [createModalError, setCreateModalError] = useState(null);
 
     const router = useRouter();
-    const after = (router.query.after) ? router.query.after : "";
-    const { results, loading, error, nextPage } =  useAPIWithPagination(() => {
-        return auth.listPolicies("", after);
-    }, [after, refresh]);
+    const prefix = router.query.prefix ? router.query.prefix : "";
+    const after = router.query.after ? router.query.after : "";
+
+    const [searchPrefix, setSearchPrefix] = useDebouncedState(
+        prefix,
+        search => router.push({ pathname: '/auth/policies', query: {prefix: search} })
+    );
+
+    const { results, loading, error, nextPage } = useAPIWithPagination(() => {
+        return auth.listPolicies(prefix, after);
+    }, [refresh, prefix, after]);
 
     useEffect(() => { setSelected([]); }, [after, refresh]);
 
@@ -70,6 +79,11 @@ const PoliciesContainer = () => {
                     </ConfirmationButton>
                 </ActionGroup>
                 <ActionGroup orientation="right">
+                    <SearchInput
+                        searchPrefix={searchPrefix}
+                        setSearchPrefix={setSearchPrefix}
+                        placeholder="Find a Policy..."
+                    />
                     <RefreshButton onClick={() => setRefresh(!refresh)}/>
                 </ActionGroup>
             </ActionsBar>
@@ -126,7 +140,7 @@ const PoliciesContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => router.push({pathname: '/auth/policies', query: {after}})}
+                onPaginate={after => router.push({pathname: "/auth/policies", query: {prefix, after}})}
             />
         </>
     );

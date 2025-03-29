@@ -1640,7 +1640,7 @@ func (g *Graveler) GetStagingToken(ctx context.Context, repository *RepositoryRe
 }
 
 func (g *Graveler) getGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRules, error) {
-	return g.garbageCollectionManager.GetRules(ctx, repository.StorageNamespace)
+	return g.garbageCollectionManager.GetRules(ctx, repository.StorageID, repository.StorageNamespace)
 }
 
 func (g *Graveler) GetGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRules, error) {
@@ -1648,7 +1648,7 @@ func (g *Graveler) GetGarbageCollectionRules(ctx context.Context, repository *Re
 }
 
 func (g *Graveler) SetGarbageCollectionRules(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules) error {
-	return g.garbageCollectionManager.SaveRules(ctx, repository.StorageNamespace, rules)
+	return g.garbageCollectionManager.SaveRules(ctx, repository.StorageID, repository.StorageNamespace, rules)
 }
 
 func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord) (*GarbageCollectionRunMetadata, error) {
@@ -1661,11 +1661,11 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository 
 	if err != nil {
 		return nil, fmt.Errorf("save garbage collection commits: %w", err)
 	}
-	commitsLocation, err := g.garbageCollectionManager.GetCommitsCSVLocation(runID, repository.StorageNamespace)
+	commitsLocation, err := g.garbageCollectionManager.GetCommitsCSVLocation(runID, repository.StorageID, repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
-	addressLocation, err := g.garbageCollectionManager.GetAddressesLocation(repository.StorageNamespace)
+	addressLocation, err := g.garbageCollectionManager.GetAddressesLocation(repository.StorageID, repository.StorageNamespace)
 	if err != nil {
 		return nil, err
 	}
@@ -1678,7 +1678,7 @@ func (g *Graveler) SaveGarbageCollectionCommits(ctx context.Context, repository 
 }
 
 func (g *Graveler) GCGetUncommittedLocation(repository *RepositoryRecord, runID string) (string, error) {
-	return g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageNamespace)
+	return g.garbageCollectionManager.GetUncommittedLocation(runID, repository.StorageID, repository.StorageNamespace)
 }
 
 func (g *Graveler) GCNewRunID() string {
@@ -2093,12 +2093,13 @@ func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref R
 }
 
 func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, params CommitParams, opts ...SetOptionsFunc) (CommitID, error) {
-	var preRunID string
-	var commit Commit
-	var newCommitID CommitID
-	var storageNamespace StorageNamespace
-	var sealedToDrop []StagingToken
-
+	var (
+		preRunID         string
+		commit           Commit
+		newCommitID      CommitID
+		storageNamespace StorageNamespace
+		sealedToDrop     []StagingToken
+	)
 	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_COMMIT)
 	if err != nil {
 		return "", err
@@ -2111,7 +2112,35 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
+
+	// fill commit information, except the commit's parents as they are set in the branch update
+	commit = NewCommit()
+	if params.Date != nil {
+		commit.CreationDate = time.Unix(*params.Date, 0)
+	}
+	commit.Committer = params.Committer
+	commit.Message = params.Message
+	commit.Metadata = params.Metadata
+
 	storageNamespace = repository.StorageNamespace
+	if !repository.ReadOnly {
+		prepareRunID := g.hooks.NewRunID()
+		err = g.hooks.PrepareCommitHook(ctx, HookRecord{
+			RunID:      prepareRunID,
+			EventType:  EventTypePrepareCommit,
+			SourceRef:  branchID.Ref(),
+			Repository: repository,
+			BranchID:   branchID,
+			Commit:     commit,
+		})
+		if err != nil {
+			return "", &HookAbortError{
+				EventType: EventTypePrepareCommit,
+				RunID:     prepareRunID,
+				Err:       err,
+			}
+		}
+	}
 
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
@@ -2132,15 +2161,6 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	}
 
 	err = g.retryBranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
-		// fill commit information - use for pre-commit and after adding the commit information used by commit
-		commit = NewCommit()
-
-		if params.Date != nil {
-			commit.CreationDate = time.Unix(*params.Date, 0)
-		}
-		commit.Committer = params.Committer
-		commit.Message = params.Message
-		commit.Metadata = params.Metadata
 		if branch.CommitID != "" {
 			commit.Parents = CommitParents{branch.CommitID}
 		}
@@ -2678,13 +2698,17 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		parentNumber--
 	}
 
+	var (
+		preRunID     string
+		commit       Commit
+		newCommitID  CommitID
+		tokensToDrop []StagingToken
+	)
 	err = g.prepareForCommitIDUpdate(ctx, repository, branchID, "revert")
 	if err != nil {
 		return "", err
 	}
 
-	var commitID CommitID
-	var tokensToDrop []StagingToken
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if empty, err := g.isSealedEmpty(ctx, repository, branch); err != nil {
 			return nil, err
@@ -2704,7 +2728,8 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 			return nil, fmt.Errorf("get commit from ref %s: %w", branch.CommitID, err)
 		}
 		// merge from the parent to the top of the branch, with the given ref as the merge base:
-		metaRangeID, err := g.CommittedManager.Merge(ctx, repository.StorageID, repository.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone)
+		metaRangeID, err := g.CommittedManager.Merge(
+			ctx, repository.StorageID, repository.StorageNamespace, branchCommit.MetaRangeID, parentMetaRangeID, commitRecord.MetaRangeID, MergeStrategyNone, WithAllowEmpty(commitParams.AllowEmpty))
 		if err != nil {
 			if !errors.Is(err, ErrUserVisible) {
 				err = fmt.Errorf("merge: %w", err)
@@ -2714,7 +2739,7 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		if (metaRangeID == branchCommit.MetaRangeID) && !commitParams.AllowEmpty {
 			return nil, ErrNoChanges
 		}
-		commit := NewCommit()
+		commit = NewCommit()
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID
@@ -2723,14 +2748,34 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		commit.Generation = branchCommit.Generation + 1
 
 		applyCommitOverrides(&commit, commitOverrides)
-		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
+
+		if !repository.ReadOnly {
+			preRunID = g.hooks.NewRunID()
+			err = g.hooks.PreRevertHook(ctx, HookRecord{
+				RunID:      preRunID,
+				EventType:  EventTypePreRevert,
+				SourceRef:  branchID.Ref(),
+				Repository: repository,
+				BranchID:   branchID,
+				Commit:     commit,
+			})
+			if err != nil {
+				return nil, &HookAbortError{
+					EventType: EventTypePreRevert,
+					RunID:     preRunID,
+					Err:       err,
+				}
+			}
+		}
+
+		newCommitID, err = g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)
 		}
 
 		tokensToDrop = branch.SealedTokens
 		branch.SealedTokens = []StagingToken{}
-		branch.CommitID = commitID
+		branch.CommitID = newCommitID
 		return branch, nil
 	})
 	if err != nil {
@@ -2738,7 +2783,28 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 	}
 
 	g.dropTokens(ctx, tokensToDrop...)
-	return commitID, nil
+
+	if !repository.ReadOnly {
+		postRunID := g.hooks.NewRunID()
+		err = g.hooks.PostRevertHook(ctx, HookRecord{
+			EventType:  EventTypePostRevert,
+			RunID:      postRunID,
+			Repository: repository,
+			SourceRef:  newCommitID.Ref(),
+			BranchID:   branchID,
+			Commit:     commit,
+			CommitID:   newCommitID,
+			PreRunID:   preRunID,
+		})
+		if err != nil {
+			g.log(ctx).WithError(err).
+				WithField("run_id", postRunID).
+				WithField("pre_run_id", preRunID).
+				Error("Post-revert hook failed")
+		}
+	}
+
+	return newCommitID, nil
 }
 
 // CherryPick creates a new commit on the given branch, with the changes from the given commit.
@@ -2948,13 +3014,14 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 		if !repository.ReadOnly {
 			preRunID = g.hooks.NewRunID()
 			err = g.hooks.PreMergeHook(ctx, HookRecord{
-				EventType:  EventTypePreMerge,
-				RunID:      preRunID,
-				Repository: repository,
-				BranchID:   destination,
-				SourceRef:  fromCommit.CommitID.Ref(),
-				Commit:     commit,
-				CommitID:   commitID,
+				EventType:   EventTypePreMerge,
+				RunID:       preRunID,
+				Repository:  repository,
+				BranchID:    destination,
+				SourceRef:   fromCommit.CommitID.Ref(), // comment id we merge from
+				MergeSource: source,                    // the requested source to merge from (branch/tag/ref)
+				Commit:      commit,
+				CommitID:    commitID,
 			})
 			if err != nil {
 				return nil, &HookAbortError{
@@ -2977,15 +3044,15 @@ func (g *Graveler) Merge(ctx context.Context, repository *RepositoryRecord, dest
 	if !repository.ReadOnly {
 		postRunID := g.hooks.NewRunID()
 		err = g.hooks.PostMergeHook(ctx, HookRecord{
-			EventType:  EventTypePostMerge,
-			RunID:      postRunID,
-			Repository: repository,
-			BranchID:   destination,
-
-			SourceRef: commitID.Ref(),
-			Commit:    commit,
-			CommitID:  commitID,
-			PreRunID:  preRunID,
+			EventType:   EventTypePostMerge,
+			RunID:       postRunID,
+			Repository:  repository,
+			BranchID:    destination,
+			SourceRef:   commitID.Ref(), // commit id we merge from
+			MergeSource: source,         // the requested source to merge from (branch/tag/ref)
+			Commit:      commit,
+			CommitID:    commitID,
+			PreRunID:    preRunID,
 		})
 		if err != nil {
 			g.log(ctx).
@@ -3725,14 +3792,14 @@ func (c *commitValueIterator) Close() {
 }
 
 type GarbageCollectionManager interface {
-	GetRules(ctx context.Context, storageNamespace StorageNamespace) (*GarbageCollectionRules, error)
-	SaveRules(ctx context.Context, storageNamespace StorageNamespace, rules *GarbageCollectionRules) error
+	GetRules(ctx context.Context, storageID StorageID, storageNamespace StorageNamespace) (*GarbageCollectionRules, error)
+	SaveRules(ctx context.Context, storageID StorageID, storageNamespace StorageNamespace, rules *GarbageCollectionRules) error
 
 	SaveGarbageCollectionCommits(ctx context.Context, repository *RepositoryRecord, rules *GarbageCollectionRules) (string, error)
-	GetCommitsCSVLocation(runID string, sn StorageNamespace) (string, error)
+	GetCommitsCSVLocation(runID string, storageID StorageID, sn StorageNamespace) (string, error)
 	SaveGarbageCollectionUncommitted(ctx context.Context, repository *RepositoryRecord, filename, runID string) error
-	GetUncommittedLocation(runID string, sn StorageNamespace) (string, error)
-	GetAddressesLocation(sn StorageNamespace) (string, error)
+	GetUncommittedLocation(runID string, storageID StorageID, sn StorageNamespace) (string, error)
+	GetAddressesLocation(storageID StorageID, sn StorageNamespace) (string, error)
 	NewID() string
 }
 

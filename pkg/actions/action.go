@@ -73,10 +73,11 @@ var (
 
 func isEventSupported(event graveler.EventType) bool {
 	switch event {
-	case graveler.EventTypePreCommit,
-		graveler.EventTypePostMerge,
-		graveler.EventTypePreMerge,
+	case graveler.EventTypePrepareCommit,
+		graveler.EventTypePreCommit,
 		graveler.EventTypePostCommit,
+		graveler.EventTypePreMerge,
+		graveler.EventTypePostMerge,
 		graveler.EventTypePreCreateBranch,
 		graveler.EventTypePostCreateBranch,
 		graveler.EventTypePreDeleteBranch,
@@ -84,7 +85,9 @@ func isEventSupported(event graveler.EventType) bool {
 		graveler.EventTypePreCreateTag,
 		graveler.EventTypePostCreateTag,
 		graveler.EventTypePreDeleteTag,
-		graveler.EventTypePostDeleteTag:
+		graveler.EventTypePostDeleteTag,
+		graveler.EventTypePreRevert,
+		graveler.EventTypePostRevert:
 		return true
 	}
 	return false

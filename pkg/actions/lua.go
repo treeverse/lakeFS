@@ -13,7 +13,6 @@ import (
 
 	"github.com/Shopify/go-lua"
 	"github.com/spf13/viper"
-
 	lualibs "github.com/treeverse/lakefs/pkg/actions/lua"
 	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
 	"github.com/treeverse/lakefs/pkg/actions/lua/lakefs"
@@ -54,6 +53,7 @@ func applyRecord(l *lua.State, actionName, hookID string, record graveler.HookRe
 		"branch_id":         record.BranchID.String(),
 		"source_ref":        record.SourceRef.String(),
 		"tag_id":            record.TagID.String(),
+		"merge_source":      record.MergeSource.String(),
 		"repository_id":     record.Repository.RepositoryID.String(),
 		"storage_namespace": record.Repository.StorageNamespace.String(),
 		"commit": map[string]interface{}{

@@ -1,6 +1,8 @@
+//nolint:unused
 package esti
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 )
@@ -278,4 +281,27 @@ func normalizeAccessKeyID(output string) string {
 
 func normalizeSecretAccessKey(output string) string {
 	return reSecretAccessKey.ReplaceAllString(output, "secret_access_key: <SECRET_ACCESS_KEY>")
+}
+
+func GetCommitter(t testing.TB) string {
+	t.Helper()
+	userResp, err := client.GetCurrentUserWithResponse(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, userResp.JSON200)
+	committer := userResp.JSON200.User.Id
+	email := *userResp.JSON200.User.Email
+	if email != "" {
+		committer = email
+	}
+	return committer
+}
+
+func GetAuthor(t testing.TB) (string, string) {
+	t.Helper()
+	userResp, err := client.GetCurrentUserWithResponse(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, userResp.JSON200)
+	author := userResp.JSON200.User.Id
+	email := swag.StringValue(userResp.JSON200.User.Email)
+	return author, email
 }

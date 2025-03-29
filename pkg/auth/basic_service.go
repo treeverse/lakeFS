@@ -46,6 +46,10 @@ func NewBasicAuthService(store kv.Store, secretStore crypt.SecretStore, cacheCon
 	return res
 }
 
+func (s *BasicAuthService) IsAdvancedAuth() bool {
+	return false
+}
+
 // Migrate tries to perform migration of existing lakeFS server to basic auth
 func (s *BasicAuthService) Migrate(ctx context.Context) (string, error) {
 	_, err := s.getUser(ctx)

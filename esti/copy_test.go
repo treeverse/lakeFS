@@ -80,7 +80,7 @@ func TestCopyObject(t *testing.T) {
 
 	// Copying different accounts takes more time and allows us to abort the copy in the middle
 	t.Run("copy_large_size_file_abort", func(t *testing.T) {
-		requireBlockstoreType(t, block.BlockstoreTypeAzure)
+		RequireBlockstoreType(t, block.BlockstoreTypeAzure)
 		importPath := strings.Replace(azureCopyDataPath, "esti", azureAbortAccount, 1)
 		const ingestionBranch = "test-copy-abort"
 		_ = testImportNew(t, ctx, repo, ingestionBranch,

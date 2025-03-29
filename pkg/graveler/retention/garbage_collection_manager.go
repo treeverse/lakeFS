@@ -34,20 +34,18 @@ type GarbageCollectionManager struct {
 	committedBlockStoragePrefix string
 }
 
-func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, sn graveler.StorageNamespace) (string, error) {
+func (m *GarbageCollectionManager) GetCommitsCSVLocation(runID string, storageID graveler.StorageID, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(commitsFileSuffixTemplate, m.committedBlockStoragePrefix, runID)
-	// TODO (gilo): replace StorageID with a real value
-	qk, err := m.blockAdapter.ResolveNamespace("", sn.String(), key, block.IdentifierTypeRelative)
+	qk, err := m.blockAdapter.ResolveNamespace(string(storageID), sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
 		return "", err
 	}
 	return qk.Format(), nil
 }
 
-func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNamespace) (string, error) {
+func (m *GarbageCollectionManager) GetAddressesLocation(storageID graveler.StorageID, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(addressesFilePrefixTemplate, m.committedBlockStoragePrefix)
-	// TODO (gilo): replace StorageID with a real value
-	qk, err := m.blockAdapter.ResolveNamespace("", sn.String(), key, block.IdentifierTypeRelative)
+	qk, err := m.blockAdapter.ResolveNamespace(string(storageID), sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
 		return "", err
 	}
@@ -55,10 +53,9 @@ func (m *GarbageCollectionManager) GetAddressesLocation(sn graveler.StorageNames
 }
 
 // GetUncommittedLocation return full path to underlying storage path to store uncommitted information
-func (m *GarbageCollectionManager) GetUncommittedLocation(runID string, sn graveler.StorageNamespace) (string, error) {
+func (m *GarbageCollectionManager) GetUncommittedLocation(runID string, storageID graveler.StorageID, sn graveler.StorageNamespace) (string, error) {
 	key := fmt.Sprintf(uncommittedFilePrefixTemplate, m.committedBlockStoragePrefix, runID)
-	// TODO (gilo): replace StorageID with a real value
-	qk, err := m.blockAdapter.ResolveNamespace("", sn.String(), key, block.IdentifierTypeRelative)
+	qk, err := m.blockAdapter.ResolveNamespace(string(storageID), sn.String(), key, block.IdentifierTypeRelative)
 	if err != nil {
 		return "", err
 	}
@@ -66,7 +63,7 @@ func (m *GarbageCollectionManager) GetUncommittedLocation(runID string, sn grave
 }
 
 func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.Context, repository *graveler.RepositoryRecord, filename, runID string) error {
-	location, err := m.GetUncommittedLocation(runID, repository.StorageNamespace)
+	location, err := m.GetUncommittedLocation(runID, repository.StorageID, repository.StorageNamespace)
 	if err != nil {
 		return err
 	}
@@ -85,7 +82,7 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionUncommitted(ctx context.
 	}
 	location += filename
 	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		// TODO (gilo): ObjectPointer init - add StorageID here?
+		StorageID:      string(repository.StorageID),
 		Identifier:     location,
 		IdentifierType: block.IdentifierTypeFull,
 	}, stat.Size(), fd, block.PutOpts{})
@@ -118,9 +115,9 @@ func NewGarbageCollectionManager(blockAdapter block.Adapter, refManager graveler
 	}
 }
 
-func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
-	// TODO (gilo): ObjectPointer init - add StorageID here?
+func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageID graveler.StorageID, storageNamespace graveler.StorageNamespace) (*graveler.GarbageCollectionRules, error) {
 	objectPointer := block.ObjectPointer{
+		StorageID:        string(storageID),
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -151,13 +148,13 @@ func (m *GarbageCollectionManager) GetRules(ctx context.Context, storageNamespac
 	return &rules, nil
 }
 
-func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageNamespace graveler.StorageNamespace, rules *graveler.GarbageCollectionRules) error {
+func (m *GarbageCollectionManager) SaveRules(ctx context.Context, storageID graveler.StorageID, storageNamespace graveler.StorageNamespace, rules *graveler.GarbageCollectionRules) error {
 	rulesBytes, err := proto.Marshal(rules)
 	if err != nil {
 		return err
 	}
-	// TODO (gilo): ObjectPointer init - add StorageID here?
 	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
+		StorageID:        string(storageID),
 		StorageNamespace: string(storageNamespace),
 		Identifier:       fmt.Sprintf(configFileSuffixTemplate, m.committedBlockStoragePrefix),
 		IdentifierType:   block.IdentifierTypeRelative,
@@ -207,12 +204,12 @@ func (m *GarbageCollectionManager) SaveGarbageCollectionCommits(ctx context.Cont
 	}
 	commitsStr := b.String()
 	runID := m.NewID()
-	csvLocation, err := m.GetCommitsCSVLocation(runID, repository.StorageNamespace)
+	csvLocation, err := m.GetCommitsCSVLocation(runID, repository.StorageID, repository.StorageNamespace)
 	if err != nil {
 		return "", err
 	}
 	_, err = m.blockAdapter.Put(ctx, block.ObjectPointer{
-		// TODO (gilo): ObjectPointer init - add StorageID here?
+		StorageID:      string(repository.StorageID),
 		Identifier:     csvLocation,
 		IdentifierType: block.IdentifierTypeFull,
 	}, int64(len(commitsStr)), strings.NewReader(commitsStr), block.PutOpts{})

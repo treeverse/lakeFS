@@ -18,8 +18,11 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/cenkalti/backoff/v4"
+	pebblesst "github.com/cockroachdb/pebble/sstable"
 	"github.com/go-openapi/swag"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rs/xid"
@@ -30,17 +33,24 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type ArrayFlags []string
+
+type HookResponse struct {
+	Path        string
+	Err         error
+	Data        []byte
+	QueryParams map[string][]string
+}
 
 var (
 	logger      logging.Logger
 	client      apigen.ClientWithResponsesInterface
 	endpointURL string
 	svc         *s3.Client
-	server      *WebhookServer
 
 	metaClientJarPath  string
 	sparkImageTag      string
@@ -66,6 +76,7 @@ var (
 
 	errNotVerified     = errors.New("lakeFS failed")
 	errWrongStatusCode = errors.New("wrong status code")
+	errRunResultsSize  = errors.New("run results size")
 )
 
 func (i *ArrayFlags) String() string {
@@ -283,7 +294,7 @@ func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 
 func tearDownTest(repoName string) {
 	ctx := context.Background()
-	deleteRepositoryIfAskedTo(ctx, repoName)
+	DeleteRepositoryIfAskedTo(ctx, repoName)
 }
 
 func createRepositoryForTest(ctx context.Context, t testing.TB) string {
@@ -339,7 +350,7 @@ func createRepository(ctx context.Context, t testing.TB, name string, repoStorag
 		"create repository '%s', storage '%s'", name, repoStorage)
 }
 
-func deleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
+func DeleteRepositoryIfAskedTo(ctx context.Context, repositoryName string) {
 	deleteRepositories := viper.GetBool("delete_repositories")
 	if deleteRepositories {
 		resp, err := client.DeleteRepositoryWithResponse(ctx, repositoryName, &apigen.DeleteRepositoryParams{Force: swag.Bool(true)})
@@ -369,16 +380,16 @@ const (
 	largeDataContentLength = 6 << 20
 )
 
-func uploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool) (checksum, content string, err error) {
+func UploadFileRandomDataAndReport(ctx context.Context, repo, branch, objPath string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum, content string, err error) {
 	objContent := randstr.String(randomDataContentLength)
-	checksum, err = uploadFileAndReport(ctx, repo, branch, objPath, objContent, direct)
+	checksum, err = UploadFileAndReport(ctx, repo, branch, objPath, objContent, direct, clt)
 	if err != nil {
 		return "", "", err
 	}
 	return checksum, objContent, nil
 }
 
-func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool) (checksum string, err error) {
+func UploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent string, direct bool, clt apigen.ClientWithResponsesInterface) (checksum string, err error) {
 	// Upload using direct access
 	if direct {
 		stats, err := uploadContentDirect(ctx, client, repo, branch, objPath, nil, "", strings.NewReader(objContent))
@@ -388,7 +399,7 @@ func uploadFileAndReport(ctx context.Context, repo, branch, objPath, objContent 
 		return stats.Checksum, nil
 	}
 	// Upload using API
-	resp, err := uploadContent(ctx, repo, branch, objPath, objContent)
+	resp, err := UploadContent(ctx, repo, branch, objPath, objContent, clt)
 	if err != nil {
 		return "", err
 	}
@@ -457,7 +468,10 @@ func uploadContentDirect(ctx context.Context, client apigen.ClientWithResponsesI
 	}
 }
 
-func uploadContent(ctx context.Context, repo string, branch string, objPath string, objContent string) (*apigen.UploadObjectResponse, error) {
+func UploadContent(ctx context.Context, repo, branch, objPath, objContent string, clt apigen.ClientWithResponsesInterface) (*apigen.UploadObjectResponse, error) {
+	if clt == nil {
+		clt = client
+	}
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
@@ -472,24 +486,25 @@ func uploadContent(ctx context.Context, repo string, branch string, objPath stri
 	if err != nil {
 		return nil, fmt.Errorf("close form file: %w", err)
 	}
-	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
+
+	return clt.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
 		Path: objPath,
 	}, w.FormDataContentType(), &b)
 }
 
-func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
-	checksum, content, err := uploadFileRandomDataAndReport(ctx, repo, branch, objPath, false)
+func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, clt apigen.ClientWithResponsesInterface) (checksum, content string) {
+	checksum, content, err := UploadFileRandomDataAndReport(ctx, repo, branch, objPath, false, clt)
 	require.NoError(t, err, "failed to upload file", repo, branch, objPath)
 	return checksum, content
 }
 
-func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []apigen.ObjectStats {
+func ListRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string, clt apigen.ClientWithResponsesInterface) []apigen.ObjectStats {
 	t.Helper()
 	const amount = 5
 	var entries []apigen.ObjectStats
 	var after string
 	for {
-		resp, err := client.ListObjectsWithResponse(ctx, repository, ref, &apigen.ListObjectsParams{
+		resp, err := clt.ListObjectsWithResponse(ctx, repository, ref, &apigen.ListObjectsParams{
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
@@ -548,8 +563,8 @@ func isBlockstoreType(requiredTypes ...string) *string {
 	return &blockstoreType
 }
 
-// requireBlockstoreType Skips test if blockstore type doesn't match the required type
-func requireBlockstoreType(t testing.TB, requiredTypes ...string) {
+// RequireBlockstoreType Skips test if blockstore type doesn't match the required type
+func RequireBlockstoreType(t testing.TB, requiredTypes ...string) {
 	if blockstoreType := isBlockstoreType(requiredTypes...); blockstoreType != nil {
 		t.Skipf("Required blockstore types: %v, got: %s", requiredTypes, *blockstoreType)
 	}
@@ -575,4 +590,60 @@ func getServerConfig(t testing.TB, ctx context.Context) *apigen.SetupState {
 	require.NoError(t, err)
 	require.NotNil(t, resp.JSON200)
 	return resp.JSON200
+}
+
+func GravelerIterator(data []byte) (*sstable.Iterator, error) {
+	// read file descriptor
+	reader, err := pebblesst.NewMemReader(data, pebblesst.ReaderOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// create an iterator over the whole thing
+	iter, err := reader.NewIter(nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// wrap it in a Graveler iterator
+	dummyDeref := func() error { return nil }
+	return sstable.NewIterator(iter, dummyDeref), nil
+}
+
+func WaitForListRepositoryRunsLen(ctx context.Context, t *testing.T, repo, ref string, l int, clt apigen.ClientWithResponsesInterface) *apigen.ActionRunList {
+	const MaxIntervalSecs = 5
+	const MaxElapsedSecs = 30
+
+	if clt == nil {
+		clt = client
+	}
+	var runs *apigen.ActionRunList
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = MaxIntervalSecs * time.Second
+	bo.MaxElapsedTime = MaxElapsedSecs * time.Second
+	listFunc := func() error {
+		runsResp, err := clt.ListRepositoryRunsWithResponse(ctx, repo, &apigen.ListRepositoryRunsParams{
+			Commit: apiutil.Ptr(ref),
+		})
+		require.NoError(t, err)
+		runs = runsResp.JSON200
+		require.NotNil(t, runs)
+		if len(runs.Results) == l {
+			return nil
+		}
+		return fmt.Errorf("size: %d: expected: %d, %w", len(runs.Results), l, errRunResultsSize)
+	}
+	err := backoff.Retry(listFunc, bo)
+	require.NoError(t, err)
+	return runs
+}
+
+// ResponseWithTimeout wait for webhook response
+func ResponseWithTimeout(s *WebhookServer, timeout time.Duration) (*HookResponse, error) {
+	select {
+	case res := <-s.respCh:
+		return &res, nil
+	case <-time.After(timeout):
+		return nil, ErrWebhookTimeout
+	}
 }

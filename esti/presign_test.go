@@ -8,13 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
-
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/graveler/committed"
 )
 
 func matchPreSignedURLContent(t *testing.T, preSignedURL, content string) {
@@ -50,10 +49,10 @@ func TestPreSign(t *testing.T) {
 		t.Skipf("Only GS, S3 and Azure Blob supported for pre-signed urls. Got: %s", blockStoreType)
 	}
 
-	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar")
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, "foo/bar", nil)
 
 	objContent := randstr.String(randomDataContentLength)
-	_, err = uploadFileAndReport(ctx, repo, mainBranch, "foo/bar", objContent, false)
+	_, err = UploadFileAndReport(ctx, repo, mainBranch, "foo/bar", objContent, false, nil)
 	if err != nil {
 		t.Errorf("could no upload data file")
 	}
@@ -107,7 +106,7 @@ func TestPreSign(t *testing.T) {
 
 	t.Run("preSignGetMetaRangeAndRange", func(t *testing.T) {
 		// get a metarange from main
-		UploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930")
+		UploadFileRandomData(ctx, t, repo, mainBranch, "some/random/path/43543985430548930", nil)
 		commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 			Message: "committing just to get a meta range!",
 		})
@@ -125,7 +124,7 @@ func TestPreSign(t *testing.T) {
 		require.NotEqual(t, endpointParsedURL.Host, responseHost, "Should have been redirected to the object store")
 
 		// try reading the meta-range
-		iter, err := gravelerIterator(response.Body)
+		iter, err := GravelerIterator(response.Body)
 		if err != nil {
 			t.Error("could not get an iterator from meta-range body")
 		}
@@ -151,7 +150,7 @@ func TestPreSign(t *testing.T) {
 		require.NotEqual(t, endpointParsedURL.Host, responseHost, "Should have been redirected to the object store")
 
 		// try reading the range
-		iter, err = gravelerIterator(response.Body)
+		iter, err = GravelerIterator(response.Body)
 		if err != nil {
 			t.Error("could not get an iterator from range body")
 		}

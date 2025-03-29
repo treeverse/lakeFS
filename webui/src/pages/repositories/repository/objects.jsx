@@ -777,13 +777,16 @@ const ObjectsBrowser = ({ config }) => {
 const RepositoryObjectsPage = () => {
     const {repo} = useRefs();
     const {configs: storageConfigs, loading: configsLoading, error: configsError} = useStorageConfigs();
-    const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(storageConfigs, repo);
 
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage("objects"), [setActivePage]);
 
-    if (configsLoading || configLoading) return <Loading/>;
-    if (configsError || configError) return <RepoError error={configsError || configError}/>;
+    if (configsLoading) return <Loading/>;
+    if (configsError) return <RepoError error={configsError}/>;
+
+    const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(storageConfigs, repo);
+    if (configLoading) return <Loading/>;
+    if (configError) return <RepoError error={configError}/>;
 
     return <ObjectsBrowser config={storageConfig}/>;
 };
