@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,6 +15,11 @@ import (
 
 var cosmosdbLocalURI string
 
+var (
+	ErrContainerExited  = errors.New("container exited")
+	ErrEmulatorNotReady = errors.New("emulator not ready")
+)
+
 func GetCosmosDBInstance() (string, func(), error) {
 	dockerPool, err := dockertest.NewPool("")
 	if err != nil {
@@ -23,12 +29,12 @@ func GetCosmosDBInstance() (string, func(), error) {
 	cosmosdbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
 		Tag:        "vnext-preview",
-		// Tag: "vnext-EN20250122",
 		Env: []string{
 			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100",
 			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false",
 			"AZURE_COSMOS_EMULATOR_DISABLE_THROTTLING=true",
 			"ENABLE_TELEMETRY=false",
+			"PROTOCOL=http",
 		},
 		ExposedPorts: []string{
 			"8081/tcp",
@@ -60,9 +66,8 @@ func GetCosmosDBInstance() (string, func(), error) {
 			log.Printf("CosmosDB emulator output: %s", containerOut.String())
 		}
 
-		err = dockerPool.Purge(resource)
-		if err != nil {
-			log.Printf("could not kill cosmosdb local container :%s", err)
+		if err := dockerPool.Purge(resource); err != nil {
+			log.Printf("could not kill cosmosdb local container: %s", err)
 		}
 	}
 	// cleanup is called when we return without databaseURI
@@ -93,7 +98,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 			return backoff.Permanent(fmt.Errorf("could not inspect container: %w", err))
 		}
 		if !container.State.Running {
-			return backoff.Permanent(fmt.Errorf("container exited with status: %s", container.State.Status))
+			return backoff.Permanent(fmt.Errorf("%w with status: %s", ErrContainerExited, container.State.Status))
 		}
 		// Check if the cosmosdb emulator is up and running
 		resp, err := httpClient.Get(cosmosdbExplorerURI)
@@ -102,7 +107,7 @@ func GetCosmosDBInstance() (string, func(), error) {
 		}
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("cosmosdb emulator not ready: %s", resp.Status)
+			return fmt.Errorf("cosmosdb %w: %s", ErrEmulatorNotReady, resp.Status)
 		}
 		return nil
 	})

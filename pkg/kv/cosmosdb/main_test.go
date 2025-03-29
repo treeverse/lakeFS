@@ -30,16 +30,12 @@ var (
 )
 
 func TestCosmosDB(t *testing.T) {
-	//if runtime.GOOS == "darwin" {
-	//	t.Skipf("this test hangs for macOS users, and fails. skipping - see Issue#8476 for more details")
-	//}
-
 	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
 
 		databaseClient, err := client.NewDatabase(testParams.Database)
 		if err != nil {
-			log.Fatalf("creating database client: %v", err)
+			t.Fatalf("creating database client: %s", err)
 		}
 
 		testParams.Container = "test-container" + testutil.UniqueName()
@@ -113,48 +109,16 @@ func (t *TestingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	return originalResp, nil
 }
 
-/*
-type customPolicy struct{}
-
-func (p *customPolicy) Do(req *policy.Request) (*http.Response, error) {
-	// Capture the request
-	log.Printf("Captured request: %v", req.Raw().URL)
-
-	resp, err := req.Next()
-	if err != nil {
-		return nil, err
-	}
-	if req.Raw().URL.Path == "" {
-		// Unmarshal the response body into accountProperties
-		bytesBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return resp, nil
-		}
-		_ = resp.Body.Close()
-
-		// Unmarshal the response body to a map, modify if needed, and marshal back to bytes
-		var bodyMap map[string]any
-		if err := json.Unmarshal(bytesBody, &bodyMap); err != nil {
-			return resp, nil
-		}
-		delete(bodyMap, "writableLocations")
-		delete(bodyMap, "readableLocations")
-
-		modifiedBody, err := json.Marshal(bodyMap)
-		if err != nil {
-			return resp, nil
-		}
-		resp.Body = streaming.NopCloser(bytes.NewReader(modifiedBody))
-	}
-	return resp, nil
-}
-*/
-
 func TestMain(m *testing.M) {
 	// This part hangs for macOS users, and fails. skipping - see Issue#8476 for more details
 	//if runtime.GOOS == "darwin" {
 	//	return
 	//}
+	// use defer to ensure cleanup is called even if os.Exit is called
+	var code int
+	defer func() {
+		os.Exit(code)
+	}()
 
 	databaseURI, cleanupFunc, err := testutil.GetCosmosDBInstance()
 	if err != nil {
@@ -171,17 +135,16 @@ func TestMain(m *testing.M) {
 			Timeout:   clientTimeout,
 			Transport: &TestingTransport{},
 		},
-		StrongConsistency: false,
+		StrongConsistency: true,
 	}
 
 	cred, err := azcosmos.NewKeyCredential(testParams.Key)
 	if err != nil {
-		log.Fatalf("creating key: %v", err)
+		log.Fatalf("creating credential key: %v", err)
 	}
 
 	// Create a CosmosDB client
 	client, err = azcosmos.NewClientWithKey(testParams.Endpoint, cred, &azcosmos.ClientOptions{
-		PreferredRegions: []string{testParams.Endpoint},
 		ClientOptions: azcore.ClientOptions{
 			InsecureAllowCredentialWithHTTP: true,
 			Transport:                       testParams.Client,
@@ -191,7 +154,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("creating client using access key: %v", err)
 	}
 
-	log.Printf("Creating database %s", testParams.Database)
+	log.Printf("creating database %s", testParams.Database)
 	ctx := context.Background()
 	_, err = client.CreateDatabase(ctx,
 		azcosmos.DatabaseProperties{ID: testParams.Database},
@@ -201,7 +164,5 @@ func TestMain(m *testing.M) {
 		log.Fatalf("creating database failed: %v", err)
 	}
 
-	code := m.Run()
-	// use defer to ensure cleanup is called even if os.Exit is called
-	defer func() { os.Exit(code) }()
+	code = m.Run()
 }
