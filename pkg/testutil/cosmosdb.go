@@ -2,21 +2,14 @@ package testutil
 
 import (
 	"bytes"
-	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"time"
 
-	"github.com/ory/dockertest/v3/docker"
-
+	"github.com/cenkalti/backoff/v4"
 	"github.com/ory/dockertest/v3"
-)
-
-const (
-	CosmosDBLocalPort = "8081"
-	maxWait           = 5 * time.Minute // Cosmosdb emulator takes time to start
+	"github.com/ory/dockertest/v3/docker"
 )
 
 var cosmosdbLocalURI string
@@ -29,13 +22,18 @@ func GetCosmosDBInstance() (string, func(), error) {
 
 	cosmosdbDockerRunOptions := &dockertest.RunOptions{
 		Repository: "mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator",
-		Tag:        "latest",
+		Tag:        "vnext-preview",
+		// Tag: "vnext-EN20250122",
 		Env: []string{
 			"AZURE_COSMOS_EMULATOR_PARTITION_COUNT=100",
 			"AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=false",
-			"AZURE_COSMOS_EMULATOR_ARGS=/DisableRateLimiting /NoExport /NoUI /EnablePreview",
+			"AZURE_COSMOS_EMULATOR_DISABLE_THROTTLING=true",
+			"ENABLE_TELEMETRY=false",
 		},
-		ExposedPorts: []string{CosmosDBLocalPort},
+		ExposedPorts: []string{
+			"8081/tcp",
+			"1234/tcp",
+		},
 	}
 
 	resource, err := dockerPool.RunWithOptions(cosmosdbDockerRunOptions)
@@ -43,7 +41,8 @@ func GetCosmosDBInstance() (string, func(), error) {
 		return "", nil, fmt.Errorf("could not start cosmosdb emulator: %w", err)
 	}
 
-	cosmosdbLocalURI = "https://localhost:" + resource.GetPort("8081/tcp")
+	// explorer endpoint to verify when container is up
+	cosmosdbExplorerURI := "http://localhost:" + resource.GetPort("1234/tcp")
 	// set cleanup
 	closer := func() {
 		// Fetch logs from the container
@@ -63,48 +62,57 @@ func GetCosmosDBInstance() (string, func(), error) {
 
 		err = dockerPool.Purge(resource)
 		if err != nil {
-			fmt.Println("could not kill cosmosdb local container :%w", err)
+			log.Printf("could not kill cosmosdb local container :%s", err)
 		}
 	}
+	// cleanup is called when we return without databaseURI
+	defer func() {
+		if cosmosdbLocalURI == "" {
+			closer()
+		}
+	}()
 
 	// expire, just to make sure
 	err = resource.Expire(dbContainerTimeoutSeconds)
 	if err != nil {
-		defer closer() // defer so that error is logged appropriately
 		return "", nil, fmt.Errorf("could not expire cosmosdb local emulator: %w", err)
-	}
-	p, err := url.JoinPath(cosmosdbLocalURI, "/_explorer/emulator.pem")
-	if err != nil {
-		defer closer()
-		return "", nil, fmt.Errorf("joining urls: %w", err)
 	}
 
 	const clientTimeout = 5 * time.Second
-	client := http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
-		},
+	httpClient := http.Client{
 		Timeout: clientTimeout,
 	}
 
-	dockerPool.MaxWait = maxWait
-	log.Printf("Waiting up to %v for emulator to start", dockerPool.MaxWait)
-	// Note: this hangs for macOS users, and fails. See https://github.com/treeverse/lakeFS/issues/8476
+	// waiting for cosmosdb container to be ready by issuing an HTTP get request with
+	// exponential backoff retry. The response is not really meaningful for that case
+	// and so is ignored
 	err = dockerPool.Retry(func() error {
-		// waiting for cosmosdb container to be ready by issuing an HTTP get request with
-		// exponential backoff retry. The response is not really meaningful for that case
-		// and so is ignored
-		resp, err := client.Get(p)
+		// Check if the container is still running
+		container, err := dockerPool.Client.InspectContainer(resource.Container.ID)
+		if err != nil {
+			return backoff.Permanent(fmt.Errorf("could not inspect container: %w", err))
+		}
+		if !container.State.Running {
+			return backoff.Permanent(fmt.Errorf("container exited with status: %s", container.State.Status))
+		}
+		// Check if the cosmosdb emulator is up and running
+		resp, err := httpClient.Get(cosmosdbExplorerURI)
 		if err != nil {
 			return err
 		}
-		_ = resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("cosmosdb emulator not ready: %s", resp.Status)
+		}
 		return nil
 	})
 	if err != nil {
-		defer closer()
 		return "", nil, fmt.Errorf("could not connect to cosmosdb emulator at %s: %w", cosmosdbLocalURI, err)
 	}
+
+	// cosmosdb emulator is running on port 8081.
+	// set the URI last as the cleanup occur in case we fail before.
+	cosmosdbLocalURI = "http://localhost:" + resource.GetPort("8081/tcp")
 
 	return cosmosdbLocalURI, closer, nil
 }
