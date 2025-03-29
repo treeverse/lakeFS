@@ -1,14 +1,18 @@
 package cosmosdb_test
 
 import (
+	"bytes"
 	"context"
-	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"testing"
 	"time"
+
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
@@ -26,11 +30,11 @@ var (
 )
 
 func TestCosmosDB(t *testing.T) {
-	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
-		if runtime.GOOS == "darwin" {
-			t.Skipf("this test hangs for macOS users, and fails. skipping - see Issue#8476 for more details")
-		}
+	//if runtime.GOOS == "darwin" {
+	//	t.Skipf("this test hangs for macOS users, and fails. skipping - see Issue#8476 for more details")
+	//}
 
+	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
 
 		databaseClient, err := client.NewDatabase(testParams.Database)
@@ -59,14 +63,98 @@ func TestCosmosDB(t *testing.T) {
 	})
 }
 
-func TestMain(m *testing.M) {
-	// SKIP CosmoDB tests until we find a bettwe way to test with the curret emulator which fail our tests
-	return
+type TestingTransport struct{}
 
-	if runtime.GOOS == "darwin" {
-		// this part hangs for macOS users, and fails. skipping - see Issue#8476 for more details
-		return
+func (t *TestingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	originalResp, err := http.DefaultTransport.RoundTrip(req)
+	if err != nil {
+		return nil, err
 	}
+
+	// Check if the original request was successful and content type is JSON
+	if originalResp.StatusCode != http.StatusOK {
+		return originalResp, nil // Return original non-OK response as is
+	}
+
+	// Basic check for JSON content type (can be more robust)
+	contentType := originalResp.Header.Get("Content-Type")
+	if contentType != "application/json" {
+		return originalResp, nil // Return original non-JSON response as is
+	}
+
+	if req.Method != http.MethodGet || req.URL.Path != "" {
+		return originalResp, nil // Return original response as is
+	}
+
+	// parse account properties response
+	originalBodyBytes, err := io.ReadAll(originalResp.Body)
+	if err != nil {
+		// Cannot modify if we can't read it. Return an error or the original response?
+		// Returning an error might be cleaner here.
+		return nil, fmt.Errorf("failed to read original body: %w", err)
+	}
+	_ = originalResp.Body.Close()
+
+	// Parse the original JSON body into a map, delete specified keys, and marshal it back
+	var dataMap map[string]any
+	if err := json.Unmarshal(originalBodyBytes, &dataMap); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal original JSON: %w", err)
+	}
+
+	// Dont't want the azcosmos client use the values from the server
+	delete(dataMap, "readableLocations")
+	delete(dataMap, "writableLocations")
+
+	modifiedBodyBytes, err := json.Marshal(dataMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal modified JSON: %w", err)
+	}
+	originalResp.Body = streaming.NopCloser(bytes.NewReader(modifiedBodyBytes)) // Reset the body
+	return originalResp, nil
+}
+
+/*
+type customPolicy struct{}
+
+func (p *customPolicy) Do(req *policy.Request) (*http.Response, error) {
+	// Capture the request
+	log.Printf("Captured request: %v", req.Raw().URL)
+
+	resp, err := req.Next()
+	if err != nil {
+		return nil, err
+	}
+	if req.Raw().URL.Path == "" {
+		// Unmarshal the response body into accountProperties
+		bytesBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return resp, nil
+		}
+		_ = resp.Body.Close()
+
+		// Unmarshal the response body to a map, modify if needed, and marshal back to bytes
+		var bodyMap map[string]any
+		if err := json.Unmarshal(bytesBody, &bodyMap); err != nil {
+			return resp, nil
+		}
+		delete(bodyMap, "writableLocations")
+		delete(bodyMap, "readableLocations")
+
+		modifiedBody, err := json.Marshal(bodyMap)
+		if err != nil {
+			return resp, nil
+		}
+		resp.Body = streaming.NopCloser(bytes.NewReader(modifiedBody))
+	}
+	return resp, nil
+}
+*/
+
+func TestMain(m *testing.M) {
+	// This part hangs for macOS users, and fails. skipping - see Issue#8476 for more details
+	//if runtime.GOOS == "darwin" {
+	//	return
+	//}
 
 	databaseURI, cleanupFunc, err := testutil.GetCosmosDBInstance()
 	if err != nil {
@@ -74,14 +162,15 @@ func TestMain(m *testing.M) {
 	}
 	defer cleanupFunc()
 
+	const clientTimeout = 30 * time.Second
 	testParams = &kvparams.CosmosDB{
 		Endpoint: databaseURI,
 		Key:      "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
 		Database: "test-db",
-		Client: &http.Client{Timeout: 30 * time.Second, Transport: &http.Transport{
-			// tests, safe
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // ignore self-signed cert for local testing using the emulator
-		}},
+		Client: &http.Client{
+			Timeout:   clientTimeout,
+			Transport: &TestingTransport{},
+		},
 		StrongConsistency: false,
 	}
 
@@ -89,12 +178,13 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("creating key: %v", err)
 	}
+
 	// Create a CosmosDB client
 	client, err = azcosmos.NewClientWithKey(testParams.Endpoint, cred, &azcosmos.ClientOptions{
+		PreferredRegions: []string{testParams.Endpoint},
 		ClientOptions: azcore.ClientOptions{
-			Transport: &http.Client{Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			}},
+			InsecureAllowCredentialWithHTTP: true,
+			Transport:                       testParams.Client,
 		},
 	})
 	if err != nil {
@@ -103,14 +193,15 @@ func TestMain(m *testing.M) {
 
 	log.Printf("Creating database %s", testParams.Database)
 	ctx := context.Background()
-	resp, err := client.CreateDatabase(ctx,
+	_, err = client.CreateDatabase(ctx,
 		azcosmos.DatabaseProperties{ID: testParams.Database},
 		&azcosmos.CreateDatabaseOptions{ThroughputProperties: &throughput},
 	)
 	if err != nil {
-		log.Fatalf("creating database: %v, raw response: %v", err, resp.RawResponse)
+		log.Fatalf("creating database failed: %v", err)
 	}
 
 	code := m.Run()
-	os.Exit(code)
+	// use defer to ensure cleanup is called even if os.Exit is called
+	defer func() { os.Exit(code) }()
 }
