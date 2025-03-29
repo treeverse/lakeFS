@@ -698,7 +698,7 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
     delete:
-      description: Deletes a group. Takes a unique groupId as a path parameter, which must match an existing group ID. 
+      description: Deletes a group. Takes a unique groupId as a path parameter, which must match an existing group ID.
         No output is returned if the deletion is successful. This endpoint should be
         implemented in a function named deleteGroup.
       tags:
@@ -948,8 +948,8 @@ paths:
           type: string
     get:
       description: Returns a list of all access_key_ids and their creation dates for a specific user. Takes a unique
-        userId that matches an existing user along with pagination parameters. The response includes a Pagination 
-        object and a list of results sorted by the access_key_id field in Credentials object within the CredentialsList. 
+        userId that matches an existing user along with pagination parameters. The response includes a Pagination
+        object and a list of results sorted by the access_key_id field in Credentials object within the CredentialsList.
         This endpoint should be implemented in a function named listUserCredentials.
       tags:
         - auth
@@ -978,8 +978,8 @@ paths:
       description: Creates new credentials for a specific user. The input might include access_key and secret_key, and
         the output is a CredentialsWithSecret object where the username field is required. If either the
         access_key or secret_key is empty, RBAC server should generate random values for both and save
-        them for the user. The path parameter includes a unique userId that matches an existing user. During lakeFS 
-        initialization, credentials must be created for the "admin" userId, and lakeFS will invoke this API to perform 
+        them for the user. The path parameter includes a unique userId that matches an existing user. During lakeFS
+        initialization, credentials must be created for the "admin" userId, and lakeFS will invoke this API to perform
         that action. This endpoint should be implemented in a function named createCredentials.
       parameters:
         - in: query
@@ -1025,7 +1025,7 @@ paths:
           type: string
     delete:
       description: Deletes credentials for a specific user. Takes the userId and accessKeyId as input. The path
-        parameter includes a unique userId that matches an existing user. No output is returned if the deletion is 
+        parameter includes a unique userId that matches an existing user. No output is returned if the deletion is
         successful. This endpoint should be implemented in a function named deleteCredentials.
       tags:
         - auth
@@ -1044,7 +1044,7 @@ paths:
 
     get:
       description: Returns a specific user's credentials. Takes the user's userId and a specific accessKeyId associated
-        with that user as input. The output includes the user's access key id and creation date. This endpoint should 
+        with that user as input. The output includes the user's access key id and creation date. This endpoint should
         be implemented in a function named getCredentialsForUser.
       tags:
         - auth
