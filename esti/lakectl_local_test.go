@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/local"
 	"github.com/treeverse/lakefs/pkg/uri"
-	"golang.org/x/exp/slices"
 )
 
 func localCreateTestData(t *testing.T, vars map[string]string, objects []string) {
