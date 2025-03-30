@@ -181,15 +181,25 @@ func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace s
 	require.NotNil(t, exp)
 	require.Equal(t, expectedURLExp(adapter), *exp)
 
-	// Parse and verify content-disposition header from URL query parameters
+	// Parse and verify content-disposition from URL query parameters
 	queryParams := parsedURL.Query()
-	contentDisposition := queryParams.Get("response-content-disposition")
-	require.NotEmpty(t, contentDisposition, "Content-disposition header not found in URL")
 
-	// Parse the content-disposition header to extract the filename
+	// extract the content disposition value from the query parameters
+	var contentDisposition string
+	for _, param := range []string{"response-content-disposition", "rscd"} {
+		contentDisposition = queryParams.Get(param)
+		if contentDisposition != "" {
+			break
+		}
+	}
+	require.NotEmpty(t, contentDisposition, "Content disposition parameter not found in URL")
+
+	// Parse the content-disposition to extract the filename
 	_, params, err := mime.ParseMediaType(contentDisposition)
-	require.NoError(t, err, "Failed to parse content-disposition header")
-	require.Equal(t, filename, params["filename"], "Extracted filename doesn't match expected value")
+	require.NoError(t, err, "Failed to parse content disposition")
+
+	parsedFilename := params["filename"]
+	require.Equal(t, filename, parsedFilename, "Extracted filename doesn't match expected value")
 }
 
 // Test request for a presigned URL with an endpoint override

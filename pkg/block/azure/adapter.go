@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"path"
@@ -13,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
@@ -274,39 +274,54 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	// Use provided filename or extract from blob URL
 	var contentDisposition string
 	if filename != "" {
-		contentDisposition = fmt.Sprintf("attachment; filename=\"%s\"", path.Base(filename))
+		contentDisposition = mime.FormatMediaType("attachment", map[string]string{"filename": path.Base(filename)})
 	}
 
-	// Use shared credential for clients initialized with storage access key
-	if qualifiedKey.StorageAccountName == a.clientCache.params.StorageAccount && a.clientCache.params.StorageAccessKey != "" {
-		container, err := a.clientCache.NewContainerClient(qualifiedKey.StorageAccountName, qualifiedKey.ContainerName)
-		if err != nil {
-			return "", err
-		}
-		client := container.NewBlobClient(qualifiedKey.BlobURL)
-		urlExpiry := a.newPreSignedTime()
-		return client.GetSASURL(permissions, urlExpiry, &blob.GetSASURLOptions{})
-	}
-
-	// Otherwise assume using role based credentials and build signed URL using user delegation credentials
-	urlExpiry := a.newPreSignedTime()
-	udc, err := a.clientCache.NewUDC(ctx, qualifiedKey.StorageAccountName, &urlExpiry)
+	// Snapshot time
+	urlParts, err := sas.ParseURL(qualifiedKey.BlobURL)
 	if err != nil {
 		return "", err
+	}
+	snapshotTime, err := time.Parse(blob.SnapshotTimeFormat, urlParts.Snapshot)
+	if err != nil {
+		snapshotTime = time.Time{}
 	}
 
 	// Create Blob Signature Values with desired permissions and sign with user delegation credential
+	urlExpiry := a.newPreSignedTime()
 	blobSignatureValues := sas.BlobSignatureValues{
 		Protocol:           sas.ProtocolHTTPS,
 		ExpiryTime:         urlExpiry,
-		Permissions:        to.Ptr(permissions).String(),
+		Version:            sas.Version,
+		Permissions:        permissions.String(),
 		ContainerName:      qualifiedKey.ContainerName,
 		BlobName:           qualifiedKey.BlobURL,
 		ContentDisposition: contentDisposition,
+		SnapshotTime:       snapshotTime,
 	}
-	sasQueryParams, err := blobSignatureValues.SignWithUserDelegation(udc)
-	if err != nil {
-		return "", err
+
+	// Use shared credential for clients initialized with storage access key
+	var sasQueryParams sas.QueryParameters
+	if qualifiedKey.StorageAccountName == a.clientCache.params.StorageAccount && a.clientCache.params.StorageAccessKey != "" {
+		credentials, err := azblob.NewSharedKeyCredential(qualifiedKey.StorageAccountName, a.clientCache.params.StorageAccessKey)
+		if err != nil {
+			return "", err
+		}
+		sasQueryParams, err = blobSignatureValues.SignWithSharedKey(credentials)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		// Otherwise assume using role based credentials and build signed URL using user delegation credentials
+		udc, err := a.clientCache.NewUDC(ctx, qualifiedKey.StorageAccountName, &urlExpiry)
+		if err != nil {
+			return "", err
+		}
+
+		sasQueryParams, err = blobSignatureValues.SignWithUserDelegation(udc)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	var accountEndpoint string
@@ -354,7 +369,7 @@ func (a *Adapter) Download(ctx context.Context, obj block.ObjectPointer, offset,
 		return nil, block.ErrDataNotFound
 	}
 	if err != nil {
-		a.log(ctx).WithError(err).Errorf("failed to get azure blob from container %s key %s", container, blobURL)
+		a.log(ctx).WithError(err).Errorf("failed to get azure blob from container %v key %v", container, blobURL)
 		return nil, err
 	}
 	return downloadResponse.Body, nil
@@ -653,6 +668,7 @@ func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPoint
 func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
 	return nil, block.ErrOperationNotSupported
 }
+
 func (a *Adapter) ListMultipartUploads(_ context.Context, _ block.ObjectPointer, _ block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {
 	return nil, block.ErrOperationNotSupported
 }

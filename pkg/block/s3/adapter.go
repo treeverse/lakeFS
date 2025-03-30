@@ -443,7 +443,7 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
 		}
-		// Add content-disposition header if filename is provided
+		// Add content-disposition if filename provided
 		if filename != "" {
 			contentDisposition := mime.FormatMediaType("attachment", map[string]string{
 				"filename": path.Base(filename),
