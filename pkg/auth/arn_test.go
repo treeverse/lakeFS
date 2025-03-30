@@ -124,8 +124,8 @@ func TestParseResources(t *testing.T) {
 		},
 		{
 			inputResource:   "",
-			outputResources: []string{""},
-			expectedError:   nil,
+			outputResources: nil,
+			expectedError:   auth.ErrInvalidArn,
 		},
 		{
 			inputResource: func() string {
