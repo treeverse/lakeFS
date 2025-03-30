@@ -66,8 +66,8 @@ func runCommand(cmdName string, cmd *exec.Cmd) error {
 		return fmt.Errorf("failed to get stderr from command: %w", err)
 	}
 
-	const ChannelSize = 2
-	cmdErrs := make(chan error, ChannelSize)
+	const channelSize = 2
+	cmdErrs := make(chan error, channelSize)
 	handlePipe(stdoutPipe, logger.WithFields(logging.Fields{
 		"source": cmdName,
 		"std":    "out",
