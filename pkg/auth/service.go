@@ -1185,30 +1185,22 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 		// check whether the permission is allowed, denied or natural (not allowed and not denied)
 		for _, policy := range policies {
 			for _, stmt := range policy.Statement {
-				resources, err := ParsePolicyResourceAsList(stmt.Resource)
-				if err != nil {
-					logging.FromContext(ctx).Error(err)
-					return CheckDeny
+				resource := interpolateUser(stmt.Resource, username)
+				if !ArnMatch(resource, node.Permission.Resource) {
+					continue
 				}
-				for _, resource := range resources {
-					resource = interpolateUser(resource, username)
-					if !ArnMatch(resource, node.Permission.Resource) {
-						continue
+				for _, action := range stmt.Action {
+					if !wildcard.Match(action, node.Permission.Action) {
+						continue // not a matching action
 					}
 
-					for _, action := range stmt.Action {
-						if !wildcard.Match(action, node.Permission.Action) {
-							continue // not a matching action
-						}
-
-						if stmt.Effect == model.StatementEffectDeny {
-							// this is a "Deny" and it takes precedence
-							permAudit.Denied = append(permAudit.Denied, action)
-							return CheckDeny
-						}
-						hasPermission = true
-						allowed = CheckAllow
+					if stmt.Effect == model.StatementEffectDeny {
+						// this is a "Deny" and it takes precedence
+						permAudit.Denied = append(permAudit.Denied, action)
+						return CheckDeny
 					}
+					hasPermission = true
+					allowed = CheckAllow
 				}
 			}
 		}
