@@ -1,5 +1,13 @@
 # Changelog
 
+# v1.53.1
+
+:new: What's new:
+- Support configuration populate arrays from environment variables (#8891)
+
+:bug: Bugs fixed:
+- Fix BI metadata collection (#8901)
+
 # v1.53.0
 
 :new: What's new:
