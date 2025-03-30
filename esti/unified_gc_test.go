@@ -155,13 +155,13 @@ func TestUnifiedGC(t *testing.T) {
 	revertRes, err := client.ResetBranchWithResponse(ctx, RepoName, "dev", apigen.ResetBranchJSONRequestBody{Type: "reset"})
 	require.Falsef(t, revertRes.StatusCode() > 299, "Unexpected status code %d in revert branch dev", revertRes.StatusCode())
 	testutil.MustDo(t, "Revert changes in dev branch", err)
-	err = RunSparkSubmit(&sparkSubmitConfig{
-		sparkVersion:    sparkImageTag,
-		localJar:        metaClientJarPath,
-		entryPoint:      "io.treeverse.gc.GarbageCollection",
-		programArgs:     []string{RepoName, "us-east-1"},
-		extraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
-		logSource:       fmt.Sprintf("gc-%s", RepoName),
+	err = RunSparkSubmit(&SparkSubmitConfig{
+		SparkVersion:    sparkImageTag,
+		LocalJar:        metaClientJarPath,
+		EntryPoint:      "io.treeverse.gc.GarbageCollection",
+		ProgramArgs:     []string{RepoName, "us-east-1"},
+		ExtraSubmitArgs: []string{"--conf", "spark.hadoop.lakefs.debug.gc.uncommitted_min_age_seconds=1"},
+		LogSource:       fmt.Sprintf("gc-%s", RepoName),
 	})
 	testutil.MustDo(t, "Run GC job", err)
 	expectedExisting := map[string]bool{
