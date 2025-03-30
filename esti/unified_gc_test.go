@@ -155,7 +155,7 @@ func TestUnifiedGC(t *testing.T) {
 	revertRes, err := client.ResetBranchWithResponse(ctx, RepoName, "dev", apigen.ResetBranchJSONRequestBody{Type: "reset"})
 	require.Falsef(t, revertRes.StatusCode() > 299, "Unexpected status code %d in revert branch dev", revertRes.StatusCode())
 	testutil.MustDo(t, "Revert changes in dev branch", err)
-	err = runSparkSubmit(&sparkSubmitConfig{
+	err = RunSparkSubmit(&sparkSubmitConfig{
 		sparkVersion:    sparkImageTag,
 		localJar:        metaClientJarPath,
 		entryPoint:      "io.treeverse.gc.GarbageCollection",

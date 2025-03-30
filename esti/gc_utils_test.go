@@ -103,7 +103,7 @@ type sparkSubmitConfig struct {
 	logSource       string
 }
 
-func runSparkSubmit(config *sparkSubmitConfig) error {
+func RunSparkSubmit(config *sparkSubmitConfig) error {
 	workingDirectory, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("getting working directory: %w", err)
