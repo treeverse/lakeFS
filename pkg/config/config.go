@@ -36,33 +36,12 @@ const (
 	SingleBlockstoreID = ""
 )
 
-type OIDC struct {
-	// configure how users are handled on the lakeFS side:
-	ValidateIDTokenClaims  map[string]string `mapstructure:"validate_id_token_claims"`
-	DefaultInitialGroups   []string          `mapstructure:"default_initial_groups"`
-	InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
-	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
-	PersistFriendlyName    bool              `mapstructure:"persist_friendly_name"`
-}
-
-// CookieAuthVerification is related to auth based on a cookie set by an external service
-// TODO(isan) consolidate with OIDC
-type CookieAuthVerification struct {
-	// ValidateIDTokenClaims if set will validate the values (e.g., department: "R&D") exist in the token claims
-	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
-	// DefaultInitialGroups is a list of groups to add to the user on the lakeFS side
-	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
-	// InitialGroupsClaimName comma separated list of groups to add to the user on the lakeFS side
-	InitialGroupsClaimName string `mapstructure:"initial_groups_claim_name"`
-	// FriendlyNameClaimName is the claim name to use as the user's friendly name in places like the UI
-	FriendlyNameClaimName string `mapstructure:"friendly_name_claim_name"`
-	// ExternalUserIDClaimName is the claim name to use as the user identifier with an IDP
-	ExternalUserIDClaimName string `mapstructure:"external_user_id_claim_name"`
-	// AuthSource tag each user with label of the IDP
-	AuthSource string `mapstructure:"auth_source"`
-	// PersistFriendlyName should we persist the friendly name in the KV store
-	PersistFriendlyName bool `mapstructure:"persist_friendly_name"`
-}
+const (
+	AuthRBACNone       = "none"
+	AuthRBACSimplified = "simplified"
+	AuthRBACExternal   = "external"
+	AuthRBACInternal   = "internal"
+)
 
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
@@ -388,6 +367,7 @@ func GetActualStorageID(storageConfig StorageConfig, storageID string) string {
 type Config interface {
 	GetBaseConfig() *BaseConfig
 	StorageConfig() StorageConfig
+	AuthConfig() *Auth
 	Validate() error
 }
 
@@ -430,58 +410,7 @@ type BaseConfig struct {
 		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
 		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
 	}
-	Database Database
-	Auth     struct {
-		Cache struct {
-			Enabled bool          `mapstructure:"enabled"`
-			Size    int           `mapstructure:"size"`
-			TTL     time.Duration `mapstructure:"ttl"`
-			Jitter  time.Duration `mapstructure:"jitter"`
-		} `mapstructure:"cache"`
-		Encrypt struct {
-			SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
-		} `mapstructure:"encrypt"`
-		API struct {
-			// Endpoint for authorization operations
-			Endpoint           string        `mapstructure:"endpoint"`
-			Token              SecureString  `mapstructure:"token"`
-			SupportsInvites    bool          `mapstructure:"supports_invites"`
-			HealthCheckTimeout time.Duration `mapstructure:"health_check_timeout"`
-			SkipHealthCheck    bool          `mapstructure:"skip_health_check"`
-		} `mapstructure:"api"`
-		AuthenticationAPI struct {
-			// Endpoint for authentication operations
-			Endpoint string `mapstructure:"endpoint"`
-			// ExternalPrincipalAuth configuration related external principals
-			ExternalPrincipalsEnabled bool `mapstructure:"external_principals_enabled"`
-		} `mapstructure:"authentication_api"`
-		RemoteAuthenticator struct {
-			// Enabled if set true will enable remote authentication
-			Enabled bool `mapstructure:"enabled"`
-			// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
-			Endpoint string `mapstructure:"endpoint"`
-			// DefaultUserGroup is the default group for the users authenticated by the remote service
-			DefaultUserGroup string `mapstructure:"default_user_group"`
-			// RequestTimeout timeout for remote authentication requests
-			RequestTimeout time.Duration `mapstructure:"request_timeout"`
-		} `mapstructure:"remote_authenticator"`
-		OIDC                   OIDC                   `mapstructure:"oidc"`
-		CookieAuthVerification CookieAuthVerification `mapstructure:"cookie_auth_verification"`
-		// LogoutRedirectURL is the URL on which to mount the
-		// server-side logout.
-		LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
-		LoginDuration     time.Duration `mapstructure:"login_duration"`
-		LoginMaxDuration  time.Duration `mapstructure:"login_max_duration"`
-		UIConfig          struct {
-			RBAC               string   `mapstructure:"rbac"`
-			LoginURL           string   `mapstructure:"login_url"`
-			LoginFailedMessage string   `mapstructure:"login_failed_message"`
-			FallbackLoginURL   *string  `mapstructure:"fallback_login_url"`
-			FallbackLoginLabel *string  `mapstructure:"fallback_login_label"`
-			LoginCookieNames   []string `mapstructure:"login_cookie_names"`
-			LogoutURL          string   `mapstructure:"logout_url"`
-		} `mapstructure:"ui_config"`
-	} `mapstructure:"auth"`
+	Database   Database
 	Blockstore Blockstore `mapstructure:"blockstore"`
 	Committed  struct {
 		LocalCache struct {
@@ -631,6 +560,8 @@ func decoderConfig() viper.DecoderConfigOption {
 			DecodeStrings,
 			mapstructure.StringToTimeDurationHookFunc(),
 			DecodeStringToMap(),
+			StringToStructHookFunc(),
+			StringToSliceWithBracketHookFunc(),
 		))
 	return hook
 }
@@ -663,6 +594,14 @@ func (c *BaseConfig) ValidateDomainNames() error {
 	return nil
 }
 
+func (c *BaseConfig) GetBaseConfig() *BaseConfig {
+	return c
+}
+
+func (c *BaseConfig) StorageConfig() StorageConfig {
+	return &c.Blockstore
+}
+
 func (c *BaseConfig) Validate() error {
 	missingKeys := ValidateMissingRequiredKeys(c, "mapstructure", "squash")
 	if len(missingKeys) > 0 {
@@ -675,45 +614,6 @@ const (
 	gcpAESKeyLength = 32
 )
 
-const (
-	AuthRBACNone       = "none"
-	AuthRBACSimplified = "simplified"
-	AuthRBACExternal   = "external"
-	AuthRBACInternal   = "internal"
-)
-
-func (c *BaseConfig) IsAuthBasic() bool {
-	return c.Auth.UIConfig.RBAC == AuthRBACNone
-}
-
-func (c *BaseConfig) IsAuthUISimplified() bool {
-	return c.Auth.UIConfig.RBAC == AuthRBACSimplified
-}
-
-func (c *BaseConfig) IsAuthenticationTypeAPI() bool {
-	return c.Auth.AuthenticationAPI.Endpoint != ""
-}
-
-func (c *BaseConfig) IsAuthTypeAPI() bool {
-	return c.Auth.API.Endpoint != ""
-}
-
-func (c *BaseConfig) IsExternalPrincipalsEnabled() bool {
-	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
-	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
-	return c.Auth.AuthenticationAPI.ExternalPrincipalsEnabled
-}
-
-// UseUILoginPlaceholders returns true if the UI should use placeholders for login
-// the UI should use place holders just in case of LDAP, the other auth methods should have their own login page
-func (c *BaseConfig) UseUILoginPlaceholders() bool {
-	return c.Auth.RemoteAuthenticator.Enabled
-}
-
-func (c *BaseConfig) IsAdvancedAuth() bool {
-	return c.Auth.UIConfig.RBAC == AuthRBACExternal || c.Auth.UIConfig.RBAC == AuthRBACInternal
-}
-
 func (c *BaseConfig) UISnippets() []apiparams.CodeSnippet {
 	snippets := make([]apiparams.CodeSnippet, 0, len(c.UI.Snippets))
 	for _, item := range c.UI.Snippets {
@@ -725,10 +625,114 @@ func (c *BaseConfig) UISnippets() []apiparams.CodeSnippet {
 	return snippets
 }
 
-func (c *BaseConfig) GetBaseConfig() *BaseConfig {
-	return c
+type Auth struct {
+	Cache struct {
+		Enabled bool          `mapstructure:"enabled"`
+		Size    int           `mapstructure:"size"`
+		TTL     time.Duration `mapstructure:"ttl"`
+		Jitter  time.Duration `mapstructure:"jitter"`
+	} `mapstructure:"cache"`
+	Encrypt struct {
+		SecretKey SecureString `mapstructure:"secret_key" validate:"required"`
+	} `mapstructure:"encrypt"`
+	API struct {
+		// Endpoint for authorization operations
+		Endpoint           string        `mapstructure:"endpoint"`
+		Token              SecureString  `mapstructure:"token"`
+		SupportsInvites    bool          `mapstructure:"supports_invites"`
+		HealthCheckTimeout time.Duration `mapstructure:"health_check_timeout"`
+		SkipHealthCheck    bool          `mapstructure:"skip_health_check"`
+	} `mapstructure:"api"`
+	AuthenticationAPI struct {
+		// Endpoint for authentication operations
+		Endpoint string `mapstructure:"endpoint"`
+		// ExternalPrincipalAuth configuration related external principals
+		ExternalPrincipalsEnabled bool `mapstructure:"external_principals_enabled"`
+	} `mapstructure:"authentication_api"`
+	RemoteAuthenticator struct {
+		// Enabled if set true will enable remote authentication
+		Enabled bool `mapstructure:"enabled"`
+		// Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth)
+		Endpoint string `mapstructure:"endpoint"`
+		// DefaultUserGroup is the default group for the users authenticated by the remote service
+		DefaultUserGroup string `mapstructure:"default_user_group"`
+		// RequestTimeout timeout for remote authentication requests
+		RequestTimeout time.Duration `mapstructure:"request_timeout"`
+	} `mapstructure:"remote_authenticator"`
+	OIDC                   OIDC                   `mapstructure:"oidc"`
+	CookieAuthVerification CookieAuthVerification `mapstructure:"cookie_auth_verification"`
+	// LogoutRedirectURL is the URL on which to mount the
+	// server-side logout.
+	LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
+	LoginDuration     time.Duration `mapstructure:"login_duration"`
+	LoginMaxDuration  time.Duration `mapstructure:"login_max_duration"`
+	UIConfig          struct {
+		RBAC               string   `mapstructure:"rbac"`
+		LoginURL           string   `mapstructure:"login_url"`
+		LoginFailedMessage string   `mapstructure:"login_failed_message"`
+		FallbackLoginURL   *string  `mapstructure:"fallback_login_url"`
+		FallbackLoginLabel *string  `mapstructure:"fallback_login_label"`
+		LoginCookieNames   []string `mapstructure:"login_cookie_names"`
+		LogoutURL          string   `mapstructure:"logout_url"`
+	} `mapstructure:"ui_config"`
 }
 
-func (c *BaseConfig) StorageConfig() StorageConfig {
-	return &c.Blockstore
+type OIDC struct {
+	// configure how users are handled on the lakeFS side:
+	ValidateIDTokenClaims  map[string]string `mapstructure:"validate_id_token_claims"`
+	DefaultInitialGroups   []string          `mapstructure:"default_initial_groups"`
+	InitialGroupsClaimName string            `mapstructure:"initial_groups_claim_name"`
+	FriendlyNameClaimName  string            `mapstructure:"friendly_name_claim_name"`
+	PersistFriendlyName    bool              `mapstructure:"persist_friendly_name"`
+}
+
+// CookieAuthVerification is related to auth based on a cookie set by an external service
+// TODO(isan) consolidate with OIDC
+type CookieAuthVerification struct {
+	// ValidateIDTokenClaims if set will validate the values (e.g., department: "R&D") exist in the token claims
+	ValidateIDTokenClaims map[string]string `mapstructure:"validate_id_token_claims"`
+	// DefaultInitialGroups is a list of groups to add to the user on the lakeFS side
+	DefaultInitialGroups []string `mapstructure:"default_initial_groups"`
+	// InitialGroupsClaimName comma separated list of groups to add to the user on the lakeFS side
+	InitialGroupsClaimName string `mapstructure:"initial_groups_claim_name"`
+	// FriendlyNameClaimName is the claim name to use as the user's friendly name in places like the UI
+	FriendlyNameClaimName string `mapstructure:"friendly_name_claim_name"`
+	// ExternalUserIDClaimName is the claim name to use as the user identifier with an IDP
+	ExternalUserIDClaimName string `mapstructure:"external_user_id_claim_name"`
+	// AuthSource tag each user with label of the IDP
+	AuthSource string `mapstructure:"auth_source"`
+	// PersistFriendlyName should we persist the friendly name in the KV store
+	PersistFriendlyName bool `mapstructure:"persist_friendly_name"`
+}
+
+func (c *Auth) IsAuthBasic() bool {
+	return c.UIConfig.RBAC == AuthRBACNone
+}
+
+func (c *Auth) IsAuthUISimplified() bool {
+	return c.UIConfig.RBAC == AuthRBACSimplified
+}
+
+func (c *Auth) IsAuthenticationTypeAPI() bool {
+	return c.AuthenticationAPI.Endpoint != ""
+}
+
+func (c *Auth) IsAuthTypeAPI() bool {
+	return c.API.Endpoint != ""
+}
+
+func (c *Auth) IsExternalPrincipalsEnabled() bool {
+	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
+	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
+	return c.AuthenticationAPI.ExternalPrincipalsEnabled
+}
+
+// UseUILoginPlaceholders returns true if the UI should use placeholders for login
+// the UI should use placeholders just in case of LDAP, the other auth methods should have their own login page
+func (c *Auth) UseUILoginPlaceholders() bool {
+	return c.RemoteAuthenticator.Enabled
+}
+
+func (c *Auth) IsAdvancedAuth() bool {
+	return c.UIConfig.RBAC == AuthRBACExternal || c.UIConfig.RBAC == AuthRBACInternal
 }

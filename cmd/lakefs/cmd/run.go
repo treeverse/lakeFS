@@ -19,11 +19,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
+	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -65,14 +65,15 @@ var runCmd = &cobra.Command{
 		baseCfg := cfg.GetBaseConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
-			var c config.BaseConfig
-			if err := config.Unmarshal(&c); err != nil {
+			var c config.Config
+			if err := config.Unmarshal(c); err != nil {
 				logger.WithError(err).Error("Failed to unmarshal config while reload")
 				return
 			}
-			if c.Logging.Level != logging.Level() {
-				logger.WithField("level", c.Logging.Level).Info("Update log level")
-				logging.SetLevel(c.Logging.Level)
+			baseCfg := c.GetBaseConfig()
+			if baseCfg.Logging.Level != logging.Level() {
+				logger.WithField("level", baseCfg.Logging.Level).Info("Update log level")
+				logging.SetLevel(baseCfg.Logging.Level)
 			}
 		})
 
@@ -105,8 +106,9 @@ var runCmd = &cobra.Command{
 		authService := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 		// initialize authentication service
 		var authenticationService authentication.Service
-		if baseCfg.IsAuthenticationTypeAPI() {
-			authenticationService, err = authentication.NewAPIService(baseCfg.Auth.AuthenticationAPI.Endpoint, baseCfg.Auth.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), baseCfg.Auth.AuthenticationAPI.ExternalPrincipalsEnabled)
+		authCfg := cfg.AuthConfig()
+		if authCfg.IsAuthenticationTypeAPI() {
+			authenticationService, err = authentication.NewAPIService(authCfg.AuthenticationAPI.Endpoint, authCfg.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), authCfg.AuthenticationAPI.ExternalPrincipalsEnabled)
 			if err != nil {
 				logger.WithError(err).Fatal("failed to create authentication service")
 			}
@@ -114,14 +116,13 @@ var runCmd = &cobra.Command{
 			authenticationService = authentication.NewDummyService()
 		}
 
-		cloudMetadataProvider := stats.BuildMetadataProvider(logger, baseCfg)
 		blockstoreType := baseCfg.Blockstore.Type
 		if blockstoreType == "mem" {
 			printLocalWarning(os.Stderr, fmt.Sprintf("blockstore type %s", blockstoreType))
 			logger.WithField("adapter_type", blockstoreType).Warn("Block adapter NOT SUPPORTED for production use")
 		}
 
-		metadata := stats.NewMetadata(ctx, logger, blockstoreType, authMetadataManager, cloudMetadataProvider)
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
@@ -164,7 +165,7 @@ var runCmd = &cobra.Command{
 		// local database lock will make sure that only one instance will run the setup.
 		if (kvParams.Type == local.DriverName || kvParams.Type == mem.DriverName) &&
 			baseCfg.Installation.UserName != "" && baseCfg.Installation.AccessKeyID.SecureValue() != "" && baseCfg.Installation.SecretAccessKey.SecureValue() != "" {
-			setupCreds, err := setupLakeFS(ctx, baseCfg, authMetadataManager, authService, baseCfg.Installation.UserName,
+			setupCreds, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, baseCfg.Installation.UserName,
 				baseCfg.Installation.AccessKeyID.SecureValue(), baseCfg.Installation.SecretAccessKey.SecureValue(), false)
 			if err != nil {
 				logger.WithError(err).WithField("admin", baseCfg.Installation.UserName).Fatal("Failed to initial setup environment")
@@ -189,18 +190,9 @@ var runCmd = &cobra.Command{
 		defer actionsService.Stop()
 		c.SetHooksHandler(actionsService)
 
-		middlewareAuthenticator := auth.ChainAuthenticator{
-			auth.NewBuiltinAuthenticator(authService),
-		}
-
-		// remote authenticator setup
-		if baseCfg.Auth.RemoteAuthenticator.Enabled {
-			remoteAuthenticator, err := authremote.NewAuthenticator(authremote.AuthenticatorConfig(baseCfg.Auth.RemoteAuthenticator), authService, logger)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create remote authenticator")
-			}
-
-			middlewareAuthenticator = append(middlewareAuthenticator, remoteAuthenticator)
+		middlewareAuthenticator, err := authenticationfactory.BuildAuthenticatorChain(cfg, logger, authService)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create authentication chain")
 		}
 
 		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, metadata.InstallationID, version.NewDefaultVersionSource(baseCfg.Security.CheckLatestVersionCache))
@@ -231,7 +223,6 @@ var runCmd = &cobra.Command{
 			authMetadataManager,
 			migrator,
 			bufferedCollector,
-			cloudMetadataProvider,
 			actionsService,
 			auditChecker,
 			logger.WithField("service", "api_gateway"),
@@ -251,8 +242,8 @@ var runCmd = &cobra.Command{
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
-		oidcConfig := api.OIDCConfig(baseCfg.Auth.OIDC)
-		cookieAuthConfig := api.CookieAuthConfig(baseCfg.Auth.CookieAuthVerification)
+		oidcConfig := api.OIDCConfig(authCfg.OIDC)
+		cookieAuthConfig := api.CookieAuthConfig(authCfg.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
 			logger.WithField("service", "s3_gateway"),
 			middlewareAuthenticator,

@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 	"text/template"
@@ -32,7 +33,6 @@ import (
 	lakefscfg "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/uri"
-	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 )
 

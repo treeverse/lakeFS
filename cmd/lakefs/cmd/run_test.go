@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
@@ -13,7 +14,7 @@ import (
 
 func TestGetAuthService(t *testing.T) {
 	t.Run("maintain_inviter", func(t *testing.T) {
-		cfg := &config.BaseConfig{}
+		cfg := &configfactory.ConfigWithAuth{}
 		cfg.Auth.UIConfig.RBAC = config.AuthRBACInternal
 		cfg.Auth.API.Endpoint = "http://localhost:8000"
 		cfg.Auth.API.SkipHealthCheck = true
@@ -24,7 +25,7 @@ func TestGetAuthService(t *testing.T) {
 		}
 	})
 	t.Run("maintain_service", func(t *testing.T) {
-		cfg := &config.BaseConfig{}
+		cfg := &configfactory.ConfigWithAuth{}
 		kvStore := kvtest.GetStore(context.Background(), t)
 		meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		cfg.Auth.UIConfig.RBAC = config.AuthRBACNone

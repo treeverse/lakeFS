@@ -12,7 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -20,7 +20,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
-	"golang.org/x/exp/slices"
 )
 
 const DefaultNamespacePrefix = block.BlockstoreTypeLocal + "://"
@@ -534,7 +533,7 @@ func (l *Adapter) getPartFiles(uploadID string, obj block.ObjectPointer) ([]stri
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names, nil
 }
 
