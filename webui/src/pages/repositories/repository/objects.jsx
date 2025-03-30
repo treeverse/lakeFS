@@ -287,10 +287,11 @@ const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }
   return (
     <Container>
       <Row className={`upload-item upload-item-${state ? state.status : "none"}`}>
-        <Col>
-          <span className="path">
+        <Col
+            title={`lakefs://${repo.id}/${reference.id}/${fpath}`}
+            className="path text-nowrap overflow-hidden text-truncate align-middle"
+        >
             lakefs://{repo.id}/{reference.id}/{fpath}
-          </span>
         </Col>
         <Col xs md="2">
           <span className="size">
@@ -653,10 +654,11 @@ const ObjectsBrowser = ({ config }) => {
   if (error) return <RepoError error={error} />;
 
   return (
-    <>
-      <ActionsBar>
-        <ActionGroup orientation="left">
-          <RefDropdown
+    <Container fluid>
+        <Row className="align-items-center">
+        <ActionsBar className="w-100">
+        <ActionGroup orientation="left" className="w-75 flex-nowrap align-items-center flex-shrink-0">
+            <RefDropdown
             emptyText={"Select Branch"}
             repo={repo}
             selected={reference}
@@ -675,7 +677,7 @@ const ObjectsBrowser = ({ config }) => {
           />
         </ActionGroup>
 
-        <ActionGroup orientation="right">
+        <ActionGroup orientation="right" className="w-75 flex-nowrap align-items-center flex-shrink-0">
           <PrefixSearchWidget
             text="Search by Prefix"
             key={path}
@@ -770,7 +772,8 @@ const ObjectsBrowser = ({ config }) => {
           refreshDep={refreshToken}
         />
       </Box>
-    </>
+      </Row>
+    </Container>
   );
 };
 

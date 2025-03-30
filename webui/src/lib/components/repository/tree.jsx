@@ -483,15 +483,15 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
       path: query.path,
     };
     button = (
-      <Link
-        href={{
-          pathname: "/repositories/:repoId/object",
-          query: filePathQuery,
-          params: params,
-        }}
-      >
-        {buttonText}
-      </Link>
+          <Link
+            href={{
+              pathname: "/repositories/:repoId/object",
+              query: filePathQuery,
+              params: params,
+            }}
+          >
+            {buttonText}
+          </Link>
     );
   }
 

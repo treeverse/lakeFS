@@ -9,8 +9,9 @@ import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/o
 import Popover from "react-bootstrap/Popover";
 
 import {tags, branches, commits} from '../../api';
-import {Nav} from "react-bootstrap";
+import {Col, Nav, Row, ListGroup} from "react-bootstrap";
 import {RefTypeBranch, RefTypeCommit, RefTypeTag} from "../../../constants";
+import Container from "react-bootstrap/Container";
 
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
@@ -173,22 +174,39 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
 
 const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, withCommits}) => {
     return (
-        <li className="list-group-item" key={namedRef}>
-            {(!!selected && namedRef === selected.id) ?
-                <strong>{namedRef}</strong> :
-                <Button variant="link" onClick={() => {
-                    selectRef({id: namedRef, type: refType});
-                }}>{namedRef}</Button>
-            }
-            <div className="actions">
-                {(refType === RefTypeBranch && namedRef === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
-                {(withCommits) ? (
-                    <Button onClick={logCommits} size="sm" variant="link">
-                        <ChevronRightIcon/>
-                    </Button>
-                ) : (<span/>)}
-            </div>
-        </li>
+        <ListGroup.Item key={namedRef}>
+            <Container fluid>
+                <Row className="align-items-center">
+                    <Col
+                        title={namedRef}
+                        className="text-nowrap overflow-hidden text-truncate"
+                    >
+                        {!!selected && namedRef === selected.id ? (
+                            <strong>{namedRef}</strong>
+                        ) : (
+                            <Button
+                                variant="link"
+                                onClick={() => selectRef({ id: namedRef, type: refType })}
+                            >
+                                {namedRef}
+                            </Button>
+                        )}
+                    </Col>
+                    <Col xs="auto" className="actions d-flex align-items-center">
+                        {refType === RefTypeBranch && namedRef === repo.default_branch && (
+                            <Badge variant="info" className="mr-2">
+                                Default
+                            </Badge>
+                        )}
+                        {withCommits && (
+                            <Button onClick={logCommits} size="sm" variant="link">
+                                <ChevronRightIcon />
+                            </Button>
+                        )}
+                    </Col>
+                </Row>
+            </Container>
+        </ListGroup.Item>
     );
 };
 
@@ -264,13 +282,63 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
 
     const title = prefix + (!!selected) ? `${prefix} ${selected.type}: ` : '';
     return (
-        <>
-            <Button ref={target} variant={variant} onClick={()=> { setShow(!show) }}>
-                {title} <strong>{showId(selected)}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-            </Button>
-            {cancelButton}
-            {popover}
-        </>
+        <Container fluid>
+            <Row>
+                <Col>
+                    <Button ref={target} variant={variant} onClick={() => setShow(!show)} title={showId(selected)}
+                            className="w-25 text-nowrap overflow-hidden text-truncate">
+                        {title}
+                        <strong>
+                            {showId(selected)}
+                        </strong>
+                        <br/>
+                        {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+                    </Button>
+                </Col>
+                <Col xs="auto">
+                    {cancelButton}
+                    {popover}
+                </Col>
+            </Row>
+        </Container>
+        // <Container fluid>
+        //     <Row className="align-items-center">
+        //         <Col>
+        //             <Button
+        //                 ref={target}
+        //                 variant={variant}
+        //                 onClick={() => setShow(!show)}
+        //                 className="w-25"
+        //             >
+        //                 <span
+        //                     title={showId(selected)}
+        //                     className="d-inline-block text-nowrap overflow-hidden text-truncate"
+        //                 >
+        //                   {title}
+        //                    <strong>{showId(selected)}</strong>
+        //                 </span>
+        //                 <span className="d-inline-block">
+        //                   {show ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        //                 </span>
+        //             </Button>
+        //         </Col>
+        //         <Col xs="auto">
+        //             {cancelButton}
+        //             {popover}
+        //         </Col>
+        //     </Row>
+        // </Container>
+        // <>
+        //     <Button ref={target} variant={variant} onClick={() => { setShow(!show) }} title={showId(selected)} className="w-25 text-nowrap overflow-hidden text-truncate">
+        //         {title}
+        //         <strong>
+        //             {showId(selected)}
+        //         </strong>
+        //         {show ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        //     </Button>
+        //     {cancelButton}
+        //     {popover}
+        // </>
     );
 };
 

@@ -58,9 +58,13 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
     return (
         <ListGroup.Item>
             <Row className="d-flex align-items-center justify-content-between">
-                <Col className="flex-grow-1">
+                <Col
+                    title={branch.id}
+                    className="flex-grow-1 text-nowrap overflow-hidden text-truncate align-middle"
+                >
                     <h6 style={{marginBottom: 0}}>
-                        <Link href={{
+                        <Link
+                            href={{
                             pathname: '/repositories/:repoId/objects',
                             params: {repoId: repo.id},
                             query: {ref: branch.id}

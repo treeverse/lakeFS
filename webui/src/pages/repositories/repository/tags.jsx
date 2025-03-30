@@ -40,7 +40,10 @@ const TagWidget = ({ repo, tag, onDelete }) => {
     return (
         <ListGroup.Item>
             <div className="clearfix">
-                <div className="float-start w-100">
+                <div
+                    title={tag.id}
+                    className="float-start w-100 text-nowrap overflow-hidden text-truncate align-middle"
+                >
                     <h6>
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
