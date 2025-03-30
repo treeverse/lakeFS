@@ -52,3 +52,18 @@ func TestInstrumentation(t *testing.T) {
 	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", ""))
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationQuickstart, true, true)
 }
+
+func TestFixedInstallationID(t *testing.T) {
+	ctx := context.Background()
+	kvStore := kvtest.GetStore(ctx, t)
+
+	const installationID = "fa3920ce-5c58-417f-b672-7e0b2870fea9"
+	// Create a new metadata manager with a fixed installation ID
+	// Do not set setup timestamp
+	mgr := auth.NewKVMetadataManager("test", installationID, "mem", kvStore)
+
+	// Get metadata and verify the installation ID matches the fixed ID
+	md, err := mgr.GetMetadata(ctx)
+	require.NoError(t, err)
+	require.Equal(t, installationID, md["installation_id"])
+}
