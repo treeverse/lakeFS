@@ -5,8 +5,18 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/auth"
 )
 
+type MultipleResourceStatement struct {
+	Action   []string `json:"action"`
+	Effect   string   `json:"effect"`
+	Resource []string `json:"resource"`
+}
+
+type MultipleResourceStatementDoc struct {
+	Statement []MultipleResourceStatement `json:"statement"`
+}
 type StatementDoc struct {
 	Statement []apigen.Statement `json:"statement"`
 }
@@ -24,6 +34,7 @@ var authPoliciesShow = &cobra.Command{
 	Short: "Show a policy",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
+		resourceArray := Must(cmd.Flags().GetBool("resource-array"))
 		clt := getClient()
 
 		resp, err := clt.GetPolicyWithResponse(cmd.Context(), id)
@@ -33,6 +44,27 @@ var authPoliciesShow = &cobra.Command{
 		}
 
 		policy := *resp.JSON200
+		if resourceArray {
+			var statementsV2 []MultipleResourceStatement
+			for _, s := range policy.Statement {
+				resources, _ := auth.ParsePolicyResourceAsList(s.Resource)
+				newStatement := MultipleResourceStatement{
+					Action:   s.Action,
+					Effect:   s.Effect,
+					Resource: resources}
+				statementsV2 = append(statementsV2, newStatement)
+			}
+			Write(policyDetailsTemplate, struct {
+				ID           string
+				CreationDate int64
+				StatementDoc MultipleResourceStatementDoc
+			}{
+				ID:           policy.Id,
+				CreationDate: *policy.CreationDate,
+				StatementDoc: MultipleResourceStatementDoc{Statement: statementsV2},
+			})
+			return
+		}
 		Write(policyDetailsTemplate, struct {
 			ID           string
 			CreationDate int64
@@ -47,6 +79,7 @@ var authPoliciesShow = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
+	authPoliciesShow.Flags().Bool("resource-array", false, "Display resources as an array in the output")
 	authPoliciesShow.Flags().String("id", "", "Policy identifier")
 	_ = authPoliciesShow.MarkFlagRequired("id")
 
