@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	}
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "fsouza/fake-gcs-server",
-		Tag:        "1.47.6",
+		Tag:        "1.52.2",
 		Cmd: []string{
 			"-scheme", "http",
 			"-backend", "memory",
@@ -87,7 +87,6 @@ func TestMain(m *testing.M) {
 				return err
 			}
 		}
-		return nil
 	}); err != nil {
 		log.Fatalf("Could not connect to fake-gcs-server while trying to list buckets: %s", err)
 	}
@@ -96,7 +95,11 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not create bucket '%s': %s", bucketName, err)
 	}
 
-	code := m.Run()
-	closer()
-	os.Exit(code)
+	var code int
+	defer func() {
+		closer()
+		os.Exit(code)
+	}()
+
+	code = m.Run()
 }

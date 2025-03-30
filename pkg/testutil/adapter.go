@@ -52,7 +52,7 @@ func WithNamespaceRegion(region string) func(a *MockAdapter) {
 	}
 }
 
-func (a *MockAdapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, time.Time, error) {
+func (a *MockAdapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode, _ string) (string, time.Time, error) {
 	return "", time.Time{}, block.ErrOperationNotSupported
 }
 

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"slices"
 	"strings"
@@ -242,7 +243,7 @@ func (a *Adapter) GetWalker(_ string, opts block.WalkerOptions) (block.Walker, e
 	return NewAzureDataLakeWalker(client, opts.SkipOutOfOrder)
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode, filename string) (string, time.Time, error) {
 	if a.disablePreSigned {
 		return "", time.Time{}, block.ErrOperationNotSupported
 	}
@@ -255,12 +256,12 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 			Write: true,
 		}
 	}
-	preSignedURL, err := a.getPreSignedURL(ctx, obj, permissions)
+	preSignedURL, err := a.getPreSignedURL(ctx, obj, permissions, filename)
 	// TODO(#6347): Report expiry.
 	return preSignedURL, time.Time{}, err
 }
 
-func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions) (string, error) {
+func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, permissions sas.BlobPermissions, filename string) (string, error) {
 	if a.disablePreSigned {
 		return "", block.ErrOperationNotSupported
 	}
@@ -268,6 +269,12 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	qualifiedKey, err := resolveBlobURLInfo(obj)
 	if err != nil {
 		return "", err
+	}
+
+	// Use provided filename or extract from blob URL
+	var contentDisposition string
+	if filename != "" {
+		contentDisposition = fmt.Sprintf("attachment; filename=\"%s\"", path.Base(filename))
 	}
 
 	// Use shared credential for clients initialized with storage access key
@@ -290,11 +297,12 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 
 	// Create Blob Signature Values with desired permissions and sign with user delegation credential
 	blobSignatureValues := sas.BlobSignatureValues{
-		Protocol:      sas.ProtocolHTTPS,
-		ExpiryTime:    urlExpiry,
-		Permissions:   to.Ptr(permissions).String(),
-		ContainerName: qualifiedKey.ContainerName,
-		BlobName:      qualifiedKey.BlobURL,
+		Protocol:           sas.ProtocolHTTPS,
+		ExpiryTime:         urlExpiry,
+		Permissions:        to.Ptr(permissions).String(),
+		ContainerName:      qualifiedKey.ContainerName,
+		BlobName:           qualifiedKey.BlobURL,
+		ContentDisposition: contentDisposition,
 	}
 	sasQueryParams, err := blobSignatureValues.SignWithUserDelegation(udc)
 	if err != nil {
@@ -432,7 +440,7 @@ func (a *Adapter) Copy(ctx context.Context, sourceObj, destinationObj block.Obje
 	}
 	destClient := destContainerClient.NewBlobClient(qualifiedDestinationKey.BlobURL)
 
-	sasKey, _, err := a.GetPreSignedURL(ctx, sourceObj, block.PreSignModeRead)
+	sasKey, _, err := a.GetPreSignedURL(ctx, sourceObj, block.PreSignModeRead, "")
 	if err != nil {
 		return err
 	}

@@ -2,8 +2,10 @@ package blocktest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -17,14 +19,12 @@ import (
 )
 
 // AdapterTest Test suite of basic adapter functionality
-func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string, presigned bool) {
+func AdapterTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string) {
 	AdapterBasicObjectTest(t, adapter, storageNamespace, externalPath)
 	AdapterMultipartTest(t, adapter, storageNamespace, externalPath)
 	t.Run("Adapter_GetRange", func(t *testing.T) { testAdapterGetRange(t, adapter, storageNamespace) })
 	t.Run("Adapter_Walker", func(t *testing.T) { testAdapterWalker(t, adapter, storageNamespace) })
-	if presigned {
-		t.Run("Adapter_GetPreSignedURL", func(t *testing.T) { testGetPreSignedURL(t, adapter, storageNamespace) })
-	}
+	t.Run("Adapter_GetPreSignedURL", func(t *testing.T) { testGetPreSignedURL(t, adapter, storageNamespace) })
 }
 
 func AdapterPresignedEndpointOverrideTest(t *testing.T, adapter block.Adapter, storageNamespace, externalPath string, oe *url.URL) {
@@ -166,17 +166,35 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 
 // Test request for a presigned URL for temporary access
 func testGetPreSignedURL(t *testing.T, adapter block.Adapter, storageNamespace string) {
-	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
-	require.NotNil(t, exp)
-	expectedExpiry := expectedURLExp(adapter)
-	require.Equal(t, expectedExpiry, *exp)
+	// without filename
+	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace, "")
 	_, err := url.Parse(preSignedURL)
 	require.NoError(t, err)
+	require.NotNil(t, exp)
+	require.Equal(t, expectedURLExp(adapter), *exp)
+
+	// with filename
+	const filename = "test_file"
+	preSignedURL, exp = getPresignedURLBasicTest(t, adapter, storageNamespace, filename)
+	parsedURL, err := url.Parse(preSignedURL)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+	require.Equal(t, expectedURLExp(adapter), *exp)
+
+	// Parse and verify content-disposition header from URL query parameters
+	queryParams := parsedURL.Query()
+	contentDisposition := queryParams.Get("response-content-disposition")
+	require.NotEmpty(t, contentDisposition, "Content-disposition header not found in URL")
+
+	// Parse the content-disposition header to extract the filename
+	_, params, err := mime.ParseMediaType(contentDisposition)
+	require.NoError(t, err, "Failed to parse content-disposition header")
+	require.Equal(t, filename, params["filename"], "Extracted filename doesn't match expected value")
 }
 
 // Test request for a presigned URL with an endpoint override
 func testGetPreSignedURLEndpointOverride(t *testing.T, adapter block.Adapter, storageNamespace string, oe *url.URL) {
-	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace)
+	preSignedURL, exp := getPresignedURLBasicTest(t, adapter, storageNamespace, "")
 	require.NotNil(t, exp)
 	expectedExpiry := expectedURLExp(adapter)
 	require.Equal(t, expectedExpiry, *exp)
@@ -186,18 +204,18 @@ func testGetPreSignedURLEndpointOverride(t *testing.T, adapter block.Adapter, st
 	require.Contains(t, u.Host, oe.Host)
 }
 
-func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamespace string) (string, *time.Time) {
+func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamespace string, filename string) (string, *time.Time) {
 	ctx := context.Background()
 	obj, _ := objPointers(storageNamespace)
 
-	preSignedURL, exp, err := adapter.GetPreSignedURL(ctx, obj, block.PreSignModeRead)
-
-	if adapter.BlockstoreType() == block.BlockstoreTypeGS {
-		require.ErrorContains(t, err, "no credentials found")
-		return "", nil
-	} else if adapter.BlockstoreType() == block.BlockstoreTypeLocal {
-		require.ErrorIs(t, err, block.ErrOperationNotSupported)
-		return "", nil
+	preSignedURL, exp, err := adapter.GetPreSignedURL(ctx, obj, block.PreSignModeRead, filename)
+	if err != nil {
+		if errors.Is(err, block.ErrOperationNotSupported) {
+			t.Skip("GetPreSignedURL not supported")
+		}
+		if strings.Contains(err.Error(), "no credentials found") {
+			t.Skip("GetPreSignedURL no credentials found")
+		}
 	}
 	require.NoError(t, err)
 	return preSignedURL, &exp

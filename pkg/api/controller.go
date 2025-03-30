@@ -726,7 +726,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 			StorageNamespace: repo.StorageNamespace,
 			Identifier:       address,
 			IdentifierType:   block.IdentifierTypeRelative,
-		}, block.PreSignModeWrite)
+		}, block.PreSignModeWrite, params.Path)
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
@@ -3724,9 +3724,10 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		StorageID:      repo.StorageID,
 		Identifier:     gcRunMetadata.CommitsCSVLocation,
 		IdentifierType: block.IdentifierTypeFull,
-	}, block.PreSignModeRead)
-	if err != nil {
+	}, block.PreSignModeRead, "")
+	if c.handleAPIError(ctx, w, r, err) {
 		c.Logger.WithError(err).Warn("Failed to presign url for GC commits")
+		return
 	}
 	writeResponse(w, r, http.StatusCreated, apigen.GarbageCollectionPrepareResponse{
 		GcCommitsLocation:     gcRunMetadata.CommitsCSVLocation,
@@ -4506,7 +4507,7 @@ func (c *Controller) GetMetadataObject(w http.ResponseWriter, r *http.Request, r
 		Identifier:       objPath,
 	}
 	if swag.BoolValue(params.Presign) {
-		location, _, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
+		location, _, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead, objPath)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -4587,7 +4588,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		Identifier:       entry.PhysicalAddress,
 	}
 	if swag.BoolValue(params.Presign) {
-		location, _, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead)
+		location, _, err := c.BlockAdapter.GetPreSignedURL(ctx, pointer, block.PreSignModeRead, params.Path)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
@@ -4737,7 +4738,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 						StorageNamespace: repo.StorageNamespace,
 						IdentifierType:   entry.AddressType.ToIdentifierType(),
 						Identifier:       entry.PhysicalAddress,
-					}, block.PreSignModeRead)
+					}, block.PreSignModeRead, entry.Path)
 					if c.handleAPIError(ctx, w, r, err) {
 						return
 					}
@@ -4820,7 +4821,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 			StorageNamespace: repo.StorageNamespace,
 			IdentifierType:   entry.AddressType.ToIdentifierType(),
 			Identifier:       entry.PhysicalAddress,
-		}, block.PreSignModeRead)
+		}, block.PreSignModeRead, params.Path)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
