@@ -66,7 +66,8 @@ func runCommand(cmdName string, cmd *exec.Cmd) error {
 		return fmt.Errorf("failed to get stderr from command: %w", err)
 	}
 
-	cmdErrs := make(chan error, 2)
+	const ChannelSize = 2
+	cmdErrs := make(chan error, ChannelSize)
 	handlePipe(stdoutPipe, logger.WithFields(logging.Fields{
 		"source": cmdName,
 		"std":    "out",
@@ -113,7 +114,8 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", config.SparkVersion), "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
-	args := append(dockerArgs, sparkSubmitArgs...)
+	args := dockerArgs
+	args = append(args, sparkSubmitArgs...)
 	args = append(args, "/opt/metaclient/client.jar")
 	args = append(args, config.ProgramArgs...)
 	cmd := exec.Command("docker", args...)
