@@ -26,7 +26,7 @@ func NewMetadata(ctx context.Context, logger logging.Logger, providers []Metadat
 		m, err := provider.GetMetadata(ctx)
 		if err != nil {
 			// do not return at this point, just log the error.
-			// we want to collect as much metadata as possible
+			// we want to collect as much metadata as possible as some providers may return partial metadata.
 			logger.WithError(err).Debug("failed to metadata from provider")
 		}
 		for k, v := range m {
