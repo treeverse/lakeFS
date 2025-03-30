@@ -115,7 +115,7 @@ func ArnMatch(src, dst string) bool {
 func ParsePolicyResourceAsList(resource string) ([]string, error) {
 	trimmed := strings.TrimSpace(resource)
 	if len(trimmed) == 0 {
-		return []string{resource}, nil
+		return nil, ErrInvalidArn
 	}
 	if trimmed[0] != '[' || trimmed[len(trimmed)-1] != ']' {
 		return []string{resource}, nil
