@@ -81,7 +81,6 @@ func TestParseResources(t *testing.T) {
 		inputResource   string
 		outputResources []string
 		expectedError   error
-		toMarshal       []string
 	}{
 		{
 			inputResource:   "[\"arn:lakefs:repos::b:myrepo\",\"arn:lakefs:repos::b:hisrepo\"]",
@@ -129,17 +128,17 @@ func TestParseResources(t *testing.T) {
 			expectedError:   auth.ErrInvalidArn,
 		},
 		{
-			toMarshal:       []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"},
+			inputResource:   sliceToJsonStrHelper(t, "arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"),
 			outputResources: []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"},
 			expectedError:   nil,
 		},
 		{
-			toMarshal:       []string{""},
+			inputResource:   sliceToJsonStrHelper(t, ""),
 			outputResources: []string{""},
 			expectedError:   auth.ErrInvalidArn,
 		},
 		{
-			toMarshal:       []string{"arn:lakefs:repos::b:m\"yrepo  ", "arn:lakefs:repos::b:hisrepo"},
+			inputResource:   sliceToJsonStrHelper(t, "arn:lakefs:repos::b:m\"yrepo  ", "arn:lakefs:repos::b:hisrepo"),
 			outputResources: []string{"arn:lakefs:repos::b:m\"yrepo  ", "arn:lakefs:repos::b:hisrepo"},
 			expectedError:   nil,
 		},
@@ -155,15 +154,8 @@ func TestParseResources(t *testing.T) {
 		},
 	}
 
-	for i, c := range cases {
-		if len(c.toMarshal) > 0 {
-			str, err := marshalThatString(c.toMarshal)
-			if err != nil && !strings.Contains(err.Error(), c.expectedError.Error()) {
-				t.Fatalf("expected %v error, to contain %v error", err, c.expectedError)
-			} else {
-				c.inputResource = str
-			}
-		}
+	for _, c := range cases {
+
 		got, err := auth.ParsePolicyResourceAsList(c.inputResource)
 		if err != nil && !strings.Contains(err.Error(), c.expectedError.Error()) {
 			t.Fatalf("expected %v error, to contain %v error", err, c.expectedError)
@@ -183,9 +175,13 @@ func TestParseResources(t *testing.T) {
 	}
 
 }
-func marshalThatString(s []string) (string, error) {
-	str, err := json.Marshal(s)
-	return string(str), err
+func sliceToJsonStrHelper(t *testing.T, s ...string) string {
+	t.Helper()
+	jsStr, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("failed to marshal slice '%v' to json string: %v", s, err)
+	}
+	return string(jsStr)
 }
 
 func TestArnMatch(t *testing.T) {
