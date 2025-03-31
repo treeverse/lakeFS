@@ -32,6 +32,7 @@ create repository
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -145,6 +146,7 @@ Name | Type | Description  | Notes
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -251,6 +253,7 @@ delete repository
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -359,6 +362,7 @@ Status of a repository dump task
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -471,6 +475,7 @@ Backup the repository metadata (tags, commits, branches) and save the backup to 
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -580,6 +585,7 @@ get branch protection rules
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -689,6 +695,7 @@ get repository GC rules
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -798,6 +805,7 @@ get repository
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -907,6 +915,7 @@ get repository metadata
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1015,6 +1024,7 @@ list repositories
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1129,6 +1139,7 @@ Status of a restore request
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1241,6 +1252,7 @@ Restore repository from a dump in the object store
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1354,6 +1366,7 @@ Name | Type | Description  | Notes
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1467,6 +1480,7 @@ void (empty response body)
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os

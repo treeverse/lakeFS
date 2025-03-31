@@ -16,6 +16,7 @@ check that the API server is up and running
 
 ### Example
 
+
 ```python
 import time
 import os
