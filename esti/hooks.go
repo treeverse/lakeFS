@@ -84,7 +84,7 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 		if timeDiff < 0 {
 			timeDiff = -timeDiff // Get absolute value
 		}
-		const maxGraceTime = 3 * time.Second
+		const maxGraceTime = time.Second
 		require.LessOrEqual(t, timeDiff, maxGraceTime, "time difference too large. expected: %s actual: %s, diff: %s",
 			expectedTime.Format(time.RFC3339), run.StartTime.Format(time.RFC3339), timeDiff)
 	}
