@@ -319,10 +319,16 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
   const [fileStates, setFileStates] = useState({});
   const [abortController, setAbortController] = useState(null)
   const onDrop = useCallback(acceptedFiles => {
+    if (uploadState.inProgress) return;
     setFiles([...acceptedFiles])
-  }, [files])
+  }, [files, uploadState.inProgress])
 
-  const { getRootProps, getInputProps, isDragAccept } = useDropzone({onDrop})
+  const { getRootProps, getInputProps, isDragAccept } = useDropzone({
+    onDrop,
+    disabled: uploadState.inProgress,
+    noClick: uploadState.inProgress,
+    noKeyboard: uploadState.inProgress
+  })
 
   if (!reference || reference.type !== RefTypeBranch) return <></>;
 
@@ -423,10 +429,10 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             </Form.Group>
 
             <Form.Group controlId="content" className="mb-3">
-              <div {...getRootProps({className: 'dropzone'})}>
-                  <input {...getInputProps()} />
+              <div {...getRootProps({className: 'dropzone', disabled: uploadState.inProgress})}>
+                  <input {...getInputProps({disabled: uploadState.inProgress})} />
                   <div className={isDragAccept ? "file-drop-zone file-drop-zone-focus" : "file-drop-zone"}>
-                    Drag &apos;n&apos; drop files or folders here (or click to select)
+                    {uploadState.inProgress ? "Upload in progress..." : "Drag 'n' drop files or folders here (or click to select)"}
                   </div>
               </div>
               <aside className="mt-3">
