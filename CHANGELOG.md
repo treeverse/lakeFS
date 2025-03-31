@@ -1,5 +1,13 @@
 # Changelog
 
+# v1.53.2
+
+:new: What's new:
+- Support multiple resources parsing (#8823)
+
+:bug: Bugs fixed:
+- Fix webui dropzone should be disabled while upload in progress (#8892)
+
 # v1.53.1
 
 :new: What's new:
