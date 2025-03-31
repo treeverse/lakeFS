@@ -117,7 +117,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	}
 
 	if redirect {
-		preSignedURL, _, err := o.BlockStore.GetPreSignedURL(ctx, objectPointer, block.PreSignModeRead, entry.Path)
+		preSignedURL, _, err := o.BlockStore.GetPreSignedURL(ctx, objectPointer, block.PreSignModeRead, "")
 		if err != nil {
 			code := gatewayerrors.ErrInternalError
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(code))

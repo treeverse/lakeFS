@@ -3727,7 +3727,7 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 	}, block.PreSignModeRead, "")
 	if c.handleAPIError(ctx, w, r, err) {
 		c.Logger.WithError(err).Warn("Failed to presign url for GC commits")
-		return
+		// continue with the rest of the response
 	}
 	writeResponse(w, r, http.StatusCreated, apigen.GarbageCollectionPrepareResponse{
 		GcCommitsLocation:     gcRunMetadata.CommitsCSVLocation,
