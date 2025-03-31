@@ -3,7 +3,7 @@
 # v1.53.2
 
 :new: What's new:
-- Support multiple resources parsing (#8823)
+- Advanced Auth, policy API:  Added currently internal logic to handle multiple resources (#8823)
 
 :bug: Bugs fixed:
 - Fix webui dropzone should be disabled while upload in progress (#8892)
