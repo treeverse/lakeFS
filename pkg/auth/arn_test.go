@@ -155,7 +155,7 @@ func TestParseResources(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
+	for i, c := range cases {
 		if len(c.toMarshal) > 0 {
 			str, err := marshalThatString(c.toMarshal)
 			if err != nil && !strings.Contains(err.Error(), c.expectedError.Error()) {
