@@ -289,7 +289,7 @@ func GetCommitter(t testing.TB) string {
 	require.NoError(t, err)
 	require.NotNil(t, userResp.JSON200)
 	committer := userResp.JSON200.User.Id
-	email := *userResp.JSON200.User.Email
+	email := swag.StringValue(userResp.JSON200.User.Email)
 	if email != "" {
 		committer = email
 	}
