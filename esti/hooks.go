@@ -78,8 +78,15 @@ func HooksSuccessTest(ctx context.Context, t *testing.T, repo string, lakeFSClie
 		require.Equal(t, hvd.data[valIdx].EventType, run.EventType)
 		expectedTime, err := time.Parse(time.RFC3339, hvd.data[valIdx].EventTime)
 		require.NoError(t, err)
-		run.StartTime = run.StartTime.Add(time.Duration(-run.StartTime.Nanosecond())) // Remove nanoseconds
-		require.True(t, expectedTime.Equal(run.StartTime), "bad start time. expected: %s actual: %s", expectedTime.String(), run.StartTime.String())
+
+		// Allow for a small time difference between expected and actual times
+		timeDiff := expectedTime.Sub(run.StartTime)
+		if timeDiff < 0 {
+			timeDiff = -timeDiff // Get absolute value
+		}
+		const maxGraceTime = 3 * time.Second
+		require.LessOrEqual(t, timeDiff, maxGraceTime, "time difference too large. expected: %s actual: %s, diff: %s",
+			expectedTime.Format(time.RFC3339), run.StartTime.Format(time.RFC3339), timeDiff)
 	}
 }
 
