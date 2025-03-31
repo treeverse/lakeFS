@@ -268,5 +268,5 @@ func (m *KVMetadataManager) GetMetadata(ctx context.Context) (map[string]string,
 		metadata[SetupTimestampKeyName] = setupTS.UTC().Format(time.RFC3339)
 	}
 
-	return metadata, err
+	return metadata, nil
 }

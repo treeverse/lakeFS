@@ -25,10 +25,10 @@ func NewMetadata(ctx context.Context, logger logging.Logger, providers []Metadat
 	for _, provider := range providers {
 		m, err := provider.GetMetadata(ctx)
 		if err != nil {
+			// do not return at this point, just log the error.
+			// we want to collect as much metadata as possible as some providers may return partial metadata.
 			logger.WithError(err).Debug("failed to metadata from provider")
-			continue
 		}
-
 		for k, v := range m {
 			// keep installation id from provider, if exists
 			if k == "installation_id" {
