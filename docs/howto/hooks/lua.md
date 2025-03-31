@@ -635,7 +635,7 @@ Delta export example for Azure Blob Storage:
 name: Delta Exporter
 on:
   post-commit:
-    branches: ["{{ .Branch }}*"]
+    branches: ["{% raw %}{{ .Branch }}{% endraw %}*"]
 hooks:
   - id: delta_exporter
     type: lua
@@ -666,11 +666,11 @@ hooks:
         end
       args:
         azure:
-          storage_account: "{{ .AzureStorageAccount }}"
-          access_key: "{{ .AzureAccessKey }}"
+          storage_account: "{% raw %}{{ .AzureStorageAccount }}{% endraw %}"
+          access_key: "{% raw %}{{ .AzureAccessKey }}{% endraw %}"
         lakefs: # provide credentials of a user that has access to the script and Delta Table
-          access_key_id: "{{ .LakeFSAccessKeyID }}"
-          secret_access_key: "{{ .LakeFSSecretAccessKey }}"
+          access_key_id: "{% raw %}{{ .LakeFSAccessKeyID }}{% endraw %}"
+          secret_access_key: "{% raw %}{{ .LakeFSSecretAccessKey }}{% endraw %}"
         table_defs:
           - mytable
 
