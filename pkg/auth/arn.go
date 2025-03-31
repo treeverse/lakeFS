@@ -113,15 +113,13 @@ func ArnMatch(src, dst string) bool {
 }
 
 func ParsePolicyResourceAsList(resource string) ([]string, error) {
-	trimmed := strings.TrimSpace(resource)
-	if len(trimmed) == 0 {
+	var resources []string
+	if resource == "" {
 		return nil, ErrInvalidArn
 	}
-	if trimmed[0] != '[' || trimmed[len(trimmed)-1] != ']' {
+	if resource[0] != '[' || resource[len(resource)-1] != ']' {
 		return []string{resource}, nil
 	}
-
-	var resources []string
 	err := json.Unmarshal([]byte(resource), &resources)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal resource: %w", err)
