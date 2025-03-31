@@ -5759,7 +5759,30 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 			expected: auth.CheckAllow,
 		},
 		{
-			name: "read repo from first resource",
+			name: "read repo from second resource",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:ReadRepository",
+					Resource: "arn:lakefs:fs:::repository/repo3",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:ReadRepository"},
+							Resource: "[\"arn:lakefs:fs:::repository/repo1\",\"arn:lakefs:fs:::repository/repo3\"]",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
+			},
+			expected: auth.CheckAllow,
+		},
+		{
+			name: "read repo from second resource, wildcard",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
@@ -5805,7 +5828,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 			expected: auth.CheckDeny,
 		},
 		{
-			name: "read repo from second resource",
+			name: "read repo from third resource",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
@@ -5819,7 +5842,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 					Statement: []model.Statement{
 						{
 							Action:   []string{"fs:ReadRepository"},
-							Resource: "[\"arn:lakefs:fs:::repository/repo1\" ,\"arn:lakefs:fs:::repository/repo2\"]",
+							Resource: "[\"arn:lakefs:fs:::repository/repo1\" ,  \"arn:lakefs:fs:::repository/repo1\" , \"arn:lakefs:fs:::repository/repo2\"]",
 							Effect:   model.StatementEffectAllow,
 						},
 					},
