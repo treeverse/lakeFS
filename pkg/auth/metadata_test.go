@@ -3,6 +3,7 @@ package auth_test
 import (
 	"context"
 	"os"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -53,17 +54,38 @@ func TestInstrumentation(t *testing.T) {
 	validateInstrumentation(t, ctx, mgr, auth.InstrumentationQuickstart, true, true)
 }
 
-func TestFixedInstallationID(t *testing.T) {
+func TestMetadataFields(t *testing.T) {
 	ctx := context.Background()
 	kvStore := kvtest.GetStore(ctx, t)
 
-	const installationID = "fa3920ce-5c58-417f-b672-7e0b2870fea9"
-	// Create a new metadata manager with a fixed installation ID
-	// Do not set setup timestamp
-	mgr := auth.NewKVMetadataManager("test", installationID, "mem", kvStore)
+	const (
+		installationID = "fa3920ce-5c58-417f-b672-7e0b2870fea9"
+		version        = "test"
+		kvType         = "mem"
+	)
 
-	// Get metadata and verify the installation ID matches the fixed ID
+	// Create a new metadata manager with a fixed installation ID
+	mgr := auth.NewKVMetadataManager(version, installationID, kvType, kvStore)
+
+	// Get metadata and verify all fields
 	md, err := mgr.GetMetadata(ctx)
 	require.NoError(t, err)
+
+	// Verify basic fields
+	require.Equal(t, version, md["lakefs_version"])
+	require.Equal(t, kvType, md["lakefs_kv_type"])
 	require.Equal(t, installationID, md["installation_id"])
+	require.Equal(t, runtime.Version(), md["golang_version"])
+	require.Equal(t, runtime.GOARCH, md["architecture"])
+	require.Equal(t, runtime.GOOS, md["os"])
+
+	// Verify environment detection fields
+	require.Contains(t, md, "is_k8s")    // Check K8s property exists
+	require.Contains(t, md, "is_docker") // Check docker property exists
+
+	// Verify instrumentation (defaults to Run)
+	require.Equal(t, auth.InstrumentationRun, md["instrumentation"])
+
+	// Verify setup timestamp is not set initially
+	require.Empty(t, md[auth.SetupTimestampKeyName])
 }
