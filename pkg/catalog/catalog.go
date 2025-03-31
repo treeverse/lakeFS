@@ -2457,6 +2457,12 @@ func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, par
 		return "", err
 	}
 
+	for _, p := range params.Paths {
+		if strings.HasPrefix(p.Path, repository.StorageNamespace.String()) {
+			return "", fmt.Errorf("import from repository storage namespace is prohibited: %s, %w", p.Path, ErrInvalidImportSource)
+		}
+	}
+
 	id := xid.New().String()
 	// Run import
 	go func() {
