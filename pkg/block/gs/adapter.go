@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
+	"net/url"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -220,6 +223,13 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 	if err != nil {
 		return "", time.Time{}, err
 	}
+
+	bucketHandle := a.client.Bucket(bucket)
+	att, err := bucketHandle.Object(key).Attrs(ctx)
+	if err == nil && att.CustomerKeySHA256 != "" {
+		return "", time.Time{}, errPreSignedURLWithCSEKNotSupported()
+	}
+
 	method := http.MethodGet
 	if mode == block.PreSignModeWrite {
 		method = http.MethodPut
@@ -229,11 +239,17 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		Method:  method,
 		Expires: a.newPreSignedTime(),
 	}
-	bucketHandle := a.client.Bucket(bucket)
-	att, err := bucketHandle.Object(key).Attrs(ctx)
-	if err == nil && att.CustomerKeySHA256 != "" {
-		return "", time.Time{}, errPreSignedURLWithCSEKNotSupported()
+
+	// Add content-disposition if filename provided
+	if mode == block.PreSignModeRead && filename != "" {
+		contentDisposition := mime.FormatMediaType("attachment", map[string]string{
+			"filename": path.Base(filename),
+		})
+		opts.QueryParameters = url.Values{
+			"response-content-disposition": {contentDisposition},
+		}
 	}
+
 	k, err := bucketHandle.SignedURL(key, opts)
 	if err != nil {
 		a.log(ctx).WithError(err).Error("error generating pre-signed URL")

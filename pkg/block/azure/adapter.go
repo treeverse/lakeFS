@@ -271,9 +271,9 @@ func (a *Adapter) getPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		return "", err
 	}
 
-	// Use provided filename or extract from blob URL
+	// Add content-disposition if filename provided
 	var contentDisposition string
-	if filename != "" {
+	if permissions.Read && filename != "" {
 		contentDisposition = mime.FormatMediaType("attachment", map[string]string{"filename": path.Base(filename)})
 	}
 
