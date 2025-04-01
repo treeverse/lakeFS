@@ -42,7 +42,7 @@ buildInfoPackage := "io.treeverse.clients"
 enablePlugins(S3Plugin, BuildInfoPlugin)
 
 libraryDependencies ++= Seq(
-  "io.lakefs" % "sdk" % "1.0.0",
+  "io.lakefs" % "sdk" % "1.53.1",
   "org.apache.spark" %% "spark-sql" % "3.1.2" % "provided",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.apache.hadoop" % "hadoop-aws" % hadoopVersion % "provided",
