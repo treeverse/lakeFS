@@ -138,10 +138,12 @@ func verifyImportObjects(t testing.TB, ctx context.Context, repoName, prefix, im
 }
 
 func TestImport(t *testing.T) {
+	t.Parallel()
 	blockstoreType, importPath, expectedContentLength := setupImportByBlockstoreType(t)
 	metadata := map[string]string{"created_by": "import"}
 
 	t.Run("default", func(t *testing.T) {
+		t.Parallel()
 		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "default")
@@ -180,6 +182,7 @@ func TestImport(t *testing.T) {
 	})
 
 	t.Run("parent", func(t *testing.T) {
+		t.Parallel()
 		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "parent")
@@ -198,6 +201,7 @@ func TestImport(t *testing.T) {
 	})
 
 	t.Run("several_paths", func(t *testing.T) {
+		t.Parallel()
 		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "several-paths")
@@ -221,6 +225,7 @@ func TestImport(t *testing.T) {
 	})
 
 	t.Run("prefixes_and_objects", func(t *testing.T) {
+		t.Parallel()
 		ctx, _, repoName := setupTest(t)
 		defer tearDownTest(repoName)
 		branch := fmt.Sprintf("%s-%s", importBranchBase, "prefixes-and-objects")
@@ -300,6 +305,7 @@ func testImportNew(t testing.TB, ctx context.Context, repoName, importBranch str
 }
 
 func TestImportCancel(t *testing.T) {
+	t.Parallel()
 	_, importPath, _ := setupImportByBlockstoreType(t)
 	ctx, _, repoName := setupTest(t)
 	defer tearDownTest(repoName)
@@ -333,6 +339,13 @@ func TestImportCancel(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusNoContent, cancelResp.StatusCode())
 
+	// Try cancel twice
+	cancelResp, err = client.ImportCancelWithResponse(ctx, repoName, branch, &apigen.ImportCancelParams{
+		Id: importResp.JSON202.Id,
+	})
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, cancelResp.StatusCode())
+
 	// Check status is canceled
 	var updateTime time.Time
 	timer := time.NewTimer(0)
@@ -351,5 +364,78 @@ func TestImportCancel(t *testing.T) {
 			break
 		}
 		timer.Reset(3 * time.Second) // Server updates status every 1 second - unless operation was canceled successfully
+	}
+}
+
+func TestImportToStorageNamespace(t *testing.T) {
+	t.Parallel()
+	ctx, _, repoName := setupTest(t)
+	defer tearDownTest(repoName)
+
+	repoResp, err := client.GetRepositoryWithResponse(ctx, repoName)
+	require.NoError(t, err)
+	require.NotNil(t, repoResp.JSON200)
+
+	const branch = importBranchBase + "-from-namespace"
+	createResp, err := client.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
+		Name:   branch,
+		Source: "main",
+	})
+	require.NoError(t, err, "failed to create branch", branch)
+	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", branch)
+
+	partialNamespace := repoResp.JSON200.StorageNamespace[:len(repoResp.JSON200.StorageNamespace)-2]
+	testCases := []struct {
+		Name        string
+		ImportPath  string
+		Type        string
+		ExpectError bool
+	}{
+		{
+			Name:        "exact namespace",
+			ImportPath:  repoResp.JSON200.StorageNamespace,
+			Type:        catalog.ImportPathTypePrefix,
+			ExpectError: true,
+		},
+		{
+			Name:        "path in namespace",
+			ImportPath:  repoResp.JSON200.StorageNamespace + "/some_path/in/namespace",
+			Type:        catalog.ImportPathTypePrefix,
+			ExpectError: true,
+		},
+		{
+			Name:        "path is prefix of namespace",
+			ImportPath:  partialNamespace,
+			Type:        catalog.ImportPathTypePrefix,
+			ExpectError: true,
+		},
+		{
+			Name:        "path is object with same prefix as namespace",
+			ImportPath:  partialNamespace,
+			Type:        catalog.ImportPathTypeObject,
+			ExpectError: false,
+		},
+	}
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			importResp, err := client.ImportStartWithResponse(ctx, repoName, branch, apigen.ImportStartJSONRequestBody{
+				Commit: apigen.CommitCreation{
+					Message:  "created by import",
+					Metadata: &apigen.CommitCreation_Metadata{AdditionalProperties: map[string]string{"created_by": "import"}},
+				},
+				Paths: []apigen.ImportLocation{{
+					Destination: importTargetPrefix,
+					Path:        tt.ImportPath,
+					Type:        tt.Type,
+				}},
+			})
+			require.NoError(t, err)
+			if tt.ExpectError {
+				require.NotNil(t, importResp.JSON400)
+				require.Contains(t, importResp.JSON400.Message, "invalid import source")
+			} else {
+				require.NotNil(t, importResp.JSON202)
+			}
+		})
 	}
 }
