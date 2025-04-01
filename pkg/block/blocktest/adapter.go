@@ -223,7 +223,7 @@ func getPresignedURLBasicTest(t *testing.T, adapter block.Adapter, storageNamesp
 		t.Skip("GetPreSignedURL not supported")
 	}
 	// Google storage returns an error if no credentials are found, and we can't sign the URL
-	if strings.Contains(err.Error(), "no credentials found") {
+	if err != nil && strings.Contains(err.Error(), "no credentials found") {
 		t.Skip("GetPreSignedURL no credentials found")
 	}
 	require.NoError(t, err)
