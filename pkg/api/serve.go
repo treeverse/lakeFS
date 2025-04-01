@@ -19,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
-	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -33,15 +32,15 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-func Serve(cfg config.Config, catalog *catalog.Catalog, middlewareAuthenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, gatewayDomains []string, snippets []params.CodeSnippet, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) http.Handler {
+func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, gatewayDomains []string, snippets []params.CodeSnippet, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
 	if err != nil {
 		panic(err)
 	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
-	oidcConfig := OIDCConfig(cfg.GetBaseConfig().Auth.OIDC)
-	cookieAuthConfig := CookieAuthConfig(cfg.GetBaseConfig().Auth.CookieAuthVerification)
+	oidcConfig := OIDCConfig(cfg.AuthConfig().OIDC)
+	cookieAuthConfig := CookieAuthConfig(cfg.AuthConfig().CookieAuthVerification)
 	r := chi.NewRouter()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
@@ -53,10 +52,10 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, middlewareAuthenticator 
 			cfg.GetBaseConfig().Logging.AuditLogLevel,
 			cfg.GetBaseConfig().Logging.TraceRequestHeaders,
 			authService.IsAdvancedAuth()),
-		AuthMiddleware(logger, swagger, middlewareAuthenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
+		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
 		MetricsMiddleware(swagger),
 	)
-	controller := NewController(cfg, catalog, middlewareAuthenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, cloudMetadataProvider, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter)
+	controller := NewController(cfg, catalog, authenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
 	r.Mount("/_health", httputil.ServeHealth())
@@ -64,7 +63,7 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, middlewareAuthenticator 
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.GetBaseConfig().Auth.LogoutRedirectURL))
+	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().LogoutRedirectURL))
 
 	// Configuration flag to control if the embedded UI is served
 	// or not and assign the correct handler for each case.

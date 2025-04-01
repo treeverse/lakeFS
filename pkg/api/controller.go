@@ -92,44 +92,42 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config                config.Config
-	Catalog               *catalog.Catalog
-	Authenticator         auth.Authenticator
-	Auth                  auth.Service
-	Authentication        authentication.Service
-	BlockAdapter          block.Adapter
-	MetadataManager       auth.MetadataManager
-	Migrator              Migrator
-	Collector             stats.Collector
-	CloudMetadataProvider cloud.MetadataProvider
-	Actions               actionsHandler
-	AuditChecker          AuditChecker
-	Logger                logging.Logger
-	sessionStore          sessions.Store
-	PathProvider          upload.PathProvider
-	usageReporter         stats.UsageReporterOperations
+	Config          config.Config
+	Catalog         *catalog.Catalog
+	Authenticator   auth.Authenticator
+	Auth            auth.Service
+	Authentication  authentication.Service
+	BlockAdapter    block.Adapter
+	MetadataManager auth.MetadataManager
+	Migrator        Migrator
+	Collector       stats.Collector
+	Actions         actionsHandler
+	AuditChecker    AuditChecker
+	Logger          logging.Logger
+	sessionStore    sessions.Store
+	PathProvider    upload.PathProvider
+	usageReporter   stats.UsageReporterOperations
 }
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, cloudMetadataProvider cloud.MetadataProvider, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
 	return &Controller{
-		Config:                cfg,
-		Catalog:               catalog,
-		Authenticator:         authenticator,
-		Auth:                  authService,
-		Authentication:        authenticationService,
-		BlockAdapter:          blockAdapter,
-		MetadataManager:       metadataManager,
-		Migrator:              migrator,
-		Collector:             collector,
-		CloudMetadataProvider: cloudMetadataProvider,
-		Actions:               actions,
-		AuditChecker:          auditChecker,
-		Logger:                logger,
-		sessionStore:          sessionStore,
-		PathProvider:          pathProvider,
-		usageReporter:         usageReporter,
+		Config:          cfg,
+		Catalog:         catalog,
+		Authenticator:   authenticator,
+		Auth:            authService,
+		Authentication:  authenticationService,
+		BlockAdapter:    blockAdapter,
+		MetadataManager: metadataManager,
+		Migrator:        migrator,
+		Collector:       collector,
+		Actions:         actions,
+		AuditChecker:    auditChecker,
+		Logger:          logger,
+		sessionStore:    sessionStore,
+		PathProvider:    pathProvider,
+		usageReporter:   usageReporter,
 	}
 }
 
@@ -587,7 +585,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	}
 
 	loginTime := time.Now()
-	duration := c.Config.GetBaseConfig().Auth.LoginDuration
+	duration := c.Config.AuthConfig().LoginDuration
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
@@ -631,13 +629,13 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	c.Logger.WithField("user_id", externalPrincipalIDInfo.UserID).Debug("got external principal ID info, generating a new JWT")
-	duration := c.Config.GetBaseConfig().Auth.LoginDuration
+	duration := c.Config.AuthConfig().LoginDuration
 	if swag.IntValue(body.TokenExpirationDuration) > 0 {
 		duration = time.Second * time.Duration(*body.TokenExpirationDuration)
 	}
-	if duration > c.Config.GetBaseConfig().Auth.LoginMaxDuration {
-		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.GetBaseConfig().Auth.LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
-		duration = c.Config.GetBaseConfig().Auth.LoginMaxDuration
+	if duration > c.Config.AuthConfig().LoginMaxDuration {
+		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.AuthConfig().LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
+		duration = c.Config.AuthConfig().LoginMaxDuration
 	}
 	loginTime := time.Now()
 	expires := loginTime.Add(duration)
@@ -1188,7 +1186,7 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params apigen.ListGroupPoliciesParams) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1245,7 +1243,7 @@ func serializePolicy(p *model.Policy) apigen.Policy {
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1267,7 +1265,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1290,7 +1288,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params apigen.ListPoliciesParams) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1329,7 +1327,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 }
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body apigen.CreatePolicyJSONRequestBody) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1375,7 +1373,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 }
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1401,7 +1399,7 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1429,7 +1427,7 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 }
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body apigen.UpdatePolicyJSONRequestBody, policyID string) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1756,7 +1754,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserPoliciesParams) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1801,7 +1799,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 }
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1823,7 +1821,7 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.GetBaseConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5059,15 +5057,15 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func newLoginConfig(c *config.BaseConfig) *apigen.LoginConfig {
+func newLoginConfig(c *config.Auth) *apigen.LoginConfig {
 	loginConfig := &apigen.LoginConfig{
-		RBAC:               &c.Auth.UIConfig.RBAC,
-		LoginUrl:           c.Auth.UIConfig.LoginURL,
-		LoginFailedMessage: &c.Auth.UIConfig.LoginFailedMessage,
-		FallbackLoginUrl:   c.Auth.UIConfig.FallbackLoginURL,
-		FallbackLoginLabel: c.Auth.UIConfig.FallbackLoginLabel,
-		LoginCookieNames:   c.Auth.UIConfig.LoginCookieNames,
-		LogoutUrl:          c.Auth.UIConfig.LogoutURL,
+		RBAC:               &c.UIConfig.RBAC,
+		LoginUrl:           c.UIConfig.LoginURL,
+		LoginFailedMessage: &c.UIConfig.LoginFailedMessage,
+		FallbackLoginUrl:   c.UIConfig.FallbackLoginURL,
+		FallbackLoginLabel: c.UIConfig.FallbackLoginLabel,
+		LoginCookieNames:   c.UIConfig.LoginCookieNames,
+		LogoutUrl:          c.UIConfig.LogoutURL,
 	}
 	if c.UseUILoginPlaceholders() {
 		loginConfig.UsernameUiPlaceholder = swag.String(usernamePlaceholder)
@@ -5080,10 +5078,10 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// external auth reports as initialized to avoid triggering the setup wizard
-	if c.Config.GetBaseConfig().Auth.UIConfig.RBAC == config.AuthRBACExternal {
+	if c.Config.AuthConfig().UIConfig.RBAC == config.AuthRBACExternal {
 		response := apigen.SetupState{
 			State:            swag.String(string(auth.SetupStateInitialized)),
-			LoginConfig:      newLoginConfig(c.Config.GetBaseConfig()),
+			LoginConfig:      newLoginConfig(c.Config.AuthConfig()),
 			CommPrefsMissing: swag.Bool(false),
 		}
 		writeResponse(w, r, http.StatusOK, response)
@@ -5101,7 +5099,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 
 	response := apigen.SetupState{
 		State:       swag.String(string(savedState)),
-		LoginConfig: newLoginConfig(c.Config.GetBaseConfig()),
+		LoginConfig: newLoginConfig(c.Config.AuthConfig()),
 	}
 
 	// if email subscription is disabled in the config, set the missing flag to false.
@@ -5154,7 +5152,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	if c.Config.GetBaseConfig().Auth.UIConfig.RBAC == config.AuthRBACExternal {
+	if c.Config.AuthConfig().UIConfig.RBAC == config.AuthRBACExternal {
 		// nothing to do - users are managed elsewhere
 		writeResponse(w, r, http.StatusOK, apigen.CredentialsWithSecret{})
 		return
@@ -5162,16 +5160,23 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 
 	var cred *model.Credential
 	if body.Key == nil {
-		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config.GetBaseConfig(), c.MetadataManager, body.Username)
+		cred, err = setup.CreateInitialAdminUser(ctx, c.Auth, c.Config, c.MetadataManager, body.Username)
 	} else {
-		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config.GetBaseConfig(), c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
+		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
 	if err != nil {
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 
-	meta := stats.NewMetadata(ctx, c.Logger, c.BlockAdapter.BlockstoreType(), c.MetadataManager, c.CloudMetadataProvider)
+	// collect metadata
+	metadataProviders := []stats.MetadataProvider{
+		c.MetadataManager,
+		cloud.NewMetadataProvider(),
+		block.NewMetadataProvider(c.Config.GetBaseConfig().StorageConfig()),
+	}
+	meta := stats.NewMetadata(ctx, c.Logger, metadataProviders)
+
 	c.Collector.SetInstallationID(meta.InstallationID)
 	c.Collector.CollectMetadata(meta)
 	c.Collector.CollectEvent(stats.Event{Class: "global", Name: "init", UserID: body.Username, Client: httputil.GetRequestLakeFSClient(r)})
@@ -5400,7 +5405,7 @@ func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, re
 func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.CreatePullRequestJSONRequestBody, repository string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.WritePullReqeustAction,
+			Action:   permissions.WritePullRequestAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5436,7 +5441,7 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repository string, pullRequestID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.ReadPullReqeustAction,
+			Action:   permissions.ReadPullRequestAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5468,7 +5473,7 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, body apigen.UpdatePullRequestJSONRequestBody, repository string, pullRequestID string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			Action:   permissions.WritePullReqeustAction,
+			Action:   permissions.WritePullRequestAction,
 			Resource: permissions.RepoArn(repository),
 		},
 	}) {
@@ -5506,7 +5511,7 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 			},
 			{
 				Permission: permissions.Permission{
-					Action:   permissions.WritePullReqeustAction,
+					Action:   permissions.WritePullRequestAction,
 					Resource: permissions.RepoArn(repository),
 				},
 			},
@@ -5963,5 +5968,5 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 
 func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
 	// if IsAuthUISimplified true then it means the user not using RBAC model
-	return c.Config.GetBaseConfig().IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
+	return c.Config.AuthConfig().IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
 }

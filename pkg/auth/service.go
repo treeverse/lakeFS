@@ -1080,7 +1080,7 @@ func (a *APIAuthService) ListUserExternalPrincipals(ctx context.Context, userID 
 	return principals, toPagination(resp.JSON200.Pagination), nil
 }
 
-func NewAPIAuthService(apiEndpoint, token string, isAdvancedAuth, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
+func NewAPIAuthService(apiEndpoint, token string, isAdvancedAuth, externalPrincipalsEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	if token == "" {
 		// when no token is provided, generate one.
 		// communicate with auth service always uses a token
@@ -1118,7 +1118,7 @@ func NewAPIAuthService(apiEndpoint, token string, isAdvancedAuth, externalPrinci
 		secretStore:               secretStore,
 		logger:                    logger,
 		cache:                     cache,
-		externalPrincipalsEnabled: externalPrincipalseEnabled,
+		externalPrincipalsEnabled: externalPrincipalsEnabled,
 		isAdvancedAuth:            isAdvancedAuth,
 	}
 	return res, nil
@@ -1150,7 +1150,7 @@ func groupIDOrDisplayName(group Group) string {
 	return group.Name
 }
 
-func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, isAdvancedAuth, externalPrincipalseEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
+func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, isAdvancedAuth, externalPrincipalsEnabled bool, secretStore crypt.SecretStore, cacheConf params.ServiceCache, logger logging.Logger) (*APIAuthService, error) {
 	var cache Cache
 	if cacheConf.Enabled {
 		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.Jitter)
@@ -1162,7 +1162,7 @@ func NewAPIAuthServiceWithClient(client ClientWithResponsesInterface, isAdvanced
 		secretStore:               secretStore,
 		cache:                     cache,
 		logger:                    logger,
-		externalPrincipalsEnabled: externalPrincipalseEnabled,
+		externalPrincipalsEnabled: externalPrincipalsEnabled,
 		isAdvancedAuth:            isAdvancedAuth,
 	}, nil
 }

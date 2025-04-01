@@ -98,18 +98,19 @@ func TestParseResources(t *testing.T) {
 			expectedError:   nil,
 		},
 		{
-			inputResource:   "   [    \"arn:lakefs:repos::b:myrepo  \"  ]",
+
+			inputResource:   "[    \"arn:lakefs:repos::b:myrepo  \"]",
 			outputResources: []string{"arn:lakefs:repos::b:myrepo  "},
 			expectedError:   nil,
 		},
 		{
-			inputResource:   "   [    \"arn:lakefs:repos::b:myre,po\"  ]",
+			inputResource:   "[\"arn:lakefs:repos::b:myre,po\"]",
 			outputResources: []string{"arn:lakefs:repos::b:myre,po"},
 			expectedError:   nil,
 		},
 		{
-			inputResource:   "   [\"    arn:lakefs:repos::b:myre,po\", \"arn:lakefs:repos::b,:myrepo\" ]",
-			outputResources: []string{"    arn:lakefs:repos::b:myre,po", "arn:lakefs:repos::b,:myrepo"},
+			inputResource:   "[\"arn:lakefs:repos::b:myre,po\",\"arn:lakefs:repos::b,:myrepo\"]",
+			outputResources: []string{"arn:lakefs:repos::b:myre,po", "arn:lakefs:repos::b,:myrepo"},
 			expectedError:   nil,
 		},
 		{
@@ -118,38 +119,37 @@ func TestParseResources(t *testing.T) {
 			expectedError:   nil,
 		},
 		{
-			inputResource:   "   [\"    arn:lakefs:repos::b:myre,po, \"arn:lakefs:repos::b,:myrepo\"] ",
+			inputResource:   "[\"arn:lakefs:repos::b:myre,po,\"arn:lakefs:repos::b,:myrepo\"]",
 			outputResources: []string{},
 			expectedError:   fmt.Errorf("unmarshal resource"),
 		},
 		{
 			inputResource:   "",
-			outputResources: []string{""},
-			expectedError:   nil,
+			outputResources: nil,
+			expectedError:   auth.ErrInvalidArn,
 		},
 		{
-			inputResource: func() string {
-				b, _ := json.Marshal([]string{})
-				return string(b)
-			}(),
-			outputResources: []string{},
-			expectedError:   nil,
-		},
-		{
-			inputResource: func() string {
-				b, _ := json.Marshal([]string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"})
-				return string(b)
-			}(),
+			inputResource:   sliceToJsonStrHelper(t, "arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"),
 			outputResources: []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"},
 			expectedError:   nil,
 		},
 		{
-			inputResource:   "[\"arn:lakefs:repos::b:myrepo\", arn:lakefs:repos::b:hisrepo\"]", // Missing quote around second item
+			inputResource:   sliceToJsonStrHelper(t, ""),
+			outputResources: []string{""},
+			expectedError:   auth.ErrInvalidArn,
+		},
+		{
+			inputResource:   sliceToJsonStrHelper(t, "arn:lakefs:repos::b:m\"yrepo  ", "arn:lakefs:repos::b:hisrepo"),
+			outputResources: []string{"arn:lakefs:repos::b:m\"yrepo  ", "arn:lakefs:repos::b:hisrepo"},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   "[\"arn:lakefs:repos::b:myrepo\", arn:lakefs:repos::b:hisrepo\"]",
 			outputResources: []string{},
 			expectedError:   fmt.Errorf("unmarshal resource"),
 		},
 		{
-			inputResource:   "[\"arn:lakefs:repos::b:myrepo\" \"arn:lakefs:repos::b:hisrepo\"]", // Missing comma
+			inputResource:   "[\"arn:lakefs:repos::b:myrepo\" \"arn:lakefs:repos::b:hisrepo\"]",
 			outputResources: []string{},
 			expectedError:   fmt.Errorf("unmarshal resource"),
 		},
@@ -174,6 +174,15 @@ func TestParseResources(t *testing.T) {
 		}
 	}
 
+}
+
+func sliceToJsonStrHelper(t *testing.T, s ...string) string {
+	t.Helper()
+	jsStr, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("failed to marshal slice '%v' to json string: %v", s, err)
+	}
+	return string(jsStr)
 }
 
 func TestArnMatch(t *testing.T) {

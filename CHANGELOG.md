@@ -1,5 +1,23 @@
 # Changelog
 
+# v1.53.1
+
+:new: What's new:
+- Support configuration populate arrays from environment variables (#8891)
+
+:bug: Bugs fixed:
+- Fix BI metadata collection (#8901)
+
+# v1.53.0
+
+:new: What's new:
+- Added a lakectl flag to point to configurations file: `LAKECTL_CONFIG_FILE` (#8831)
+- Added markdown files diff display to the webui (#8855)
+
+:bug: Bugs fixed:
+- Fixed: Use new Delta Lake client registration flow to handle multiple parquet readers (#8869)
+- Fixed: Preserve PR form state when switching branches (#8870)
+
 # v1.52.0
 
 :new: What's new:
