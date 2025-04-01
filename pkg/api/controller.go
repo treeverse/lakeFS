@@ -2822,7 +2822,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, block.ErrOperationNotSupported),
 		errors.Is(err, authentication.ErrInvalidRequest),
 		errors.Is(err, graveler.ErrSameBranch),
-		errors.Is(err, graveler.ErrInvalidPullRequestStatus):
+		errors.Is(err, graveler.ErrInvalidPullRequestStatus),
+		errors.Is(err, catalog.ErrInvalidImportSource):
 		log.Debug("Bad request")
 		cb(w, r, http.StatusBadRequest, err)
 
