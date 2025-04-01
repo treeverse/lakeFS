@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/osinfo"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"github.com/treeverse/lakefs/pkg/version"
-	"golang.org/x/exp/slices"
 	"golang.org/x/term"
 )
 
@@ -598,6 +598,9 @@ func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
+	} else if envCfgFile, _ := os.LookupEnv("LAKECTL_CONFIG_FILE"); envCfgFile != "" {
+		// Use config file from the env variable.
+		viper.SetConfigFile(envCfgFile)
 	} else {
 		// Find home directory.
 		home, err := os.UserHomeDir()

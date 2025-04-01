@@ -1,0 +1,16 @@
+files:
+  client.mustache:
+    folder: lakefs_sdk
+    destinationFilename: client.py
+
+  requirements.mustache:
+    destinationFilename: requirements.txt
+
+  Gemfile:
+    destinationFilename: Gemfile
+
+  Gemfile.lock:
+    destinationFilename: Gemfile.lock
+
+  _config.yml:
+    destinationFilename: _config.yml

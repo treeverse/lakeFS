@@ -1,5 +1,41 @@
 # Changelog
 
+# v1.53.1
+
+:new: What's new:
+- Support configuration populate arrays from environment variables (#8891)
+
+:bug: Bugs fixed:
+- Fix BI metadata collection (#8901)
+
+# v1.53.0
+
+:new: What's new:
+- Added a lakectl flag to point to configurations file: `LAKECTL_CONFIG_FILE` (#8831)
+- Added markdown files diff display to the webui (#8855)
+
+:bug: Bugs fixed:
+- Fixed: Use new Delta Lake client registration flow to handle multiple parquet readers (#8869)
+- Fixed: Preserve PR form state when switching branches (#8870)
+
+# v1.52.0
+
+:new: What's new:
+- Added Lua Action support for `update_object_user_metadata` (#8771)
+- Hooks: Enhanced Lua `stat_object` to get metadata (#8777)
+- Added search functionality for Groups and Policies in Web UI (#8783)
+- Added search functionality for Users in Web UI (#8784)
+- Actions: Added pre-post revert hooks (#8804)
+- Actions: Added prepare-commit hook (#8788)
+
+:bug: Bugs fixed:
+
+- Fixed Web UI Merge Dialog - Enter Should Submit (#8781)
+- Fixed Web UI Auth Error after first login (#8806)
+- Fixed: Revert with allow empty commit (#8803)
+- Fixed: Create bare repository now skips storage namespace check (#8816)
+- Fixed lakeFS Lua package to properly post data in request (#8768)
+
 # v1.51.0
 
 :new: What's new:

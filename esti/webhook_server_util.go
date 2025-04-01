@@ -39,6 +39,7 @@ func StartWebhookServer(t testing.TB) *WebhookServer {
 	const channelSize = 10
 	respCh := make(chan HookResponse, channelSize)
 	mux := http.NewServeMux()
+	mux.HandleFunc("/prepare-commit", hookHandlerFunc(respCh))
 	mux.HandleFunc("/pre-commit", hookHandlerFunc(respCh))
 	mux.HandleFunc("/post-commit", hookHandlerFunc(respCh))
 	mux.HandleFunc("/pre-merge", hookHandlerFunc(respCh))
@@ -51,6 +52,8 @@ func StartWebhookServer(t testing.TB) *WebhookServer {
 	mux.HandleFunc("/post-create-tag", hookHandlerFunc(respCh))
 	mux.HandleFunc("/pre-delete-tag", hookHandlerFunc(respCh))
 	mux.HandleFunc("/post-delete-tag", hookHandlerFunc(respCh))
+	mux.HandleFunc("/pre-revert", hookHandlerFunc(respCh))
+	mux.HandleFunc("/post-revert", hookHandlerFunc(respCh))
 	mux.HandleFunc("/timeout", timeoutHandlerFunc(respCh))
 	mux.HandleFunc("/fail", failHandlerFunc(respCh))
 	listener, err := net.Listen("tcp", ":0") //nolint:gosec
@@ -112,7 +115,12 @@ func hookHandlerFunc(respCh chan HookResponse) func(http.ResponseWriter, *http.R
 			return
 		}
 
-		time.Sleep(1 * time.Second) // Added sleep to differentiate between event timestamps
+		// Added sleep to differentiate between event timestamps
+		ctx := request.Context()
+		select {
+		case <-ctx.Done():
+		case <-time.After(time.Second):
+		}
 		respCh <- HookResponse{Path: request.URL.Path, Data: data, QueryParams: request.URL.Query()}
 		_, _ = io.WriteString(writer, "OK")
 		writer.WriteHeader(http.StatusOK)

@@ -22,15 +22,12 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
-    environment:
-      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
-      - ESTI_LARGE_OBJECT_PATH
     command:
       - /bin/sh
       - -c
       - |
         apk add --no-cache util-linux
-        go test -timeout 20m -v $$ESTI_GOTEST_FLAGS ./esti --system-tests $$ESTI_FLAGS --skip $$ESTI_SKIP_TESTS
+        go test -timeout 20m $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro

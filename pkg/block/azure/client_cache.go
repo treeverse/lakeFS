@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -15,7 +16,6 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/puzpuzpuz/xsync"
 	"github.com/treeverse/lakefs/pkg/block/params"
-	"golang.org/x/exp/slices"
 )
 
 const UDCCacheExpiry = time.Hour

@@ -56,7 +56,7 @@ var entryCmd = &cobra.Command{
 		}
 		conf := confInterface.GetBaseConfig()
 
-		err = conf.Validate()
+		err = confInterface.Validate()
 		if err != nil {
 			fmt.Printf("invalid config: %s\n", err)
 		}
@@ -72,7 +72,7 @@ var entryCmd = &cobra.Command{
 		defer kvStore.Close()
 
 		c, err := catalog.New(ctx, catalog.Config{
-			Config:       conf,
+			Config:       confInterface,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
 		})

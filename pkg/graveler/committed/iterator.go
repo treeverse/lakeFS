@@ -16,18 +16,16 @@ type iterator struct {
 	rng         *Range                 // Decoded value at which rangeIt point
 	it          graveler.ValueIterator // nil at start of range
 	err         error
-	storageID   StorageID
 	namespace   Namespace
 	beforeRange bool
 }
 
-func NewIterator(ctx context.Context, manager RangeManager, storageID StorageID, namespace Namespace, rangesIt ValueIterator) Iterator {
+func NewIterator(ctx context.Context, manager RangeManager, namespace Namespace, rangesIt ValueIterator) Iterator {
 	return &iterator{
 		ctx:       ctx,
 		manager:   manager,
 		namespace: namespace,
 		rangesIt:  rangesIt,
-		storageID: storageID,
 	}
 }
 

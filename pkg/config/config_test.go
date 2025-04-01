@@ -12,6 +12,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/go-test/deep"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -23,7 +24,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
-func newConfigFromFile(fn string) (*config.BaseConfig, error) {
+func newConfigFromFile(fn string) (config.Config, error) {
 	viper.SetConfigFile(fn)
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -34,17 +35,17 @@ func newConfigFromFile(fn string) (*config.BaseConfig, error) {
 		return nil, err
 	}
 	err = cfg.Validate()
-	return cfg.GetBaseConfig(), err
+	return cfg, err
 }
 
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	cfg := &config.BaseConfig{}
-	cfg, err := config.NewConfig("", cfg)
+	cfg := &configfactory.ConfigWithAuth{}
+	baseCfg, err := config.NewConfig("", cfg)
 	testutil.Must(t, err)
 	// Don't validate, some tested configs don't have all required fields.
-	if cfg.ListenAddress != config.DefaultListenAddress {
-		t.Fatalf("expected listen addr '%s', got '%s'", config.DefaultListenAddress, cfg.ListenAddress)
+	if baseCfg.ListenAddress != config.DefaultListenAddress {
+		t.Fatalf("expected listen addr '%s', got '%s'", config.DefaultListenAddress, baseCfg.ListenAddress)
 	}
 }
 
@@ -52,10 +53,11 @@ func TestConfig_NewFromFile(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		c, err := newConfigFromFile("testdata/valid_config.yaml")
 		testutil.Must(t, err)
-		if c.ListenAddress != "0.0.0.0:8005" {
-			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.ListenAddress)
+		baseConfig := c.GetBaseConfig()
+		if baseConfig.ListenAddress != "0.0.0.0:8005" {
+			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", baseConfig.ListenAddress)
 		}
-		if diffs := deep.Equal([]string(c.Gateways.S3.DomainNames), []string{"s3.example.com", "gs3.example.com", "gcp.example.net"}); diffs != nil {
+		if diffs := deep.Equal([]string(baseConfig.Gateways.S3.DomainNames), []string{"s3.example.com", "gs3.example.com", "gcp.example.net"}); diffs != nil {
 			t.Fatalf("expected domain name s3.example.com, diffs %s", diffs)
 		}
 	})
@@ -73,6 +75,22 @@ func TestConfig_NewFromFile(t *testing.T) {
 		if !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("expected missing configuration file to fail, got %v", err)
 		}
+	})
+
+	t.Run("auth fixture", func(t *testing.T) {
+		t.Run("success", func(t *testing.T) {
+			c, err := newConfigFromFile("testdata/auth_fixture/basic_auth.yaml")
+			require.NoError(t, err)
+			require.Equal(t, "test value", c.AuthConfig().Encrypt.SecretKey.SecureValue())
+		})
+		t.Run("invalid auth", func(t *testing.T) {
+			_, err := newConfigFromFile("testdata/auth_fixture/invalid_auth.yaml")
+			require.Error(t, err)
+		})
+		t.Run("no auth", func(t *testing.T) {
+			_, err := newConfigFromFile("testdata/auth_fixture/no_auth.yaml")
+			require.Error(t, err)
+		})
 	})
 }
 
@@ -95,7 +113,7 @@ func TestConfig_EnvironmentVariables(t *testing.T) {
 
 	c, err := newConfigFromFile("testdata/valid_config.yaml")
 	testutil.Must(t, err)
-	kvParams, err := kvparams.NewConfig(&c.Database)
+	kvParams, err := kvparams.NewConfig(&c.GetBaseConfig().Database)
 	testutil.Must(t, err)
 	if kvParams.Postgres.ConnectionString != dbString {
 		t.Errorf("got DB connection string %s, expected to override to %s", kvParams.Postgres.ConnectionString, dbString)

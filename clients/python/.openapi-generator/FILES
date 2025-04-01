@@ -1,5 +1,9 @@
+.gitignore
 .travis.yml
+Gemfile
+Gemfile.lock
 README.md
+_config.yml
 docs/ACL.md
 docs/AbortPresignMultipartUpload.md
 docs/AccessKeyCredentials.md

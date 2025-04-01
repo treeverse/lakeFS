@@ -12,7 +12,7 @@ import {useRefs} from "../../hooks/repo";
 import {getRepoStorageConfig} from "../../../pages/repositories/repository/utils";
 
 const maxDiffSizeBytes = 120 << 10;
-const supportedReadableFormats = ["txt", "text", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson"];
+const supportedReadableFormats = ["txt", "text", "md", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const {repo, error: refsError, loading: refsLoading} = useRefs();

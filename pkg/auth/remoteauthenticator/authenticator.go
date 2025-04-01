@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -126,42 +125,16 @@ func (ra *Authenticator) AuthenticateUser(ctx context.Context, username, passwor
 	}
 
 	dbUsername := username
-
 	// if the external authentication service provided an external user identifier, use it as the username
 	externalUserIdentifier := swag.StringValue(res.ExternalUserIdentifier)
 	if externalUserIdentifier != "" {
-		log = log.WithField("external_user_identifier", externalUserIdentifier)
 		dbUsername = externalUserIdentifier
 	}
-
-	user, err := ra.AuthService.GetUser(ctx, dbUsername)
-	if err == nil {
-		log.WithField("user", fmt.Sprintf("%+v", user)).Debug("Got existing user")
-		return user.Username, nil
-	}
-	if !errors.Is(err, auth.ErrNotFound) {
-		return "", fmt.Errorf("get user %s: %w", dbUsername, err)
-	}
-
-	log.Info("first time remote authenticated user, creating them")
-
-	newUser := &model.User{
-		CreatedAt:    time.Now().UTC(),
-		Username:     dbUsername,
-		FriendlyName: &username,
-		Source:       remoteAuthSource,
-	}
-
-	_, err = ra.AuthService.CreateUser(ctx, newUser)
+	user, err := auth.GetOrCreateUser(ctx, log, ra.AuthService, dbUsername, username, ra.Config.DefaultUserGroup, remoteAuthSource)
 	if err != nil {
-		return "", fmt.Errorf("create backing user for remote auth user %s: %w", newUser.Username, err)
+		return "", fmt.Errorf("get or create user: %w", err)
 	}
-
-	err = ra.AuthService.AddUserToGroup(ctx, newUser.Username, ra.Config.DefaultUserGroup)
-	if err != nil {
-		return "", fmt.Errorf("add newly created remote auth user %s to %s: %w", newUser.Username, ra.Config.DefaultUserGroup, err)
-	}
-	return newUser.Username, nil
+	return user.Username, nil
 }
 
 func (ra *Authenticator) String() string {

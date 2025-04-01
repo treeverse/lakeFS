@@ -24,6 +24,10 @@ test.describe("Quickstart", () => {
         const repositoriesPage = new RepositoriesPage(page);
         await repositoriesPage.goto();
         await repositoriesPage.createRepository(QUICKSTART_REPO_NAME, true);
+        // validate the redirect to the relevant repository page
+        const repositoryPage = new RepositoryPage(page);
+        const repoHeaderLink = repositoryPage.breadcrumbsLocator.getByRole("link", {name: QUICKSTART_REPO_NAME, exact: true});
+        await expect(repoHeaderLink).toBeVisible();
     });
 
     test("view and query parquet object", async ({page}) => {
@@ -143,5 +147,28 @@ test.describe("Quickstart", () => {
         const firstPullRowDetails = await pullsPage.getFirstPullsRowDetails();
         expect(firstPullRowDetails.title).toEqual(pullDetails.title);
         expect(firstPullRowDetails.description).toMatch(/^Merged/)
+    });
+
+    test("repository settings", async ({page}) => {
+        const repositoryPage = new RepositoryPage(page);
+        await repositoryPage.goto(QUICKSTART_REPO_NAME);
+        await repositoryPage.gotoSettingsTab();
+
+        await expect(page.getByRole("heading", {name: "General"})).toBeVisible();
+        const container = page.locator('.container');
+        
+        async function validateRow(elementText: string, inputValue: string | undefined = undefined) {
+            const rowText = container.getByText(elementText, {exact: true});
+            await expect(rowText).toBeVisible();
+            const valueInput = rowText.locator('..').getByRole("textbox");
+            await expect(valueInput).toBeVisible();
+            if (inputValue) {
+                await expect(valueInput).toHaveValue(inputValue);
+            }
+        }
+
+        await validateRow("Repository name", QUICKSTART_REPO_NAME);
+        await validateRow("Storage namespace", "local://" + QUICKSTART_REPO_NAME);
+        await validateRow("Default branch", "main");
     });
 });

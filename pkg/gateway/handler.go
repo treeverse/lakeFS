@@ -6,6 +6,7 @@ import (
 	gohttputil "net/http/httputil"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -20,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
-	"golang.org/x/exp/slices"
 )
 
 type contextKey string

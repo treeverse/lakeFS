@@ -4,10 +4,12 @@ export class RepositoryPage {
   private page: Page;
 
   public readOnlyIndicatorLocator: Locator;
+  public breadcrumbsLocator: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.readOnlyIndicatorLocator = this.page.locator("text=Read-only");
+    this.breadcrumbsLocator = this.page.locator("ol.breadcrumb");
   }
 
   async goto(repoName: string): Promise<void> {
@@ -123,6 +125,10 @@ export class RepositoryPage {
 
   async gotoPullRequestsTab(): Promise<void> {
     await this.page.getByRole("link", { name: "Pull Requests" }).click();
+  }
+
+  async gotoSettingsTab(): Promise<void> {
+    await this.page.getByRole("link", { name: "Settings" }).click();
   }
 
   async uploadObject(filePath: string): Promise<void> {

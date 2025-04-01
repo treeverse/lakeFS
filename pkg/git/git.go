@@ -8,13 +8,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	giterror "github.com/treeverse/lakefs/pkg/git/errors"
 	"github.com/treeverse/lakefs/pkg/git/internal"
-	"golang.org/x/exp/slices"
 )
 
 const (

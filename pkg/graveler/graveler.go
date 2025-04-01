@@ -2093,12 +2093,13 @@ func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref R
 }
 
 func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, branchID BranchID, params CommitParams, opts ...SetOptionsFunc) (CommitID, error) {
-	var preRunID string
-	var commit Commit
-	var newCommitID CommitID
-	var storageNamespace StorageNamespace
-	var sealedToDrop []StagingToken
-
+	var (
+		preRunID         string
+		commit           Commit
+		newCommitID      CommitID
+		storageNamespace StorageNamespace
+		sealedToDrop     []StagingToken
+	)
 	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_COMMIT)
 	if err != nil {
 		return "", err
@@ -2111,7 +2112,35 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
 	}
+
+	// fill commit information, except the commit's parents as they are set in the branch update
+	commit = NewCommit()
+	if params.Date != nil {
+		commit.CreationDate = time.Unix(*params.Date, 0)
+	}
+	commit.Committer = params.Committer
+	commit.Message = params.Message
+	commit.Metadata = params.Metadata
+
 	storageNamespace = repository.StorageNamespace
+	if !repository.ReadOnly {
+		prepareRunID := g.hooks.NewRunID()
+		err = g.hooks.PrepareCommitHook(ctx, HookRecord{
+			RunID:      prepareRunID,
+			EventType:  EventTypePrepareCommit,
+			SourceRef:  branchID.Ref(),
+			Repository: repository,
+			BranchID:   branchID,
+			Commit:     commit,
+		})
+		if err != nil {
+			return "", &HookAbortError{
+				EventType: EventTypePrepareCommit,
+				RunID:     prepareRunID,
+				Err:       err,
+			}
+		}
+	}
 
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if params.SourceMetaRange != nil {
@@ -2132,15 +2161,6 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 	}
 
 	err = g.retryBranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
-		// fill commit information - use for pre-commit and after adding the commit information used by commit
-		commit = NewCommit()
-
-		if params.Date != nil {
-			commit.CreationDate = time.Unix(*params.Date, 0)
-		}
-		commit.Committer = params.Committer
-		commit.Message = params.Message
-		commit.Metadata = params.Metadata
 		if branch.CommitID != "" {
 			commit.Parents = CommitParents{branch.CommitID}
 		}
@@ -2678,13 +2698,17 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		parentNumber--
 	}
 
+	var (
+		preRunID     string
+		commit       Commit
+		newCommitID  CommitID
+		tokensToDrop []StagingToken
+	)
 	err = g.prepareForCommitIDUpdate(ctx, repository, branchID, "revert")
 	if err != nil {
 		return "", err
 	}
 
-	var commitID CommitID
-	var tokensToDrop []StagingToken
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if empty, err := g.isSealedEmpty(ctx, repository, branch); err != nil {
 			return nil, err
@@ -2715,7 +2739,7 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		if (metaRangeID == branchCommit.MetaRangeID) && !commitParams.AllowEmpty {
 			return nil, ErrNoChanges
 		}
-		commit := NewCommit()
+		commit = NewCommit()
 		commit.Committer = commitParams.Committer
 		commit.Message = commitParams.Message
 		commit.MetaRangeID = metaRangeID
@@ -2724,14 +2748,34 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 		commit.Generation = branchCommit.Generation + 1
 
 		applyCommitOverrides(&commit, commitOverrides)
-		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
+
+		if !repository.ReadOnly {
+			preRunID = g.hooks.NewRunID()
+			err = g.hooks.PreRevertHook(ctx, HookRecord{
+				RunID:      preRunID,
+				EventType:  EventTypePreRevert,
+				SourceRef:  branchID.Ref(),
+				Repository: repository,
+				BranchID:   branchID,
+				Commit:     commit,
+			})
+			if err != nil {
+				return nil, &HookAbortError{
+					EventType: EventTypePreRevert,
+					RunID:     preRunID,
+					Err:       err,
+				}
+			}
+		}
+
+		newCommitID, err = g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)
 		}
 
 		tokensToDrop = branch.SealedTokens
 		branch.SealedTokens = []StagingToken{}
-		branch.CommitID = commitID
+		branch.CommitID = newCommitID
 		return branch, nil
 	})
 	if err != nil {
@@ -2739,7 +2783,28 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 	}
 
 	g.dropTokens(ctx, tokensToDrop...)
-	return commitID, nil
+
+	if !repository.ReadOnly {
+		postRunID := g.hooks.NewRunID()
+		err = g.hooks.PostRevertHook(ctx, HookRecord{
+			EventType:  EventTypePostRevert,
+			RunID:      postRunID,
+			Repository: repository,
+			SourceRef:  newCommitID.Ref(),
+			BranchID:   branchID,
+			Commit:     commit,
+			CommitID:   newCommitID,
+			PreRunID:   preRunID,
+		})
+		if err != nil {
+			g.log(ctx).WithError(err).
+				WithField("run_id", postRunID).
+				WithField("pre_run_id", preRunID).
+				Error("Post-revert hook failed")
+		}
+	}
+
+	return newCommitID, nil
 }
 
 // CherryPick creates a new commit on the given branch, with the changes from the given commit.

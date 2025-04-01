@@ -1,9 +1,0 @@
-files:
-  client.mustache:
-    templateType: SupportingFiles
-    folder: lakefs_sdk
-    destinationFilename: client.py
-
-  requirements.mustache:
-    templateType: SupportingFiles
-    destinationFilename: requirements.txt

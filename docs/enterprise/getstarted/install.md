@@ -451,7 +451,7 @@ extraManifests:
   - apiVersion: v1
     kind: ConfigMap
     metadata:
-      name: '{{ .Values.fluffy.name }}-extra-config'
+      name: '{% raw %}{{ .Values.fluffy.name }}{% endraw %}-extra-config'
     data:
       config.yaml: my-data
 ```

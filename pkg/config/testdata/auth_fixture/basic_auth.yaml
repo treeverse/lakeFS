@@ -1,0 +1,22 @@
+---
+logging:
+  format: text
+  level: NONE
+  output: "-"
+
+database:
+  type: postgres
+  postgres:
+    connection_string: test:///dev/null
+    max_open_connections: 12
+    max_idle_connections: 13
+    connection_max_lifetime: 2s
+
+blockstore:
+  type: local
+  local:
+    path: /tmp/d1
+
+auth:
+  encrypt:
+    secret_key: "test value"

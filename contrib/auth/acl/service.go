@@ -41,6 +41,10 @@ func NewAuthService(store kv.Store, secretStore crypt.SecretStore, cacheConf par
 	return res
 }
 
+func (s *AuthService) IsAdvancedAuth() bool {
+	return false
+}
+
 func (s *AuthService) ListKVPaged(ctx context.Context, protoType protoreflect.MessageType, params *model.PaginationParams, prefix []byte, secondary bool) ([]proto.Message, *model.Paginator, error) {
 	var (
 		it    kv.MessageIterator
@@ -935,13 +939,32 @@ func (s *AuthService) ListUserExternalPrincipals(_ context.Context, _ string, _ 
 }
 
 func (s *AuthService) getSetupTimestamp(ctx context.Context) (time.Time, error) {
-	valWithPred, err := s.store.Get(ctx, []byte(ServerPartitionKey), []byte(model.MetadataKeyPath(auth.SetupTimestampKeyName)))
+	// Try with model.PartitionKey first
+	ts, err := s.getTimestampFromPartition(ctx, model.PartitionKey)
+	if err == nil {
+		return ts, nil
+	}
+	if !errors.Is(err, kv.ErrNotFound) {
+		return time.Time{}, err
+	}
+
+	// Fallback to ServerPartitionKey for backward compatibility
+	return s.getTimestampFromPartition(ctx, ServerPartitionKey)
+}
+
+func (s *AuthService) getTimestampFromPartition(ctx context.Context, partition string) (time.Time, error) {
+	valWithPred, err := s.store.Get(ctx, []byte(partition), []byte(model.MetadataKeyPath(auth.SetupTimestampKeyName)))
 	if err != nil {
 		return time.Time{}, err
 	}
-	return time.Parse(time.RFC3339, string(valWithPred.Value))
+	ts, err := time.Parse(time.RFC3339, string(valWithPred.Value))
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid timestamp format: %w", err)
+	}
+	return ts, nil
 }
 
 func (s *AuthService) updateSetupTimestamp(ctx context.Context, ts time.Time) error {
-	return s.store.SetIf(ctx, []byte(ServerPartitionKey), []byte(model.MetadataKeyPath(auth.SetupTimestampKeyName)), []byte(ts.UTC().Format(time.RFC3339)), nil)
+	// Only write to model.PartitionKey as getSetupTimestamp has fallback for backward compatibility
+	return s.store.SetIf(ctx, []byte(model.PartitionKey), []byte(model.MetadataKeyPath(auth.SetupTimestampKeyName)), []byte(ts.UTC().Format(time.RFC3339)), nil)
 }

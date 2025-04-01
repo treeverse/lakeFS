@@ -1,6 +1,9 @@
 package auth_test
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -71,6 +74,114 @@ func TestParseARN(t *testing.T) {
 			t.Fatalf("got unexpected resource ID parsing arn: \"%s\": \"%s\" (expected \"%s\")", c.Input, got.ResourceID, c.Arn.ResourceID)
 		}
 	}
+}
+
+func TestParseResources(t *testing.T) {
+	cases := []struct {
+		inputResource   string
+		outputResources []string
+		expectedError   error
+	}{
+		{
+			inputResource:   "[\"arn:lakefs:repos::b:myrepo\",\"arn:lakefs:repos::b:hisrepo\"]",
+			outputResources: []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   "[\"arn:lakefs:repos::b:myrepo\",\"arn:lakefs:repos::b:hisrepo\",\"arn:lakefs:repos::b:ourrepo\"]",
+			outputResources: []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo", "arn:lakefs:repos::b:ourrepo"},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   "       arn:lakefs:repos::b:myrepo  ",
+			outputResources: []string{"       arn:lakefs:repos::b:myrepo  "},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   "[    \"arn:lakefs:repos::b:myrepo  \"]",
+			outputResources: []string{"arn:lakefs:repos::b:myrepo  "},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   "[\"arn:lakefs:repos::b:myre,po\"]",
+			outputResources: []string{"arn:lakefs:repos::b:myre,po"},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   "[\"arn:lakefs:repos::b:myre,po\",\"arn:lakefs:repos::b,:myrepo\"]",
+			outputResources: []string{"arn:lakefs:repos::b:myre,po", "arn:lakefs:repos::b,:myrepo"},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   "*",
+			outputResources: []string{"*"},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   "[\"arn:lakefs:repos::b:myre,po,\"arn:lakefs:repos::b,:myrepo\"]",
+			outputResources: []string{},
+			expectedError:   fmt.Errorf("unmarshal resource"),
+		},
+		{
+			inputResource:   "",
+			outputResources: nil,
+			expectedError:   auth.ErrInvalidArn,
+		},
+		{
+			inputResource:   sliceToJsonStrHelper(t, "arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"),
+			outputResources: []string{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:hisrepo"},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   sliceToJsonStrHelper(t, ""),
+			outputResources: []string{""},
+			expectedError:   auth.ErrInvalidArn,
+		},
+		{
+			inputResource:   sliceToJsonStrHelper(t, "arn:lakefs:repos::b:m\"yrepo  ", "arn:lakefs:repos::b:hisrepo"),
+			outputResources: []string{"arn:lakefs:repos::b:m\"yrepo  ", "arn:lakefs:repos::b:hisrepo"},
+			expectedError:   nil,
+		},
+		{
+			inputResource:   "[\"arn:lakefs:repos::b:myrepo\", arn:lakefs:repos::b:hisrepo\"]",
+			outputResources: []string{},
+			expectedError:   fmt.Errorf("unmarshal resource"),
+		},
+		{
+			inputResource:   "[\"arn:lakefs:repos::b:myrepo\" \"arn:lakefs:repos::b:hisrepo\"]",
+			outputResources: []string{},
+			expectedError:   fmt.Errorf("unmarshal resource"),
+		},
+	}
+
+	for _, c := range cases {
+
+		got, err := auth.ParsePolicyResourceAsList(c.inputResource)
+		if err != nil && !strings.Contains(err.Error(), c.expectedError.Error()) {
+			t.Fatalf("expected %v error, to contain %v error", err, c.expectedError)
+		}
+		if len(got) != len(c.outputResources) {
+			t.Fatalf("expected %d resources, got %d for input: %s", len(c.outputResources), len(got), c.inputResource)
+		}
+		if len(got) == 0 {
+			continue
+
+		}
+		for i, expected := range c.outputResources {
+			if got[i] != expected {
+				t.Fatalf("expected resource %s at index %d, got %s for input: %s", expected, i, got[i], c.inputResource)
+			}
+		}
+	}
+
+}
+func sliceToJsonStrHelper(t *testing.T, s ...string) string {
+	t.Helper()
+	jsStr, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("failed to marshal slice '%v' to json string: %v", s, err)
+	}
+	return string(jsStr)
 }
 
 func TestArnMatch(t *testing.T) {

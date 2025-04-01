@@ -46,6 +46,7 @@ Method | HTTP request | Description
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -152,6 +153,7 @@ create commit record
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -263,6 +265,7 @@ creates symlink files corresponding to the given directory
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -378,6 +381,7 @@ Delete specified keys from the repository's metadata.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -486,6 +490,7 @@ Dump repository refs (tags, commits, branches) to object store Deprecated: a new
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -591,6 +596,7 @@ list authentication capabilities supported
 
 ### Example
 
+
 ```python
 import time
 import os
@@ -663,6 +669,7 @@ get information of gc settings
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -766,6 +773,7 @@ get version of lakeFS server
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -867,6 +875,7 @@ return a lakeFS metadata object by ID
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -977,6 +986,7 @@ check if the lakeFS installation is already set up
 
 ### Example
 
+
 ```python
 import time
 import os
@@ -1049,6 +1059,7 @@ retrieve lakeFS storage configuration
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1150,6 +1161,7 @@ get usage report summary
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1256,6 +1268,7 @@ This endpoint does not need any parameter.
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1364,6 +1377,7 @@ void (empty response body)
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1472,6 +1486,7 @@ void (empty response body)
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1577,6 +1592,7 @@ get branch protection rules
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1686,6 +1702,7 @@ Name | Type | Description  | Notes
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1794,6 +1811,7 @@ Name | Type | Description  | Notes
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -1902,6 +1920,7 @@ post stats events, this endpoint is meant for internal use only
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -2009,6 +2028,7 @@ save lists of active commits for garbage collection
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -2119,6 +2139,7 @@ save repository uncommitted metadata for garbage collection
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -2233,6 +2254,7 @@ Restore repository refs (tags, commits, branches) from object store. Deprecated:
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -2343,6 +2365,7 @@ void (empty response body)
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -2450,6 +2473,7 @@ Set repository metadata. This will only add or update the provided keys, and wil
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -2554,6 +2578,7 @@ setup lakeFS and create a first user
 
 ### Example
 
+
 ```python
 import time
 import os
@@ -2625,6 +2650,7 @@ No authorization required
 setup communications preferences
 
 ### Example
+
 
 ```python
 import time
@@ -2700,6 +2726,7 @@ stage an object's metadata for the given branch
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os
@@ -2818,6 +2845,7 @@ Name | Type | Description  | Notes
 * Api Key Authentication (oidc_auth):
 * Api Key Authentication (saml_auth):
 * Bearer (JWT) Authentication (jwt_token):
+
 ```python
 import time
 import os

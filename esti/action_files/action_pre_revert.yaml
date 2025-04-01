@@ -1,0 +1,12 @@
+name: Test Pre Revert
+description: a test action description
+on:
+  pre-revert:
+    branches:
+
+hooks:
+  - id: test_webhook
+    type: webhook
+    description: Check webhooks for pre-revert works
+    properties:
+      url: "{{.URL}}/pre-revert"

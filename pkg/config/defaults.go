@@ -12,7 +12,7 @@ const (
 	DefaultLoggingAuditLogLevel = "DEBUG"
 	BlockstoreTypeKey           = "blockstore.type"
 	DefaultQuickstartUsername   = "quickstart"
-	// quicksart creds, safe
+	// quickstart creds, safe
 	DefaultQuickstartKeyID           = "AKIAIOSFOLQUICKSTART"                     //nolint:gosec
 	DefaultQuickstartSecretKey       = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
 	DefaultAuthAPIHealthCheckTimeout = 20 * time.Second

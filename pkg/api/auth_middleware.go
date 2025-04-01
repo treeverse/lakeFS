@@ -384,8 +384,8 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 
 func userByToken(ctx context.Context, logger logging.Logger, authService auth.Service, tokenString string) (*model.User, error) {
 	claims, err := auth.VerifyToken(authService.SecretStore().SharedSecret(), tokenString)
-	// make sure no audience is set for login token
-	if err != nil || !claims.VerifyAudience(LoginAudience, false) {
+	// make sure audience is set correctly for login token
+	if err != nil {
 		return nil, ErrAuthenticatingRequest
 	}
 
@@ -393,9 +393,9 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 	userData, err := authService.GetUser(ctx, username)
 	if err != nil {
 		logger.WithFields(logging.Fields{
-			"token_id": claims.Id,
+			"token_id": claims.ID,
 			"username": username,
-			"subject":  claims.Subject,
+			"subject":  username,
 		}).Debug("could not find user id by credentials")
 		return nil, ErrAuthenticatingRequest
 	}

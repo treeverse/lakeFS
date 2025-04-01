@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
-	"golang.org/x/exp/slices"
 )
 
 const commitsTemplate = `{{ range $val := .Commits }}

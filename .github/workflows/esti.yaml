@@ -1200,7 +1200,7 @@ jobs:
 
       - name: build and install lakeFS Python SDK
         run: |
-          PACKAGE_VERSION=0.0.0-dev make sdk-python
+          PACKAGE_VERSION=0.0.0-dev make client-python
           pip install ./clients/python
 
       - name: Generate uniquifying value

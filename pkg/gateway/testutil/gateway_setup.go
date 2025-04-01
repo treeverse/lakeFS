@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -42,12 +43,12 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 
-	conf := &config.BaseConfig{}
-	conf, err = config.NewConfig("", conf)
+	cfg := &configfactory.ConfigWithAuth{}
+	_, err = config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 
 	c, err := catalog.New(ctx, catalog.Config{
-		Config:       conf,
+		Config:       cfg,
 		KVStore:      store,
 		PathProvider: upload.DefaultPathProvider,
 	})
