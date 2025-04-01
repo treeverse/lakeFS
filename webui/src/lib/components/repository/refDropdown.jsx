@@ -181,16 +181,15 @@ const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, wit
                         title={namedRef}
                         className="text-nowrap overflow-hidden text-truncate"
                     >
-                        {!!selected && namedRef === selected.id ? (
-                            <strong>{namedRef}</strong>
-                        ) : (
+                        {!!selected && namedRef === selected.id ?
+                            <strong>{namedRef}</strong> :
                             <Button
                                 variant="link"
                                 onClick={() => selectRef({ id: namedRef, type: refType })}
                             >
                                 {namedRef}
                             </Button>
-                        )}
+                        }
                     </Col>
                     <Col xs="auto" className="actions d-flex align-items-center">
                         {refType === RefTypeBranch && namedRef === repo.default_branch && (
