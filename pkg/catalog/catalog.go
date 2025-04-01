@@ -2446,6 +2446,19 @@ func (c *Catalog) importAsync(ctx context.Context, repository *graveler.Reposito
 	return nil
 }
 
+// verifyImportPaths - Verify that import paths will not cause an import of objects from the repository namespace itself
+func verifyImportPaths(storageNamespace string, params ImportRequest) error {
+	for _, p := range params.Paths {
+		if strings.HasPrefix(p.Path, storageNamespace) {
+			return fmt.Errorf("import path (%s) in repository namespace (%s) is prohibited: %w", p.Path, storageNamespace, ErrInvalidImportSource)
+		}
+		if p.Type == ImportPathTypePrefix && strings.HasPrefix(storageNamespace, p.Path) {
+			return fmt.Errorf("prefix (%s) contains repository namespace: (%s), %w", p.Path, storageNamespace, ErrInvalidImportSource)
+		}
+	}
+	return nil
+}
+
 func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, params ImportRequest) (string, error) {
 	repository, err := c.getRepository(ctx, repositoryID)
 	if err != nil {
@@ -2457,10 +2470,8 @@ func (c *Catalog) Import(ctx context.Context, repositoryID, branchID string, par
 		return "", err
 	}
 
-	for _, p := range params.Paths {
-		if strings.HasPrefix(p.Path, repository.StorageNamespace.String()) {
-			return "", fmt.Errorf("import from repository storage namespace is prohibited: %s, %w", p.Path, ErrInvalidImportSource)
-		}
+	if err = verifyImportPaths(repository.StorageNamespace.String(), params); err != nil {
+		return "", err
 	}
 
 	id := xid.New().String()

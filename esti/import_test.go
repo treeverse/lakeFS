@@ -384,17 +384,36 @@ func TestImportToStorageNamespace(t *testing.T) {
 	require.NoError(t, err, "failed to create branch", branch)
 	require.Equal(t, http.StatusCreated, createResp.StatusCode(), "failed to create branch", branch)
 
+	partialNamespace := repoResp.JSON200.StorageNamespace[:len(repoResp.JSON200.StorageNamespace)-2]
 	testCases := []struct {
-		Name       string
-		ImportPath string
+		Name        string
+		ImportPath  string
+		Type        string
+		ExpectError bool
 	}{
 		{
-			Name:       "exact namespace",
-			ImportPath: repoResp.JSON200.StorageNamespace,
+			Name:        "exact namespace",
+			ImportPath:  repoResp.JSON200.StorageNamespace,
+			Type:        catalog.ImportPathTypePrefix,
+			ExpectError: true,
 		},
 		{
-			Name:       "path in namespace",
-			ImportPath: repoResp.JSON200.StorageNamespace + "/some_path/in/namespace",
+			Name:        "path in namespace",
+			ImportPath:  repoResp.JSON200.StorageNamespace + "/some_path/in/namespace",
+			Type:        catalog.ImportPathTypePrefix,
+			ExpectError: true,
+		},
+		{
+			Name:        "path is prefix of namespace",
+			ImportPath:  partialNamespace,
+			Type:        catalog.ImportPathTypePrefix,
+			ExpectError: true,
+		},
+		{
+			Name:        "path is object with same prefix as namespace",
+			ImportPath:  partialNamespace,
+			Type:        catalog.ImportPathTypeObject,
+			ExpectError: false,
 		},
 	}
 	for _, tt := range testCases {
@@ -407,12 +426,16 @@ func TestImportToStorageNamespace(t *testing.T) {
 				Paths: []apigen.ImportLocation{{
 					Destination: importTargetPrefix,
 					Path:        tt.ImportPath,
-					Type:        catalog.ImportPathTypePrefix,
+					Type:        tt.Type,
 				}},
 			})
 			require.NoError(t, err)
-			require.NotNil(t, importResp.JSON400)
-			require.Contains(t, importResp.JSON400.Message, "invalid import source")
+			if tt.ExpectError {
+				require.NotNil(t, importResp.JSON400)
+				require.Contains(t, importResp.JSON400.Message, "invalid import source")
+			} else {
+				require.NotNil(t, importResp.JSON202)
+			}
 		})
 	}
 }
