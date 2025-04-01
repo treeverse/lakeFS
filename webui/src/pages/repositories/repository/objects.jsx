@@ -287,10 +287,11 @@ const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }
   return (
     <Container>
       <Row className={`upload-item upload-item-${state ? state.status : "none"}`}>
-        <Col>
-          <span className="path">
-            lakefs://{repo.id}/{reference.id}/{fpath}
-          </span>
+          <Col
+              title={`lakefs://${repo.id}/${reference.id}/${fpath}`}
+              className="path text-nowrap overflow-hidden text-truncate align-middle"
+          >
+              lakefs://{repo.id}/{reference.id}/{fpath}
         </Col>
         <Col xs md="2">
           <span className="size">
