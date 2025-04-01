@@ -225,8 +225,11 @@ class ApiClient private (conf: APIConfigurations) {
         if (storageConfigList.isEmpty || storageConfigList.size() == 1) {
           cfg.getStorageConfig
         } else {
-          storageConfigList.asScala.find(_.getBlockstoreId == storageID)
-            .getOrElse(throw new IllegalArgumentException(s"Storage config not found for ID: $storageID"))
+          storageConfigList.asScala
+            .find(_.getBlockstoreId == storageID)
+            .getOrElse(
+              throw new IllegalArgumentException(s"Storage config not found for ID: $storageID")
+            )
         }
       }
     }
