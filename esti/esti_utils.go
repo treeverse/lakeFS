@@ -305,14 +305,14 @@ func createRepositoryForTest(ctx context.Context, t testing.TB) string {
 func createRepositoryByName(ctx context.Context, t testing.TB, name string) string {
 	storageNamespace := GenerateUniqueStorageNamespace(name)
 	name = MakeRepositoryName(name)
-	CreateRepository(ctx, t, name, storageNamespace, "", false)
+	CreateRepository(ctx, t, name, storageNamespace, config.SingleBlockstoreID, false)
 	return name
 }
 
 func createReadOnlyRepositoryByName(ctx context.Context, t testing.TB, name string) string {
 	storageNamespace := GenerateUniqueStorageNamespace(name)
 	name = MakeRepositoryName(name)
-	CreateRepository(ctx, t, name, storageNamespace, "", true)
+	CreateRepository(ctx, t, name, storageNamespace, config.SingleBlockstoreID, true)
 	return name
 }
 
