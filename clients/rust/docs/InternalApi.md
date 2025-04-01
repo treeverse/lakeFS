@@ -431,6 +431,8 @@ Name | Type | Description  | Required | Notes
 > internal_delete_garbage_collection_rules(repository)
 
 
+Deprecated; use deleteGCRules.
+
 ### Parameters
 
 
@@ -487,6 +489,8 @@ Name | Type | Description  | Required | Notes
 > models::GarbageCollectionRules internal_get_garbage_collection_rules(repository)
 
 
+Deprecated; use getGCRules.
+
 ### Parameters
 
 
@@ -514,6 +518,8 @@ Name | Type | Description  | Required | Notes
 
 > internal_set_garbage_collection_rules(repository, garbage_collection_rules)
 
+
+Deprecated; use setGCRules.
 
 ### Parameters
 
