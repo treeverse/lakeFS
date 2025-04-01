@@ -6427,6 +6427,7 @@ paths:
   /repositories/{repository}/gc/rules:
     delete:
       deprecated: true
+      description: Deprecated; use deleteGCRules.
       operationId: internalDeleteGarbageCollectionRules
       parameters:
       - explode: false
@@ -6464,6 +6465,7 @@ paths:
       x-accepts: application/json
     get:
       deprecated: true
+      description: Deprecated; use getGCRules.
       operationId: internalGetGarbageCollectionRules
       parameters:
       - explode: false
@@ -6505,6 +6507,7 @@ paths:
       x-accepts: application/json
     post:
       deprecated: true
+      description: Deprecated; use setGCRules.
       operationId: internalSetGarbageCollectionRules
       parameters:
       - explode: false

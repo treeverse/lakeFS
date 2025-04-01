@@ -5551,6 +5551,7 @@ paths:
       tags:
         - internal
       operationId: internalGetGarbageCollectionRules
+      description: "Deprecated; use getGCRules."
       responses:
         200:
           description: gc rule list
@@ -5572,6 +5573,7 @@ paths:
       tags:
         - internal
       operationId: internalSetGarbageCollectionRules
+      description: "Deprecated; use setGCRules."
       requestBody:
         required: true
         content:
@@ -5594,6 +5596,7 @@ paths:
       tags:
         - internal
       operationId: internalDeleteGarbageCollectionRules
+      description: "Deprecated; use deleteGCRules."
       responses:
         204:
           description: deleted garbage collection rules successfully

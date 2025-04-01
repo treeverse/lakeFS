@@ -1479,6 +1479,8 @@ void (empty response body)
 
 
 
+Deprecated; use deleteGCRules.
+
 ### Example
 
 * Basic Authentication (basic_auth):
@@ -1695,6 +1697,8 @@ Name | Type | Description  | Notes
 
 
 
+Deprecated; use getGCRules.
+
 ### Example
 
 * Basic Authentication (basic_auth):
@@ -1803,6 +1807,8 @@ Name | Type | Description  | Notes
 > internal_set_garbage_collection_rules(repository, garbage_collection_rules)
 
 
+
+Deprecated; use setGCRules.
 
 ### Example
 
