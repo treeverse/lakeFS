@@ -117,9 +117,9 @@ export const ActionGroup = ({ children, orientation = "left", className = "" }) 
     );
 };
 
-export const ActionsBar = ({ children }) => {
+export const ActionsBar = ({ children, className = "" }) => {
     return (
-        <div className="action-bar d-flex mb-3">
+        <div className={`action-bar d-flex mb-3 ${className}`}>
             {children}
         </div>
     );

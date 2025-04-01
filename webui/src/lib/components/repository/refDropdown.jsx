@@ -283,7 +283,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
     const title = prefix + (!!selected) ? `${prefix} ${selected.type}: ` : '';
     return (
         <Container fluid>
-            <Row>
+            <Row className="align-items-center">
                 <Col>
                     <Button ref={target} variant={variant} onClick={() => setShow(!show)} title={showId(selected)}
                             className="w-25 text-nowrap overflow-hidden text-truncate">
