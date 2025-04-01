@@ -1277,6 +1277,8 @@ null (empty response body)
 
 
 
+Deprecated; use deleteGCRules.
+
 ### Example
 ```java
 // Import classes:
@@ -1462,6 +1464,8 @@ public class Example {
 
 
 
+Deprecated; use getGCRules.
+
 ### Example
 ```java
 // Import classes:
@@ -1554,6 +1558,8 @@ public class Example {
 > internalSetGarbageCollectionRules(repository, garbageCollectionRules).execute();
 
 
+
+Deprecated; use setGCRules.
 
 ### Example
 ```java

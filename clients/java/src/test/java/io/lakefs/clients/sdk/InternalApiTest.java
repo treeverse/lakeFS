@@ -240,6 +240,8 @@ public class InternalApiTest {
     }
 
     /**
+     * Deprecated; use deleteGCRules.
+     *
      * @throws ApiException if the Api call fails
      */
     @Test
@@ -264,6 +266,8 @@ public class InternalApiTest {
     }
 
     /**
+     * Deprecated; use getGCRules.
+     *
      * @throws ApiException if the Api call fails
      */
     @Test
@@ -275,6 +279,8 @@ public class InternalApiTest {
     }
 
     /**
+     * Deprecated; use setGCRules.
+     *
      * @throws ApiException if the Api call fails
      */
     @Test

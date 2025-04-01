@@ -786,6 +786,7 @@ pub async fn internal_delete_branch_protection_rule(configuration: &configuratio
     }
 }
 
+/// Deprecated; use deleteGCRules.
 pub async fn internal_delete_garbage_collection_rules(configuration: &configuration::Configuration, repository: &str) -> Result<(), Error<InternalDeleteGarbageCollectionRulesError>> {
     let local_var_configuration = configuration;
 
@@ -852,6 +853,7 @@ pub async fn internal_get_branch_protection_rules(configuration: &configuration:
     }
 }
 
+/// Deprecated; use getGCRules.
 pub async fn internal_get_garbage_collection_rules(configuration: &configuration::Configuration, repository: &str) -> Result<models::GarbageCollectionRules, Error<InternalGetGarbageCollectionRulesError>> {
     let local_var_configuration = configuration;
 
@@ -885,6 +887,7 @@ pub async fn internal_get_garbage_collection_rules(configuration: &configuration
     }
 }
 
+/// Deprecated; use setGCRules.
 pub async fn internal_set_garbage_collection_rules(configuration: &configuration::Configuration, repository: &str, garbage_collection_rules: models::GarbageCollectionRules) -> Result<(), Error<InternalSetGarbageCollectionRulesError>> {
     let local_var_configuration = configuration;
 
