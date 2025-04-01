@@ -7,7 +7,7 @@ info:
 
 servers:
   - url: "/api/v1"
-    description: lakeFS authentication endpoint sdfsdf
+    description: lakeFS authentication endpoint
 
 security:
   - jwt_token: []
@@ -312,6 +312,7 @@ components:
 
     Statement:
       type: object
+      description: Details about the expected structure of the properties can be found in the lakeFS documentation.
       required:
         - effect
         - resource
@@ -361,7 +362,7 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
-          description: The results list must be sorted by the name property of each Policy component.
+          description: An array of Policy components.
           items:
             $ref: "#/components/schemas/Policy"
 
@@ -455,7 +456,7 @@ paths:
       description: Creates a new user. The input is provided in the request body, and the response returns a
         User component. This endpoint is also used during the setup phase to create the initial admin user with
         username="admin" and source="internal". The output fields in the User schema must align with the input
-        fields in the UserCreation schema. This endpoint should be implemented in a function called
+        fields in the UserCreation schema. This endpoint should be implemented in a function named
         createUser.
       tags:
         - auth
