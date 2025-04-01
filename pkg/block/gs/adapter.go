@@ -245,8 +245,10 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		contentDisposition := mime.FormatMediaType("attachment", map[string]string{
 			"filename": path.Base(filename),
 		})
-		opts.QueryParameters = url.Values{
-			"response-content-disposition": {contentDisposition},
+		if contentDisposition != "" {
+			opts.QueryParameters = url.Values{
+				"response-content-disposition": {contentDisposition},
+			}
 		}
 	}
 
