@@ -5851,7 +5851,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 			expected: auth.CheckAllow,
 		},
 		{
-			name: "read second resource, unpermitted",
+			name: "read second resource, denied",
 			node: permissions.Node{
 				Type: permissions.NodeTypeNode,
 				Permission: permissions.Permission{
@@ -5861,6 +5861,38 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 			},
 			username: "user1",
 			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:ReadRepository"},
+							Resource: "[\"arn:lakefs:fs:::repository/repo1\" ,\"arn:lakefs:fs:::repository/repo2\"]",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
+				},
+			},
+			expected: auth.CheckDeny,
+		},
+		{
+			name: "one allow one deny",
+			node: permissions.Node{
+				Type: permissions.NodeTypeNode,
+				Permission: permissions.Permission{
+					Action:   "fs:ReadRepository",
+					Resource: "arn:lakefs:fs:::repository/repo2",
+				},
+			},
+			username: "user1",
+			policies: []*model.Policy{
+				{
+					Statement: []model.Statement{
+						{
+							Action:   []string{"fs:ReadRepository"},
+							Resource: "[\"arn:lakefs:fs:::repository/repo1\" ,\"arn:lakefs:fs:::repository/repo2\"]",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
+				},
 				{
 					Statement: []model.Statement{
 						{
