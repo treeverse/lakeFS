@@ -376,7 +376,7 @@ func TestImportToStorageNamespace(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, repoResp.JSON200)
 
-	branch := fmt.Sprintf("%s-%s", importBranchBase, "from-namespace")
+	const branch = importBranchBase + "-from-namespace"
 	createResp, err := client.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
 		Name:   branch,
 		Source: "main",
