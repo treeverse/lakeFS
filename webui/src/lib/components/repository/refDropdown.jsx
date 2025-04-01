@@ -5,13 +5,14 @@ import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Badge from "react-bootstrap/Badge";
 import Overlay from "react-bootstrap/Overlay";
-import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/octicons-react";
+import {Col, Nav, Row} from "react-bootstrap";
+import Container from "react-bootstrap/Container";
 import Popover from "react-bootstrap/Popover";
+import ListGroup from 'react-bootstrap/ListGroup';
+import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/octicons-react";
 
 import {tags, branches, commits} from '../../api';
-import {Nav} from "react-bootstrap";
 import {RefTypeBranch, RefTypeCommit, RefTypeTag} from "../../../constants";
-
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
@@ -173,22 +174,39 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
 
 const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, withCommits}) => {
     return (
-        <li className="list-group-item" key={namedRef}>
-            {(!!selected && namedRef === selected.id) ?
-                <strong>{namedRef}</strong> :
-                <Button variant="link" onClick={() => {
-                    selectRef({id: namedRef, type: refType});
-                }}>{namedRef}</Button>
-            }
-            <div className="actions">
-                {(refType === RefTypeBranch && namedRef === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
-                {(withCommits) ? (
-                    <Button onClick={logCommits} size="sm" variant="link">
-                        <ChevronRightIcon/>
-                    </Button>
-                ) : (<span/>)}
-            </div>
-        </li>
+        <ListGroup.Item key={namedRef}>
+            <Container fluid>
+                <Row className="align-items-center">
+                    <Col
+                        title={namedRef}
+                        className="text-nowrap overflow-hidden text-truncate"
+                    >
+                        {!!selected && namedRef === selected.id ? (
+                            <strong>{namedRef}</strong>
+                        ) : (
+                            <Button
+                                variant="link"
+                                onClick={() => selectRef({ id: namedRef, type: refType })}
+                            >
+                                {namedRef}
+                            </Button>
+                        )}
+                    </Col>
+                    <Col xs="auto" className="actions d-flex align-items-center">
+                        {refType === RefTypeBranch && namedRef === repo.default_branch && (
+                            <Badge variant="info" className="mr-2">
+                                Default
+                            </Badge>
+                        )}
+                        {withCommits && (
+                            <Button onClick={logCommits} size="sm" variant="link">
+                                <ChevronRightIcon />
+                            </Button>
+                        )}
+                    </Col>
+                </Row>
+            </Container>
+        </ListGroup.Item>
     );
 };
 
