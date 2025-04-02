@@ -31,7 +31,7 @@ Though our previous SDK client is still supported and maintained, we highly reco
 - **Boto S3 Router**: [https://github.com/treeverse/boto-s3-router](https://github.com/treeverse/boto-s3-router)
 - **lakefs-spec API Reference**: [https://lakefs-spec.org/latest/reference/lakefs_spec/](https://lakefs-spec.org/latest/reference/lakefs_spec/)
 
-Python Integration Options
+### Python Integration Options
 
 - [Use the High Level lakeFS SDK](#using-the-lakefs-sdk) to perform **object operations**, **versioning** and other **lakeFS-specific operations**.
 - [Use the generated lakefs-sdk](https://pydocs-sdk.lakefs.io) for direct API access based on the OpenAPI specification of lakeFS.
