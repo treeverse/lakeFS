@@ -107,14 +107,14 @@ const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, wi
             <div className="ref-scroller">
                 {(results && results.length > 0) ? (
                     <>
-                        <ul className="list-group ref-list">
+                        <ListGroup as="ul" className="ref-list">
                             {results.map(namedRef => (
                                 <RefEntry key={namedRef.id} repo={repo} refType={refType} namedRef={namedRef.id} selectRef={selectRef} selected={selected} withCommits={refType !== RefTypeTag && withCommits} logCommits={async () => {
                                     const data = await commits.log(repo.id, namedRef.id)
                                     setCommitList({...commitList, branch: namedRef.id, commits: data.results});
                                 }}/>
                             ))}
-                        </ul>
+                        </ListGroup>
                         <Paginator results={refList.payload.results} pagination={refList.payload.pagination} from={pagination.after} onPaginate={(after) => {
                             setPagination({after})
                         }}/>
@@ -174,8 +174,8 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
 
 const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, withCommits}) => {
     return (
-        <ListGroup.Item key={namedRef}>
-            <Container fluid>
+        <ListGroup.Item as="li" key={namedRef}>
+            <Container>
                 <Row className="align-items-center">
                     <Col
                         title={namedRef}
