@@ -191,7 +191,9 @@ type Adapter interface {
 	// expiry time for this URL.  The expiry time IsZero() if reporting
 	// expiry is not supported.  The expiry time will be sooner than
 	// Config.*.PreSignedExpiry if an auth token is about to expire.
-	GetPreSignedURL(ctx context.Context, obj ObjectPointer, mode PreSignMode) (string, time.Time, error)
+	// If filename is not empty, it will be used as the content-disposition filename
+	// when downloading the object (if the underlying storage supports it).
+	GetPreSignedURL(ctx context.Context, obj ObjectPointer, mode PreSignMode, filename string) (string, time.Time, error)
 	GetPresignUploadPartURL(ctx context.Context, obj ObjectPointer, uploadID string, partNumber int) (string, error)
 
 	Exists(ctx context.Context, obj ObjectPointer) (bool, error)

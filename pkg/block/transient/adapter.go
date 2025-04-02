@@ -39,7 +39,7 @@ func (a *Adapter) GetWalker(_ string, _ block.WalkerOptions) (block.Walker, erro
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, time.Time, error) {
+func (a *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode, _ string) (string, time.Time, error) {
 	return "", time.Time{}, block.ErrOperationNotSupported
 }
 
