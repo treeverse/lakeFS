@@ -46,7 +46,7 @@ func TestS3Adapter(t *testing.T) {
 	require.NoError(t, err)
 
 	adapter := getS3BlockAdapter(t, nil)
-	blocktest.AdapterTest(t, adapter, localPath, externalPath, true)
+	blocktest.AdapterTest(t, adapter, localPath, externalPath)
 }
 
 // TestS3AdapterPresignedOverride tests basic functionality of the S3 block adapter along with the desired behavior of

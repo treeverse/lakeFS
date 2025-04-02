@@ -12,7 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
-	"github.com/treeverse/lakefs/pkg/gateway/path"
+	gatewaypath "github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
@@ -117,7 +117,7 @@ func (controller *GetObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	}
 
 	if redirect {
-		preSignedURL, _, err := o.BlockStore.GetPreSignedURL(ctx, objectPointer, block.PreSignModeRead)
+		preSignedURL, _, err := o.BlockStore.GetPreSignedURL(ctx, objectPointer, block.PreSignModeRead, "")
 		if err != nil {
 			code := gatewayerrors.ErrInternalError
 			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(code))
@@ -178,7 +178,7 @@ func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation)
 	partNumberMarker := query.Get(QueryParamPartNumberMarker)
 	resp := &serde.ListPartsOutput{
 		Bucket: o.Repository.Name,
-		Key:    path.WithRef(o.Path, o.Reference),
+		Key:    gatewaypath.WithRef(o.Path, o.Reference),
 	}
 	opts := block.ListPartsOpts{}
 	if maxPartsStr != "" {
