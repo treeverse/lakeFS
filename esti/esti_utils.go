@@ -305,14 +305,14 @@ func createRepositoryForTest(ctx context.Context, t testing.TB) string {
 func createRepositoryByName(ctx context.Context, t testing.TB, name string) string {
 	storageNamespace := GenerateUniqueStorageNamespace(name)
 	name = MakeRepositoryName(name)
-	CreateRepository(ctx, t, name, storageNamespace, config.SingleBlockstoreID, false)
+	createRepository(ctx, t, name, storageNamespace, false)
 	return name
 }
 
 func createReadOnlyRepositoryByName(ctx context.Context, t testing.TB, name string) string {
 	storageNamespace := GenerateUniqueStorageNamespace(name)
 	name = MakeRepositoryName(name)
-	CreateRepository(ctx, t, name, storageNamespace, config.SingleBlockstoreID, true)
+	createRepository(ctx, t, name, storageNamespace, true)
 	return name
 }
 
@@ -333,7 +333,7 @@ func GenerateUniqueStorageNamespace(repoName string) string {
 	return ns + xid.New().String() + "/" + repoName
 }
 
-func CreateRepository(ctx context.Context, t testing.TB, name string, repoStorage string, sid string, isReadOnly bool) {
+func createRepository(ctx context.Context, t testing.TB, name string, repoStorage string, isReadOnly bool) {
 	logger.WithFields(logging.Fields{
 		"repository":        name,
 		"storage_namespace": repoStorage,
@@ -343,7 +343,6 @@ func CreateRepository(ctx context.Context, t testing.TB, name string, repoStorag
 		DefaultBranch:    apiutil.Ptr(mainBranch),
 		Name:             name,
 		StorageNamespace: repoStorage,
-		StorageId:        &sid,
 		ReadOnly:         &isReadOnly,
 	})
 	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
