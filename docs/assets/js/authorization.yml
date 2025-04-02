@@ -93,7 +93,7 @@ components:
       properties:
         has_more:
           type: boolean
-          description: Next page is available.
+          description: A boolean indicating whether the Next page is available.
         next_offset:
           type: string
           description: A value used to retrieve the next page of results. This value is typically passed as the after 
@@ -106,7 +106,7 @@ components:
         max_per_page:
           type: integer
           minimum: 0
-          description: Maximum number of entries per page. It is not used internally.
+          description: Maximum number of entries per page.
 
     VersionConfig:
       type: object
@@ -128,15 +128,10 @@ components:
     User:
       type: object
       required:
-        - name
         - username
         - creation_date
         - encryptedPassword
       properties:
-        name:
-          type: string
-          deprecated: true
-          description: Not used.
         username:
           type: string
           description: A unique identifier for the user.
@@ -156,10 +151,9 @@ components:
           deprecated: true
           type: string
           format: byte
-          description: Not used internally. Represents an encrypted password as a string.
+          description: Represents an encrypted password as a string.
         external_id:
           type: string
-          description: For internal use only.
 
     UserPassword:
       type: object
@@ -191,13 +185,13 @@ components:
           deprecated: true
           type: string
           format: byte
-          description: Not used internally. Represents an encrypted password as a string.
+          description: Represents an encrypted password as a string.
         external_id:
           type: string
-          description: For internal use only.
         invite:
           type: boolean
-          description: If passed and true, send an invitation by email. Otherwise, only create the user.
+          description: A boolean that determines whether an invitation email should be sent to a user for account 
+            creation. If passed and set to true, the invitation email will be sent along with the user creation.
 
     Credentials:
       type: object
@@ -222,7 +216,6 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
-          description: An array of Credential components.
           items:
             $ref: "#/components/schemas/Credentials"
 
@@ -281,7 +274,6 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
-          description: An array of Group components.
           items:
             $ref: "#/components/schemas/Group"
 
@@ -295,7 +287,6 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
-          description: An array of User components.
           items:
             $ref: "#/components/schemas/User"
 
@@ -349,8 +340,7 @@ components:
           minItems: 1
         acl:
           type: string
-          description: For internal use only. Not required when implementing an RBAC auth server.
-            Represents the access control list assigned to this policy, if it exists.
+          description: Represents the access control list assigned to this policy.
 
     PolicyList:
       type: object
@@ -362,12 +352,10 @@ components:
           $ref: "#/components/schemas/Pagination"
         results:
           type: array
-          description: An array of Policy components.
           items:
             $ref: "#/components/schemas/Policy"
 
     ClaimTokenId:
-      description: For internal use only.
       type: object
       required:
         - token_id
@@ -381,7 +369,6 @@ components:
           description: Unix Epoch in seconds
 
     ExternalPrincipal:
-      description: For internal use only.
       type: object
       required:
         - user_id
@@ -393,7 +380,6 @@ components:
           type: string
 
     ExternalPrincipalList:
-      description: For internal use only.
       type: object
       required:
         - pagination
@@ -412,8 +398,11 @@ paths:
       description: Returns a list of all users. Accepts pagination parameters as input and returns a Pagination 
         component along with a list of users. The results must be sorted by the username property of each User 
         component. Internally, the username value is converted to the id field, and the creation_date is stored, along 
-        with optional fields such as friendly_name and email. This endpoint should be implemented in a function named 
-        listUsers.
+        with optional fields such as friendly_name and email. The external_id property in the User component in the 
+        UserList component is for external system association. The max_per_page property in the pagination of the 
+        Pagination component within the UserList component is not used internally. The encryptedPassword property in 
+        the User component within the UserList component is not used internally. This endpoint should be implemented in 
+        a function named listUsers.
       tags:
         - auth
         - users
@@ -456,8 +445,11 @@ paths:
       description: Creates a new user. The input is provided in the request body, and the response returns a
         User component. This endpoint is also used during the setup phase to create the initial admin user with
         username="admin" and source="internal". The output fields in the User schema must align with the input
-        fields in the UserCreation schema. This endpoint should be implemented in a function named
-        createUser.
+        fields in the UserCreation schema. The external_id property in the UserCreation and User components is for 
+        external system association. The encryptedPassword property in the User component is not used internally. The 
+        encryptedPassword property in the UserCreation component is not used internally. If the invite property in the 
+        UserCreation component is passed and true, send an invitation by email and create the user. Otherwise, only 
+        create the user. This endpoint should be implemented in a function named createUser.
       tags:
         - auth
         - users
@@ -498,8 +490,9 @@ paths:
     get:
       description: Returns the details of a specific user. Takes a unique userId as a path parameter, which must match 
         an existing user ID. The response includes a User component. Internally, the creation_date, email, and id fields 
-        (where id is derived from the username) are used from the response. This endpoint should be implemented in a 
-        function named getUser.
+        (where id is derived from the username) are used from the response. The external_id property in the User 
+        component is for external system association. The encryptedPassword property in the User component is not used 
+        internally. This endpoint should be implemented in a function named getUser.
       tags:
         - auth
         - users
@@ -608,7 +601,9 @@ paths:
     get:
       description: Returns a list of groups. Accepts pagination parameters as input and returns a Pagination
         component along with a list of groups. The results must be sorted by the name property of each Group
-        component in the GroupList response. This endpoint should be implemented in a function named listGroups.
+        component in the GroupList response. The max_per_page property in the pagination of the Pagination component 
+        within the GroupList component is not used internally. This endpoint should be implemented in a function named 
+        listGroups.
       tags:
         - auth
         - groups
@@ -716,8 +711,11 @@ paths:
     get:
       description: Returns a list of policies. Accepts pagination parameters as input and returns a Pagination component 
         along with a list of policies. The results must be sorted by the name property of each Policy component in the 
-        PolicyList response. Internally, the name property of each Policy component is converted to the id field. 
-        This endpoint should be implemented in a function named listPolicies.
+        PolicyList response. Internally, the name property of each Policy component is converted to the id field. The 
+        max_per_page property in the pagination of the Pagination component within the PolicyList component is not used 
+        internally. The acl property in the Policy component within the PolicyList is for internal use only and is not 
+        needed when implementing an RBAC authentication server. This endpoint should be implemented in a function named 
+        listPolicies.
 
       tags:
         - auth
@@ -745,8 +743,9 @@ paths:
         phase to create default policies required for operation. The policy IDs (names) that are sent include 
         "FSFullAccess", "FSReadWriteAll", "FSReadAll", "RepoManagementFullAccess", "PRReadWriteAll", 
         "RepoManagementReadAll", "AuthFullAccess", and "AuthManageOwnCredentials". The output fields in the Policy 
-        schema must align with the input fields in the Policy schema. This endpoint should be implemented in a function 
-        named createPolicy.
+        schema must align with the input fields in the Policy schema. The acl property in the Policy component is for 
+        internal use only and is not needed when implementing an RBAC authentication server. This endpoint should be 
+        implemented in a function named createPolicy.
       tags:
         - auth
         - policies
@@ -783,8 +782,9 @@ paths:
           type: string
     get:
       description: Returns the details of a specific policy. Takes a unique policyId as input and returns a Policy
-        component. Internally, the name property of the Policy component is converted to the id property. 
-        This endpoint should be implemented in a function named getPolicy.
+        component. Internally, the name property of the Policy component is converted to the id property. The acl 
+        property in the Policy component is for internal use only and is not needed when implementing an RBAC 
+        authentication server. This endpoint should be implemented in a function named getPolicy.
       tags:
         - auth
         - policies
@@ -807,8 +807,9 @@ paths:
     put:
       description: Updates an existing policy. Takes a unique policyId (name) and a request body containing
         the updated policy details, and returns the updated Policy component. The response fields should match
-        those provided in the request body. This endpoint should be implemented in a function named
-        updatePolicy.
+        those provided in the request body. The acl property in the Policy component is for internal use only and is 
+        not needed when implementing an RBAC authentication server. This endpoint should be implemented in a function 
+        named updatePolicy.
       tags:
         - auth
         - policies
@@ -863,8 +864,11 @@ paths:
     get:
       description: Returns the list of users associated with a specific group. Takes the groupId and pagination
         parameters as input, and returns a Pagination component along with the list of users. The results must be
-        sorted by the username property of each User component in the UserList response. This endpoint should
-        be implemented in a function named listGroupMembers.
+        sorted by the username property of each User component in the UserList response. The external_id property in 
+        the User component in the UserList component is for external system association. The max_per_page property in 
+        the pagination of the Pagination component within the UserList component is not used internally. The 
+        encryptedPassword property in the User component within the UserList component is not used internally. This 
+        endpoint should be implemented in a function named listGroupMembers.
       tags:
         - auth
         - groups
@@ -947,7 +951,9 @@ paths:
       description: Returns a list of all access_key_ids and their creation dates for a specific user. Takes a unique
         userId that matches an existing user along with pagination parameters. The response includes a Pagination
         component and a list of results sorted by the access_key_id field in Credentials component within the 
-        CredentialsList component. This endpoint should be implemented in a function named listUserCredentials.
+        CredentialsList component. The max_per_page property in the pagination of the Pagination component within the 
+        CredentialsList component is not used internally. This endpoint should be implemented in a function named 
+        listUserCredentials.
       tags:
         - auth
         - credentials
@@ -1103,8 +1109,9 @@ paths:
     get:
       description: Returns the list of groups that a specific user is associated with. Takes a unique userId
         and pagination parameters as input, and returns a Pagination component along with the list of results.
-        The results must be sorted by the name property of each Group component in the GroupList. This endpoint
-        should be implemented in a function named listUserGroups.
+        The results must be sorted by the name property of each Group component in the GroupList. The max_per_page 
+        property in the pagination of the Pagination component within the GroupList component is not used internally. 
+        This endpoint should be implemented in a function named listUserGroups.
       tags:
         - auth
         - users
@@ -1141,8 +1148,10 @@ paths:
         belongs to. If effective is false, only policies directly attached to the user should be returned.
         The input includes a unique userId corresponding to an existing user, pagination parameters, and the
         effective boolean. The output includes a Pagination component and a list of results sorted by the name
-        field of each Policy component in the PolicyList. This endpoint should be implemented in a function
-        named listUserPolicies.
+        field of each Policy component in the PolicyList. The max_per_page property in the pagination of the Pagination 
+        component within the PolicyList component is not used internally. The acl property in the Policy component 
+        within the PolicyList is for internal use only and is not needed when implementing an RBAC authentication 
+        server. This endpoint should be implemented in a function named listUserPolicies.
 
       tags:
         - auth
@@ -1234,7 +1243,10 @@ paths:
       description: Returns the list of policies attached to a specific group. Takes a unique groupId and pagination 
         parameters as input. The output includes a Pagination component and a list of results sorted by the name field 
         of each Policy component in the PolicyList. Internally, the name property of the Policy component is converted 
-        to the id field. This endpoint should be implemented in a function named listGroupPolicies.
+        to the id field. The max_per_page property in the pagination of the Pagination component within the PolicyList 
+        component is not used internally. The acl property in the Policy component within the PolicyList is for 
+        internal use only and is not needed when implementing an RBAC authentication server. This endpoint should be 
+        implemented in a function named listGroupPolicies.
       tags:
         - auth
         - groups
@@ -1310,6 +1322,7 @@ paths:
   /auth/tokenid/claim:
     post:
       deprecated: true
+      description: For internal use only.
       tags:
         - auth
       operationId: claimTokenId
