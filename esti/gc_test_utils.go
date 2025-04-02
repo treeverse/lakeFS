@@ -66,7 +66,8 @@ func runCommand(cmdName string, cmd *exec.Cmd) error {
 		return fmt.Errorf("failed to get stderr from command: %w", err)
 	}
 
-	cmdErrs := make(chan error, 2)
+	const channelSize = 2
+	cmdErrs := make(chan error, channelSize)
 	handlePipe(stdoutPipe, logger.WithFields(logging.Fields{
 		"source": cmdName,
 		"std":    "out",
@@ -92,31 +93,32 @@ func runCommand(cmdName string, cmd *exec.Cmd) error {
 	return cmd.Wait()
 }
 
-type sparkSubmitConfig struct {
-	sparkVersion string
-	// localJar is a local path to a jar that contains the main class.
-	localJar string
-	// entryPoint is the class name to run
-	entryPoint      string
-	extraSubmitArgs []string
-	programArgs     []string
-	logSource       string
+type SparkSubmitConfig struct {
+	SparkVersion string
+	// LocalJar is a local path to a jar that contains the main class.
+	LocalJar string
+	// EntryPoint is the class name to run
+	EntryPoint      string
+	ExtraSubmitArgs []string
+	ProgramArgs     []string
+	LogSource       string
 }
 
-func runSparkSubmit(config *sparkSubmitConfig) error {
+func RunSparkSubmit(config *SparkSubmitConfig) error {
 	workingDirectory, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("getting working directory: %w", err)
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
-	dockerArgs := getDockerArgs(workingDirectory, config.localJar)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", config.sparkVersion), "spark-submit")
-	sparkSubmitArgs := getSparkSubmitArgs(config.entryPoint)
-	sparkSubmitArgs = append(sparkSubmitArgs, config.extraSubmitArgs...)
-	args := append(dockerArgs, sparkSubmitArgs...)
+	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
+	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", config.SparkVersion), "spark-submit")
+	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
+	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
+	args := dockerArgs
+	args = append(args, sparkSubmitArgs...)
 	args = append(args, "/opt/metaclient/client.jar")
-	args = append(args, config.programArgs...)
+	args = append(args, config.ProgramArgs...)
 	cmd := exec.Command("docker", args...)
 	logger.Infof("Running command: %s", cmd.String())
-	return runCommand(config.logSource, cmd)
+	return runCommand(config.LogSource, cmd)
 }
