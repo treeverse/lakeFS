@@ -1,6 +1,7 @@
 package io.lakefs;
 
 import java.io.IOException;
+import java.util.Date;
 import org.apache.hadoop.fs.Path;
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.StagingApi;
@@ -24,10 +25,16 @@ public class LakeFSLinker {
         this.overwrite = overwrite;
     }
 
-    public void link(String eTag, long byteSize) throws IOException {
+    public void link(String eTag, long byteSize, Date time) throws IOException {
         StagingApi staging = lakeFSClient.getStagingApi();
-        StagingMetadata stagingMetadata =
-                new StagingMetadata().checksum(eTag).sizeBytes(byteSize).staging(stagingLocation);
+        StagingMetadata stagingMetadata = new StagingMetadata()
+            .checksum(eTag)
+            .sizeBytes(byteSize)
+            .staging(stagingLocation);
+        if (time != null) {
+            long secs = (time.getTime() + 500) / 1000;
+            stagingMetadata.setMtime(secs);
+        }
         try {
             StagingApi.APIlinkPhysicalAddressRequest request = 
                     staging.linkPhysicalAddress(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath(), stagingMetadata);

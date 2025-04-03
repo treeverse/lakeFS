@@ -3,6 +3,7 @@ package io.lakefs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.amazonaws.ClientConfiguration;
+import com.amazonaws.HttpMethod;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
@@ -14,8 +15,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
 
 import io.lakefs.clients.sdk.model.*;
+
+import static org.mockserver.model.HttpResponse.response;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -27,6 +31,9 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.net.URL;
+import java.util.concurrent.TimeUnit;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -40,10 +47,10 @@ public abstract class S3FSTestBase extends FSTestBase {
     protected String s3Endpoint;
     protected AmazonS3 s3Client;
 
-    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2021-06-07T21-40-51Z");
+    private static final DockerImageName MINIO = DockerImageName.parse("minio/minio:RELEASE.2024-11-07T00-52-20Z");
 
     @Rule
-    public final GenericContainer s3 = new GenericContainer(MINIO.toString()).
+    public final GenericContainer s3 = new GenericContainer(MINIO).
         withCommand("minio", "server", "/data").
         withEnv("MINIO_ROOT_USER", S3_ACCESS_KEY_ID).
         withEnv("MINIO_ROOT_PASSWORD", S3_SECRET_ACCESS_KEY).
@@ -65,7 +72,7 @@ public abstract class S3FSTestBase extends FSTestBase {
 
         ClientConfiguration clientConfiguration = new ClientConfiguration()
                 .withSignerOverride("AWSS3V4SignerType");
-        s3Endpoint = String.format("http://s3.local.lakefs.io:%d", s3.getMappedPort(9000));
+        s3Endpoint = String.format("http://s3.local.lakefs.io:%d/", s3.getMappedPort(9000));
 
         s3Client = new AmazonS3Client(creds, clientConfiguration);
 
@@ -76,7 +83,8 @@ public abstract class S3FSTestBase extends FSTestBase {
 
         s3Bucket = makeS3BucketName();
         s3Base = String.format("s3://%s/", s3Bucket);
-        LOG.info("S3: bucket {} => base URL {}", s3Bucket, s3Base);
+        LOG.info("S3 [endpoint {}]: bucket {} => base URL {}",
+                 s3Endpoint, s3Bucket, s3Base);
 
         CreateBucketRequest cbr = new CreateBucketRequest(s3Bucket);
         s3Client.createBucket(cbr);
@@ -117,6 +125,8 @@ public abstract class S3FSTestBase extends FSTestBase {
         }
     }
 
+    protected abstract PhysicalAddressCreator getPac();
+
     protected void moreHadoopSetup() {
         s3ClientSetup();
 
@@ -125,5 +135,71 @@ public abstract class S3FSTestBase extends FSTestBase {
         conf.set(org.apache.hadoop.fs.s3a.Constants.SECRET_KEY, S3_SECRET_ACCESS_KEY);
         conf.set(org.apache.hadoop.fs.s3a.Constants.ENDPOINT, s3Endpoint);
         conf.set(org.apache.hadoop.fs.s3a.Constants.BUFFER_DIR, "/tmp/s3a");
+        getPac().initConfiguration(conf);
+
+        LOG.info("Setup done!");
+    }
+
+    public static interface PhysicalAddressCreator {
+        default void initConfiguration(Configuration conf) {}
+        String createGetPhysicalAddress(S3FSTestBase o, String key);
+        StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path);
+    }
+
+    protected static class SimplePhysicalAddressCreator implements PhysicalAddressCreator {
+        public String createGetPhysicalAddress(S3FSTestBase o, String key) {
+            return o.s3Url(key);
+        }
+
+        public StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path) {
+            String fullPath = String.format("%s/%s/%s/%s/%s-object",
+                                            o.sessionId(), namespace, repo, branch, path);
+            return new StagingLocation().physicalAddress(o.s3Url(fullPath));
+        }
+    }
+
+    protected static class PresignedPhysicalAddressCreator implements PhysicalAddressCreator {
+        public void initConfiguration(Configuration conf) {
+            conf.set("fs.lakefs.access.mode", "presigned");
+        }
+
+        protected Date getExpiration() {
+            return new Date(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1));
+        }
+
+        public String createGetPhysicalAddress(S3FSTestBase o, String key) {
+            Date expiration = getExpiration();
+            URL presignedUrl =
+                o.s3Client.generatePresignedUrl(new GeneratePresignedUrlRequest(o.s3Bucket, key)
+                                              .withMethod(HttpMethod.GET)
+                                              .withExpiration(expiration));
+            return presignedUrl.toString();
+        }
+
+        public StagingLocation createPutStagingLocation(S3FSTestBase o, String namespace, String repo, String branch, String path) {
+            String fullPath = String.format("%s/%s/%s/%s/%s-object",
+                                            o.sessionId(), namespace, repo, branch, path);
+            Date expiration = getExpiration();
+            URL presignedUrl =
+                o.s3Client.generatePresignedUrl(new GeneratePresignedUrlRequest(o.s3Bucket, fullPath)
+                                              .withMethod(HttpMethod.PUT)
+                                              .withExpiration(expiration));
+            return new StagingLocation()
+                .physicalAddress(o.s3Url(fullPath))
+                .presignedUrl(presignedUrl.toString());
+        }
+    }
+
+    // Return a location under namespace for this getPhysicalAddress call.
+    protected StagingLocation mockGetPhysicalAddress(String repo, String branch, String path, String namespace) {
+        StagingLocation stagingLocation =
+            getPac().createPutStagingLocation(this, namespace, repo, branch, path);
+        mockServerClient.when(request()
+                              .withMethod("GET")
+                              .withPath(String.format("/repositories/%s/branches/%s/staging/backing", repo, branch))
+                              .withQueryStringParameter("path", path))
+            .respond(response().withStatusCode(200)
+                     .withBody(gson.toJson(stagingLocation)));
+        return stagingLocation;
     }
 }
