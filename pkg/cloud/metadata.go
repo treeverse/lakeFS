@@ -45,10 +45,12 @@ type DetectorFunc func() (string, error)
 
 // RegisterDetector registers a new cloud detector with the given name
 func RegisterDetector(name string, detector DetectorFunc) {
-	// Only add to order list if it's not already there
-	if _, exists := detectorsRegistry[name]; !exists {
-		detectorOrder = append(detectorOrder, name)
+	_, exists := detectorsRegistry[name]
+	if exists {
+		// detector already registered, do nothing
+		return
 	}
+	detectorOrder = append(detectorOrder, name)
 	detectorsRegistry[name] = detector
 }
 
@@ -130,10 +132,16 @@ func checkAzureMetadata() bool {
 }
 
 // init registers the built-in cloud detectors
-// maintained the original order: GCP first, then AWS, then Azure
 //
 //nolint:gochecknoinits
 func init() {
+	RegisterDefaultDetectors()
+}
+
+// RegisterDefaultDetectors registers the built-in cloud detectors
+//
+// maintained the order: GCP first, then AWS, then Azure
+func RegisterDefaultDetectors() {
 	RegisterDetector(GCPCloud, GetGCPProjectID)
 	RegisterDetector(AWSCloud, GetAWSAccountID)
 	RegisterDetector(AzureCloud, GetAzureSubscriptionID)
