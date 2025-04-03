@@ -6,7 +6,6 @@ import Button from "react-bootstrap/Button";
 import Badge from "react-bootstrap/Badge";
 import Overlay from "react-bootstrap/Overlay";
 import {Col, Nav, Row} from "react-bootstrap";
-import Container from "react-bootstrap/Container";
 import Popover from "react-bootstrap/Popover";
 import ListGroup from 'react-bootstrap/ListGroup';
 import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/octicons-react";
@@ -175,36 +174,34 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
 const RefEntry = ({repo, namedRef, refType, selectRef, selected, logCommits, withCommits}) => {
     return (
         <ListGroup.Item as="li" key={namedRef}>
-            <Container>
-                <Row className="align-items-center">
-                    <Col
-                        title={namedRef}
-                        className="text-nowrap overflow-hidden text-truncate"
-                    >
-                        {!!selected && namedRef === selected.id ?
-                            <strong>{namedRef}</strong> :
-                            <Button
-                                variant="link"
-                                onClick={() => selectRef({ id: namedRef, type: refType })}
-                            >
-                                {namedRef}
-                            </Button>
-                        }
-                    </Col>
-                    <Col xs="auto" className="actions d-flex align-items-center">
-                        {refType === RefTypeBranch && namedRef === repo.default_branch && (
-                            <Badge variant="info" className="mr-2">
-                                Default
-                            </Badge>
-                        )}
-                        {withCommits && (
-                            <Button onClick={logCommits} size="sm" variant="link">
-                                <ChevronRightIcon />
-                            </Button>
-                        )}
-                    </Col>
-                </Row>
-            </Container>
+            <Row className="align-items-center">
+                <Col
+                    title={namedRef}
+                    className="text-nowrap overflow-hidden text-truncate"
+                >
+                    {!!selected && namedRef === selected.id ?
+                        <strong>{namedRef}</strong> :
+                        <Button
+                            variant="link"
+                            onClick={() => selectRef({ id: namedRef, type: refType })}
+                        >
+                            {namedRef}
+                        </Button>
+                    }
+                </Col>
+                <Col xs="auto" className="actions d-flex align-items-center">
+                    {refType === RefTypeBranch && namedRef === repo.default_branch && (
+                        <Badge variant="info" className="mr-2">
+                            Default
+                        </Badge>
+                    )}
+                    {withCommits && (
+                        <Button onClick={logCommits} size="sm" variant="link">
+                            <ChevronRightIcon />
+                        </Button>
+                    )}
+                </Col>
+            </Row>
         </ListGroup.Item>
     );
 };
