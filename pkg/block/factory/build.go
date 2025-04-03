@@ -103,7 +103,6 @@ func buildLocalAdapter(ctx context.Context, params params.Local, adapterOpts ...
 		local.WithAllowedExternalPrefixes(params.AllowedExternalPrefixes),
 		local.WithImportEnabled(params.ImportEnabled),
 	}
-	// Append custom options
 	opts = append(opts, adapterOpts...)
 
 	adapter, err := local.NewAdapter(params.Path, opts...)
@@ -145,7 +144,6 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 	if params.PreSignedEndpoint != "" {
 		opts = append(opts, s3a.WithPreSignedEndpoint(params.PreSignedEndpoint))
 	}
-	// Append custom options
 	opts = append(opts, adapterOpts...)
 
 	adapter, err := s3a.NewAdapter(ctx, params, opts...)
@@ -186,7 +184,6 @@ func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.Ada
 	case params.ServerSideEncryptionKmsKeyID != "":
 		opts = append(opts, gs.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
 	}
-	// Append custom options
 	opts = append(opts, adapterOpts...)
 
 	adapter := gs.NewAdapter(client, opts...)
