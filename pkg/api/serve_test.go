@@ -40,7 +40,7 @@ import (
 )
 
 const (
-	ServerTimeout = 30 * time.Second
+	ServerTimeout = time.Minute
 )
 
 type dependencies struct {
