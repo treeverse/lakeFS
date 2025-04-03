@@ -9,8 +9,10 @@ import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/o
 import Popover from "react-bootstrap/Popover";
 
 import {tags, branches, commits} from '../../api';
-import {Nav} from "react-bootstrap";
+import {Col, Nav, OverlayTrigger, Row} from "react-bootstrap";
 import {RefTypeBranch, RefTypeCommit, RefTypeTag} from "../../../constants";
+import Tooltip from "react-bootstrap/Tooltip";
+import Container from "react-bootstrap/Container";
 
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
@@ -264,13 +266,94 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
 
     const title = prefix + (!!selected) ? `${prefix} ${selected.type}: ` : '';
     return (
-        <>
-            <Button ref={target} variant={variant} onClick={()=> { setShow(!show) }}>
-                {title} <strong>{showId(selected)}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-            </Button>
-            {cancelButton}
-            {popover}
-        </>
+        // <>
+        //     <Button ref={target} variant={variant} onClick={()=> { setShow(!show) }}>
+        //         {title} <strong>{showId(selected)}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+        //     </Button>
+        //     {cancelButton}
+        //     {popover}
+        // </>
+
+        // <>
+        //     {/*<OverlayTrigger*/}
+        //     {/*    placement="bottom"*/}
+        //     {/*    overlay={<Tooltip>{showId(selected)}</Tooltip>}*/}
+        //     {/*>*/}
+        //     {/*    <Button*/}
+        //     {/*        ref={target}*/}
+        //     {/*        variant={variant}*/}
+        //     {/*        onClick={()=> { setShow(!show) }}*/}
+        //     {/*        className="text-nowrap overflow-hidden"*/}
+        //     {/*    >*/}
+        //     {/*        {title} <strong className="text-truncate d-inline-block">{showId(selected)}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}*/}
+        //     {/*    </Button>*/}
+        //     {/*</OverlayTrigger>*/}
+        //     {/*<OverlayTrigger*/}
+        //     {/*    placement="bottom"*/}
+        //     {/*    overlay={<Tooltip>{showId(selected)}</Tooltip>}*/}
+        //     {/*>*/}
+        //     {/*    <Button*/}
+        //     {/*        ref={target}*/}
+        //     {/*        variant={variant}*/}
+        //     {/*        onClick={()=> { setShow(!show) }}*/}
+        //     {/*        className="text-nowrap text-truncate"*/}
+        //     {/*    >*/}
+        //     {/*        {title} <span className="d-flex align-items-center ">*/}
+        //     {/*                  <strong className="text-truncate">{showId(selected)}</strong>*/}
+        //     {/*                  <span className="ms-1">{show ? <ChevronUpIcon/> : <ChevronDownIcon/>}</span>*/}
+        //     {/*                </span>*/}
+        //     {/*    </Button>*/}
+        //     {/*</OverlayTrigger>*/}
+        //
+        //     <Button
+        //         ref={target}
+        //         variant={variant}
+        //         onClick={() => { setShow(!show) }}
+        //         className="p-0 w-25"
+        //     >
+        //         <Container className="px-0">
+        //             <Row className="align-items-center mx-0">
+        //                 <Col xs="auto" className="pe-1">
+        //                     {title}
+        //                 </Col>
+        //                 <Col xs={4} className="px-0 text-truncate">
+        //                     <OverlayTrigger
+        //                         placement="bottom"
+        //                         overlay={<Tooltip>{showId(selected)}</Tooltip>}
+        //                     >
+        //                         <strong>{showId(selected)}</strong>
+        //                     </OverlayTrigger>
+        //                 </Col>
+        //                 <Col xs="auto" className="ps-1">
+        //                     {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+        //                 </Col>
+        //             </Row>
+        //         </Container>
+        //     </Button>
+        //
+        //     {cancelButton}
+        //     {popover}
+        // </>
+        <Container fluid>
+            <Row className="align-items-center">
+                <Col>
+                    <Button ref={target} variant={variant} onClick={() => setShow(!show)} title={showId(selected)}
+                            className="w-25 text-nowrap overflow-hidden text-truncate">
+                        {title}
+                        <strong>
+                            {showId(selected)}
+                        </strong>
+                        <br/>
+                        {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+                    </Button>
+                </Col>
+                <Col xs="auto">
+                    {cancelButton}
+                    {popover}
+                </Col>
+            </Row>
+        </Container>
+
     );
 };
 
