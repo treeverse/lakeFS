@@ -807,8 +807,9 @@ lakectl auth policies show [flags]
 {:.no_toc}
 
 ```
-  -h, --help        help for show
-      --id string   Policy identifier
+  -h, --help             help for show
+      --id string        Policy identifier
+      --resource-array   Display resources as an array in the output
 ```
 
 

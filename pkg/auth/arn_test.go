@@ -98,6 +98,7 @@ func TestParseResources(t *testing.T) {
 			expectedError:   nil,
 		},
 		{
+
 			inputResource:   "[    \"arn:lakefs:repos::b:myrepo  \"]",
 			outputResources: []string{"arn:lakefs:repos::b:myrepo  "},
 			expectedError:   nil,
@@ -155,7 +156,6 @@ func TestParseResources(t *testing.T) {
 	}
 
 	for _, c := range cases {
-
 		got, err := auth.ParsePolicyResourceAsList(c.inputResource)
 		if err != nil && !strings.Contains(err.Error(), c.expectedError.Error()) {
 			t.Fatalf("expected %v error, to contain %v error", err, c.expectedError)
@@ -175,6 +175,7 @@ func TestParseResources(t *testing.T) {
 	}
 
 }
+
 func sliceToJsonStrHelper(t *testing.T, s ...string) string {
 	t.Helper()
 	jsStr, err := json.Marshal(s)
