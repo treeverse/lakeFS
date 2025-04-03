@@ -22,12 +22,43 @@ import (
 	"google.golang.org/api/option"
 )
 
+// AdapterOptions holds options for each adapter type that supports options
+type AdapterOptions struct {
+	Local []func(*local.Adapter)
+	S3    []s3a.AdapterOption
+	GS    []gs.AdapterOption
+}
+
+// BuildOption is a function that modifies the adapter options
+type BuildOption func(*AdapterOptions)
+
+// WithAdapterOptions returns a BuildOption that sets adapter-specific options
+func WithAdapterOptions(opts AdapterOptions) BuildOption {
+	return func(o *AdapterOptions) {
+		if opts.Local != nil {
+			o.Local = append(o.Local, opts.Local...)
+		}
+		if opts.S3 != nil {
+			o.S3 = append(o.S3, opts.S3...)
+		}
+		if opts.GS != nil {
+			o.GS = append(o.GS, opts.GS...)
+		}
+	}
+}
+
 const (
 	// googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
 	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 )
 
-func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c config.AdapterConfig) (block.Adapter, error) {
+func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c config.AdapterConfig, opts ...BuildOption) (block.Adapter, error) {
+	// Apply options
+	options := &AdapterOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	blockstore := strings.ToLower(c.BlockstoreType())
 	logging.FromContext(ctx).
 		WithField("type", blockstore).
@@ -38,13 +69,13 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 		if err != nil {
 			return nil, err
 		}
-		return buildLocalAdapter(ctx, p)
+		return buildLocalAdapter(ctx, p, options.Local...)
 	case block.BlockstoreTypeS3:
 		p, err := c.BlockstoreS3Params()
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(ctx, statsCollector, p)
+		return buildS3Adapter(ctx, statsCollector, p, options.S3...)
 	case block.BlockstoreTypeMem, "memory":
 		return mem.New(ctx), nil
 	case block.BlockstoreTypeTransient:
@@ -54,7 +85,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 		if err != nil {
 			return nil, err
 		}
-		return buildGSAdapter(ctx, p)
+		return buildGSAdapter(ctx, p, options.GS...)
 	case block.BlockstoreTypeAzure:
 		p, err := c.BlockstoreAzureParams()
 		if err != nil {
@@ -67,11 +98,14 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 	}
 }
 
-func buildLocalAdapter(ctx context.Context, params params.Local) (*local.Adapter, error) {
-	adapter, err := local.NewAdapter(params.Path,
+func buildLocalAdapter(ctx context.Context, params params.Local, adapterOpts ...func(*local.Adapter)) (*local.Adapter, error) {
+	opts := []func(*local.Adapter){
 		local.WithAllowedExternalPrefixes(params.AllowedExternalPrefixes),
 		local.WithImportEnabled(params.ImportEnabled),
-	)
+	}
+	opts = append(opts, adapterOpts...)
+
+	adapter, err := local.NewAdapter(params.Path, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("got error opening a local block adapter with path %s: %w", params.Path, err)
 	}
@@ -92,7 +126,7 @@ func BuildS3Client(ctx context.Context, params params.S3) (*s3.Client, error) {
 	return client, nil
 }
 
-func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3) (*s3a.Adapter, error) {
+func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params params.S3, adapterOpts ...s3a.AdapterOption) (*s3a.Adapter, error) {
 	opts := []s3a.AdapterOption{
 		s3a.WithStatsCollector(statsCollector),
 		s3a.WithDiscoverBucketRegion(params.DiscoverBucketRegion),
@@ -110,6 +144,8 @@ func buildS3Adapter(ctx context.Context, statsCollector stats.Collector, params 
 	if params.PreSignedEndpoint != "" {
 		opts = append(opts, s3a.WithPreSignedEndpoint(params.PreSignedEndpoint))
 	}
+	opts = append(opts, adapterOpts...)
+
 	adapter, err := s3a.NewAdapter(ctx, params, opts...)
 	if err != nil {
 		return nil, err
@@ -132,7 +168,7 @@ func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, erro
 	return storage.NewClient(ctx, opts...)
 }
 
-func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) {
+func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (*gs.Adapter, error) {
 	client, err := BuildGSClient(ctx, params)
 	if err != nil {
 		return nil, err
@@ -148,6 +184,8 @@ func buildGSAdapter(ctx context.Context, params params.GS) (*gs.Adapter, error) 
 	case params.ServerSideEncryptionKmsKeyID != "":
 		opts = append(opts, gs.WithServerSideEncryptionKmsKeyID(params.ServerSideEncryptionKmsKeyID))
 	}
+	opts = append(opts, adapterOpts...)
+
 	adapter := gs.NewAdapter(client, opts...)
 	logging.FromContext(ctx).WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
