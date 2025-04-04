@@ -87,3 +87,32 @@ func TestGetHashedInformation(t *testing.T) {
 		t.Fatalf("Expected hashed ID to still be '%s', got '%s'", expectedHash, cloudID)
 	}
 }
+
+// TestDetectWithDefaultDetectors verifies that only known clouds can be detected
+func TestDetectWithDefaultDetectors(t *testing.T) {
+	// Reset all detectors before the test
+	Reset()
+
+	// Register the default cloud detectors (AWS, GCP, Azure)
+	RegisterDefaultDetectors()
+
+	// Run detection
+	Detect()
+
+	// If a cloud was detected, verify it's one of the known types
+	if cloudDetected {
+		switch cloudType {
+		case AWSCloud, GCPCloud, AzureCloud:
+			// Known cloud type detected - test passes
+		default:
+			t.Errorf("Detected unknown cloud type: %s", cloudType)
+		}
+
+		// Verify we got a non-empty cloud ID
+		if cloudID == "" {
+			t.Error("Cloud was detected but cloud ID is empty")
+		}
+	}
+	// Note: if no cloud was detected, that's also a valid state
+	// since the test might run in a non-cloud environment
+}
