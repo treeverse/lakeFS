@@ -17,7 +17,7 @@ type AuthOutletContext = [(tab: string) => void];
 const rbacDismissedKey = "lakefs:ui:acl:dismissRBACAlert";
 export const AuthLayout = () => {
     const [showRBACAlert, setShowRBACAlert] = useState(!window.localStorage.getItem(rbacDismissedKey));
-    const [activeTab, setActiveTab] = useState("credentials");
+    const [activeTab, setActiveTab] = useState("credentials");  
     const {RBAC: rbac} = useLoginConfigContext();
     const [setIsLogged] = useLayoutOutletContext();
     useEffect(() => {
@@ -25,7 +25,7 @@ export const AuthLayout = () => {
     }, [setIsLogged]);
     return (
         <Container fluid="xl">
-            <Row className="mt-5">
+            <Row className="mt-5 justify-content-md-center" >
                 <div>
                     {rbac === 'simplified' && showRBACAlert &&
                     <Alert variant="info" title="rbac CTA" dismissible onClose={() => {
@@ -35,61 +35,60 @@ export const AuthLayout = () => {
                         – Available on <Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link> and <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>lakeFS Enterprise</Alert.Link>!</Alert>
                     }
                 </div>
-                        <Col md={{span: 3}}>
-                            <Card>
-                                <Card.Header>
-                                    <Card.Title>Access Control</Card.Title>
-                                </Card.Header>
-                                <Card.Body>
-                                    <Nav variant="pills" className="flex-column">
-                                        <Link component={Nav.Link} href="/auth/credentials" active={activeTab === 'credentials'}>
-                                            My Credentials
-                                        </Link>
-                                    </Nav>
+                {rbac!=="none"? (
+                    <Col md={{span: 3}}>
+                        <Card>
+                            <Card.Header>
+                                <Card.Title>Access Control</Card.Title>
+                            </Card.Header>
+                            <Card.Body>
+                                <Nav variant="pills" className="flex-column">
+                                    <Link component={Nav.Link} href="/auth/credentials" active={activeTab === 'credentials'} >
+                                        My Credentials
+                                    </Link>
+                                </Nav>
 
-                                    <hr/>
+                                <hr/>
 
-                                    <Nav variant="pills" className="flex-column">
-                                        <Link component={Nav.Link} href="/auth/users" active={activeTab === 'users'}>
-                                            Users
-                                        </Link>
+                                <Nav variant="pills" className="flex-column">
+                                    <Link component={Nav.Link} href="/auth/users" active={activeTab === 'users'} >
+                                        Users
+                                    </Link>
 
-                                        <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'}>
-                                            Groups
-                                        </Link>
-                                        {rbac !== 'simplified' && rbac !== 'none' &&
-                                            <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'}>
-                                                Policies
-                                            </Link>}
-                                    </Nav>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    {rbac === "none" ?
-                        <>
-                            <Col md={{span: 9}}>
-                                <div>
-                                    <Alert variant="info" title="rbac CTA">
-                                        <p><InfoIcon/>{" "}<b>Role-based access control not configured.</b></p>
-                                        This feature is enabled on {" "}<Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link>{" "}
-                                        and <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>lakeFS Enterprise</Alert.Link>. {" "}
-                                        <Alert.Link href={"https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/"}>Learn More</Alert.Link>
-
-                                    </Alert>
-                                </div>                            
-                            </Col>
-                        </>
+                                    <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'} >
+                                        Groups
+                                    </Link>
+                                    {rbac !== 'simplified' && rbac !== 'none' &&
+                                        <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'} >
+                                            Policies
+                                        </Link>}
+                                </Nav>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                ) : (<></>)}
+                <Col md={{span: 9}}>
+                    {rbac === "none"?
+                        (
+                            <div>
+                                <Alert variant="info" title="rbac CTA">
+                                    <p><InfoIcon/>{" "}<b>Role-based access control not configured.</b></p>
+                                    This feature is enabled on {" "}<Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link>{" "}
+                                    and <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>lakeFS Enterprise</Alert.Link>. {" "}
+                                    <Alert.Link href={"https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/"}>Learn More</Alert.Link>
+                                </Alert>
+                            </div>
+                        )
                         :
-                        <>
-                            <Col md={{span: 9}}>
-                                <Outlet context={[setActiveTab] satisfies AuthOutletContext}/>
-                            </Col>
-                        </>
+                        (
+                            <Outlet context={[setActiveTab] satisfies AuthOutletContext}/>
+                        )
+
                     }
+                </Col>
             </Row>
         </Container>
     )
-        ;
 };
 
 export function useAuthOutletContext() {
