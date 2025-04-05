@@ -143,7 +143,8 @@ object GarbageCollection {
     val apiConf =
       APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout, sourceName)
     val apiClient = ApiClient.get(apiConf)
-    val storageType = apiClient.getBlockstoreType
+    val storageID = apiClient.getRepository(repo).getStorageId
+    val storageType = apiClient.getBlockstoreType(storageID)
     var storageNamespace = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
     if (!storageNamespace.endsWith("/")) {
       storageNamespace += "/"
