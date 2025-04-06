@@ -647,3 +647,27 @@ func ResponseWithTimeout(s *WebhookServer, timeout time.Duration) (*HookResponse
 		return nil, ErrWebhookTimeout
 	}
 }
+
+// CheckFilesWereGarbageCollected checks that the actual list of presigned URLs matches the expected list in terms of existence status
+func CheckFilesWereGarbageCollected(t *testing.T, expectedExisting map[string]bool, presignedURLs map[string]string) {
+	for file, expected := range expectedExisting {
+		checkFileWasGarbageCollected(t, presignedURLs, file, expected)
+	}
+}
+
+func checkFileWasGarbageCollected(t *testing.T, presignedURLs map[string]string, file string, expected bool) {
+	r, err := http.Get(presignedURLs[file])
+	if err != nil {
+		t.Fatalf("%s, expected no error, got err=%s", "Http request to presigned url", err)
+	}
+	defer r.Body.Close()
+	if r.StatusCode > 299 && r.StatusCode != 404 {
+		t.Fatalf("Unexpected status code in http request: %d", r.StatusCode)
+	}
+	if r.StatusCode >= 200 && r.StatusCode <= 299 && !expected {
+		t.Fatalf("Didn't expect %s to exist, but it did", file)
+	}
+	if r.StatusCode == 404 && expected {
+		t.Fatalf("Expected %s to exist, but it didn't", file)
+	}
+}
