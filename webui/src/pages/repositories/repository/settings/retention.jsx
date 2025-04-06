@@ -125,7 +125,6 @@ const GCPolicy = ({repo}) => {
             policy: exampleJson(repo.default_branch),
         }
     }
-
     return <div className="mt-3 mb-5">
         <div className={"section-title"}>
             <h4 className={"mb-0"}>
