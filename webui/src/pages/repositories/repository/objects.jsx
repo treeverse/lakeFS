@@ -678,7 +678,7 @@ const ObjectsBrowser = ({ config }) => {
                   path: path === undefined ? "" : path,
                 },
                 query: { ref: ref.id, path: path === undefined ? "" : path },
-               })
+              })
             }
           />
         </ActionGroup>
@@ -743,7 +743,7 @@ const ObjectsBrowser = ({ config }) => {
           mb: "30px",
         }}
       >
-      <TreeContainer
+        <TreeContainer
           config={config}
           reference={reference}
           repo={repo}
@@ -768,14 +768,14 @@ const ObjectsBrowser = ({ config }) => {
             setShowImport(true);
           }}
           onRefresh={refresh}
-      />
-      <ReadmeContainer
-        config={config}
-        reference={reference}
-        repo={repo}
-        path={path}
-        refreshDep={refreshToken}
-      />
+        />
+        <ReadmeContainer
+          config={config}
+          reference={reference}
+          repo={repo}
+          path={path}
+          refreshDep={refreshToken}
+        />
       </Box>
     </>
   );
