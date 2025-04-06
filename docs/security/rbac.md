@@ -366,6 +366,26 @@ You can create additional policies to further limit user access. Use the web UI 
     ]
 }
 ```
+## Multiple Resources Statements
+
+Starting from version v1.54.0, LakeFS supports specifying multiple resources in a single RBAC statement.
+To enable this, the resource field should contain a string representing a JSON-encoded list of resources.
+
+```json
+{
+    "statement": [
+        {
+            "action": [
+                "fs:Read*"
+            ],
+            "effect": "allow",
+            "resource": "[\"arn:lakefs:fs:::repository/repo1\",\"arn:lakefs:fs:::repository/repo2\"]"
+        }
+    ]
+}
+```
+Note: Ensure that the list is properly JSON-encoded as a string—using double quotes and escaping as shown—otherwise, the policy will not be parsed correctly.
+
 
 ## Preconfigured Groups
 
