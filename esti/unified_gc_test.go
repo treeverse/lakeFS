@@ -3,7 +3,6 @@ package esti
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 	"time"
 
@@ -177,19 +176,7 @@ func TestUnifiedGC(t *testing.T) {
 		"file_10": false,
 	}
 
-	for file, expected := range expectedExisting {
-		r, err := http.Get(presignedURLs[file])
-		testutil.MustDo(t, "Http request to presigned url", err)
-		if r.StatusCode > 299 && r.StatusCode != 404 {
-			t.Fatalf("Unexpected status code in http request: %d", r.StatusCode)
-		}
-		if r.StatusCode >= 200 && r.StatusCode <= 299 && !expected {
-			t.Fatalf("Didn't expect %s to exist, but it did", file)
-		}
-		if r.StatusCode == 404 && expected {
-			t.Fatalf("Expected %s to exist, but it didn't", file)
-		}
-	}
+	CheckFilesWereGarbageCollected(t, expectedExisting, presignedURLs)
 }
 
 func prepareForUnifiedGC(t *testing.T, ctx context.Context) {
