@@ -73,7 +73,7 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="success" disabled={!enabled} onClick={() => setShow(true)}>
+            <Button variant="success" disabled={!enabled} onClick={() => setShow(true)} className="ms-1">
                 <GitCommitIcon/> Commit Changes{' '}
             </Button>
         </>

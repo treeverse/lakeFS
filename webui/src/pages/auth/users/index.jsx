@@ -86,15 +86,18 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     return (
         <>
             <ActionsBar>
-                <UserActionsActionGroup canInviteUsers={canInviteUsers} selected={selected}
-                                        onClickInvite={() => setShowInvite(true)} onClickCreate={() => setShowCreate(true)}
-                                        onConfirmDelete={() => {
-                                            auth.deleteUsers(selected.map(u => u.id))
-                                                .catch(err => setDeleteError(err))
-                                                .then(() => {
-                                                    setSelected([]);
-                                                    setRefresh(!refresh);
-                                                })}}/>
+                <ActionGroup orientation="left">
+                    <UserActionsActionGroup canInviteUsers={canInviteUsers} selected={selected}
+                                            onClickInvite={() => setShowInvite(true)} onClickCreate={() => setShowCreate(true)}
+                                            onConfirmDelete={() => {
+                                                auth.deleteUsers(selected.map(u => u.id))
+                                                    .catch(err => setDeleteError(err))
+                                                    .then(() => {
+                                                        setSelected([]);
+                                                        setRefresh(!refresh);
+                                                    })}}
+                    />
+                </ActionGroup>
                 <ActionGroup orientation="right">
                     <SearchInput
                         searchPrefix={searchPrefix}
@@ -174,7 +177,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
 const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClickCreate, onConfirmDelete }) => {
 
     return (
-        <ActionGroup orientation="left">
+        <div className="d-flex text-nowrap">
             <Button
                 hidden={!canInviteUsers}
                 variant="primary"
@@ -184,7 +187,9 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
 
             <Button
                 variant="success"
-                onClick={onClickCreate}>
+                onClick={onClickCreate}
+                className="ms-1 me-1"
+            >
                 {canInviteUsers ? "Create API User" : "Create User"}
             </Button>
             <ConfirmationButton
@@ -194,7 +199,7 @@ const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClic
                 msg={`Are you sure you'd like to delete ${selected.length} users?`}>
                 Delete Selected
             </ConfirmationButton>
-        </ActionGroup>
+        </div>
     );
 }
 

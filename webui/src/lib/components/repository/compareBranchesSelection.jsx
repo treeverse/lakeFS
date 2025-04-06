@@ -36,7 +36,8 @@ const CompareBranchesSelection = (
     );
 
 
-    return <>
+    return (
+        <div className="d-flex">
             <RefDropdown
                 prefix={'Base '}
                 repo={repo}
@@ -46,7 +47,7 @@ const CompareBranchesSelection = (
                 withTags={withTags}
                 selectRef={onSelectRef}/>
 
-            <ArrowLeftIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
+            <ArrowLeftIcon className="ms-2 me-2 mt-2" size="small" verticalAlign="middle"/>
 
             <RefDropdown
                 prefix={'Compared to '}
@@ -64,11 +65,12 @@ const CompareBranchesSelection = (
                     <span>
                         <Button variant={"link"}
                                 onClick={handleSwitchRefs}>
-                            <ArrowSwitchIcon className="me-2 mt-2" size="small" verticalAlign="middle"/>
+                            <ArrowSwitchIcon className="ms-2 me-2 mt-2" size="small" verticalAlign="middle"/>
                         </Button>
                     </span>
             </OverlayTrigger>
-        </>;
+        </div>
+    );
 };
 
 export default CompareBranchesSelection;

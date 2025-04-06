@@ -59,7 +59,9 @@ const PoliciesContainer = () => {
                 <ActionGroup orientation="left">
                     <Button
                         variant="success"
-                        onClick={() => setShowCreate(true)}>
+                        onClick={() => setShowCreate(true)}
+                        className="me-1"
+                    >
                         Create Policy
                     </Button>
 

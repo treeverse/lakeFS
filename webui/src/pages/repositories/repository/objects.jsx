@@ -474,6 +474,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
       variant={!config.import_support ? "success" : "light"}
       disabled={disabled}
       onClick={onClick}
+      className="me-1"
       >
       <UploadIcon /> Upload Object
     </Button>
@@ -660,218 +661,37 @@ const ObjectsBrowser = ({ config }) => {
   if (error) return <RepoError error={error} />;
 
   return (
-    // <>
-    //   <ActionsBar>
-    //     <ActionGroup orientation="left" className="w-50">
-    //       <RefDropdown
-    //         emptyText={"Select Branch"}
-    //         repo={repo}
-    //         selected={reference}
-    //         withCommits={true}
-    //         withWorkspace={true}
-    //         selectRef={(ref) =>
-    //           router.push({
-    //             pathname: `/repositories/:repoId/objects`,
-    //             params: {
-    //               repoId: repo.id,
-    //               path: path === undefined ? "" : path,
-    //             },
-    //             query: { ref: ref.id, path: path === undefined ? "" : path },
-    //           })
-    //         }
-    //       />
-    //     </ActionGroup>
-    //
-    //     <ActionGroup orientation="right" className="w-50">
-    //       <PrefixSearchWidget
-    //         text="Search by Prefix"
-    //         key={path}
-    //         defaultValue={searchSuffix}
-    //         onFilter={(prefix) => {
-    //           const query = { path: "" };
-    //           if (searchPrefix !== undefined) query.path = searchPrefix;
-    //           if (prefix) query.path += prefix;
-    //           if (reference) query.ref = reference.id;
-    //           const url = {
-    //             pathname: `/repositories/:repoId/objects`,
-    //             query,
-    //             params: { repoId: repo.id },
-    //           };
-    //           router.push(url);
-    //         }}
-    //       />
-    //       <RefreshButton onClick={refresh} />
-    //       <UploadButton
-    //         config={config}
-    //         path={path}
-    //         repo={repo}
-    //         reference={reference}
-    //         onDone={refresh}
-    //         onClick={() => {
-    //           setShowUpload(true);
-    //         }}
-    //         onHide={() => {
-    //           setShowUpload(false);
-    //         }}
-    //         show={showUpload}
-    //         disabled={repo?.read_only}
-    //       />
-    //       <ImportButton onClick={() => setShowImport(true)} config={config} />
-    //       <ImportModal
-    //         config={config}
-    //         path={path}
-    //         repoId={repo.id}
-    //         referenceId={reference.id}
-    //         referenceType={reference.type}
-    //         onDone={refresh}
-    //         onHide={() => {
-    //           setShowImport(false);
-    //         }}
-    //         show={showImport}
-    //       />
-    //     </ActionGroup>
-    //   </ActionsBar>
-    //
-    //   <NoGCRulesWarning repoId={repo.id} />
-    //
-    //   <Box
-    //     sx={{
-    //       display: "flex",
-    //       flexDirection: "column",
-    //       gap: "10px",
-    //       mb: "30px",
-    //     }}
-    //   >
-    //     <TreeContainer
-    //       config={config}
-    //       reference={reference}
-    //       repo={repo}
-    //       path={path ? path : ""}
-    //       after={after ? after : ""}
-    //       onPaginate={(after) => {
-    //         const query = { after };
-    //         if (path) query.path = path;
-    //         if (reference) query.ref = reference.id;
-    //         const url = {
-    //           pathname: `/repositories/:repoId/objects`,
-    //           query,
-    //           params: { repoId: repo.id },
-    //         };
-    //         router.push(url);
-    //       }}
-    //       refreshToken={refreshToken}
-    //       onUpload={() => {
-    //         setShowUpload(true);
-    //       }}
-    //       onImport={() => {
-    //         setShowImport(true);
-    //       }}
-    //       onRefresh={refresh}
-    //     />
-    //
-    //     <ReadmeContainer
-    //       config={config}
-    //       reference={reference}
-    //       repo={repo}
-    //       path={path}
-    //       refreshDep={refreshToken}
-    //     />
-    //   </Box>
-    // </>
-
-
-      <Container>
-          <Row className="align-items-center">
-              <ActionsBar className="px-0">
-                  <ActionGroup orientation="left" className="w-75 flex-nowrap align-items-center flex-shrink-0">
-                      <RefDropdown
-                          emptyText={"Select Branch"}
-                          repo={repo}
-                          selected={reference}
-                          withCommits={true}
-                          withWorkspace={true}
-                          selectRef={(ref) =>
-                              router.push({
-                                  pathname: `/repositories/:repoId/objects`,
-                                  params: {
-                                      repoId: repo.id,
-                                      path: path === undefined ? "" : path,
-                                  },
-                                  query: { ref: ref.id, path: path === undefined ? "" : path },
-                              })
-                          }
-                      />
-                  </ActionGroup>
-
-                  <ActionGroup orientation="right" className="w-75 flex-nowrap align-items-center flex-shrink-0">
-                      <PrefixSearchWidget
-                          text="Search by Prefix"
-                          key={path}
-                          defaultValue={searchSuffix}
-                          onFilter={(prefix) => {
-                              const query = { path: "" };
-                              if (searchPrefix !== undefined) query.path = searchPrefix;
-                              if (prefix) query.path += prefix;
-                              if (reference) query.ref = reference.id;
-                              const url = {
-                                  pathname: `/repositories/:repoId/objects`,
-                                  query,
-                                  params: { repoId: repo.id },
-                              };
-                              router.push(url);
-                          }}
-                      />
-                      <RefreshButton onClick={refresh} />
-                      <UploadButton
-                          config={config}
-                          path={path}
-                          repo={repo}
-                          reference={reference}
-                          onDone={refresh}
-                          onClick={() => {
-                              setShowUpload(true);
-                          }}
-                          onHide={() => {
-                              setShowUpload(false);
-                          }}
-                          show={showUpload}
-                          disabled={repo?.read_only}
-                      />
-                      <ImportButton onClick={() => setShowImport(true)} config={config} />
-                      <ImportModal
-                          config={config}
-                          path={path}
-                          repoId={repo.id}
-                          referenceId={reference.id}
-                          referenceType={reference.type}
-                          onDone={refresh}
-                          onHide={() => {
-                              setShowImport(false);
-                          }}
-                          show={showImport}
-                      />
-                  </ActionGroup>
-              </ActionsBar>
-
-              <NoGCRulesWarning repoId={repo.id} />
-
-              <Box
-                  sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
-                      mb: "30px",
-                  }}
-              >
-                  <TreeContainer
-                      config={config}
-                      reference={reference}
+      <>
+          <ActionsBar>
+              <ActionGroup orientation="left">
+                  <RefDropdown
+                      emptyText={"Select Branch"}
                       repo={repo}
-                      path={path ? path : ""}
-                      after={after ? after : ""}
-                      onPaginate={(after) => {
-                          const query = { after };
-                          if (path) query.path = path;
+                      selected={reference}
+                      withCommits={true}
+                      withWorkspace={true}
+                      selectRef={(ref) =>
+                          router.push({
+                              pathname: `/repositories/:repoId/objects`,
+                              params: {
+                                  repoId: repo.id,
+                                  path: path === undefined ? "" : path,
+                              },
+                              query: { ref: ref.id, path: path === undefined ? "" : path },
+                          })
+                      }
+                  />
+              </ActionGroup>
+
+              <ActionGroup orientation="right">
+                  <PrefixSearchWidget
+                      text="Search by Prefix"
+                      key={path}
+                      defaultValue={searchSuffix}
+                      onFilter={(prefix) => {
+                          const query = { path: "" };
+                          if (searchPrefix !== undefined) query.path = searchPrefix;
+                          if (prefix) query.path += prefix;
                           if (reference) query.ref = reference.id;
                           const url = {
                               pathname: `/repositories/:repoId/objects`,
@@ -880,26 +700,85 @@ const ObjectsBrowser = ({ config }) => {
                           };
                           router.push(url);
                       }}
-                      refreshToken={refreshToken}
-                      onUpload={() => {
+                  />
+                  <RefreshButton onClick={refresh} />
+                  <UploadButton
+                      config={config}
+                      path={path}
+                      repo={repo}
+                      reference={reference}
+                      onDone={refresh}
+                      onClick={() => {
                           setShowUpload(true);
                       }}
-                      onImport={() => {
-                          setShowImport(true);
+                      onHide={() => {
+                          setShowUpload(false);
                       }}
-                      onRefresh={refresh}
+                      show={showUpload}
+                      disabled={repo?.read_only}
                   />
-
-                  <ReadmeContainer
+                  <ImportButton onClick={() => setShowImport(true)} config={config} />
+                  <ImportModal
                       config={config}
-                      reference={reference}
-                      repo={repo}
                       path={path}
-                      refreshDep={refreshToken}
+                      repoId={repo.id}
+                      referenceId={reference.id}
+                      referenceType={reference.type}
+                      onDone={refresh}
+                      onHide={() => {
+                          setShowImport(false);
+                      }}
+                      show={showImport}
                   />
-              </Box>
-          </Row>
-      </Container>
+              </ActionGroup>
+          </ActionsBar>
+
+          <NoGCRulesWarning repoId={repo.id} />
+
+          <Box
+              sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                  mb: "30px",
+              }}
+          >
+              <TreeContainer
+                  config={config}
+                  reference={reference}
+                  repo={repo}
+                  path={path ? path : ""}
+                  after={after ? after : ""}
+                  onPaginate={(after) => {
+                      const query = { after };
+                      if (path) query.path = path;
+                      if (reference) query.ref = reference.id;
+                      const url = {
+                          pathname: `/repositories/:repoId/objects`,
+                          query,
+                          params: { repoId: repo.id },
+                      };
+                      router.push(url);
+                  }}
+                  refreshToken={refreshToken}
+                  onUpload={() => {
+                      setShowUpload(true);
+                  }}
+                  onImport={() => {
+                      setShowImport(true);
+                  }}
+                  onRefresh={refresh}
+              />
+
+              <ReadmeContainer
+                  config={config}
+                  reference={reference}
+                  repo={repo}
+                  path={path}
+                  refreshDep={refreshToken}
+              />
+          </Box>
+      </>
   );
 };
 

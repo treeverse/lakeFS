@@ -43,7 +43,7 @@ const SettingsContainer = () => {
                     <div className={"ms-1 me-1 pl-0 d-flex"}>
                         <div className="flex-grow-1">Branch protection rules</div>
                         <RefreshButton className={"ms-1"} onClick={() => {setRefresh(!refresh)}}/>
-                        <Button className={"ms-2"} onClick={() => setShowCreateModal(true)}>Add</Button>
+                        <Button className={"ms-1"} onClick={() => setShowCreateModal(true)}>Add</Button>
                     </div>
                 </h4>
             </div>

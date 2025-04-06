@@ -14,7 +14,7 @@ import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
-import {ActionsBar, AlertError, Loading, useDebouncedState} from "../../lib/components/controls";
+import {ActionGroup, ActionsBar, AlertError, Loading, useDebouncedState} from "../../lib/components/controls";
 import {config, repositories} from '../../lib/api';
 import {useAPI, useAPIWithPagination} from "../../lib/hooks/api";
 import {Paginator} from "../../lib/components/pagination";
@@ -259,9 +259,9 @@ const RepositoriesPage = () => {
     return (
         <Container fluid="xl" className="mt-3">
             {showActionsBar && <ActionsBar>
-                <Form style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
-                    <Form.Group>
-                        <Col>
+                <ActionGroup orientation="left">
+                    <Form style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
+                        <Form.Group>
                             <InputGroup>
                                 <InputGroup.Text>
                                     <SearchIcon/>
@@ -273,12 +273,14 @@ const RepositoriesPage = () => {
                                     onChange={event => setSearch(event.target.value)}
                                 />
                             </InputGroup>
-                        </Col>
-                    </Form.Group>
-                </Form>
-                <ButtonToolbar className="ms-auto mb-2">
-                    <CreateRepositoryButton variant={"success"} enabled={true} onClick={createRepositoryButtonCallback} />
-                </ButtonToolbar>
+                        </Form.Group>
+                    </Form>
+                </ActionGroup>
+                <ActionGroup orientation="right">
+                    <ButtonToolbar className="ms-auto mb-2">
+                        <CreateRepositoryButton variant={"success"} enabled={true} onClick={createRepositoryButtonCallback} />
+                    </ButtonToolbar>
+                </ActionGroup>
             </ActionsBar> }
 
                 <RepositoryList

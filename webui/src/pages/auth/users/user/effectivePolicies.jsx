@@ -52,13 +52,13 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
 
             <ActionsBar>
                 <ActionGroup orientation="left">
-                    <p>
+                    <span className="d-flex text-nowrap">
                         <small>
                             <strong>
                             All policies attached to this user, through direct attachment or via group memberships
                             </strong>
                         </small>
-                    </p>
+                    </span>
                 </ActionGroup>
 
                 <ActionGroup orientation="right">

@@ -109,9 +109,9 @@ export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => 
 
 
 export const ActionGroup = ({ children, orientation = "left", className = "" }) => {
-    const side = (orientation === 'right') ? 'ms-auto' : '';
+    const side = orientation === 'right' ? 'col d-flex justify-content-end' : 'col-4';
     return (
-        <div role="toolbar" className={`${side} mb-2 btn-toolbar action-group-${orientation} ${className}`}>
+        <div role="toolbar" className={`btn-toolbar ${side} ${className}`}>
             {children}
         </div>
     );
@@ -119,7 +119,7 @@ export const ActionGroup = ({ children, orientation = "left", className = "" }) 
 
 export const ActionsBar = ({ children }) => {
     return (
-        <div className="action-bar d-flex mb-3">
+        <div className="action-bar row mb-3 gx-2">
             {children}
         </div>
     );
@@ -332,7 +332,9 @@ export const RefreshButton = ({ onClick, size = "md", variant = "light", tooltip
             tooltip={tooltip}
             variant={variant}
             onClick={onClick}
-            size={size}>
+            size={size}
+            className={"ms-1 me-1"}
+        >
             {icon}
         </TooltipButton>
     );

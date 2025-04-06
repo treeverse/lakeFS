@@ -5,15 +5,12 @@ import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Badge from "react-bootstrap/Badge";
 import Overlay from "react-bootstrap/Overlay";
-import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/octicons-react";
 import Popover from "react-bootstrap/Popover";
+import {Nav} from "react-bootstrap";
+import {ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, XIcon} from "@primer/octicons-react";
 
 import {tags, branches, commits} from '../../api';
-import {Col, Nav, OverlayTrigger, Row} from "react-bootstrap";
 import {RefTypeBranch, RefTypeCommit, RefTypeTag} from "../../../constants";
-import Tooltip from "react-bootstrap/Tooltip";
-import Container from "react-bootstrap/Container";
-
 
 const RefSelector = ({ repo, selected, selectRef, withCommits, withWorkspace, withTags, amount = 300 }) => {
     // used for ref pagination
@@ -266,94 +263,26 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
 
     const title = prefix + (!!selected) ? `${prefix} ${selected.type}: ` : '';
     return (
-        // <>
-        //     <Button ref={target} variant={variant} onClick={()=> { setShow(!show) }}>
-        //         {title} <strong>{showId(selected)}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-        //     </Button>
-        //     {cancelButton}
-        //     {popover}
-        // </>
-
-        // <>
-        //     {/*<OverlayTrigger*/}
-        //     {/*    placement="bottom"*/}
-        //     {/*    overlay={<Tooltip>{showId(selected)}</Tooltip>}*/}
-        //     {/*>*/}
-        //     {/*    <Button*/}
-        //     {/*        ref={target}*/}
-        //     {/*        variant={variant}*/}
-        //     {/*        onClick={()=> { setShow(!show) }}*/}
-        //     {/*        className="text-nowrap overflow-hidden"*/}
-        //     {/*    >*/}
-        //     {/*        {title} <strong className="text-truncate d-inline-block">{showId(selected)}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}*/}
-        //     {/*    </Button>*/}
-        //     {/*</OverlayTrigger>*/}
-        //     {/*<OverlayTrigger*/}
-        //     {/*    placement="bottom"*/}
-        //     {/*    overlay={<Tooltip>{showId(selected)}</Tooltip>}*/}
-        //     {/*>*/}
-        //     {/*    <Button*/}
-        //     {/*        ref={target}*/}
-        //     {/*        variant={variant}*/}
-        //     {/*        onClick={()=> { setShow(!show) }}*/}
-        //     {/*        className="text-nowrap text-truncate"*/}
-        //     {/*    >*/}
-        //     {/*        {title} <span className="d-flex align-items-center ">*/}
-        //     {/*                  <strong className="text-truncate">{showId(selected)}</strong>*/}
-        //     {/*                  <span className="ms-1">{show ? <ChevronUpIcon/> : <ChevronDownIcon/>}</span>*/}
-        //     {/*                </span>*/}
-        //     {/*    </Button>*/}
-        //     {/*</OverlayTrigger>*/}
-        //
-        //     <Button
-        //         ref={target}
-        //         variant={variant}
-        //         onClick={() => { setShow(!show) }}
-        //         className="p-0 w-25"
-        //     >
-        //         <Container className="px-0">
-        //             <Row className="align-items-center mx-0">
-        //                 <Col xs="auto" className="pe-1">
-        //                     {title}
-        //                 </Col>
-        //                 <Col xs={4} className="px-0 text-truncate">
-        //                     <OverlayTrigger
-        //                         placement="bottom"
-        //                         overlay={<Tooltip>{showId(selected)}</Tooltip>}
-        //                     >
-        //                         <strong>{showId(selected)}</strong>
-        //                     </OverlayTrigger>
-        //                 </Col>
-        //                 <Col xs="auto" className="ps-1">
-        //                     {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-        //                 </Col>
-        //             </Row>
-        //         </Container>
-        //     </Button>
-        //
-        //     {cancelButton}
-        //     {popover}
-        // </>
-        <Container fluid>
-            <Row className="align-items-center">
-                <Col>
-                    <Button ref={target} variant={variant} onClick={() => setShow(!show)} title={showId(selected)}
-                            className="w-25 text-nowrap overflow-hidden text-truncate">
-                        {title}
-                        <strong>
-                            {showId(selected)}
-                        </strong>
-                        <br/>
-                        {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-                    </Button>
-                </Col>
-                <Col xs="auto">
-                    {cancelButton}
-                    {popover}
-                </Col>
-            </Row>
-        </Container>
-
+        <>
+            <Button
+                ref={target}
+                variant={variant}
+                onClick={() => setShow(!show)}
+                style={{ maxWidth: '250px' }}
+                title={showId(selected)}
+                className="d-inline-flex align-items-center"
+            >
+                <span className="text-truncate">
+                    {title}
+                    <strong>{showId(selected)}</strong>
+                </span>
+                <span className="ms-1">
+                    {show ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                </span>
+            </Button>
+            {cancelButton}
+            {popover}
+        </>
     );
 };
 

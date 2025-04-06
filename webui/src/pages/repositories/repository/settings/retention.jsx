@@ -125,6 +125,7 @@ const GCPolicy = ({repo}) => {
             policy: exampleJson(repo.default_branch),
         }
     }
+
     return <div className="mt-3 mb-5">
         <div className={"section-title"}>
             <h4 className={"mb-0"}>
@@ -134,7 +135,7 @@ const GCPolicy = ({repo}) => {
                     {!error && !loading && !isPolicyNotSet &&
                         <Button className={"ms-2 btn-secondary"} disabled={isActionsDisabled} onClick={onDelete}>Delete
                             Policy</Button>}
-                    <Button className={"ms-2"} disabled={isActionsDisabled} onClick={() => setShowCreate(true)}>Edit Policy</Button>
+                    <Button className={"ms-1"} disabled={isActionsDisabled} onClick={() => setShowCreate(true)}>Edit Policy</Button>
                 </div>
             </h4>
         </div>
