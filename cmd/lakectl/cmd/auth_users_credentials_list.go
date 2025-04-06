@@ -13,10 +13,8 @@ var authUsersCredentialsList = &cobra.Command{
 	Use:   "list",
 	Short: "List user credentials",
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := Must(cmd.Flags().GetInt("amount"))
-		after := Must(cmd.Flags().GetString("after"))
+		prefix, after, amount := getPaginationFlags(cmd)
 		id := Must(cmd.Flags().GetString("id"))
-
 		clt := getClient()
 		if id == "" {
 			resp, err := clt.GetCurrentUserWithResponse(cmd.Context())
@@ -28,6 +26,7 @@ var authUsersCredentialsList = &cobra.Command{
 		}
 
 		resp, err := clt.ListUserCredentialsWithResponse(cmd.Context(), id, &apigen.ListUserCredentialsParams{
+			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
@@ -50,7 +49,7 @@ var authUsersCredentialsList = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	authUsersCredentialsList.Flags().String("id", "", "Username (email for password-based users, default: current user)")
-	addPaginationFlags(authUsersCredentialsList)
+	withPaginationFlags(authUsersCredentialsList)
 
 	authUsersCredentials.AddCommand(authUsersCredentialsList)
 }

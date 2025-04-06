@@ -20,8 +20,7 @@ var actionsRunsListCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := Must(cmd.Flags().GetInt("amount"))
-		after := Must(cmd.Flags().GetString("after"))
+		_, after, amount := getPaginationFlags(cmd)
 		commit := Must(cmd.Flags().GetString("commit"))
 		branch := Must(cmd.Flags().GetString("branch"))
 		u := MustParseRepoURI("repository URI", args[0])
@@ -100,8 +99,7 @@ var actionsRunsListCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	actionsRunsCmd.AddCommand(actionsRunsListCmd)
-	actionsRunsListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
-	actionsRunsListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 	actionsRunsListCmd.Flags().String("branch", "", "show results for specific branch")
 	actionsRunsListCmd.Flags().String("commit", "", "show results for specific commit ID")
+	withPaginationFlags(actionsRunsListCmd, withoutPrefix)
 }

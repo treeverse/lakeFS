@@ -15,9 +15,7 @@ var branchListCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		prefix := Must(cmd.Flags().GetString("prefix"))
-		after := Must(cmd.Flags().GetString("after"))
-		amount := Must(cmd.Flags().GetInt("amount"))
+		prefix, after, amount := getPaginationFlags(cmd)
 		u := MustParseRepoURI("repository URI", args[0])
 		client := getClient()
 		resp, err := client.ListBranchesWithResponse(cmd.Context(), u.Repository, &apigen.ListBranchesParams{
@@ -43,9 +41,7 @@ var branchListCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	branchListCmd.Flags().String("prefix", "", "filter according to this prefix")
-	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
-	branchListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
+	withPaginationFlags(branchListCmd)
 
 	branchCmd.AddCommand(branchListCmd)
 }

@@ -167,6 +167,10 @@ const (
 	defaultSyncPresign = true
 	defaultNoProgress  = false
 
+	paginationPrefixFlagName = "prefix"
+	paginationAfterFlagName  = "after"
+	paginationAmountFlagName = "amount"
+
 	myRepoExample   = "lakefs://my-repo"
 	myBucketExample = "s3://my-bucket"
 	myBranchExample = "my-branch"
@@ -330,6 +334,33 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 		}
 	}
 	return
+}
+
+func getPaginationFlags(cmd *cobra.Command) (prefix string, after string, amount int) {
+	prefix = Must(cmd.Flags().GetString(paginationPrefixFlagName))
+	after = Must(cmd.Flags().GetString(paginationAfterFlagName))
+	amount = Must(cmd.Flags().GetInt(paginationAmountFlagName))
+
+	return
+}
+
+type PaginationOptions func(*cobra.Command)
+
+func withoutPrefix(cmd *cobra.Command) {
+	if err := cmd.Flags().MarkHidden(paginationPrefixFlagName); err != nil {
+		DieErr(err)
+	}
+}
+
+func withPaginationFlags(cmd *cobra.Command, options ...PaginationOptions) {
+	cmd.Flags().SortFlags = false
+	cmd.Flags().Int(paginationAmountFlagName, defaultAmountArgumentValue, "how many results to return")
+	cmd.Flags().String(paginationAfterFlagName, "", "show results after this value (used for pagination)")
+	cmd.Flags().String(paginationPrefixFlagName, "", "filter results by prefix (used for pagination)")
+
+	for _, option := range options {
+		option(cmd)
+	}
 }
 
 func withMessageFlags(cmd *cobra.Command, allowEmpty bool) {

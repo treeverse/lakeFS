@@ -237,10 +237,10 @@ lakectl actions runs list lakefs://my-repo --branch my-branch --commit 600dc0ffe
 {:.no_toc}
 
 ```
-      --after string    show results after this value (used for pagination)
-      --amount int      number of results to return (default 100)
       --branch string   show results for specific branch
       --commit string   show results for specific commit ID
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
   -h, --help            help for list
 ```
 
@@ -480,9 +480,10 @@ lakectl auth groups list [flags]
 {:.no_toc}
 
 ```
-      --amount int     how many results to return (default 100)
-      --after string   show results after this value (used for pagination)
-  -h, --help           help for list
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 
@@ -554,10 +555,11 @@ lakectl auth groups members list [flags]
 {:.no_toc}
 
 ```
-      --id string      Group identifier
-      --amount int     how many results to return (default 100)
-      --after string   show results after this value (used for pagination)
-  -h, --help           help for list
+      --id string       Group identifier
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 
@@ -672,10 +674,11 @@ lakectl auth groups policies list [flags]
 {:.no_toc}
 
 ```
-      --id string      Group identifier
-      --amount int     how many results to return (default 100)
-      --after string   show results after this value (used for pagination)
-  -h, --help           help for list
+      --id string       Group identifier
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 
@@ -788,9 +791,10 @@ lakectl auth policies list [flags]
 {:.no_toc}
 
 ```
-      --amount int     how many results to return (default 100)
-      --after string   show results after this value (used for pagination)
-  -h, --help           help for list
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 
@@ -929,10 +933,11 @@ lakectl auth users credentials list [flags]
 {:.no_toc}
 
 ```
-      --id string      Username (email for password-based users, default: current user)
-      --amount int     how many results to return (default 100)
-      --after string   show results after this value (used for pagination)
-  -h, --help           help for list
+      --id string       Username (email for password-based users, default: current user)
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 
@@ -1003,10 +1008,11 @@ lakectl auth users groups list [flags]
 {:.no_toc}
 
 ```
-      --id string      Username (email for password-based users)
-      --amount int     how many results to return (default 100)
-      --after string   show results after this value (used for pagination)
-  -h, --help           help for list
+      --id string       Username (email for password-based users)
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 
@@ -1046,9 +1052,10 @@ lakectl auth users list [flags]
 {:.no_toc}
 
 ```
-      --amount int     how many results to return (default 100)
-      --after string   show results after this value (used for pagination)
-  -h, --help           help for list
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 
@@ -1144,11 +1151,12 @@ lakectl auth users policies list [flags]
 {:.no_toc}
 
 ```
-      --effective      List all distinct policies attached to the user, including by group memberships
-      --id string      Username (email for password-based users)
-      --amount int     how many results to return (default 100)
-      --after string   show results after this value (used for pagination)
-  -h, --help           help for list
+      --effective       List all distinct policies attached to the user, including by group memberships
+      --id string       Username (email for password-based users)
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 
@@ -1263,10 +1271,10 @@ lakectl branch list lakefs://my-repo
 {:.no_toc}
 
 ```
+      --amount int      how many results to return (default 100)
       --after string    show results after this value (used for pagination)
-      --amount int      number of results to return (default 100)
+      --prefix string   filter results by prefix (used for pagination)
   -h, --help            help for list
-      --prefix string   filter according to this prefix
 ```
 
 
@@ -2692,10 +2700,10 @@ lakectl repo list [flags]
 {:.no_toc}
 
 ```
+      --amount int      how many results to return (default 100)
       --after string    show results after this value (used for pagination)
-      --amount int      number of results to return (default 100)
+      --prefix string   filter results by prefix (used for pagination)
   -h, --help            help for list
-      --prefix string   filter according to this prefix
 ```
 
 
@@ -2887,9 +2895,10 @@ lakectl tag list lakefs://my-repo
 {:.no_toc}
 
 ```
-      --after string   show results after this value (used for pagination)
-      --amount int     number of results to return (default 100)
-  -h, --help           help for list
+      --amount int      how many results to return (default 100)
+      --after string    show results after this value (used for pagination)
+      --prefix string   filter results by prefix (used for pagination)
+  -h, --help            help for list
 ```
 
 

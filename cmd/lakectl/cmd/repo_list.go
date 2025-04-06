@@ -17,9 +17,7 @@ var repoListCmd = &cobra.Command{
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		prefix := Must(cmd.Flags().GetString("prefix"))
-		after := Must(cmd.Flags().GetString("after"))
-		amount := Must(cmd.Flags().GetInt("amount"))
+		prefix, after, amount := getPaginationFlags(cmd)
 		clt := getClient()
 
 		resp, err := clt.ListRepositoriesWithResponse(cmd.Context(), &apigen.ListRepositoriesParams{
@@ -44,9 +42,6 @@ var repoListCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	repoListCmd.Flags().String("prefix", "", "filter according to this prefix")
-	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
-	repoListCmd.Flags().Int("amount", defaultAmountArgumentValue, "number of results to return")
-
+	withPaginationFlags(repoListCmd)
 	repoCmd.AddCommand(repoListCmd)
 }

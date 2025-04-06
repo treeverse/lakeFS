@@ -15,14 +15,14 @@ var tagListCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := Must(cmd.Flags().GetInt("amount"))
-		after := Must(cmd.Flags().GetString("after"))
+		prefix, after, amount := getPaginationFlags(cmd)
 
 		u := MustParseRepoURI("repository URI", args[0])
 
 		ctx := cmd.Context()
 		client := getClient()
 		resp, err := client.ListTagsWithResponse(ctx, u.Repository, &apigen.ListTagsParams{
+			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
@@ -60,9 +60,7 @@ var tagListCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	flags := tagListCmd.Flags()
-	flags.Int("amount", defaultAmountArgumentValue, "number of results to return")
-	flags.String("after", "", "show results after this value (used for pagination)")
+	withPaginationFlags(tagListCmd)
 
 	tagCmd.AddCommand(tagListCmd)
 }

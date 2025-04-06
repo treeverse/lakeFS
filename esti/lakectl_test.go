@@ -1167,6 +1167,10 @@ func TestLakectlBranchList(t *testing.T) {
 	t.Run("with prefix", func(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch list lakefs://"+repoName+" --prefix="+tempBranch, false, "lakectl_branch_list_prefix", branchVars)
 	})
+
+	t.Run("with prefix and amount", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch list lakefs://"+repoName+" --prefix="+tempBranch+" --amount=1", false, "lakectl_branch_list_prefix", branchVars)
+	})
 }
 
 func TestLakectlRepoList(t *testing.T) {
@@ -1191,5 +1195,42 @@ func TestLakectlRepoList(t *testing.T) {
 
 	t.Run("with prefix", func(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list --prefix=b", false, "lakectl_repo_list_prefix", repo2Vars)
+	})
+
+	t.Run("with prefix and amount", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo list --prefix=b --amount=1", false, "lakectl_repo_list_prefix", repo2Vars)
+	})
+}
+
+func TestLakectlTagList(t *testing.T) {
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"TAG":     "tag1",
+	}
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_tag_create", vars)
+
+	vars["TAG"] = "tag2"
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag create lakefs://"+repoName+"/"+vars["TAG"]+" lakefs://"+repoName+"/"+mainBranch, false, "lakectl_tag_create", vars)
+
+	vars_test := map[string]string{
+		"TAG1": "tag1",
+		"TAG2": "tag2",
+	}
+	t.Run("default", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag list lakefs://"+repoName, false, "lakectl_tag_list", vars_test)
+	})
+
+	t.Run("with prefix", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag list lakefs://"+repoName+" --prefix="+vars_test["TAG1"], false, "lakectl_tag_list_prefix", vars_test)
+	})
+
+	t.Run("with prefix and amount", func(t *testing.T) {
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" tag list lakefs://"+repoName+" --prefix="+vars_test["TAG1"]+" --amount=1", false, "lakectl_tag_list_prefix", vars_test)
 	})
 }
