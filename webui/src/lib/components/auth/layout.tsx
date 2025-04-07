@@ -35,15 +35,14 @@ export const AuthLayout = () => {
                         – Available on <Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link> and <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>lakeFS Enterprise</Alert.Link>!</Alert>
                     }
                 </div>
-                {rbac!=="none"? (
-                    <Col md={{span: 3}}>
+                <Col md={{span: 3}}>
                         <Card>
                             <Card.Header>
                                 <Card.Title>Access Control</Card.Title>
                             </Card.Header>
                             <Card.Body>
                                 <Nav variant="pills" className="flex-column">
-                                    <Link component={Nav.Link} href="/auth/credentials" active={activeTab === 'credentials'} >
+                                    <Link component={Nav.Link} href="/auth/credentials" active={activeTab === 'credentials'} style={{pointerEvents: (rbac!=="none")?"":"none"}}>
                                         My Credentials
                                     </Link>
                                 </Nav>
@@ -51,22 +50,21 @@ export const AuthLayout = () => {
                                 <hr/>
 
                                 <Nav variant="pills" className="flex-column">
-                                    <Link component={Nav.Link} href="/auth/users" active={activeTab === 'users'} >
+                                    <Link component={Nav.Link} href="/auth/users" active={activeTab === 'users'} style={{pointerEvents: (rbac!=="none")?"":"none"}}>
                                         Users
                                     </Link>
 
-                                    <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'} >
+                                    <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'} style={{pointerEvents: (rbac!=="none")?"":"none"}}>
                                         Groups
                                     </Link>
                                     {rbac !== 'simplified' && rbac !== 'none' &&
-                                        <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'} >
+                                        <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'} style={{pointerEvents: (rbac!=="none")?"":"none"}}>
                                             Policies
                                         </Link>}
                                 </Nav>
                             </Card.Body>
                         </Card>
                     </Col>
-                ) : (<></>)}
                 <Col md={{span: 9}}>
                     {rbac === "none"?
                         (
