@@ -391,13 +391,24 @@ The list must be properly encoded as a JSON string: quote each resource, and esc
 Here is how you can leverage Python SDK to create a multiple resource policy:
 
 ```python
-admin1Client.auth_api.create_policy(
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+from lakefs_sdk import models
+
+configuration = lakefs_sdk.Configuration(
+        host=lakefsEndPoint,
+        username=lakefsAccessKey,
+        password=lakefsSecretKey,
+)
+clt = LakeFSClient(configuration)
+
+clt.auth_api.create_policy(
     policy=models.Policy(
-        id='FSBlockMergingToMain',
+        id='FSReadTwoRepos',
         statement=[models.Statement(
             effect="deny",
-            resource="[\"arn:lakefs:fs:::repository/repo1/branch/main\",\"arn:lakefs:fs:::repository/repo2/branch/main\"]",
-            action=["fs:CreateCommit"],
+            resource=json.dumps(["arn:lakefs:fs:::repository/repo1","arn:lakefs:fs:::repository/repo2"]),
+            action=["fs:ReadRepository"],
         ),
         ]
     )
