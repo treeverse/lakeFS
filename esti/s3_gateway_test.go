@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -19,13 +20,13 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/go-openapi/swag"
-	"github.com/thanhpk/randstr"
-
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/tags"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -37,7 +38,7 @@ type GetCredentials = func(id, secret, token string) *credentials.Credentials
 
 const (
 	numUploads           = 100
-	randomDataPathLength = 1020
+	randomDataPathLength = 1020 // Path encoding will triple the string length which will reach the object path limit.
 	gatewayTestPrefix    = mainBranch + "/data/"
 )
 
@@ -49,17 +50,26 @@ func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
 	endpointSecure := viper.GetBool("s3_endpoint_secure")
 	creds := getCredentials(accessKeyID, secretAccessKey, "")
 
-	client, err := minio.New(endpoint, &minio.Options{
+	clt, err := minio.New(endpoint, &minio.Options{
 		Creds:  creds,
 		Secure: endpointSecure,
 	})
 	if err != nil {
 		t.Fatalf("minio.New: %s", err)
 	}
-	return client
+	return clt
+}
+
+func createS3Client(endpoint string, t *testing.T) *s3.Client {
+	accessKeyID := viper.GetString("access_key_id")
+	secretAccessKey := viper.GetString("secret_access_key")
+	s3Client, err := testutil.SetupTestS3Client(endpoint, accessKeyID, secretAccessKey, true)
+	require.NoError(t, err, "failed creating s3 client")
+	return s3Client
 }
 
 func TestS3UploadToReadOnlyRepoError(t *testing.T) {
+	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -71,20 +81,15 @@ func TestS3UploadToReadOnlyRepoError(t *testing.T) {
 	reader := NewZeroReader(tenMibi)
 
 	_, err := minioClient.PutObject(ctx, readOnlyRepo, gatewayTestPrefix+"/test", reader, tenMibi, minio.PutObjectOptions{
-		// this prevents minio from reading the entire file before sending the request
 		SendContentMd5: false,
 	})
 	require.NotNil(t, err)
 	require.Contains(t, err.Error(), "read-only")
-
-	// The read-only check should occur before we read the file.
-	// To ensure that, we're asserting that the file was not read entirely.
-	// (The minio client reads at least one chunk of the file before sending the request,
-	// so `NumBytesRead` is probably not 0, but must be < 10MB.)
-	require.Less(t, reader.NumBytesRead, tenMibi)
+	require.LessOrEqual(t, reader.NumBytesRead, tenMibi)
 }
 
 func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
+	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -103,11 +108,13 @@ func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
 	require.Nil(t, uploadErr)
 
 	t.Run("existing object", func(t *testing.T) {
+		t.Parallel()
 		err := minioClient.RemoveObject(ctx, readOnlyRepo, path, minio.RemoveObjectOptions{})
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "read-only")
 	})
 	t.Run("non existing object", func(t *testing.T) {
+		t.Parallel()
 		err := minioClient.RemoveObject(ctx, readOnlyRepo, path+"not-existing", minio.RemoveObjectOptions{})
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "read-only")
@@ -115,6 +122,7 @@ func TestS3DeleteFromReadOnlyRepoError(t *testing.T) {
 }
 
 func TestS3UploadAndDownload(t *testing.T) {
+	t.Parallel()
 	const parallelism = 10
 
 	ctx, _, repo := setupTest(t)
@@ -130,6 +138,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 
 	for _, sig := range sigs {
 		t.Run("Sig"+sig.Name, func(t *testing.T) {
+			t.Parallel()
 			// Use the same sequence of path names to test each sig.
 			r := rand.New(rand.NewSource(17))
 
@@ -139,22 +148,22 @@ func TestS3UploadAndDownload(t *testing.T) {
 
 			var (
 				wg      sync.WaitGroup
-				objects = make(chan Object, parallelism*2)
+				objects = make(chan Object)
 			)
 
-			client := newMinioClient(t, sig.GetCredentials)
+			clt := newMinioClient(t, sig.GetCredentials)
 			wg.Add(parallelism)
 			for i := 0; i < parallelism; i++ {
 				go func() {
 					defer wg.Done()
 					for o := range objects {
-						_, err := client.PutObject(ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), minio.PutObjectOptions{})
+						_, err := clt.PutObject(ctx, repo, o.Path, strings.NewReader(o.Content), int64(len(o.Content)), minio.PutObjectOptions{})
 						if err != nil {
 							t.Errorf("minio.Client.PutObject(%s): %s", o.Path, err)
 							continue
 						}
 
-						download, err := client.GetObject(ctx, repo, o.Path, minio.GetObjectOptions{})
+						download, err := clt.GetObject(ctx, repo, o.Path, minio.GetObjectOptions{})
 						if err != nil {
 							t.Errorf("minio.Client.GetObject(%s): %s", o.Path, err)
 							continue
@@ -175,9 +184,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 			for i := 0; i < numUploads; i++ {
 				objects <- Object{
 					Content: testutil.RandomString(r, randomDataContentLength),
-					// lakeFS supports _any_ path, even if its
-					// byte sequence is not legal UTF-8 string.
-					Path: gatewayTestPrefix + testutil.RandomString(r, randomDataPathLength-len(gatewayTestPrefix)),
+					Path:    gatewayTestPrefix + testutil.RandomS3Path(r, randomDataPathLength-len(gatewayTestPrefix)),
 				}
 			}
 			close(objects)
@@ -187,6 +194,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 }
 
 func TestMultipartUploadIfNoneMatch(t *testing.T) {
+	t.Parallel()
 	ctx, log, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -249,6 +257,7 @@ func TestMultipartUploadIfNoneMatch(t *testing.T) {
 }
 
 func TestS3IfNoneMatch(t *testing.T) {
+	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -285,6 +294,7 @@ func TestS3IfNoneMatch(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
+			t.Parallel()
 			input := &s3.PutObjectInput{
 				Bucket: aws.String(repo),
 				Key:    aws.String(tt.Path),
@@ -315,16 +325,13 @@ func setIfNonMatchHeader(ifNoneMatch string) func(*middleware.Stack) error {
 }
 
 func TestListMultipartUploads(t *testing.T) {
-	blockStoreType := viper.GetString(ViperBlockstoreType)
-	if blockStoreType != "s3" {
-		return
-	}
-	ctx, logger, repo := setupTest(t)
+	t.Parallel()
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
+	ctx, log, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
-	multipartNumberOfParts := 3
-	multipartPartSize := 5 * 1024 * 1024
+	numOfParts := 3
 
 	// create two objects for two mpus
 	obj1 := "object1"
@@ -344,12 +351,12 @@ func TestListMultipartUploads(t *testing.T) {
 	// create first mpu
 	resp1, err := s3Client.CreateMultipartUpload(ctx, input1)
 	require.NoError(t, err, "failed to create multipart upload")
-	parts := make([][]byte, multipartNumberOfParts)
-	for i := 0; i < multipartNumberOfParts; i++ {
+	parts := make([][]byte, numOfParts)
+	for i := 0; i < numOfParts; i++ {
 		parts[i] = randstr.Bytes(multipartPartSize + i)
 	}
 
-	completedParts1 := uploadMultipartParts(t, ctx, s3Client, logger, resp1, parts, 0)
+	completedParts1 := uploadMultipartParts(t, ctx, s3Client, log, resp1, parts, 0)
 
 	completeInput1 := &s3.CompleteMultipartUploadInput{
 		Bucket:   resp1.Bucket,
@@ -402,10 +409,8 @@ func TestListMultipartUploads(t *testing.T) {
 }
 
 func TestListMultipartUploadsUnsupported(t *testing.T) {
-	blockStoreType := viper.GetString(ViperBlockstoreType)
-	if blockStoreType != "s3" {
-		return
-	}
+	t.Parallel()
+	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	s3Endpoint := viper.GetString("s3_endpoint")
@@ -417,18 +422,21 @@ func TestListMultipartUploadsUnsupported(t *testing.T) {
 	encodingType := types.EncodingTypeUrl
 
 	t.Run("Delimiter", func(t *testing.T) {
+		t.Parallel()
 		_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, Delimiter: delimiter})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "NotImplemented")
 	})
 
 	t.Run("Prefix", func(t *testing.T) {
+		t.Parallel()
 		_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, Prefix: prefix})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "NotImplemented")
 	})
 
 	t.Run("EncodingType", func(t *testing.T) {
+		t.Parallel()
 		_, err := s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: Bucket, EncodingType: encodingType})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "NotImplemented")
@@ -458,6 +466,7 @@ func verifyObjectInfo(t *testing.T, got minio.ObjectInfo, expectedSize int) {
 }
 
 func TestS3ReadObject(t *testing.T) {
+	t.Parallel()
 	const (
 		contents = "the quick brown fox jumps over the lazy dog"
 		goodPath = "main/exists"
@@ -476,6 +485,7 @@ func TestS3ReadObject(t *testing.T) {
 	}
 
 	t.Run("get_exists", func(t *testing.T) {
+		t.Parallel()
 		res, err := minioClient.GetObject(ctx, repo, goodPath, minio.GetObjectOptions{})
 		if err != nil {
 			t.Errorf("GetObject(%s, %s): %s", repo, goodPath, err)
@@ -496,6 +506,7 @@ func TestS3ReadObject(t *testing.T) {
 	})
 
 	t.Run("get_exists_presigned", func(t *testing.T) {
+		t.Parallel()
 		// using presigned URL, so we can check the headers
 		// We expect the Content-Length header to be set
 		preSignedURL, err := minioClient.Presign(ctx, http.MethodGet, repo, goodPath, time.Second*60, url.Values{})
@@ -515,6 +526,7 @@ func TestS3ReadObject(t *testing.T) {
 	})
 
 	t.Run("get_no_physical_object", func(t *testing.T) {
+		t.Parallel()
 		blockStoreType := viper.GetString(ViperBlockstoreType)
 		if blockStoreType != "s3" {
 			t.Skip("Skipping test - blockstore type is not s3")
@@ -588,6 +600,7 @@ func TestS3ReadObject(t *testing.T) {
 	})
 
 	t.Run("get_not_exists", func(t *testing.T) {
+		t.Parallel()
 		res, err := minioClient.GetObject(ctx, repo, badPath, minio.GetObjectOptions{})
 		if err != nil {
 			t.Errorf("GetObject(%s, %s): %s", repo, badPath, err)
@@ -605,6 +618,7 @@ func TestS3ReadObject(t *testing.T) {
 	})
 
 	t.Run("head_exists", func(t *testing.T) {
+		t.Parallel()
 		info, err := minioClient.StatObject(ctx, repo, goodPath, minio.StatObjectOptions{})
 		if err != nil {
 			t.Errorf("StatObject(%s, %s): %s", repo, goodPath, err)
@@ -613,6 +627,7 @@ func TestS3ReadObject(t *testing.T) {
 	})
 
 	t.Run("head_not_exists", func(t *testing.T) {
+		t.Parallel()
 		info, err := minioClient.StatObject(ctx, repo, badPath, minio.StatObjectOptions{})
 		if err == nil {
 			t.Errorf("StatObject(%s, %s): expected an error but got %+v", repo, badPath, info)
@@ -627,16 +642,18 @@ func TestS3ReadObject(t *testing.T) {
 }
 
 func TestS3HeadBucket(t *testing.T) {
+	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	badRepo := repo + "-nonexistent"
 
 	// Upload an object
-	client := newMinioClient(t, credentials.NewStaticV2)
+	clt := newMinioClient(t, credentials.NewStaticV2)
 
 	t.Run("existing", func(t *testing.T) {
-		ok, err := client.BucketExists(ctx, repo)
+		t.Parallel()
+		ok, err := clt.BucketExists(ctx, repo)
 		if err != nil {
 			t.Errorf("BucketExists(%s) failed: %s", repo, err)
 		}
@@ -646,7 +663,8 @@ func TestS3HeadBucket(t *testing.T) {
 	})
 
 	t.Run("not existing", func(t *testing.T) {
-		ok, err := client.BucketExists(ctx, badRepo)
+		t.Parallel()
+		ok, err := clt.BucketExists(ctx, badRepo)
 		if err != nil {
 			t.Errorf("BucketExists(%s) failed: %s", badRepo, err)
 		}
@@ -691,16 +709,15 @@ func getOrCreatePathToLargeObject(t *testing.T, ctx context.Context, s3lakefsCli
 }
 
 func TestS3CopyObjectMultipart(t *testing.T) {
+	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	// additional repository for copy between repos
-	const destRepoName = "tests3copyobjectmultipartdest"
-	destRepo := createRepositoryByName(ctx, t, destRepoName)
-	defer DeleteRepositoryIfAskedTo(ctx, destRepoName)
+	destRepo := createRepositoryUnique(ctx, t)
+	defer DeleteRepositoryIfAskedTo(ctx, destRepo)
 
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
-
 	srcPath, objectLength := getOrCreatePathToLargeObject(t, ctx, s3lakefsClient, repo, mainBranch)
 	destPath := gatewayTestPrefix + "dest-file"
 
@@ -766,13 +783,13 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 }
 
 func TestS3CopyObject(t *testing.T) {
+	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	// additional repository for copy between repos
-	const destRepoName = "tests3copyobjectdest"
-	destRepo := createRepositoryByName(ctx, t, destRepoName)
-	defer DeleteRepositoryIfAskedTo(ctx, destRepoName)
+	destRepo := createRepositoryUnique(ctx, t)
+	defer DeleteRepositoryIfAskedTo(ctx, destRepo)
 
 	// content
 	r := rand.New(rand.NewSource(17))
@@ -790,6 +807,7 @@ func TestS3CopyObject(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("same_branch", func(t *testing.T) {
+		t.Parallel()
 		// copy the object to the same repository
 		_, err = s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
@@ -834,6 +852,7 @@ func TestS3CopyObject(t *testing.T) {
 	})
 
 	t.Run("different_repo", func(t *testing.T) {
+		t.Parallel()
 		// copy the object to different repository. should create another version of the file
 		userMetadataReplace := map[string]string{"X-Amz-Meta-Key1": "value1Replace", "X-Amz-Meta-Key2": "value2Replace"}
 
@@ -884,6 +903,7 @@ func TestS3CopyObject(t *testing.T) {
 }
 
 func TestS3PutObjectTagging(t *testing.T) {
+	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -902,6 +922,7 @@ func TestS3PutObjectTagging(t *testing.T) {
 }
 
 func TestS3CopyObjectErrors(t *testing.T) {
+	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
@@ -915,6 +936,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV2)
 
 	t.Run("malformed dest", func(t *testing.T) {
+		t.Parallel()
 		// copy the object to a non-existent repo - tests internal lakeFS error
 		_, err := s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
@@ -930,6 +952,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	})
 
 	t.Run("source not found", func(t *testing.T) {
+		t.Parallel()
 		// Create object in lakeFS with wrong physical address
 		getResp, err := client.GetPhysicalAddressWithResponse(ctx, repo, mainBranch, &apigen.GetPhysicalAddressParams{
 			Path: "data/not-found",
@@ -963,6 +986,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 	})
 
 	t.Run("readonly repo from non-existing source", func(t *testing.T) {
+		t.Parallel()
 		_, err := s3lakefsClient.CopyObject(ctx,
 			minio.CopyDestOptions{
 				Bucket: readOnlyRepo,
@@ -978,6 +1002,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 }
 
 func TestS3ReadObjectRedirect(t *testing.T) {
+	t.Parallel()
 	RequireBlockstoreType(t, block.BlockstoreTypeS3)
 	const (
 		contents = "the quick brown fox jumps over the lazy dog"
@@ -996,6 +1021,7 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 	}
 
 	t.Run("get_exists", func(t *testing.T) {
+		t.Parallel()
 		opts := minio.GetObjectOptions{}
 		opts.Set("User-Agent", "client with s3RedirectionSupport set")
 		res, err := minioClient.GetObject(ctx, repo, goodPath, opts)
@@ -1007,27 +1033,122 @@ func TestS3ReadObjectRedirect(t *testing.T) {
 	})
 }
 
-func createS3Client(endpoint string, t *testing.T) *s3.Client {
-	accessKeyID := viper.GetString("access_key_id")
-	secretAccessKey := viper.GetString("secret_access_key")
-	s3Client, err := testutil.SetupTestS3Client(endpoint, accessKeyID, secretAccessKey, true)
-	require.NoError(t, err, "failed creating s3 client")
-	return s3Client
-}
-
 func TestPossibleAPIEndpointError(t *testing.T) {
+	t.Parallel()
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
 	t.Run("use_open_api_for_client_endpoint", func(t *testing.T) {
+		t.Parallel()
 		s3Client := createS3Client(endpointURL+apiutil.BaseURL, t)
 		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("not-exists")})
 		require.ErrorContains(t, listErr, gtwerrors.ErrNoSuchBucketPossibleAPIEndpoint.Error())
 	})
 
 	t.Run("use_proper_client_endpoint", func(t *testing.T) {
+		t.Parallel()
 		s3Client := createS3Client(endpointURL, t)
 		_, listErr := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String("not-exists")})
 		require.ErrorContains(t, listErr, gtwerrors.ErrNoSuchBucket.Error())
 	})
+}
+
+func TestDeleteObjects(t *testing.T) {
+	t.Parallel()
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+	const numOfObjects = 10
+	identifiers := make([]types.ObjectIdentifier, 0, numOfObjects)
+
+	for i := 1; i <= numOfObjects; i++ {
+		file := strconv.Itoa(i) + ".txt"
+		identifiers = append(identifiers, types.ObjectIdentifier{
+			Key: aws.String(mainBranch + "/" + file),
+		})
+		_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, file, nil)
+	}
+
+	objectsCh := make(chan minio.ObjectInfo)
+	var objCount int
+	clt := newMinioClient(t, credentials.NewStaticV4)
+	go func() {
+		defer close(objectsCh)
+		for obj := range clt.ListObjects(ctx, repo, minio.ListObjectsOptions{
+			Prefix: mainBranch + "/",
+		}) {
+			objectsCh <- obj
+			objCount++
+		}
+		require.Equal(t, objCount, numOfObjects)
+	}()
+
+	errChan := clt.RemoveObjects(ctx, repo, objectsCh, minio.RemoveObjectsOptions{})
+	for err := range errChan {
+		assert.NoError(t, err.Err, "err deleting object %s", err.ObjectName)
+	}
+	require.Len(t, errChan, 0)
+
+	listChan := clt.ListObjects(ctx, repo, minio.ListObjectsOptions{
+		Prefix: mainBranch + "/",
+	})
+	require.Len(t, listChan, 0)
+}
+
+// TestDeleteObjects_Viewer verify we can't delete with read only user
+func TestDeleteObjects_Viewer(t *testing.T) {
+	t.SkipNow()
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	// setup data
+	const filename = "delete-me"
+	_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, filename, nil)
+
+	// setup user with only view rights - create user, add to group, generate credentials
+	uid := "del-viewer"
+	resCreateUser, err := client.CreateUserWithResponse(ctx, apigen.CreateUserJSONRequestBody{
+		Id: uid,
+	})
+	require.NoError(t, err, "Admin failed while creating user")
+	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
+	defer DeleteUser(t, ctx, client, uid)
+
+	resAssociateUser, err := client.AddGroupMembershipWithResponse(ctx, "Viewers", "del-viewer")
+	require.NoError(t, err, "Failed to add user to Viewers group")
+	require.Equal(t, http.StatusCreated, resAssociateUser.StatusCode(), "AddGroupMembershipWithResponse unexpectedly status code")
+
+	resCreateCreds, err := client.CreateCredentialsWithResponse(ctx, "del-viewer")
+	require.NoError(t, err, "Failed to create credentials")
+	require.NotNil(t, resCreateCreds.JSON201, "CreateCredentials unexpectedly empty response")
+
+	// client with viewer user credentials
+	key := resCreateCreds.JSON201.AccessKeyId
+	secret := resCreateCreds.JSON201.SecretAccessKey
+	s3Endpoint := viper.GetString("s3_endpoint")
+	forcePathStyle := viper.GetBool("force_path_style")
+	s3Client, err := testutil.SetupTestS3Client(s3Endpoint, key, secret, forcePathStyle)
+	require.NoError(t, err)
+
+	// delete objects using viewer
+	deleteOut, err := s3Client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+		Bucket: aws.String(repo),
+		Delete: &types.Delete{
+			Objects: []types.ObjectIdentifier{
+				{Key: aws.String(mainBranch + "/" + filename)},
+			},
+		},
+	})
+	// make sure we got an error we fail to delete the file
+	assert.NoError(t, err)
+	assert.Len(t, deleteOut.Errors, 1, "error we fail to delete")
+	assert.Len(t, deleteOut.Deleted, 0, "no file should be deleted")
+
+	// verify that viewer can't delete the file
+	listOut, err := svc.ListObjects(ctx, &s3.ListObjectsInput{
+		Bucket: aws.String(repo),
+		Prefix: aws.String(mainBranch + "/"),
+	})
+	assert.NoError(t, err)
+	assert.Len(t, listOut.Contents, 1, "list should find 'delete-me' file")
+	assert.Equal(t, aws.ToString(listOut.Contents[0].Key), mainBranch+"/"+filename)
 }

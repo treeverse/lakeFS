@@ -251,6 +251,18 @@ func DeleteAllPolicies(ctx context.Context, client apigen.ClientWithResponsesInt
 	return errs.ErrorOrNil()
 }
 
+func DeleteUser(t testing.TB, ctx context.Context, client apigen.ClientWithResponsesInterface, userName string) {
+	getResp, err := client.GetUserWithResponse(ctx, userName)
+	require.NoError(t, err)
+	if getResp.StatusCode() == http.StatusNotFound { // skip if already deleted
+		return
+	}
+	require.NotNil(t, getResp.JSON200)
+	resp, err := client.DeleteUserWithResponse(ctx, userName)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode())
+}
+
 // skipOnSchemaMismatch matches the rawURL schema to the current tested storage namespace schema
 func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	t.Helper()
@@ -287,7 +299,7 @@ func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
 	name := MakeRepositoryName(t.Name())
 	log := logger.WithField("testName", name)
-	repo := createRepositoryForTest(ctx, t)
+	repo := createRepositoryUnique(ctx, t)
 	log.WithField("repo", repo).Info("Created repository")
 	return ctx, log, repo
 }
@@ -295,11 +307,6 @@ func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 func tearDownTest(repoName string) {
 	ctx := context.Background()
 	DeleteRepositoryIfAskedTo(ctx, repoName)
-}
-
-func createRepositoryForTest(ctx context.Context, t testing.TB) string {
-	name := strings.ToLower(t.Name())
-	return createRepositoryByName(ctx, t, name)
 }
 
 func createRepositoryByName(ctx context.Context, t testing.TB, name string) string {
@@ -311,7 +318,7 @@ func createRepositoryByName(ctx context.Context, t testing.TB, name string) stri
 
 func createReadOnlyRepositoryByName(ctx context.Context, t testing.TB, name string) string {
 	storageNamespace := GenerateUniqueStorageNamespace(name)
-	name = MakeRepositoryName(name)
+	name = GenerateUniqueRepositoryName()
 	createRepository(ctx, t, name, storageNamespace, true)
 	return name
 }
