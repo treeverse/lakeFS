@@ -371,7 +371,7 @@ You can create additional policies to further limit user access. Use the web UI 
 
 lakeFS has four preconfigured groups:
 
-* Admins
+* Admins added word
 * SuperUsers
 * Developers
 * Viewers
