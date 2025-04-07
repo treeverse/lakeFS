@@ -650,30 +650,44 @@ export const URINavigator = ({
     <div className="d-flex">
       <div className="lakefs-uri flex-grow-1">
         {relativeTo === "" ? (
-          <>
-            <strong>{"lakefs://"}</strong>
-            <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
-              {repo.id}
-            </Link>
-            <strong>{"/"}</strong>
-            <Link
-              href={{
-                pathname: "/repositories/:repoId/objects",
-                params,
-                query: { ref: reference.id },
-              }}
-            >
-              {reference.type === RefTypeCommit
-                ? reference.id.substr(0, 12)
-                : reference.id}
-            </Link>
-            <strong>{"/"}</strong>
-          </>
+            <Row>
+                <Col
+                    xs={11}
+                    title={reference.type === RefTypeCommit
+                        ? reference.id.substr(0, 12)
+                        : reference.id}
+                    className="text-nowrap overflow-hidden text-truncate"
+                >
+                  <strong>lakefs://</strong>
+                  <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
+                    {repo.id}
+                  </Link>
+                  <strong>/</strong>
+                  <Link
+                      href={{
+                        pathname: "/repositories/:repoId/objects",
+                        params,
+                        query: { ref: reference.id },
+                      }}
+                  >
+                    {reference.type === RefTypeCommit
+                        ? reference.id.substr(0, 12)
+                        : reference.id}
+                  </Link>
+                  <strong>/</strong>
+                </Col>
+            </Row>
         ) : (
-          <>
-            <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
-            <strong>{"/"}</strong>
-          </>
+          <Row>
+            <Col
+                xs={11}
+                title={relativeTo}
+                className="text-nowrap overflow-hidden text-truncate"
+            >
+                <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
+                <strong>{"/"}</strong>
+              </Col>
+          </Row>
         )}
 
         {parts.map((part, i) => {
