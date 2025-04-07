@@ -184,7 +184,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 			for i := 0; i < numUploads; i++ {
 				objects <- Object{
 					Content: testutil.RandomString(r, randomDataContentLength),
-					Path:    gatewayTestPrefix + testutil.RandomS3Path(r, randomDataPathLength-len(gatewayTestPrefix)),
+					Path:    gatewayTestPrefix + testutil.RandomS3Path(randomDataPathLength-len(gatewayTestPrefix)),
 				}
 			}
 			close(objects)
@@ -1111,7 +1111,7 @@ func TestDeleteObjects_Viewer(t *testing.T) {
 	})
 	require.NoError(t, err, "Admin failed while creating user")
 	require.Equal(t, http.StatusCreated, resCreateUser.StatusCode(), "Admin unexpectedly failed to create user")
-	defer DeleteUser(t, ctx, client, uid)
+	defer CleanupUser(t, ctx, client, uid)
 
 	resAssociateUser, err := client.AddGroupMembershipWithResponse(ctx, "Viewers", "del-viewer")
 	require.NoError(t, err, "Failed to add user to Viewers group")

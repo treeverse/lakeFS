@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	gonanoid "github.com/matoous/go-nanoid"
 	"io"
 	"math"
 	"math/rand"
@@ -66,13 +67,10 @@ func UniqueName() string {
 	return nanoid.MustGenerate(chars, charsSize)
 }
 
-func RandomS3Path(rand *rand.Rand, size int) string {
+func RandomS3Path(size int) string {
 	// List of valid chars per https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html
-	var pathRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!-_.*'()&$@=;/:+,?")
+	const pathRunes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!-_.*'()&$@=;/:+,?"
 
-	b := make([]rune, size)
-	for i := range b {
-		b[i] = pathRunes[rand.Intn(len(pathRunes))]
-	}
-	return string(b)
+	result, _ := gonanoid.Generate(pathRunes, size)
+	return result
 }

@@ -251,7 +251,8 @@ func DeleteAllPolicies(ctx context.Context, client apigen.ClientWithResponsesInt
 	return errs.ErrorOrNil()
 }
 
-func DeleteUser(t testing.TB, ctx context.Context, client apigen.ClientWithResponsesInterface, userName string) {
+// CleanupUser - A helper function to remove created users during test
+func CleanupUser(t testing.TB, ctx context.Context, client apigen.ClientWithResponsesInterface, userName string) {
 	getResp, err := client.GetUserWithResponse(ctx, userName)
 	require.NoError(t, err)
 	if getResp.StatusCode() == http.StatusNotFound { // skip if already deleted
@@ -318,9 +319,9 @@ func createRepositoryByName(ctx context.Context, t testing.TB, name string) stri
 
 func createReadOnlyRepositoryByName(ctx context.Context, t testing.TB, name string) string {
 	storageNamespace := GenerateUniqueStorageNamespace(name)
-	name = GenerateUniqueRepositoryName()
-	createRepository(ctx, t, name, storageNamespace, true)
-	return name
+	repoName := GenerateUniqueRepositoryName()
+	createRepository(ctx, t, repoName, storageNamespace, true)
+	return repoName
 }
 
 func createRepositoryUnique(ctx context.Context, t testing.TB) string {
