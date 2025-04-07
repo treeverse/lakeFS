@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	gonanoid "github.com/matoous/go-nanoid"
 	nanoid "github.com/matoous/go-nanoid/v2"
 )
 
@@ -64,4 +65,12 @@ func NewRandomReader(rand *rand.Rand, size int64) io.Reader {
 
 func UniqueName() string {
 	return nanoid.MustGenerate(chars, charsSize)
+}
+
+func RandomS3Path(size int) string {
+	// List of valid chars per https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html
+	const pathRunes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!-_.*'()&$@=;/:+,?"
+
+	result, _ := gonanoid.Generate(pathRunes, size)
+	return result
 }
