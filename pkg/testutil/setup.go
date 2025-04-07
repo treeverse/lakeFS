@@ -139,9 +139,14 @@ func SetupTestingEnv(params *SetupTestingEnvParams) (logging.Logger, apigen.Clie
 	return logger, client, svc, endpointURL
 }
 
-func SetupTestS3Client(endpoint, key, secret string, forcePathStyle bool) (*s3.Client, error) {
+func SetupTestS3Client(endpoint, key, secret string, forcePathStyle bool, opts ...func(*s3.Options)) (*s3.Client, error) {
+	endpointSecure := viper.GetBool("s3_endpoint_secure")
 	if !strings.HasPrefix(endpoint, "http") {
-		endpoint = "http://" + endpoint
+		if endpointSecure {
+			endpoint = "https://" + endpoint
+		} else {
+			endpoint = "http://" + endpoint
+		}
 	}
 	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion("us-east-1"),
@@ -150,10 +155,10 @@ func SetupTestS3Client(endpoint, key, secret string, forcePathStyle bool) (*s3.C
 	if err != nil {
 		return nil, err
 	}
-	svc := s3.NewFromConfig(cfg, func(options *s3.Options) {
+	svc := s3.NewFromConfig(cfg, append(opts, func(options *s3.Options) {
 		options.BaseEndpoint = aws.String(endpoint)
 		options.UsePathStyle = forcePathStyle
-	})
+	})...)
 	return svc, nil
 }
 
