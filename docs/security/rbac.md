@@ -368,8 +368,8 @@ You can create additional policies to further limit user access. Use the web UI 
 ```
 ## Multiple Resources Statements
 
-Starting from version v1.54.0, (for on-prem users using fluffy > v0.11.0) LakeFS supports specifying multiple resources in a single RBAC statement.
-To enable this, the resource field should contain a string representing a JSON-encoded list of resources.
+lakeFS supports specifying multiple resources in a single RBAC statement. This is available on lakeFS Cloud, or on lakeFS Enterprise if starting at version lakeFS v1.54.0 and Fluffy v0.12.0
+In addition to a single resource, the resource field can contain a string representing a JSON-encoded list of resources.
 
 ```json
 {
@@ -384,9 +384,11 @@ To enable this, the resource field should contain a string representing a JSON-e
     ]
 }
 ```
-Note: Ensure that the list is properly JSON-encoded as a string—using double quotes and escaping as shown—otherwise, the policy will not be parsed correctly.
+The list must be properly encoded as a JSON string: quote each resource, and escape those quotes as shown. Otherwise, the policy cannot be parsed.
 
-Multi resource policy creation using python-sdk:
+### Multi-Resource Policy Creation Using Python SDK
+
+Here is how you can leverage Python SDK to create a multiple resource policy:
 
 ```python
 admin1Client.auth_api.create_policy(
