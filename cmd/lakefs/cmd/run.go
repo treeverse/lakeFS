@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/modules/license/factory"
 	"io"
 	"net/http"
 	"net/url"
@@ -125,6 +126,11 @@ var runCmd = &cobra.Command{
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
+
+		_, err = factory.NewNopLicenseManager()
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create license manager")
+		}
 
 		// init block store
 		blockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, cfg)

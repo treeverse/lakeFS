@@ -7,4 +7,5 @@ use (
 	./modules/block/factory
 	./modules/config/factory
 	./webui
+	modules/license/factory
 )
