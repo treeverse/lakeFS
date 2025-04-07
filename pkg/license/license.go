@@ -1,13 +1,19 @@
 /*
-Package for licensing functionality. For OSS version this is a minimal implementation
+Package license contains enterprise licensing functionality. For OSS version this is a minimal implementation
 */
 package license
+
+import (
+	"errors"
+)
 
 type Manager interface {
 	ValidateLicense() error
 	GetToken() (string, error)
 	InstallationID() string
 }
+
+var errNotImplemented = errors.New("not implemented")
 
 // NewNopLicenseManager creates and returns a new instance of NopLicenseManager.
 func NewNopLicenseManager() *NopLicenseManager {
@@ -22,7 +28,7 @@ func (n *NopLicenseManager) ValidateLicense() error {
 }
 
 func (n *NopLicenseManager) GetToken() (string, error) {
-	return "", nil
+	return "", errNotImplemented
 }
 
 func (n *NopLicenseManager) InstallationID() string {
