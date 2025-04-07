@@ -217,52 +217,51 @@ func TestSyncManager_upload(t *testing.T) {
 		Mtime           int64
 	}{
 		{
-			Name:  "basic upload",
+			Name:  "basic",
 			Path:  "my_object",
 			Mtime: time.Now().Unix(),
 		},
 		{
-			Name:  "download with client mtime",
+			Name:  "with client mtime",
 			Mtime: time.Now().Add(24 * time.Hour).Unix(),
 			Path:  "my_object",
 		},
 		{
-			Name:        "download file POSIX perm metadata disabled",
+			Name:        "file POSIX perm metadata disabled",
 			Permissions: &local.POSIXPermissions{Mode: local.DefaultDirectoryPermissions},
 			Path:        "my_object",
 		},
 		{
-			Name:            "download file POSIX perm enabled no metadata",
+			Name:            "file POSIX perm enabled no metadata",
 			Path:            "my_object",
 			UnixPermEnabled: true,
 		},
 		{
-			Name:            "download file POSIX perm enabled with metadata",
+			Name:            "file POSIX perm enabled with metadata",
 			Path:            "my_object",
 			UnixPermEnabled: true,
 			Permissions:     &local.POSIXPermissions{Mode: os.FileMode(0o100755)},
 		},
 		{
-			Name:            "download folder POSIX perm no metadata",
+			Name:            "folder POSIX perm no metadata",
 			Path:            "folder1/",
 			UnixPermEnabled: true,
 		},
 		{
-			Name:            "download folder POSIX perm with metadata",
+			Name:            "folder POSIX perm with metadata",
 			Path:            "folder2/",
 			UnixPermEnabled: true,
 			Permissions:     &local.POSIXPermissions{Mode: os.FileMode(0o40770)},
 		},
 	}
+	umask := syscall.Umask(0)
+	syscall.Umask(umask)
 
 	for _, tt := range testCases {
-		umask := syscall.Umask(0)
-		syscall.Umask(umask)
-
 		t.Run(tt.Name, func(t *testing.T) {
 			// We must create the test at the user home dir otherwise we will file to chown
-			home, err := os.UserHomeDir()
-			require.NoError(t, err)
+			home := t.TempDir()
+			t.Setenv("HOME", home)
 			testFolderPath := filepath.Join(home, fmt.Sprintf("sync_manager_test_%s", xid.New().String()))
 			require.NoError(t, os.MkdirAll(testFolderPath, os.ModePerm))
 			defer func() {
@@ -282,27 +281,34 @@ func TestSyncManager_upload(t *testing.T) {
 			require.NoError(t, os.Chtimes(localPath, time.Now(), time.Unix(tt.Mtime, 0)))
 
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				switch {
-				case strings.HasSuffix(r.URL.Path, "/objects"):
-					// Check Chown
-					perm := local.POSIXPermissions{}
-					data := []byte(r.Header.Get(apiutil.LakeFSHeaderInternalPrefix + "POSIX-permissions"))
-					if len(data) > 0 {
-						require.NoError(t, json.Unmarshal(data, &perm))
-					} else {
-						perm = local.GetDefaultPermissions(isDir)
-					}
-					expectedPerm := perm
-					if tt.UnixPermEnabled && tt.Permissions != nil {
-						expectedPerm.Mode = tt.Permissions.Mode
-					}
-					require.Equal(t, expectedPerm, perm)
-
-					// Check Mtime
-					require.Equal(t, fmt.Sprintf("%d", tt.Mtime), r.Header.Get(apiutil.LakeFSHeaderInternalPrefix+"client-mtime"))
-				default:
+				if !strings.HasSuffix(r.URL.Path, "/objects") {
 					t.Fatal("Unexpected request")
 				}
+
+				// Check Chown
+				perm := local.POSIXPermissions{}
+				data := []byte(r.Header.Get(apiutil.LakeFSHeaderInternalPrefix + "POSIX-permissions"))
+				if len(data) > 0 {
+					require.NoError(t, json.Unmarshal(data, &perm))
+				} else {
+					perm = local.GetDefaultPermissions(isDir)
+				}
+				if tt.UnixPermEnabled && tt.Permissions != nil {
+					expectedPerm := local.POSIXPermissions{
+						POSIXOwnership: local.POSIXOwnership{
+							UID: os.Getuid(),
+							GID: os.Getgid(),
+						},
+						Mode: os.FileMode(int(tt.Permissions.Mode) &^ umask),
+					}
+					require.Equal(t, expectedPerm, perm)
+				}
+
+				// Check Mtime
+				expectedMtime := fmt.Sprintf("%d", tt.Mtime)
+				fileMtime := r.Header.Get(apiutil.LakeFSHeaderInternalPrefix + "client-mtime")
+				require.Equal(t, expectedMtime, fileMtime)
+
 				w.WriteHeader(http.StatusOK)
 			})
 			server := httptest.NewServer(h)
@@ -314,14 +320,12 @@ func TestSyncManager_upload(t *testing.T) {
 					Parallelism:      1,
 					Presign:          false,
 					PresignMultipart: false,
+					NoProgress:       true,
 				},
 				IncludePerm: tt.UnixPermEnabled,
+				IncludeGID:  tt.UnixPermEnabled,
+				IncludeUID:  tt.UnixPermEnabled,
 			})
-			u := &uri.URI{
-				Repository: "repo",
-				Ref:        "main",
-				Path:       nil,
-			}
 			changes := make(chan *local.Change, 2)
 			changes <- &local.Change{
 				Source: local.ChangeSourceLocal,
@@ -329,7 +333,12 @@ func TestSyncManager_upload(t *testing.T) {
 				Type:   local.ChangeTypeAdded,
 			}
 			close(changes)
-			require.NoError(t, s.Sync(testFolderPath, u, changes))
+
+			remoteURI := &uri.URI{
+				Repository: "repo",
+				Ref:        "main",
+			}
+			require.NoError(t, s.Sync(testFolderPath, remoteURI, changes))
 		})
 	}
 }
