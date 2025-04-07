@@ -38,8 +38,7 @@ type GetCredentials = func(id, secret, token string) *credentials.Credentials
 const (
 	numUploads           = 100
 	randomDataPathLength = 1020
-	branch               = "main"
-	gatewayTestPrefix    = branch + "/data/"
+	gatewayTestPrefix    = mainBranch + "/data/"
 )
 
 func newMinioClient(t *testing.T, getCredentials GetCredentials) *minio.Client {
@@ -702,7 +701,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 
 	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
 
-	srcPath, objectLength := getOrCreatePathToLargeObject(t, ctx, s3lakefsClient, repo, branch)
+	srcPath, objectLength := getOrCreatePathToLargeObject(t, ctx, s3lakefsClient, repo, mainBranch)
 	destPath := gatewayTestPrefix + "dest-file"
 
 	dest := minio.CopyDestOptions{

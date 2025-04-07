@@ -667,13 +667,14 @@ type Auth struct {
 	LoginDuration     time.Duration `mapstructure:"login_duration"`
 	LoginMaxDuration  time.Duration `mapstructure:"login_max_duration"`
 	UIConfig          struct {
-		RBAC               string   `mapstructure:"rbac"`
-		LoginURL           string   `mapstructure:"login_url"`
-		LoginFailedMessage string   `mapstructure:"login_failed_message"`
-		FallbackLoginURL   *string  `mapstructure:"fallback_login_url"`
-		FallbackLoginLabel *string  `mapstructure:"fallback_login_label"`
-		LoginCookieNames   []string `mapstructure:"login_cookie_names"`
-		LogoutURL          string   `mapstructure:"logout_url"`
+		RBAC                 string   `mapstructure:"rbac"`
+		LoginURL             string   `mapstructure:"login_url"`
+		LoginFailedMessage   string   `mapstructure:"login_failed_message"`
+		FallbackLoginURL     *string  `mapstructure:"fallback_login_url"`
+		FallbackLoginLabel   *string  `mapstructure:"fallback_login_label"`
+		LoginCookieNames     []string `mapstructure:"login_cookie_names"`
+		LogoutURL            string   `mapstructure:"logout_url"`
+		UseLoginPlaceholders bool     `mapstructure:"use_login_placeholders"`
 	} `mapstructure:"ui_config"`
 }
 
@@ -730,7 +731,7 @@ func (c *Auth) IsExternalPrincipalsEnabled() bool {
 // UseUILoginPlaceholders returns true if the UI should use placeholders for login
 // the UI should use placeholders just in case of LDAP, the other auth methods should have their own login page
 func (c *Auth) UseUILoginPlaceholders() bool {
-	return c.RemoteAuthenticator.Enabled
+	return c.RemoteAuthenticator.Enabled || c.UIConfig.UseLoginPlaceholders
 }
 
 func (c *Auth) IsAdvancedAuth() bool {

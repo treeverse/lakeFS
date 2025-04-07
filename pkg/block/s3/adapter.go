@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -403,7 +405,7 @@ func (c *CaptureExpiresPresigner) PresignHTTP(ctx context.Context, credentials a
 	return c.Presigner.PresignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
 }
 
-func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode) (string, time.Time, error) {
+func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, mode block.PreSignMode, filename string) (string, time.Time, error) {
 	if a.disablePreSigned {
 		return "", time.Time{}, block.ErrOperationNotSupported
 	}
@@ -440,6 +442,15 @@ func (a *Adapter) GetPreSignedURL(ctx context.Context, obj block.ObjectPointer, 
 		getObjectInput := &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String(key),
+		}
+		// Add content-disposition if filename provided
+		if filename != "" {
+			contentDisposition := mime.FormatMediaType("attachment", map[string]string{
+				"filename": path.Base(filename),
+			})
+			if contentDisposition != "" {
+				getObjectInput.ResponseContentDisposition = aws.String(contentDisposition)
+			}
 		}
 		req, err = presigner.PresignGetObject(ctx, getObjectInput, func(o *s3.PresignOptions) {
 			captureExpiresPresigner.Presigner = o.Presigner

@@ -2691,7 +2691,7 @@ public class InternalApi {
 
     /**
      * 
-     * 
+     * Deprecated; use deleteGCRules.
      * @param repository  (required)
      * @return APIinternalDeleteGarbageCollectionRulesRequest
      * @http.response.details
@@ -3057,7 +3057,7 @@ public class InternalApi {
 
     /**
      * 
-     * 
+     * Deprecated; use getGCRules.
      * @param repository  (required)
      * @return APIinternalGetGarbageCollectionRulesRequest
      * @http.response.details
@@ -3244,7 +3244,7 @@ public class InternalApi {
 
     /**
      * 
-     * 
+     * Deprecated; use setGCRules.
      * @param repository  (required)
      * @param garbageCollectionRules  (required)
      * @return APIinternalSetGarbageCollectionRulesRequest

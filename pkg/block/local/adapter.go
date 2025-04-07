@@ -97,7 +97,7 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	return localAdapter, nil
 }
 
-func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode) (string, time.Time, error) {
+func (l *Adapter) GetPreSignedURL(_ context.Context, _ block.ObjectPointer, _ block.PreSignMode, _ string) (string, time.Time, error) {
 	return "", time.Time{}, fmt.Errorf("local adapter presigned URL: %w", block.ErrOperationNotSupported)
 }
 

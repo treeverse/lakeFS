@@ -35,9 +35,9 @@ func (m *MetricsAdapter) GetWalker(storageID string, opts WalkerOptions) (Walker
 	return m.adapter.GetWalker(storageID, opts)
 }
 
-func (m *MetricsAdapter) GetPreSignedURL(ctx context.Context, obj ObjectPointer, mode PreSignMode) (string, time.Time, error) {
+func (m *MetricsAdapter) GetPreSignedURL(ctx context.Context, obj ObjectPointer, mode PreSignMode, filename string) (string, time.Time, error) {
 	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
-	return m.adapter.GetPreSignedURL(ctx, obj, mode)
+	return m.adapter.GetPreSignedURL(ctx, obj, mode, filename)
 }
 
 func (m *MetricsAdapter) GetPresignUploadPartURL(ctx context.Context, obj ObjectPointer, uploadID string, partNumber int) (string, error) {

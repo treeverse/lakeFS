@@ -17,7 +17,10 @@ import (
 
 const ImportCanceled = "Canceled"
 
-var ErrImportClosed = errors.New("import closed")
+var (
+	ErrImportClosed        = errors.New("import closed")
+	ErrInvalidImportSource = errors.New("invalid import source")
+)
 
 type Import struct {
 	db            *pebble.DB

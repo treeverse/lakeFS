@@ -103,6 +103,8 @@ Configuration section when using `database.type="local"`
 * `auth.ui_config.rbac` `(string: "none")` - "none", "simplified", "external" or "internal" (enterprise feature).
   If you have configured an external auth server you can set this to "external" to support the policy editor.
   If you are using the enteprrise version of lakeFS, you can set this to "internal" to use the built-in policy editor.
+* `auth.ui_config.use_login_placeholders` `(bool: false)` - 
+  If set to true, the login page will show placeholders for the _Access Key ID_ and _Secret Access Key_ (_Username_ and _Password_).
 
 #### auth.cache
 

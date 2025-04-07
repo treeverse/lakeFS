@@ -24,19 +24,25 @@ Though our previous SDK client is still supported and maintained, we highly reco
 [legacy-sdk](https://pydocs.lakefs.io) (Deprecated)
 {: .note }
 
-Overview of lakeFS integration approaches using Python:
+## References & Resources
 
-* [Use the High Level lakeFS SDK](#using-the-lakefs-sdk) to perform **object operations**, **versioning** and other **lakeFS-specific operations**.
-* [Use the generated lakefs-sdk](https://pydocs-sdk.lakefs.io) for direct API access based on the OpenAPI specification of lakeFS.
-* [Use Boto](#using-boto) to perform **object operations** through the **lakeFS S3 gateway**.
-* [Using lakefs-spec](#using-lakefs-spec-for-higher-level-file-operations) to perform high-level file operations through a file-system-like API.
+- **High Level Python SDK Documentation**: [https://pydocs-lakefs.lakefs.io](https://pydocs-lakefs.lakefs.io)
+- **Generated Python SDK Documentation**: [https://pydocs-sdk.lakefs.io](https://pydocs-sdk.lakefs.io)
+- **Boto S3 Router**: [https://github.com/treeverse/boto-s3-router](https://github.com/treeverse/boto-s3-router)
+- **lakefs-spec API Reference**: [https://lakefs-spec.org/latest/reference/lakefs_spec/](https://lakefs-spec.org/latest/reference/lakefs_spec/)
+
+### Python Integration Options
+
+- [Use the High Level lakeFS SDK](#using-the-lakefs-sdk) to perform **object operations**, **versioning** and other **lakeFS-specific operations**.
+- [Use the generated lakefs-sdk](https://pydocs-sdk.lakefs.io) for direct API access based on the OpenAPI specification of lakeFS.
+- [Using lakefs-spec](#using-lakefs-spec-for-higher-level-file-operations) to perform high-level file operations through a file-system-like API.
+- [Use Boto](#using-boto) to perform **object operations** through the **lakeFS S3 gateway**.
 
 ## Using the lakeFS SDK
 
 ### Installing
 
 Install the Python client using pip:
-
 
 ```shell
 pip install lakefs
@@ -217,6 +223,7 @@ print(obj.stat())
 ```
 
 Reading the data is just as simple:
+
 ```python
 print(obj.reader(mode='r').read())
 ```
@@ -452,7 +459,7 @@ True
 
 ### Python SDK documentation and API reference
 
-For the documentation of lakeFS’s Python package and full api reference, see [https://pydocs-lakefs.lakefs.io](https://pydocs-lakefs.lakefs.io)
+For the documentation of lakeFS's Python package and full api reference, see [https://pydocs-lakefs.lakefs.io](https://pydocs-lakefs.lakefs.io)
 
 ## Using lakefs-spec for higher-level file operations
 
@@ -468,7 +475,7 @@ in the [lakefs-spec](https://github.com/aai-institute/lakefs-spec) repository.
 
 Install `lakefs-spec` directly with `pip`:
 
-```
+```shell
 python -m pip install --upgrade lakefs-spec
 ```
 
@@ -572,9 +579,10 @@ The client is now configured to operate on your lakeFS installation.
 
 In newer versions of Boto3, when connecting to **lakeFS** using **HTTPS**,
 you might encounter an **AccessDenied** error on upload,
-while the lakeFS logs display an error `encoding/hex: invalid byte: U+0053 'S'`. 
+while the lakeFS logs display an error `encoding/hex: invalid byte: U+0053 'S'`.
 
 To avoid this issue, explicitly configure the Boto3 client with the following checksum settings:
+
 - `request_checksum_calculation: 'when_required'`
 - `response_checksum_validation: 'when_required'`
 

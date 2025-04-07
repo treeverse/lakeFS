@@ -2089,6 +2089,7 @@ class InternalApi:
     def internal_delete_garbage_collection_rules(self, repository : StrictStr, **kwargs) -> None:  # noqa: E501
         """(Deprecated) internal_delete_garbage_collection_rules  # noqa: E501
 
+        Deprecated; use deleteGCRules.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -2118,6 +2119,7 @@ class InternalApi:
     def internal_delete_garbage_collection_rules_with_http_info(self, repository : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
         """(Deprecated) internal_delete_garbage_collection_rules  # noqa: E501
 
+        Deprecated; use deleteGCRules.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -2370,6 +2372,7 @@ class InternalApi:
     def internal_get_garbage_collection_rules(self, repository : StrictStr, **kwargs) -> GarbageCollectionRules:  # noqa: E501
         """(Deprecated) internal_get_garbage_collection_rules  # noqa: E501
 
+        Deprecated; use getGCRules.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -2399,6 +2402,7 @@ class InternalApi:
     def internal_get_garbage_collection_rules_with_http_info(self, repository : StrictStr, **kwargs) -> ApiResponse:  # noqa: E501
         """(Deprecated) internal_get_garbage_collection_rules  # noqa: E501
 
+        Deprecated; use getGCRules.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -2513,6 +2517,7 @@ class InternalApi:
     def internal_set_garbage_collection_rules(self, repository : StrictStr, garbage_collection_rules : GarbageCollectionRules, **kwargs) -> None:  # noqa: E501
         """(Deprecated) internal_set_garbage_collection_rules  # noqa: E501
 
+        Deprecated; use setGCRules.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -2544,6 +2549,7 @@ class InternalApi:
     def internal_set_garbage_collection_rules_with_http_info(self, repository : StrictStr, garbage_collection_rules : GarbageCollectionRules, **kwargs) -> ApiResponse:  # noqa: E501
         """(Deprecated) internal_set_garbage_collection_rules  # noqa: E501
 
+        Deprecated; use setGCRules.  # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
