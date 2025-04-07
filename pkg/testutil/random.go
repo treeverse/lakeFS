@@ -1,13 +1,13 @@
 package testutil
 
 import (
-	gonanoid "github.com/matoous/go-nanoid"
 	"io"
 	"math"
 	"math/rand"
 	"strings"
 	"unicode/utf8"
 
+	gonanoid "github.com/matoous/go-nanoid"
 	nanoid "github.com/matoous/go-nanoid/v2"
 )
 
