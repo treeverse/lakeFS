@@ -366,6 +366,55 @@ You can create additional policies to further limit user access. Use the web UI 
     ]
 }
 ```
+## Multiple Resources Statements
+
+lakeFS supports specifying multiple resources in a single RBAC statement. This is available on lakeFS Cloud, or on lakeFS Enterprise if starting at version lakeFS v1.54.0 and Fluffy v0.12.0
+In addition to a single resource, the resource field can contain a string representing a JSON-encoded list of resources.
+
+```json
+{
+    "statement": [
+        {
+            "action": [
+                "fs:Read*"
+            ],
+            "effect": "allow",
+            "resource": "[\"arn:lakefs:fs:::repository/repo1\",\"arn:lakefs:fs:::repository/repo2\"]"
+        }
+    ]
+}
+```
+The list must be properly encoded as a JSON string: quote each resource, and escape those quotes as shown. Otherwise, the policy cannot be parsed.
+
+### Multi-Resource Policy Creation Using Python SDK
+
+Here is how you can leverage Python SDK to create a multiple resource policy:
+
+```python
+import lakefs_sdk
+from lakefs_sdk.client import LakeFSClient
+from lakefs_sdk import models
+
+configuration = lakefs_sdk.Configuration(
+        host=lakefsEndPoint,
+        username=lakefsAccessKey,
+        password=lakefsSecretKey,
+)
+clt = LakeFSClient(configuration)
+
+clt.auth_api.create_policy(
+    policy=models.Policy(
+        id='FSReadTwoRepos',
+        statement=[models.Statement(
+            effect="deny",
+            resource=json.dumps(["arn:lakefs:fs:::repository/repo1","arn:lakefs:fs:::repository/repo2"]),
+            action=["fs:ReadRepository"],
+        ),
+        ]
+    )
+)
+```
+
 
 ## Preconfigured Groups
 
