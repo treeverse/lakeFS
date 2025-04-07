@@ -152,6 +152,11 @@ func TestParseResources(t *testing.T) {
 			outputResources: []string{},
 			expectedError:   fmt.Errorf("unmarshal resource"),
 		},
+		{
+			inputResource:   "[\"arn:lakefs:repos::b:myrepo\" ,\"arn:lakefs:repos::b:hisrepo\",]",
+			outputResources: []string{},
+			expectedError:   fmt.Errorf("unmarshal resource"),
+		},
 	}
 
 	for _, c := range cases {
