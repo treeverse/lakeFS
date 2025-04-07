@@ -731,8 +731,7 @@ func (c *Auth) IsExternalPrincipalsEnabled() bool {
 // UseUILoginPlaceholders returns true if the UI should use placeholders for login
 // the UI should use placeholders just in case of LDAP, the other auth methods should have their own login page
 func (c *Auth) UseUILoginPlaceholders() bool {
-	print("UseUILoginPlaceholders")
-	return c.UIConfig.UseLoginPlaceholders
+	return c.RemoteAuthenticator.Enabled || c.UIConfig.UseLoginPlaceholders
 }
 
 func (c *Auth) IsAdvancedAuth() bool {
