@@ -645,40 +645,41 @@ export const URINavigator = ({
 }) => {
   const parts = pathParts(path, isPathToFile);
   const params = { repoId: repo.id };
+  const displayedReference =
+      reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id;
 
   return (
     <div className="d-flex">
       <div className="lakefs-uri flex-grow-1">
-        {relativeTo === "" ? (
-            <div
-                title={reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id}
-                className="w-100 text-nowrap overflow-hidden text-truncate"
-            >
-              <strong>lakefs://</strong>
-              <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
-                {repo.id}
-              </Link>
-              <strong>/</strong>
-              <Link
-                  href={{
-                    pathname: "/repositories/:repoId/objects",
-                    params,
-                    query: { ref: reference.id },
-                  }}
-              >
-                {reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id}
-              </Link>
-              <strong>/</strong>
-            </div>
-        ) : (
-            <div
-                title={reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id}
-                className="w-100 text-nowrap overflow-hidden text-truncate"
-            >
-              <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
-              <strong>/</strong>
-            </div>
-        )}
+        <div
+            title={displayedReference}
+            className="w-100 text-nowrap overflow-hidden text-truncate"
+        >
+          {relativeTo === "" ? (
+              <>
+                <strong>lakefs://</strong>
+                <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
+                  {repo.id}
+                </Link>
+                <strong>/</strong>
+                <Link
+                    href={{
+                      pathname: "/repositories/:repoId/objects",
+                      params,
+                      query: { ref: reference.id },
+                    }}
+                >
+                  {displayedReference}
+                </Link>
+                <strong>/</strong>
+              </>
+          ) : (
+              <>
+                <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
+                <strong>/</strong>
+              </>
+          )}
+        </div>
 
         {parts.map((part, i) => {
           const path =
