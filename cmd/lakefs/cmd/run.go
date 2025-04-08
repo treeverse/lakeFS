@@ -98,6 +98,11 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Failure on schema validation")
 		}
 
+		licenseManager, err := licensefactory.NewLicenseManager()
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create license manager")
+		}
+
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
 		actionsStore := actions.NewActionsKVStore(kvStore)
@@ -126,11 +131,6 @@ var runCmd = &cobra.Command{
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
-
-		licenseManager, err := licensefactory.NewLicenseManager()
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to create license manager")
-		}
 
 		// init block store
 		blockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
