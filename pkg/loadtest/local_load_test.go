@@ -3,6 +3,7 @@ package loadtest
 import (
 	"context"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	"github.com/treeverse/lakefs/modules/license/factory"
 	"math"
 	"net/http/httptest"
 	"os"
@@ -87,7 +88,8 @@ func TestLocalLoad(t *testing.T) {
 	})
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 	authenticationService := authentication.NewDummyService()
-	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, blockAdapter, meta, migrator, &stats.NullCollector{}, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)
+	licenseManager, _ := factory.NewLicenseManager()
+	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, blockAdapter, meta, migrator, &stats.NullCollector{}, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
 
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
