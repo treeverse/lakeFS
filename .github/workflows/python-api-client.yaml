@@ -34,7 +34,7 @@ jobs:
       run: make package-python-sdk PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
     - name: Python SDK publish package
-      if: ${{ inputs. skip_publish_pypi == true }}
+      if: ${{ inputs.skip_publish_pypi == true }}
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
