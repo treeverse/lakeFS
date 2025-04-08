@@ -127,7 +127,7 @@ var runCmd = &cobra.Command{
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
-		_, err = factory.NewNopLicenseManager()
+		licenseManager, err := factory.NewNopLicenseManager()
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create license manager")
 		}
@@ -236,6 +236,7 @@ var runCmd = &cobra.Command{
 			baseCfg.UISnippets(),
 			upload.DefaultPathProvider,
 			usageReporter,
+			licenseManager,
 		)
 
 		// init gateway server
