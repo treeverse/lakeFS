@@ -12,9 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/streaming"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/cosmosdb"
@@ -31,15 +30,13 @@ var (
 
 func TestCosmosDB(t *testing.T) {
 	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
-		t.Helper()
-
 		databaseClient, err := client.NewDatabase(testParams.Database)
 		if err != nil {
 			t.Fatalf("creating database client: %s", err)
 		}
 
 		testParams.Container = "test-container" + testutil.UniqueName()
-		log.Printf("Creating container %s", testParams.Container)
+		t.Logf("Creating container %s", testParams.Container)
 		resp2, err := databaseClient.CreateContainer(ctx, azcosmos.ContainerProperties{
 			ID: testParams.Container,
 			PartitionKeyDefinition: azcosmos.PartitionKeyDefinition{
@@ -59,6 +56,9 @@ func TestCosmosDB(t *testing.T) {
 	})
 }
 
+// TestingTransport is a custom HTTP transport for testing purposes.
+// It modifies the response body of CosmosDB requests to remove
+// certain fields from the JSON response of the account properties endpoint.
 type TestingTransport struct{}
 
 func (t *TestingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
