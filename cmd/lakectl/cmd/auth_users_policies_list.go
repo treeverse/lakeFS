@@ -51,7 +51,7 @@ func init() {
 		"List all distinct policies attached to the user, including by group memberships")
 	authUsersPoliciesList.Flags().String("id", "", "Username (email for password-based users)")
 	_ = authUsersPoliciesList.MarkFlagRequired("id")
-	addPaginationFlags(authUsersPoliciesList)
+	withPaginationFlags(authUsersPoliciesList)
 
 	authUsersPolicies.AddCommand(authUsersPoliciesList)
 }

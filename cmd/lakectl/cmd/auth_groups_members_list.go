@@ -13,12 +13,11 @@ var authGroupsMembersList = &cobra.Command{
 	Short: "List users in a group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		amount := Must(cmd.Flags().GetInt("amount"))
-		after := Must(cmd.Flags().GetString("after"))
-
+		prefix, after, amount := getPaginationFlags(cmd)
 		clt := getClient()
 
 		resp, err := clt.ListGroupMembersWithResponse(cmd.Context(), id, &apigen.ListGroupMembersParams{
+			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
@@ -42,7 +41,7 @@ var authGroupsMembersList = &cobra.Command{
 func init() {
 	authGroupsMembersList.Flags().String("id", "", "Group identifier")
 	_ = authGroupsMembersList.MarkFlagRequired("id")
-	addPaginationFlags(authGroupsMembersList)
+	withPaginationFlags(authGroupsMembersList)
 
 	authGroupsMembersCmd.AddCommand(authGroupsMembersList)
 }

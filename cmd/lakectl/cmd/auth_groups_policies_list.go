@@ -15,12 +15,12 @@ var authGroupsPoliciesList = &cobra.Command{
 	Short: "List policies for the given group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id := Must(cmd.Flags().GetString("id"))
-		amount := Must(cmd.Flags().GetInt("amount"))
-		after := Must(cmd.Flags().GetString("after"))
+		prefix, after, amount := getPaginationFlags(cmd)
 
 		clt := getClient()
 
 		resp, err := clt.ListGroupPoliciesWithResponse(cmd.Context(), id, &apigen.ListGroupPoliciesParams{
+			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
@@ -47,7 +47,7 @@ var authGroupsPoliciesList = &cobra.Command{
 func init() {
 	authGroupsPoliciesList.Flags().String("id", "", "Group identifier")
 	_ = authGroupsPoliciesList.MarkFlagRequired("id")
-	addPaginationFlags(authGroupsPoliciesList)
+	withPaginationFlags(authGroupsPoliciesList)
 
 	authGroupsPoliciesCmd.AddCommand(authGroupsPoliciesList)
 }
