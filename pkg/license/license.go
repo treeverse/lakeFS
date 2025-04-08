@@ -15,11 +15,6 @@ type Manager interface {
 
 var errNotImplemented = errors.New("not implemented")
 
-// NewNopLicenseManager creates and returns a new instance of NopLicenseManager.
-func NewNopLicenseManager() *NopLicenseManager {
-	return &NopLicenseManager{}
-}
-
 type NopLicenseManager struct {
 }
 
