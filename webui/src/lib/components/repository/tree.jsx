@@ -25,6 +25,8 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Dropdown from "react-bootstrap/Dropdown";
+import Modal from "react-bootstrap/Modal";
+import {FaDownload} from "react-icons/fa";
 
 import { commits, linkToPath, objects } from "../../api";
 import { ConfirmationModal } from "../modals";
@@ -32,10 +34,8 @@ import { Paginator } from "../pagination";
 import { Link } from "../nav";
 import { RefTypeBranch, RefTypeCommit } from "../../../constants";
 import {ClipboardButton, copyTextToClipboard, AlertError, Loading} from "../controls";
-import Modal from "react-bootstrap/Modal";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
-import {FaDownload} from "react-icons/fa";
 import {CommitInfoCard} from "./commits";
 
 export const humanSize = (bytes) => {
@@ -650,30 +650,34 @@ export const URINavigator = ({
     <div className="d-flex">
       <div className="lakefs-uri flex-grow-1">
         {relativeTo === "" ? (
-          <>
-            <strong>{"lakefs://"}</strong>
-            <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
-              {repo.id}
-            </Link>
-            <strong>{"/"}</strong>
-            <Link
-              href={{
-                pathname: "/repositories/:repoId/objects",
-                params,
-                query: { ref: reference.id },
-              }}
+            <div
+                title={reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id}
+                className="w-100 text-nowrap overflow-hidden text-truncate"
             >
-              {reference.type === RefTypeCommit
-                ? reference.id.substr(0, 12)
-                : reference.id}
-            </Link>
-            <strong>{"/"}</strong>
-          </>
+              <strong>lakefs://</strong>
+              <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
+                {repo.id}
+              </Link>
+              <strong>/</strong>
+              <Link
+                  href={{
+                    pathname: "/repositories/:repoId/objects",
+                    params,
+                    query: { ref: reference.id },
+                  }}
+              >
+                {reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id}
+              </Link>
+              <strong>/</strong>
+            </div>
         ) : (
-          <>
-            <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
-            <strong>{"/"}</strong>
-          </>
+            <div
+                title={reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id}
+                className="w-100 text-nowrap overflow-hidden text-truncate"
+            >
+              <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
+              <strong>/</strong>
+            </div>
         )}
 
         {parts.map((part, i) => {
