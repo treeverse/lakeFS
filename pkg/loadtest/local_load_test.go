@@ -2,8 +2,6 @@ package loadtest
 
 import (
 	"context"
-	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	"github.com/treeverse/lakefs/modules/license/factory"
 	"math"
 	"net/http/httptest"
 	"os"
@@ -11,6 +9,8 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	"github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"

@@ -3,7 +3,6 @@ package api_test
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/modules/license/factory"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	"github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
