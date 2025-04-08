@@ -11,12 +11,6 @@ var authCmd = &cobra.Command{
 This functionality is supported with an external auth service only.`,
 }
 
-func addPaginationFlags(cmd *cobra.Command) {
-	cmd.Flags().SortFlags = false
-	cmd.Flags().Int("amount", defaultAmountArgumentValue, "how many results to return")
-	cmd.Flags().String("after", "", "show results after this value (used for pagination)")
-}
-
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(authCmd)

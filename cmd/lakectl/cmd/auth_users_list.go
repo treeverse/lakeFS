@@ -13,12 +13,12 @@ var authUsersList = &cobra.Command{
 	Use:   "list",
 	Short: "List users",
 	Run: func(cmd *cobra.Command, args []string) {
-		amount := Must(cmd.Flags().GetInt("amount"))
-		after := Must(cmd.Flags().GetString("after"))
+		prefix, after, amount := getPaginationFlags(cmd)
 
 		clt := getClient()
 
 		resp, err := clt.ListUsersWithResponse(cmd.Context(), &apigen.ListUsersParams{
+			Prefix: apiutil.Ptr(apigen.PaginationPrefix(prefix)),
 			After:  apiutil.Ptr(apigen.PaginationAfter(after)),
 			Amount: apiutil.Ptr(apigen.PaginationAmount(amount)),
 		})
@@ -41,7 +41,7 @@ var authUsersList = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	addPaginationFlags(authUsersList)
+	withPaginationFlags(authUsersList)
 
 	authUsersCmd.AddCommand(authUsersList)
 }

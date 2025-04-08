@@ -516,5 +516,6 @@ func mapGroupNamesToIDs(t *testing.T, ctx context.Context, groups []string) (map
 			}
 		}
 	}
+
 	return mapGroupNameToID, groupIDs
 }
