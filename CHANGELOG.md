@@ -1,5 +1,17 @@
 # Changelog
 
+# v1.54.0
+
+:new: What's new:
+- Support multiple resources policies (#8823)
+- Presigned URL support in original filename content disposition (#8897)
+
+:bug: Bugs fixed:
+- Fix webui dropzone should be disabled while upload in progress (#8892)
+- Import: prohibit import from storage namespace (#8917)
+- Fix: Truncate Long Path Values in Upload Object Modal (#8920)
+- Truncated the display of overly long branch names in the dropdown. (#8922)
+
 # v1.53.1
 
 :new: What's new:
