@@ -21,7 +21,7 @@ import (
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
-	"github.com/treeverse/lakefs/modules/license/factory"
+	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -127,7 +127,7 @@ var runCmd = &cobra.Command{
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
-		licenseManager, err := factory.NewLicenseManager()
+		licenseManager, err := licensefactory.NewLicenseManager()
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create license manager")
 		}
