@@ -8,6 +8,7 @@ import {SearchIcon} from "@primer/octicons-react";
 
 import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
+import {Paginator} from "../pagination";
 
 
 export const AttachModal = ({
@@ -18,14 +19,22 @@ export const AttachModal = ({
   const search = useRef(null);
   const [searchPrefix, setSearchPrefix] = useState("");
   const [selected, setSelected] = useState([]);
+  const [results, setResults] = useState([]);
+  const [after, setAfter] = useState("");
+
+  const { response, error, loading } = useAPI(() => {
+      return searchFn(searchPrefix, after);
+  }, [searchPrefix, after]);
 
   useEffect(() => {
-    if (!!search.current && search.current.value === "")
-      search.current.focus();
-  });
+      if (response) {
+          setResults(response.results);
+      }
+  }, [response]);
 
-  const {response, error, loading} = useAPI(() => {
-    return searchFn(searchPrefix);
+  useEffect(() => {
+      setAfter("");
+      search.current?.focus();
   }, [searchPrefix]);
 
   let content;
@@ -33,22 +42,28 @@ export const AttachModal = ({
   else if (error) content = <AlertError error={error}/>;
   else content = (
       <>
-        <DataTable
-          headers={headers}
-          keyFn={ent => ent.id}
-          emptyState={emptyState}
-          results={response}
-          rowFn={ent => [
-            <Checkbox
-              defaultChecked={selected.some(selectedEnt => selectedEnt.id === ent.id)}
-              onAdd={() => setSelected([...selected, ent])}
-              onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
-              name={'selected'}/>,
-            <strong>{resolveEntityFn(ent)}</strong>
-          ]}
-          firstFixedCol={true}
-        />
-
+          <div style={{ height: '260px'}}>
+            <DataTable
+              headers={headers}
+              keyFn={ent => ent.id}
+              emptyState={emptyState}
+              results={results}
+              rowFn={ent => [
+                <Checkbox
+                  defaultChecked={selected.some(selectedEnt => selectedEnt.id === ent.id)}
+                  onAdd={() => setSelected([...selected, ent])}
+                  onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
+                  name={'selected'}/>,
+                <strong>{resolveEntityFn(ent)}</strong>
+              ]}
+              firstFixedCol={true}
+            />
+          </div>
+          <Paginator
+              after={after}
+              nextPage={response?.pagination?.next_offset && results.length > 0 ? response.pagination.next_offset : null}
+              onPaginate={setAfter}
+          />
         <div className="mt-3">
           {(selected.length > 0) &&
             <p>
