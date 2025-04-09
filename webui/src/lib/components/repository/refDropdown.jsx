@@ -279,8 +279,20 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, variant="light", pre
     const title = prefix + (!!selected) ? `${prefix} ${selected.type}: ` : '';
     return (
         <>
-            <Button ref={target} variant={variant} onClick={()=> { setShow(!show) }}>
-                {title} <strong>{showId(selected)}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+            <Button ref={target}
+                    variant={variant}
+                    onClick={() => setShow(!show)}
+                    style={{ maxWidth: '250px' }}
+                    title={showId(selected)}
+                    className="d-inline-flex align-items-center"
+            >
+                <span className="text-truncate">
+                    {title}
+                    <strong>{showId(selected)}</strong>
+                </span>
+                <span className="ms-1">
+                    {show ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                </span>
             </Button>
             {cancelButton}
             {popover}
