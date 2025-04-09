@@ -102,6 +102,10 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create license manager")
 		}
+		err = licenseManager.ValidateLicense()
+		if err != nil {
+			logger.WithError(err).Fatal("License validation failed")
+		}
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
