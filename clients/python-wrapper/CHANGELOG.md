@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.9.1
+
+:bug: Bugs fixed:
+
+- HL Python SDK: Fix object storage ID (#8952)
+
 ## v0.9.0
 
 :new: What's new:
