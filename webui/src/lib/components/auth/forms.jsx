@@ -42,7 +42,6 @@ export const AttachModal = ({
   else if (error) content = <AlertError error={error}/>;
   else content = (
       <>
-          <div style={{ height: '260px'}}>
             <DataTable
               headers={headers}
               keyFn={ent => ent.id}
@@ -58,7 +57,6 @@ export const AttachModal = ({
               ]}
               firstFixedCol={true}
             />
-          </div>
           <Paginator
               after={after}
               nextPage={response?.pagination?.next_offset && results.length > 0 ? response.pagination.next_offset : null}
