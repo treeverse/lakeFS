@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/viper"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
-	"github.com/treeverse/lakefs/modules/license/factory"
+	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -88,7 +88,7 @@ func TestLocalLoad(t *testing.T) {
 	})
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 	authenticationService := authentication.NewDummyService()
-	licenseManager, _ := factory.NewLicenseManager()
+	licenseManager, _ := licensefactory.NewLicenseManager()
 	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, blockAdapter, meta, migrator, &stats.NullCollector{}, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
 
 	ts := httptest.NewServer(handler)
