@@ -19,7 +19,6 @@ export const AttachModal = ({
   const search = useRef(null);
   const [searchPrefix, setSearchPrefix] = useState("");
   const [selected, setSelected] = useState([]);
-  const [results, setResults] = useState([]);
   const [after, setAfter] = useState("");
 
   const { response, error, loading } = useAPI(() => {
@@ -27,15 +26,14 @@ export const AttachModal = ({
   }, [searchPrefix, after]);
 
   useEffect(() => {
-      if (response) {
-          setResults(response.results);
-      }
-  }, [response]);
+      if (!!search.current && search.current.value === "")
+          search.current.focus();
+  });
 
-  useEffect(() => {
-      setAfter("");
-      search.current?.focus();
-  }, [searchPrefix]);
+  const nextPage =
+      response?.pagination?.next_offset && response.results?.length > 0
+          ? response.pagination.next_offset
+          : null;
 
   let content;
   if (loading) content = <Loading/>;
@@ -46,7 +44,7 @@ export const AttachModal = ({
               headers={headers}
               keyFn={ent => ent.id}
               emptyState={emptyState}
-              results={results}
+              results={response.results}
               rowFn={ent => [
                 <Checkbox
                   defaultChecked={selected.some(selectedEnt => selectedEnt.id === ent.id)}
@@ -59,7 +57,7 @@ export const AttachModal = ({
           />
           <Paginator
               after={after}
-              nextPage={response?.pagination?.next_offset && results.length > 0 ? response.pagination.next_offset : null}
+              nextPage={nextPage}
               onPaginate={setAfter}
           />
         <div className="mt-3">
@@ -91,6 +89,11 @@ export const AttachModal = ({
       </>
     );
 
+  const handleSearchChange = () => {
+      setSearchPrefix(search.current.value);
+      setAfter("");
+  };
+
   return (
     <Modal show={show} onHide={onHide}>
       <Modal.Header closeButton>
@@ -107,9 +110,7 @@ export const AttachModal = ({
             <DebouncedFormControl
               ref={search}
               placeholder={filterPlaceholder}
-              onChange={() => {
-                setSearchPrefix(search.current.value)
-              }}/>
+              onChange={handleSearchChange}/>
           </InputGroup>
         </Form>
         <div className="mt-2">
