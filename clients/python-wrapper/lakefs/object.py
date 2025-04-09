@@ -17,7 +17,7 @@ from typing import AnyStr, IO, Iterator, List, Literal, Optional, Union, get_arg
 import lakefs_sdk
 from lakefs_sdk import StagingMetadata
 
-from lakefs.client import Client, _BaseLakeFSObject
+from lakefs.client import Client, _BaseLakeFSObject, SINGLE_STORAGE_ID
 from lakefs.exceptions import (
     api_exception_handler,
     handle_http_error,
@@ -693,7 +693,7 @@ class StoredObject(_BaseLakeFSObject):
         if self._storage_id is None:
             with api_exception_handler(_io_exception_handler):
                 repo = self._client.sdk_client.repositories_api.get_repository(self._repo_id)
-                self._storage_id = repo.storage_id
+                self._storage_id = repo.storage_id if repo.storage_id else SINGLE_STORAGE_ID
         return self._storage_id
 
     def exists(self) -> bool:
