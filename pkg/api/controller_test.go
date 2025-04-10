@@ -6526,3 +6526,16 @@ func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, re
 	}
 	return nil
 }
+
+func TestController_GetLicense(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("Get license", func(t *testing.T) {
+		resp, _ := clt.GetLicenseWithResponse(ctx)
+		require.Empty(t, resp.JSON200.Token)
+		if resp.JSON501 == nil {
+			t.Error("get_license should return 'not implemented' in lakeFS OSS")
+		}
+	})
+}

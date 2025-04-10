@@ -10,4 +10,5 @@ var (
 	ErrInvalidAPIEndpoint    = errors.New("invalid API endpoint")
 	ErrRequestSizeExceeded   = errors.New("request size exceeded")
 	ErrStorageNamespaceInUse = errors.New("storage namespace already in use")
+	ErrNotImplemented        = errors.New("not implemented")
 )

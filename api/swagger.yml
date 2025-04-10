@@ -1873,6 +1873,15 @@ components:
           type: string
           description: ID of the pull request
 
+    License:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: The license JWT token
+
 paths:
   /setup_comm_prefs:
     post:
@@ -6094,5 +6103,26 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /license:
+    get:
+      tags:
+        - license
+        - experimental
+      operationId: getLicense
+      description: retrieve lakeFS license information
+      responses:
+        200:
+          description: lakeFS configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/License"
+        501:
+          description: Not Implemented
+        401:
+          $ref: "#/components/responses/Unauthorized"
         default:
           $ref: "#/components/responses/ServerError"
