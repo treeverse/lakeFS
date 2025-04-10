@@ -5988,7 +5988,7 @@ func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 
 	token, err := c.licenseManager.GetToken()
 
-	if errors.Is(err, ErrNotImplemented) {
+	if errors.Is(err, license.ErrNotImplemented) {
 		writeError(w, r, http.StatusNotImplemented, license.ErrNotImplemented)
 		return
 	} else if err != nil {
