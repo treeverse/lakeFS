@@ -14,6 +14,7 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -162,7 +163,8 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 
 	authenticationService := authentication.NewDummyService()
-	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter)
+	licenseManager, _ := licensefactory.NewLicenseManager(cfg)
+	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
 
 	// reset cloud metadata - faster setup, the cloud metadata maintain its own tests
 	cloud.Reset()

@@ -39,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/samplerepo"
@@ -107,11 +108,12 @@ type Controller struct {
 	sessionStore    sessions.Store
 	PathProvider    upload.PathProvider
 	usageReporter   stats.UsageReporterOperations
+	licenseManager  license.Manager
 }
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *Controller {
 	return &Controller{
 		Config:          cfg,
 		Catalog:         catalog,
@@ -128,6 +130,7 @@ func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator au
 		sessionStore:    sessionStore,
 		PathProvider:    pathProvider,
 		usageReporter:   usageReporter,
+		licenseManager:  licenseManager,
 	}
 }
 
