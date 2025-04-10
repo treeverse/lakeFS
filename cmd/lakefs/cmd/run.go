@@ -98,7 +98,7 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Failure on schema validation")
 		}
 
-		licenseManager, err := licensefactory.NewLicenseManager()
+		licenseManager, err := licensefactory.NewLicenseManager(cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create license manager")
 		}
