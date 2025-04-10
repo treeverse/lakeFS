@@ -22,6 +22,7 @@ import io.lakefs.clients.sdk.model.ExternalLoginInformation;
 import io.lakefs.clients.sdk.model.ExternalPrincipal;
 import io.lakefs.clients.sdk.model.ExternalPrincipalCreation;
 import io.lakefs.clients.sdk.model.ExternalPrincipalList;
+import io.lakefs.clients.sdk.model.License;
 import io.lakefs.clients.sdk.model.MergeResult;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.PresignMultipartUpload;
@@ -175,6 +176,18 @@ public class ExperimentalApiTest {
     public void getExternalPrincipalTest() throws ApiException {
         String principalId = null;
         ExternalPrincipal response = api.getExternalPrincipal(principalId)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * retrieve lakeFS license information
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void getLicenseTest() throws ApiException {
+        License response = api.getLicense()
                 .execute();
         // TODO: test validations
     }

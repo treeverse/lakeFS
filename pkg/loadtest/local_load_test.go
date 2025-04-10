@@ -88,7 +88,7 @@ func TestLocalLoad(t *testing.T) {
 	})
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 	authenticationService := authentication.NewDummyService()
-	licenseManager, _ := licensefactory.NewLicenseManager(cfg)
+	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
 	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, blockAdapter, meta, migrator, &stats.NullCollector{}, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
 
 	ts := httptest.NewServer(handler)
