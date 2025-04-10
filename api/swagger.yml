@@ -143,6 +143,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    NotImplemented:
+      description: Not Implemented
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
 
   schemas:
     Pagination:
@@ -6120,9 +6126,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/License"
-        501:
-          description: Not Implemented
         401:
           $ref: "#/components/responses/Unauthorized"
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"

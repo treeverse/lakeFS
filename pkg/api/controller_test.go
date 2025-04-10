@@ -6532,10 +6532,10 @@ func TestController_GetLicense(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Get license", func(t *testing.T) {
-		resp, _ := clt.GetLicenseWithResponse(ctx)
-		require.Empty(t, resp.JSON200.Token)
+		resp, err := clt.GetLicenseWithResponse(ctx)
+		require.NoError(t, err)
 		if resp.JSON501 == nil {
-			t.Error("get_license should return 'not implemented' in lakeFS OSS")
+			t.Error("get_license should return 'not implemented' error in lakeFS OSS")
 		}
 	})
 }

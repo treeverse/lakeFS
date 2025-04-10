@@ -202,6 +202,7 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**deleteUserExternalPrincipal**](docs/ExperimentalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *ExperimentalApi* | [**externalPrincipalLogin**](docs/ExperimentalApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator
 *ExperimentalApi* | [**getExternalPrincipal**](docs/ExperimentalApi.md#getExternalPrincipal) | **GET** /auth/external/principals | describe external principal by id
+*ExperimentalApi* | [**getLicense**](docs/ExperimentalApi.md#getLicense) | **GET** /license | 
 *ExperimentalApi* | [**getPullRequest**](docs/ExperimentalApi.md#getPullRequest) | **GET** /repositories/{repository}/pulls/{pull_request} | get pull request
 *ExperimentalApi* | [**hardResetBranch**](docs/ExperimentalApi.md#hardResetBranch) | **PUT** /repositories/{repository}/branches/{branch}/hard_reset | hard reset branch
 *ExperimentalApi* | [**listPullRequests**](docs/ExperimentalApi.md#listPullRequests) | **GET** /repositories/{repository}/pulls | list pull requests
@@ -247,6 +248,7 @@ Class | Method | HTTP request | Description
 *InternalApi* | [**setupCommPrefs**](docs/InternalApi.md#setupCommPrefs) | **POST** /setup_comm_prefs | setup communications preferences
 *InternalApi* | [**stageObject**](docs/InternalApi.md#stageObject) | **PUT** /repositories/{repository}/branches/{branch}/objects | stage an object&#39;s metadata for the given branch
 *InternalApi* | [**uploadObjectPreflight**](docs/InternalApi.md#uploadObjectPreflight) | **GET** /repositories/{repository}/branches/{branch}/objects/stage_allowed | 
+*LicenseApi* | [**getLicense**](docs/LicenseApi.md#getLicense) | **GET** /license | 
 *MetadataApi* | [**getMetaRange**](docs/MetadataApi.md#getMetaRange) | **GET** /repositories/{repository}/metadata/meta_range/{meta_range} | return URI to a meta-range file
 *MetadataApi* | [**getRange**](docs/MetadataApi.md#getRange) | **GET** /repositories/{repository}/metadata/range/{range} | return URI to a range file
 *ObjectsApi* | [**copyObject**](docs/ObjectsApi.md#copyObject) | **POST** /repositories/{repository}/branches/{branch}/objects/copy | create a copy of an object
@@ -338,6 +340,7 @@ Class | Method | HTTP request | Description
  - [ImportStatus](docs/ImportStatus.md)
  - [InstallationUsageReport](docs/InstallationUsageReport.md)
  - [InternalDeleteBranchProtectionRuleRequest](docs/InternalDeleteBranchProtectionRuleRequest.md)
+ - [License](docs/License.md)
  - [LoginConfig](docs/LoginConfig.md)
  - [LoginInformation](docs/LoginInformation.md)
  - [Merge](docs/Merge.md)
