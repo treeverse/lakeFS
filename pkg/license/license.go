@@ -1,6 +1,3 @@
-/*
-Package license contains enterprise licensing functionality. For OSS version this is a minimal implementation
-*/
 package license
 
 import (
