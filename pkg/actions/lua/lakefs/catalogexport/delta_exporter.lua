@@ -34,6 +34,18 @@ local function delta_log_entry_key_generator()
     end
 end
 
+
+-- Local function to get the table descriptor
+local function get_table_descriptor(repo, commit_id,table_name_yaml, table_descriptors_path)
+    local tny = table_name_yaml
+    if not strings.has_suffix(tny, ".yaml") then
+        tny = tny .. ".yaml"
+    end
+    local table_src_path = pathlib.join("/", table_descriptors_path, tny)
+    local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
+    return table_descriptor
+end
+
 --[[
     action:
         - repository_id
@@ -62,13 +74,7 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
     local response = {}
     for _, table_name_yaml in ipairs(table_def_names) do
 
-        -- Get the table descriptor
-        local tny  = table_name_yaml
-        if not strings.has_suffix(tny, ".yaml") then
-            tny = tny .. ".yaml"
-        end
-        local table_src_path = pathlib.join("/", table_descriptors_path, tny)
-        local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
+        local table_descriptor=get_table_descriptor(repo,commit_id,table_name_yaml,table_descriptors_path)
         local table_path = table_descriptor.path
         if not table_path then
             error("table path is required to proceed with Delta catalog export")
@@ -201,6 +207,35 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
     return response
 end
 
+local function table_def_changes(table_def_names,table_descriptors_path,repository_id, source_ref, branch_id)
+    -- Initialize the result table for storing changed table definitions
+    local changed_table_defs = {}
+
+    -- Perform a diff_refs operation to get the differences between references
+    local diffJSON, code = lakefs.diff_refs(repository_id, source_ref, branch_id)
+    if code ~= 200 then
+        error("Failed to perform diff_refs with code: " .. tostring(code))
+    end
+
+    -- Iterate through the table definitions
+    for _, table_name_yaml in ipairs(table_def_names) do
+
+        local table_descriptor=get_table_descriptor(repository_id,source_ref,table_name_yaml,table_descriptors_path)
+        local table_path = table_descriptor.path
+        if not table_path then
+            error("table path is required to proceed with Delta catalog export")
+        end
+
+        --if table_path is in the diff
+            table.insert(changed_table_defs, table_name_yaml)
+        --end
+    end
+
+    -- Return the changed table definitions
+    return changed_table_defs
+end
+
 return {
     export_delta_log = export_delta_log,
+    table_def_changes = table_def_changes,
 }
