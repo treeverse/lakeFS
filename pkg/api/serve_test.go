@@ -163,7 +163,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
 
 	authenticationService := authentication.NewDummyService()
-	licenseManager, _ := licensefactory.NewLicenseManager(cfg)
+	licenseManager, _ := licensefactory.NewLicenseManager(nil, cfg)
 	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
 
 	// reset cloud metadata - faster setup, the cloud metadata maintain its own tests
