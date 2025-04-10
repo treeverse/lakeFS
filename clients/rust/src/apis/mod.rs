@@ -100,6 +100,7 @@ pub mod external_api;
 pub mod health_check_api;
 pub mod import_api;
 pub mod internal_api;
+pub mod license_api;
 pub mod metadata_api;
 pub mod objects_api;
 pub mod pulls_api;

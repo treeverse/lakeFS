@@ -28,6 +28,7 @@ from lakefs_sdk.api.external_api import ExternalApi
 from lakefs_sdk.api.health_check_api import HealthCheckApi
 from lakefs_sdk.api.import_api import ImportApi
 from lakefs_sdk.api.internal_api import InternalApi
+from lakefs_sdk.api.license_api import LicenseApi
 from lakefs_sdk.api.metadata_api import MetadataApi
 from lakefs_sdk.api.objects_api import ObjectsApi
 from lakefs_sdk.api.pulls_api import PullsApi
@@ -94,6 +95,7 @@ from lakefs_sdk.models.import_location import ImportLocation
 from lakefs_sdk.models.import_status import ImportStatus
 from lakefs_sdk.models.installation_usage_report import InstallationUsageReport
 from lakefs_sdk.models.internal_delete_branch_protection_rule_request import InternalDeleteBranchProtectionRuleRequest
+from lakefs_sdk.models.license import License
 from lakefs_sdk.models.login_config import LoginConfig
 from lakefs_sdk.models.login_information import LoginInformation
 from lakefs_sdk.models.merge import Merge

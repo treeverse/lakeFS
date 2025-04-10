@@ -83,6 +83,12 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_get_license(self) -> None:
+        """Test case for get_license
+
+        """
+        pass
+
     def test_get_pull_request(self) -> None:
         """Test case for get_pull_request
 

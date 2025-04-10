@@ -143,6 +143,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    NotImplemented:
+      description: Not Implemented
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
 
   schemas:
     Pagination:
@@ -1872,6 +1878,15 @@ components:
         id:
           type: string
           description: ID of the pull request
+
+    License:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: The license JWT token
 
 paths:
   /setup_comm_prefs:
@@ -6096,3 +6111,25 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
+
+  /license:
+    get:
+      tags:
+        - license
+        - experimental
+      operationId: getLicense
+      description: retrieve lakeFS license information
+      responses:
+        200:
+          description: lakeFS configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/License"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        501:
+          $ref: "#/components/responses/NotImplemented"
+        default:
+          $ref: "#/components/responses/ServerError"
+          

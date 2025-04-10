@@ -7357,6 +7357,39 @@ paths:
       tags:
       - internal
       x-accepts: application/json
+  /license:
+    get:
+      description: retrieve lakeFS license information
+      operationId: getLicense
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/License'
+          description: lakeFS configuration
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "501":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - license
+      - experimental
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
@@ -7473,6 +7506,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
       description: Validation Error
+    NotImplemented:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: Not Implemented
   schemas:
     Pagination:
       example:
@@ -9895,6 +9934,16 @@ components:
           type: string
       required:
       - id
+      type: object
+    License:
+      example:
+        token: token
+      properties:
+        token:
+          description: The license JWT token
+          type: string
+      required:
+      - token
       type: object
     uploadObject_request:
       properties:

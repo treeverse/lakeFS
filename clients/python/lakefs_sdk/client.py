@@ -12,6 +12,7 @@ from lakefs_sdk.api import external_api
 from lakefs_sdk.api import health_check_api
 from lakefs_sdk.api import import_api
 from lakefs_sdk.api import internal_api
+from lakefs_sdk.api import license_api
 from lakefs_sdk.api import metadata_api
 from lakefs_sdk.api import objects_api
 from lakefs_sdk.api import pulls_api
@@ -69,6 +70,7 @@ class LakeFSClient:
         self.health_check_api = health_check_api.HealthCheckApi(self._api)
         self.import_api = import_api.ImportApi(self._api)
         self.internal_api = internal_api.InternalApi(self._api)
+        self.license_api = license_api.LicenseApi(self._api)
         self.metadata_api = metadata_api.MetadataApi(self._api)
         self.objects_api = objects_api.ObjectsApi(self._api)
         self.pulls_api = pulls_api.PullsApi(self._api)
