@@ -168,7 +168,7 @@ class ApiClient private (conf: APIConfigurations) {
     val storageNamespace = key.storageClientType match {
       case StorageClientType.HadoopFS =>
         ApiClient
-          .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType)
+          .translateURI(URI.create(repo.getStorageNamespace), getBlockstoreType(repo.getStorageId))
           .normalize()
           .toString
       case StorageClientType.SDKClient => repo.getStorageNamespace
@@ -210,19 +210,27 @@ class ApiClient private (conf: APIConfigurations) {
     retryWrapper.wrapWithRetry(prepareGcCommits)
   }
 
-  def getGarbageCollectionRules(repoName: String): String = {
-    val getGcRules = new dev.failsafe.function.CheckedSupplier[GarbageCollectionRules]() {
-      def get(): GarbageCollectionRules = repositoriesApi.getGCRules(repoName).execute()
+  def getRepository(repoName: String): Repository = {
+    val getRepo = new dev.failsafe.function.CheckedSupplier[Repository]() {
+      def get(): Repository = repositoriesApi.getRepository(repoName).execute()
     }
-    val gcRules = retryWrapper.wrapWithRetry(getGcRules)
-    gcRules.toString()
+    retryWrapper.wrapWithRetry(getRepo)
   }
 
-  def getBlockstoreType: String = {
+  def getBlockstoreType(storageID: String): String = {
     val getStorageConfig = new dev.failsafe.function.CheckedSupplier[StorageConfig]() {
       def get(): StorageConfig = {
         val cfg = configApi.getConfig.execute()
-        cfg.getStorageConfig
+        val storageConfigList = cfg.getStorageConfigList
+        if (storageConfigList.isEmpty || storageConfigList.size() == 1) {
+          cfg.getStorageConfig
+        } else {
+          storageConfigList.asScala
+            .find(_.getBlockstoreId == storageID)
+            .getOrElse(
+              throw new IllegalArgumentException(s"Storage config not found for ID: $storageID")
+            )
+        }
       }
     }
     val storageConfig = retryWrapper.wrapWithRetry(getStorageConfig)
