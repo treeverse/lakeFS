@@ -6534,8 +6534,6 @@ func TestController_GetLicense(t *testing.T) {
 	t.Run("Get license", func(t *testing.T) {
 		resp, err := clt.GetLicenseWithResponse(ctx)
 		require.NoError(t, err)
-		if resp.JSON501 == nil {
-			t.Error("get_license should return 'not implemented' error in lakeFS OSS")
-		}
+		require.NotNil(t, resp.JSON501, "expected 501 (not implemented) got %v", resp.StatusCode)
 	})
 }

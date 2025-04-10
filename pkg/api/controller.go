@@ -2858,7 +2858,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case errors.Is(err, authentication.ErrNotImplemented),
-		errors.Is(err, auth.ErrNotImplemented):
+		errors.Is(err, auth.ErrNotImplemented),
+		errors.Is(err, license.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
@@ -5985,16 +5986,9 @@ func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return
 	}
-
 	token, err := c.licenseManager.GetToken()
-
-	if errors.Is(err, license.ErrNotImplemented) {
-		writeError(w, r, http.StatusNotImplemented, license.ErrNotImplemented)
-		return
-	} else if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-
 	writeResponse(w, r, http.StatusOK, apigen.License{Token: token})
 }
