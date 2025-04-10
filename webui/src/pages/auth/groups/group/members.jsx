@@ -20,14 +20,12 @@ import {
 import {useRouter} from "../../../../lib/hooks/router";
 import {Link} from "../../../../lib/components/nav";
 import {resolveUserDisplayName} from "../../../../lib/utils";
-import {allUsersFromLakeFS} from "../../../../lib/components/auth/users";
 
 
 const GroupMemberList = ({ groupId, after, onPaginate }) => {
     const [refresh, setRefresh] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [attachError, setAttachError] = useState(null);
-    const [allUsers, setAllUsers] = useState([]);
     const {results, loading, error, nextPage} = useAPIWithPagination(() => {
         return auth.listGroupMembers(groupId, after);
     }, [groupId, after, refresh]);
@@ -35,16 +33,6 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
         setAttachError(null);
     }, [refresh]);
 
-
-    const searchUsers = async (prefix, maxResults, resolveUserDisplayNameFN = (user => user.id)) => {
-        let allUsersList = allUsers;
-        if (allUsersList.length === 0) {
-            allUsersList = await allUsersFromLakeFS(resolveUserDisplayNameFN)
-            setAllUsers(allUsersList)
-        }
-        let filteredUsers = allUsersList.filter(user => resolveUserDisplayNameFN(user).startsWith(prefix));
-        return filteredUsers.slice(0, maxResults);
-    };
     let content;
     if (loading) content = <Loading/>;
     else if (error) content=  <AlertError error={error}/>;
@@ -86,7 +74,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                     modalTitle={'Add to Group'}
                     addText={'Add to Group'}
                     resolveEntityFn={resolveUserDisplayName}
-                    searchFn={prefix => searchUsers(prefix, 5, resolveUserDisplayName).then(res => res)}
+                    searchFn={(prefix, after) => auth.listUsers(prefix, after, 5)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
                         Promise.all(selected.map(user => auth.addUserToGroup(user.id, groupId)))

@@ -30,10 +30,7 @@ export const AttachModal = ({
           search.current.focus();
   });
 
-  const nextPage =
-      response?.pagination?.next_offset && response.results?.length > 0
-          ? response.pagination.next_offset
-          : null;
+  const nextPage = response?.pagination?.has_more ? response.pagination.next_offset : null;
 
   let content;
   if (loading) content = <Loading/>;

@@ -100,9 +100,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
             modalTitle={"Add to Groups"}
             addText={"Add to Groups"}
             headers={["", "Group Name"]}
-            searchFn={(prefix) =>
-              auth.listGroups(prefix, "", 5).then((res) => res.results)
-            }
+            searchFn={(prefix, after) => auth.listGroups(prefix, after, 5)}
             resolveEntityFn={resolveGroupDisplayName}
             onHide={() => setShowAddModal(false)}
             onAttach={(selected) => {

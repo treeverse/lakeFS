@@ -71,7 +71,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                     filterPlaceholder={'Find Policy...'}
                     modalTitle={'Attach Policies'}
                     addText={'Attach Policies'}
-                    searchFn={prefix => auth.listPolicies(prefix, "", 5).then(res => res.results)}
+                    searchFn={(prefix,after) => auth.listPolicies(prefix, after, 5)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
                         Promise.all(selected.map(policy => auth.attachPolicyToUser(userId, policy.id)))
