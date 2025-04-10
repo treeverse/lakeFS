@@ -26,8 +26,8 @@ export const AttachModal = ({
   }, [searchPrefix, after]);
 
   useEffect(() => {
-      if (!!search.current && search.current.value === "")
-          search.current.focus();
+    if (!!search.current && search.current.value === "")
+      search.current.focus();
   });
 
   const nextPage = response?.pagination?.has_more ? response.pagination.next_offset : null;
