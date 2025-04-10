@@ -207,14 +207,28 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
     return response
 end
 
+-- Function to extract directory from a path
+local function extractDirectory(path)
+    return path:match("^(.*)/[^/]+$")
+end
+
 local function table_def_changes(table_def_names,table_descriptors_path,repository_id, source_ref, branch_id)
     -- Initialize the result table for storing changed table definitions
     local changed_table_defs = {}
 
     -- Perform a diff_refs operation to get the differences between references
-    local diffJSON, code = lakefs.diff_refs(repository_id, source_ref, branch_id)
+    local diff, code = lakefs.diff_refs(repository_id, source_ref, branch_id)
     if code ~= 200 then
         error("Failed to perform diff_refs with code: " .. tostring(code))
+    end
+
+    -- Now make a map out of the paths of the filenames
+    local changed_path_set = {}
+    for _, change in ipairs(changed_path_set) do
+        local dir = extractDirectory(change.path)
+        if dir then
+            changed_path_set[dir] = true
+        end
     end
 
     -- Iterate through the table definitions
@@ -226,9 +240,10 @@ local function table_def_changes(table_def_names,table_descriptors_path,reposito
             error("table path is required to proceed with Delta catalog export")
         end
 
-        --if table_path is in the diff
+        -- filter only the changed paths from the list
+        if changed_path_set[table_path]  ~= nil then
             table.insert(changed_table_defs, table_name_yaml)
-        --end
+        end
     end
 
     -- Return the changed table definitions
