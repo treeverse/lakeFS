@@ -25,7 +25,7 @@ export const AuthLayout = () => {
     }, [setIsLogged]);
     return (
         <Container fluid="xl">
-            <Row className="mt-5 justify-content-md-center" >
+            <Row className="mt-5" >
                 <div>
                     {rbac === 'simplified' && showRBACAlert &&
                     <Alert variant="info" title="rbac CTA" dismissible onClose={() => {
@@ -42,7 +42,7 @@ export const AuthLayout = () => {
                             </Card.Header>
                             <Card.Body>
                                 <Nav variant="pills" className="flex-column">
-                                    <Link component={Nav.Link} href="/auth/credentials" active={activeTab === 'credentials'} style={{pointerEvents: (rbac!=="none")?"":"none"}}>
+                                    <Link component={Nav.Link} href="/auth/credentials" active={activeTab === 'credentials'} disabled={rbac === "none"} >
                                         My Credentials
                                     </Link>
                                 </Nav>
@@ -50,15 +50,15 @@ export const AuthLayout = () => {
                                 <hr/>
 
                                 <Nav variant="pills" className="flex-column">
-                                    <Link component={Nav.Link} href="/auth/users" active={activeTab === 'users'} style={{pointerEvents: (rbac!=="none")?"":"none"}}>
+                                    <Link component={Nav.Link} href="/auth/users" active={activeTab === 'users'} disabled={rbac === "none"} >
                                         Users
                                     </Link>
 
-                                    <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'} style={{pointerEvents: (rbac!=="none")?"":"none"}}>
+                                    <Link component={Nav.Link} href="/auth/groups" active={activeTab === 'groups'} disabled={rbac === "none"} >
                                         Groups
                                     </Link>
                                     {rbac !== 'simplified' && rbac !== 'none' &&
-                                        <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'} style={{pointerEvents: (rbac!=="none")?"":"none"}}>
+                                        <Link component={Nav.Link} href="/auth/policies" active={activeTab === 'policies'} disabled={rbac === "none"} >
                                             Policies
                                         </Link>}
                                 </Nav>
