@@ -37,12 +37,12 @@ export const AttachModal = ({
   else if (error) content = <AlertError error={error}/>;
   else content = (
       <>
-          <DataTable
-              headers={headers}
-              keyFn={ent => ent.id}
-              emptyState={emptyState}
-              results={response.results}
-              rowFn={ent => [
+        <DataTable
+            headers={headers}
+            keyFn={ent => ent.id}
+            emptyState={emptyState}
+            results={response.results}
+            rowFn={ent => [
                 <Checkbox
                   defaultChecked={selected.some(selectedEnt => selectedEnt.id === ent.id)}
                   onAdd={() => setSelected([...selected, ent])}
@@ -50,13 +50,13 @@ export const AttachModal = ({
                   name={'selected'}/>,
                 <strong>{resolveEntityFn(ent)}</strong>
               ]}
-              firstFixedCol={true}
-          />
-          <Paginator
-              after={after}
-              nextPage={nextPage}
-              onPaginate={setAfter}
-          />
+            firstFixedCol={true}
+        />
+        <Paginator
+            after={after}
+            nextPage={nextPage}
+            onPaginate={setAfter}
+        />
         <div className="mt-3">
           {(selected.length > 0) &&
             <p>
