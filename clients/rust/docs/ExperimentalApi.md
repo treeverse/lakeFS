@@ -21,6 +21,7 @@ Method | HTTP request | Description
 [**sts_login**](ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
 [**update_object_user_metadata**](ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 [**update_pull_request**](ExperimentalApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
+[**upload_part_from**](ExperimentalApi.md#upload_part_from) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber} | 
 
 
 
@@ -526,6 +527,41 @@ Name | Type | Description  | Required | Notes
 ### Return type
 
  (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## upload_part_from
+
+> models::UploadTo upload_part_from(repository, branch, upload_id, path, part_number, upload_part_from)
+
+
+Copy a part, or return a presigned URL to upload into a presigned multipart upload. 
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**repository** | **String** |  | [required] |
+**branch** | **String** |  | [required] |
+**upload_id** | **String** |  | [required] |
+**path** | **String** |  | [required] |
+**part_number** | **i32** |  | [required] |
+**upload_part_from** | Option<[**UploadPartFrom**](UploadPartFrom.md)> |  |  |
+
+### Return type
+
+[**models::UploadTo**](UploadTo.md)
 
 ### Authorization
 

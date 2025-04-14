@@ -47,6 +47,8 @@ import io.lakefs.clients.sdk.model.PullRequestsList;
 import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.clients.sdk.model.StsAuthRequest;
 import io.lakefs.clients.sdk.model.UpdateObjectUserMetadata;
+import io.lakefs.clients.sdk.model.UploadPartFrom;
+import io.lakefs.clients.sdk.model.UploadTo;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -3449,5 +3451,233 @@ public class ExperimentalApi {
      */
     public APIupdatePullRequestRequest updatePullRequest(String repository, String pullRequest, PullRequestBasic pullRequestBasic) {
         return new APIupdatePullRequestRequest(repository, pullRequest, pullRequestBasic);
+    }
+    private okhttp3.Call uploadPartFromCall(String repository, String branch, String uploadId, String path, Integer partNumber, UploadPartFrom uploadPartFrom, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = uploadPartFrom;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()))
+            .replace("{" + "uploadId" + "}", localVarApiClient.escapeString(uploadId.toString()))
+            .replace("{" + "partNumber" + "}", localVarApiClient.escapeString(partNumber.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (path != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("path", path));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call uploadPartFromValidateBeforeCall(String repository, String branch, String uploadId, String path, Integer partNumber, UploadPartFrom uploadPartFrom, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling uploadPartFrom(Async)");
+        }
+
+        // verify the required parameter 'branch' is set
+        if (branch == null) {
+            throw new ApiException("Missing the required parameter 'branch' when calling uploadPartFrom(Async)");
+        }
+
+        // verify the required parameter 'uploadId' is set
+        if (uploadId == null) {
+            throw new ApiException("Missing the required parameter 'uploadId' when calling uploadPartFrom(Async)");
+        }
+
+        // verify the required parameter 'path' is set
+        if (path == null) {
+            throw new ApiException("Missing the required parameter 'path' when calling uploadPartFrom(Async)");
+        }
+
+        // verify the required parameter 'partNumber' is set
+        if (partNumber == null) {
+            throw new ApiException("Missing the required parameter 'partNumber' when calling uploadPartFrom(Async)");
+        }
+
+        return uploadPartFromCall(repository, branch, uploadId, path, partNumber, uploadPartFrom, _callback);
+
+    }
+
+
+    private ApiResponse<UploadTo> uploadPartFromWithHttpInfo(String repository, String branch, String uploadId, String path, Integer partNumber, UploadPartFrom uploadPartFrom) throws ApiException {
+        okhttp3.Call localVarCall = uploadPartFromValidateBeforeCall(repository, branch, uploadId, path, partNumber, uploadPartFrom, null);
+        Type localVarReturnType = new TypeToken<UploadTo>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call uploadPartFromAsync(String repository, String branch, String uploadId, String path, Integer partNumber, UploadPartFrom uploadPartFrom, final ApiCallback<UploadTo> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = uploadPartFromValidateBeforeCall(repository, branch, uploadId, path, partNumber, uploadPartFrom, _callback);
+        Type localVarReturnType = new TypeToken<UploadTo>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APIuploadPartFromRequest {
+        private final String repository;
+        private final String branch;
+        private final String uploadId;
+        private final String path;
+        private final Integer partNumber;
+        private UploadPartFrom uploadPartFrom;
+
+        private APIuploadPartFromRequest(String repository, String branch, String uploadId, String path, Integer partNumber) {
+            this.repository = repository;
+            this.branch = branch;
+            this.uploadId = uploadId;
+            this.path = path;
+            this.partNumber = partNumber;
+        }
+
+        /**
+         * Set uploadPartFrom
+         * @param uploadPartFrom  (optional)
+         * @return APIuploadPartFromRequest
+         */
+        public APIuploadPartFromRequest uploadPartFrom(UploadPartFrom uploadPartFrom) {
+            this.uploadPartFrom = uploadPartFrom;
+            return this;
+        }
+
+        /**
+         * Build call for uploadPartFrom
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return uploadPartFromCall(repository, branch, uploadId, path, partNumber, uploadPartFrom, _callback);
+        }
+
+        /**
+         * Execute uploadPartFrom request
+         * @return UploadTo
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public UploadTo execute() throws ApiException {
+            ApiResponse<UploadTo> localVarResp = uploadPartFromWithHttpInfo(repository, branch, uploadId, path, partNumber, uploadPartFrom);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute uploadPartFrom request with HTTP info returned
+         * @return ApiResponse&lt;UploadTo&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<UploadTo> executeWithHttpInfo() throws ApiException {
+            return uploadPartFromWithHttpInfo(repository, branch, uploadId, path, partNumber, uploadPartFrom);
+        }
+
+        /**
+         * Execute uploadPartFrom request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<UploadTo> _callback) throws ApiException {
+            return uploadPartFromAsync(repository, branch, uploadId, path, partNumber, uploadPartFrom, _callback);
+        }
+    }
+
+    /**
+     * 
+     * Copy a part, or return a presigned URL to upload into a presigned multipart upload. 
+     * @param repository  (required)
+     * @param branch  (required)
+     * @param uploadId  (required)
+     * @param path  (required)
+     * @param partNumber  (required)
+     * @return APIuploadPartFromRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APIuploadPartFromRequest uploadPartFrom(String repository, String branch, String uploadId, String path, Integer partNumber) {
+        return new APIuploadPartFromRequest(repository, branch, uploadId, path, partNumber);
     }
 }
