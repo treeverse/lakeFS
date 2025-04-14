@@ -59,6 +59,8 @@ docs/ImportStatus.md
 docs/InstallationUsageReport.md
 docs/InternalApi.md
 docs/InternalDeleteBranchProtectionRuleRequest.md
+docs/License.md
+docs/LicenseApi.md
 docs/LoginConfig.md
 docs/LoginInformation.md
 docs/Merge.md
@@ -137,6 +139,7 @@ src/apis/external_api.rs
 src/apis/health_check_api.rs
 src/apis/import_api.rs
 src/apis/internal_api.rs
+src/apis/license_api.rs
 src/apis/metadata_api.rs
 src/apis/mod.rs
 src/apis/objects_api.rs
@@ -192,6 +195,7 @@ src/models/import_location.rs
 src/models/import_status.rs
 src/models/installation_usage_report.rs
 src/models/internal_delete_branch_protection_rule_request.rs
+src/models/license.rs
 src/models/login_config.rs
 src/models/login_information.rs
 src/models/merge.rs

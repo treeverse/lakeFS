@@ -21,6 +21,7 @@ import (
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -95,6 +96,15 @@ var runCmd = &cobra.Command{
 		_, err = kv.ValidateSchemaVersion(ctx, kvStore)
 		if err != nil && !errors.Is(err, kv.ErrNotFound) {
 			logger.WithError(err).Fatal("Failure on schema validation")
+		}
+
+		licenseManager, err := licensefactory.NewLicenseManager(ctx, cfg)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create license manager")
+		}
+		err = licenseManager.ValidateLicense()
+		if err != nil {
+			logger.WithError(err).Fatal("License validation failed")
 		}
 
 		migrator := kv.NewDatabaseMigrator(kvParams)
@@ -230,6 +240,7 @@ var runCmd = &cobra.Command{
 			baseCfg.UISnippets(),
 			upload.DefaultPathProvider,
 			usageReporter,
+			licenseManager,
 		)
 
 		// init gateway server

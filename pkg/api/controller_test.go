@@ -6526,3 +6526,14 @@ func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, re
 	}
 	return nil
 }
+
+func TestController_GetLicense(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	t.Run("Get license", func(t *testing.T) {
+		resp, err := clt.GetLicenseWithResponse(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON501, "expected 501 (not implemented) got %v", resp.StatusCode)
+	})
+}

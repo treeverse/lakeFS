@@ -11,6 +11,7 @@ from lakefs_sdk.api.external_api import ExternalApi
 from lakefs_sdk.api.health_check_api import HealthCheckApi
 from lakefs_sdk.api.import_api import ImportApi
 from lakefs_sdk.api.internal_api import InternalApi
+from lakefs_sdk.api.license_api import LicenseApi
 from lakefs_sdk.api.metadata_api import MetadataApi
 from lakefs_sdk.api.objects_api import ObjectsApi
 from lakefs_sdk.api.pulls_api import PullsApi

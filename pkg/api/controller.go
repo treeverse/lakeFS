@@ -39,6 +39,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/samplerepo"
@@ -107,11 +108,12 @@ type Controller struct {
 	sessionStore    sessions.Store
 	PathProvider    upload.PathProvider
 	usageReporter   stats.UsageReporterOperations
+	licenseManager  license.Manager
 }
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations) *Controller {
+func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *Controller {
 	return &Controller{
 		Config:          cfg,
 		Catalog:         catalog,
@@ -128,6 +130,7 @@ func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator au
 		sessionStore:    sessionStore,
 		PathProvider:    pathProvider,
 		usageReporter:   usageReporter,
+		licenseManager:  licenseManager,
 	}
 }
 
@@ -2526,7 +2529,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case errors.Is(err, authentication.ErrNotImplemented),
-		errors.Is(err, auth.ErrNotImplemented):
+		errors.Is(err, auth.ErrNotImplemented),
+		errors.Is(err, license.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
@@ -5192,4 +5196,20 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
 	// if IsAuthUISimplified true then it means the user not using RBAC model
 	return c.Config.AuthConfig().IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
+}
+
+func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	c.LogAction(ctx, "get_license", r, "", "", "")
+
+	_, err := auth.GetUser(ctx)
+	if err != nil {
+		writeError(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		return
+	}
+	token, err := c.licenseManager.GetToken()
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	writeResponse(w, r, http.StatusOK, apigen.License{Token: token})
 }
