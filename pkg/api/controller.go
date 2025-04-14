@@ -153,7 +153,7 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID s
 }
 
 func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http.Request, repository string, branch string, params apigen.CreatePresignMultipartUploadParams) {
-	if !c.authorize(w, r, permissions.GetCreatePresignMultipartUploadPermissions(repository, params.Path)) {
+	if !c.authorize(w, r, permissions.CreatePresignMultipartUploadPermissions(repository, params.Path)) {
 		return
 	}
 	ctx := r.Context()

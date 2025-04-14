@@ -1,6 +1,6 @@
 package permissions
 
-func GetCreatePresignMultipartUploadPermissions(repository string, path string) Node {
+func CreatePresignMultipartUploadPermissions(repository string, path string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   WriteObjectAction,
