@@ -123,6 +123,8 @@ docs/UnderlyingObjectProperties.md
 docs/UpdateObjectUserMetadata.md
 docs/UpdateToken.md
 docs/UploadPart.md
+docs/UploadPartFrom.md
+docs/UploadTo.md
 docs/UsageReport.md
 docs/User.md
 docs/UserCreation.md
@@ -255,6 +257,8 @@ lakefs_sdk/models/underlying_object_properties.py
 lakefs_sdk/models/update_object_user_metadata.py
 lakefs_sdk/models/update_token.py
 lakefs_sdk/models/upload_part.py
+lakefs_sdk/models/upload_part_from.py
+lakefs_sdk/models/upload_to.py
 lakefs_sdk/models/usage_report.py
 lakefs_sdk/models/user.py
 lakefs_sdk/models/user_creation.py
@@ -387,6 +391,8 @@ test/test_underlying_object_properties.py
 test/test_update_object_user_metadata.py
 test/test_update_token.py
 test/test_upload_part.py
+test/test_upload_part_from.py
+test/test_upload_to.py
 test/test_usage_report.py
 test/test_user.py
 test/test_user_creation.py

@@ -145,6 +145,12 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
+    def test_upload_part_from(self) -> None:
+        """Test case for upload_part_from
+
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

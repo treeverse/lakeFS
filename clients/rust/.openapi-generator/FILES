@@ -122,6 +122,8 @@ docs/UnderlyingObjectProperties.md
 docs/UpdateObjectUserMetadata.md
 docs/UpdateToken.md
 docs/UploadPart.md
+docs/UploadPartFrom.md
+docs/UploadTo.md
 docs/UsageReport.md
 docs/User.md
 docs/UserCreation.md
@@ -251,6 +253,8 @@ src/models/underlying_object_properties.rs
 src/models/update_object_user_metadata.rs
 src/models/update_token.rs
 src/models/upload_part.rs
+src/models/upload_part_from.rs
+src/models/upload_to.rs
 src/models/usage_report.rs
 src/models/user.rs
 src/models/user_creation.rs

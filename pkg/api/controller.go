@@ -263,6 +263,71 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	writeResponse(w, r, http.StatusCreated, resp)
 }
 
+func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body apigen.UploadPartFromJSONRequestBody, dstRepository string, branch string, uploadID string, partNumber int, params apigen.UploadPartFromParams) {
+	isCopy := body.Repository != "" || body.Ref != "" || body.Path != ""
+	dstPath := params.Path
+	srcRepository := body.Repository
+	srcPath := body.Path
+	requiredPermissions := permissions.Node{
+		Permission: permissions.Permission{
+			Action: permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(dstRepository, dstPath),
+		},
+	}
+	if isCopy {
+		requiredPermissions = permissions.Node{
+			Type: permissions.NodeTypeAnd,
+			Nodes: []permissions.Node{
+				requiredPermissions,
+				permissions.Node{
+					Permission: permissions.Permission{
+						Action:  permissions.ReadObjectAction,
+						Resource: permissions.ObjectArn(srcRepository, srcPath),
+					},
+				},
+			},
+		}
+	}
+	if !c.authorize(w, r, requiredPermissions) {
+		return
+	}		
+
+	ctx := r.Context()
+	c.LogAction(ctx, "upload_part_from", r, dstRepository, dstPath, srcPath)
+
+	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// verify physical address
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	if addressType != catalog.AddressTypeRelative {
+		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
+		return
+	}
+
+	//  verify it has been saved for linking
+	if err := c.Catalog.VerifyLinkAddress(dstRepository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	presignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, block.ObjectPointer{
+		StorageID: repo.StorageID,
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType: block.IdentifierTypeRelative,
+		Identifier: physicalAddress,
+	}, uploadID, partNumber)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	response := apigen.UploadTo{
+		PresignedUrl: presignedURL,
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
 func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.Request, body apigen.AbortPresignMultipartUploadJSONRequestBody, repository string, branch string, uploadID string, params apigen.AbortPresignMultipartUploadParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
