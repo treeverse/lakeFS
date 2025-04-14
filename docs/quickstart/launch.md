@@ -1,6 +1,6 @@
 ---
 title: 1️⃣ Run lakeFS
-description: lakeFS quickstart / Run lakeFS locally pre-populated with a sample repository and data under Docker Compose
+description: lakeFS quickstart / Run lakeFS locally pre-populated with a sample repository
 parent: ⭐ Quickstart
 nav_order: 5
 next: ["Query the pre-populated data", "./query.html"]
@@ -10,14 +10,13 @@ previous: ["Quickstart introduction", "./index.html"]
 # Spin up the environment
 
 {: .note}
-If you don't want to use Docker, you can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register). Once you launch the free trial you will have access to the same content as this quickstart within the provided repository once you login.
+If you don't want to install lakeFS locally, you can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register). Once you launch the free trial you will have access to the same content as this quickstart within the provided repository once you login.
 
-_The quickstart uses Docker to bring up the lakeFS container, pre-populate it with some data, and also provides DuckDB from where we can interact with the data. You'll need [Docker](https://docs.docker.com/get-docker/) installed to run this._
-
-Launch the lakeFS container:
+install and launch lakeFS:
 
 ```bash
-docker run --name lakefs --pull always --rm --publish 8000:8000 treeverse/lakefs:latest run --quickstart
+pip install lakefs
+lakefs run --quickstart
 ```
 
 After a few moments you should see the lakeFS container ready to use: 

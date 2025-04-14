@@ -45,4 +45,10 @@ setup(
         "all": ["boto3 >= 1.26.0"],
         "aws-iam": ["boto3 >= 1.26.0"],
     },
+    entry_points={
+        'console_scripts': [
+            'lakefs=lakefs:lakefs_cli',
+            'lakectl=lakefs:lakectl_cli',
+        ],
+    },
 )

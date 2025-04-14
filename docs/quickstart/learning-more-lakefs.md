@@ -14,7 +14,7 @@ Here are some more resources to help you find out more about lakeFS.
 
 ## Connecting lakeFS to your own object storage
 
-Enjoyed the quickstart and want to try out lakeFS against your own data? Here's how to run lakeFS locally as a Docker container locally connecting to an object store. 
+Enjoyed the quickstart and want to try out lakeFS against your own data? Here's how to run lakeFS locally, connecting to an object store. 
 
 <div class="tabs">
   <ul>
@@ -25,54 +25,50 @@ Enjoyed the quickstart and want to try out lakeFS against your own data? Here's 
   </ul> 
   <div markdown="1" id="on-aws-s3">
 
-Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
+Note: Make sure the Quickstart server from the previous steps isn't also running as you'll get a port conflict.
 {: .note }
 
-   ```bash
-docker run --pull always -p 8000:8000 \
-   -e LAKEFS_BLOCKSTORE_TYPE='s3' \
-   -e AWS_ACCESS_KEY_ID='YourAccessKeyValue' \
-   -e AWS_SECRET_ACCESS_KEY='YourSecretKeyValue' \
-   treeverse/lakefs run --local-settings
-   ```
+```bash
+export LAKEFS_BLOCKSTORE_TYPE="s3"
+export AWS_ACCESS_KEY_ID="YourAccessKeyValue"
+export AWS_SECRET_ACCESS_KEY="YourSecretKeyValue"
+lakefs run --local-settings
+```
 
   </div>
   <div markdown="1" id="on-azure-blob">
 
-Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
+Note: Make sure the Quickstart server from the previous steps isn't also running as you'll get a port conflict.
 {: .note }
 
-   ```bash
-docker run --pull always -p 8000:8000 \
-   -e LAKEFS_BLOCKSTORE_TYPE='azure' \
-   -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT='YourAzureStorageAccountName' \
-   -e LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY='YourAzureStorageAccessKey' \
-   treeverse/lakefs run --local-settings
-   ```
+```bash
+export LAKEFS_BLOCKSTORE_TYPE="azure"
+export LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT="YourAzureStorageAccountName"
+export LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY="YourAzureStorageAccessKey"
+lakefs run --local-settings
+```
 
   </div>
   <div markdown="1" id="on-google-gcs">
 
-Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
+Note: Make sure the Quickstart server from the previous steps isn't also running as you'll get a port conflict.
 {: .note }
 
-   ```bash
-docker run --pull always -p 8000:8000 \
-   -e LAKEFS_BLOCKSTORE_TYPE='gs' \
-   -e LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON='YourGoogleServiceAccountKeyJSON' \
-   treeverse/lakefs run --local-settings
-   ```
+```bash
+export LAKEFS_BLOCKSTORE_TYPE="gs"
+export LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON="YourGoogleServiceAccountKeyJSON"
+lakefs run --local-settings
+```
 where you will replace ```YourGoogleServiceAccountKeyJSON``` with JSON string that contains your Google service account key.
 
 If you want to use the JSON file that contains your Google service account key instead of JSON string (as in the previous command) then go to the directory where JSON file is stored and run the command with local parameters:
 
-   ```bash
-docker run --pull always -p 8000:8000 \
-   -v $PWD:/myfiles \
-   -e LAKEFS_BLOCKSTORE_TYPE='gs' \
-   -e LAKEFS_BLOCKSTORE_GS_CREDENTIALS_FILE='/myfiles/YourGoogleServiceAccountKey.json' \
-   treeverse/lakefs run --local-settings
-   ```
+```bash
+export LAKEFS_BLOCKSTORE_TYPE="gs"
+export LAKEFS_BLOCKSTORE_GS_CREDENTIALS_FILE="/myfiles/YourGoogleServiceAccountKey.json"
+lakefs run --local-settings
+```
+
 This command will mount your present working directory (PWD) within the container and will read the JSON file from your PWD.
 
   </div>
@@ -80,19 +76,18 @@ This command will mount your present working directory (PWD) within the containe
 
 To use lakeFS with MinIO (or other S3-compatible object storage), use the following example:
 
-Note: Make sure the Quickstart Docker Compose from the previous steps isn't also running as you'll get a port conflict.
+Note: Make sure the Quickstart server from the previous steps isn't also running as you'll get a port conflict.
 {: .note }
 
-   ```bash
-docker run --pull always -p 8000:8000 \
-   -e LAKEFS_BLOCKSTORE_TYPE='s3' \
-   -e LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE='true' \
-   -e LAKEFS_BLOCKSTORE_S3_ENDPOINT='http://<minio_endpoint>' \
-   -e LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION='false' \
-   -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID='<minio_access_key>' \
-   -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY='<minio_secret_key>' \
-   treeverse/lakefs run --local-settings
-   ```
+```bash
+export LAKEFS_BLOCKSTORE_TYPE="s3"
+export LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE="true"
+export LAKEFS_BLOCKSTORE_S3_ENDPOINT="http://<minio_endpoint>"
+export LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION="false"
+export LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID="<minio_access_key>"
+export LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY="<minio_secret_key>"
+lakefs run --local-settings
+```
 
   </div>
 </div>
