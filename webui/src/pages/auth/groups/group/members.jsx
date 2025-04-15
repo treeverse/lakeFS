@@ -21,6 +21,7 @@ import {useRouter} from "../../../../lib/hooks/router";
 import {Link} from "../../../../lib/components/nav";
 import {resolveUserDisplayName} from "../../../../lib/utils";
 import {allUsersFromLakeFS} from "../../../../lib/components/auth/users";
+import {pageSize} from "../../../../constants";
 
 
 const GroupMemberList = ({ groupId, after, onPaginate }) => {
@@ -36,21 +37,23 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
     }, [refresh]);
 
 
-    const searchUsers = async (prefix, after, resolveUserDisplayNameFN = (user => user.id)) => {
-        let allUsersList = allUsers;
-        if (allUsersList.length === 0) {
-            allUsersList = await allUsersFromLakeFS(resolveUserDisplayNameFN)
-            setAllUsers(allUsersList)
-        }
-        let filteredUsers = allUsersList.filter(user => resolveUserDisplayNameFN(user).startsWith(prefix));
-        const pageSize = 5;
+    useEffect(() => {
+        const loadUsers = async () => {
+            const users = await allUsersFromLakeFS(resolveUserDisplayName);
+            setAllUsers(users);
+        };
+        void loadUsers();
+    }, []);
+
+    const searchUsers = (prefix, after, resolveUserDisplayNameFN = (user => user.id)) => {
+        const filteredUsers = allUsers.filter(user =>
+            resolveUserDisplayNameFN(user).toLowerCase().startsWith(prefix.toLowerCase())
+        );
         const startIndex = after ? parseInt(after, 10) : 0;
         const page = filteredUsers.slice(startIndex, startIndex + pageSize);
-
-        const nextOffset =
-            startIndex + pageSize < filteredUsers.length
-                ? (startIndex + pageSize).toString()
-                : null;
+        const nextOffset = (startIndex + pageSize < filteredUsers.length)
+            ? (startIndex + pageSize).toString()
+            : null;
 
         return {
             results: page,

@@ -17,13 +17,12 @@ export const AttachModal = ({
                               filterPlaceholder = 'Filter...'
                             }) => {
   const search = useRef(null);
-  const [searchPrefix, setSearchPrefix] = useState("");
+  const [paginationParams, setPaginationParams] = useState({ prefix: "", after: "" });
   const [selected, setSelected] = useState([]);
-  const [after, setAfter] = useState("");
 
   const { response, error, loading } = useAPI(() => {
-      return searchFn(searchPrefix, after);
-  }, [searchPrefix, after]);
+      return searchFn(paginationParams.prefix, paginationParams.after);
+  }, [paginationParams]);
 
   useEffect(() => {
     if (!!search.current && search.current.value === "")
@@ -53,11 +52,13 @@ export const AttachModal = ({
           firstFixedCol={true}
         />
         <Paginator
-            after={after}
+            after={paginationParams.after}
             nextPage={nextPage}
-            onPaginate={setAfter}
+            onPaginate={(newAfter) => setPaginationParams(prev => ({
+                ...prev,
+                after: newAfter
+            }))}
         />
-
         <div className="mt-3">
           {(selected.length > 0) &&
             <p>
@@ -88,8 +89,11 @@ export const AttachModal = ({
     );
 
   const handleSearchChange = () => {
-      setSearchPrefix(search.current.value);
-      setAfter("");
+      setPaginationParams(prev => ({
+          ...prev,
+          prefix: search.current.value,
+          after: ""
+      }));
   };
 
   return (
