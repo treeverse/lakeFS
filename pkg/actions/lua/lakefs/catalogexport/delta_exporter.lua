@@ -36,13 +36,13 @@ end
 
 
 -- Local function to get the table descriptor
-local function get_table_descriptor(repo, commit_id, table_name_yaml, table_descriptors_path)
+local function get_table_descriptor(repo, ref, table_name_yaml, table_descriptors_path)
     local tny = table_name_yaml
     if not strings.has_suffix(tny, ".yaml") then
         tny = tny .. ".yaml"
     end
     local table_src_path = pathlib.join("/", table_descriptors_path, tny)
-    local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
+    local table_descriptor = extractor.get_table_descriptor(lakefs, repo, ref, table_src_path)
     return table_descriptor
 end
 
@@ -213,6 +213,7 @@ local function extractDirectory(path)
     return path:match("^(.*)/[^/]+$")
 end
 
+-- Local function to filter the list of table defs to include only those that have changed
 local function table_def_changes(table_def_names, table_descriptors_path, repository_id, source_ref, branch_id)
     -- Initialize the result table for storing changed table definitions
     local changed_table_defs = {}
