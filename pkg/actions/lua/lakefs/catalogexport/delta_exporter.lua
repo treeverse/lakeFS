@@ -224,10 +224,10 @@ local function table_def_changes(table_def_names, table_descriptors_path, reposi
         error("Failed to perform diff_refs with code: " .. tostring(code))
     end
 
-    -- Now make a map out of the paths of the filenames
+    -- Now make a set out of the paths of the filenames
     local changed_path_set = {}
-    for _, change in ipairs(changed_path_set) do
-        local dir = extractDirectory(change.path)
+    for _, descriptor_path in ipairs(table_descriptors_path) do
+        local dir = extractDirectory(descriptor_path.path)
         if dir then
             changed_path_set[dir] = true
         end
