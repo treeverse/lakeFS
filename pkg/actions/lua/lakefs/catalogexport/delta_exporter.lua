@@ -36,7 +36,7 @@ end
 
 
 -- Local function to get the table descriptor
-local function get_table_descriptor(repo, commit_id,table_name_yaml, table_descriptors_path)
+local function get_table_descriptor(repo, commit_id, table_name_yaml, table_descriptors_path)
     local tny = table_name_yaml
     if not strings.has_suffix(tny, ".yaml") then
         tny = tny .. ".yaml"
@@ -61,7 +61,8 @@ end
     path_transformer: function(path) used for transforming path scheme (ex: Azure https to abfss)
 
 ]]
-local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path, path_transformer)
+local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path,
+                                path_transformer)
     local repo = action.repository_id
     local commit_id = action.commit_id
     if not commit_id then
@@ -73,8 +74,7 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
     end
     local response = {}
     for _, table_name_yaml in ipairs(table_def_names) do
-
-        local table_descriptor=get_table_descriptor(repo,commit_id,table_name_yaml,table_descriptors_path)
+        local table_descriptor = get_table_descriptor(repo, commit_id, table_name_yaml, table_descriptors_path)
         local table_path = table_descriptor.path
         if not table_path then
             error("table path is required to proceed with Delta catalog export")
@@ -143,7 +143,8 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                     elseif code == 404 then
                         if entry.remove ~= nil then
                             -- If the object is not found, and the entry is a remove entry, we can assume it was vacuumed
-                            print(string.format("Object with path '%s' of a `remove` entry wasn't found. Assuming vacuum.", unescaped_path))
+                            print(string.format(
+                            "Object with path '%s' of a `remove` entry wasn't found. Assuming vacuum.", unescaped_path))
                             unfound_paths[unescaped_path] = nil
                         else
                             unfound_paths[unescaped_path] = true
@@ -199,8 +200,8 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
             table_physical_path = path_transformer(table_physical_path)
         end
         local table_val = {
-            path=table_physical_path,
-            metadata=metadata,
+            path = table_physical_path,
+            metadata = metadata,
         }
         response[table_name_yaml] = table_val
     end
@@ -212,7 +213,7 @@ local function extractDirectory(path)
     return path:match("^(.*)/[^/]+$")
 end
 
-local function table_def_changes(table_def_names,table_descriptors_path,repository_id, source_ref, branch_id)
+local function table_def_changes(table_def_names, table_descriptors_path, repository_id, source_ref, branch_id)
     -- Initialize the result table for storing changed table definitions
     local changed_table_defs = {}
 
@@ -233,15 +234,14 @@ local function table_def_changes(table_def_names,table_descriptors_path,reposito
 
     -- Iterate through the table definitions
     for _, table_name_yaml in ipairs(table_def_names) do
-
-        local table_descriptor=get_table_descriptor(repository_id,source_ref,table_name_yaml,table_descriptors_path)
+        local table_descriptor = get_table_descriptor(repository_id, source_ref, table_name_yaml, table_descriptors_path)
         local table_path = table_descriptor.path
         if not table_path then
             error("table path is required to proceed with Delta catalog export")
         end
 
         -- filter only the changed paths from the list
-        if changed_path_set[table_path]  ~= nil then
+        if changed_path_set[table_path] ~= nil then
             table.insert(changed_table_defs, table_name_yaml)
         end
     end
