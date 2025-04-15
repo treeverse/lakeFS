@@ -215,25 +215,25 @@ end
 
 -- Local function to filter the list of table defs to include only those that have changed
 local function table_def_changes(table_def_names, table_descriptors_path, repository_id, source_ref, branch_id)
-    -- Initialize the result table for storing changed table definitions
-    local changed_table_defs = {}
-
     -- Perform a diff_refs operation to get the differences between references
-    local diff, code = lakefs.diff_refs(repository_id, source_ref, branch_id)
+    local code, diff_resp = lakefs.diff_refs(repository_id, source_ref, branch_id)
     if code ~= 200 then
         error("Failed to perform diff_refs with code: " .. tostring(code))
     end
 
     -- Now make a set out of the paths of the filenames
     local changed_path_set = {}
-    for _, diff_item in ipairs(diff) do
+    for _, diff_item in ipairs(diff_resp) do
         local dir = extractDirectory(diff_item.path)
         if dir then
             changed_path_set[dir] = true
         end
     end
 
-    -- Iterate through the table definitions
+    -- Initialize the result table for storing changed table definitions
+    local changed_table_defs = {}
+
+    -- Iterate through the table definitions and add to the result the ones that pass the filter
     for _, table_name_yaml in ipairs(table_def_names) do
         local table_descriptor = get_table_descriptor(repository_id, source_ref, table_name_yaml, table_descriptors_path)
         local table_path = table_descriptor.path
