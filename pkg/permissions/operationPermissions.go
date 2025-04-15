@@ -354,7 +354,7 @@ func GetRepoMetadataPermissions(repository string) Node {
 	}
 }
 
-func SetRepoMetadataPermissions(repository string) Node {
+func UpdateRepoMetadataPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   UpdateRepositoryAction,
@@ -390,15 +390,6 @@ func GetBranchProtectionRulesPermissions(repository string) Node {
 	}
 }
 
-func SetBranchProtectionRulesPermissions(repository string) Node {
-	return Node{
-		Permission: Permission{
-			Action:   SetBranchProtectionRulesAction,
-			Resource: RepoArn(repository),
-		},
-	}
-}
-
 func DeleteGCRulesPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
@@ -426,7 +417,7 @@ func SetGCRulesPermissions(repository string) Node {
 	}
 }
 
-func ListRepositoryRunsPermissions(repository string) Node {
+func ActionsRepositoryRunsPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadActionsAction,
@@ -712,7 +703,7 @@ func GetCommitPermissions(repository string) Node {
 	}
 }
 
-func SetGcCollectionRulesPreflightPermissions(repository string) Node {
+func SetGCCollectionRulesPreflightPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   SetGarbageCollectionRulesAction,
@@ -1027,7 +1018,7 @@ func ListObjectsPermissions(repository string) Node {
 	}
 }
 
-func StartObjectPermissions(repository string, path string) Node {
+func StatObjectPermissions(repository string, path string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadObjectAction,
@@ -1144,7 +1135,7 @@ func UpdatePullRequestPermissions(repository string) Node {
 	}
 }
 
-func MergePullRequestsPermissions(repository string, destination string) Node {
+func MergePullRequestPermissions(repository string, destination string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{

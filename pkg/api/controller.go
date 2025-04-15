@@ -2028,7 +2028,7 @@ func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) SetRepositoryMetadata(w http.ResponseWriter, r *http.Request, body apigen.SetRepositoryMetadataJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.SetRepoMetadataPermissions(repository)) {
+	if !c.authorize(w, r, permissions.UpdateRepoMetadataPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2073,7 +2073,7 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 }
 
 func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Request, body apigen.SetBranchProtectionRulesJSONRequestBody, repository string, params apigen.SetBranchProtectionRulesParams) {
-	if !c.authorize(w, r, permissions.SetBranchProtectionRulesPermissions(repository)) {
+	if !c.authorize(w, r, permissions.CreateBranchProtectionRulePermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2146,7 +2146,7 @@ func (c *Controller) SetGCRules(w http.ResponseWriter, r *http.Request, body api
 }
 
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params apigen.ListRepositoryRunsParams) {
-	if !c.authorize(w, r, permissions.ListRepositoryRunsPermissions(repository)) {
+	if !c.authorize(w, r, permissions.ActionsRepositoryRunsPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -3240,7 +3240,7 @@ func (c *Controller) InternalGetGarbageCollectionRules(w http.ResponseWriter, r 
 }
 
 func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.SetGcCollectionRulesPreflightPermissions(repository)) {
+	if !c.authorize(w, r, permissions.SetGCCollectionRulesPreflightPermissions(repository)) {
 		return
 	}
 
@@ -4093,7 +4093,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 }
 
 func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.StatObjectParams) {
-	if !c.authorize(w, r, permissions.StartObjectPermissions(repository, params.Path)) {
+	if !c.authorize(w, r, permissions.StatObjectPermissions(repository, params.Path)) {
 		return
 	}
 	ctx := r.Context()
@@ -4763,7 +4763,7 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 
-	if !c.authorize(w, r, permissions.MergePullRequestsPermissions(repository, pr.Destination)) {
+	if !c.authorize(w, r, permissions.MergePullRequestPermissions(repository, pr.Destination)) {
 		return
 	}
 
