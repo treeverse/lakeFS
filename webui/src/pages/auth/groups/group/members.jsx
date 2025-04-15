@@ -21,7 +21,7 @@ import {useRouter} from "../../../../lib/hooks/router";
 import {Link} from "../../../../lib/components/nav";
 import {resolveUserDisplayName} from "../../../../lib/utils";
 import {allUsersFromLakeFS} from "../../../../lib/components/auth/users";
-import {pageSize} from "../../../../constants";
+import {PageSize} from "../../../../constants";
 
 
 const GroupMemberList = ({ groupId, after, onPaginate }) => {
@@ -50,9 +50,9 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
             resolveUserDisplayNameFN(user).toLowerCase().startsWith(prefix.toLowerCase())
         );
         const startIndex = after ? parseInt(after, 10) : 0;
-        const page = filteredUsers.slice(startIndex, startIndex + pageSize);
-        const nextOffset = (startIndex + pageSize < filteredUsers.length)
-            ? (startIndex + pageSize).toString()
+        const page = filteredUsers.slice(startIndex, startIndex + PageSize);
+        const nextOffset = (startIndex + PageSize < filteredUsers.length)
+            ? (startIndex + PageSize).toString()
             : null;
 
         return {
