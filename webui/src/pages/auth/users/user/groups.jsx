@@ -20,6 +20,7 @@ import { AttachModal } from "../../../../lib/components/auth/forms";
 import { ConfirmationButton } from "../../../../lib/components/modals";
 import { useRouter } from "../../../../lib/hooks/router";
 import { Link } from "../../../../lib/components/nav";
+import {PageSize} from "../../../../constants";
 
 const resolveGroupDisplayName = (group) => {
     if(!group) return "";
@@ -100,9 +101,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
             modalTitle={"Add to Groups"}
             addText={"Add to Groups"}
             headers={["", "Group Name"]}
-            searchFn={(prefix) =>
-              auth.listGroups(prefix, "", 5).then((res) => res.results)
-            }
+            searchFn={(prefix, after) => auth.listGroups(prefix, after, PageSize)}
             resolveEntityFn={resolveGroupDisplayName}
             onHide={() => setShowAddModal(false)}
             onAttach={(selected) => {
