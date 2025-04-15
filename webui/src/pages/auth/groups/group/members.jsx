@@ -21,6 +21,7 @@ import {useRouter} from "../../../../lib/hooks/router";
 import {Link} from "../../../../lib/components/nav";
 import {resolveUserDisplayName} from "../../../../lib/utils";
 import {allUsersFromLakeFS} from "../../../../lib/components/auth/users";
+import {PageSize} from "../../../../constants";
 
 
 const GroupMemberList = ({ groupId, after, onPaginate }) => {
@@ -36,14 +37,31 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
     }, [refresh]);
 
 
-    const searchUsers = async (prefix, maxResults, resolveUserDisplayNameFN = (user => user.id)) => {
-        let allUsersList = allUsers;
-        if (allUsersList.length === 0) {
-            allUsersList = await allUsersFromLakeFS(resolveUserDisplayNameFN)
-            setAllUsers(allUsersList)
-        }
-        let filteredUsers = allUsersList.filter(user => resolveUserDisplayNameFN(user).startsWith(prefix));
-        return filteredUsers.slice(0, maxResults);
+    useEffect(() => {
+        const loadUsers = async () => {
+            const users = await allUsersFromLakeFS(resolveUserDisplayName);
+            setAllUsers(users);
+        };
+        void loadUsers();
+    }, []);
+
+    const searchUsers = (prefix, after, resolveUserDisplayNameFN = (user => user.id)) => {
+        const filteredUsers = allUsers.filter(user =>
+            resolveUserDisplayNameFN(user).toLowerCase().startsWith(prefix.toLowerCase())
+        );
+        const startIndex = after ? parseInt(after, 10) : 0;
+        const page = filteredUsers.slice(startIndex, startIndex + PageSize);
+        const nextOffset = (startIndex + PageSize < filteredUsers.length)
+            ? (startIndex + PageSize).toString()
+            : null;
+
+        return {
+            results: page,
+            pagination: {
+                next_offset: nextOffset,
+                has_more: nextOffset !== null
+            }
+        };
     };
     let content;
     if (loading) content = <Loading/>;
@@ -86,7 +104,7 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                     modalTitle={'Add to Group'}
                     addText={'Add to Group'}
                     resolveEntityFn={resolveUserDisplayName}
-                    searchFn={prefix => searchUsers(prefix, 5, resolveUserDisplayName).then(res => res)}
+                    searchFn={(prefix, after) => searchUsers(prefix, after, resolveUserDisplayName)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
                         Promise.all(selected.map(user => auth.addUserToGroup(user.id, groupId)))

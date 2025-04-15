@@ -19,6 +19,7 @@ import {
 } from "../../../../lib/components/controls";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
+import {PageSize} from "../../../../constants";
 
 
 const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
@@ -74,7 +75,7 @@ const GroupPoliciesList = ({ groupId, after, onPaginate }) => {
                     filterPlaceholder={'Find Policy...'}
                     modalTitle={'Attach Policies'}
                     addText={'Attach Policies'}
-                    searchFn={prefix => auth.listPolicies(prefix, "", 5).then(res => res.results)}
+                    searchFn={(prefix, after) => auth.listPolicies(prefix, after, PageSize)}
                     onHide={() => setShowAddModal(false)}
                     onAttach={(selected) => {
                         Promise.all(selected.map(policy => auth.attachPolicyToGroup(groupId, policy.id)))
