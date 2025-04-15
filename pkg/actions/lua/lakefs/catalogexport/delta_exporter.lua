@@ -226,8 +226,8 @@ local function table_def_changes(table_def_names, table_descriptors_path, reposi
 
     -- Now make a set out of the paths of the filenames
     local changed_path_set = {}
-    for _, descriptor_path in ipairs(table_descriptors_path) do
-        local dir = extractDirectory(descriptor_path.path)
+    for _, diff_item in ipairs(diff) do
+        local dir = extractDirectory(diff_item.path)
         if dir then
             changed_path_set[dir] = true
         end
