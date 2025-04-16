@@ -18,7 +18,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.UploadPartFromCopy;
+import io.lakefs.clients.sdk.model.UploadPartFromCopySource;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
@@ -47,11 +47,11 @@ public class UploadPartFromTest {
     }
 
     /**
-     * Test the property 'copy'
+     * Test the property 'copySource'
      */
     @Test
-    public void copyTest() {
-        // TODO: test copy
+    public void copySourceTest() {
+        // TODO: test copySource
     }
 
     /**

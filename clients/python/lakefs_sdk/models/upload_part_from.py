@@ -24,16 +24,16 @@ try:
     from pydantic.v1 import BaseModel, Field, StrictStr, constr, validator
 except ImportError:
     from pydantic import BaseModel, Field, StrictStr, constr, validator
-from lakefs_sdk.models.upload_part_from_copy import UploadPartFromCopy
+from lakefs_sdk.models.upload_part_from_copy_source import UploadPartFromCopySource
 
 class UploadPartFrom(BaseModel):
     """
     UploadPartFrom
     """
     type: constr(strict=True) = Field(..., description="Future versions may allow operations other than copy")
-    copy: Optional[UploadPartFromCopy] = None
+    copy_source: Optional[UploadPartFromCopySource] = None
     physical_address: StrictStr = Field(..., description="The physical address returned from createPresignMultipartUpload")
-    __properties = ["type", "copy", "physical_address"]
+    __properties = ["type", "copy_source", "physical_address"]
 
     @validator('type')
     def type_validate_regular_expression(cls, value):
@@ -66,9 +66,9 @@ class UploadPartFrom(BaseModel):
                           exclude={
                           },
                           exclude_none=True)
-        # override the default output from pydantic by calling `to_dict()` of copy
-        if self.copy:
-            _dict['copy'] = self.copy.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of copy_source
+        if self.copy_source:
+            _dict['copy_source'] = self.copy_source.to_dict()
         return _dict
 
     @classmethod
@@ -82,7 +82,7 @@ class UploadPartFrom(BaseModel):
 
         _obj = UploadPartFrom.parse_obj({
             "type": obj.get("type"),
-            "copy": UploadPartFromCopy.from_dict(obj.get("copy")) if obj.get("copy") is not None else None,
+            "copy_source": UploadPartFromCopySource.from_dict(obj.get("copy_source")) if obj.get("copy_source") is not None else None,
             "physical_address": obj.get("physical_address")
         })
         return _obj

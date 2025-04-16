@@ -19,7 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.UploadPartFromCopy;
+import io.lakefs.clients.sdk.model.UploadPartFromCopySource;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -56,9 +56,9 @@ public class UploadPartFrom {
   @SerializedName(SERIALIZED_NAME_TYPE)
   private String type;
 
-  public static final String SERIALIZED_NAME_COPY = "copy";
-  @SerializedName(SERIALIZED_NAME_COPY)
-  private UploadPartFromCopy copy;
+  public static final String SERIALIZED_NAME_COPY_SOURCE = "copy_source";
+  @SerializedName(SERIALIZED_NAME_COPY_SOURCE)
+  private UploadPartFromCopySource copySource;
 
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
@@ -88,24 +88,24 @@ public class UploadPartFrom {
   }
 
 
-  public UploadPartFrom copy(UploadPartFromCopy copy) {
+  public UploadPartFrom copySource(UploadPartFromCopySource copySource) {
     
-    this.copy = copy;
+    this.copySource = copySource;
     return this;
   }
 
    /**
-   * Get copy
-   * @return copy
+   * Get copySource
+   * @return copySource
   **/
   @javax.annotation.Nullable
-  public UploadPartFromCopy getCopy() {
-    return copy;
+  public UploadPartFromCopySource getCopySource() {
+    return copySource;
   }
 
 
-  public void setCopy(UploadPartFromCopy copy) {
-    this.copy = copy;
+  public void setCopySource(UploadPartFromCopySource copySource) {
+    this.copySource = copySource;
   }
 
 
@@ -185,14 +185,14 @@ public class UploadPartFrom {
     }
     UploadPartFrom uploadPartFrom = (UploadPartFrom) o;
     return Objects.equals(this.type, uploadPartFrom.type) &&
-        Objects.equals(this.copy, uploadPartFrom.copy) &&
+        Objects.equals(this.copySource, uploadPartFrom.copySource) &&
         Objects.equals(this.physicalAddress, uploadPartFrom.physicalAddress)&&
         Objects.equals(this.additionalProperties, uploadPartFrom.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, copy, physicalAddress, additionalProperties);
+    return Objects.hash(type, copySource, physicalAddress, additionalProperties);
   }
 
   @Override
@@ -200,7 +200,7 @@ public class UploadPartFrom {
     StringBuilder sb = new StringBuilder();
     sb.append("class UploadPartFrom {\n");
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    copy: ").append(toIndentedString(copy)).append("\n");
+    sb.append("    copySource: ").append(toIndentedString(copySource)).append("\n");
     sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
@@ -226,7 +226,7 @@ public class UploadPartFrom {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("type");
-    openapiFields.add("copy");
+    openapiFields.add("copy_source");
     openapiFields.add("physical_address");
 
     // a set of required properties/fields (JSON key names)
@@ -258,9 +258,9 @@ public class UploadPartFrom {
       if (!jsonObj.get("type").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("type").toString()));
       }
-      // validate the optional field `copy`
-      if (jsonObj.get("copy") != null && !jsonObj.get("copy").isJsonNull()) {
-        UploadPartFromCopy.validateJsonElement(jsonObj.get("copy"));
+      // validate the optional field `copy_source`
+      if (jsonObj.get("copy_source") != null && !jsonObj.get("copy_source").isJsonNull()) {
+        UploadPartFromCopySource.validateJsonElement(jsonObj.get("copy_source"));
       }
       if (!jsonObj.get("physical_address").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `physical_address` to be a primitive type in the JSON string but got `%s`", jsonObj.get("physical_address").toString()));

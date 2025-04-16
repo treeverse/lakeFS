@@ -6,7 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | **str** | Future versions may allow operations other than copy | 
-**copy** | [**UploadPartFromCopy**](UploadPartFromCopy.md) |  | [optional] 
+**copy_source** | [**UploadPartFromCopySource**](UploadPartFromCopySource.md) |  | [optional] 
 **physical_address** | **str** | The physical address returned from createPresignMultipartUpload | 
 
 ## Example

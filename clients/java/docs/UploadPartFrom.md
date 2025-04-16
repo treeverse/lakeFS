@@ -8,7 +8,7 @@
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
 |**type** | **String** | Future versions may allow operations other than copy |  |
-|**copy** | [**UploadPartFromCopy**](UploadPartFromCopy.md) |  |  [optional] |
+|**copySource** | [**UploadPartFromCopySource**](UploadPartFromCopySource.md) |  |  [optional] |
 |**physicalAddress** | **String** | The physical address returned from createPresignMultipartUpload |  |
 
 

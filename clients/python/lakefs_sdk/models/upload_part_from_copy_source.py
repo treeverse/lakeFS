@@ -25,7 +25,7 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field, StrictStr, constr, validator
 
-class UploadPartFromCopy(BaseModel):
+class UploadPartFromCopySource(BaseModel):
     """
     Source of copy, required for type \"copy\"  # noqa: E501
     """
@@ -59,8 +59,8 @@ class UploadPartFromCopy(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> UploadPartFromCopy:
-        """Create an instance of UploadPartFromCopy from a JSON string"""
+    def from_json(cls, json_str: str) -> UploadPartFromCopySource:
+        """Create an instance of UploadPartFromCopySource from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -72,15 +72,15 @@ class UploadPartFromCopy(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> UploadPartFromCopy:
-        """Create an instance of UploadPartFromCopy from a dict"""
+    def from_dict(cls, obj: dict) -> UploadPartFromCopySource:
+        """Create an instance of UploadPartFromCopySource from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return UploadPartFromCopy.parse_obj(obj)
+            return UploadPartFromCopySource.parse_obj(obj)
 
-        _obj = UploadPartFromCopy.parse_obj({
+        _obj = UploadPartFromCopySource.parse_obj({
             "repository": obj.get("repository"),
             "ref": obj.get("ref"),
             "path": obj.get("path"),

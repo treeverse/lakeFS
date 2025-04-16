@@ -1,6 +1,6 @@
 
 
-# UploadPartFromCopy
+# UploadPartFromCopySource
 
 Source of copy, required for type \"copy\"
 

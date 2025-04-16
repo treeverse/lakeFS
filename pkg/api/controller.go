@@ -267,8 +267,8 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 	isCopy := strings.ToLower(body.Type) == "copy"
 	dstPath := params.Path
 
-	if isCopy && body.Copy == nil {
-		writeError(w, r, http.StatusBadRequest, "body element \"copy\" is required for type=copy")
+	if isCopy && body.CopySource == nil {
+		writeError(w, r, http.StatusBadRequest, "body element \"copy_source\" is required for type=copy")
 		return
 	}
 
@@ -277,8 +277,8 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 		srcRepository, /*srcRef,*/ srcPath string
 	)
 	if isCopy {
-		srcRepository = body.Copy.Repository
-		srcPath = body.Copy.Path
+		srcRepository = body.CopySource.Repository
+		srcPath = body.CopySource.Path
 	}
 	requiredPermissions := permissions.Node{
 		Permission: permissions.Permission{

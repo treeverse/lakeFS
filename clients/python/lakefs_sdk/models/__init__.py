@@ -117,7 +117,7 @@ from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetada
 from lakefs_sdk.models.update_token import UpdateToken
 from lakefs_sdk.models.upload_part import UploadPart
 from lakefs_sdk.models.upload_part_from import UploadPartFrom
-from lakefs_sdk.models.upload_part_from_copy import UploadPartFromCopy
+from lakefs_sdk.models.upload_part_from_copy_source import UploadPartFromCopySource
 from lakefs_sdk.models.upload_to import UploadTo
 from lakefs_sdk.models.usage_report import UsageReport
 from lakefs_sdk.models.user import User

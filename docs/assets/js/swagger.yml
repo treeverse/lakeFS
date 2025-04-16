@@ -1705,7 +1705,7 @@ components:
           description: "Future versions may allow operations other than copy"
           type: string
           pattern: '^(?:copy|)$'
-        copy:
+        copy_source:
           description: "Source of copy, required for type \"copy\""
           type: object
           properties:

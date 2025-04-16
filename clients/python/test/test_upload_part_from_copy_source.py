@@ -16,10 +16,10 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.upload_part_from_copy import UploadPartFromCopy  # noqa: E501
+from lakefs_sdk.models.upload_part_from_copy_source import UploadPartFromCopySource  # noqa: E501
 
-class TestUploadPartFromCopy(unittest.TestCase):
-    """UploadPartFromCopy unit test stubs"""
+class TestUploadPartFromCopySource(unittest.TestCase):
+    """UploadPartFromCopySource unit test stubs"""
 
     def setUp(self):
         pass
@@ -27,31 +27,31 @@ class TestUploadPartFromCopy(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> UploadPartFromCopy:
-        """Test UploadPartFromCopy
+    def make_instance(self, include_optional) -> UploadPartFromCopySource:
+        """Test UploadPartFromCopySource
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `UploadPartFromCopy`
+        # uncomment below to create an instance of `UploadPartFromCopySource`
         """
-        model = UploadPartFromCopy()  # noqa: E501
+        model = UploadPartFromCopySource()  # noqa: E501
         if include_optional:
-            return UploadPartFromCopy(
+            return UploadPartFromCopySource(
                 repository = '',
                 ref = '',
                 path = '',
                 range = 'bytes=8072888001528021798096225500-5076206862933933397565068513910 '
             )
         else:
-            return UploadPartFromCopy(
+            return UploadPartFromCopySource(
                 repository = '',
                 ref = '',
                 path = '',
         )
         """
 
-    def testUploadPartFromCopy(self):
-        """Test UploadPartFromCopy"""
+    def testUploadPartFromCopySource(self):
+        """Test UploadPartFromCopySource"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

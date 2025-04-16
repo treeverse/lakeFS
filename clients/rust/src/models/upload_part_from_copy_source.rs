@@ -10,9 +10,9 @@
 
 use crate::models;
 
-/// UploadPartFromCopy : Source of copy, required for type \"copy\"
+/// UploadPartFromCopySource : Source of copy, required for type \"copy\"
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct UploadPartFromCopy {
+pub struct UploadPartFromCopySource {
     #[serde(rename = "repository")]
     pub repository: String,
     #[serde(rename = "ref")]
@@ -24,10 +24,10 @@ pub struct UploadPartFromCopy {
     pub range: Option<String>,
 }
 
-impl UploadPartFromCopy {
+impl UploadPartFromCopySource {
     /// Source of copy, required for type \"copy\"
-    pub fn new(repository: String, r#ref: String, path: String) -> UploadPartFromCopy {
-        UploadPartFromCopy {
+    pub fn new(repository: String, r#ref: String, path: String) -> UploadPartFromCopySource {
+        UploadPartFromCopySource {
             repository,
             r#ref,
             path,

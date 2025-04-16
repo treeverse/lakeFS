@@ -9771,19 +9771,19 @@ components:
     UploadPartFrom:
       example:
         physical_address: physical_address
-        copy:
+        type: type
+        copy_source:
           path: path
           ref: ref
           range: range
           repository: repository
-        type: type
       properties:
         type:
           description: Future versions may allow operations other than copy
           pattern: ^(?:copy|)$
           type: string
-        copy:
-          $ref: '#/components/schemas/UploadPartFrom_copy'
+        copy_source:
+          $ref: '#/components/schemas/UploadPartFrom_copy_source'
         physical_address:
           description: The physical address returned from createPresignMultipartUpload
           type: string
@@ -10071,7 +10071,7 @@ components:
       required:
       - pattern
       type: object
-    UploadPartFrom_copy:
+    UploadPartFrom_copy_source:
       description: "Source of copy, required for type \"copy\""
       example:
         path: path

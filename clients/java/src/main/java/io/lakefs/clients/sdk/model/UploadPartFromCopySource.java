@@ -50,7 +50,7 @@ import io.lakefs.clients.sdk.JSON;
  * Source of copy, required for type \&quot;copy\&quot;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class UploadPartFromCopy {
+public class UploadPartFromCopySource {
   public static final String SERIALIZED_NAME_REPOSITORY = "repository";
   @SerializedName(SERIALIZED_NAME_REPOSITORY)
   private String repository;
@@ -67,10 +67,10 @@ public class UploadPartFromCopy {
   @SerializedName(SERIALIZED_NAME_RANGE)
   private String range;
 
-  public UploadPartFromCopy() {
+  public UploadPartFromCopySource() {
   }
 
-  public UploadPartFromCopy repository(String repository) {
+  public UploadPartFromCopySource repository(String repository) {
     
     this.repository = repository;
     return this;
@@ -91,7 +91,7 @@ public class UploadPartFromCopy {
   }
 
 
-  public UploadPartFromCopy ref(String ref) {
+  public UploadPartFromCopySource ref(String ref) {
     
     this.ref = ref;
     return this;
@@ -112,7 +112,7 @@ public class UploadPartFromCopy {
   }
 
 
-  public UploadPartFromCopy path(String path) {
+  public UploadPartFromCopySource path(String path) {
     
     this.path = path;
     return this;
@@ -133,7 +133,7 @@ public class UploadPartFromCopy {
   }
 
 
-  public UploadPartFromCopy range(String range) {
+  public UploadPartFromCopySource range(String range) {
     
     this.range = range;
     return this;
@@ -166,9 +166,9 @@ public class UploadPartFromCopy {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the UploadPartFromCopy instance itself
+   * @return the UploadPartFromCopySource instance itself
    */
-  public UploadPartFromCopy putAdditionalProperty(String key, Object value) {
+  public UploadPartFromCopySource putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -207,12 +207,12 @@ public class UploadPartFromCopy {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UploadPartFromCopy uploadPartFromCopy = (UploadPartFromCopy) o;
-    return Objects.equals(this.repository, uploadPartFromCopy.repository) &&
-        Objects.equals(this.ref, uploadPartFromCopy.ref) &&
-        Objects.equals(this.path, uploadPartFromCopy.path) &&
-        Objects.equals(this.range, uploadPartFromCopy.range)&&
-        Objects.equals(this.additionalProperties, uploadPartFromCopy.additionalProperties);
+    UploadPartFromCopySource uploadPartFromCopySource = (UploadPartFromCopySource) o;
+    return Objects.equals(this.repository, uploadPartFromCopySource.repository) &&
+        Objects.equals(this.ref, uploadPartFromCopySource.ref) &&
+        Objects.equals(this.path, uploadPartFromCopySource.path) &&
+        Objects.equals(this.range, uploadPartFromCopySource.range)&&
+        Objects.equals(this.additionalProperties, uploadPartFromCopySource.additionalProperties);
   }
 
   @Override
@@ -223,7 +223,7 @@ public class UploadPartFromCopy {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UploadPartFromCopy {\n");
+    sb.append("class UploadPartFromCopySource {\n");
     sb.append("    repository: ").append(toIndentedString(repository)).append("\n");
     sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
     sb.append("    path: ").append(toIndentedString(path)).append("\n");
@@ -267,17 +267,17 @@ public class UploadPartFromCopy {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to UploadPartFromCopy
+  * @throws IOException if the JSON Element is invalid with respect to UploadPartFromCopySource
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!UploadPartFromCopy.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in UploadPartFromCopy is not found in the empty JSON string", UploadPartFromCopy.openapiRequiredFields.toString()));
+        if (!UploadPartFromCopySource.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in UploadPartFromCopySource is not found in the empty JSON string", UploadPartFromCopySource.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : UploadPartFromCopy.openapiRequiredFields) {
+      for (String requiredField : UploadPartFromCopySource.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
@@ -301,16 +301,16 @@ public class UploadPartFromCopy {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!UploadPartFromCopy.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'UploadPartFromCopy' and its subtypes
+       if (!UploadPartFromCopySource.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'UploadPartFromCopySource' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<UploadPartFromCopy> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(UploadPartFromCopy.class));
+       final TypeAdapter<UploadPartFromCopySource> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(UploadPartFromCopySource.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<UploadPartFromCopy>() {
+       return (TypeAdapter<T>) new TypeAdapter<UploadPartFromCopySource>() {
            @Override
-           public void write(JsonWriter out, UploadPartFromCopy value) throws IOException {
+           public void write(JsonWriter out, UploadPartFromCopySource value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -333,12 +333,12 @@ public class UploadPartFromCopy {
            }
 
            @Override
-           public UploadPartFromCopy read(JsonReader in) throws IOException {
+           public UploadPartFromCopySource read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             UploadPartFromCopy instance = thisAdapter.fromJsonTree(jsonObj);
+             UploadPartFromCopySource instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -365,18 +365,18 @@ public class UploadPartFromCopy {
   }
 
  /**
-  * Create an instance of UploadPartFromCopy given an JSON string
+  * Create an instance of UploadPartFromCopySource given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of UploadPartFromCopy
-  * @throws IOException if the JSON string is invalid with respect to UploadPartFromCopy
+  * @return An instance of UploadPartFromCopySource
+  * @throws IOException if the JSON string is invalid with respect to UploadPartFromCopySource
   */
-  public static UploadPartFromCopy fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, UploadPartFromCopy.class);
+  public static UploadPartFromCopySource fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, UploadPartFromCopySource.class);
   }
 
  /**
-  * Convert an instance of UploadPartFromCopy to an JSON string
+  * Convert an instance of UploadPartFromCopySource to an JSON string
   *
   * @return JSON string
   */

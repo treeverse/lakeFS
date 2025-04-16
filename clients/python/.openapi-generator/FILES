@@ -124,7 +124,7 @@ docs/UpdateObjectUserMetadata.md
 docs/UpdateToken.md
 docs/UploadPart.md
 docs/UploadPartFrom.md
-docs/UploadPartFromCopy.md
+docs/UploadPartFromCopySource.md
 docs/UploadTo.md
 docs/UsageReport.md
 docs/User.md
@@ -259,7 +259,7 @@ lakefs_sdk/models/update_object_user_metadata.py
 lakefs_sdk/models/update_token.py
 lakefs_sdk/models/upload_part.py
 lakefs_sdk/models/upload_part_from.py
-lakefs_sdk/models/upload_part_from_copy.py
+lakefs_sdk/models/upload_part_from_copy_source.py
 lakefs_sdk/models/upload_to.py
 lakefs_sdk/models/usage_report.py
 lakefs_sdk/models/user.py
@@ -394,7 +394,7 @@ test/test_update_object_user_metadata.py
 test/test_update_token.py
 test/test_upload_part.py
 test/test_upload_part_from.py
-test/test_upload_part_from_copy.py
+test/test_upload_part_from_copy_source.py
 test/test_upload_to.py
 test/test_usage_report.py
 test/test_user.py
