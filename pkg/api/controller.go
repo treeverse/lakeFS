@@ -264,7 +264,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 }
 
 func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body apigen.UploadPartFromJSONRequestBody, dstRepository string, branch string, uploadID string, partNumber int, params apigen.UploadPartFromParams) {
-	isCopy := body.Repository != "" || body.Ref != "" || body.Path != ""
+	isCopy := strings.ToLower(body.Type) == "copy"
 	dstPath := params.Path
 	srcRepository := body.Repository
 	srcPath := body.Path

@@ -1704,7 +1704,7 @@ components:
         type:
           description: "Future versions may allow operations other than copy"
           type: string
-          pattern: '^copy$'
+          pattern: '^(?:copy|)$'
         repository:
           type: string
         ref:
