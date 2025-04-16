@@ -259,3 +259,4 @@ require (
 )
 
 replace github.com/csimplestring/delta-go => github.com/treeverse/delta-go v0.0.0-20250325160917-8c0ebb032f43
+replace github.com/golang-jwt/jwt => github.com/golang-jwt/jwt/v5 v5.2.2
