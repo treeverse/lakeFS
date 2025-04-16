@@ -18,48 +18,55 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.UploadPartFromCopy;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for UploadPartFrom
+ * Model tests for UploadPartFromCopy
  */
-public class UploadPartFromTest {
-    private final UploadPartFrom model = new UploadPartFrom();
+public class UploadPartFromCopyTest {
+    private final UploadPartFromCopy model = new UploadPartFromCopy();
 
     /**
-     * Model tests for UploadPartFrom
+     * Model tests for UploadPartFromCopy
      */
     @Test
-    public void testUploadPartFrom() {
-        // TODO: test UploadPartFrom
+    public void testUploadPartFromCopy() {
+        // TODO: test UploadPartFromCopy
     }
 
     /**
-     * Test the property 'type'
+     * Test the property 'repository'
      */
     @Test
-    public void typeTest() {
-        // TODO: test type
+    public void repositoryTest() {
+        // TODO: test repository
     }
 
     /**
-     * Test the property 'copy'
+     * Test the property 'ref'
      */
     @Test
-    public void copyTest() {
-        // TODO: test copy
+    public void refTest() {
+        // TODO: test ref
     }
 
     /**
-     * Test the property 'physicalAddress'
+     * Test the property 'path'
      */
     @Test
-    public void physicalAddressTest() {
-        // TODO: test physicalAddress
+    public void pathTest() {
+        // TODO: test path
+    }
+
+    /**
+     * Test the property 'range'
+     */
+    @Test
+    public void rangeTest() {
+        // TODO: test range
     }
 
 }

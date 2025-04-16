@@ -266,8 +266,20 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body apigen.UploadPartFromJSONRequestBody, dstRepository string, branch string, uploadID string, partNumber int, params apigen.UploadPartFromParams) {
 	isCopy := strings.ToLower(body.Type) == "copy"
 	dstPath := params.Path
-	srcRepository := body.Repository
-	srcPath := body.Path
+
+	if isCopy && body.Copy == nil {
+		writeError(w, r, http.StatusBadRequest, "body element \"copy\" is required for type=copy")
+		return
+	}
+
+	// srcRepository and srcPath are ignored for types other than copy.
+	var (
+		srcRepository, /*srcRef,*/ srcPath string
+	)
+	if isCopy {
+		srcRepository = body.Copy.Repository
+		srcPath = body.Copy.Path
+	}
 	requiredPermissions := permissions.Node{
 		Permission: permissions.Permission{
 			Action: permissions.WriteObjectAction,

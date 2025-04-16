@@ -1704,25 +1704,30 @@ components:
         type:
           description: "Future versions may allow operations other than copy"
           type: string
-          pattern: '^copy$'
-        repository:
-          type: string
-        ref:
-          type: string
-        path:
-          type: string
+          pattern: '^(?:copy|)$'
+        copy:
+          description: "Source of copy, required for type \"copy\""
+          type: object
+          properties:
+            repository:
+              type: string
+            ref:
+              type: string
+            path:
+              type: string
+            range:
+              description: "Range of bytes to copy"
+              type: string
+              pattern: '^bytes=((\d*-\d*,? ?)+)$'
+          required:
+            - repository
+            - ref
+            - path
         physical_address:
           description: "The physical address returned from createPresignMultipartUpload"
           type: string
-        range:
-          description: "Range of bytes to copy"
-          type: string
-          pattern: '^bytes=((\d*-\d*,? ?)+)$'
       required:
         - type
-        - repository
-        - ref
-        - path
         - physical_address
 
     UploadTo:

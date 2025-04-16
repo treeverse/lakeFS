@@ -202,6 +202,8 @@ pub mod upload_part;
 pub use self::upload_part::UploadPart;
 pub mod upload_part_from;
 pub use self::upload_part_from::UploadPartFrom;
+pub mod upload_part_from_copy;
+pub use self::upload_part_from_copy::UploadPartFromCopy;
 pub mod upload_to;
 pub use self::upload_to::UploadTo;
 pub mod usage_report;

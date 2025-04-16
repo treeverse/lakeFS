@@ -15,29 +15,19 @@ pub struct UploadPartFrom {
     /// Future versions may allow operations other than copy
     #[serde(rename = "type")]
     pub r#type: String,
-    #[serde(rename = "repository")]
-    pub repository: String,
-    #[serde(rename = "ref")]
-    pub r#ref: String,
-    #[serde(rename = "path")]
-    pub path: String,
+    #[serde(rename = "copy", skip_serializing_if = "Option::is_none")]
+    pub copy: Option<Box<models::UploadPartFromCopy>>,
     /// The physical address returned from createPresignMultipartUpload
     #[serde(rename = "physical_address")]
     pub physical_address: String,
-    /// Range of bytes to copy
-    #[serde(rename = "range", skip_serializing_if = "Option::is_none")]
-    pub range: Option<String>,
 }
 
 impl UploadPartFrom {
-    pub fn new(r#type: String, repository: String, r#ref: String, path: String, physical_address: String) -> UploadPartFrom {
+    pub fn new(r#type: String, physical_address: String) -> UploadPartFrom {
         UploadPartFrom {
             r#type,
-            repository,
-            r#ref,
-            path,
+            copy: None,
             physical_address,
-            range: None,
         }
     }
 }

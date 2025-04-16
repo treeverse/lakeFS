@@ -373,6 +373,7 @@ Class | Method | HTTP request | Description
  - [UpdateToken](docs/UpdateToken.md)
  - [UploadPart](docs/UploadPart.md)
  - [UploadPartFrom](docs/UploadPartFrom.md)
+ - [UploadPartFromCopy](docs/UploadPartFromCopy.md)
  - [UploadTo](docs/UploadTo.md)
  - [UsageReport](docs/UsageReport.md)
  - [User](docs/User.md)

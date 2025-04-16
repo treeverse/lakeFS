@@ -19,7 +19,6 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.UploadPartFromCopy;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -48,85 +47,110 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * UploadPartFrom
+ * Source of copy, required for type \&quot;copy\&quot;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class UploadPartFrom {
-  public static final String SERIALIZED_NAME_TYPE = "type";
-  @SerializedName(SERIALIZED_NAME_TYPE)
-  private String type;
+public class UploadPartFromCopy {
+  public static final String SERIALIZED_NAME_REPOSITORY = "repository";
+  @SerializedName(SERIALIZED_NAME_REPOSITORY)
+  private String repository;
 
-  public static final String SERIALIZED_NAME_COPY = "copy";
-  @SerializedName(SERIALIZED_NAME_COPY)
-  private UploadPartFromCopy copy;
+  public static final String SERIALIZED_NAME_REF = "ref";
+  @SerializedName(SERIALIZED_NAME_REF)
+  private String ref;
 
-  public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
-  @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
-  private String physicalAddress;
+  public static final String SERIALIZED_NAME_PATH = "path";
+  @SerializedName(SERIALIZED_NAME_PATH)
+  private String path;
 
-  public UploadPartFrom() {
+  public static final String SERIALIZED_NAME_RANGE = "range";
+  @SerializedName(SERIALIZED_NAME_RANGE)
+  private String range;
+
+  public UploadPartFromCopy() {
   }
 
-  public UploadPartFrom type(String type) {
+  public UploadPartFromCopy repository(String repository) {
     
-    this.type = type;
+    this.repository = repository;
     return this;
   }
 
    /**
-   * Future versions may allow operations other than copy
-   * @return type
+   * Get repository
+   * @return repository
   **/
   @javax.annotation.Nonnull
-  public String getType() {
-    return type;
+  public String getRepository() {
+    return repository;
   }
 
 
-  public void setType(String type) {
-    this.type = type;
+  public void setRepository(String repository) {
+    this.repository = repository;
   }
 
 
-  public UploadPartFrom copy(UploadPartFromCopy copy) {
+  public UploadPartFromCopy ref(String ref) {
     
-    this.copy = copy;
+    this.ref = ref;
     return this;
   }
 
    /**
-   * Get copy
-   * @return copy
+   * Get ref
+   * @return ref
+  **/
+  @javax.annotation.Nonnull
+  public String getRef() {
+    return ref;
+  }
+
+
+  public void setRef(String ref) {
+    this.ref = ref;
+  }
+
+
+  public UploadPartFromCopy path(String path) {
+    
+    this.path = path;
+    return this;
+  }
+
+   /**
+   * Get path
+   * @return path
+  **/
+  @javax.annotation.Nonnull
+  public String getPath() {
+    return path;
+  }
+
+
+  public void setPath(String path) {
+    this.path = path;
+  }
+
+
+  public UploadPartFromCopy range(String range) {
+    
+    this.range = range;
+    return this;
+  }
+
+   /**
+   * Range of bytes to copy
+   * @return range
   **/
   @javax.annotation.Nullable
-  public UploadPartFromCopy getCopy() {
-    return copy;
+  public String getRange() {
+    return range;
   }
 
 
-  public void setCopy(UploadPartFromCopy copy) {
-    this.copy = copy;
-  }
-
-
-  public UploadPartFrom physicalAddress(String physicalAddress) {
-    
-    this.physicalAddress = physicalAddress;
-    return this;
-  }
-
-   /**
-   * The physical address returned from createPresignMultipartUpload
-   * @return physicalAddress
-  **/
-  @javax.annotation.Nonnull
-  public String getPhysicalAddress() {
-    return physicalAddress;
-  }
-
-
-  public void setPhysicalAddress(String physicalAddress) {
-    this.physicalAddress = physicalAddress;
+  public void setRange(String range) {
+    this.range = range;
   }
 
   /**
@@ -142,9 +166,9 @@ public class UploadPartFrom {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the UploadPartFrom instance itself
+   * @return the UploadPartFromCopy instance itself
    */
-  public UploadPartFrom putAdditionalProperty(String key, Object value) {
+  public UploadPartFromCopy putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -183,25 +207,27 @@ public class UploadPartFrom {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    UploadPartFrom uploadPartFrom = (UploadPartFrom) o;
-    return Objects.equals(this.type, uploadPartFrom.type) &&
-        Objects.equals(this.copy, uploadPartFrom.copy) &&
-        Objects.equals(this.physicalAddress, uploadPartFrom.physicalAddress)&&
-        Objects.equals(this.additionalProperties, uploadPartFrom.additionalProperties);
+    UploadPartFromCopy uploadPartFromCopy = (UploadPartFromCopy) o;
+    return Objects.equals(this.repository, uploadPartFromCopy.repository) &&
+        Objects.equals(this.ref, uploadPartFromCopy.ref) &&
+        Objects.equals(this.path, uploadPartFromCopy.path) &&
+        Objects.equals(this.range, uploadPartFromCopy.range)&&
+        Objects.equals(this.additionalProperties, uploadPartFromCopy.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, copy, physicalAddress, additionalProperties);
+    return Objects.hash(repository, ref, path, range, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class UploadPartFrom {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    copy: ").append(toIndentedString(copy)).append("\n");
-    sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
+    sb.append("class UploadPartFromCopy {\n");
+    sb.append("    repository: ").append(toIndentedString(repository)).append("\n");
+    sb.append("    ref: ").append(toIndentedString(ref)).append("\n");
+    sb.append("    path: ").append(toIndentedString(path)).append("\n");
+    sb.append("    range: ").append(toIndentedString(range)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -225,45 +251,49 @@ public class UploadPartFrom {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
-    openapiFields.add("type");
-    openapiFields.add("copy");
-    openapiFields.add("physical_address");
+    openapiFields.add("repository");
+    openapiFields.add("ref");
+    openapiFields.add("path");
+    openapiFields.add("range");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("type");
-    openapiRequiredFields.add("physical_address");
+    openapiRequiredFields.add("repository");
+    openapiRequiredFields.add("ref");
+    openapiRequiredFields.add("path");
   }
 
  /**
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to UploadPartFrom
+  * @throws IOException if the JSON Element is invalid with respect to UploadPartFromCopy
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!UploadPartFrom.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in UploadPartFrom is not found in the empty JSON string", UploadPartFrom.openapiRequiredFields.toString()));
+        if (!UploadPartFromCopy.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in UploadPartFromCopy is not found in the empty JSON string", UploadPartFromCopy.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : UploadPartFrom.openapiRequiredFields) {
+      for (String requiredField : UploadPartFromCopy.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if (!jsonObj.get("type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("type").toString()));
+      if (!jsonObj.get("repository").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `repository` to be a primitive type in the JSON string but got `%s`", jsonObj.get("repository").toString()));
       }
-      // validate the optional field `copy`
-      if (jsonObj.get("copy") != null && !jsonObj.get("copy").isJsonNull()) {
-        UploadPartFromCopy.validateJsonElement(jsonObj.get("copy"));
+      if (!jsonObj.get("ref").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `ref` to be a primitive type in the JSON string but got `%s`", jsonObj.get("ref").toString()));
       }
-      if (!jsonObj.get("physical_address").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `physical_address` to be a primitive type in the JSON string but got `%s`", jsonObj.get("physical_address").toString()));
+      if (!jsonObj.get("path").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `path` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path").toString()));
+      }
+      if ((jsonObj.get("range") != null && !jsonObj.get("range").isJsonNull()) && !jsonObj.get("range").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `range` to be a primitive type in the JSON string but got `%s`", jsonObj.get("range").toString()));
       }
   }
 
@@ -271,16 +301,16 @@ public class UploadPartFrom {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!UploadPartFrom.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'UploadPartFrom' and its subtypes
+       if (!UploadPartFromCopy.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'UploadPartFromCopy' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<UploadPartFrom> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(UploadPartFrom.class));
+       final TypeAdapter<UploadPartFromCopy> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(UploadPartFromCopy.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<UploadPartFrom>() {
+       return (TypeAdapter<T>) new TypeAdapter<UploadPartFromCopy>() {
            @Override
-           public void write(JsonWriter out, UploadPartFrom value) throws IOException {
+           public void write(JsonWriter out, UploadPartFromCopy value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -303,12 +333,12 @@ public class UploadPartFrom {
            }
 
            @Override
-           public UploadPartFrom read(JsonReader in) throws IOException {
+           public UploadPartFromCopy read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             UploadPartFrom instance = thisAdapter.fromJsonTree(jsonObj);
+             UploadPartFromCopy instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -335,18 +365,18 @@ public class UploadPartFrom {
   }
 
  /**
-  * Create an instance of UploadPartFrom given an JSON string
+  * Create an instance of UploadPartFromCopy given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of UploadPartFrom
-  * @throws IOException if the JSON string is invalid with respect to UploadPartFrom
+  * @return An instance of UploadPartFromCopy
+  * @throws IOException if the JSON string is invalid with respect to UploadPartFromCopy
   */
-  public static UploadPartFrom fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, UploadPartFrom.class);
+  public static UploadPartFromCopy fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, UploadPartFromCopy.class);
   }
 
  /**
-  * Convert an instance of UploadPartFrom to an JSON string
+  * Convert an instance of UploadPartFromCopy to an JSON string
   *
   * @return JSON string
   */

@@ -9771,34 +9771,24 @@ components:
     UploadPartFrom:
       example:
         physical_address: physical_address
-        path: path
-        ref: ref
-        range: range
+        copy:
+          path: path
+          ref: ref
+          range: range
+          repository: repository
         type: type
-        repository: repository
       properties:
         type:
           description: Future versions may allow operations other than copy
-          pattern: ^copy$
+          pattern: ^(?:copy|)$
           type: string
-        repository:
-          type: string
-        ref:
-          type: string
-        path:
-          type: string
+        copy:
+          $ref: '#/components/schemas/UploadPartFrom_copy'
         physical_address:
           description: The physical address returned from createPresignMultipartUpload
           type: string
-        range:
-          description: Range of bytes to copy
-          pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
-          type: string
       required:
-      - path
       - physical_address
-      - ref
-      - repository
       - type
       type: object
     UploadTo:
@@ -10080,6 +10070,29 @@ components:
           type: string
       required:
       - pattern
+      type: object
+    UploadPartFrom_copy:
+      description: "Source of copy, required for type \"copy\""
+      example:
+        path: path
+        ref: ref
+        range: range
+        repository: repository
+      properties:
+        repository:
+          type: string
+        ref:
+          type: string
+        path:
+          type: string
+        range:
+          description: Range of bytes to copy
+          pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
+          type: string
+      required:
+      - path
+      - ref
+      - repository
       type: object
   securitySchemes:
     basic_auth:

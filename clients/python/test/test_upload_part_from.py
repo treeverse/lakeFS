@@ -37,19 +37,17 @@ class TestUploadPartFrom(unittest.TestCase):
         model = UploadPartFrom()  # noqa: E501
         if include_optional:
             return UploadPartFrom(
-                type = 'copy',
-                repository = '',
-                ref = '',
-                path = '',
-                physical_address = '',
-                range = 'bytes=8072888001528021798096225500-5076206862933933397565068513910 '
+                type = '',
+                copy = lakefs_sdk.models.upload_part_from_copy.UploadPartFrom_copy(
+                    repository = '', 
+                    ref = '', 
+                    path = '', 
+                    range = 'bytes=8072888001528021798096225500-5076206862933933397565068513910 ', ),
+                physical_address = ''
             )
         else:
             return UploadPartFrom(
-                type = 'copy',
-                repository = '',
-                ref = '',
-                path = '',
+                type = '',
                 physical_address = '',
         )
         """

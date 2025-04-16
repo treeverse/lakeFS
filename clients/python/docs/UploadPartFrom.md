@@ -6,11 +6,8 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | **str** | Future versions may allow operations other than copy | 
-**repository** | **str** |  | 
-**ref** | **str** |  | 
-**path** | **str** |  | 
+**copy** | [**UploadPartFromCopy**](UploadPartFromCopy.md) |  | [optional] 
 **physical_address** | **str** | The physical address returned from createPresignMultipartUpload | 
-**range** | **str** | Range of bytes to copy | [optional] 
 
 ## Example
 

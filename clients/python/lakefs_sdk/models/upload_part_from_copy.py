@@ -24,22 +24,25 @@ try:
     from pydantic.v1 import BaseModel, Field, StrictStr, constr, validator
 except ImportError:
     from pydantic import BaseModel, Field, StrictStr, constr, validator
-from lakefs_sdk.models.upload_part_from_copy import UploadPartFromCopy
 
-class UploadPartFrom(BaseModel):
+class UploadPartFromCopy(BaseModel):
     """
-    UploadPartFrom
+    Source of copy, required for type \"copy\"  # noqa: E501
     """
-    type: constr(strict=True) = Field(..., description="Future versions may allow operations other than copy")
-    copy: Optional[UploadPartFromCopy] = None
-    physical_address: StrictStr = Field(..., description="The physical address returned from createPresignMultipartUpload")
-    __properties = ["type", "copy", "physical_address"]
+    repository: StrictStr = Field(...)
+    ref: StrictStr = Field(...)
+    path: StrictStr = Field(...)
+    range: Optional[constr(strict=True)] = Field(None, description="Range of bytes to copy")
+    __properties = ["repository", "ref", "path", "range"]
 
-    @validator('type')
-    def type_validate_regular_expression(cls, value):
+    @validator('range')
+    def range_validate_regular_expression(cls, value):
         """Validates the regular expression"""
-        if not re.match(r"^(?:copy|)$", value):
-            raise ValueError(r"must validate the regular expression /^(?:copy|)$/")
+        if value is None:
+            return value
+
+        if not re.match(r"^bytes=((\d*-\d*,? ?)+)$", value):
+            raise ValueError(r"must validate the regular expression /^bytes=((\d*-\d*,? ?)+)$/")
         return value
 
     class Config:
@@ -56,8 +59,8 @@ class UploadPartFrom(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> UploadPartFrom:
-        """Create an instance of UploadPartFrom from a JSON string"""
+    def from_json(cls, json_str: str) -> UploadPartFromCopy:
+        """Create an instance of UploadPartFromCopy from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -66,24 +69,22 @@ class UploadPartFrom(BaseModel):
                           exclude={
                           },
                           exclude_none=True)
-        # override the default output from pydantic by calling `to_dict()` of copy
-        if self.copy:
-            _dict['copy'] = self.copy.to_dict()
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> UploadPartFrom:
-        """Create an instance of UploadPartFrom from a dict"""
+    def from_dict(cls, obj: dict) -> UploadPartFromCopy:
+        """Create an instance of UploadPartFromCopy from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return UploadPartFrom.parse_obj(obj)
+            return UploadPartFromCopy.parse_obj(obj)
 
-        _obj = UploadPartFrom.parse_obj({
-            "type": obj.get("type"),
-            "copy": UploadPartFromCopy.from_dict(obj.get("copy")) if obj.get("copy") is not None else None,
-            "physical_address": obj.get("physical_address")
+        _obj = UploadPartFromCopy.parse_obj({
+            "repository": obj.get("repository"),
+            "ref": obj.get("ref"),
+            "path": obj.get("path"),
+            "range": obj.get("range")
         })
         return _obj
 

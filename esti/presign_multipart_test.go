@@ -212,6 +212,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 			require.NotNil(t, respCreate.JSON201)
 
 			uploadID := respCreate.JSON201.UploadId
+			physicalAddress := respCreate.JSON201.PhysicalAddress
 
 			// upload parts
 			httpClient := http.Client{
@@ -236,7 +237,9 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 				// upload part using presigned url
 				var partPresignedURL string
 				if tt.PresignSeparately {
-					respGetPresigned, err := client.UploadPartFromWithResponse(ctx, repo, mainBranch, uploadID, i+1, &apigen.UploadPartFromParams{Path: objPath}, apigen.UploadPartFromJSONRequestBody{})
+					respGetPresigned, err := client.UploadPartFromWithResponse(ctx, repo, mainBranch, uploadID, i+1, &apigen.UploadPartFromParams{Path: objPath}, apigen.UploadPartFromJSONRequestBody{
+						PhysicalAddress: physicalAddress,
+					})
 					require.NoError(t, err)
 					require.NoError(t, helpers.ResponseAsError(respGetPresigned))
 					partPresignedURL = respGetPresigned.JSON200.PresignedUrl
@@ -266,7 +269,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 			}, apigen.CompletePresignMultipartUploadJSONRequestBody{
 				ContentType:     swag.String("application/octet-stream"),
 				Parts:           parts,
-				PhysicalAddress: respCreate.JSON201.PhysicalAddress,
+				PhysicalAddress: physicalAddress,
 				UserMetadata: &apigen.CompletePresignMultipartUpload_UserMetadata{
 					AdditionalProperties: map[string]string{"foo": "bar"},
 				},
