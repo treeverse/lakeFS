@@ -39,6 +39,18 @@ lakefs run --quickstart
 
 Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser.
 
+### Getting Started with Docker
+
+Alternatively, you can run lakeFS a server using Docker:
+
+```bash
+docker run --pull always \
+		   --name lakefs \
+		   -p 8000:8000 \
+		   treeverse/lakefs:latest \
+		   run --quickstart
+```
+
 ### Quickstart
 
 **👉🏻 For a hands-on walk through of the core functionality in lakeFS head over to [the quickstart](https://docs.lakefs.io/quickstart/) to jump right in!**
