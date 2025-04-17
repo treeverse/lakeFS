@@ -212,14 +212,12 @@ end
 
 -- Function to extract directory from a path
 local function extractDirectory(path)
-    print("extractDirectory", path)
     local patt = regexp.compile("^(.*[\\/])")
     local m = patt.find(path)
     if m then
-        print("m", m)
         return m
     else
-        print("path not fond")
+        print("path not found")
     end
 end
 
@@ -235,17 +233,11 @@ local function table_def_changes(table_def_names, table_descriptors_path, reposi
     print("diff_resp.results", diff_resp.results)
     local changed_path_set = {}
     for index, diff_item in ipairs(diff_resp.results) do
-        print(index, "path", diff_item.path)
         local dir = extractDirectory(diff_item.path)
-        print(index, "extractedDirectory", dir)
         if dir then
             changed_path_set[dir] = true
             print("  added to changed_path_set:", dir)
         end
-    end
-    print("changed_path_set")
-    for key, _ in pairs(changed_path_set) do
-        print(" ",key)
     end
 
     -- Initialize the result table for storing changed table definitions
