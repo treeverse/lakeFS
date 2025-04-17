@@ -51,22 +51,6 @@ def _get_platform_info() -> _PlatformInfo:
     return _PlatformInfo(system, machine)
 
 
-def _is_python_script(file_path: str) -> bool:
-    '''
-    Check if the file is a Python script by looking for a shebang line.
-    '''
-    platform_info =_get_platform_info()
-    with open(file_path, 'rb') as f:
-        if platform_info.system == 'windows':
-            # on windows, Python places an executable EXE file.
-            # it contains the python snippet at the end of the file
-            f.seek(-4096, io.SEEK_END)  # last 4k
-            return b'__main__.py' in f.read(4096)
-        # on unix, the lakeFS binary is a Python script
-        first_line = f.readline()
-        return first_line.startswith(b'#!') and b'python' in first_line.lower()
-
-
 def _find_binary(binary_name: str) -> Optional[str]:
     '''
     Find the binary in PATH or ~/.lakefs/bin, skipping Python scripts.
@@ -76,15 +60,16 @@ def _find_binary(binary_name: str) -> Optional[str]:
     # Check if the binary is in the PATH
     binary_path = shutil.which(binary_name)
     # If the found binary is a Python script, find the next occurrence
-    platform_info =_get_platform_info()
+    platform_info = _get_platform_info()
     if platform_info.system == 'windows':
         binary_name = f'{binary_name}.exe'
         home_bin_path = os.path.expanduser(f'{BINARY_DOWNLOAD_DIR}/{binary_name}')
-    if binary_path and _is_python_script(binary_path):
+    if binary_path and os.path.samefile(binary_path, sys.argv[0]):
         # Find the next occurrence of the binary in PATH
         for path in os.environ.get('PATH', '').split(os.pathsep):
             candidate = os.path.join(path, binary_name)
-            if os.path.isfile(candidate) and not _is_python_script(candidate):
+            if os.path.isfile(candidate) and not os.path.samefile(
+                candidate, sys.argv[0]):
                 binary_path = candidate
                 break
         else:
