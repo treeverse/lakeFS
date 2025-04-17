@@ -676,6 +676,19 @@ hooks:
 
 ```
 
+### `lakefs/catalogexport/delta_exporter.table_def_changes(table_def_names, table_descriptors_path, repository_id, ref, left_ref, right_ref)`
+
+Utility function to filter list of table defs based on those that have changed.
+
+Parameters:
+
+- `table_def_names(string)`: List of table names to filter based on the diff
+- `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_def_names` reside
+- `repository_id(string)`: The repository ID
+- `ref(string)`: ref for reading the table descriptors
+- `left_ref(string)`: left ref for the diff
+- `right_ref(string)`: right ref for the diff
+
 ### `lakefs/catalogexport/table_extractor`
 
 Utility package to parse `_lakefs_tables/` descriptors.
