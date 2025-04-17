@@ -145,7 +145,8 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                         if entry.remove ~= nil then
                             -- If the object is not found, and the entry is a remove entry, we can assume it was vacuumed
                             print(string.format(
-                            "Object with path '%s' of a `remove` entry wasn't found. Assuming vacuum.", unescaped_path))
+                                "Object with path '%s' of a `remove` entry wasn't found. Assuming vacuum.",
+                                unescaped_path))
                             unfound_paths[unescaped_path] = nil
                         else
                             unfound_paths[unescaped_path] = true
@@ -211,14 +212,14 @@ end
 
 -- Function to extract directory from a path
 local function extractDirectory(path)
-    print("extractDirectory",path)
+    print("extractDirectory", path)
     local patt = regexp.compile("^(.*[\\/])")
     local m = patt.find(path)
     if m then
-        print("m",m)
+        print("m", m)
         return m
     else
-        print"NOT FOUND"
+        print("path not fond")
     end
 end
 
@@ -232,27 +233,29 @@ local function table_def_changes(table_def_names, table_descriptors_path, reposi
 
     -- Now make a set out of the paths of the filenames
     print("diff_resp.results", diff_resp.results)
-   local changed_path_set = {}
+    local changed_path_set = {}
     for index, diff_item in ipairs(diff_resp.results) do
-        print(index,"path",diff_item.path)
+        print(index, "path", diff_item.path)
         local dir = extractDirectory(diff_item.path)
-        print(index,"extractedDirectory",dir)
+        print(index, "extractedDirectory", dir)
         if dir then
             changed_path_set[dir] = true
+            print("  added to changed_path_set:", dir)
         end
     end
     print("changed_path_set")
-    for i = 1, #changed_path_set do
-        print(changed_path_set[i])
+    for key, _ in pairs(changed_path_set) do
+        print(" ",key)
     end
 
     -- Initialize the result table for storing changed table definitions
     local changed_table_defs = {}
 
     -- Iterate through the table definitions and add to the result the ones that pass the filter
-    for _, table_name_yaml in ipairs(table_def_names) do
+    for index, table_name_yaml in ipairs(table_def_names) do
         local table_descriptor = get_table_descriptor(repository_id, ref, table_name_yaml, table_descriptors_path)
-        local table_path = table_descriptor.path
+        print(index, "table_descriptor.path", table_descriptor.path)
+        local table_path = table_descriptor.path .. "/"
         if not table_path then
             error("table path is required to proceed with Delta catalog export")
         end
@@ -260,6 +263,7 @@ local function table_def_changes(table_def_names, table_descriptors_path, reposi
         -- filter only the changed paths from the list
         if changed_path_set[table_path] ~= nil then
             table.insert(changed_table_defs, table_name_yaml)
+            print("  (inserted)")
         end
     end
 
