@@ -148,7 +148,7 @@ def _download_file(url: str) -> io.BytesIO:
     return content
 
 
-def _extract_binary(content: io.BytesIO, binary_name: str, 
+def _extract_binary(content: io.BytesIO, binary_name: str,
                     bin_dir: str, platform_info: _PlatformInfo) -> str:
     '''
     Extract the binary from the downloaded content
