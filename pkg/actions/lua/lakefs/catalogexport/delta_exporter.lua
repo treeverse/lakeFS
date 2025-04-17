@@ -214,20 +214,26 @@ local function extractDirectory(path)
 end
 
 -- Local function to filter the list of table defs to include only those that have changed
-local function table_def_changes(table_def_names, table_descriptors_path, repository_id, source_ref, branch_id)
+local function table_def_changes(table_def_names, table_descriptors_path, repository_id, left_ref, right_ref)
     -- Perform a diff_refs operation to get the differences between references
-    local code, diff_resp = lakefs.diff_refs(repository_id, source_ref, branch_id)
+    local code, diff_resp = lakefs.diff_refs(repository_id, left_ref, right_ref)
     if code ~= 200 then
         error("Failed to perform diff_refs with code: " .. tostring(code))
     end
 
     -- Now make a set out of the paths of the filenames
-    local changed_path_set = {}
+    print("diff_resp")
+   local changed_path_set = {}
     for _, diff_item in ipairs(diff_resp) do
+        print(diff_item)
         local dir = extractDirectory(diff_item.path)
         if dir then
             changed_path_set[dir] = true
         end
+    end
+    print("changed_path_set")
+    for i = 1, #changed_path_set do
+        print(changed_path_set[i])
     end
 
     -- Initialize the result table for storing changed table definitions
