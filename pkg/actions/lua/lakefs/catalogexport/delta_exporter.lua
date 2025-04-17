@@ -214,7 +214,7 @@ local function extractDirectory(path)
 end
 
 -- Local function to filter the list of table defs to include only those that have changed
-local function table_def_changes(table_def_names, table_descriptors_path, repository_id, left_ref, right_ref)
+local function table_def_changes(table_def_names, table_descriptors_path, repository_id, ref, left_ref, right_ref)
     -- Perform a diff_refs operation to get the differences between references
     local code, diff_resp = lakefs.diff_refs(repository_id, left_ref, right_ref)
     if code ~= 200 then
@@ -241,7 +241,7 @@ local function table_def_changes(table_def_names, table_descriptors_path, reposi
 
     -- Iterate through the table definitions and add to the result the ones that pass the filter
     for _, table_name_yaml in ipairs(table_def_names) do
-        local table_descriptor = get_table_descriptor(repository_id, source_ref, table_name_yaml, table_descriptors_path)
+        local table_descriptor = get_table_descriptor(repository_id, ref, table_name_yaml, table_descriptors_path)
         local table_path = table_descriptor.path
         if not table_path then
             error("table path is required to proceed with Delta catalog export")
