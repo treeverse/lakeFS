@@ -11,6 +11,7 @@ local unity_export = require("lakefs/catalogexport/unity_exporter")
 
 local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
 
+NS EXAMPLE HERE
 -- Export Delta Lake tables export:
 local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
 local delta_table_locations = delta_export.export_delta_log(action, args.table_defs, sc.put_object, delta_client, "_lakefs_tables")
