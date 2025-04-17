@@ -4658,6 +4658,11 @@ paths:
                 $ref: "#/components/schemas/UploadTo"
         204:
           description: part copied
+          headers:
+            ETag:
+              schema:
+                type: string
+                description: ETag of the uploaded part, pass in completion
         401:
           $ref: "#/components/responses/Unauthorized"
         404:

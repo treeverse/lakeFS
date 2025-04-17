@@ -271,6 +271,10 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 		writeError(w, r, http.StatusBadRequest, "body element \"copy_source\" is required for type=copy")
 		return
 	}
+	if !isCopy && body.CopySource != nil {
+		writeError(w, r, http.StatusBadRequest, "body element \"copy_source\" not allowed when type!=copy")
+		return
+	}
 
 	ctx := r.Context()
 
@@ -303,7 +307,7 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 			Type: permissions.NodeTypeAnd,
 			Nodes: []permissions.Node{
 				requiredPermissions,
-				permissions.Node{
+				{
 					Permission: permissions.Permission{
 						Action:   permissions.ReadObjectAction,
 						Resource: permissions.ObjectArn(srcRepository, srcPath),
@@ -344,7 +348,9 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 
 	if isCopy {
 		srcEntry, err := c.Catalog.GetEntry(ctx, srcRepo.Name, srcRef, srcPath, catalog.GetEntryParams{})
-		if c.handleAPIError(ctx, w, r, fmt.Errorf("%s/%s/%s: %w", srcRepo.Name, srcRef, srcPath, err)) {
+		if err != nil {
+			err = fmt.Errorf("%s/%s/%s: %w", srcRepo.Name, srcRef, srcPath, err)
+			_ = c.handleAPIError(ctx, w, r, err)
 			return
 		}
 
@@ -354,6 +360,7 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 			IdentifierType:   block.IdentifierTypeRelative,
 			Identifier:       srcEntry.PhysicalAddress,
 		}
+		var etag string
 		if rng := body.CopySource.Range; rng != nil {
 			var startPosition, endPosition int64
 			// Cannot use httputil.ParseRange without knowing the length of the
@@ -366,17 +373,21 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 				c.handleAPIError(ctx, w, r, fmt.Errorf("parse range \"%s\": %w", *rng, err))
 				return
 			}
-			_, err = c.BlockAdapter.UploadCopyPartRange(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber,
+			resp, err := c.BlockAdapter.UploadCopyPartRange(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber,
 				startPosition, endPosition)
 			if c.handleAPIError(ctx, w, r, err) {
 				return
 			}
+			etag = resp.ETag
 		} else {
-			_, err = c.BlockAdapter.UploadCopyPart(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber)
+			resp, err := c.BlockAdapter.UploadCopyPart(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber)
 			if c.handleAPIError(ctx, w, r, err) {
 				return
 			}
+			etag = resp.ETag
 		}
+		w.Header().Set("ETag", etag)
+		writeResponse(w, r, http.StatusNoContent, nil)
 	}
 
 	presignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, dstObjectRef, uploadID, partNumber)

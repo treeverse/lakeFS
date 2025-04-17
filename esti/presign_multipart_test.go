@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	mathrand "math/rand"
 	"net/http"
 	"strconv"
 	"testing"
@@ -176,6 +177,8 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 }
 
 func TestPresignMultipartUploadSeparateParts(t *testing.T) {
+	const largeObjectPath = "data/large"
+
 	skipPresignMultipart(t)
 	// not a short test
 	if testing.Short() {
@@ -185,12 +188,23 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 
-	cases := []struct{
-		Name string
+	// Create a large object.
+	r := mathrand.New(mathrand.NewSource(17))
+	data := make([]byte, largeDataContentLength)
+	_, err := r.Read(data)
+	require.NoError(t, err)
+	_, err = helpers.ClientUpload(ctx, client, repo, mainBranch, largeObjectPath, nil, "", bytes.NewReader(data))
+	require.NoError(t, err, "Failed to upload large file for multipart upload test")
+
+	cases := []struct {
+		Name              string
 		PresignSeparately bool
+		Copy              bool
 	}{
-		{"presign all parts", false},
-		{"presign each part separately", true},
+		{"presign all parts", false, false},
+		{"presign each part separately", true, false},
+		{"presign each part separately, copy", true, true},
+		// API can only copy a part if we presign each part separately.
 	}
 
 	for _, tt := range cases {
@@ -218,52 +232,87 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 			httpClient := http.Client{
 				Timeout: 30 * time.Second, // make sure we do not wait forever
 			}
-			var parts []apigen.UploadPart
+			var (
+				totalSize int64 = 0
+				parts     []apigen.UploadPart
+			)
 			for i := 0; i < numberOfParts; i++ {
 				startTime := time.Now()
 				// random data - all parts except the last one should be at least >= MinUploadPartSize
-				n, err := rand.Int(rand.Reader, big.NewInt(1<<20))
-				require.NoError(t, err)
-				var partSize int64
-				if i < numberOfParts-1 {
-					partSize = manager.MinUploadPartSize + n.Int64() // 5mb + ~1mb
+				var (
+					data          []byte
+					partSize      int64
+					contentLength int64
+				)
+				if tt.Copy && i == 0 {
+					// Will copy everything except first and last bytes.
+					partSize = largeDataContentLength - 2
+					contentLength = 0
 				} else {
-					partSize = n.Int64() + 1 // ~1mb + 1
+					n, err := rand.Int(rand.Reader, big.NewInt(1<<20))
+					require.NoError(t, err)
+					if i < numberOfParts-1 {
+						partSize = manager.MinUploadPartSize + n.Int64() // 5mb + ~1mb
+					} else {
+						partSize = n.Int64() + 1 // ~1mb + 1
+					}
+					contentLength = partSize
+					data = make([]byte, partSize)
+					_, err = rand.Read(data)
+					require.NoError(t, err)
 				}
-				data := make([]byte, partSize)
-				_, err = rand.Read(data)
-				require.NoError(t, err)
 
 				// upload part using presigned url
 				var partPresignedURL string
+				body := apigen.UploadPartFromJSONRequestBody{
+					PhysicalAddress: physicalAddress,
+				}
+				if tt.Copy && i == 0 {
+					body.Type = "copy"
+					body.CopySource = &apigen.CopyPartSource{
+						Repository: repo,
+						Ref:        mainBranch,
+						Path:       largeObjectPath,
+						// the Range header is _inclusive_.  So this drops the last byte.
+						Range: swag.String(fmt.Sprintf("bytes=%d-%d", 1, largeDataContentLength-2)),
+					}
+				}
+				var etag string
 				if tt.PresignSeparately {
-					respGetPresigned, err := client.UploadPartFromWithResponse(ctx, repo, mainBranch, uploadID, i+1, &apigen.UploadPartFromParams{Path: objPath}, apigen.UploadPartFromJSONRequestBody{
-						PhysicalAddress: physicalAddress,
-					})
+					respGetPresigned, err := client.UploadPartFromWithResponse(ctx, repo, mainBranch, uploadID, i+1, &apigen.UploadPartFromParams{Path: objPath}, body)
 					require.NoError(t, err)
 					require.NoError(t, helpers.ResponseAsError(respGetPresigned))
-					partPresignedURL = respGetPresigned.JSON200.PresignedUrl
+					if respGetPresigned.JSON200 != nil {
+						partPresignedURL = respGetPresigned.JSON200.PresignedUrl
+					} else {
+						etag = respGetPresigned.HTTPResponse.Header.Get("ETag")
+					}
 				} else {
 					partPresignedURL = (*respCreate.JSON201.PresignedUrls)[i]
 				}
-				req, err := http.NewRequest(http.MethodPut, partPresignedURL, bytes.NewReader(data))
-				require.NoError(t, err)
-				req.ContentLength = partSize
-				req.Header.Set("Content-Type", "application/octet-stream")
-				resp, err := httpClient.Do(req)
-				require.NoError(t, err)
-				_ = resp.Body.Close()
-				require.Equal(t, http.StatusOK, resp.StatusCode)
+				if partPresignedURL != "" {
+					req, err := http.NewRequest(http.MethodPut, partPresignedURL, bytes.NewReader(data))
+					require.NoError(t, err)
+					req.ContentLength = contentLength
+					req.Header.Set("Content-Type", "application/octet-stream")
+					resp, err := httpClient.Do(req)
+					require.NoError(t, err)
+					_ = resp.Body.Close()
+					require.Equal(t, http.StatusOK, resp.StatusCode)
+					etag = resp.Header.Get("ETag")
+				}
 
 				// extract etag from response
 				parts = append(parts, apigen.UploadPart{
-					Etag:       resp.Header.Get("ETag"),
+					Etag:       etag,
 					PartNumber: i + 1,
 				})
 				t.Logf("Uploaded part %d/%d, %d bytes, in %s", i+1, numberOfParts, partSize, time.Since(startTime))
+				totalSize += partSize
 			}
 
 			// complete multipart upload
+			t.Logf("Parts: %v", parts)
 			resp, err := client.CompletePresignMultipartUploadWithResponse(ctx, repo, mainBranch, uploadID, &apigen.CompletePresignMultipartUploadParams{
 				Path: objPath,
 			}, apigen.CompletePresignMultipartUploadJSONRequestBody{
@@ -284,6 +333,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, statResp.JSON200)
 			require.Equal(t, resp.JSON200.Checksum, statResp.JSON200.Checksum)
+			require.Equal(t, swag.Int64Value(statResp.JSON200.SizeBytes), totalSize)
 		})
 	}
 }

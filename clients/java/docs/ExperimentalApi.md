@@ -1745,7 +1745,7 @@ public class Example {
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | presigned URL to use for upload |  -  |
-| **204** | part copied |  -  |
+| **204** | part copied |  * ETag -  <br>  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
