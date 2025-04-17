@@ -125,32 +125,16 @@ def _progress(total_size: int):
     return FakeProgressBar()
 
 
-def _download_binary(binary_name: str) -> str:
+def _download_file(url: str) -> io.BytesIO:
     '''
-    Download the binary from lakeFS releases
-    Returns the path to the binary
+    Download a file from the given URL and return it as a BytesIO object
     '''
-    version = _get_latest_version()
-    platform_info = _get_platform_info()
-    compression = 'tar.gz'
-    if platform_info.system == 'windows':
-        compression = 'zip'
-    # Construct download URL
-    url = (f"{BINARY_DOWNLOAD_URL}"
-           f"v{version}/lakeFS_{version}_{platform_info.system}_"
-           f"{platform_info.machine}.{compression}")
     content = io.BytesIO()
     try:
-        print(f"Downloading {binary_name} v{version} for "
-              f"{platform_info.system}/{platform_info.machine}...")
         req = urllib.request.Request(url, headers={'User-Agent': 'lakeFS SDK Downloader'})
         with urllib.request.urlopen(req) as response:
             total_size = int(response.headers.get('Content-Length', 0))
             block_size = 1024
-            # Create ~/.lakefs/bin directory if it doesn't exist
-            bin_dir = os.path.expanduser(BINARY_DOWNLOAD_DIR)
-            os.makedirs(bin_dir, exist_ok=True)
-            # Download with progress bar
             with _progress(total_size) as progress_bar:
                 while True:
                     data = response.read(block_size)
@@ -160,32 +144,53 @@ def _download_binary(binary_name: str) -> str:
                     progress_bar.update(size)
                 content.seek(0)
     except urllib.error.URLError as e:
-        raise RuntimeError(f"Error downloading {binary_name}: {e}") from e
+        raise RuntimeError(f"Error downloading file: {e}") from e
+    return content
 
-    # Extract the binary
+
+def _extract_binary(content: io.BytesIO, binary_name: str, 
+                    bin_dir: str, platform_info: _PlatformInfo) -> str:
+    '''
+    Extract the binary from the downloaded content
+    '''
+    binary_path = os.path.join(bin_dir, binary_name)
     if platform_info.system == 'windows':
         binary_name = f'{binary_name}.exe'
-    if compression == 'zip':
         try:
             with zipfile.ZipFile(content, 'r') as zip_ref:
                 zip_ref.extract(binary_name, bin_dir)
-                binary_path = os.path.join(bin_dir, binary_name)
-                return binary_path
         except (zipfile.BadZipFile, OSError) as e:
             raise RuntimeError(f"Error extracting {binary_name}: {e}") from e
+        return binary_path
     try:
         with tarfile.open(fileobj=content, mode='r:gz') as tar:
             for member in tar.getmembers():
                 if member.name.endswith(binary_name):
                     member.name = os.path.basename(member.name)
                     tar.extract(member, bin_dir)
-                    binary_path = os.path.join(bin_dir, binary_name)
-                    if platform_info.system != 'windows':
-                        # Only set executable permission on Unix-like systems
-                        os.chmod(binary_path, 0o755)
-                    return binary_path
+                    os.chmod(binary_path, 0o755)
     except (tarfile.TarError, OSError) as e:
         raise RuntimeError(f"Error extracting {binary_name}: {e}") from e
+    return binary_path
+
+
+def _download_binary(binary_name: str) -> str:
+    '''
+    Download the binary from lakeFS releases
+    Returns the path to the binary
+    '''
+    version = _get_latest_version()
+    platform_info = _get_platform_info()
+    compression = 'zip' if platform_info.system == 'windows' else 'tar.gz'
+    url = (f"{BINARY_DOWNLOAD_URL}"
+           f"v{version}/lakeFS_{version}_{platform_info.system}_"
+           f"{platform_info.machine}.{compression}")
+    print(f"Downloading {binary_name} v{version} for "
+          f"{platform_info.system}/{platform_info.machine}...")
+    bin_dir = os.path.expanduser(BINARY_DOWNLOAD_DIR)
+    os.makedirs(bin_dir, exist_ok=True)
+    content = _download_file(url)
+    return _extract_binary(content, binary_name, bin_dir, platform_info)
 
 
 def find_or_download_binary(binary_name: str) -> str:
