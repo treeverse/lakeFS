@@ -37,8 +37,8 @@ local function list_table_descriptor_entries(client, repo_id, commit_id)
 end
 
 -- table as parsed YAML object
-local function get_table_descriptor(client, repo_id, commit_id, logical_path)
-    local code, content = client.get_object(repo_id, commit_id, logical_path)
+local function get_table_descriptor(client, repo_id, ref, logical_path)
+    local code, content = client.get_object(repo_id, ref, logical_path)
     if code ~= 200 then
         error("could not fetch data file: HTTP " .. tostring(code) .. " path: " .. logical_path)
     end
