@@ -298,6 +298,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 					PartNumber: i + 1,
 				})
 				t.Logf("Uploaded part %d/%d, %d bytes, in %s", i+1, numberOfParts, partSize, time.Since(startTime))
+				t.Logf("\tResponse headers %v", resp.Header)
 				totalSize += partSize
 			}
 
