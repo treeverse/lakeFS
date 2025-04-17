@@ -1,4 +1,4 @@
-# UploadPartFromCopySource
+# CopyPartSource
 
 ## Properties
 

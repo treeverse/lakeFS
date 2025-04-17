@@ -38,7 +38,7 @@ class TestUploadPartFrom(unittest.TestCase):
         if include_optional:
             return UploadPartFrom(
                 type = '',
-                copy_source = lakefs_sdk.models.upload_part_from_copy_source.UploadPartFrom_copy_source(
+                copy_source = lakefs_sdk.models.copy_part_source.CopyPartSource(
                     repository = '', 
                     ref = '', 
                     path = '', 

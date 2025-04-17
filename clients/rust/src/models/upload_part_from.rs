@@ -16,7 +16,7 @@ pub struct UploadPartFrom {
     #[serde(rename = "type")]
     pub r#type: String,
     #[serde(rename = "copy_source", skip_serializing_if = "Option::is_none")]
-    pub copy_source: Option<Box<models::UploadPartFromCopySource>>,
+    pub copy_source: Option<Box<models::CopyPartSource>>,
     /// The physical address returned from createPresignMultipartUpload
     #[serde(rename = "physical_address")]
     pub physical_address: String,

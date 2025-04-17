@@ -274,7 +274,7 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 
 	// srcRepository and srcPath are ignored for types other than copy.
 	var (
-		srcRepository, /*srcRef,*/ srcPath string
+		srcRepository /*srcRef,*/, srcPath string
 	)
 	if isCopy {
 		srcRepository = body.CopySource.Repository
@@ -282,7 +282,7 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 	}
 	requiredPermissions := permissions.Node{
 		Permission: permissions.Permission{
-			Action: permissions.WriteObjectAction,
+			Action:   permissions.WriteObjectAction,
 			Resource: permissions.ObjectArn(dstRepository, dstPath),
 		},
 	}
@@ -293,7 +293,7 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 				requiredPermissions,
 				permissions.Node{
 					Permission: permissions.Permission{
-						Action:  permissions.ReadObjectAction,
+						Action:   permissions.ReadObjectAction,
 						Resource: permissions.ObjectArn(srcRepository, srcPath),
 					},
 				},
@@ -302,7 +302,7 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 	}
 	if !c.authorize(w, r, requiredPermissions) {
 		return
-	}		
+	}
 
 	ctx := r.Context()
 	c.LogAction(ctx, "upload_part_from", r, dstRepository, dstPath, srcPath)
@@ -325,10 +325,10 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 	}
 
 	presignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, block.ObjectPointer{
-		StorageID: repo.StorageID,
+		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
-		IdentifierType: block.IdentifierTypeRelative,
-		Identifier: physicalAddress,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       physicalAddress,
 	}, uploadID, partNumber)
 	if c.handleAPIError(ctx, w, r, err) {
 		return

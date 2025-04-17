@@ -24,14 +24,14 @@ try:
     from pydantic.v1 import BaseModel, Field, StrictStr, constr, validator
 except ImportError:
     from pydantic import BaseModel, Field, StrictStr, constr, validator
-from lakefs_sdk.models.upload_part_from_copy_source import UploadPartFromCopySource
+from lakefs_sdk.models.copy_part_source import CopyPartSource
 
 class UploadPartFrom(BaseModel):
     """
     UploadPartFrom
     """
     type: constr(strict=True) = Field(..., description="Future versions may allow operations other than copy")
-    copy_source: Optional[UploadPartFromCopySource] = None
+    copy_source: Optional[CopyPartSource] = None
     physical_address: StrictStr = Field(..., description="The physical address returned from createPresignMultipartUpload")
     __properties = ["type", "copy_source", "physical_address"]
 
@@ -82,7 +82,7 @@ class UploadPartFrom(BaseModel):
 
         _obj = UploadPartFrom.parse_obj({
             "type": obj.get("type"),
-            "copy_source": UploadPartFromCopySource.from_dict(obj.get("copy_source")) if obj.get("copy_source") is not None else None,
+            "copy_source": CopyPartSource.from_dict(obj.get("copy_source")) if obj.get("copy_source") is not None else None,
             "physical_address": obj.get("physical_address")
         })
         return _obj

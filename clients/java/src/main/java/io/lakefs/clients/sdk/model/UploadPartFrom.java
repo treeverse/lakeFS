@@ -19,7 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.UploadPartFromCopySource;
+import io.lakefs.clients.sdk.model.CopyPartSource;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -58,7 +58,7 @@ public class UploadPartFrom {
 
   public static final String SERIALIZED_NAME_COPY_SOURCE = "copy_source";
   @SerializedName(SERIALIZED_NAME_COPY_SOURCE)
-  private UploadPartFromCopySource copySource;
+  private CopyPartSource copySource;
 
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
@@ -88,7 +88,7 @@ public class UploadPartFrom {
   }
 
 
-  public UploadPartFrom copySource(UploadPartFromCopySource copySource) {
+  public UploadPartFrom copySource(CopyPartSource copySource) {
     
     this.copySource = copySource;
     return this;
@@ -99,12 +99,12 @@ public class UploadPartFrom {
    * @return copySource
   **/
   @javax.annotation.Nullable
-  public UploadPartFromCopySource getCopySource() {
+  public CopyPartSource getCopySource() {
     return copySource;
   }
 
 
-  public void setCopySource(UploadPartFromCopySource copySource) {
+  public void setCopySource(CopyPartSource copySource) {
     this.copySource = copySource;
   }
 
@@ -260,7 +260,7 @@ public class UploadPartFrom {
       }
       // validate the optional field `copy_source`
       if (jsonObj.get("copy_source") != null && !jsonObj.get("copy_source").isJsonNull()) {
-        UploadPartFromCopySource.validateJsonElement(jsonObj.get("copy_source"));
+        CopyPartSource.validateJsonElement(jsonObj.get("copy_source"));
       }
       if (!jsonObj.get("physical_address").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `physical_address` to be a primitive type in the JSON string but got `%s`", jsonObj.get("physical_address").toString()));

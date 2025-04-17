@@ -24,17 +24,17 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for UploadPartFromCopySource
+ * Model tests for CopyPartSource
  */
-public class UploadPartFromCopySourceTest {
-    private final UploadPartFromCopySource model = new UploadPartFromCopySource();
+public class CopyPartSourceTest {
+    private final CopyPartSource model = new CopyPartSource();
 
     /**
-     * Model tests for UploadPartFromCopySource
+     * Model tests for CopyPartSource
      */
     @Test
-    public void testUploadPartFromCopySource() {
-        // TODO: test UploadPartFromCopySource
+    public void testCopyPartSource() {
+        // TODO: test CopyPartSource
     }
 
     /**

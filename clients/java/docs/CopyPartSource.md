@@ -1,8 +1,7 @@
 
 
-# UploadPartFromCopySource
+# CopyPartSource
 
-Source of copy, required for type \"copy\"
 
 ## Properties
 

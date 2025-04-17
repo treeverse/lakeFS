@@ -9768,6 +9768,28 @@ components:
       - etag
       - part_number
       type: object
+    CopyPartSource:
+      example:
+        path: path
+        ref: ref
+        range: range
+        repository: repository
+      properties:
+        repository:
+          type: string
+        ref:
+          type: string
+        path:
+          type: string
+        range:
+          description: Range of bytes to copy
+          pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
+          type: string
+      required:
+      - path
+      - ref
+      - repository
+      type: object
     UploadPartFrom:
       example:
         physical_address: physical_address
@@ -9783,7 +9805,7 @@ components:
           pattern: ^(?:copy|)$
           type: string
         copy_source:
-          $ref: '#/components/schemas/UploadPartFrom_copy_source'
+          $ref: '#/components/schemas/CopyPartSource'
         physical_address:
           description: The physical address returned from createPresignMultipartUpload
           type: string
@@ -10070,29 +10092,6 @@ components:
           type: string
       required:
       - pattern
-      type: object
-    UploadPartFrom_copy_source:
-      description: "Source of copy, required for type \"copy\""
-      example:
-        path: path
-        ref: ref
-        range: range
-        repository: repository
-      properties:
-        repository:
-          type: string
-        ref:
-          type: string
-        path:
-          type: string
-        range:
-          description: Range of bytes to copy
-          pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
-          type: string
-      required:
-      - path
-      - ref
-      - repository
       type: object
   securitySchemes:
     basic_auth:
