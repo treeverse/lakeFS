@@ -3,6 +3,7 @@ local pathlib = require("path")
 local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
+local regexp = require("regexp")
 local strings = require("strings")
 local url = require("net/url")
 
@@ -210,7 +211,15 @@ end
 
 -- Function to extract directory from a path
 local function extractDirectory(path)
-    return path:match("^(.*)/[^/]+$")
+    print("extractDirectory",path)
+    local patt = regexp.compile("^(.*[\\/])")
+    local m = patt.find(path)
+    if m then
+        print("m",m)
+        return m
+    else
+        print"NOT FOUND"
+    end
 end
 
 -- Local function to filter the list of table defs to include only those that have changed
@@ -227,6 +236,7 @@ local function table_def_changes(table_def_names, table_descriptors_path, reposi
     for index, diff_item in ipairs(diff_resp.results) do
         print(index,"path",diff_item.path)
         local dir = extractDirectory(diff_item.path)
+        print(index,"extractedDirectory",dir)
         if dir then
             changed_path_set[dir] = true
         end
