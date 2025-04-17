@@ -244,7 +244,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 					partSize      int64
 					contentLength int64
 				)
-				if tt.Copy {
+				if tt.Copy && i == 0 {
 					// Will copy everything except first and last bytes.
 					partSize = largeDataContentLength - 2
 					contentLength = 0
@@ -267,7 +267,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 				body := apigen.UploadPartFromJSONRequestBody{
 					PhysicalAddress: physicalAddress,
 				}
-				if tt.Copy {
+				if tt.Copy && i == 0 {
 					body.CopySource = &apigen.CopyPartSource{
 						Repository: repo,
 						Ref:        mainBranch,
@@ -303,6 +303,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 			}
 
 			// complete multipart upload
+			t.Logf("Parts: %v", parts)
 			resp, err := client.CompletePresignMultipartUploadWithResponse(ctx, repo, mainBranch, uploadID, &apigen.CompletePresignMultipartUploadParams{
 				Path: objPath,
 			}, apigen.CompletePresignMultipartUploadJSONRequestBody{
