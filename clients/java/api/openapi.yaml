@@ -4768,7 +4768,8 @@ paths:
   /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}:
     put:
       description: |
-        Return a URL to upload or copy a part into a presigned multipart upload.
+        Copy a part, or return a presigned URL to upload into a
+        presigned multipart upload.
       operationId: uploadPartFrom
       parameters:
       - explode: false
@@ -4820,7 +4821,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UploadTo'
-          description: presigned URL to use for upload or for copy
+          description: presigned URL to use for upload
+        "204":
+          description: part copied
         "401":
           content:
             application/json:

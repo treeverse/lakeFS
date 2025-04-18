@@ -2767,7 +2767,7 @@ class ExperimentalApi:
     def upload_part_from(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_from : Optional[UploadPartFrom] = None, **kwargs) -> UploadTo:  # noqa: E501
         """upload_part_from  # noqa: E501
 
-        Return a URL to upload or copy a part into a presigned multipart upload.   # noqa: E501
+        Copy a part, or return a presigned URL to upload into a presigned multipart upload.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -2807,7 +2807,7 @@ class ExperimentalApi:
     def upload_part_from_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_from : Optional[UploadPartFrom] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """upload_part_from  # noqa: E501
 
-        Return a URL to upload or copy a part into a presigned multipart upload.   # noqa: E501
+        Copy a part, or return a presigned URL to upload into a presigned multipart upload.   # noqa: E501
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
@@ -2931,6 +2931,7 @@ class ExperimentalApi:
 
         _response_types_map = {
             '200': "UploadTo",
+            '204': None,
             '401': "Error",
             '404': "Error",
             '420': None,

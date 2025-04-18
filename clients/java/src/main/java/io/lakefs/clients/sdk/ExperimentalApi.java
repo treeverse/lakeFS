@@ -3585,7 +3585,8 @@ public class ExperimentalApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> presigned URL to use for upload or for copy </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3603,7 +3604,8 @@ public class ExperimentalApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> presigned URL to use for upload or for copy </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3622,7 +3624,8 @@ public class ExperimentalApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> presigned URL to use for upload or for copy </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3641,7 +3644,8 @@ public class ExperimentalApi {
          * @http.response.details
          <table summary="Response Details" border="1">
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-            <tr><td> 200 </td><td> presigned URL to use for upload or for copy </td><td>  -  </td></tr>
+            <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+            <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
@@ -3655,7 +3659,7 @@ public class ExperimentalApi {
 
     /**
      * 
-     * Return a URL to upload or copy a part into a presigned multipart upload. 
+     * Copy a part, or return a presigned URL to upload into a presigned multipart upload. 
      * @param repository  (required)
      * @param branch  (required)
      * @param uploadId  (required)
@@ -3665,7 +3669,8 @@ public class ExperimentalApi {
      * @http.response.details
      <table summary="Response Details" border="1">
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
-        <tr><td> 200 </td><td> presigned URL to use for upload or for copy </td><td>  -  </td></tr>
+        <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
+        <tr><td> 204 </td><td> part copied </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>

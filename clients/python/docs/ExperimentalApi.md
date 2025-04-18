@@ -1900,7 +1900,7 @@ void (empty response body)
 
 
 
-Return a URL to upload or copy a part into a presigned multipart upload. 
+Copy a part, or return a presigned URL to upload into a presigned multipart upload. 
 
 ### Example
 
@@ -2009,7 +2009,8 @@ Name | Type | Description  | Notes
 
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**200** | presigned URL to use for upload or for copy |  -  |
+**200** | presigned URL to use for upload |  -  |
+**204** | part copied |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **420** | too many requests |  -  |

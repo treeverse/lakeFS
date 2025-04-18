@@ -829,7 +829,7 @@ pub async fn update_pull_request(configuration: &configuration::Configuration, r
     }
 }
 
-/// Return a URL to upload or copy a part into a presigned multipart upload. 
+/// Copy a part, or return a presigned URL to upload into a presigned multipart upload. 
 pub async fn upload_part_from(configuration: &configuration::Configuration, repository: &str, branch: &str, upload_id: &str, path: &str, part_number: i32, upload_part_from: Option<models::UploadPartFrom>) -> Result<models::UploadTo, Error<UploadPartFromError>> {
     let local_var_configuration = configuration;
 

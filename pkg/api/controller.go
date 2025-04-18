@@ -272,12 +272,21 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 
+	ctx := r.Context()
+
 	// srcRepository and srcPath are ignored for types other than copy.
 	var (
-		srcRepository /*srcRef,*/, srcPath string
+		err                            error
+		srcRepository, srcRef, srcPath string
+		srcRepo                        *catalog.Repository
 	)
 	if isCopy {
 		srcRepository = body.CopySource.Repository
+		srcRef = body.CopySource.Ref
+		srcRepo, err = c.Catalog.GetRepository(ctx, srcRepository)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
 		srcPath = body.CopySource.Path
 	}
 	requiredPermissions := permissions.Node{
@@ -287,6 +296,9 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 		},
 	}
 	if isCopy {
+		// TODO(ariels): This will likely break everything for
+		// automating permissions (#8201).  Consider breaking this
+		// up into two calls.
 		requiredPermissions = permissions.Node{
 			Type: permissions.NodeTypeAnd,
 			Nodes: []permissions.Node{
@@ -304,7 +316,6 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 
-	ctx := r.Context()
 	c.LogAction(ctx, "upload_part_from", r, dstRepository, dstPath, srcPath)
 
 	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
@@ -324,12 +335,51 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 		return
 	}
 
-	presignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, block.ObjectPointer{
+	dstObjectRef := block.ObjectPointer{
 		StorageID:        repo.StorageID,
 		StorageNamespace: repo.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 		Identifier:       physicalAddress,
-	}, uploadID, partNumber)
+	}
+
+	if isCopy {
+		srcEntry, err := c.Catalog.GetEntry(ctx, srcRepo.Name, srcRef, srcPath, catalog.GetEntryParams{})
+		if c.handleAPIError(ctx, w, r, fmt.Errorf("%s/%s/%s: %w", srcRepo.Name, srcRef, srcPath, err)) {
+			return
+		}
+
+		srcObjectRef := block.ObjectPointer{
+			StorageID:        srcRepo.StorageID,
+			StorageNamespace: srcRepo.StorageNamespace,
+			IdentifierType:   block.IdentifierTypeRelative,
+			Identifier:       srcEntry.PhysicalAddress,
+		}
+		if rng := body.CopySource.Range; rng != nil {
+			var startPosition, endPosition int64
+			// Cannot use httputil.ParseRange without knowing the length of the
+			// source object.  Instead we will pass negative counts-from-end
+			// unchanged, the blockstore will handle them.
+
+			// Sscanf is safe for parsing ints.
+			_, err = fmt.Sscanf(*rng, "bytes=%d-%d", &startPosition, &endPosition)
+			if err != nil {
+				c.handleAPIError(ctx, w, r, fmt.Errorf("parse range \"%s\": %w", *rng, err))
+				return
+			}
+			_, err = c.BlockAdapter.UploadCopyPartRange(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber,
+				startPosition, endPosition)
+			if c.handleAPIError(ctx, w, r, err) {
+				return
+			}
+		} else {
+			_, err = c.BlockAdapter.UploadCopyPart(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber)
+			if c.handleAPIError(ctx, w, r, err) {
+				return
+			}
+		}
+	}
+
+	presignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, dstObjectRef, uploadID, partNumber)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

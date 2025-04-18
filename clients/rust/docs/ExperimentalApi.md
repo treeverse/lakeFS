@@ -545,7 +545,7 @@ Name | Type | Description  | Required | Notes
 > models::UploadTo upload_part_from(repository, branch, upload_id, path, part_number, upload_part_from)
 
 
-Return a URL to upload or copy a part into a presigned multipart upload. 
+Copy a part, or return a presigned URL to upload into a presigned multipart upload. 
 
 ### Parameters
 

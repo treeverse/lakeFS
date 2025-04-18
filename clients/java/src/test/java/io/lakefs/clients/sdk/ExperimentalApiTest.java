@@ -326,7 +326,7 @@ public class ExperimentalApiTest {
     }
 
     /**
-     * Return a URL to upload or copy a part into a presigned multipart upload. 
+     * Copy a part, or return a presigned URL to upload into a presigned multipart upload. 
      *
      * @throws ApiException if the Api call fails
      */

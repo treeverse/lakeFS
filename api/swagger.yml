@@ -4641,7 +4641,8 @@ paths:
         - experimental
       operationId: uploadPartFrom
       description: |
-        Return a URL to upload or copy a part into a presigned multipart upload.
+        Copy a part, or return a presigned URL to upload into a
+        presigned multipart upload.
       requestBody:
         required: false
         content:
@@ -4650,11 +4651,13 @@ paths:
               $ref: "#/components/schemas/UploadPartFrom"
       responses:
         200:
-          description: presigned URL to use for upload or for copy
+          description: presigned URL to use for upload
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UploadTo"
+        204:
+          description: part copied
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
