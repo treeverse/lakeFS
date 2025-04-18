@@ -211,6 +211,7 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**stsLogin**](docs/ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS
 *ExperimentalApi* | [**updateObjectUserMetadata**](docs/ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ExperimentalApi* | [**updatePullRequest**](docs/ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
+*ExperimentalApi* | [**uploadPartFrom**](docs/ExperimentalApi.md#uploadPartFrom) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber} | 
 *ExternalApi* | [**createUserExternalPrincipal**](docs/ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 *ExternalApi* | [**deleteUserExternalPrincipal**](docs/ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *ExternalApi* | [**externalPrincipalLogin**](docs/ExternalApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator
@@ -312,6 +313,7 @@ Class | Method | HTTP request | Description
  - [CommitRecordCreation](docs/CommitRecordCreation.md)
  - [CompletePresignMultipartUpload](docs/CompletePresignMultipartUpload.md)
  - [Config](docs/Config.md)
+ - [CopyPartSource](docs/CopyPartSource.md)
  - [Credentials](docs/Credentials.md)
  - [CredentialsList](docs/CredentialsList.md)
  - [CredentialsWithSecret](docs/CredentialsWithSecret.md)
@@ -395,6 +397,8 @@ Class | Method | HTTP request | Description
  - [UpdateObjectUserMetadata](docs/UpdateObjectUserMetadata.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [UploadPart](docs/UploadPart.md)
+ - [UploadPartFrom](docs/UploadPartFrom.md)
+ - [UploadTo](docs/UploadTo.md)
  - [UsageReport](docs/UsageReport.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)

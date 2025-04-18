@@ -34,6 +34,8 @@ import io.lakefs.clients.sdk.model.PullRequestsList;
 import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.clients.sdk.model.StsAuthRequest;
 import io.lakefs.clients.sdk.model.UpdateObjectUserMetadata;
+import io.lakefs.clients.sdk.model.UploadPartFrom;
+import io.lakefs.clients.sdk.model.UploadTo;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -319,6 +321,25 @@ public class ExperimentalApiTest {
         String pullRequest = null;
         PullRequestBasic pullRequestBasic = null;
         api.updatePullRequest(repository, pullRequest, pullRequestBasic)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * Copy a part, or return a presigned URL to upload into a presigned multipart upload. 
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void uploadPartFromTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String uploadId = null;
+        String path = null;
+        Integer partNumber = null;
+        UploadPartFrom uploadPartFrom = null;
+        UploadTo response = api.uploadPartFrom(repository, branch, uploadId, path, partNumber)
+                .uploadPartFrom(uploadPartFrom)
                 .execute();
         // TODO: test validations
     }

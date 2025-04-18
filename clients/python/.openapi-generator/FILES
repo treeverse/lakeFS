@@ -27,6 +27,7 @@ docs/CommitsApi.md
 docs/CompletePresignMultipartUpload.md
 docs/Config.md
 docs/ConfigApi.md
+docs/CopyPartSource.md
 docs/Credentials.md
 docs/CredentialsList.md
 docs/CredentialsWithSecret.md
@@ -123,6 +124,8 @@ docs/UnderlyingObjectProperties.md
 docs/UpdateObjectUserMetadata.md
 docs/UpdateToken.md
 docs/UploadPart.md
+docs/UploadPartFrom.md
+docs/UploadTo.md
 docs/UsageReport.md
 docs/User.md
 docs/UserCreation.md
@@ -172,6 +175,7 @@ lakefs_sdk/models/commit_overrides.py
 lakefs_sdk/models/commit_record_creation.py
 lakefs_sdk/models/complete_presign_multipart_upload.py
 lakefs_sdk/models/config.py
+lakefs_sdk/models/copy_part_source.py
 lakefs_sdk/models/credentials.py
 lakefs_sdk/models/credentials_list.py
 lakefs_sdk/models/credentials_with_secret.py
@@ -255,6 +259,8 @@ lakefs_sdk/models/underlying_object_properties.py
 lakefs_sdk/models/update_object_user_metadata.py
 lakefs_sdk/models/update_token.py
 lakefs_sdk/models/upload_part.py
+lakefs_sdk/models/upload_part_from.py
+lakefs_sdk/models/upload_to.py
 lakefs_sdk/models/usage_report.py
 lakefs_sdk/models/user.py
 lakefs_sdk/models/user_creation.py
@@ -291,6 +297,7 @@ test/test_commits_api.py
 test/test_complete_presign_multipart_upload.py
 test/test_config.py
 test/test_config_api.py
+test/test_copy_part_source.py
 test/test_credentials.py
 test/test_credentials_list.py
 test/test_credentials_with_secret.py
@@ -387,6 +394,8 @@ test/test_underlying_object_properties.py
 test/test_update_object_user_metadata.py
 test/test_update_token.py
 test/test_upload_part.py
+test/test_upload_part_from.py
+test/test_upload_to.py
 test/test_usage_report.py
 test/test_user.py
 test/test_user_creation.py
