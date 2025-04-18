@@ -134,6 +134,7 @@ def _find_binary(binary_name: str) -> Optional[str]:
     Find the requested binary in the following by order of preference:
      - $PATH
      - {sys.exec_prefix}/bin
+     - {sys.exec_prefix}/Scripts (venv on windows)
      - ~/.lakefs/bin
     '''
     bin_directory = _determine_binary_path()
