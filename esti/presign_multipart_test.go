@@ -268,37 +268,46 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 					PhysicalAddress: physicalAddress,
 				}
 				if tt.Copy && i == 0 {
+					body.Type = "copy"
 					body.CopySource = &apigen.CopyPartSource{
 						Repository: repo,
 						Ref:        mainBranch,
 						Path:       largeObjectPath,
-						Range:      swag.String(fmt.Sprintf("bytes=%d-%d", 1, largeDataContentLength-1)),
+						// the Range header is _inclusive_.  So this drops the last byte.
+						Range: swag.String(fmt.Sprintf("bytes=%d-%d", 1, largeDataContentLength-2)),
 					}
 				}
+				var etag string
 				if tt.PresignSeparately {
 					respGetPresigned, err := client.UploadPartFromWithResponse(ctx, repo, mainBranch, uploadID, i+1, &apigen.UploadPartFromParams{Path: objPath}, body)
 					require.NoError(t, err)
 					require.NoError(t, helpers.ResponseAsError(respGetPresigned))
-					partPresignedURL = respGetPresigned.JSON200.PresignedUrl
+					if respGetPresigned.JSON200 != nil {
+						partPresignedURL = respGetPresigned.JSON200.PresignedUrl
+					} else {
+						etag = respGetPresigned.HTTPResponse.Header.Get("ETag")
+					}
 				} else {
 					partPresignedURL = (*respCreate.JSON201.PresignedUrls)[i]
 				}
-				req, err := http.NewRequest(http.MethodPut, partPresignedURL, bytes.NewReader(data))
-				require.NoError(t, err)
-				req.ContentLength = contentLength
-				req.Header.Set("Content-Type", "application/octet-stream")
-				resp, err := httpClient.Do(req)
-				require.NoError(t, err)
-				_ = resp.Body.Close()
-				require.Equal(t, http.StatusOK, resp.StatusCode)
+				if partPresignedURL != "" {
+					req, err := http.NewRequest(http.MethodPut, partPresignedURL, bytes.NewReader(data))
+					require.NoError(t, err)
+					req.ContentLength = contentLength
+					req.Header.Set("Content-Type", "application/octet-stream")
+					resp, err := httpClient.Do(req)
+					require.NoError(t, err)
+					_ = resp.Body.Close()
+					require.Equal(t, http.StatusOK, resp.StatusCode)
+					etag = resp.Header.Get("ETag")
+				}
 
 				// extract etag from response
 				parts = append(parts, apigen.UploadPart{
-					Etag:       resp.Header.Get("ETag"),
+					Etag:       etag,
 					PartNumber: i + 1,
 				})
 				t.Logf("Uploaded part %d/%d, %d bytes, in %s", i+1, numberOfParts, partSize, time.Since(startTime))
-				t.Logf("\tResponse headers %v", resp.Header)
 				totalSize += partSize
 			}
 

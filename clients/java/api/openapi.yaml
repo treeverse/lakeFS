@@ -4824,6 +4824,13 @@ paths:
           description: presigned URL to use for upload
         "204":
           description: part copied
+          headers:
+            ETag:
+              explode: false
+              schema:
+                description: "ETag of the uploaded part, pass in completion"
+                type: string
+              style: simple
         "401":
           content:
             application/json:
