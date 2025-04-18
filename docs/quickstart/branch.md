@@ -27,6 +27,9 @@ Now that lakectl is configured, we can use it to create the branch. Run the foll
 lakectl branch create lakefs://quickstart/denmark-lakes --source lakefs://quickstart/main
 ```
 
+{: .note }
+In some python environments, you might have to call lakectl by using `python -m lakectl` instead.
+
 You should get a confirmation message like this:
 
 ```

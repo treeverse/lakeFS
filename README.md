@@ -34,6 +34,7 @@ You can spin up a standalone sandbox instance of lakeFS:
 
 ```bash
 pip install lakefs
+python -m lakefs download
 lakefs run --quickstart
 ```
 
