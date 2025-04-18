@@ -9,7 +9,6 @@ It handles command-line argument parsing and execution of the CLI commands.
 
 import sys
 import platform
-import json
 import io
 import urllib.request
 import urllib.error
@@ -46,7 +45,6 @@ def _get_platform_info() -> _PlatformInfo:
     if system not in ('darwin', 'linux', 'windows'):
         raise ValueError(f"Unsupported OS: {system}")
     return _PlatformInfo(system, machine)
-
 
 
 def _determine_binary_path() -> str:
@@ -186,8 +184,8 @@ def _show_help() -> int:
     print("Commands:")
     print("  help - show this help message")
     print("  download - download the lakeFS CLI (lakefs and lakectl)")
-    print("  server - run the lakeFS server")
-    print("  lakectl - run the lakectl command")
+    print("")
+    print("  All other commands will be passed to the lakeFS command line")
     return 0
 
 
@@ -196,9 +194,6 @@ def cli_run() -> int:
     Main entry point for the lakeFS CLI
     '''
     args = sys.argv[1:]
-    if len(args) == 0:
-        _show_help()
-        return 1
     if args[0] == 'help':
         _show_help()
     if args[0] == 'download':
@@ -207,13 +202,7 @@ def cli_run() -> int:
         else:
             _download_binaries(version=args[1])
         return 0
-    if args[0] == 'server':
-        return run_binary(find_or_download_binary('lakefs'), args[1:])
-    if args[0] == 'lakectl':
-        return run_binary(find_or_download_binary('lakectl'), args[1:])
-    # no match
-    _show_help()
-    return 1
+    return run_binary(find_or_download_binary('lakefs'), args)
 
 if __name__ == '__main__':
     sys.exit(cli_run())
