@@ -51,9 +51,10 @@ def _determine_binary_path() -> str:
     '''
     Determine the correct path to place binaries
     '''
-    python_bin_dir = os.path.join(sys.exec_prefix, 'bin')
-    if os.path.isdir(python_bin_dir) and os.access(python_bin_dir, os.W_OK):
-        return python_bin_dir  # Most likely a virtualenv
+    for bin_relative_dir in ('bin', 'Scripts'):
+        python_bin_dir = os.path.join(sys.exec_prefix, bin_relative_dir)
+        if os.path.isdir(python_bin_dir) and os.access(python_bin_dir, os.W_OK):
+            return python_bin_dir  # Most likely a virtualenv
     # fallback to ~/.lakefs/bin
     return os.path.expanduser('~/.lakefs/bin')
 
