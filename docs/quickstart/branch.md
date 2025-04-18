@@ -28,7 +28,7 @@ lakectl branch create lakefs://quickstart/denmark-lakes --source lakefs://quicks
 ```
 
 {: .note }
-In some python environments, you might have to call lakectl by using `python -m lakectl` instead.
+If for some reason you get a command not found error, you can call lakectl by using `python -m lakectl` instead.
 
 You should get a confirmation message like this:
 

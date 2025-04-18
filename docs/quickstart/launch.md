@@ -16,12 +16,12 @@ install and launch lakeFS:
 
 ```bash
 pip install lakefs
-python -m lakefs download
+python -m lakefs.download
 lakefs run --quickstart
 ```
 
 {: .note }
-In some Python environments, you might need to run `python -m lakefs run --quickstart` instead
+If for some reason you get a command not found error, you can run `python -m lakefs run --quickstart` instead
 
 After a few moments you should see the lakeFS container ready to use: 
 

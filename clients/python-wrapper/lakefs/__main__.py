@@ -54,6 +54,7 @@ def _determine_binary_path() -> str:
     python_bin_dir = os.path.join(sys.exec_prefix, 'bin')
     if os.path.isdir(python_bin_dir) and os.access(python_bin_dir, os.W_OK):
         return python_bin_dir  # Most likely a virtualenv
+    # fallback to ~/.lakefs/bin
     return os.path.expanduser('~/.lakefs/bin')
 
 
@@ -123,13 +124,16 @@ def _download_binaries(version: Optional[str] = None):
     bin_dir = _determine_binary_path()
     os.makedirs(bin_dir, exist_ok=True)
     content = _download_file(url)
-    return _extract_binaries(content, bin_dir, platform_info)
+    _extract_binaries(content, bin_dir, platform_info)
+    print(f"lakefs and lakectl binaries successfully downloaded to: {bin_dir}")
 
 
 def _find_binary(binary_name: str) -> Optional[str]:
     '''
-    Find the binary in PATH or ~/.lakefs/bin, skipping Python scripts.
-    Returns the path to the binary or None if not found.
+    Find the requested binary in the following by order of preference:
+     - $PATH
+     - {sys.exec_prefix}/bin
+     - ~/.lakefs/bin
     '''
     bin_directory = _determine_binary_path()
     bin_path = os.path.expanduser(f'{bin_directory}/{binary_name}')
@@ -175,34 +179,13 @@ def find_or_download_binary(binary_name: str) -> str:
     return binary_path
 
 
-def _show_help() -> int:
-    '''
-    Print the help message for the lakeFS CLI
-    '''
-    print("lakeFS CLI")
-    print("Usage: python -m lakefs <command> [options]")
-    print("Commands:")
-    print("  help - show this help message")
-    print("  download - download the lakeFS CLI (lakefs and lakectl)")
-    print("")
-    print("  All other commands will be passed to the lakeFS command line")
-    return 0
-
-
 def cli_run() -> int:
     '''
     Main entry point for the lakeFS CLI
     '''
     args = sys.argv[1:]
-    if args[0] == 'help':
-        _show_help()
-    if args[0] == 'download':
-        if len(args) == 1:
-            _download_binaries()
-        else:
-            _download_binaries(version=args[1])
-        return 0
     return run_binary(find_or_download_binary('lakefs'), args)
+
 
 if __name__ == '__main__':
     sys.exit(cli_run())
