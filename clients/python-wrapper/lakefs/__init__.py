@@ -1,7 +1,6 @@
 """
 Allow importing of models from package root
 """
-
 from lakefs.client import Client
 from lakefs.repository import Repository, repositories
 from lakefs.reference import Reference

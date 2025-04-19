@@ -35,7 +35,7 @@ This quickstart will introduce you to some of the core ideas in lakeFS and show 
 <h3>
 <a href="launch.html">Launch</a>
 </h3>
-<p>Spin up the quickstart environment locally under Docker</p>
+<p>Spin up the quickstart environment locally</p>
 </div>
 </div>
 

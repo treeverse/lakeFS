@@ -86,3 +86,6 @@ target/
 
 # Python Wrapper
 /clients/python-wrapper/_site/
+clients/python-wrapper/build/
+clients/python-wrapper/lakefs.egg-info/
+clients/python-wrapper/lakefs/__pycache__/
