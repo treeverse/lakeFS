@@ -14,11 +14,11 @@ local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, arg
 --find the tables that changed
 local ref = action.commit.parents[1]
 local compare_ref = action.commit_id
-local table_def_changes = delta_export.table_def_changes(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
+local changed_table_defs = delta_export.changed_table_defs(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
 
 -- Export Delta Lake tables export:
 local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
-local delta_table_locations = delta_export.export_delta_log(action, table_def_changes, sc.put_object, delta_client, "_lakefs_tables")
+local delta_table_locations = delta_export.export_delta_log(action, changed_table_defs, sc.put_object, delta_client, "_lakefs_tables")
 
 -- Register the exported table in Unity Catalog:
 local databricks_client = databricks.client(args.databricks_host, args.databricks_token)

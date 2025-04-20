@@ -18,11 +18,11 @@ end
 --find the tables that changed
 local ref = action.commit.parents[1]
 local compare_ref = action.commit_id
-local table_def_changes = delta_export.table_def_changes(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
+local changed_table_defs = delta_exporter.changed_table_defs(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
 
 -- Export Delta Lake tables export:
 local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key)
-local delta_table_details = delta_exporter.export_delta_log(action, table_def_changes, write_object, delta_client, table_descriptors_path, azure.abfss_transform_path)
+local delta_table_details = delta_exporter.export_delta_log(action, changed_table_defs, write_object, delta_client, table_descriptors_path, azure.abfss_transform_path)
 
 -- Register the exported table in Unity Catalog:
 local databricks_client = databricks.client(args.databricks_host, args.databricks_token)

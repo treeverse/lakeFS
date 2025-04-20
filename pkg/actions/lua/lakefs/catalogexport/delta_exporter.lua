@@ -222,7 +222,7 @@ local function extractDirectory(path)
 end
 
 -- Local function to filter the list of table defs to include only those that have changed
-local function table_def_changes(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)
+local function changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)
     -- Perform a diff_refs operation to get the differences between references
     local code, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref)
     if code ~= 200 then
@@ -240,7 +240,7 @@ local function table_def_changes(table_def_names, table_descriptors_path, reposi
     end
 
     -- Initialize the result table for storing changed table definitions
-    local changed_table_defs = {}
+    local changed_table_def_names = {}
 
     -- Iterate through the table definitions and add to the result the ones that pass the filter
     for index, table_name_yaml in ipairs(table_def_names) do
@@ -253,13 +253,13 @@ local function table_def_changes(table_def_names, table_descriptors_path, reposi
 
         -- filter only the changed paths from the list
         if changed_path_set[table_path] ~= nil then
-            table.insert(changed_table_defs, table_name_yaml)
+            table.insert(changed_table_def_names, table_name_yaml)
             print("  (inserted)")
         end
     end
 
     -- Return the changed table definitions
-    return changed_table_defs
+    return changed_table_def_names
 end
 
 return {

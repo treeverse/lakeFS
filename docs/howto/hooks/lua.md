@@ -676,13 +676,13 @@ hooks:
 
 ```
 
-### `lakefs/catalogexport/delta_exporter.table_def_changes(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)`
+### `lakefs/catalogexport/delta_exporter.changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)`
 
-Utility function to filter list of table defs based on those that have changed.
+Utility function to filter list of table defs based on those that have changed. Returns the subset of the tables in the table_def_names parameter that have changed. 
 
 Parameters:
 
-- `table_def_names(string)`: List of table names to filter based on the diff
+- `table_def_names(table of strings)`: List of table names to filter based on the diff
 - `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_def_names` reside
 - `repository_id(string)`: The repository ID
 - `ref(string)`: base reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
@@ -694,7 +694,10 @@ Example:
 local delta_export = require("lakefs/catalogexport/delta_exporter")
 local ref = action.commit.parents[1]
 local compare_ref = action.commit_id
-local table_def_changes = delta_export.table_def_changes(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
+local changed_table_defs = delta_export.changed_table_defs(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
+for i = 1, #changed_table_defs do
+    print(changed_table_defs[i])
+end
 ```
 
 ### `lakefs/catalogexport/table_extractor`
