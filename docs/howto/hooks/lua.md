@@ -686,8 +686,7 @@ Parameters:
 - `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_def_names` reside
 - `repository_id(string)`: The repository ID
 - `ref(string)`: ref for reading the table descriptors
-- `left_ref(string)`: left ref for the diff
-- `right_ref(string)`: right ref for the diff
+- `compare_ref(string)`: ref for the diff, determining which tables changed
 
 ### `lakefs/catalogexport/table_extractor`
 
