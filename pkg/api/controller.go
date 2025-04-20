@@ -388,6 +388,7 @@ func (c *Controller) UploadPartFrom(w http.ResponseWriter, r *http.Request, body
 		}
 		w.Header().Set("ETag", etag)
 		writeResponse(w, r, http.StatusNoContent, nil)
+		return
 	}
 
 	presignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, dstObjectRef, uploadID, partNumber)

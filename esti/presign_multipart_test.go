@@ -177,8 +177,6 @@ func TestCompletePresignMultipartUpload(t *testing.T) {
 }
 
 func TestPresignMultipartUploadSeparateParts(t *testing.T) {
-	const largeObjectPath = "data/large"
-
 	skipPresignMultipart(t)
 	// not a short test
 	if testing.Short() {
@@ -193,6 +191,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 	data := make([]byte, largeDataContentLength)
 	_, err := r.Read(data)
 	require.NoError(t, err)
+	const largeObjectPath = "data/large"
 	_, err = helpers.ClientUpload(ctx, client, repo, mainBranch, largeObjectPath, nil, "", bytes.NewReader(data))
 	require.NoError(t, err, "Failed to upload large file for multipart upload test")
 
@@ -209,9 +208,7 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.Name, func(t *testing.T) {
-			const (
-				numberOfParts = 2
-			)
+			const numberOfParts = 2
 			objPath := fmt.Sprintf("presign_multipart_upload/%s/complete", tt.Name)
 			numberOfPartsToRequest := 0
 			if !tt.PresignSeparately {
