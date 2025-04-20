@@ -688,6 +688,15 @@ Parameters:
 - `ref(string)`: ref for reading the table descriptors
 - `compare_ref(string)`: ref for the diff, determining which tables changed
 
+Example:
+
+```lua
+local delta_export = require("lakefs/catalogexport/delta_exporter")
+local ref = action.commit_id
+local compare_ref = action.commit.parents[1]
+local table_def_changes = delta_export.table_def_changes(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
+```
+
 ### `lakefs/catalogexport/table_extractor`
 
 Utility package to parse `_lakefs_tables/` descriptors.
