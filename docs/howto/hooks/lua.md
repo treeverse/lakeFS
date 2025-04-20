@@ -676,7 +676,7 @@ hooks:
 
 ```
 
-### `lakefs/catalogexport/delta_exporter.table_def_changes(table_def_names, table_descriptors_path, repository_id, ref, left_ref, right_ref)`
+### `lakefs/catalogexport/delta_exporter.table_def_changes(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)`
 
 Utility function to filter list of table defs based on those that have changed.
 
