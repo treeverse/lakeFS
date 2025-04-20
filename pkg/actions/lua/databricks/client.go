@@ -72,6 +72,20 @@ func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, 
 	return esr.Status.State.String(), nil
 }
 
+func (client *Client) alterTable(warehouseID, catalogName, schemaName, tableName, alterStatement string) (string, error) {
+	statement := fmt.Sprintf(`ALTER TABLE %s.%s.%s %s`, catalogName, schemaName, tableName, alterStatement)
+	esr, err := client.workspaceClient.StatementExecution.ExecuteAndWait(client.ctx, sql.ExecuteStatementRequest{
+		WarehouseId: warehouseID,
+		Catalog:     catalogName,
+		Schema:      schemaName,
+		Statement:   statement,
+	})
+	if err != nil {
+		return "", fmt.Errorf("alter table \"%s\" failed: %w", tableName, err)
+	}
+	return esr.Status.State.String(), nil
+}
+
 func tableFullName(catalogName, schemaName, tableName string) string {
 	return fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
 }
@@ -160,6 +174,22 @@ func (client *Client) CreateSchema(l *lua.State) int {
 		panic("unreachable")
 	}
 	l.PushString(schemaInfo.Name)
+	return 1
+}
+
+func (client *Client) AlterTable(l *lua.State) int {
+	tableName := lua.CheckString(l, 1)
+	tableName = strings.ReplaceAll(tableName, "-", "_")
+	warehouseID := lua.CheckString(l, 2)
+	catalogName := lua.CheckString(l, 3)
+	schemaName := lua.CheckString(l, 4)
+	alterStatement := lua.CheckString(l, 5)
+	status, err := client.alterTable(warehouseID, catalogName, schemaName, tableName, alterStatement)
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+	l.PushString(status)
 	return 1
 }
 
