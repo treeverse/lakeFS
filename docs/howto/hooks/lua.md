@@ -685,15 +685,15 @@ Parameters:
 - `table_def_names(string)`: List of table names to filter based on the diff
 - `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_def_names` reside
 - `repository_id(string)`: The repository ID
-- `ref(string)`: reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
-- `compare_ref(string)`: ref for the diff, determining which tables changed
+- `ref(string)`: base reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
+- `compare_ref(string)`: compared-to reference for the diff to determine which tables changed
 
 Example:
 
 ```lua
 local delta_export = require("lakefs/catalogexport/delta_exporter")
-local ref = action.commit_id
-local compare_ref = action.commit.parents[1]
+local ref = action.commit.parents[1]
+local compare_ref = action.commit_id
 local table_def_changes = delta_export.table_def_changes(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
 ```
 

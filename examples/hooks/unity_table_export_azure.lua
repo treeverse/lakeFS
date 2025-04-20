@@ -16,8 +16,8 @@ local function write_object(_, key, buf)
 end
 
 --find the tables that changed
-local ref = action.commit_id
-local compare_ref = action.commit.parents[1]
+local ref = action.commit.parents[1]
+local compare_ref = action.commit_id
 local table_def_changes = delta_export.table_def_changes(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
 
 -- Export Delta Lake tables export:
