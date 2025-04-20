@@ -8,6 +8,7 @@ import {SearchIcon} from "@primer/octicons-react";
 
 import {useAPI} from "../../hooks/api";
 import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
+import {Paginator} from "../pagination";
 
 
 export const AttachModal = ({
@@ -16,17 +17,19 @@ export const AttachModal = ({
                               filterPlaceholder = 'Filter...'
                             }) => {
   const search = useRef(null);
-  const [searchPrefix, setSearchPrefix] = useState("");
+  const [paginationParams, setPaginationParams] = useState({ prefix: "", after: "" });
   const [selected, setSelected] = useState([]);
+
+  const { response, error, loading } = useAPI(() => {
+      return searchFn(paginationParams.prefix, paginationParams.after);
+  }, [paginationParams]);
 
   useEffect(() => {
     if (!!search.current && search.current.value === "")
       search.current.focus();
   });
 
-  const {response, error, loading} = useAPI(() => {
-    return searchFn(searchPrefix);
-  }, [searchPrefix]);
+  const nextPage = response?.pagination?.has_more ? response.pagination.next_offset : null;
 
   let content;
   if (loading) content = <Loading/>;
@@ -37,7 +40,7 @@ export const AttachModal = ({
           headers={headers}
           keyFn={ent => ent.id}
           emptyState={emptyState}
-          results={response}
+          results={response.results}
           rowFn={ent => [
             <Checkbox
               defaultChecked={selected.some(selectedEnt => selectedEnt.id === ent.id)}
@@ -48,7 +51,14 @@ export const AttachModal = ({
           ]}
           firstFixedCol={true}
         />
-
+        <Paginator
+            after={paginationParams.after}
+            nextPage={nextPage}
+            onPaginate={(newAfter) => setPaginationParams(prev => ({
+                ...prev,
+                after: newAfter
+            }))}
+        />
         <div className="mt-3">
           {(selected.length > 0) &&
             <p>
@@ -78,6 +88,14 @@ export const AttachModal = ({
       </>
     );
 
+  const handleSearchChange = () => {
+      setPaginationParams(prev => ({
+          ...prev,
+          prefix: search.current.value,
+          after: ""
+      }));
+  };
+
   return (
     <Modal show={show} onHide={onHide}>
       <Modal.Header closeButton>
@@ -94,9 +112,7 @@ export const AttachModal = ({
             <DebouncedFormControl
               ref={search}
               placeholder={filterPlaceholder}
-              onChange={() => {
-                setSearchPrefix(search.current.value)
-              }}/>
+              onChange={handleSearchChange}/>
           </InputGroup>
         </Form>
         <div className="mt-2">
