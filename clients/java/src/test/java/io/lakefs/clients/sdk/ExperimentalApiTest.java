@@ -34,6 +34,7 @@ import io.lakefs.clients.sdk.model.PullRequestsList;
 import io.lakefs.clients.sdk.model.StagingLocation;
 import io.lakefs.clients.sdk.model.StsAuthRequest;
 import io.lakefs.clients.sdk.model.UpdateObjectUserMetadata;
+import io.lakefs.clients.sdk.model.UploadPartCopyFrom;
 import io.lakefs.clients.sdk.model.UploadPartFrom;
 import io.lakefs.clients.sdk.model.UploadTo;
 import org.junit.jupiter.api.Disabled;
@@ -326,20 +327,37 @@ public class ExperimentalApiTest {
     }
 
     /**
-     * Copy a part, or return a presigned URL to upload into a presigned multipart upload. 
+     * Return a presigned URL to upload into a presigned multipart upload.
      *
      * @throws ApiException if the Api call fails
      */
     @Test
-    public void uploadPartFromTest() throws ApiException {
+    public void uploadPartTest() throws ApiException {
         String repository = null;
         String branch = null;
         String uploadId = null;
         String path = null;
         Integer partNumber = null;
         UploadPartFrom uploadPartFrom = null;
-        UploadTo response = api.uploadPartFrom(repository, branch, uploadId, path, partNumber)
-                .uploadPartFrom(uploadPartFrom)
+        UploadTo response = api.uploadPart(repository, branch, uploadId, path, partNumber, uploadPartFrom)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * Upload a part by copying part of another object.
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void uploadPartCopyTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String uploadId = null;
+        String path = null;
+        Integer partNumber = null;
+        UploadPartCopyFrom uploadPartCopyFrom = null;
+        api.uploadPartCopy(repository, branch, uploadId, path, partNumber, uploadPartCopyFrom)
                 .execute();
         // TODO: test validations
     }

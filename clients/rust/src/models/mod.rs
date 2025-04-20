@@ -202,6 +202,8 @@ pub mod update_token;
 pub use self::update_token::UpdateToken;
 pub mod upload_part;
 pub use self::upload_part::UploadPart;
+pub mod upload_part_copy_from;
+pub use self::upload_part_copy_from::UploadPartCopyFrom;
 pub mod upload_part_from;
 pub use self::upload_part_from::UploadPartFrom;
 pub mod upload_to;

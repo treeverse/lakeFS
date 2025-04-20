@@ -260,34 +260,41 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 				}
 
 				// upload part using presigned url
-				var partPresignedURL string
-				body := apigen.UploadPartFromJSONRequestBody{
-					PhysicalAddress: physicalAddress,
-				}
-				if tt.Copy && i == 0 {
-					body.Type = "copy"
-					body.CopySource = &apigen.CopyPartSource{
-						Repository: repo,
-						Ref:        mainBranch,
-						Path:       largeObjectPath,
-						// the Range header is _inclusive_.  So this drops the last byte.
-						Range: swag.String(fmt.Sprintf("bytes=%d-%d", 1, largeDataContentLength-2)),
-					}
-				}
 				var etag string
-				if tt.PresignSeparately {
-					respGetPresigned, err := client.UploadPartFromWithResponse(ctx, repo, mainBranch, uploadID, i+1, &apigen.UploadPartFromParams{Path: objPath}, body)
+				if tt.Copy && i == 0 {
+					// Expand body to the wider type for Copy
+					body := apigen.UploadPartCopyJSONRequestBody{
+						UploadPartFrom: apigen.UploadPartFrom{
+							PhysicalAddress: physicalAddress,
+						},
+						CopySource: apigen.CopyPartSource{
+							Repository: repo,
+							Ref:        mainBranch,
+							Path:       largeObjectPath,
+							// the Range header is _inclusive_.  So this drops the last byte.
+							Range: swag.String(fmt.Sprintf("bytes=%d-%d", 1, largeDataContentLength-2)),
+						},
+					}
+					respCopyPart, err := client.UploadPartCopyWithResponse(ctx, repo, mainBranch, uploadID, i+1, &apigen.UploadPartCopyParams{Path: objPath}, body)
 					require.NoError(t, err)
-					require.NoError(t, helpers.ResponseAsError(respGetPresigned))
-					if respGetPresigned.JSON200 != nil {
+					require.NoError(t, helpers.ResponseAsError(respCopyPart))
+					require.Equal(t, http.StatusNoContent, respCopyPart.StatusCode())
+					etag = respCopyPart.HTTPResponse.Header.Get("ETag")
+				} else {
+					var partPresignedURL string
+					if tt.PresignSeparately {
+						body := apigen.UploadPartJSONRequestBody{
+							PhysicalAddress: physicalAddress,
+						}
+						respGetPresigned, err := client.UploadPartWithResponse(ctx, repo, mainBranch, uploadID, i+1, &apigen.UploadPartParams{Path: objPath}, body)
+						require.NoError(t, err)
+						require.NoError(t, helpers.ResponseAsError(respGetPresigned))
+						require.Equal(t, http.StatusOK, respGetPresigned.StatusCode())
 						partPresignedURL = respGetPresigned.JSON200.PresignedUrl
 					} else {
-						etag = respGetPresigned.HTTPResponse.Header.Get("ETag")
+						partPresignedURL = (*respCreate.JSON201.PresignedUrls)[i]
 					}
-				} else {
-					partPresignedURL = (*respCreate.JSON201.PresignedUrls)[i]
-				}
-				if partPresignedURL != "" {
+
 					req, err := http.NewRequest(http.MethodPut, partPresignedURL, bytes.NewReader(data))
 					require.NoError(t, err)
 					req.ContentLength = contentLength

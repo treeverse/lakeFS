@@ -24,13 +24,15 @@ try:
     from pydantic.v1 import BaseModel, Field, StrictStr
 except ImportError:
     from pydantic import BaseModel, Field, StrictStr
+from lakefs_sdk.models.copy_part_source import CopyPartSource
 
-class UploadPartFrom(BaseModel):
+class UploadPartCopyFrom(BaseModel):
     """
-    UploadPartFrom
+    UploadPartCopyFrom
     """
     physical_address: StrictStr = Field(..., description="The physical address (of the entire intended object) returned from createPresignMultipartUpload. ")
-    __properties = ["physical_address"]
+    copy_source: CopyPartSource = Field(...)
+    __properties = ["physical_address", "copy_source"]
 
     class Config:
         """Pydantic configuration"""
@@ -46,8 +48,8 @@ class UploadPartFrom(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> UploadPartFrom:
-        """Create an instance of UploadPartFrom from a JSON string"""
+    def from_json(cls, json_str: str) -> UploadPartCopyFrom:
+        """Create an instance of UploadPartCopyFrom from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -56,19 +58,23 @@ class UploadPartFrom(BaseModel):
                           exclude={
                           },
                           exclude_none=True)
+        # override the default output from pydantic by calling `to_dict()` of copy_source
+        if self.copy_source:
+            _dict['copy_source'] = self.copy_source.to_dict()
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> UploadPartFrom:
-        """Create an instance of UploadPartFrom from a dict"""
+    def from_dict(cls, obj: dict) -> UploadPartCopyFrom:
+        """Create an instance of UploadPartCopyFrom from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return UploadPartFrom.parse_obj(obj)
+            return UploadPartCopyFrom.parse_obj(obj)
 
-        _obj = UploadPartFrom.parse_obj({
-            "physical_address": obj.get("physical_address")
+        _obj = UploadPartCopyFrom.parse_obj({
+            "physical_address": obj.get("physical_address"),
+            "copy_source": CopyPartSource.from_dict(obj.get("copy_source")) if obj.get("copy_source") is not None else None
         })
         return _obj
 

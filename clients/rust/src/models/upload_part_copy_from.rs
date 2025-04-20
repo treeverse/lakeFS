@@ -11,16 +11,19 @@
 use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct UploadPartFrom {
+pub struct UploadPartCopyFrom {
     /// The physical address (of the entire intended object) returned from createPresignMultipartUpload. 
     #[serde(rename = "physical_address")]
     pub physical_address: String,
+    #[serde(rename = "copy_source")]
+    pub copy_source: Box<models::CopyPartSource>,
 }
 
-impl UploadPartFrom {
-    pub fn new(physical_address: String) -> UploadPartFrom {
-        UploadPartFrom {
+impl UploadPartCopyFrom {
+    pub fn new(physical_address: String, copy_source: models::CopyPartSource) -> UploadPartCopyFrom {
+        UploadPartCopyFrom {
             physical_address,
+            copy_source: Box::new(copy_source),
         }
     }
 }

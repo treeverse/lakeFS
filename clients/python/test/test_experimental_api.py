@@ -145,8 +145,14 @@ class TestExperimentalApi(unittest.TestCase):
         """
         pass
 
-    def test_upload_part_from(self) -> None:
-        """Test case for upload_part_from
+    def test_upload_part(self) -> None:
+        """Test case for upload_part
+
+        """
+        pass
+
+    def test_upload_part_copy(self) -> None:
+        """Test case for upload_part_copy
 
         """
         pass

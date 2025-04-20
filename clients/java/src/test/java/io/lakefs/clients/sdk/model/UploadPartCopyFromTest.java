@@ -18,23 +18,24 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.CopyPartSource;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for UploadPartFrom
+ * Model tests for UploadPartCopyFrom
  */
-public class UploadPartFromTest {
-    private final UploadPartFrom model = new UploadPartFrom();
+public class UploadPartCopyFromTest {
+    private final UploadPartCopyFrom model = new UploadPartCopyFrom();
 
     /**
-     * Model tests for UploadPartFrom
+     * Model tests for UploadPartCopyFrom
      */
     @Test
-    public void testUploadPartFrom() {
-        // TODO: test UploadPartFrom
+    public void testUploadPartCopyFrom() {
+        // TODO: test UploadPartCopyFrom
     }
 
     /**
@@ -43,6 +44,14 @@ public class UploadPartFromTest {
     @Test
     public void physicalAddressTest() {
         // TODO: test physicalAddress
+    }
+
+    /**
+     * Test the property 'copySource'
+     */
+    @Test
+    public void copySourceTest() {
+        // TODO: test copySource
     }
 
 }

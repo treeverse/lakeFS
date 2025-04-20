@@ -151,6 +151,7 @@ from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectPrope
 from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata
 from lakefs_sdk.models.update_token import UpdateToken
 from lakefs_sdk.models.upload_part import UploadPart
+from lakefs_sdk.models.upload_part_copy_from import UploadPartCopyFrom
 from lakefs_sdk.models.upload_part_from import UploadPartFrom
 from lakefs_sdk.models.upload_to import UploadTo
 from lakefs_sdk.models.usage_report import UsageReport

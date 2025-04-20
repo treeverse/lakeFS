@@ -1698,6 +1698,17 @@ components:
         - part_number
         - etag
 
+    UploadPartFrom:
+      type: object
+      properties:
+        physical_address:
+          description: |
+            The physical address (of the entire intended object) returned from
+            createPresignMultipartUpload.
+          type: string
+      required:
+        - physical_address
+
     CopyPartSource:
       type: object
       properties:
@@ -1716,22 +1727,16 @@ components:
         - ref
         - path
 
-    UploadPartFrom:
-      type: object
-      properties:
-        type:
-          description: "Future versions may allow operations other than copy"
-          type: string
-          pattern: '^(?:copy|)$'
-        copy_source:
-          description: "Source of copy, required for type \"copy\""
-          $ref: "#/components/schemas/CopyPartSource"
-        physical_address:
-          description: "The physical address returned from createPresignMultipartUpload"
-          type: string
-      required:
-        - type
-        - physical_address
+    UploadPartCopyFrom:
+      allOf: # Extend UploadPartFrom
+        - $ref: "#/components/schemas/UploadPartFrom"
+        - type: object
+          properties:
+            copy_source:
+              description: "Source of copy"
+              $ref: "#/components/schemas/CopyPartSource"
+          required:
+            - copy_source
 
     UploadTo:
       type: object
@@ -4639,12 +4644,10 @@ paths:
     put:
       tags:
         - experimental
-      operationId: uploadPartFrom
-      description: |
-        Copy a part, or return a presigned URL to upload into a
-        presigned multipart upload.
+      operationId: uploadPart
+      description: Return a presigned URL to upload into a presigned multipart upload.
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -4656,6 +4659,56 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UploadTo"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: path
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: partNumber
+        required: true
+        schema:
+          type: integer
+          maximum: 1000
+          minimum: 1
+    put:
+      tags:
+        - experimental
+      operationId: uploadPartCopy
+      description: Upload a part by copying part of another object.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadPartCopyFrom"
+      responses:
         204:
           description: part copied
           headers:
@@ -4671,7 +4724,6 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
 
   /repositories/{repository}/branches/{branch}/staging/backing:
     parameters:
