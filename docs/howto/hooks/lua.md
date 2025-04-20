@@ -685,7 +685,7 @@ Parameters:
 - `table_def_names(string)`: List of table names to filter based on the diff
 - `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_def_names` reside
 - `repository_id(string)`: The repository ID
-- `ref(string)`: ref for reading the table descriptors
+- `ref(string)`: reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
 - `compare_ref(string)`: ref for the diff, determining which tables changed
 
 Example:
@@ -706,10 +706,15 @@ Utility package to parse `_lakefs_tables/` descriptors.
 List all YAML files under `_lakefs_tables/*` and return a list of type `[{physical_address, path}]`, ignores hidden files. 
 The `client` is `lakefs` client.
 
-### `lakefs/catalogexport/table_extractor.get_table_descriptor(client, repo_id, commit_id, logical_path)`
+### `lakefs/catalogexport/table_extractor.get_table_descriptor(client, repo_id, ref, logical_path)`
 
 Read a table descriptor and parse YAML object. Will set `partition_columns` to `{}` if no partitions are defined.
-The `client` is `lakefs` client.
+
+Parameters:
+- `client`: `lakefs` client
+- `repo_id(string)`: The repository ID
+- `ref(string)`: reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
+- `logical_path(string)`: logical path of the table descriptor file within the repo
 
 ### `lakefs/catalogexport/hive.extract_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)`
 
