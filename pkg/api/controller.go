@@ -939,7 +939,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 
 func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID string) {
 	aclPolicyName := authacl.PolicyName(groupID)
-	if !c.authorize(w, r, permissions.GetGroupAclPermissions(groupID, aclPolicyName)) {
+	if !c.authorize(w, r, permissions.GetGroupACLPermissions(groupID, aclPolicyName)) {
 		return
 	}
 
@@ -995,7 +995,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 
 func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body apigen.SetGroupACLJSONRequestBody, groupID string) {
 	aclPolicyName := authacl.PolicyName(groupID)
-	if !c.authorize(w, r, permissions.SetGroupAclPermissions(groupID, aclPolicyName)) {
+	if !c.authorize(w, r, permissions.SetGroupACLPermissions(groupID, aclPolicyName)) {
 		return
 	}
 

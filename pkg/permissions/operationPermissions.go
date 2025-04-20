@@ -63,7 +63,7 @@ func GetGroupPermissions(groupID string) Node {
 	}
 }
 
-func GetGroupAclPermissions(groupID string, aclPolicyName string) Node {
+func GetGroupACLPermissions(groupID string, aclPolicyName string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -83,7 +83,7 @@ func GetGroupAclPermissions(groupID string, aclPolicyName string) Node {
 	}
 }
 
-func SetGroupAclPermissions(groupID string, aclPolicyName string) Node {
+func SetGroupACLPermissions(groupID string, aclPolicyName string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -1173,11 +1173,11 @@ func DeleteUserExternalPrincipalPermissions(userID string) Node {
 	}
 }
 
-func GetExternalPrincipalPermissions(principalId string) Node {
+func GetExternalPrincipalPermissions(principalID string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadExternalPrincipalAction,
-			Resource: ExternalPrincipalArn(principalId),
+			Resource: ExternalPrincipalArn(principalID),
 		},
 	}
 }
