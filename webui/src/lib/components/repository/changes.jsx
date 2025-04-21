@@ -1,8 +1,9 @@
-import React, {useCallback, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 
 import {ClockIcon, PlusIcon, XIcon} from "@primer/octicons-react";
 
 import {useAPIWithPagination} from "../../hooks/api";
+import {useExpandCollapseDirs} from "./useExpandCollapseDirs";
 import {AlertError} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {ObjectTreeEntryRow, PrefixTreeEntryRow} from "./treeRows";
@@ -32,11 +33,13 @@ import Col from "react-bootstrap/Col";
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
 export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
-                                depth=0}) => {
-    const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
+                                depth=0, onToggleDir, expandMode, registerDir, markDirAsManuallyToggled, tick }) => {
+    const userToggledRef = useRef(false);
+    const [localExpanded, setLocalExpanded] = useState(false);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
+    const dirExpanded = localExpanded;
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!dirExpanded) return
@@ -51,6 +54,21 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
         setResultsState({results: resultsState.results.concat(results), pagination: pagination})
         return {results:resultsState.results, pagination: pagination}
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
+
+    useEffect(() => {
+        if (entry.path_type !== "object") {
+            registerDir(entry.path);
+        }
+    }, [entry.path_type, entry.path, registerDir]);
+
+    useEffect(() => {
+        if (entry.path_type !== "object" && expandMode && expandMode.value !== null) {
+            userToggledRef.current = false;
+            setLocalExpanded(expandMode.value);
+            onToggleDir(entry.path, expandMode.value);
+        }
+    }, [expandMode?.version]);
+
 
     const results = resultsState.results
     if (error)
@@ -83,12 +101,24 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     }
     // entry is a common prefix
     return <>
-        <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
+        <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth}
+                            onClick={() => {
+                                userToggledRef.current = true;
+                                markDirAsManuallyToggled(entry.path);
+                                setLocalExpanded(!dirExpanded);
+                                onToggleDir(entry.path, !dirExpanded);
+                            }}
+                            onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
         {dirExpanded && results &&
         results.map(child =>
             (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                           internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
                           relativeTo={entry.path} getMore={getMore}
+                          onToggleDir={onToggleDir}
+                          expandMode={userToggledRef.current ? undefined : expandMode}
+                          registerDir={registerDir}
+                          markDirAsManuallyToggled={markDirAsManuallyToggled}
+                          tick={tick}
                           />))}
         {(!!nextPage || loading) &&
         <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
@@ -144,6 +174,7 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
                                          changesTreeMessage}) => {
+    const { expandAllDirs, expandMode, toggleAllDirs, updateOpenedDir, registerDir, markDirAsManuallyToggled, tick } = useExpandCollapseDirs();
     if (results.length === 0) {
         return <div className="tree-container">
             <Alert variant="info">No changes</Alert>
@@ -151,6 +182,11 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
     } else {
         return <div className="tree-container">
             {changesTreeMessage && <div>{changesTreeMessage}</div>}
+                    <div className="mb-2">
+                        <Button size="sm" variant="outline-secondary" onClick={toggleAllDirs} key={tick}>
+                            {expandAllDirs ? 'Collapse All' : 'Expand All'}
+                        </Button>
+                    </div>
                     <Card>
                         <Card.Header>
                             <span className="float-start w-100">
@@ -170,6 +206,11 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
+                                                     onToggleDir={updateOpenedDir}
+                                                     expandMode={expandMode}
+                                                     registerDir={registerDir}
+                                                     markDirAsManuallyToggled={markDirAsManuallyToggled}
+                                                     tick={tick}
                                                  />);
                                 })}
                                 {!!nextPage &&
