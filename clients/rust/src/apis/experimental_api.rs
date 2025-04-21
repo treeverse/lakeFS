@@ -220,6 +220,28 @@ pub enum UpdatePullRequestError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`upload_part`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum UploadPartError {
+    Status401(models::Error),
+    Status404(models::Error),
+    Status420(),
+    DefaultResponse(models::Error),
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`upload_part_copy`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum UploadPartCopyError {
+    Status401(models::Error),
+    Status404(models::Error),
+    Status420(),
+    DefaultResponse(models::Error),
+    UnknownValue(serde_json::Value),
+}
+
 
 /// Aborts a presign multipart upload.
 pub async fn abort_presign_multipart_upload(configuration: &configuration::Configuration, repository: &str, branch: &str, upload_id: &str, path: &str, abort_presign_multipart_upload: Option<models::AbortPresignMultipartUpload>) -> Result<(), Error<AbortPresignMultipartUploadError>> {
@@ -813,6 +835,78 @@ pub async fn update_pull_request(configuration: &configuration::Configuration, r
         Ok(())
     } else {
         let local_var_entity: Option<UpdatePullRequestError> = serde_json::from_str(&local_var_content).ok();
+        let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
+        Err(Error::ResponseError(local_var_error))
+    }
+}
+
+/// Return a presigned URL to upload into a presigned multipart upload.
+pub async fn upload_part(configuration: &configuration::Configuration, repository: &str, branch: &str, upload_id: &str, path: &str, part_number: i32, upload_part_from: models::UploadPartFrom) -> Result<models::UploadTo, Error<UploadPartError>> {
+    let local_var_configuration = configuration;
+
+    let local_var_client = &local_var_configuration.client;
+
+    let local_var_uri_str = format!("{}/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}", local_var_configuration.base_path, repository=crate::apis::urlencode(repository), branch=crate::apis::urlencode(branch), uploadId=crate::apis::urlencode(upload_id), partNumber=part_number);
+    let mut local_var_req_builder = local_var_client.request(reqwest::Method::PUT, local_var_uri_str.as_str());
+
+    local_var_req_builder = local_var_req_builder.query(&[("path", &path.to_string())]);
+    if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
+        local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());
+    }
+    if let Some(ref local_var_auth_conf) = local_var_configuration.basic_auth {
+        local_var_req_builder = local_var_req_builder.basic_auth(local_var_auth_conf.0.to_owned(), local_var_auth_conf.1.to_owned());
+    };
+    if let Some(ref local_var_token) = local_var_configuration.bearer_access_token {
+        local_var_req_builder = local_var_req_builder.bearer_auth(local_var_token.to_owned());
+    };
+    local_var_req_builder = local_var_req_builder.json(&upload_part_from);
+
+    let local_var_req = local_var_req_builder.build()?;
+    let local_var_resp = local_var_client.execute(local_var_req).await?;
+
+    let local_var_status = local_var_resp.status();
+    let local_var_content = local_var_resp.text().await?;
+
+    if !local_var_status.is_client_error() && !local_var_status.is_server_error() {
+        serde_json::from_str(&local_var_content).map_err(Error::from)
+    } else {
+        let local_var_entity: Option<UploadPartError> = serde_json::from_str(&local_var_content).ok();
+        let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
+        Err(Error::ResponseError(local_var_error))
+    }
+}
+
+/// Upload a part by copying part of another object.
+pub async fn upload_part_copy(configuration: &configuration::Configuration, repository: &str, branch: &str, upload_id: &str, path: &str, part_number: i32, upload_part_copy_from: models::UploadPartCopyFrom) -> Result<(), Error<UploadPartCopyError>> {
+    let local_var_configuration = configuration;
+
+    let local_var_client = &local_var_configuration.client;
+
+    let local_var_uri_str = format!("{}/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy", local_var_configuration.base_path, repository=crate::apis::urlencode(repository), branch=crate::apis::urlencode(branch), uploadId=crate::apis::urlencode(upload_id), partNumber=part_number);
+    let mut local_var_req_builder = local_var_client.request(reqwest::Method::PUT, local_var_uri_str.as_str());
+
+    local_var_req_builder = local_var_req_builder.query(&[("path", &path.to_string())]);
+    if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
+        local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());
+    }
+    if let Some(ref local_var_auth_conf) = local_var_configuration.basic_auth {
+        local_var_req_builder = local_var_req_builder.basic_auth(local_var_auth_conf.0.to_owned(), local_var_auth_conf.1.to_owned());
+    };
+    if let Some(ref local_var_token) = local_var_configuration.bearer_access_token {
+        local_var_req_builder = local_var_req_builder.bearer_auth(local_var_token.to_owned());
+    };
+    local_var_req_builder = local_var_req_builder.json(&upload_part_copy_from);
+
+    let local_var_req = local_var_req_builder.build()?;
+    let local_var_resp = local_var_client.execute(local_var_req).await?;
+
+    let local_var_status = local_var_resp.status();
+    let local_var_content = local_var_resp.text().await?;
+
+    if !local_var_status.is_client_error() && !local_var_status.is_server_error() {
+        Ok(())
+    } else {
+        let local_var_entity: Option<UploadPartCopyError> = serde_json::from_str(&local_var_content).ok();
         let local_var_error = ResponseContent { status: local_var_status, content: local_var_content, entity: local_var_entity };
         Err(Error::ResponseError(local_var_error))
     }

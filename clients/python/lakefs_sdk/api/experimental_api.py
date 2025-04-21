@@ -48,6 +48,9 @@ from lakefs_sdk.models.pull_request_creation_response import PullRequestCreation
 from lakefs_sdk.models.pull_requests_list import PullRequestsList
 from lakefs_sdk.models.sts_auth_request import StsAuthRequest
 from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata
+from lakefs_sdk.models.upload_part_copy_from import UploadPartCopyFrom
+from lakefs_sdk.models.upload_part_from import UploadPartFrom
+from lakefs_sdk.models.upload_to import UploadTo
 
 from lakefs_sdk.api_client import ApiClient
 from lakefs_sdk.api_response import ApiResponse
@@ -2746,6 +2749,381 @@ class ExperimentalApi:
 
         return self.api_client.call_api(
             '/repositories/{repository}/pulls/{pull_request}', 'PATCH',
+            _path_params,
+            _query_params,
+            _header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            response_types_map=_response_types_map,
+            auth_settings=_auth_settings,
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
+            collection_formats=_collection_formats,
+            _request_auth=_params.get('_request_auth'))
+
+    @validate_arguments
+    def upload_part(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_from : UploadPartFrom, **kwargs) -> UploadTo:  # noqa: E501
+        """upload_part  # noqa: E501
+
+        Return a presigned URL to upload into a presigned multipart upload.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.upload_part(repository, branch, upload_id, path, part_number, upload_part_from, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: (required)
+        :type path: str
+        :param part_number: (required)
+        :type part_number: int
+        :param upload_part_from: (required)
+        :type upload_part_from: UploadPartFrom
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _request_timeout: timeout setting for this request.
+               If one number provided, it will be total request
+               timeout. It can also be a pair (tuple) of
+               (connection, read) timeouts.
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: UploadTo
+        """
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
+            message = "Error! Please call the upload_part_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
+            raise ValueError(message)
+        return self.upload_part_with_http_info(repository, branch, upload_id, path, part_number, upload_part_from, **kwargs)  # noqa: E501
+
+    @validate_arguments
+    def upload_part_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_from : UploadPartFrom, **kwargs) -> ApiResponse:  # noqa: E501
+        """upload_part  # noqa: E501
+
+        Return a presigned URL to upload into a presigned multipart upload.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.upload_part_with_http_info(repository, branch, upload_id, path, part_number, upload_part_from, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: (required)
+        :type path: str
+        :param part_number: (required)
+        :type part_number: int
+        :param upload_part_from: (required)
+        :type upload_part_from: UploadPartFrom
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _preload_content: if False, the ApiResponse.data will
+                                 be set to none and raw_data will store the
+                                 HTTP response body without reading/decoding.
+                                 Default is True.
+        :type _preload_content: bool, optional
+        :param _return_http_data_only: response data instead of ApiResponse
+                                       object with status code, headers, etc
+        :type _return_http_data_only: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the authentication
+                              in the spec for a single request.
+        :type _request_auth: dict, optional
+        :type _content_type: string, optional: force content-type for the request
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: tuple(UploadTo, status_code(int), headers(HTTPHeaderDict))
+        """
+
+        _params = locals()
+
+        _all_params = [
+            'repository',
+            'branch',
+            'upload_id',
+            'path',
+            'part_number',
+            'upload_part_from'
+        ]
+        _all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
+            ]
+        )
+
+        # validate the arguments
+        for _key, _val in _params['kwargs'].items():
+            if _key not in _all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method upload_part" % _key
+                )
+            _params[_key] = _val
+        del _params['kwargs']
+
+        _collection_formats = {}
+
+        # process the path parameters
+        _path_params = {}
+        if _params['repository']:
+            _path_params['repository'] = _params['repository']
+
+        if _params['branch']:
+            _path_params['branch'] = _params['branch']
+
+        if _params['upload_id']:
+            _path_params['uploadId'] = _params['upload_id']
+
+        if _params['part_number']:
+            _path_params['partNumber'] = _params['part_number']
+
+
+        # process the query parameters
+        _query_params = []
+        if _params.get('path') is not None:  # noqa: E501
+            _query_params.append(('path', _params['path']))
+
+        # process the header parameters
+        _header_params = dict(_params.get('_headers', {}))
+        # process the form parameters
+        _form_params = []
+        _files = {}
+        # process the body parameter
+        _body_params = None
+        if _params['upload_part_from'] is not None:
+            _body_params = _params['upload_part_from']
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # set the HTTP header `Content-Type`
+        _content_types_list = _params.get('_content_type',
+            self.api_client.select_header_content_type(
+                ['application/json']))
+        if _content_types_list:
+                _header_params['Content-Type'] = _content_types_list
+
+        # authentication setting
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+
+        _response_types_map = {
+            '200': "UploadTo",
+            '401': "Error",
+            '404': "Error",
+            '420': None,
+        }
+
+        return self.api_client.call_api(
+            '/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}', 'PUT',
+            _path_params,
+            _query_params,
+            _header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            response_types_map=_response_types_map,
+            auth_settings=_auth_settings,
+            async_req=_params.get('async_req'),
+            _return_http_data_only=_params.get('_return_http_data_only'),  # noqa: E501
+            _preload_content=_params.get('_preload_content', True),
+            _request_timeout=_params.get('_request_timeout'),
+            collection_formats=_collection_formats,
+            _request_auth=_params.get('_request_auth'))
+
+    @validate_arguments
+    def upload_part_copy(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_copy_from : UploadPartCopyFrom, **kwargs) -> None:  # noqa: E501
+        """upload_part_copy  # noqa: E501
+
+        Upload a part by copying part of another object.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.upload_part_copy(repository, branch, upload_id, path, part_number, upload_part_copy_from, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: (required)
+        :type path: str
+        :param part_number: (required)
+        :type part_number: int
+        :param upload_part_copy_from: (required)
+        :type upload_part_copy_from: UploadPartCopyFrom
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _request_timeout: timeout setting for this request.
+               If one number provided, it will be total request
+               timeout. It can also be a pair (tuple) of
+               (connection, read) timeouts.
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: None
+        """
+        kwargs['_return_http_data_only'] = True
+        if '_preload_content' in kwargs:
+            message = "Error! Please call the upload_part_copy_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
+            raise ValueError(message)
+        return self.upload_part_copy_with_http_info(repository, branch, upload_id, path, part_number, upload_part_copy_from, **kwargs)  # noqa: E501
+
+    @validate_arguments
+    def upload_part_copy_with_http_info(self, repository : StrictStr, branch : StrictStr, upload_id : StrictStr, path : StrictStr, part_number : conint(strict=True, le=1000, ge=1), upload_part_copy_from : UploadPartCopyFrom, **kwargs) -> ApiResponse:  # noqa: E501
+        """upload_part_copy  # noqa: E501
+
+        Upload a part by copying part of another object.  # noqa: E501
+        This method makes a synchronous HTTP request by default. To make an
+        asynchronous HTTP request, please pass async_req=True
+
+        >>> thread = api.upload_part_copy_with_http_info(repository, branch, upload_id, path, part_number, upload_part_copy_from, async_req=True)
+        >>> result = thread.get()
+
+        :param repository: (required)
+        :type repository: str
+        :param branch: (required)
+        :type branch: str
+        :param upload_id: (required)
+        :type upload_id: str
+        :param path: (required)
+        :type path: str
+        :param part_number: (required)
+        :type part_number: int
+        :param upload_part_copy_from: (required)
+        :type upload_part_copy_from: UploadPartCopyFrom
+        :param async_req: Whether to execute the request asynchronously.
+        :type async_req: bool, optional
+        :param _preload_content: if False, the ApiResponse.data will
+                                 be set to none and raw_data will store the
+                                 HTTP response body without reading/decoding.
+                                 Default is True.
+        :type _preload_content: bool, optional
+        :param _return_http_data_only: response data instead of ApiResponse
+                                       object with status code, headers, etc
+        :type _return_http_data_only: bool, optional
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the authentication
+                              in the spec for a single request.
+        :type _request_auth: dict, optional
+        :type _content_type: string, optional: force content-type for the request
+        :return: Returns the result object.
+                 If the method is called asynchronously,
+                 returns the request thread.
+        :rtype: None
+        """
+
+        _params = locals()
+
+        _all_params = [
+            'repository',
+            'branch',
+            'upload_id',
+            'path',
+            'part_number',
+            'upload_part_copy_from'
+        ]
+        _all_params.extend(
+            [
+                'async_req',
+                '_return_http_data_only',
+                '_preload_content',
+                '_request_timeout',
+                '_request_auth',
+                '_content_type',
+                '_headers'
+            ]
+        )
+
+        # validate the arguments
+        for _key, _val in _params['kwargs'].items():
+            if _key not in _all_params:
+                raise ApiTypeError(
+                    "Got an unexpected keyword argument '%s'"
+                    " to method upload_part_copy" % _key
+                )
+            _params[_key] = _val
+        del _params['kwargs']
+
+        _collection_formats = {}
+
+        # process the path parameters
+        _path_params = {}
+        if _params['repository']:
+            _path_params['repository'] = _params['repository']
+
+        if _params['branch']:
+            _path_params['branch'] = _params['branch']
+
+        if _params['upload_id']:
+            _path_params['uploadId'] = _params['upload_id']
+
+        if _params['part_number']:
+            _path_params['partNumber'] = _params['part_number']
+
+
+        # process the query parameters
+        _query_params = []
+        if _params.get('path') is not None:  # noqa: E501
+            _query_params.append(('path', _params['path']))
+
+        # process the header parameters
+        _header_params = dict(_params.get('_headers', {}))
+        # process the form parameters
+        _form_params = []
+        _files = {}
+        # process the body parameter
+        _body_params = None
+        if _params['upload_part_copy_from'] is not None:
+            _body_params = _params['upload_part_copy_from']
+
+        # set the HTTP header `Accept`
+        _header_params['Accept'] = self.api_client.select_header_accept(
+            ['application/json'])  # noqa: E501
+
+        # set the HTTP header `Content-Type`
+        _content_types_list = _params.get('_content_type',
+            self.api_client.select_header_content_type(
+                ['application/json']))
+        if _content_types_list:
+                _header_params['Content-Type'] = _content_types_list
+
+        # authentication setting
+        _auth_settings = ['basic_auth', 'cookie_auth', 'oidc_auth', 'saml_auth', 'jwt_token']  # noqa: E501
+
+        _response_types_map = {}
+
+        return self.api_client.call_api(
+            '/repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy', 'PUT',
             _path_params,
             _query_params,
             _header_params,

@@ -4765,6 +4765,167 @@ paths:
       - experimental
       x-content-type: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}:
+    put:
+      description: Return a presigned URL to upload into a presigned multipart upload.
+      operationId: uploadPart
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: partNumber
+        required: true
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadPartFrom'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadTo'
+          description: presigned URL to use for upload
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy:
+    put:
+      description: Upload a part by copying part of another object.
+      operationId: uploadPartCopy
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: uploadId
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: true
+        in: query
+        name: path
+        required: true
+        schema:
+          type: string
+        style: form
+      - explode: false
+        in: path
+        name: partNumber
+        required: true
+        schema:
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadPartCopyFrom'
+        required: true
+      responses:
+        "204":
+          description: part copied
+          headers:
+            ETag:
+              explode: false
+              schema:
+                description: "ETag of the uploaded part, pass in completion"
+                type: string
+              style: simple
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      tags:
+      - experimental
+      x-content-type: application/json
+      x-accepts: application/json
   /repositories/{repository}/branches/{branch}/staging/backing:
     get:
       operationId: getPhysicalAddress
@@ -9687,6 +9848,53 @@ components:
       required:
       - etag
       - part_number
+      type: object
+    UploadPartFrom:
+      example:
+        physical_address: physical_address
+      properties:
+        physical_address:
+          description: |
+            The physical address (of the entire intended object) returned from
+            createPresignMultipartUpload.
+          type: string
+      required:
+      - physical_address
+      type: object
+    CopyPartSource:
+      properties:
+        repository:
+          type: string
+        ref:
+          type: string
+        path:
+          type: string
+        range:
+          description: Range of bytes to copy
+          pattern: "^bytes=((\\d*-\\d*,? ?)+)$"
+          type: string
+      required:
+      - path
+      - ref
+      - repository
+      type: object
+    UploadPartCopyFrom:
+      allOf:
+      - $ref: '#/components/schemas/UploadPartFrom'
+      - properties:
+          copy_source:
+            $ref: '#/components/schemas/CopyPartSource'
+        required:
+        - copy_source
+        type: object
+    UploadTo:
+      example:
+        presigned_url: presigned_url
+      properties:
+        presigned_url:
+          type: string
+      required:
+      - presigned_url
       type: object
     CompletePresignMultipartUpload:
       example:
