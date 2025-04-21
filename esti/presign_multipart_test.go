@@ -200,9 +200,9 @@ func TestPresignMultipartUploadSeparateParts(t *testing.T) {
 		PresignSeparately bool
 		Copy              bool
 	}{
-		{"presign all parts", false, false},
-		{"presign each part separately", true, false},
-		{"presign each part separately, copy", true, true},
+		{Name: "presign all parts", PresignSeparately: false, Copy: false},
+		{Name: "presign each part separately", PresignSeparately: true, Copy: false},
+		{Name: "presign each part separately, copy", PresignSeparately: true, Copy: true},
 		// API can only copy a part if we presign each part separately.
 	}
 
