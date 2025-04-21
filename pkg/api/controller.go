@@ -263,6 +263,166 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	writeResponse(w, r, http.StatusCreated, resp)
 }
 
+func (c *Controller) UploadPart(w http.ResponseWriter, r *http.Request, body apigen.UploadPartJSONRequestBody, dstRepository string, branch string, uploadID string, partNumber int, params apigen.UploadPartParams) {
+	var (
+		ctx     = r.Context()
+		dstPath = params.Path
+	)
+	requiredPermissions := permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(dstRepository, dstPath),
+		},
+	}
+	if !c.authorize(w, r, requiredPermissions) {
+		return
+	}
+
+	c.LogAction(ctx, "upload_part", r, dstRepository, dstPath, "")
+
+	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// verify physical address
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	if addressType != catalog.AddressTypeRelative {
+		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
+		return
+	}
+
+	//  verify it has been saved for linking
+	if err := c.Catalog.VerifyLinkAddress(dstRepository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	dstObjectRef := block.ObjectPointer{
+		StorageID:        repo.StorageID,
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       physicalAddress,
+	}
+
+	presignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, dstObjectRef, uploadID, partNumber)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	response := apigen.UploadTo{
+		PresignedUrl: presignedURL,
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) UploadPartCopy(w http.ResponseWriter, r *http.Request,
+	body apigen.UploadPartCopyJSONRequestBody, dstRepository string, branch string, uploadID string, partNumber int,
+	params apigen.UploadPartCopyParams) {
+	var (
+		ctx = r.Context()
+
+		dstPath = params.Path
+
+		srcRepository = body.CopySource.Repository
+		srcRef        = body.CopySource.Ref
+		srcPath       = body.CopySource.Path
+	)
+
+	requiredPermissions := permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(dstRepository, dstPath),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadObjectAction,
+					Resource: permissions.ObjectArn(srcRepository, srcPath),
+				},
+			},
+		},
+	}
+	if !c.authorize(w, r, requiredPermissions) {
+		return
+	}
+
+	c.LogAction(ctx, "upload_part_copy", r, dstRepository, dstPath, srcPath)
+
+	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	srcRepo, err := c.Catalog.GetRepository(ctx, srcRepository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// verify physical address
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	if addressType != catalog.AddressTypeRelative {
+		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
+		return
+	}
+
+	//  verify it has been saved for linking
+	if err := c.Catalog.VerifyLinkAddress(dstRepository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	dstObjectRef := block.ObjectPointer{
+		StorageID:        repo.StorageID,
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       physicalAddress,
+	}
+
+	srcEntry, err := c.Catalog.GetEntry(ctx, srcRepo.Name, srcRef, srcPath, catalog.GetEntryParams{})
+	if err != nil {
+		err = fmt.Errorf("%s/%s/%s: %w", srcRepo.Name, srcRef, srcPath, err)
+		_ = c.handleAPIError(ctx, w, r, err)
+		return
+	}
+
+	srcObjectRef := block.ObjectPointer{
+		StorageID:        srcRepo.StorageID,
+		StorageNamespace: srcRepo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       srcEntry.PhysicalAddress,
+	}
+	var etag string
+	if rng := body.CopySource.Range; rng != nil {
+		var startPosition, endPosition int64
+		// Cannot use httputil.ParseRange without knowing the length of the source
+		// object.  Instead we will pass negative counts-from-end unchanged, the
+		// blockstore will handle them.
+
+		// Sscanf is safe for parsing ints.
+		_, err = fmt.Sscanf(*rng, "bytes=%d-%d", &startPosition, &endPosition)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("parse range \"%s\": %w", *rng, err))
+			return
+		}
+		resp, err := c.BlockAdapter.UploadCopyPartRange(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber,
+			startPosition, endPosition)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		etag = resp.ETag
+	} else {
+		resp, err := c.BlockAdapter.UploadCopyPart(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		etag = resp.ETag
+	}
+
+	w.Header().Set("ETag", etag)
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
 func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.Request, body apigen.AbortPresignMultipartUploadJSONRequestBody, repository string, branch string, uploadID string, params apigen.AbortPresignMultipartUploadParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{

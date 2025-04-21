@@ -26,6 +26,7 @@ docs/CommitsApi.md
 docs/CompletePresignMultipartUpload.md
 docs/Config.md
 docs/ConfigApi.md
+docs/CopyPartSource.md
 docs/Credentials.md
 docs/CredentialsList.md
 docs/CredentialsWithSecret.md
@@ -122,6 +123,9 @@ docs/UnderlyingObjectProperties.md
 docs/UpdateObjectUserMetadata.md
 docs/UpdateToken.md
 docs/UploadPart.md
+docs/UploadPartCopyFrom.md
+docs/UploadPartFrom.md
+docs/UploadTo.md
 docs/UsageReport.md
 docs/User.md
 docs/UserCreation.md
@@ -167,6 +171,7 @@ src/models/commit_overrides.rs
 src/models/commit_record_creation.rs
 src/models/complete_presign_multipart_upload.rs
 src/models/config.rs
+src/models/copy_part_source.rs
 src/models/credentials.rs
 src/models/credentials_list.rs
 src/models/credentials_with_secret.rs
@@ -251,6 +256,9 @@ src/models/underlying_object_properties.rs
 src/models/update_object_user_metadata.rs
 src/models/update_token.rs
 src/models/upload_part.rs
+src/models/upload_part_copy_from.rs
+src/models/upload_part_from.rs
+src/models/upload_to.rs
 src/models/usage_report.rs
 src/models/user.rs
 src/models/user_creation.rs
