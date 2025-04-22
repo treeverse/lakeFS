@@ -20,7 +20,7 @@ hooks:
         local changed_table_names = delta_exporter.changed_table_defs(args.table_names, table_descriptors_path, action.repository_id, ref, compare_ref)
   
         local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
-        local delta_table_details = delta_exporter.export_delta_log(action, args.changed_table_names, sc.put_object, delta_client, table_descriptors_path)
+        local delta_table_details = delta_exporter.export_delta_log(action, changed_table_names, sc.put_object, delta_client, table_descriptors_path)
 
         for t, details in pairs(delta_table_details) do
           if details["path"] == nil then
