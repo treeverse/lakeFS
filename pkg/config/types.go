@@ -136,17 +136,17 @@ func StringToSliceWithBracketHookFunc() mapstructure.DecodeHookFunc {
 		if raw == "" {
 			return []string{}, nil
 		}
-		var slice []json.RawMessage
-		err := json.Unmarshal([]byte(raw), &slice)
+		var result any
+		err := json.Unmarshal([]byte(raw), &result)
 		if err != nil {
 			return data, nil
 		}
 
-		var strSlice []string
-		for _, v := range slice {
-			strSlice = append(strSlice, string(v))
+		// Verify that the result matches the target (slice)
+		if reflect.TypeOf(result).Kind() != t {
+			return data, nil
 		}
-		return strSlice, nil
+		return result, nil
 	}
 }
 

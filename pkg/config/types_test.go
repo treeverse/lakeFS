@@ -2,10 +2,12 @@ package config_test
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/go-openapi/swag"
+
 	"github.com/go-test/deep"
 	"github.com/mitchellh/mapstructure"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -192,51 +194,79 @@ func TestOnlyString(t *testing.T) {
 }
 
 func TestStringToSliceWithBracketHookFunc(t *testing.T) {
+	type testStruct struct {
+		ID      int
+		Element string
+	}
+
 	cases := []struct {
 		Name       string
 		Source     string
-		Expected   []string
+		Expected   any
 		ErrMessage *string
 	}{
 		{
-			Name:     "Empty string",
+			Name:     "empty slice of strings",
 			Source:   "",
 			Expected: []string{},
 		},
 		{
-			Name:     "Valid array",
+			Name:     "slice of string",
 			Source:   `["one", "two", "three"]`,
-			Expected: []string{"\"one\"", "\"two\"", "\"three\""},
+			Expected: []string{"one", "two", "three"},
 		},
 		{
-			Name:       "Invalid array (json)",
+			Name:     "slice of numbers",
+			Source:   `[1, 2, 3]`,
+			Expected: []int{1, 2, 3},
+		},
+		{
+			Name:   "slice of structs",
+			Source: `[{"id": 1, "element": "one"}, {"id": 2, "element": "two"}]`,
+			Expected: []testStruct{
+				{ID: 1, Element: "one"},
+				{ID: 2, Element: "two"},
+			},
+		},
+		{
+			Name:       "invalid object",
 			Source:     `{"key": "value"}`,
+			Expected:   []string(nil),
 			ErrMessage: swag.String("source data must be an array or slice"),
 		},
 		{
-			Name:       "Invalid array (string)",
+			Name:       "invalid json",
 			Source:     "not a json array",
+			Expected:   []string(nil),
 			ErrMessage: swag.String("source data must be an array or slice"),
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			var s []string
-
+			expectedType := reflect.TypeOf(c.Expected)
+			result := reflect.New(expectedType).Interface()
 			dc := mapstructure.DecoderConfig{
 				DecodeHook: config.StringToSliceWithBracketHookFunc(),
-				Result:     &s,
+				Result:     &result,
 			}
 			decoder, err := mapstructure.NewDecoder(&dc)
 			testutil.MustDo(t, "new decoder", err)
+
 			err = decoder.Decode(c.Source)
 			if c.ErrMessage != nil && err == nil {
-				t.Errorf("Got value %+v, error %v when expecting error %v", s, err, c.ErrMessage)
+				t.Errorf("Got value %+v, error %v when expecting error %v", result, err, c.ErrMessage)
 			} else if err != nil && !strings.Contains(err.Error(), *c.ErrMessage) {
 				t.Errorf("Got error %v when expecting to succeed", err)
-			} else if diffs := deep.Equal(s, c.Expected); diffs != nil {
-				t.Errorf("Got unexpected value: %s", diffs)
+			} else {
+				// Dereference the pointer to compare the underlying value
+				if expectedType.Kind() == reflect.Ptr {
+					expectedType = expectedType.Elem()
+				}
+				reflectResult := reflect.ValueOf(result).Elem().Interface()
+				if diffs := deep.Equal(reflectResult, c.Expected); diffs != nil {
+					t.Errorf("Got unexpected value: %v", diffs)
+				}
 			}
 		})
 	}
