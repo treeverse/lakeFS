@@ -73,7 +73,7 @@ func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, 
 }
 
 func (client *Client) alterTable(warehouseID, catalogName, schemaName, tableName, alterStatement string) (string, error) {
-	statement := fmt.Sprintf(`ALTER TABLE %s.%s.%s %s`, catalogName, schemaName, tableName, alterStatement)
+	statement := fmt.Sprintf(`ALTER TABLE %s %s`, tableName, alterStatement)
 	esr, err := client.workspaceClient.StatementExecution.ExecuteAndWait(client.ctx, sql.ExecuteStatementRequest{
 		WarehouseId: warehouseID,
 		Catalog:     catalogName,
