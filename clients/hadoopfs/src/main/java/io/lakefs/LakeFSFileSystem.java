@@ -80,7 +80,7 @@ public class LakeFSFileSystem extends FileSystem {
 
     private Configuration conf;
     private URI uri;
-    private Path workingDirectory = new Path(Constants.SEPARATOR);
+    private Path workingDirectory = new Path(SEPARATOR);
     private ClientFactory clientFactory;
     private LakeFSClient lfsClient;
     private int listAmount;
@@ -126,7 +126,7 @@ public class LakeFSFileSystem extends FileSystem {
                 .execute();
         String storageID = repository.getStorageId();
         Config cfg = lfsClient.getConfigApi().getConfig().execute();
-        StorageConfig storageConfig = new StorageConfig();
+        StorageConfig storageConfig = null;
         if (storageID == null || Objects.equals(storageID, "")) {
             storageConfig = cfg.getStorageConfig();
 
@@ -136,7 +136,7 @@ public class LakeFSFileSystem extends FileSystem {
                 storageConfig = storageConfigList.stream()
                         .filter(sc -> Objects.equals(sc.getBlockstoreId(), storageID))
                         .findFirst()
-                        .orElseThrow(() -> new IOException("Failed to get lakeFS blockstore type"));
+                        .orElseThrow(() -> new IOException("Failed to get lakeFS blockstore configuration"));
             }
         }
         return storageConfig;
@@ -208,7 +208,7 @@ public class LakeFSFileSystem extends FileSystem {
         if (getFSForConfig() != null) {
             return getFSForConfig().getDefaultBlockSize(path);
         }
-        return Constants.DEFAULT_BLOCK_SIZE;
+        return DEFAULT_BLOCK_SIZE;
     }
 
     @Override
@@ -216,7 +216,7 @@ public class LakeFSFileSystem extends FileSystem {
         if (getFSForConfig() != null) {
             return getFSForConfig().getDefaultBlockSize();
         }
-        return Constants.DEFAULT_BLOCK_SIZE;
+        return DEFAULT_BLOCK_SIZE;
     }
 
     @Override
@@ -762,7 +762,7 @@ public class LakeFSFileSystem extends FileSystem {
             ObjectLocation objectLoc = pathToObjectLocation(path).toDirectory();
             OutputStream out = storageAccessStrategy.createDataOutputStream(objectLoc, null);
             out.close();
-        } catch (io.lakefs.clients.sdk.ApiException e) {
+        } catch (ApiException e) {
             throw new IOException("createDirectoryMarker: " + e.getResponseBody(), e);
         }
     }
@@ -771,7 +771,7 @@ public class LakeFSFileSystem extends FileSystem {
      * Return a file status object that represents the path.
      * @param path to a file or directory
      * @return a LakeFSFileStatus object
-     * @throws java.io.FileNotFoundException when the path does not exist;
+     * @throws FileNotFoundException when the path does not exist;
      *         IOException API call or underlying filesystem exceptions
      */
     @Override
