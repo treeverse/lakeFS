@@ -233,12 +233,12 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
         error("Failed to perform diff_refs with status: " .. tostring(status))
     end
 
-    -- Now make a list of the paths of the filenames
-    local changed_paths = {}
-    for index, diff_item in ipairs(diff_resp.results) do
+    -- Now make a set out of the paths of the filenames
+    local changed_path_set = {}
+    for _, diff_item in ipairs(diff_resp.results) do
         local dir = extractDirName(diff_item.path)
         if dir then
-            changed_paths[index] = dir
+            changed_path_set[dir] = true
         end
     end
 
@@ -252,8 +252,8 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
             print(index, "table_descriptor.path", table_descriptor.path)
 
             -- filter only the changed paths from the list
-            for _, changed_path in ipairs(changed_paths) do
-                if starts_with(changed_path, table_descriptor.path) then
+            for changed_path, value in pairs(changed_path_set) do
+                if value and starts_with(changed_path, table_descriptor.path) then
                     table.insert(changed_table_def_names, table_name_yaml)
                     print("  (inserted)")
                 end
