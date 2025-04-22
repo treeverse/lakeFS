@@ -24,8 +24,10 @@ import Col from "react-bootstrap/Col";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
- * 1. A single TreeEntryRow for the current prefix (or entry for leaves).
- * 2. Multiple TreeItem as children, each representing another tree node.
+ *   1. A single TreeEntryRow for the current prefix (or entry for leaves).
+ *   2. Multiple TreeItem as children, each representing another tree node.
+ * Also, it syncs with global "Expand All / Collapse All" via `expandMode`.
+ * Ignores global mode if the user manually toggled the folder.
  * @param entry The entry the TreeItem is representing, could be either an object or a prefix.
  * @param repo Repository
  * @param reference commitID / branch
@@ -40,7 +42,11 @@ import Col from "react-bootstrap/Col";
  */
 export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
                                 depth=0, onToggleDir, expandMode, registerDir, markDirAsManuallyToggled, tick }) => {
+
+    // Tracks whether this specific folder was manually toggled by the user.
+    // Used to ignore global expandMode changes once the user interacts manually.
     const userToggledRef = useRef(false);
+
     const [dirExpanded, setDirExpanded] = useState(false);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
@@ -67,8 +73,10 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     }, [entry.path_type, entry.path, registerDir]);
 
     useEffect(() => {
+        // When the global expand/collapse mode changes (triggered by the button),
+        // update this specific directory's expanded state — unless the user manually changed it.
         if (entry.path_type !== "object" && expandMode && expandMode.value !== null) {
-            userToggledRef.current = false;
+            userToggledRef.current = false; // Mark as "not manually toggled" so sync with global mode is allowed
             setDirExpanded(expandMode.value);
             onToggleDir(entry.path, expandMode.value);
         }
@@ -178,7 +186,8 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
                                          changesTreeMessage}) => {
-    const { addDirsExpanded, expandMode, toggleAllDirs, updateOpenedDir, registerDir, markDirAsManuallyToggled, tick } = useExpandCollapseDirs();
+    // Manages expand/collapse state for all directories in the tree.
+    const { allDirsExpanded, expandMode, toggleAllDirs, updateOpenedDir, registerDir, markDirAsManuallyToggled, tick } = useExpandCollapseDirs();
     if (results.length === 0) {
         return <div className="tree-container">
             <Alert variant="info">No changes</Alert>
@@ -194,10 +203,10 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                     size="sm"
                                     variant="outline-secondary"
                                     onClick={toggleAllDirs}
-                                    title={addDirsExpanded ? "Collapse all" : "Expand all"}
+                                    title={allDirsExpanded ? "Collapse all" : "Expand all"}
                                 >
                                     <FileDirectoryFillIcon className="me-1" />
-                                    {addDirsExpanded ? <FoldUpIcon /> : <FoldDownIcon />}
+                                    {allDirsExpanded ? <FoldUpIcon /> : <FoldDownIcon />}
                                 </Button>
                             )}
                         </Card.Header>
