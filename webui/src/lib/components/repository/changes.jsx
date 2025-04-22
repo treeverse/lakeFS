@@ -22,10 +22,8 @@ import Col from "react-bootstrap/Col";
 
 /**
  * Tree item is a node in the tree view. It can be expanded to multiple TreeEntryRow:
- *   1. A single TreeEntryRow for the current prefix (or entry for leaves).
- *   2. Multiple TreeItem as children, each representing another tree node.
- * Also, it syncs with global "Expand All / Collapse All" via `expandMode`.
- * Ignores global mode if the user manually toggled the folder.
+ * 1. A single TreeEntryRow for the current prefix (or entry for leaves).
+ * 2. Multiple TreeItem as children, each representing another tree node.
  * @param entry The entry the TreeItem is representing, could be either an object or a prefix.
  * @param repo Repository
  * @param reference commitID / branch
