@@ -48,7 +48,7 @@ export const useExpandCollapseDirs = () => {
     }, []);
 
     return {
-        expandAllDirs: isAllExpanded(),
+        addDirsExpanded: isAllExpanded(),
         expandMode,
         toggleAllDirs,
         updateOpenedDir,

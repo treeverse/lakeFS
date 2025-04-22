@@ -1,6 +1,12 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
 
-import {ClockIcon, PlusIcon, XIcon} from "@primer/octicons-react";
+import {
+    ClockIcon, FileDirectoryFillIcon,
+    FoldDownIcon,
+    FoldUpIcon,
+    PlusIcon,
+    XIcon
+} from "@primer/octicons-react";
 
 import {useAPIWithPagination} from "../../hooks/api";
 import {useExpandCollapseDirs} from "./useExpandCollapseDirs";
@@ -35,11 +41,10 @@ import Col from "react-bootstrap/Col";
 export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
                                 depth=0, onToggleDir, expandMode, registerDir, markDirAsManuallyToggled, tick }) => {
     const userToggledRef = useRef(false);
-    const [localExpanded, setLocalExpanded] = useState(false);
+    const [dirExpanded, setDirExpanded] = useState(false);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
-    const dirExpanded = localExpanded;
 
     const { error, loading, nextPage } = useAPIWithPagination(async () => {
         if (!dirExpanded) return
@@ -64,11 +69,10 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     useEffect(() => {
         if (entry.path_type !== "object" && expandMode && expandMode.value !== null) {
             userToggledRef.current = false;
-            setLocalExpanded(expandMode.value);
+            setDirExpanded(expandMode.value);
             onToggleDir(entry.path, expandMode.value);
         }
     }, [expandMode?.version]);
-
 
     const results = resultsState.results
     if (error)
@@ -105,7 +109,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
                             onClick={() => {
                                 userToggledRef.current = true;
                                 markDirAsManuallyToggled(entry.path);
-                                setLocalExpanded(!dirExpanded);
+                                setDirExpanded(!dirExpanded);
                                 onToggleDir(entry.path, !dirExpanded);
                             }}
                             onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
@@ -174,7 +178,7 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
                                          changesTreeMessage}) => {
-    const { expandAllDirs, expandMode, toggleAllDirs, updateOpenedDir, registerDir, markDirAsManuallyToggled, tick } = useExpandCollapseDirs();
+    const { addDirsExpanded, expandMode, toggleAllDirs, updateOpenedDir, registerDir, markDirAsManuallyToggled, tick } = useExpandCollapseDirs();
     if (results.length === 0) {
         return <div className="tree-container">
             <Alert variant="info">No changes</Alert>
@@ -182,16 +186,20 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
     } else {
         return <div className="tree-container">
             {changesTreeMessage && <div>{changesTreeMessage}</div>}
-                    <div className="mb-2">
-                        <Button size="sm" variant="outline-secondary" onClick={toggleAllDirs} key={tick}>
-                            {expandAllDirs ? 'Collapse All' : 'Expand All'}
-                        </Button>
-                    </div>
                     <Card>
-                        <Card.Header>
-                            <span className="float-start w-100">
-                                {(delimiter !== "") && uriNavigator}
-                            </span>
+                        <Card.Header className="d-flex justify-content-between align-items-center">
+                            {(delimiter !== "") && uriNavigator}
+                            {changesTreeMessage && (
+                                <Button
+                                    size="sm"
+                                    variant="outline-secondary"
+                                    onClick={toggleAllDirs}
+                                    title={addDirsExpanded ? "Collapse all" : "Expand all"}
+                                >
+                                    <FileDirectoryFillIcon className="me-1" />
+                                    {addDirsExpanded ? <FoldUpIcon /> : <FoldDownIcon />}
+                                </Button>
+                            )}
                         </Card.Header>
                         <Card.Body>
                             <Table borderless size="sm">
