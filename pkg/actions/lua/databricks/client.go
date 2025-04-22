@@ -72,8 +72,7 @@ func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, 
 	return esr.Status.State.String(), nil
 }
 
-func (client *Client) alterTable(warehouseID, catalogName, schemaName, tableName, alterStatement string) (string, error) {
-	statement := fmt.Sprintf(`ALTER TABLE %s %s`, tableName, alterStatement)
+func (client *Client) executeStatement(warehouseID, catalogName, schemaName, statement string) (string, error) {
 	esr, err := client.workspaceClient.StatementExecution.ExecuteAndWait(client.ctx, sql.ExecuteStatementRequest{
 		WarehouseId: warehouseID,
 		Catalog:     catalogName,
@@ -81,7 +80,7 @@ func (client *Client) alterTable(warehouseID, catalogName, schemaName, tableName
 		Statement:   statement,
 	})
 	if err != nil {
-		return "", fmt.Errorf("alter table \"%s\" failed: %w", tableName, err)
+		return "", fmt.Errorf("execute statement failed: \"%s\" statement: \"%s\" %w", tableFullName(warehouseID, catalogName, schemaName), statement, err)
 	}
 	return esr.Status.State.String(), nil
 }
@@ -177,14 +176,12 @@ func (client *Client) CreateSchema(l *lua.State) int {
 	return 1
 }
 
-func (client *Client) AlterTable(l *lua.State) int {
-	tableName := lua.CheckString(l, 1)
-	tableName = strings.ReplaceAll(tableName, "-", "_")
-	warehouseID := lua.CheckString(l, 2)
-	catalogName := lua.CheckString(l, 3)
-	schemaName := lua.CheckString(l, 4)
-	alterStatement := lua.CheckString(l, 5)
-	status, err := client.alterTable(warehouseID, catalogName, schemaName, tableName, alterStatement)
+func (client *Client) ExecuteStatement(l *lua.State) int {
+	warehouseID := lua.CheckString(l, 1)
+	catalogName := lua.CheckString(l, 2)
+	schemaName := lua.CheckString(l, 3)
+	statement := lua.CheckString(l, 4)
+	status, err := client.executeStatement(warehouseID, catalogName, schemaName, statement)
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
 		panic("unreachable")
@@ -209,6 +206,7 @@ func newClient(ctx context.Context) lua.Function {
 		functions := map[string]lua.Function{
 			"create_schema":           client.CreateSchema,
 			"register_external_table": client.RegisterExternalTable,
+			"execute_statement":       client.ExecuteStatement,
 		}
 		for name, goFn := range functions {
 			l.PushGoFunction(goFn)
