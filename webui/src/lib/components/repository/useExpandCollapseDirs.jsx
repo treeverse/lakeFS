@@ -14,15 +14,15 @@ export const useExpandCollapseDirs = () => {
 
     const wasDirManuallyToggled = useCallback(path => manuallyToggledDirs.has(path), [manuallyToggledDirs]);
 
-    const expandAll = () => {
+    const expandAll = useCallback(() => {
         setManuallyToggledDirs(new Set());
         setIsAllExpanded(true);
-    };
+    }, []);
 
-    const collapseAll = () => {
+    const collapseAll = useCallback(() => {
         setManuallyToggledDirs(new Set());
         setIsAllExpanded(false);
-    };
+    }, []);
 
     return {
         isAllExpanded,
