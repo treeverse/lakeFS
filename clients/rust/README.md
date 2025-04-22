@@ -94,6 +94,8 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**sts_login**](docs/ExperimentalApi.md#sts_login) | **POST** /sts/login | perform a login with STS
 *ExperimentalApi* | [**update_object_user_metadata**](docs/ExperimentalApi.md#update_object_user_metadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ExperimentalApi* | [**update_pull_request**](docs/ExperimentalApi.md#update_pull_request) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
+*ExperimentalApi* | [**upload_part**](docs/ExperimentalApi.md#upload_part) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber} | 
+*ExperimentalApi* | [**upload_part_copy**](docs/ExperimentalApi.md#upload_part_copy) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy | 
 *ExternalApi* | [**create_user_external_principal**](docs/ExternalApi.md#create_user_external_principal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 *ExternalApi* | [**delete_user_external_principal**](docs/ExternalApi.md#delete_user_external_principal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *ExternalApi* | [**external_principal_login**](docs/ExternalApi.md#external_principal_login) | **POST** /auth/external/principal/login | perform a login using an external authenticator
@@ -195,6 +197,7 @@ Class | Method | HTTP request | Description
  - [CommitRecordCreation](docs/CommitRecordCreation.md)
  - [CompletePresignMultipartUpload](docs/CompletePresignMultipartUpload.md)
  - [Config](docs/Config.md)
+ - [CopyPartSource](docs/CopyPartSource.md)
  - [Credentials](docs/Credentials.md)
  - [CredentialsList](docs/CredentialsList.md)
  - [CredentialsWithSecret](docs/CredentialsWithSecret.md)
@@ -278,6 +281,9 @@ Class | Method | HTTP request | Description
  - [UpdateObjectUserMetadata](docs/UpdateObjectUserMetadata.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [UploadPart](docs/UploadPart.md)
+ - [UploadPartCopyFrom](docs/UploadPartCopyFrom.md)
+ - [UploadPartFrom](docs/UploadPartFrom.md)
+ - [UploadTo](docs/UploadTo.md)
  - [UsageReport](docs/UsageReport.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)
