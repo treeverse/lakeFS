@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"slices"
@@ -488,6 +489,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 	}
 	blockstore := setupCatalogExportTestByStorageType(t, testData)
 
+	// upload the data folder
 	tmplDir, err := fs.Sub(ExportHooksFiles, "export_hooks_files/delta")
 	require.NoError(t, err)
 	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {
@@ -499,6 +501,13 @@ func TestDeltaCatalogExport(t *testing.T) {
 			if err != nil {
 				return err
 			}
+
+			// change parquet file name so it appears in the diff
+			if strings.HasSuffix(path, "parquet") {
+				randomNumber := rand.Intn(1_000_000)
+				path = fmt.Sprintf("%d_%s", randomNumber, path)
+			}
+
 			uploadResp, err := UploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf), nil)
 			if err != nil {
 				return err
