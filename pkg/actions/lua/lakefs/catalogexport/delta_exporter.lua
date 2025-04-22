@@ -222,9 +222,9 @@ local function extractDirectory(path)
 end
 
 -- Local function to filter the list of table defs to include only those that have changed
-local function changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)
+local function changed_table_defs(table_def_names, table_descriptors_path, action, ref, compare_ref)
     -- Perform a diff_refs operation to get the differences between references
-    local code, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref)
+    local code, diff_resp = lakefs.diff_refs(action.repository_id, ref, compare_ref)
     if code ~= 200 then
         error("Failed to perform diff_refs with code: " .. tostring(code))
     end
@@ -244,7 +244,7 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
 
     -- Iterate through the table definitions and add to the result the ones that pass the filter
     for index, table_name_yaml in ipairs(table_def_names) do
-        local table_descriptor = get_table_descriptor(repository_id, ref, table_name_yaml, table_descriptors_path)
+        local table_descriptor = get_table_descriptor(action.repository_id, action.commit_id, table_name_yaml, table_descriptors_path)
         print(index, "table_descriptor.path", table_descriptor.path)
         local table_path = table_descriptor.path .. "/"
         if not table_path then
@@ -264,5 +264,5 @@ end
 
 return {
     export_delta_log = export_delta_log,
-    table_def_changes = table_def_changes,
+    table_def_changes = changed_table_defs,
 }
