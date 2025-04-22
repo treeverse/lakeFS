@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"slices"
@@ -502,11 +501,11 @@ func TestDeltaCatalogExport(t *testing.T) {
 				return err
 			}
 
-			// change parquet file name so it appears in the diff
-			if strings.HasSuffix(path, "parquet") {
-				randomNumber := rand.Intn(1_000_000)
-				path = fmt.Sprintf("%d_%s", randomNumber, path)
-			}
+			//// change parquet file name so it appears in the diff
+			//if strings.HasSuffix(path, "parquet") {
+			//	randomNumber := rand.Intn(1_000_000)
+			//	path = fmt.Sprintf("%d_%s", randomNumber, path)
+			//}
 
 			uploadResp, err := UploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf), nil)
 			if err != nil {
