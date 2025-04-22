@@ -1,9 +1,7 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 
 import {
-    ClockIcon, FileDirectoryFillIcon,
-    FoldDownIcon,
-    FoldUpIcon,
+    ClockIcon,
     PlusIcon,
     XIcon
 } from "@primer/octicons-react";
@@ -41,12 +39,7 @@ import Col from "react-bootstrap/Col";
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
 export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
-                                depth=0, onToggleDir, expandMode, registerDir, markDirAsManuallyToggled, tick }) => {
-
-    // Tracks whether this specific folder was manually toggled by the user.
-    // Used to ignore global expandMode changes once the user interacts manually.
-    const userToggledRef = useRef(false);
-
+                                depth=0, isAllExpanded, markDirAsManuallyToggled, wasDirManuallyToggled }) => {
     const [dirExpanded, setDirExpanded] = useState(false);
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
@@ -68,19 +61,13 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
 
     useEffect(() => {
         if (entry.path_type !== "object") {
-            registerDir(entry.path);
+            if (isAllExpanded === true && !wasDirManuallyToggled(entry.path)) {
+                setDirExpanded(true);
+            } else if (isAllExpanded === false) {
+                setDirExpanded(false);
+            }
         }
-    }, [entry.path_type, entry.path, registerDir]);
-
-    useEffect(() => {
-        // When the global expand/collapse mode changes (triggered by the button),
-        // update this specific directory's expanded state — unless the user manually changed it.
-        if (entry.path_type !== "object" && expandMode && expandMode.value !== null) {
-            userToggledRef.current = false; // Mark as "not manually toggled" so sync with global mode is allowed
-            setDirExpanded(expandMode.value);
-            onToggleDir(entry.path, expandMode.value);
-        }
-    }, [expandMode?.version]);
+    }, [isAllExpanded, wasDirManuallyToggled, entry]);
 
     const results = resultsState.results
     if (error)
@@ -115,10 +102,13 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     return <>
         <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth}
                             onClick={() => {
-                                userToggledRef.current = true;
-                                markDirAsManuallyToggled(entry.path);
-                                setDirExpanded(!dirExpanded);
-                                onToggleDir(entry.path, !dirExpanded);
+                                setDirExpanded(prev => {
+                                    const next = !prev;
+                                    if (!next) {
+                                        markDirAsManuallyToggled(entry.path);
+                                    }
+                                    return next;
+                                });
                             }}
                             onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
         {dirExpanded && results &&
@@ -126,12 +116,10 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
             (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
                           internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
                           relativeTo={entry.path} getMore={getMore}
-                          onToggleDir={onToggleDir}
-                          expandMode={userToggledRef.current ? undefined : expandMode}
-                          registerDir={registerDir}
+                          isAllExpanded={!wasDirManuallyToggled(entry.path) ? isAllExpanded : null}
                           markDirAsManuallyToggled={markDirAsManuallyToggled}
-                          tick={tick}
-                          />))}
+                          wasDirManuallyToggled={wasDirManuallyToggled}
+            />))}
         {(!!nextPage || loading) &&
         <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
                             setAfterUpdated={setAfterUpdated}/>
@@ -187,7 +175,7 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
                                          changesTreeMessage}) => {
     // Manages expand/collapse state for all directories in the tree.
-    const { allDirsExpanded, expandMode, toggleAllDirs, updateOpenedDir, registerDir, markDirAsManuallyToggled, tick } = useExpandCollapseDirs();
+    const { isAllExpanded, expandAll, collapseAll, markDirAsManuallyToggled, wasDirManuallyToggled } = useExpandCollapseDirs();
     if (results.length === 0) {
         return <div className="tree-container">
             <Alert variant="info">No changes</Alert>
@@ -198,18 +186,16 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                     <Card>
                         <Card.Header className="d-flex justify-content-between align-items-center">
                             {(delimiter !== "") && uriNavigator}
-                            {changesTreeMessage && (
-                                <Button
-                                    size="sm"
-                                    variant="outline-secondary"
-                                    onClick={toggleAllDirs}
-                                    title={allDirsExpanded ? "Collapse all" : "Expand all"}
-                                >
-                                    <FileDirectoryFillIcon className="me-1" />
-                                    {allDirsExpanded ? <FoldUpIcon /> : <FoldDownIcon />}
+                            <div className="d-flex gap-2">
+                                <Button size="sm" variant="outline-secondary" onClick={expandAll}>
+                                    Expand All
                                 </Button>
-                            )}
+                                <Button size="sm" variant="outline-secondary" onClick={collapseAll}>
+                                    Collapse All
+                                </Button>
+                            </div>
                         </Card.Header>
+
                         <Card.Body>
                             <Table borderless size="sm">
                                 <tbody>
@@ -223,12 +209,10 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
-                                                     onToggleDir={updateOpenedDir}
-                                                     expandMode={expandMode}
-                                                     registerDir={registerDir}
+                                                     isAllExpanded={isAllExpanded}
                                                      markDirAsManuallyToggled={markDirAsManuallyToggled}
-                                                     tick={tick}
-                                                 />);
+                                                     wasDirManuallyToggled={wasDirManuallyToggled}
+                                        />);
                                 })}
                                 {!!nextPage &&
                                 <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
