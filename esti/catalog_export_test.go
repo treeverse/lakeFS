@@ -500,13 +500,6 @@ func TestDeltaCatalogExport(t *testing.T) {
 			if err != nil {
 				return err
 			}
-
-			//// change parquet file name so it appears in the diff
-			//if strings.HasSuffix(path, "parquet") {
-			//	randomNumber := rand.Intn(1_000_000)
-			//	path = fmt.Sprintf("%d_%s", randomNumber, path)
-			//}
-
 			uploadResp, err := UploadContent(ctx, repo, mainBranch, strings.TrimPrefix(path, "data/"), string(buf), nil)
 			if err != nil {
 				return err
