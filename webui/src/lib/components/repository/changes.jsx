@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useState} from "react";
 
 import {
-    ClockIcon,
+    ClockIcon, FileDirectoryFillIcon, FoldDownIcon, FoldUpIcon,
     PlusIcon,
     XIcon
 } from "@primer/octicons-react";
@@ -188,10 +188,12 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                             {(delimiter !== "") && uriNavigator}
                             <div className="d-flex gap-2">
                                 <Button size="sm" variant="outline-secondary" onClick={expandAll}>
-                                    Expand All
+                                    <FileDirectoryFillIcon className="me-1" />
+                                    <FoldDownIcon />
                                 </Button>
                                 <Button size="sm" variant="outline-secondary" onClick={collapseAll}>
-                                    Collapse All
+                                    <FileDirectoryFillIcon className="me-1" />
+                                    <FoldUpIcon />
                                 </Button>
                             </div>
                         </Card.Header>
