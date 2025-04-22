@@ -65,6 +65,8 @@ export const useExpandCollapseDirs = () => {
         forceRerender();
     }, [isAllExpanded]);
 
+    // Manually removes a path from the globally expanded state.
+    // Used to prevent global expandMode from overriding user's choice
     const markDirAsManuallyToggled = useCallback(path => {
         opened.current.delete(path);
     }, []);
