@@ -47,6 +47,10 @@ local function get_table_descriptor(repo, ref, table_name_yaml, table_descriptor
     return table_descriptor
 end
 
+local function starts_with(str, start)
+    return string.sub(str, 1, #start) == start
+end
+
 --[[
     action:
         - repository_id
@@ -229,12 +233,12 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
         error("Failed to perform diff_refs with status: " .. tostring(status))
     end
 
-    -- Now make a set out of the paths of the filenames
-    local changed_path_set = {}
-    for _, diff_item in ipairs(diff_resp.results) do
+    -- Now make a list of the paths of the filenames
+    local changed_paths = {}
+    for index, diff_item in ipairs(diff_resp.results) do
         local dir = extractDirName(diff_item.path)
         if dir then
-            changed_path_set[dir] = true
+            changed_paths[index] = dir
         end
     end
 
@@ -246,15 +250,13 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
         local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
         if table_descriptor.path ~= nil then
             print(index, "table_descriptor.path", table_descriptor.path)
-            local table_path = table_descriptor.path .. "/"
-            if not table_path then
-                error("table path is required to proceed with Delta catalog export")
-            end
 
             -- filter only the changed paths from the list
-            if changed_path_set[table_path] ~= nil then
-                table.insert(changed_table_def_names, table_name_yaml)
-                print("  (inserted)")
+            for _, changed_path in ipairs(changed_paths) do
+                if starts_with(changed_path, table_descriptor.path) then
+                    table.insert(changed_table_def_names, table_name_yaml)
+                    print("  (inserted)")
+                end
             end
         else
             print("  (skipped nil path)")
