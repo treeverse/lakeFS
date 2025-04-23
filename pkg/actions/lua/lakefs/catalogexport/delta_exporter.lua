@@ -47,10 +47,6 @@ local function get_table_descriptor(repo, ref, table_name_yaml, table_descriptor
     return table_descriptor
 end
 
-local function starts_with(str, start)
-    return string.sub(str, 1, #start) == start
-end
-
 --[[
     action:
         - repository_id
@@ -253,7 +249,7 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
 
             -- filter only the changed paths from the list
             for changed_path, value in pairs(changed_path_set) do
-                if value and starts_with(changed_path, table_descriptor.path) then
+                if value and strings.has_prefix(changed_path, table_descriptor.path) then
                     table.insert(changed_table_def_names, table_name_yaml)
                     print("  (inserted)")
                 end
