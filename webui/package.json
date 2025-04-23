@@ -24,6 +24,7 @@
     "@emotion/styled": "^11.11.0",
     "@mui/material": "^5.14.20",
     "@primer/octicons-react": "^17.10.0",
+    "@testing-library/react": "^16.3.0",
     "apache-arrow": "^15.0.0",
     "bootstrap": "^5.3.2",
     "csstype": "^3.1.3",

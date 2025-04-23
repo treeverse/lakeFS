@@ -7,7 +7,7 @@ import {
 } from "@primer/octicons-react";
 
 import {useAPIWithPagination} from "../../hooks/api";
-import {useExpandCollapseDirs} from "./useExpandCollapseDirs";
+import {useExpandCollapseDirs} from "../../hooks/useExpandCollapseDirs";
 import {AlertError} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {ObjectTreeEntryRow, PrefixTreeEntryRow} from "./treeRows";
@@ -67,6 +67,14 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
         }
     }, [isAllExpanded, wasDirManuallyToggled, entry]);
 
+    const handleToggleDir = () => {
+        setDirExpanded(prev => {
+            const next = !prev;
+            if (!next) markDirAsManuallyToggled(entry.path);
+            return next;
+        });
+    };
+
     const results = resultsState.results
     if (error)
         return <tr><td><AlertError error={error}/></td></tr>
@@ -99,15 +107,7 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     // entry is a common prefix
     return <>
         <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth}
-                            onClick={() => {
-                                setDirExpanded(prev => {
-                                    const next = !prev;
-                                    if (!next) {
-                                        markDirAsManuallyToggled(entry.path);
-                                    }
-                                    return next;
-                                });
-                            }}
+                            onClick={handleToggleDir}
                             onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
         {dirExpanded && results &&
         results.map(child =>
