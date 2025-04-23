@@ -1,6 +1,7 @@
 package path
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/Shopify/go-lua"
@@ -26,6 +27,7 @@ var library = []lua.RegistryFunction{
 	{Name: "join", Function: join},
 	{Name: "is_hidden", Function: isHidden},
 	{Name: "default_separator", Function: getDefaultSeparator},
+	{Name: "extract_dir_name", Function: extractDirName},
 }
 
 func getDefaultSeparator(l *lua.State) int {
@@ -121,5 +123,23 @@ func isHidden(l *lua.State) int {
 		prefix = lua.CheckString(l, 3)
 	}
 	l.PushBoolean(IsHidden(p, sep, prefix))
+	return 1
+}
+
+// Function to extract directory from a path
+func extractDirName(l *lua.State) int {
+	path := lua.CheckString(l, 1)
+
+	re, err := regexp.Compile(`^(.*[\\/])`)
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+	dirPath := re.FindString(path)
+	if dirPath == "" {
+		lua.Errorf(l, "failed to extract dir name from path: %s", path)
+		panic("unreachable")
+	}
+	l.PushString(dirPath)
 	return 1
 }

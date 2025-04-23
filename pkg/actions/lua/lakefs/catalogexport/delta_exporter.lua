@@ -3,7 +3,6 @@ local pathlib = require("path")
 local json = require("encoding/json")
 local utils = require("lakefs/catalogexport/internal")
 local extractor = require("lakefs/catalogexport/table_extractor")
-local regexp = require("regexp")
 local strings = require("strings")
 local url = require("net/url")
 
@@ -210,17 +209,6 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
     return response
 end
 
--- Function to extract directory from a path
-local function extractDirName(path)
-    local patt = regexp.compile("^(.*[\\/])")
-    local m = patt.find(path)
-    if m then
-        return m
-    else
-        print("failed to extract dir name from path ",path)
-    end
-end
-
 -- Local function to filter the list of table defs to include only those that have changed
 local function changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)
     -- Perform a diff_refs operation to get the differences between references
@@ -232,7 +220,7 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
     -- Now make a set out of the paths of the filenames
     local changed_path_set = {}
     for _, diff_item in ipairs(diff_resp.results) do
-        local dir = extractDirName(diff_item.path)
+        local dir = pathlib.extract_dir_name(diff_item.path)
         if dir then
             changed_path_set[dir] = true
         end
