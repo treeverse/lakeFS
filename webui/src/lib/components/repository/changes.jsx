@@ -38,7 +38,7 @@ import Col from "react-bootstrap/Col";
  */
 export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
                                 depth=0, isAllExpanded, markDirAsManuallyToggled, wasDirManuallyToggled }) => {
-    const [dirExpanded, setDirExpanded] = useState(false);
+    const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
     const [diffExpanded, setDiffExpanded] = useState(false); // state of a leaf item expansion
@@ -106,17 +106,36 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     }
     // entry is a common prefix
     return <>
-        <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth}
-                            onClick={handleToggleDir}
-                            onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
+        <PrefixTreeEntryRow
+            key={entry.path + "entry-row"}
+            entry={entry}
+            dirExpanded={dirExpanded}
+            relativeTo={relativeTo}
+            depth={depth}
+            onClick={handleToggleDir}
+            onRevert={onRevert}
+            onNavigate={onNavigate}
+            getMore={getMore}
+            repo={repo}
+            reference={reference}
+        />
         {dirExpanded && results &&
         results.map(child =>
-            (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
-                          internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
-                          relativeTo={entry.path} getMore={getMore}
-                          isAllExpanded={!wasDirManuallyToggled(entry.path) ? isAllExpanded : null}
-                          markDirAsManuallyToggled={markDirAsManuallyToggled}
-                          wasDirManuallyToggled={wasDirManuallyToggled}
+            (<TreeItemRow
+                key={child.path + "-item"}
+                entry={child}
+                repo={repo}
+                reference={reference}
+                leftDiffRefID={leftDiffRefID}
+                rightDiffRefID={rightDiffRefID}
+                onRevert={onRevert}
+                onNavigate={onNavigate}
+                internalReferesh={internalRefresh}
+                delimiter={delimiter} depth={depth + 1}
+                relativeTo={entry.path} getMore={getMore}
+                isAllExpanded={!wasDirManuallyToggled(entry.path) ? isAllExpanded : null}
+                markDirAsManuallyToggled={markDirAsManuallyToggled}
+                wasDirManuallyToggled={wasDirManuallyToggled}
             />))}
         {(!!nextPage || loading) &&
         <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
