@@ -1,8 +1,13 @@
-import React, {useCallback, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 
-import {ClockIcon, PlusIcon, XIcon} from "@primer/octicons-react";
+import {
+    ClockIcon, FileDirectoryFillIcon, FoldDownIcon, FoldUpIcon,
+    PlusIcon,
+    XIcon
+} from "@primer/octicons-react";
 
 import {useAPIWithPagination} from "../../hooks/api";
+import {useExpandCollapseDirs} from "../../hooks/useExpandCollapseDirs";
 import {AlertError} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {ObjectTreeEntryRow, PrefixTreeEntryRow} from "./treeRows";
@@ -31,8 +36,7 @@ import Col from "react-bootstrap/Col";
  * @param relativeTo prefix of the parent item ('' for root elements)
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore callback to be called when more items need to be rendered
  */
-export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore,
-                                depth=0}) => {
+export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRefID, internalRefresh, onRevert, onNavigate, delimiter, relativeTo, getMore, depth=0, isAllExpanded, markDirAsManuallyToggled, wasDirManuallyToggled }) => {
     const [dirExpanded, setDirExpanded] = useState(false); // state of a non-leaf item expansion
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
     const [resultsState, setResultsState] = useState({results:[], pagination:{}}); // current retrieved children of the item
@@ -51,6 +55,24 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
         setResultsState({results: resultsState.results.concat(results), pagination: pagination})
         return {results:resultsState.results, pagination: pagination}
     }, [repo.id, reference.id, internalRefresh, afterUpdated, entry.path, delimiter, dirExpanded])
+
+    useEffect(() => {
+        if (entry.path_type !== "object") {
+            if (isAllExpanded === true && !wasDirManuallyToggled(entry.path)) {
+                setDirExpanded(true);
+            } else if (isAllExpanded === false) {
+                setDirExpanded(false);
+            }
+        }
+    }, [isAllExpanded, wasDirManuallyToggled, entry]);
+
+    const handleToggleDir = () => {
+        setDirExpanded(prev => {
+            const next = !prev;
+            if (!next) markDirAsManuallyToggled(entry.path);
+            return next;
+        });
+    };
 
     const results = resultsState.results
     if (error)
@@ -83,13 +105,37 @@ export const TreeItemRow = ({ entry, repo, reference, leftDiffRefID, rightDiffRe
     }
     // entry is a common prefix
     return <>
-        <PrefixTreeEntryRow key={entry.path + "entry-row"} entry={entry} dirExpanded={dirExpanded} relativeTo={relativeTo} depth={depth} onClick={() => setDirExpanded(!dirExpanded)} onRevert={onRevert} onNavigate={onNavigate} getMore={getMore} repo={repo} reference={reference}/>
+        <PrefixTreeEntryRow
+            key={entry.path + "entry-row"}
+            entry={entry}
+            dirExpanded={dirExpanded}
+            relativeTo={relativeTo}
+            depth={depth}
+            onClick={handleToggleDir}
+            onRevert={onRevert}
+            onNavigate={onNavigate}
+            getMore={getMore}
+            repo={repo}
+            reference={reference}
+        />
         {dirExpanded && results &&
         results.map(child =>
-            (<TreeItemRow key={child.path + "-item"} entry={child} repo={repo} reference={reference} leftDiffRefID={leftDiffRefID} rightDiffRefID={rightDiffRefID} onRevert={onRevert} onNavigate={onNavigate}
-                          internalReferesh={internalRefresh} delimiter={delimiter} depth={depth + 1}
-                          relativeTo={entry.path} getMore={getMore}
-                          />))}
+            (<TreeItemRow
+                key={child.path + "-item"}
+                entry={child}
+                repo={repo}
+                reference={reference}
+                leftDiffRefID={leftDiffRefID}
+                rightDiffRefID={rightDiffRefID}
+                onRevert={onRevert}
+                onNavigate={onNavigate}
+                internalReferesh={internalRefresh}
+                delimiter={delimiter} depth={depth + 1}
+                relativeTo={entry.path} getMore={getMore}
+                isAllExpanded={!wasDirManuallyToggled(entry.path) ? isAllExpanded : null}
+                markDirAsManuallyToggled={markDirAsManuallyToggled}
+                wasDirManuallyToggled={wasDirManuallyToggled}
+            />))}
         {(!!nextPage || loading) &&
         <TreeEntryPaginator path={entry.path} depth={depth} loading={loading} nextPage={nextPage}
                             setAfterUpdated={setAfterUpdated}/>
@@ -144,6 +190,8 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
                                          changesTreeMessage}) => {
+    // Manages expand/collapse state for all directories in the tree.
+    const { isAllExpanded, expandAll, collapseAll, markDirAsManuallyToggled, wasDirManuallyToggled } = useExpandCollapseDirs();
     if (results.length === 0) {
         return <div className="tree-container">
             <Alert variant="info">No changes</Alert>
@@ -152,11 +200,20 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
         return <div className="tree-container">
             {changesTreeMessage && <div>{changesTreeMessage}</div>}
                     <Card>
-                        <Card.Header>
-                            <span className="float-start w-100">
-                                {(delimiter !== "") && uriNavigator}
-                            </span>
+                        <Card.Header className="d-flex justify-content-between align-items-center">
+                            {(delimiter !== "") && uriNavigator}
+                            <div className="d-flex gap-2">
+                                <Button size="sm" variant="outline-secondary" onClick={expandAll}>
+                                    <FileDirectoryFillIcon className="me-1" />
+                                    <FoldDownIcon />
+                                </Button>
+                                <Button size="sm" variant="outline-secondary" onClick={collapseAll}>
+                                    <FileDirectoryFillIcon className="me-1" />
+                                    <FoldUpIcon />
+                                </Button>
+                            </div>
                         </Card.Header>
+
                         <Card.Body>
                             <Table borderless size="sm">
                                 <tbody>
@@ -170,7 +227,10 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                                      onNavigate={onNavigate}
                                                      getMore={getMore}
                                                      onRevert={onRevert}
-                                                 />);
+                                                     isAllExpanded={isAllExpanded}
+                                                     markDirAsManuallyToggled={markDirAsManuallyToggled}
+                                                     wasDirManuallyToggled={wasDirManuallyToggled}
+                                        />);
                                 })}
                                 {!!nextPage &&
                                 <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
