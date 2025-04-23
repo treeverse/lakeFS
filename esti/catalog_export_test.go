@@ -488,6 +488,7 @@ func TestDeltaCatalogExport(t *testing.T) {
 	}
 	blockstore := setupCatalogExportTestByStorageType(t, testData)
 
+	// upload the data folder
 	tmplDir, err := fs.Sub(ExportHooksFiles, "export_hooks_files/delta")
 	require.NoError(t, err)
 	err = fs.WalkDir(tmplDir, "data", func(path string, d fs.DirEntry, err error) error {

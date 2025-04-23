@@ -676,6 +676,30 @@ hooks:
 
 ```
 
+### `lakefs/catalogexport/delta_exporter.changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)`
+
+Utility function to filter list of table defs based on those that have changed. Returns the subset of the tables in the table_def_names parameter that have changed. 
+
+Parameters:
+
+- `table_def_names(table of strings)`: List of table names to filter based on the diff
+- `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_def_names` reside
+- `repository_id(string)`: The repository ID
+- `ref(string)`: base reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
+- `compare_ref(string)`: compared-to reference for the diff to determine which tables changed
+
+Example:
+
+```lua
+local delta_export = require("lakefs/catalogexport/delta_exporter")
+local ref = action.commit.parents[1]
+local compare_ref = action.commit_id
+local changed_table_defs = delta_export.changed_table_defs(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
+for i = 1, #changed_table_defs do
+    print(changed_table_defs[i])
+end
+```
+
 ### `lakefs/catalogexport/table_extractor`
 
 Utility package to parse `_lakefs_tables/` descriptors.
@@ -685,10 +709,15 @@ Utility package to parse `_lakefs_tables/` descriptors.
 List all YAML files under `_lakefs_tables/*` and return a list of type `[{physical_address, path}]`, ignores hidden files. 
 The `client` is `lakefs` client.
 
-### `lakefs/catalogexport/table_extractor.get_table_descriptor(client, repo_id, commit_id, logical_path)`
+### `lakefs/catalogexport/table_extractor.get_table_descriptor(client, repo_id, ref, logical_path)`
 
 Read a table descriptor and parse YAML object. Will set `partition_columns` to `{}` if no partitions are defined.
-The `client` is `lakefs` client.
+
+Parameters:
+- `client`: `lakefs` client
+- `repo_id(string)`: The repository ID
+- `ref(string)`: reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
+- `logical_path(string)`: logical path of the table descriptor file within the repo
 
 ### `lakefs/catalogexport/hive.extract_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)`
 
