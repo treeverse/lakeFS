@@ -59,6 +59,7 @@
     "@babel/eslint-parser": "^7.23.3",
     "@playwright/test": "^1.40.1",
     "@rollup/plugin-replace": "^5.0.5",
+    "@testing-library/react": "^16.3.0",
     "@types/bootstrap": "^5.2.10",
     "@types/lodash": "^4.14.202",
     "@types/mdast": "^3.0.10",
