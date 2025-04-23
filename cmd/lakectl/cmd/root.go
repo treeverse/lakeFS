@@ -71,9 +71,9 @@ type Configuration struct {
 		Provider        struct {
 			Type   lakefsconfig.OnlyString `mapstructure:"type"`
 			AWSIAM struct {
-				TokenTTLSeconds      int               `mapstructure:"token_ttl_seconds"`
-				URLPresignTTLSeconds int               `mapstructure:"url_presign_ttl_seconds"`
-				TokenRequestHeaders  map[string]string `mapstructure:"token_request_headers"`
+				TokenTTL            time.Duration     `mapstructure:"token_ttl_seconds"`
+				URLPresignTTL       time.Duration     `mapstructure:"url_presign_ttl_seconds"`
+				TokenRequestHeaders map[string]string `mapstructure:"token_request_headers"`
 			} `mapstructure:"aws_iam"`
 		} `mapstructure:"provider"`
 	} `mapstructure:"credentials"`
