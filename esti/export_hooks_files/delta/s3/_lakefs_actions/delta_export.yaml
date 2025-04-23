@@ -13,12 +13,12 @@ hooks:
         local json = require("encoding/json")
         
         local table_descriptors_path = "_lakefs_tables"
-        local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
         
         local ref = action.commit.parents[1]
         local compare_ref = action.commit_id
         local changed_table_names = delta_exporter.changed_table_defs(args.table_names, table_descriptors_path, action.repository_id, ref, compare_ref)
-  
+        
+        local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
         local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
         local delta_table_details = delta_exporter.export_delta_log(action, changed_table_names, sc.put_object, delta_client, table_descriptors_path)
 

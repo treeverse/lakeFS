@@ -12,11 +12,12 @@ hooks:
         local delta_exporter = require("lakefs/catalogexport/delta_exporter")
         local json = require("encoding/json")
         
+        local table_descriptors_path = "_lakefs_tables"
+
         local ref = action.commit.parents[1]
         local compare_ref = action.commit_id
         local changed_table_names = delta_exporter.changed_table_defs(args.table_names, table_descriptors_path, action.repository_id, ref, compare_ref)
         
-        local table_descriptors_path = "_lakefs_tables"
         local sc = azure.blob_client(args.azure.storage_account, args.azure.access_key)
         local function write_object(_, key, buf)
           return sc.put_object(key,buf)
