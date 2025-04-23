@@ -1,7 +1,7 @@
 package path
 
 import (
-	"regexp"
+	"path/filepath"
 	"strings"
 
 	"github.com/Shopify/go-lua"
@@ -129,13 +129,7 @@ func isHidden(l *lua.State) int {
 // Function to extract directory from a path
 func extractDirName(l *lua.State) int {
 	path := lua.CheckString(l, 1)
-
-	re := regexp.MustCompile(`^(.*[\\/])`)
-	dirPath := re.FindString(path)
-	if dirPath == "" {
-		lua.Errorf(l, "failed to extract dir name from path: %s", path)
-		panic("unreachable")
-	}
-	l.PushString(dirPath)
+	dirName := filepath.Dir(path)
+	l.PushString(dirName)
 	return 1
 }
