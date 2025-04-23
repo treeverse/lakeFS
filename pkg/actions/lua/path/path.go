@@ -130,11 +130,7 @@ func isHidden(l *lua.State) int {
 func extractDirName(l *lua.State) int {
 	path := lua.CheckString(l, 1)
 
-	re, err := regexp.Compile(`^(.*[\\/])`)
-	if err != nil {
-		lua.Errorf(l, "%s", err.Error())
-		panic("unreachable")
-	}
+	re := regexp.MustCompile(`^(.*[\\/])`)
 	dirPath := re.FindString(path)
 	if dirPath == "" {
 		lua.Errorf(l, "failed to extract dir name from path: %s", path)
