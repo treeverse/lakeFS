@@ -39,7 +39,7 @@
     "react-icons": "^4.12.0",
     "react-ipynb-renderer": "^2.2.1",
     "react-markdown": "^8.0.7",
-    "react-router-dom": "^6.20.1",
+    "react-router-dom": "^7.5.2",
     "react-simple-code-editor": "^0.13.1",
     "react-syntax-highlighter": "^15.5.0",
     "react-toggle-dark-mode": "^1.1.1",
