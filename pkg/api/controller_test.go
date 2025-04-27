@@ -49,7 +49,7 @@ import (
 
 const DefaultUserID = "example_user"
 
-type Stature interface {
+type Statuser interface {
 	StatusCode() int
 }
 
@@ -62,7 +62,7 @@ type commitEntriesParams struct {
 	commitName   string
 }
 
-func verifyResponseOK(t testing.TB, resp Stature, err error) {
+func verifyResponseOK(t testing.TB, resp Statuser, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal("request failed with error:", err)
