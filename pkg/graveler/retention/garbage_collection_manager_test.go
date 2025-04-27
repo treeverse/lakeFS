@@ -55,8 +55,8 @@ func createTestFile(t *testing.T, filename, testLine string, count int) {
 	fd, err := os.Create(filename)
 	require.NoError(t, err)
 	defer func() { _ = fd.Close() }()
-	for i := 0; i < count; i++ {
-		_, err := fd.WriteString(fmt.Sprintf("%s_%d\n", testLine, i))
+	for i := range count {
+		_, err := fmt.Fprintf(fd, "%s_%d\n", testLine, i)
 		require.NoError(t, err)
 	}
 }
@@ -90,7 +90,11 @@ func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T)
 			testLine := "TestLine"
 			lineCount := 5
 			createTestFile(t, filename, testLine, lineCount)
-			defer os.Remove(filename)
+			defer func() {
+				if err := os.Remove(filename); err != nil {
+					t.Error("Failed to cleanup test file:", err)
+				}
+			}()
 			err = gc.SaveGarbageCollectionUncommitted(ctx, &repositoryRec, filename, runID)
 			require.NoError(t, err)
 			reader, err := blockAdapter.Get(ctx, block.ObjectPointer{

@@ -122,7 +122,6 @@ func TestDeletedSensor(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestDeletedSensor_Close(t *testing.T) {

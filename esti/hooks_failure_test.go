@@ -3,11 +3,11 @@ package esti
 import (
 	"bytes"
 	"context"
-	"github.com/google/uuid"
 	"net/http"
 	"testing"
 	"text/template"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )

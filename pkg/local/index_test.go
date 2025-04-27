@@ -101,7 +101,7 @@ func TestFindIndices(t *testing.T) {
 
 	// Create file on root and check only one result
 	writeIndex(t, root)
-	dirs, err = local.FindIndices(filepath.Join(root))
+	dirs, err = local.FindIndices(root)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(dirs))
 	require.Equal(t, ".", dirs[0])

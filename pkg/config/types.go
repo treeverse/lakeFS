@@ -158,7 +158,7 @@ func StringToSliceWithBracketHookFunc() mapstructure.DecodeHookFunc {
 func StringToStructHookFunc() mapstructure.DecodeHookFunc {
 	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
 		if f.Kind() != reflect.String ||
-			(t.Kind() != reflect.Struct && !(t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Struct)) {
+			(t.Kind() != reflect.Struct && (t.Kind() != reflect.Pointer || t.Elem().Kind() != reflect.Struct)) {
 			return data, nil
 		}
 		raw := data.(string)

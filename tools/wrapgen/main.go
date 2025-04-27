@@ -308,7 +308,12 @@ func main() {
 		exitCode = 2
 		return
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Close %s: %s\n", *outputFile, err)
+			exitCode = 4
+		}
+	}()
 
 	err = t.Execute(file, methods)
 	if err != nil {

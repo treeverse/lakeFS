@@ -9,7 +9,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/git/internal"
 )
 
-var testErr = errors.New("this is a test generated error")
+var errTest = errors.New("this is a test generated error")
 
 func TestHandleOutput(t *testing.T) {
 	testCases := []struct {
@@ -21,25 +21,25 @@ func TestHandleOutput(t *testing.T) {
 		{
 			Name:          "not git repository",
 			Output:        "fatal: not a git repository (or any of the parent directories): .git",
-			Error:         testErr,
+			Error:         errTest,
 			ExpectedError: giterror.ErrNotARepository,
 		},
 		{
 			Name:          "not a git repository - Mount",
 			Output:        "fatal: Not a git repository (or any parent up to mount point /home/my_home)\nStopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).",
-			Error:         testErr,
+			Error:         errTest,
 			ExpectedError: giterror.ErrNotARepository,
 		},
 		{
 			Name:          "other error",
 			Output:        "Some other error happened",
-			Error:         testErr,
-			ExpectedError: testErr,
+			Error:         errTest,
+			ExpectedError: errTest,
 		},
 		{
 			Name:          "remote not found",
 			Output:        "prefix, Remote nOt founD, suffix",
-			Error:         testErr,
+			Error:         errTest,
 			ExpectedError: giterror.ErrRemoteNotFound,
 		},
 		{
@@ -57,7 +57,6 @@ func TestHandleOutput(t *testing.T) {
 			} else {
 				require.Equal(t, tt.Output, str)
 			}
-
 		})
 	}
 }

@@ -112,7 +112,6 @@ func TestMultiToken(t *testing.T) {
 	testutil.Must(t, err)
 	if string(e.Identity) != "identity2" {
 		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity2", string(e.Identity))
-		t.Errorf("got wrong value identity. expected=%s, got=%s", "identity2", string(e.Identity))
 	}
 }
 
@@ -472,8 +471,8 @@ func TestDeleteAndTombstone(t *testing.T) {
 		if it.Err() != nil {
 			t.Fatalf("unexpected error from iterator: %v", it.Err())
 		}
-		if len(it.Value().Value.Data) != 0 {
-			t.Fatalf("expected empty value data from iterator, got: %v", it.Value().Value.Data)
+		if len(it.Value().Data) != 0 {
+			t.Fatalf("expected empty value data from iterator, got: %v", it.Value().Data)
 		}
 		it.Close()
 	}

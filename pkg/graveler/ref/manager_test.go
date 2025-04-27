@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -581,7 +582,7 @@ func TestManager_ListBranches(t *testing.T) {
 
 	visibleBranches := []graveler.BranchID{"a", "ab", "ca", "ba", "za", "fa"}
 	hiddenBranches := []graveler.BranchID{"aa", "ac", "cb", "bb", "zb", "fb"}
-	allBranches := append(visibleBranches, hiddenBranches...)
+	allBranches := slices.Concat(visibleBranches, hiddenBranches)
 	for _, b := range visibleBranches {
 		testutil.Must(t, r.SetBranch(context.Background(), repository, b, graveler.Branch{
 			CommitID: "c2",

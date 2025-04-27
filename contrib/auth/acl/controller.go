@@ -1,4 +1,4 @@
-// nolint:stylecheck
+//nolint:stylecheck
 package acl
 
 import (
