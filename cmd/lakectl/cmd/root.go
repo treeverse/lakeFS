@@ -68,6 +68,14 @@ type Configuration struct {
 	Credentials struct {
 		AccessKeyID     lakefsconfig.OnlyString `mapstructure:"access_key_id"`
 		SecretAccessKey lakefsconfig.OnlyString `mapstructure:"secret_access_key"`
+		Provider        struct {
+			Type   lakefsconfig.OnlyString `mapstructure:"type"`
+			AWSIAM struct {
+				TokenTTL            time.Duration     `mapstructure:"token_ttl_seconds"`
+				URLPresignTTL       time.Duration     `mapstructure:"url_presign_ttl_seconds"`
+				TokenRequestHeaders map[string]string `mapstructure:"token_request_headers"`
+			} `mapstructure:"aws_iam"`
+		} `mapstructure:"provider"`
 	} `mapstructure:"credentials"`
 	Network struct {
 		HTTP2 struct {
@@ -186,6 +194,9 @@ const (
 	defaultMaxAttempts      = 4
 	defaultMaxRetryInterval = 30 * time.Second
 	defaultMinRetryInterval = 200 * time.Millisecond
+
+	defaultTokenTTL      = 3600 * time.Second
+	defaultURLPresignTTL = 60 * time.Second
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -666,5 +677,7 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
+	viper.SetDefault("credentials.provider.aws_iam.token_ttl_seconds", defaultTokenTTL)
+	viper.SetDefault("credentials.provider.aws_iam.url_presign_ttl_seconds", defaultURLPresignTTL)
 	cfgErr = viper.ReadInConfig()
 }
