@@ -110,7 +110,11 @@ var runCmd = &cobra.Command{
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
 		actionsStore := actions.NewActionsKVStore(kvStore)
-		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
+		installationID := licenseManager.InstallationID()
+		if installationID == "" {
+			installationID = baseCfg.Installation.FixedID
+		}
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, installationID, baseCfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
 		authService := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
