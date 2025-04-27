@@ -27,6 +27,7 @@ Compile / PB.targets := Seq(
 
 testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
 Test / logBuffered := false
+
 // Uncomment to get accurate benchmarks with just "sbt test".
 // Otherwise tell sbt to
 //     "testOnly io.treeverse.clients.ReadSSTableBenchmark"
