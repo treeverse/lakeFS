@@ -1,5 +1,22 @@
 # Changelog
 
+# v1.55.0
+
+:new: What's new:
+
+- Support list repositories and branches in lakectl by prefixes by @AliRamberg in #8860
+- Add pagination to Add Group Members and Attach Policies by @Ben-El in #8953
+- Security fix - Replace old go-jwt by @Isan-Rivkin in #8968
+- Support separate per-part requests for MPU presigned URLs by @arielshaqed in #8962
+- lua delta exporter- add a function to find changed tables by @nadavsteindler in #8957
+- Enable expand/collapse functionality for directory trees by @Ben-El in #8978
+
+:bug: Bugs fixed:
+
+- Fix - long branch name overflows in the UI by @Annaseli in #8948
+- Fix - No prompt after clicking the button in access control page #8610 by @VH992098059 in #8932
+- Fix - Parse configuration from environment slice of any by @nopcoder in #8980
+
 # v1.54.0
 
 :new: What's new:
