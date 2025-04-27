@@ -333,7 +333,7 @@ Parameters:
 - `warehouse_id(string)`: The SQL warehouse ID used in Databricks to run the `CREATE TABLE` query (fetched from the SQL warehouse
 - `catalog_name(string)`: The catalog name under which the schema will be created (or from which it will be fetched)
 - `schema_name(string)`: The required schema name
-  `status`, return the SQL status i.e. success or an error code/message
+  `status`, return the SQL status i.e. SUCCEEDED or an error code/message
 
 Example:
 ```lua
