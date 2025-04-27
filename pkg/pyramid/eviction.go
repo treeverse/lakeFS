@@ -21,7 +21,7 @@ const (
 	bufferItems = 64
 )
 
-// nolint: unused,deadcode
+//nolint:unused
 func newRistrettoEviction(capacity int64, evict func(rPath params.RelativePath, cost int64)) (params.Eviction, error) {
 	re := &ristrettoEviction{evictCallback: evict}
 

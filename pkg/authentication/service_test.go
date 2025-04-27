@@ -104,7 +104,6 @@ func TestAPIAuthService_STSLogin(t *testing.T) {
 				if tt.returnedSubject != "" {
 					loginResponse.JSON200.Claims.AdditionalProperties["sub"] = tt.returnedSubject
 				}
-
 			}
 			mockClient.EXPECT().STSLoginWithResponse(gomock.Any(), requestEq).Return(loginResponse, tt.error)
 			externalUserID, err := s.ValidateSTS(ctx, code, redirectURI, state)

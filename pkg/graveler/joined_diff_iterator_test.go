@@ -446,8 +446,7 @@ func TestJoinedDiffIterator_NextValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var it graveler.DiffIterator
-			it = graveler.NewJoinedDiffIterator(tt.fields.iterA, tt.fields.iterB)
+			it := graveler.NewJoinedDiffIterator(tt.fields.iterA, tt.fields.iterB)
 			defer it.Close()
 
 			var got []*graveler.Diff

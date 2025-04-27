@@ -22,7 +22,9 @@ func TestLakeFSContainer(t *testing.T) {
 	}
 
 	container := lakefs_ci.New().WithTag(version).New(ctx, t, pool)
-	defer container.Close()
+	defer func() {
+		_ = container.Close()
+	}()
 
 	res, err := container.Client.ListRepositoriesWithResponse(ctx, &apigen.ListRepositoriesParams{})
 	if err != nil {

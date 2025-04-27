@@ -329,7 +329,7 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 		gitRoot, err := git.GetRepositoryPath(localPath)
 		if err == nil {
 			localPath = gitRoot
-		} else if !(errors.Is(err, giterror.ErrNotARepository) || errors.Is(err, giterror.ErrNoGit)) { // allow support in environments with no git
+		} else if !errors.Is(err, giterror.ErrNotARepository) && !errors.Is(err, giterror.ErrNoGit) { // allow support in environments with no git
 			DieErr(err)
 		}
 	}
@@ -392,7 +392,7 @@ func getCommitFlags(cmd *cobra.Command) (string, map[string]string) {
 	return message, kvPairs
 }
 
-func getKV(cmd *cobra.Command, name string) (map[string]string, error) { //nolint:unparam
+func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	kvList, err := cmd.Flags().GetStringSlice(name)
 	if err != nil {
 		return nil, err

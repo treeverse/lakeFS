@@ -500,9 +500,12 @@ func fixTime(t *testing.T, localPath string, includeDirs bool) {
 }
 
 func fixUnixPermissions(t *testing.T, localPath string) {
-	err := filepath.WalkDir(localPath, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(localPath, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
 		perm := local.GetDefaultPermissions(d.IsDir())
-		if err = os.Chown(path, os.Getuid(), os.Getgid()); err != nil {
+		if err := os.Chown(path, os.Getuid(), os.Getgid()); err != nil {
 			return err
 		}
 		return os.Chmod(path, perm.Mode)

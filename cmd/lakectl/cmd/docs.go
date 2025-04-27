@@ -146,12 +146,12 @@ func genMarkdownForCmd(cmd *cobra.Command, w io.Writer, topLevel bool) error {
 	}
 
 	if cmd.Runnable() {
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.UseLine()))
+		_, _ = fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.UseLine())
 	}
 
 	if len(cmd.Example) > 0 {
 		buf.WriteString("#### Examples\n{:.no_toc}\n\n")
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.Example))
+		_, _ = fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.Example)
 	}
 
 	if err := printOptions(buf, cmd); err != nil {

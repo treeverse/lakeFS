@@ -53,30 +53,24 @@ func TestLakectlRetryPolicy(t *testing.T) {
 			expectedError:       context.Canceled.Error(),
 		},
 		{
-			name: "Transport Error - Too Many Redirects",
-			getTestContext: func() context.Context {
-				return context.Background()
-			},
+			name:                "Transport Error - Too Many Redirects",
+			getTestContext:      context.Background,
 			resp:                nil,
 			err:                 &url.Error{Op: http.MethodGet, URL: testURL, Err: errors.New(tooManyRedirectsErrorMessage)},
 			expectedShouldRetry: false,
 			expectedError:       tooManyRedirectsErrorMessage,
 		},
 		{
-			name: "Transport Error - Random Transport Error",
-			getTestContext: func() context.Context {
-				return context.Background()
-			},
+			name:                "Transport Error - Random Transport Error",
+			getTestContext:      context.Background,
 			resp:                nil,
 			err:                 &url.Error{Op: http.MethodGet, URL: testURL, Err: errors.New(someRandomErrorMessage)},
 			expectedShouldRetry: true,
 			expectedError:       "",
 		},
 		{
-			name: "HTTP Status - 429 Too Many Requests",
-			getTestContext: func() context.Context {
-				return context.Background()
-			},
+			name:           "HTTP Status - 429 Too Many Requests",
+			getTestContext: context.Background,
 			resp: &http.Response{
 				StatusCode: http.StatusTooManyRequests,
 			},
@@ -85,10 +79,8 @@ func TestLakectlRetryPolicy(t *testing.T) {
 			expectedError:       "",
 		},
 		{
-			name: "HTTP Status - 500 Internal Server Error",
-			getTestContext: func() context.Context {
-				return context.Background()
-			},
+			name:           "HTTP Status - 500 Internal Server Error",
+			getTestContext: context.Background,
 			resp: &http.Response{
 				StatusCode: http.StatusInternalServerError,
 			},
@@ -97,10 +89,8 @@ func TestLakectlRetryPolicy(t *testing.T) {
 			expectedError:       "",
 		},
 		{
-			name: "HTTP Status - 503 Service Unavailable",
-			getTestContext: func() context.Context {
-				return context.Background()
-			},
+			name:           "HTTP Status - 503 Service Unavailable",
+			getTestContext: context.Background,
 			resp: &http.Response{
 				StatusCode: http.StatusServiceUnavailable,
 			},
@@ -109,10 +99,8 @@ func TestLakectlRetryPolicy(t *testing.T) {
 			expectedError:       "",
 		},
 		{
-			name: "HTTP Status - 401 Unauthorized",
-			getTestContext: func() context.Context {
-				return context.Background()
-			},
+			name:           "HTTP Status - 401 Unauthorized",
+			getTestContext: context.Background,
 			resp: &http.Response{
 				StatusCode: http.StatusUnauthorized,
 			},
@@ -121,10 +109,8 @@ func TestLakectlRetryPolicy(t *testing.T) {
 			expectedError:       "",
 		},
 		{
-			name: "HTTP Status - 404 Not Found",
-			getTestContext: func() context.Context {
-				return context.Background()
-			},
+			name:           "HTTP Status - 404 Not Found",
+			getTestContext: context.Background,
 			resp: &http.Response{
 				StatusCode: http.StatusNotFound,
 			},
@@ -133,10 +119,8 @@ func TestLakectlRetryPolicy(t *testing.T) {
 			expectedError:       "",
 		},
 		{
-			name: "HTTP Status - 200 Ok",
-			getTestContext: func() context.Context {
-				return context.Background()
-			},
+			name:           "HTTP Status - 200 Ok",
+			getTestContext: context.Background,
 			resp: &http.Response{
 				StatusCode: http.StatusOK,
 			},
@@ -145,10 +129,8 @@ func TestLakectlRetryPolicy(t *testing.T) {
 			expectedError:       "",
 		},
 		{
-			name: "HTTP Status - 201 Created",
-			getTestContext: func() context.Context {
-				return context.Background()
-			},
+			name:           "HTTP Status - 201 Created",
+			getTestContext: context.Background,
 			resp: &http.Response{
 				StatusCode: http.StatusCreated,
 			},

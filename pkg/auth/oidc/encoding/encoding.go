@@ -17,7 +17,7 @@ const OIDCClaimsSerdeNickname = "github.com/treeverse/lakefs/pkg/auth/oidc.Claim
 // using gob encoding in JWT.  It should be called in an init() func of a
 // package in any external service that produces matching claims.
 //
-// nolint:gochecknoinits
+//nolint:gochecknoinits
 func init() {
 	// Register at startup, gob.Register says: "Expecting to be used
 	// only during initialization...".

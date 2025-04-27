@@ -124,10 +124,8 @@ func TestDecodeStringToMap(t *testing.T) {
 				if diffs := deep.Equal(result, c.Expected); diffs != nil {
 					t.Error(diffs)
 				}
-			} else {
-				if !errorsMatch(err, c.ExpectedErr) {
-					t.Errorf("Got error \"%v\", expected error \"%v\"", err, c.ExpectedErr)
-				}
+			} else if !errorsMatch(err, c.ExpectedErr) {
+				t.Errorf("Got error \"%v\", expected error \"%v\"", err, c.ExpectedErr)
 			}
 		})
 	}
@@ -259,10 +257,6 @@ func TestStringToSliceWithBracketHookFunc(t *testing.T) {
 			} else if err != nil && !strings.Contains(err.Error(), *c.ErrMessage) {
 				t.Errorf("Got error %v when expecting to succeed", err)
 			} else {
-				// Dereference the pointer to compare the underlying value
-				if expectedType.Kind() == reflect.Ptr {
-					expectedType = expectedType.Elem()
-				}
 				reflectResult := reflect.ValueOf(result).Elem().Interface()
 				if diffs := deep.Equal(reflectResult, c.Expected); diffs != nil {
 					t.Errorf("Got unexpected value: %v", diffs)

@@ -760,7 +760,7 @@ func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, num
 			test.RefManager.EXPECT().GetBranch(gomock.Any(), gomock.Any(), branchID).MinTimes(1).Return(&graveler.Branch{StagingToken: token}, nil)
 		} else {
 			branch.CompactedBaseMetaRangeID = compactBaseMetaRangeID
-			branch.Branch.CommitID = commitID
+			branch.CommitID = commitID
 			test.RefManager.EXPECT().GetBranch(gomock.Any(), gomock.Any(), branchID).MinTimes(1).Return(&graveler.Branch{StagingToken: token, CommitID: commitID, CompactedBaseMetaRangeID: compactBaseMetaRangeID}, nil)
 		}
 		branches = append(branches, branch)

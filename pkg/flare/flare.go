@@ -21,9 +21,9 @@ import (
 var defaultEnvVarPrefixes = []string{"LAKEFS_", "HTTP_", "HOSTNAME"}
 
 const (
-	DirPermissions  = 0700
-	FilePremissions = 0600
-	FlareUmask      = 077
+	DirPermissions  = 0o700
+	FilePremissions = 0o600
+	FlareUmask      = 0o77
 )
 
 type RedactedValueReplacer func(value string) string
@@ -202,7 +202,7 @@ func (f *Flare) processEnvVars(w io.Writer) error {
 						return err
 					}
 				}
-				if _, err := w.Write([]byte(fmt.Sprintf("%s\n", re))); err != nil {
+				if _, err := fmt.Fprintf(w, "%s\n", re); err != nil {
 					return fmt.Errorf("failed to write to output: %w", err)
 				}
 			}
