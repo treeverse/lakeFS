@@ -325,6 +325,24 @@ local client = databricks.client("https://my-host.cloud.databricks.com", "my-ser
 local schema_name = client.create_schema("main", "mycatalog", true)
 ```
 
+### `databricks/client.execute_statement(warehouse_id, catalog_name, schema_name, statement)`
+
+Parameters:
+
+- `warehouse_id(string)`: The SQL warehouse ID used in Databricks to run the `CREATE TABLE` query (fetched from the SQL warehouse
+- `catalog_name(string)`: The catalog name under which the schema will be created (or from which it will be fetched)
+- `schema_name(string)`: The required schema name
+- `statement(boolean)`: The SQL statement to execute on the databricks table
+  `status`, return the SQL status i.e. success or an error code/message
+
+Example:
+```lua
+local databricks = require("databricks")
+local client = databricks.client("https://my-host.cloud.databricks.com", "my-service-principal-token")
+local statement = "ALTER TABLE " .. table_descriptor.name .. " ALTER COLUMN ID SET MASK mask_num"
+databricks_client.execute_statement(args.warehouse_id,table_descriptor.catalog,table_descriptor.schema,statement)
+```
+
 ### `databricks/client.register_external_table(table_name, physical_path, warehouse_id, catalog_name, schema_name, metadata)`
 
 Registers an external table under the provided warehouse ID, catalog name, and schema name.
