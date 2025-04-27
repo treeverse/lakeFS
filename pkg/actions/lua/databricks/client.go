@@ -72,6 +72,19 @@ func (client *Client) createExternalTable(warehouseID, catalogName, schemaName, 
 	return esr.Status.State.String(), nil
 }
 
+func (client *Client) executeStatement(warehouseID, catalogName, schemaName, statement string) (string, error) {
+	esr, err := client.workspaceClient.StatementExecution.ExecuteAndWait(client.ctx, sql.ExecuteStatementRequest{
+		WarehouseId: warehouseID,
+		Catalog:     catalogName,
+		Schema:      schemaName,
+		Statement:   statement,
+	})
+	if err != nil {
+		return "", fmt.Errorf("execute statement failed: \"%s\" statement: \"%s\" %w", tableFullName(warehouseID, catalogName, schemaName), statement, err)
+	}
+	return esr.Status.State.String(), nil
+}
+
 func tableFullName(catalogName, schemaName, tableName string) string {
 	return fmt.Sprintf("%s.%s.%s", catalogName, schemaName, tableName)
 }
@@ -163,6 +176,20 @@ func (client *Client) CreateSchema(l *lua.State) int {
 	return 1
 }
 
+func (client *Client) ExecuteStatement(l *lua.State) int {
+	statement := lua.CheckString(l, 1)
+	warehouseID := lua.CheckString(l, 2)
+	catalogName := lua.CheckString(l, 3)
+	schemaName := lua.CheckString(l, 4)
+	status, err := client.executeStatement(warehouseID, catalogName, schemaName, statement)
+	if err != nil {
+		lua.Errorf(l, "%s", err.Error())
+		panic("unreachable")
+	}
+	l.PushString(status)
+	return 1
+}
+
 func alreadyExists(e error) bool {
 	return strings.Contains(e.Error(), "already exists")
 }
@@ -179,6 +206,7 @@ func newClient(ctx context.Context) lua.Function {
 		functions := map[string]lua.Function{
 			"create_schema":           client.CreateSchema,
 			"register_external_table": client.RegisterExternalTable,
+			"execute_statement":       client.ExecuteStatement,
 		}
 		for name, goFn := range functions {
 			l.PushGoFunction(goFn)
