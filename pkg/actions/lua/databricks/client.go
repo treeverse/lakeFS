@@ -177,10 +177,10 @@ func (client *Client) CreateSchema(l *lua.State) int {
 }
 
 func (client *Client) ExecuteStatement(l *lua.State) int {
-	warehouseID := lua.CheckString(l, 1)
-	catalogName := lua.CheckString(l, 2)
-	schemaName := lua.CheckString(l, 3)
-	statement := lua.CheckString(l, 4)
+	statement := lua.CheckString(l, 1)
+	warehouseID := lua.CheckString(l, 2)
+	catalogName := lua.CheckString(l, 3)
+	schemaName := lua.CheckString(l, 4)
 	status, err := client.executeStatement(warehouseID, catalogName, schemaName, statement)
 	if err != nil {
 		lua.Errorf(l, "%s", err.Error())
