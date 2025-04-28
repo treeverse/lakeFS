@@ -667,9 +667,9 @@ public class LakeFSFileSystem extends FileSystem {
         OPERATIONS_LOG.trace("list_status({})", path);
         ObjectLocation objectLoc = pathToObjectLocation(path);
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
-        String ObjectPath = objectLoc.getPath();
+        String objectPath = objectLoc.getPath();
         // If the path is empty, it represents the root of the branch - no need to try to stat
-        if (!ObjectPath.isEmpty()){
+        if (!objectPath.isEmpty()){
             try {
                 ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()).userMetadata(false).presign(false).execute();
                 LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
