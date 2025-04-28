@@ -429,6 +429,35 @@ public class LakeFSFileSystemServerTest extends FSTestBase {
         Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
     }
 
+    @Test
+    public void testListStatusRoot() throws IOException {
+        int totalObjectsCount = 3;
+        ObjectStats[] objects = new ObjectStats[3];
+        for (int i = 0; i < totalObjectsCount; i++) {
+            objects[i] = makeObjectStats("file" + i);
+        }
+        mockListing("repo", "main",
+                ImmutablePagination.builder().prefix("").build(),
+                objects);
+
+        Path dir = new Path("lakefs://repo/main");
+        FileStatus[] fileStatuses = fs.listStatus(dir);
+
+        FileStatus[] expectedFileStatuses = new LocatedFileStatus[totalObjectsCount];
+        for (int i = 0; i < totalObjectsCount; i++) {
+            Path p = new Path(dir + "/file" + i);
+            LakeFSFileStatus fileStatus = new LakeFSFileStatus.Builder(p)
+                    .length(STATUS_FILE_SIZE)
+                    .checksum(STATUS_CHECKSUM)
+                    .mTime(STATUS_MTIME)
+                    .blockSize(Constants.DEFAULT_BLOCK_SIZE)
+                    .physicalAddress(s3Url("/repo-base/status" + i))
+                    .build();
+            expectedFileStatuses[i] = new LocatedFileStatus(fileStatus, null);
+        }
+        Assert.assertArrayEquals(expectedFileStatuses, fileStatuses);
+    }
+
     @Test(expected = UnsupportedOperationException.class)
     public void testAppend() throws IOException {
         fs.append(null, 0, null);
