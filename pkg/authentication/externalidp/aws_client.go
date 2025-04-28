@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -39,6 +40,9 @@ const (
 	AWSCredentialTimeFormat  = "20060102"
 	AWSDefaultSTSLoginExpire = 15 * time.Minute
 )
+
+var ErrAWSCredentialsExpired = errors.New("AWS credentials expired")
+var ErrRetrievingToken = errors.New("failed to retrieve token")
 
 type LoginResponse struct {
 	Token string
@@ -117,7 +121,7 @@ func getJWT(params *AWSIAMParams, serverEndpoint string, httpClient *http.Client
 		return "", err
 	}
 	if externalPrincipalLoginResp == nil || externalPrincipalLoginResp.JSON200 == nil {
-		return "", fmt.Errorf("failed to retrieve token, status code: %d", externalPrincipalLoginResp.StatusCode())
+		return "", ErrRetrievingToken
 	}
 	return externalPrincipalLoginResp.JSON200.Token, nil
 }
@@ -132,7 +136,7 @@ func getIdentityToken(ctx context.Context, params *AWSIAMParams) (string, error)
 		return "", err
 	}
 	if creds.Expired() {
-		return "", fmt.Errorf("AWS credentials expired")
+		return "", ErrAWSCredentialsExpired
 	}
 	stsClient := sts.NewFromConfig(cfg)
 	stsPresignClient := sts.NewPresignClient(stsClient, func(o *sts.PresignOptions) {
@@ -150,7 +154,7 @@ func getIdentityToken(ctx context.Context, params *AWSIAMParams) (string, error)
 
 	parsedURL, err := url.Parse(presignGetCallerIdentityResp.URL)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse presigned URL: %w", err)
+		return "", err
 	}
 
 	queryParams := parsedURL.Query()
