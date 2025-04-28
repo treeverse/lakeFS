@@ -10,9 +10,10 @@ import {useStorageConfigs} from "../../hooks/storageConfig";
 import {AppContext} from "../../hooks/appContext";
 import {useRefs} from "../../hooks/repo";
 import {getRepoStorageConfig} from "../../../pages/repositories/repository/utils";
+import {GeoJSONPreview} from "./GeoJSONPreview";
 
 const maxDiffSizeBytes = 120 << 10;
-const supportedReadableFormats = ["txt", "text", "md", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson"];
+const supportedReadableFormats = ["txt", "text", "md", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson", "geojson"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const {repo, error: refsError, loading: refsLoading} = useRefs();
@@ -94,6 +95,16 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
     if ((left && left.loading) || (right && right.loading)) return <Loading/>;
     const err = (left && left.error) || (right && right.err);
     if (err) return <AlertError error={err}/>;
+
+    const isGeoJSON = path.endsWith(".geojson");
+    if (isGeoJSON) {
+        return (
+            <div>
+                <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
+                <GeoJSONPreview data={right?.response} />
+            </div>
+        );
+    }
 
     return <div>
         <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
