@@ -18,6 +18,9 @@ The first thing we'll do is create a branch for us to do this development agains
 ```bash
 lakectl config
 ```
+{: .note }
+If for some reason you get a command not found error, you can call lakectl by using `python -m lakectl` instead.
+
 
 Follow the prompts to enter the credentials that you got in the first step. Leave the **Server endpoint URL** as `http://127.0.0.1:8000`. 
 
@@ -26,9 +29,6 @@ Now that lakectl is configured, we can use it to create the branch. Run the foll
 ```bash
 lakectl branch create lakefs://quickstart/denmark-lakes --source lakefs://quickstart/main
 ```
-
-{: .note }
-If for some reason you get a command not found error, you can call lakectl by using `python -m lakectl` instead.
 
 You should get a confirmation message like this:
 

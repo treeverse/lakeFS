@@ -34,8 +34,7 @@ You can spin up a standalone sandbox instance of lakeFS:
 
 ```bash
 pip install lakefs
-python -m lakefs.download
-lakefs run --quickstart
+python -m lakefs.quickstart
 ```
 
 Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser.
