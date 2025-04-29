@@ -25,6 +25,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"hash/crc32"
 	"io"
@@ -52,7 +53,6 @@ const (
 	ChecksumAlgorithmCRC32     ChecksumAlgorithm = "x-amz-checksum-crc32"
 	ChecksumAlgorithmCRC32C    ChecksumAlgorithm = "x-amz-checksum-crc32c"
 	ChecksumAlgorithmCRC64NVME ChecksumAlgorithm = "x-amz-checksum-crc64nvme"
-	ChecksumAlgorithmSHA1      ChecksumAlgorithm = "x-amz-checksum-sha1"
 	ChecksumAlgorithmSHA256    ChecksumAlgorithm = "x-amz-checksum-sha256"
 	ChecksumAlgorithmInvalid   ChecksumAlgorithm = ""
 )
@@ -96,12 +96,11 @@ var (
 	// Malformed encoding is generated when a chunk header is wrongly formed.
 	errMalformedEncoding = errors.New("malformed chunked encoding")
 
-	ErrInvalidByte           = errors.New("invalid byte in chunk length")
-	ErrChunkTooLarge         = errors.New("http chunk length too large")
-	ErrChecksumHeaderMissing = errors.New("trailer header is missing")
-	ErrUnsupportedChecksum   = errors.New("unsupported checksum algorithm")
-	ErrChecksumMismatch      = errors.New("checksum mismatch")
-	ErrChecksumTypeMismatch  = errors.New("checksum type mismatch")
+	ErrInvalidByte          = errors.New("invalid byte in chunk length")
+	ErrChunkTooLarge        = errors.New("http chunk length too large")
+	ErrUnsupportedChecksum  = errors.New("unsupported checksum algorithm")
+	ErrChecksumMismatch     = errors.New("checksum mismatch")
+	ErrChecksumTypeMismatch = errors.New("checksum type mismatch")
 )
 
 // newSignV4ChunkedReader returns a new s3ChunkedReader that translates the data read from r
@@ -118,9 +117,6 @@ func newSignV4ChunkedReader(reader *bufio.Reader, amzDate string, auth V4Auth, s
 
 	var checksumWriter hash.Hash
 	if signatureMethod == v4UnsignedPayloadTrailer {
-		if auth.ChecksumAlgorithm == "" {
-			return nil, ErrChecksumHeaderMissing
-		}
 		checksumWriter, err = GetChecksumWriter(auth.ChecksumAlgorithm)
 		if err != nil {
 			return nil, err
@@ -136,7 +132,6 @@ func newSignV4ChunkedReader(reader *bufio.Reader, amzDate string, auth V4Auth, s
 		service:           auth.Service,
 		chunkSHA256Writer: sha256.New(),
 		state:             readChunkHeader,
-		trailers:          make(map[string]string),
 		checksumAlgorithm: auth.ChecksumAlgorithm,
 		checksumWriter:    checksumWriter,
 	}, nil
@@ -157,7 +152,6 @@ type s3ChunkedReader struct {
 	chunkSHA256Writer hash.Hash // Calculates sha256 of chunk data.
 	n                 uint64    // Unread bytes in chunk
 	err               error
-	trailers          map[string]string
 	checksumAlgorithm string
 	checksumWriter    hash.Hash
 }
@@ -199,7 +193,7 @@ func (cs chunkState) String() string {
 	case readChunkHeader:
 		stateString = "readChunkHeader"
 	case readChunkTerm:
-		stateString = "readChunkTrailer"
+		stateString = "readChunkTerm"
 	case readChunk:
 		stateString = "readChunk"
 	case verifyChunk:
@@ -266,7 +260,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			checksumAlgorithm, checksumValue := getTrailerChecksum(cr.reader)
 
 			if checksumAlgorithm != cr.checksumAlgorithm {
-				cr.err = ErrChecksumTypeMismatch
+				cr.err = fmt.Errorf("checksum type mismatch: %s != %s: %w", checksumAlgorithm, cr.checksumAlgorithm, ErrChecksumTypeMismatch)
 				return 0, cr.err
 			}
 
@@ -280,7 +274,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			// Read the final CRLF sequence
 			if err := readCRLF(cr.reader); err != nil {
 				cr.err = err
-				return n, err
+				return 0, err
 			}
 
 			cr.state = eofChunk
