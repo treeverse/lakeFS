@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -350,5 +351,215 @@ func TestUnsignedPayload(t *testing.T) {
 	})
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
+	}
+}
+
+// Helper function to truncate long strings for display in error messages
+func truncateForDisplay(s string) string {
+	if len(s) > 40 {
+		return s[:20] + "..." + s[len(s)-20:]
+	}
+	return s
+}
+
+func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
+	testCases := []struct {
+		name           string
+		method         string
+		host           string
+		path           string
+		trailerHeader  sig.ChecksumAlgorithm
+		trailerContent string
+		chunkSize      int
+		totalChunks    int
+		chunkData      [][]byte
+		expectedError  bool // If true, we expect an error when using this trailer
+	}{
+		{
+			name:           "CRC32C Trailer",
+			method:         http.MethodPut,
+			host:           "s3.amazonaws.com",
+			path:           "examplebucket/trailertest.txt",
+			trailerHeader:  sig.ChecksumAlgorithmCRC32C,
+			trailerContent: "x-amz-checksum-crc32c:%s\r\n\r\n", // %s will be replaced with actual checksum
+			chunkSize:      64,
+			totalChunks:    2,
+			chunkData: [][]byte{
+				bytes.Repeat([]byte("a"), 64),
+				bytes.Repeat([]byte("b"), 64),
+			},
+			expectedError: false,
+		},
+		{
+			name:           "CRC32 Trailer",
+			method:         http.MethodPut,
+			host:           "s3.amazonaws.com",
+			path:           "examplebucket/trailertest.txt",
+			trailerHeader:  sig.ChecksumAlgorithmCRC32,
+			trailerContent: "x-amz-checksum-crc32:%s\r\n\r\n",
+			chunkSize:      64,
+			totalChunks:    2,
+			chunkData: [][]byte{
+				bytes.Repeat([]byte("a"), 64),
+				bytes.Repeat([]byte("b"), 64),
+			},
+			expectedError: false,
+		},
+		{
+			name:           "Invalid Trailer",
+			method:         http.MethodPut,
+			host:           "s3.amazonaws.com",
+			path:           "examplebucket/trailertest.txt",
+			trailerHeader:  sig.ChecksumAlgorithm("invalid"),
+			trailerContent: "invalid:%s\r\n\r\n",
+			chunkSize:      64,
+			totalChunks:    1,
+			chunkData: [][]byte{
+				bytes.Repeat([]byte("a"), 64),
+			},
+			expectedError: true,
+		},
+	}
+
+	const (
+		testID     = "AKIAIOSFODNN7EXAMPLE"
+		testSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		region     = "us-east-1"
+		service    = "s3"
+		date       = "20130524"
+		timeStamp  = "20130524T000000Z"
+	)
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a request
+			req, err := http.NewRequest(tc.method, fmt.Sprintf("https://%s/%s", tc.host, tc.path), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Set required headers for unsigned trailers
+			req.Header.Set("X-Amz-Date", timeStamp)
+			req.Header.Set("X-Amz-Content-Sha256", "STREAMING-UNSIGNED-PAYLOAD-TRAILER")
+			req.Header.Set("Content-Encoding", "aws-chunked")
+			req.Header.Set("X-Amz-Trailer", string(tc.trailerHeader))
+
+			// Calculate decoded content length
+			decodedContentLength := 0
+			for _, chunk := range tc.chunkData {
+				decodedContentLength += len(chunk)
+			}
+			req.Header.Set("X-Amz-Decoded-Content-Length", fmt.Sprintf("%d", decodedContentLength))
+			req.Header.Set("Host", tc.host)
+
+			// Create AWS credentials
+			creds := aws.Credentials{
+				AccessKeyID:     testID,
+				SecretAccessKey: testSecret,
+			}
+
+			// Sign the request using AWS SDK v4 signer
+			signer := v4.NewSigner()
+			err = signer.SignHTTP(context.Background(), creds, req, "STREAMING-UNSIGNED-PAYLOAD-TRAILER", service, region, time.Date(2013, 5, 24, 0, 0, 0, 0, time.UTC))
+			if err != nil {
+				t.Fatalf("Failed to sign request: %v", err)
+			}
+
+			// Prepare chunks
+			var chunks strings.Builder
+			var combinedData []byte
+
+			// Create each chunk
+			for _, chunkData := range tc.chunkData {
+				chunkHex := fmt.Sprintf("%x\r\n", len(chunkData))
+				chunks.WriteString(chunkHex)
+				chunks.Write(chunkData)
+				chunks.WriteString("\r\n")
+				combinedData = append(combinedData, chunkData...)
+			}
+
+			// For valid trailer types, calculate checksum
+			var checksumB64 string
+			if !tc.expectedError {
+				// Get the appropriate checksum writer using the public API
+				checksumWriter, err := sig.GetChecksumWriter(string(tc.trailerHeader))
+				if err != nil {
+					t.Fatalf("Failed to get checksum writer for %s", tc.trailerHeader)
+				}
+
+				// Calculate checksum for the entire payload
+				checksumWriter.Write(combinedData)
+				checksum := checksumWriter.Sum(nil)
+				checksumB64 = base64.StdEncoding.EncodeToString(checksum)
+			} else {
+				// For invalid trailers, just use a dummy value
+				checksumB64 = "dummyvalue=="
+			}
+
+			// Add terminating chunk with trailer
+			chunks.WriteString("0\r\n")
+			chunks.WriteString(fmt.Sprintf(tc.trailerContent, checksumB64))
+
+			// Set the request body
+			fullBody := chunks.String()
+			req.Body = io.NopCloser(strings.NewReader(fullBody))
+			req.ContentLength = int64(len(fullBody))
+
+			// Create credential for verification
+			modelCred := model.Credential{
+				BaseCredential: model.BaseCredential{
+					AccessKeyID:     testID,
+					SecretAccessKey: testSecret,
+					IssuedDate:      time.Date(2013, 5, 24, 0, 0, 0, 0, time.UTC),
+				},
+			}
+
+			// Parse the request using our authenticator
+			authenticator := sig.NewV4Authenticator(req)
+			sigContext, err := authenticator.Parse()
+			if err != nil {
+				t.Errorf("failed to parse request with STREAMING-UNSIGNED-PAYLOAD-TRAILER: %v", err)
+				return
+			}
+
+			// Verify the signature
+			err = authenticator.Verify(&modelCred)
+			
+			// For invalid trailer cases, we expect an error
+			if tc.expectedError {
+				if err == nil {
+					t.Errorf("expected an error for invalid trailer, but got none")
+				} else if !errors.Is(err, sig.ErrUnsupportedChecksum) {
+					t.Errorf("expected ErrUnsupportedChecksumAlgorithm error, got: %v", err)
+				}
+				return // Skip the rest of the test for invalid cases
+			} else if err != nil {
+				t.Errorf("failed to verify request with STREAMING-UNSIGNED-PAYLOAD-TRAILER: %v", err)
+				return
+			}
+
+			// Check that it properly identified the auth type
+			if sigContext.GetAccessKeyID() != testID {
+				t.Errorf("expected access key ID to be %s, got %s", testID, sigContext.GetAccessKeyID())
+			}
+
+			// Verify that content length was properly set to decoded length
+			if req.ContentLength != int64(decodedContentLength) {
+				t.Errorf("expected content length to be %d, got %d", decodedContentLength, req.ContentLength)
+			}
+
+			// Read the body to verify the chunks are correctly parsed
+			bodyData, err := io.ReadAll(req.Body)
+			if err != nil {
+				t.Errorf("failed to read parsed body: %v", err)
+				return
+			}
+
+			// Verify that the decoded body contains exactly what we expect
+			if !bytes.Equal(bodyData, combinedData) {
+				t.Errorf("body data doesn't match expected content\nExpected: %s\nGot: %s",
+					truncateForDisplay(string(combinedData)), truncateForDisplay(string(bodyData)))
+			}
+		})
 	}
 }

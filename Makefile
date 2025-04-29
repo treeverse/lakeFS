@@ -180,7 +180,9 @@ gen-code: gen-api ## Run the generator for inline commands
 		./tools/wrapgen/testcode
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
-build: gen docs ## Download dependencies and build the default binary
+build: gen docs build-binaries ## Download dependencies and build the default binary
+
+build-binaries:
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
