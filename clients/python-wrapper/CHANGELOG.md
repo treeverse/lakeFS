@@ -6,7 +6,7 @@
 
 :new: What's new:
 
-- Enalbe quick install and run of lakefs and lakectl (#8972)
+- Enable quick install and run of lakefs and lakectl (#8972)
 
 ## v0.9.1
 
