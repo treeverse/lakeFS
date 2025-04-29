@@ -20,8 +20,8 @@ lakeFS provides 2 ways to expose versioned data locally
 
 ## lakeFS Mount
 
-lakeFS Mount is available (in preview) for [lakeFS Enterprise](../enterprise/index.html) and [lakeFS Cloud](../cloud/index.html) customers. <br/> 
-You can try it out by [signing up for the preview](https://info.lakefs.io/thanks-lakefs-mounts)
+lakeFS Mount is available for [lakeFS Enterprise](../enterprise/index.html) and [lakeFS Cloud](../cloud/index.html) customers. <br/> 
+You can try it out by [signing up](https://info.lakefs.io/thanks-lakefs-mounts)
 {: .note }
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU"></iframe>
@@ -39,10 +39,9 @@ Prerequisites:
 1. In lakeFS create a new branch called `my-experiment`. You can do this through the UI or with `lakectl`:
 
     ```bash
-    docker exec lakefs \
-        lakectl branch create \
-            lakefs://quickstart/my-experiment \
-            --source lakefs://quickstart/main
+    lakectl branch create \
+        lakefs://quickstart/my-experiment \
+        --source lakefs://quickstart/main
     ```
 
 2. Mount images from your quickstart repository into a local directory named `my_local_dir`
@@ -83,19 +82,19 @@ Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/b
 1. In lakeFS create a new branch called `my-experiment`. You can do this through the UI or with `lakectl`:
 
     ```bash
-    docker exec lakefs lakectl branch create lakefs://quickstart/my-experiment --source lakefs://quickstart/main
+    lakectl branch create lakefs://quickstart/my-experiment --source lakefs://quickstart/main
     ```
 
 2. Clone images from your quickstart repository into a local directory named `my_local_dir` within your container:   
 
     ```bash
-    docker exec lakefs lakectl local clone lakefs://quickstart/my-experiment/images my_local_dir
+    lakectl local clone lakefs://quickstart/my-experiment/images my_local_dir
     ```
 
 3. Verify that `my_local_dir` is linked to the correct path in your lakeFS remote: 
   
     ```bash
-    docker exec lakefs lakectl local list
+    lakectl local list
     ```
 
    You should see confirmation that my_local_dir is tracking the desired lakeFS path.:    
@@ -107,7 +106,7 @@ Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/b
 4. Verify that your local environment is up-to-date with its remote path:
     
    ```bash
-    docker exec lakefs lakectl local status my_local_dir
+    lakectl local status my_local_dir
     ```
     You should get a confirmation message like this showing that there is no difference between your local environment and the lakeFS remote:
 
@@ -121,22 +120,15 @@ Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/b
 ### Making Changes to Data Locally
 {: .no_toc }
 
-1. Download a new image of an Axolotl and add it to the dataset cloned into `my_local_dir`:  
 
-    ```bash
-    curl -L https://go.lakefs.io/43ENDyS > axolotl.png
-   
-    docker cp axolotl.png lakefs:/home/lakefs/my_local_dir
-   ```
-
-2. Clean the dataset by removing images larger than 225 KB:
+1. Clean the dataset by removing images larger than 225 KB:
     ```bash  
-    docker exec lakefs find my_local_dir -type f -size +225k -delete
+    find my_local_dir -type f -size +225k -delete
     ```
    
-3. Check the status of your local changes compared to the lakeFS remote path:
+2. Check the status of your local changes compared to the lakeFS remote path:
     ```bash
-    docker exec lakefs lakectl local status my_local_dir
+    lakectl local status my_local_dir
     ```
    
     You should get a confirmation message like this, showing the modifications you made locally: 
@@ -163,7 +155,7 @@ the improved dataset is shared and versioned.
 1. Commit your local changes to lakeFS: 
 
     ```bash
-    docker exec lakefs lakectl local commit -m 'Deleted images larger than 225KB in size and changed the Axolotl image' my_local_dir
+    lakectl local commit -m 'Deleted images larger than 225KB in size and changed the Axolotl image' my_local_dir
     ```
     
     In your branch, you should see the commit including your local changes:
@@ -186,12 +178,4 @@ object          2023-03-21 17:33:51 +0000 UTC    20.9 kB         denmark-lakes.p
 object          2023-03-21 14:45:38 +0000 UTC    916.4 kB        lakes.parquet
 ```
 
-# Finishing Up
-{: .no_toc }
-
-Once you've finished the quickstart, shut down your local environment with the following command:
-
-```bash
-docker stop lakefs
-```
 
