@@ -658,7 +658,13 @@ export const URINavigator = ({
           {relativeTo === "" ? (
               <>
                 <strong>lakefs://</strong>
-                <Link href={{ pathname: "/repositories/:repoId/objects", params }}>
+                <Link
+                    href={{
+                      pathname: "/repositories/:repoId/objects",
+                      params,
+                      query: { ref: reference.id },
+                    }}
+                >
                   {repo.id}
                 </Link>
                 <strong>/</strong>
@@ -679,28 +685,28 @@ export const URINavigator = ({
                 <strong>/</strong>
               </>
           )}
-        </div>
 
-        {parts.map((part, i) => {
-          const path =
-            parts
-              .slice(0, i + 1)
-              .map((p) => p.name)
-              .join("/") + "/";
-          const query = { path, ref: reference.id };
-          const edgeElement =
-            isPathToFile && i === parts.length - 1 ? (
-              <span>{part.name}</span>
-            ) : (
-              <>
-                <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
-                <strong>{"/"}</strong>
-              </>
-            );
-          return <span key={part.name}>{edgeElement}</span>;
-        })}
+          {parts.map((part, i) => {
+            const path =
+              parts
+                .slice(0, i + 1)
+                .map((p) => p.name)
+                .join("/") + "/";
+            const query = { path, ref: reference.id };
+            const edgeElement =
+              isPathToFile && i === parts.length - 1 ? (
+                <span>{part.name}</span>
+              ) : (
+                <>
+                  <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                  <strong>{"/"}</strong>
+                </>
+              );
+            return <span key={part.name}>{edgeElement}</span>;
+          })}
         </div>
-      <div className="object-viewer-buttons">
+      </div>
+      <div className="object-viewer-buttons" style={{ flexShrink: 0 }}>
         {hasCopyButton &&
         <ClipboardButton
             text={`lakefs://${repo.id}/${reference.id}/${path}`}
