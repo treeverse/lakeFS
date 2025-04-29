@@ -21,6 +21,7 @@ package sig
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha1" //nolint:gosec
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -54,6 +55,7 @@ const (
 	ChecksumAlgorithmCRC32C    ChecksumAlgorithm = "x-amz-checksum-crc32c"
 	ChecksumAlgorithmCRC64NVME ChecksumAlgorithm = "x-amz-checksum-crc64nvme"
 	ChecksumAlgorithmSHA256    ChecksumAlgorithm = "x-amz-checksum-sha256"
+	ChecksumAlgorithmSHA1      ChecksumAlgorithm = "x-amz-checksum-sha1"
 	ChecksumAlgorithmInvalid   ChecksumAlgorithm = ""
 )
 
@@ -489,6 +491,9 @@ func GetChecksumWriter(name string) (hash.Hash, error) {
 		return crc64nvme.New(), nil
 	case ChecksumAlgorithmSHA256:
 		return sha256.New(), nil
+	case ChecksumAlgorithmSHA1:
+		// could be a security risk, but some clients might use it
+		return sha1.New(), nil //nolint:gosec
 	default:
 		return nil, ErrUnsupportedChecksum
 	}
