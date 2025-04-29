@@ -97,23 +97,20 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
     if (err) return <AlertError error={err}/>;
 
     const isGeoJSON = path.endsWith(".geojson");
-    if (isGeoJSON) {
-        return (
-            <div>
-                <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
-                <GeoJSONPreview data={right?.response} />
-            </div>
-        );
-    }
 
     return <div>
         <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
-        <ReactDiffViewer
-            oldValue={left && left.response}
-            newValue={right && right.response}
-            splitView={false}
-            useDarkTheme={state.settings.darkMode}
-            compareMethod={DiffMethod.WORDS}/>
+        {
+            isGeoJSON
+                ? <GeoJSONPreview data={right?.response} />
+                : <ReactDiffViewer
+                    oldValue={left?.response}
+                    newValue={right?.response}
+                    splitView={false}
+                    useDarkTheme={state.settings.darkMode}
+                    compareMethod={DiffMethod.WORDS}
+                />
+        }
     </div>;
 }
 
