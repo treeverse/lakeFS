@@ -30,7 +30,18 @@ For more information, see the [documentation](https://docs.lakefs.io).
 
 ## Getting Started
 
-You can spin up a standalone sandbox instance of lakeFS using Docker:
+You can spin up a standalone sandbox instance of lakeFS:
+
+```bash
+pip install lakefs
+python -m lakefs.quickstart
+```
+
+Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser.
+
+### Getting Started with Docker
+
+Alternatively, you can run lakeFS a server using Docker:
 
 ```bash
 docker run --pull always \
@@ -39,8 +50,6 @@ docker run --pull always \
 		   treeverse/lakefs:latest \
 		   run --quickstart
 ```
-
-Once you've got lakeFS running, open [http://127.0.0.1:8000/](http://127.0.0.1:8000/) in your web browser.
 
 ### Quickstart
 
