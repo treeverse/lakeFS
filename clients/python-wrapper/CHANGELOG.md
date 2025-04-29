@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.9.2
+
+:new: What's new:
+
+- Enalbe quick install and run of lakefs and lakectl (#8972)
+
 ## v0.9.1
 
 :bug: Bugs fixed:
