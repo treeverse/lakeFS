@@ -650,7 +650,7 @@ export const URINavigator = ({
 
   return (
     <div className="d-flex">
-      <div className="lakefs-uri flex-grow-1" style={{ minWidth: 0 }}>
+      <div className="lakefs-uri flex-grow-1">
         <div
             title={displayedReference}
             className="w-100 text-nowrap overflow-hidden text-truncate"
