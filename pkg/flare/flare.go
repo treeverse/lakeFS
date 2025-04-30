@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/octarinesec/secret-detector/pkg/scanner"
-	"github.com/octarinesec/secret-detector/pkg/secrets"
+	"github.com/treeverse/secret-detector/pkg/scanner"
+	"github.com/treeverse/secret-detector/pkg/secrets"
 	"gopkg.in/yaml.v3"
 )
 
