@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.14.2 - 2024-30-04
+* Spark Client StorageID support (#8918)
+
+
 ## v0.14.1 - 2024-07-04
 * When scanning across all commits, correctly handle lakeFS storage namespaces that do not end in `/` (#7955)
   
