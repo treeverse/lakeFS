@@ -13,7 +13,28 @@ import {getRepoStorageConfig} from "../../../pages/repositories/repository/utils
 import {GeoJSONPreview} from "./GeoJSONPreview";
 
 const maxDiffSizeBytes = 120 << 10;
-const supportedReadableFormats = ["txt", "text", "md", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson", "geojson"];
+const DiffViewerType = {
+    GEOJSON: 'geojson',
+    REACT: 'react',
+};
+const diffViewersByExtension = {
+    geojson: DiffViewerType.GEOJSON,
+    txt: DiffViewerType.REACT,
+    text: DiffViewerType.REACT,
+    md: DiffViewerType.REACT,
+    csv: DiffViewerType.REACT,
+    tsv: DiffViewerType.REACT,
+    yaml: DiffViewerType.REACT,
+    yml: DiffViewerType.REACT,
+    json: DiffViewerType.REACT,
+    jsonl: DiffViewerType.REACT,
+    ndjson: DiffViewerType.REACT,
+};
+
+const getViewer = (path) => {
+    const ext = path.split(".").pop().toLowerCase();
+    return diffViewersByExtension[ext] || null;
+};
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const {repo, error: refsError, loading: refsLoading} = useRefs();
@@ -24,7 +45,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
 
     if (hooksError) return <AlertError error={hooksError}/>;
 
-    const readable = readableObject(path);
+    const viewer = getViewer(path);
     let left;
     let right;
     switch (diffType) {
@@ -53,7 +74,7 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
 
     const leftStat = left && left.response;
     const rightStat = right && right.response;
-    if (!readable) {
+    if (!viewer) {
         return <NoContentDiff left={leftStat} right={rightStat} diffType={diffType}/>;
     }
     const objectTooBig = (leftStat && leftStat.size_bytes > maxDiffSizeBytes) || (rightStat && rightStat.size_bytes > maxDiffSizeBytes);
@@ -67,17 +88,8 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
                         leftSize={leftSize} rightSize={rightSize} diffType={diffType}/>;
 }
 
-function readableObject(path) {
-    for (const ext of supportedReadableFormats) {
-        if (path.endsWith("." + ext)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 const NoContentDiff = ({left, right, diffType}) => {
-    const supportedFileExtensions = supportedReadableFormats.map((fileType) => `.${fileType}`);
+    const supportedFileExtensions = Object.keys(diffViewersByExtension).map((ext) => `.${ext}`);
     return <div>
         <span><StatDiff left={left} right={right} diffType={diffType}/></span>
         <span><Alert variant="light"><InfoIcon/> {`lakeFS supports content diff for ${supportedFileExtensions.join(',')} file formats only`}</Alert></span>
@@ -96,12 +108,13 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
     const err = (left && left.error) || (right && right.err);
     if (err) return <AlertError error={err}/>;
 
-    const isGeoJSON = path.endsWith(".geojson");
+    const viewer = getViewer(path);
+    if (!viewer) return null;
 
     return <div>
         <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
         {
-            isGeoJSON
+            viewer === DiffViewerType.GEOJSON
                 ? <GeoJSONPreview data={right?.response} />
                 : <ReactDiffViewer
                     oldValue={left?.response}

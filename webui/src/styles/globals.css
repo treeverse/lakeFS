@@ -924,3 +924,8 @@ td.entry-type-indicator {
 .pull-details .description {
   min-height: 160px;
 }
+
+.geojson-map-wrapper {
+  height: 400px;
+  width: 100%;
+}

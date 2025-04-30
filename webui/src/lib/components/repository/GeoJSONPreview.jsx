@@ -23,7 +23,7 @@ export const GeoJSONPreview = ({ data }) => {
         : { center: [0, 0], zoom: 2 };
 
     return (
-        <div style={{ height: "400px", width: "100%" }}>
+        <div className="geojson-map-wrapper">
             <MapContainer {...mapProps} style={{ height: "100%", width: "100%" }}>
                 <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
