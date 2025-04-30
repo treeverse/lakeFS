@@ -929,3 +929,8 @@ td.entry-type-indicator {
   height: 400px;
   width: 100%;
 }
+
+.geojson-map-container {
+  height: 100%;
+  width: 100%;
+}
