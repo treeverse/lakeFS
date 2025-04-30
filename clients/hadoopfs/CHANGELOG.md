@@ -2,6 +2,11 @@
 
 ## _Upcoming_
 
+## 0.2.5
+
+* Fix listStatus - Skip stat object on empty path for supporting wild card on root (#8989)
+* Support storage ID (#8954)
+
 ## 0.2.4
 
 lakeFSFS: new Token Provider feature with IAM Role Support for lakeFS authentication (#7659 + #7604)
