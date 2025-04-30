@@ -468,7 +468,7 @@ interact with your data on lakeFS.
 Add the package to your `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.2.4
+  --packages io.lakefs:hadoop-lakefs-assembly:0.2.5
   ```
 
   </div>
@@ -476,7 +476,7 @@ Add the package to your `spark-submit` command:
 In  your cluster settings, under the _Libraries_ tab, add the following Maven package:
 
 ```
-io.lakefs:hadoop-lakefs-assembly:0.2.4
+io.lakefs:hadoop-lakefs-assembly:0.2.5
 ```
 
 Once installed, it should look something like this:
@@ -489,7 +489,7 @@ Once installed, it should look something like this:
 Add the package to your `pyspark` or `spark-submit` command:
 
   ```
-  --packages io.lakefs:hadoop-lakefs-assembly:0.2.4
+  --packages io.lakefs:hadoop-lakefs-assembly:0.2.5
   ```
 
 Add the configuration to access the S3 bucket used by lakeFS to your `pyspark` or `spark-submit` command or add this configuration at the Cloudera cluster level (see below):
@@ -560,7 +560,7 @@ spark-shell --conf spark.hadoop.fs.s3a.access.key='AKIAIOSFODNN7EXAMPLE' \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.2.4 \
+              --packages io.lakefs:hadoop-lakefs-assembly:0.2.5 \
               io.example.ExampleClass
 ```
   </div>
@@ -727,7 +727,7 @@ spark-shell --conf spark.hadoop.fs.lakefs.access.mode=presigned \
               --conf spark.hadoop.fs.lakefs.access.key=AKIAlakefs12345EXAMPLE \
               --conf spark.hadoop.fs.lakefs.secret.key=abc/lakefs/1234567bPxRfiCYEXAMPLEKEY \
               --conf spark.hadoop.fs.lakefs.endpoint=https://example-org.us-east-1.lakefscloud.io/api/v1 \
-              --packages io.lakefs:hadoop-lakefs-assembly:0.2.4
+              --packages io.lakefs:hadoop-lakefs-assembly:0.2.5
 ```
   </div>
   <div markdown="1" id="config-scala">
