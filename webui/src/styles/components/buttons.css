@@ -1,0 +1,114 @@
+/* Buttons */
+.btn {
+  font-weight: 500;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-success {
+  background-color: var(--success);
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: var(--success-dark);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: var(--danger-dark);
+}
+
+.btn-secondary {
+  background-color: #4b5563; /* Gray, closer to background color */
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #374151; /* Darker gray for hover */
+}
+
+.btn-outline-secondary {
+  color: #4b5563;
+  border: 1px solid #4b5563;
+  background-color: transparent;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #888888;
+  color: #000;
+}
+
+.btn-link {
+  color: var(--primary);
+  background: none;
+  padding: 0;
+  font-weight: 500;
+}
+
+.btn-link:hover {
+  color: var(--primary-dark);
+  text-decoration: none;
+}
+
+/* Fix for btn-light in dark mode */
+[data-bs-theme="dark"] .btn-light {
+  background-color: #374151;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+[data-bs-theme="dark"] .btn-light:hover {
+  background-color: #4b5563;
+  color: #f9fafb;
+  border-color: #6b7280;
+}
+
+[data-bs-theme="dark"] .btn-light:focus,
+[data-bs-theme="dark"] .btn-light:active {
+  background-color: #4b5563;
+  color: #f9fafb;
+  border-color: #6b7280;
+  box-shadow: 0 0 0 0.25rem rgba(75, 85, 99, 0.5);
+}
+
+/* Fix for btn-light dropdown toggle in dark mode */
+[data-bs-theme="dark"] .btn-light.dropdown-toggle {
+  background-color: #374151;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+[data-bs-theme="dark"] .btn-light.dropdown-toggle:hover,
+[data-bs-theme="dark"] .btn-light.dropdown-toggle:focus,
+[data-bs-theme="dark"] .btn-light.dropdown-toggle:active {
+  background-color: #4b5563;
+  color: #f9fafb;
+  border-color: #6b7280;
+}
+
+/* Dark mode fix for btn-outline-secondary */
+[data-bs-theme="dark"] .btn-outline-secondary {
+  color: #f9fafb;
+  border-color: #6b7280;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary:hover {
+  background-color: #4b5563;
+  color: #f9fafb;
+} 

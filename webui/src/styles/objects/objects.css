@@ -1,0 +1,378 @@
+/* Tree Table */
+.tree-container {
+  margin-bottom: var(--spacing-xl);
+}
+
+.tree-container .card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tree-container .card-header {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.tree-container .card-body {
+  padding: 0;
+}
+
+.tree-entry-row,
+.change-entry-row {
+  transition: background-color var(--transition-fast);
+}
+
+.tree-entry-row:hover,
+.change-entry-row:hover {
+  background-color: var(--border-light);
+}
+
+.tree-path {
+  font-size: 0.9rem;
+}
+
+.tree-path .octicon {
+  color: inherit;
+  margin-right: var(--spacing-xs);
+}
+
+/* Make icons in diff rows match their text color */
+.diff-changed .tree-path .octicon {
+  color: inherit;
+}
+
+.diff-added .tree-path .octicon {
+  color: inherit;
+}
+
+.diff-removed .tree-path .octicon {
+  color: inherit;
+}
+
+.diff-conflict .tree-path .octicon {
+  color: inherit;
+}
+
+.prefix-expand-icon {
+  margin-left: 10px;
+  cursor: pointer;
+  color: var(--bs-nav-link-color);
+}
+
+.tree-path-action {
+  cursor: pointer;
+  color: var(--bs-nav-link-color);
+}
+
+/* Gear icon visibility and alignment */
+.change-entry-row-actions .dropdown-toggle,
+.row-hover .btn-outline-danger {
+  visibility: hidden;
+  float: right;
+}
+
+.change-entry-row:hover .change-entry-row-actions .dropdown-toggle,
+tr:hover .row-hover .btn-outline-danger {
+  visibility: visible;
+}
+
+/* Diff Styling */
+.diff-changed td {
+  background-color: var(--color-bg-changed);
+}
+
+.diff-added td {
+  background-color: var(--color-bg-added);
+}
+
+.diff-removed td {
+  background-color: var(--color-bg-removed);
+}
+
+.diff-conflict td {
+  background-color: var(--color-bg-conflict);
+}
+
+/* Improve link contrast on colored backgrounds */
+.diff-changed a, .diff-changed .btn-link {
+  color: #000000;
+  font-weight: 600;
+}
+
+.diff-added a, .diff-added .btn-link {
+  color: #003300;
+  font-weight: 600;
+}
+
+.diff-removed a, .diff-removed .btn-link {
+  color: #330000;
+  font-weight: 600;
+}
+
+.diff-conflict a, .diff-conflict .btn-link {
+  color: #330033;
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"]  tr.diff-changed > td ,
+[data-bs-theme="dark"]  tr.diff-changed > td a,
+[data-bs-theme="dark"]  tr.diff-added > td ,
+[data-bs-theme="dark"]  tr.diff-added > td a,
+[data-bs-theme="dark"]  tr.diff-removed > td,
+[data-bs-theme="dark"]  tr.diff-removed > td a,
+[data-bs-theme="dark"]  tr.diff-conflict  > td ,
+[data-bs-theme="dark"]  tr.diff-conflict  > td a{
+  color: var(--surface);
+}
+
+/* Ensure hover states maintain contrast */
+.diff-changed a:hover, .diff-changed .btn-link:hover {
+  color: #333333;
+}
+
+.diff-added a:hover, .diff-added .btn-link:hover {
+  color: #006600;
+}
+
+.diff-removed a:hover, .diff-removed .btn-link:hover {
+  color: #660000;
+}
+
+.diff-conflict a:hover, .diff-conflict .btn-link:hover {
+  color: #660066;
+}
+
+[data-bs-theme="dark"] .diff-changed a:hover, 
+[data-bs-theme="dark"] .diff-changed .btn-link:hover {
+  color: #dddddd;
+}
+
+[data-bs-theme="dark"] .diff-added a:hover, 
+[data-bs-theme="dark"] .diff-added .btn-link:hover {
+  color: #88ff88;
+}
+
+[data-bs-theme="dark"] .diff-removed a:hover, 
+[data-bs-theme="dark"] .diff-removed .btn-link:hover {
+  color: #ff8888;
+}
+
+[data-bs-theme="dark"] .diff-conflict a:hover, 
+[data-bs-theme="dark"] .diff-conflict .btn-link:hover {
+  color: #ff88ff;
+}
+
+.color-fg-added {
+  color: var(--color-fg-added);
+  font-weight: 600;
+}
+
+.color-fg-removed {
+  color: var(--color-fg-removed);
+  font-weight: 600;
+}
+
+.color-fg-changed {
+  color: var(--color-fg-changed);
+  font-weight: 600;
+}
+
+.color-fg-conflict {
+  color: var(--color-fg-conflict);
+  font-weight: 600;
+}
+
+/* Object viewer styles */
+.object-viewer-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.object-viewer-buttons .btn {
+  margin-right: var(--spacing-md);
+}
+
+.object-viewer-buttons .btn:last-child {
+  margin-right: 0;
+}
+
+/* Make images in object viewer scale to fit their container */
+.object-viewer img,
+[class*="object-viewer"] img,
+[class*="fileViewer"] img,
+.file-content-body img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.object-viewer-pdf object {
+  width: 100%;
+  height: 600px;
+}
+
+/* Upload modal styles */
+.file-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--background-alt);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.file-drop-zone:hover,
+.file-drop-zone-focus {
+  border-color: var(--primary);
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Upload item styles */
+.upload-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.upload-item:last-child {
+  border-bottom: none;
+}
+
+.upload-item-done {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.upload-item-error {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.upload-item .path {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.upload-item .size {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+/* Data Table Specific Styling (often used in object views like SQL results) */
+.object-viewer-sql-results {
+  margin-top: var(--spacing-md);
+  border-radius: var(--radius-md);
+  overflow: auto;
+  height: 70vh; /* Fixed height instead of max-height to ensure sticky headers work */
+  box-shadow: var(--shadow-md);
+  position: relative; /* Needed for sticky positioning context */
+}
+
+.object-viewer-sql-results .table {
+  margin-bottom: 0;
+  border: 1px solid var(--border);
+}
+
+.object-viewer-sql-results .table-dark th {
+  background-color: var(--surface);
+  color: var(--text);
+  border: none;
+  border-bottom: 2px solid var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: var(--spacing-md) var(--spacing-lg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.object-viewer-sql-results .table {
+  border-collapse: collapse;
+}
+
+.object-viewer-sql-results .table th,
+.object-viewer-sql-results .table td {
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.object-viewer-sql-results .table th:first-child,
+.object-viewer-sql-results .table td:first-child {
+  border-left: 1px solid var(--border);
+}
+
+.object-viewer-sql-results .table th:last-child,
+.object-viewer-sql-results .table td:last-child {
+  border-right: 1px solid var(--border);
+}
+
+.object-viewer-sql-results .table-dark th small {
+  color: var(--text-light);
+  font-size: 0.75rem;
+  display: block;
+  margin-top: 0.25rem;
+  font-weight: normal;
+}
+
+.object-viewer-sql-results tbody tr:nth-child(odd) {
+  background-color: var(--background-alt);
+}
+
+.object-viewer-sql-results tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.object-viewer-sql-results td {
+  font-size: 0.9rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-viewer-sql-results td.number-cell {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.object-viewer-sql-results td.string-cell {
+  font-family: var(--font-sans);
+}
+
+.object-viewer-sql-results td.date-cell {
+  font-family: var(--font-mono);
+  color: var(--text-light);
+}
+
+/* Dark mode adjustments for data tables */
+[data-bs-theme="dark"] .object-viewer-sql-results .table-dark th {
+  background-color: var(--background-alt);
+  color: var(--text-light);
+  border: none;
+  border-bottom: 2px solid var(--primary-dark);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+[data-bs-theme="dark"] .object-viewer-sql-results .table th,
+[data-bs-theme="dark"] .object-viewer-sql-results .table td {
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+[data-bs-theme="dark"] .object-viewer-sql-results tbody tr:nth-child(odd) {
+  background-color: rgba(31, 41, 55, 0.5);
+}
+
+[data-bs-theme="dark"] .object-viewer-sql-results tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Fix for object browser gear icon dropdown */
+.tree-container .dropdown-menu,
+.change-entry-row .dropdown-menu {
+  position: fixed !important; /* Use fixed positioning to avoid container constraints */
+  max-height: 80vh; /* Limit height to 80% of viewport height */
+  overflow-y: auto; /* Add scrolling if needed */
+} 

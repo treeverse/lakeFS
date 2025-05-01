@@ -1,0 +1,44 @@
+/* Upload modal styles */
+.file-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--background-alt);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.file-drop-zone:hover,
+.file-drop-zone-focus {
+  border-color: var(--primary);
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Upload item styles */
+.upload-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.upload-item:last-child {
+  border-bottom: none;
+}
+
+.upload-item-done {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.upload-item-error {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.upload-item .path {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.upload-item .size {
+  font-size: 0.85rem;
+  color: var(--text-light);
+} 

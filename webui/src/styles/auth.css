@@ -1,0 +1,94 @@
+/* Admin navigation pills */
+.auth-page .nav-tabs .nav-link {
+  color: var(--text-light);
+}
+
+.auth-page .nav-tabs .nav-link:hover {
+  color: var(--success);
+  background-color: rgba(139, 92, 246, 0.05);
+}
+
+.auth-page .nav-tabs .nav-link.active {
+  color: var(--success);
+  background-color: rgba(139, 92, 246, 0.1);
+  transform: translateY(-2px);
+  position: relative;
+  scale: 1.05;
+}
+
+.auth-page .nav-tabs .nav-link.active::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--success);
+  opacity: 0.7;
+  transition: opacity var(--transition);
+}
+
+.auth-page .nav-tabs .nav-link.active::after {
+  background-color: var(--success);
+}
+
+/* Override any blue styling in admin navigation */
+.auth-page .nav-tabs,
+.auth-page .nav-item,
+.auth-page .nav-link {
+  border-color: var(--success) !important;
+}
+
+.auth-page .nav-tabs .nav-link.active,
+.auth-page .nav-item.active,
+.auth-page .nav-link.active {
+  border-color: var(--success) !important;
+}
+
+.auth-page a:not(.btn) {
+  color: var(--success);
+}
+
+.auth-page a:not(.btn):hover {
+  color: var(--success-dark);
+}
+
+/* Force override for nav pills in auth pages */
+.auth-page .nav-pills {
+  --bs-nav-pills-link-active-bg: var(--success) !important;
+  --bs-nav-pills-link-active-color: white !important;
+  --bs-nav-link-color: var(--success) !important;
+  --bs-nav-link-hover-color: var(--success-dark) !important;
+}
+
+.auth-page .nav-pills .nav-link.active {
+  background-color: var(--success) !important;
+}
+
+/* Ensure nav pills use our custom colors with higher specificity */
+.auth-page .nav-pills .nav-link.active,
+.auth-page .nav-pills .show > .nav-link,
+.auth-page .nav.nav-pills .nav-link.active,
+.auth-page .nav.nav-pills .show > .nav-link,
+body .auth-page .nav-pills .nav-link.active,
+body .auth-page .nav-pills .show > .nav-link {
+  background-color: var(--success) !important;
+  color: white !important;
+}
+
+.auth-page .nav-pills .nav-link,
+.auth-page .nav.nav-pills .nav-link,
+body .auth-page .nav-pills .nav-link {
+  color: var(--success) !important;
+}
+
+.auth-page .nav-pills .nav-link:hover,
+.auth-page .nav.nav-pills .nav-link:hover,
+body .auth-page .nav-pills .nav-link:hover {
+  color: var(--success-dark) !important;
+}
+
+/* Direct style override for nav-pills */
+.auth-page .nav-pills .nav-link.active {
+  background-color: var(--success) !important;
+} 

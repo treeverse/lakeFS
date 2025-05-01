@@ -1,0 +1,443 @@
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  font-size: 0.75em;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: var(--radius-full);
+  transition: color var(--transition-fast) ease-in-out, background-color var(--transition-fast) ease-in-out;
+}
+
+.badge-info {
+  color: white;
+  background-color: var(--info);
+}
+
+/* Alerts */
+.alert {
+  position: relative;
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.alert-info {
+  color: var(--info-dark);
+  background-color: var(--color-bg-unknown);
+  border-color: var(--info-light);
+}
+
+.alert-warning {
+  color: var(--warning-dark);
+  background-color: var(--color-bg-changed);
+  border-color: var(--warning-light);
+}
+
+.alert-danger {
+  color: var(--danger-dark);
+  background-color: var(--color-bg-removed);
+  border-color: var(--danger-light);
+}
+
+/* Dark mode alert fixes */
+[data-bs-theme="dark"] .alert-info {
+  background-color: #1e3a8a;
+  color: #bfdbfe;
+  border-color: #3b82f6;
+}
+
+[data-bs-theme="dark"] .alert-warning {
+  background-color: #fbbf24;
+  color: #1f2937;
+  border-color: #f59e0b;
+}
+
+/* Action Bar */
+.action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.action-bar.borderless {
+  border-bottom: none;
+}
+
+.action-bar .float-start .btn {
+  margin-right: var(--spacing-sm);
+}
+
+.action-bar .float-end .btn {
+  margin-left: var(--spacing-sm);
+}
+.action-bar .btn {
+  margin-right: var(--spacing-sm);
+}
+
+.action-bar .btn:last-child {
+  margin-right: 0;
+}
+
+/* Action Group - Add spacing between buttons */
+.action-group .btn {
+  margin-right: var(--spacing-sm);
+}
+
+.action-group button:last-child {
+  margin-right: 0;
+}
+
+/* Fix spacing for PrefixSearchWidget when expanded */
+.action-group form {
+  margin-right: var(--spacing-sm);
+}
+
+.action-group-right form {
+  margin-right: var(--spacing-sm);
+}
+
+/* Upload and Import buttons spacing */
+.action-group [class*="Upload"] + [class*="Import"],
+.action-group button + button,
+button[class*="Upload"] + button[class*="Import"],
+[class*="Upload"] ~ [class*="Import"],
+[data-testid*="upload"] + [data-testid*="import"],
+button[title*="Upload"] + button[title*="Import"],
+a[title*="Upload"] + a[title*="Import"] {
+  margin-left: var(--spacing-xl) !important;
+  margin-right: var(--spacing-md) !important;
+}
+
+/* LakeFS URI */
+.lakefs-uri {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text);
+  width: 95%;
+  min-width: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--border-light);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  margin-right: var(--spacing-md);
+}
+
+.lakefs-uri .octicon {
+  color: var(--color-uri-octicon);
+  margin-right: var(--spacing-xs);
+}
+
+.lakefs-uri a {
+  color: var(--color-uri-link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.lakefs-uri strong {
+  margin: 0 5px;
+}
+
+[data-bs-theme="dark"] .lakefs-uri {
+  background-color: #2d3748;
+  color: #f9fafb;
+}
+
+/* Getting Started Card */
+.getting-started-card {
+  margin-top: 64px;
+  background-color: var(--surface);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  padding: 64px 48px 32px 48px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.getting-started-card > .main-title {
+  font-style: normal;
+  font-weight: 300;
+  font-size: 42px;
+  line-height: 1.2;
+  margin-bottom: var(--spacing-lg);
+  background: linear-gradient(90deg, var(--primary) 0%, var(--success) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.getting-started-card > .text-container {
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.getting-started-card > .text-container h4 {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.4;
+  font-style: normal;
+  color: var(--text);
+}
+
+.getting-started-card > .text-container p {
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1.6;
+  font-style: normal;
+  color: var(--text-light);
+}
+
+.getting-started-card > .text-container p .sub-title {
+  font-size: 20px;
+  font-weight: 300;
+  line-height: 1.4;
+  font-style: normal;
+  color: var(--text);
+}
+
+.getting-started-card > .button-container {
+  margin-bottom: 64px;
+}
+
+.getting-started-card .learn-more {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  font-style: normal;
+  color: var(--text-light);
+}
+
+.getting-started-card .getting-started-image {
+  width: 50%;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  opacity: 0.9;
+  transform: translateY(20%);
+  transition: transform var(--transition-slow), opacity var(--transition-slow);
+}
+
+.getting-started-card:hover .getting-started-image {
+  transform: translateY(15%);
+  opacity: 1;
+}
+
+.create-sample-repo-button {
+  padding: 12px 24px;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  border-radius: var(--radius);
+  transition: all var(--transition);
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  box-shadow: var(--shadow);
+}
+
+.create-sample-repo-button:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.create-sample-repo-button.btn-link {
+  background: none;
+  color: var(--primary);
+  box-shadow: none;
+  padding: 0;
+}
+
+.create-sample-repo-button.btn-link:hover {
+  color: var(--primary-dark);
+  background: none;
+  text-decoration: underline;
+  transform: none;
+  box-shadow: none;
+}
+
+/* SyntaxHighlighter styling */
+.react-syntax-highlighter {
+  border-radius: var(--radius-md) !important;
+  margin: var(--spacing-md) 0 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  background-color: var(--background-alt) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Fix code background in SyntaxHighlighter */
+.react-syntax-highlighter code,
+.react-syntax-highlighter pre {
+  background-color: transparent !important;
+  border: none !important;
+  font-family: var(--font-mono) !important;
+  padding: 0 !important;
+}
+
+/* SyntaxHighlighter line numbers */
+.react-syntax-highlighter .linenumber {
+  color: var(--text-light) !important;
+  border-right: 1px solid var(--border) !important;
+  padding-right: var(--spacing-sm) !important;
+  margin-right: var(--spacing-sm) !important;
+  min-width: 3em !important;
+  text-align: right !important;
+  display: inline-block !important; /* Fix alignment issues */
+  width: 3em !important; /* Ensure consistent width */
+}
+
+/* SyntaxHighlighter dark mode */
+[data-bs-theme="dark"] .react-syntax-highlighter {
+  background-color: #1e293b !important;
+  border-color: #1e293b !important; /* Remove light border in dark mode */
+}
+
+[data-bs-theme="dark"] .react-syntax-highlighter .linenumber {
+  color: #64748b !important;
+  border-right-color: #374151 !important;
+}
+
+/* SyntaxHighlighter token colors for light mode */
+.react-syntax-highlighter .hljs-keyword {
+  color: #8250df !important;
+}
+
+.react-syntax-highlighter .hljs-string {
+  color: #0a3069 !important;
+}
+
+.react-syntax-highlighter .hljs-comment {
+  color: #6e7781 !important;
+  font-style: italic !important;
+}
+
+.react-syntax-highlighter .hljs-function {
+  color: #953800 !important;
+}
+
+.react-syntax-highlighter .hljs-number {
+  color: #0550ae !important;
+}
+
+.react-syntax-highlighter .hljs-operator {
+  color: #0550ae !important;
+}
+
+.react-syntax-highlighter .hljs-built_in {
+  color: #e36209 !important;
+}
+
+.react-syntax-highlighter .hljs-tag {
+  color: #116329 !important;
+}
+
+.react-syntax-highlighter .hljs-attr {
+  color: #0550ae !important;
+}
+
+/* SyntaxHighlighter token colors for dark mode */
+[data-bs-theme="dark"] .react-syntax-highlighter .hljs-keyword {
+  color: #c792ea !important;
+}
+
+[data-bs-theme="dark"] .react-syntax-highlighter .hljs-string {
+  color: #a5d6ff !important;
+}
+
+[data-bs-theme="dark"] .react-syntax-highlighter .hljs-comment {
+  color: #8b949e !important;
+  font-style: italic !important;
+}
+
+[data-bs-theme="dark"] .react-syntax-highlighter .hljs-function {
+  color: #d2a8ff !important;
+}
+
+[data-bs-theme="dark"] .react-syntax-highlighter .hljs-number {
+  color: #79c0ff !important;
+}
+
+[data-bs-theme="dark"] .react-syntax-highlighter .hljs-operator {
+  color: #79c0ff !important;
+}
+
+[data-bs-theme="dark"] .react-syntax-highlighter .hljs-built_in {
+  color: #ffa657 !important;
+}
+
+[data-bs-theme="dark"] .react-syntax-highlighter .hljs-tag {
+  color: #7ee787 !important;
+}
+
+[data-bs-theme="dark"] .react-syntax-highlighter .hljs-attr {
+  color: #79c0ff !important;
+}
+
+/* GetStarted Component Styles */
+.get-started-container {
+  background-color: var(--background-alt);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.get-started-image {
+  max-height: 250px;
+  transition: transform var(--transition), opacity var(--transition);
+}
+
+.get-started-container:hover .get-started-image {
+  transform: scale(1.1);
+}
+
+.get-started-card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.get-started-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-light);
+}
+
+.get-started-icon-container {
+  background-color: var(--border-light);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dark mode adjustments */
+[data-bs-theme="dark"] .get-started-container {
+  background-color: var(--surface);
+}
+
+[data-bs-theme="dark"] .get-started-icon-container {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Bootstrap popover size */
+.bs-popover-max-width {
+  max-width: 400px !important;
+}
+.popover {
+  max-width: 400px !important;
+} 
