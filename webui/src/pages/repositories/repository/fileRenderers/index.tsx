@@ -51,6 +51,10 @@ export const Renderers: {[fileType in FileType] : FC<RendererComponent> } = {
 }
 
 export const guessLanguage =  (extension: string | null, contentType: string | null) => {
+    switch (extension) {
+        case 'py':
+            extension = 'python'
+    }
     if (extension && SyntaxHighlighter.supportedLanguages.includes(extension)) {
         return extension;
     }
@@ -139,6 +143,7 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'txt':
         case 'text':
         case 'yaml':
+        case 'py':
         case 'yml':
         case 'json':
         case 'jsonl':

@@ -5,7 +5,6 @@ import { useAPI } from "../../../../lib/hooks/api";
 import { objects, qs } from "../../../../lib/api";
 import { AlertError, Loading } from "../../../../lib/components/controls";
 import SyntaxHighlighter from "react-syntax-highlighter";
-import { githubGist as syntaxHighlightStyle } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import { IpynbRenderer as NbRenderer } from "react-ipynb-renderer";
 import { guessLanguage } from "./index";
 import {
@@ -17,7 +16,6 @@ import {
 import "react-ipynb-renderer/dist/styles/default.css";
 import { useMarkdownProcessor } from "./useMarkdownProcessor";
 import { AppContext } from "../../../../lib/hooks/appContext";
-import { dark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
   return (
@@ -88,10 +86,27 @@ export const TextRenderer: FC<RendererComponentWithText> = ({
 
   return (
     <SyntaxHighlighter
-      style={state.settings.darkMode ? dark : syntaxHighlightStyle}
+      style={{}}
       language={language}
       showInlineLineNumbers={true}
       showLineNumbers={true}
+      className="react-syntax-highlighter"
+      lineNumberStyle={{minWidth: '3em'}}
+      customStyle={{
+        borderRadius: 'var(--radius-md)',
+        margin: 'var(--spacing-md) 0',
+        fontSize: '0.9rem',
+        lineHeight: '1.5',
+        padding: 'var(--spacing-md)',
+        backgroundColor: state.settings.darkMode ? '#1e293b' : 'var(--background-alt)',
+        color: state.settings.darkMode ? '#f9fafb' : 'var(--text)',
+      }}
+      codeTagProps={{
+        style: {
+          backgroundColor: 'transparent',
+          fontFamily: 'var(--font-mono)',
+        }
+      }}
     >
       {text}
     </SyntaxHighlighter>

@@ -8,13 +8,13 @@ import {
 
 import {useAPIWithPagination} from "../../hooks/api";
 import {useExpandCollapseDirs} from "../../hooks/useExpandCollapseDirs";
-import {AlertError} from "../controls";
+import {AlertError, TooltipButton} from "../controls";
 import {ObjectsDiff} from "./ObjectsDiff";
 import {ObjectTreeEntryRow, PrefixTreeEntryRow} from "./treeRows";
-import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
+import Alert from "react-bootstrap/Alert";
 import {refs} from "../../api";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
@@ -154,7 +154,7 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
             onClick={() => setAfterUpdated(nextPage)}
         >
             <td className="diff-indicator"/>
-            <td className="tree-path">
+            <td className="tree-path tree-path-action">
                 <span style={{marginLeft: depth * 20 + "px",color:"#007bff"}}>
                     {loading && <ClockIcon/>}
                     {pathSectionText}
@@ -165,37 +165,22 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     );
 };
 
-/**
- * A container component for entries that represent a diff between refs. This container is used by the compare, commit changes,
- * and uncommitted changes views.
- *
- * @param results to be displayed in the changes tree container
- * @param delimiter objects delimiter ('' or '/')
- * @param uriNavigator to navigate in the page using the changes container
- * @param leftDiffRefID commitID / branch
- * @param rightDiffRefID commitID / branch
- * @param repo Repository
- * @param reference commitID / branch
- * @param internalRefresh to be called when the page refreshes manually
- * @param prefix for which changes are displayed
- * @param getMore to be called when requesting more diff results for a prefix
- * @param loading of API response state to get changes
- * @param nextPage of API response state to get changes
- * @param setAfterUpdated state of pagination of the item's children
- * @param onNavigate to be called when navigating to a prefix
- * @param onRevert to be called when an object/prefix is requested to be reverted
- * @param changesTreeMessage
- */
+
 export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
-                                         changesTreeMessage}) => {
+                                         changesTreeMessage, noChangesText = 'No changes', emptyStateComponent}) => {
     // Manages expand/collapse state for all directories in the tree.
     const { isAllExpanded, expandAll, collapseAll, markDirAsManuallyToggled, wasDirManuallyToggled } = useExpandCollapseDirs();
+    
     if (results.length === 0) {
-        return <div className="tree-container">
-            <Alert variant="info">No changes</Alert>
-        </div>
+        if (emptyStateComponent) {
+            return emptyStateComponent;
+        } else {
+            return <div className="tree-container">
+                <Alert variant="info">{noChangesText}</Alert>
+            </div>
+        }
     } else {
         return <div className="tree-container">
             {changesTreeMessage && <div>{changesTreeMessage}</div>}
@@ -203,14 +188,14 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                         <Card.Header className="d-flex justify-content-between align-items-center">
                             {(delimiter !== "") && uriNavigator}
                             <div className="d-flex gap-2">
-                                <Button size="sm" variant="outline-secondary" onClick={expandAll}>
+                                <TooltipButton tooltip="Expand All" size="sm" variant="outline-secondary" onClick={expandAll}>
                                     <FileDirectoryFillIcon className="me-1" />
                                     <FoldDownIcon />
-                                </Button>
-                                <Button size="sm" variant="outline-secondary" onClick={collapseAll}>
+                                </TooltipButton>
+                                <TooltipButton tooltip="Collapse All" size="sm" variant="outline-secondary" onClick={collapseAll}>
                                     <FileDirectoryFillIcon className="me-1" />
                                     <FoldUpIcon />
-                                </Button>
+                                </TooltipButton>
                             </div>
                         </Card.Header>
 
