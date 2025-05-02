@@ -292,7 +292,7 @@ func (s *Store) SetIf(ctx context.Context, partitionKey, key, value []byte, valu
 		return kv.ErrMissingValue
 	}
 
-	// Specifies the value of the partiton key
+	// Specifies the value of the partition key
 	item := Document{
 		PartitionKey: encoding.EncodeToString(partitionKey),
 		ID:           s.hashID(key),
