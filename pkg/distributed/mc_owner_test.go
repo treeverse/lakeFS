@@ -35,6 +35,7 @@ func TestMostlyCorrectOwnerSingleThreaded(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer store.Close()
 	log := logging.FromContext(ctx).WithField("test", t.Name())
 
 	w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 10*time.Millisecond)
@@ -98,6 +99,7 @@ func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer store.Close()
 	log := logging.FromContext(ctx).WithField("test", t.Name())
 
 	w := distributed.NewMostlyCorrectOwner(log, store, "p", 5*time.Millisecond, 40*time.Millisecond)
