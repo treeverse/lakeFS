@@ -66,15 +66,16 @@ func TestUsageCounter(t *testing.T) {
 }
 
 func TestUsageReporter(t *testing.T) {
-	// create a storage
+	// create a store
 	ctx := context.Background()
-	storage, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
+	store, err := kv.Open(ctx, kvparams.Config{Type: "mem"})
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer store.Close()
 
 	installationID := gonanoid.Must(8)
-	report := stats.NewUsageReporter(installationID, storage)
+	report := stats.NewUsageReporter(installationID, store)
 	if report == nil {
 		t.Fatal("expected an instance")
 	}
