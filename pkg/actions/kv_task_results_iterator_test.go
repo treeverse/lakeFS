@@ -36,7 +36,7 @@ func TestTaskResultsIterator(t *testing.T) {
 		},
 		{
 			name:  "after out of range",
-			runID: rand.Intn(100), //nolint:gosec
+			runID: rand.Intn(100),
 			after: 100,
 			count: 0,
 		},

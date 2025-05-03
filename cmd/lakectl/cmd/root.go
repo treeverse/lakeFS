@@ -340,7 +340,7 @@ func getSyncArgs(args []string, requireRemote bool, considerGitRoot bool) (remot
 		gitRoot, err := git.GetRepositoryPath(localPath)
 		if err == nil {
 			localPath = gitRoot
-		} else if !errors.Is(err, giterror.ErrNotARepository) && !errors.Is(err, giterror.ErrNoGit) { // allow support in environments with no git
+		} else if !(errors.Is(err, giterror.ErrNotARepository) || errors.Is(err, giterror.ErrNoGit)) { // allow support in environments with no git
 			DieErr(err)
 		}
 	}

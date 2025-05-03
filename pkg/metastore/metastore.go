@@ -84,7 +84,7 @@ func (m *StorageDescriptor) Update(db, table, serde string, setSymlink bool, tra
 		m.InputFormat = symlinkInputFormat
 	}
 	var err error
-	if m.Location != "" && (!isSparkSQLTable || !strings.HasSuffix(m.Location, sparkSQLWorkaroundSuffix)) {
+	if m.Location != "" && !(isSparkSQLTable && strings.HasSuffix(m.Location, sparkSQLWorkaroundSuffix)) {
 		m.Location, err = transformLocation(m.Location)
 	}
 	if err != nil {

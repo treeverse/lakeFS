@@ -80,7 +80,7 @@ func localInit(ctx context.Context, dir string, remote *uri.URI, force, updateIg
 		ignoreFile, err := git.Ignore(dir, []string{dir}, []string{filepath.Join(dir, local.IndexFileName)}, local.IgnoreMarker)
 		if err == nil {
 			fmt.Println("Location added to", ignoreFile)
-		} else if !errors.Is(err, giterror.ErrNotARepository) && !errors.Is(err, giterror.ErrNoGit) {
+		} else if !(errors.Is(err, giterror.ErrNotARepository) || errors.Is(err, giterror.ErrNoGit)) {
 			return "", err
 		}
 	}
