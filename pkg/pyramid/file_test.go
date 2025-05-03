@@ -22,11 +22,7 @@ func TestPyramidWriteFile(t *testing.T) {
 	}
 
 	filepath := fh.Name()
-	defer func() {
-		if err := os.Remove(filepath); err != nil {
-			t.Logf("Failed to remove temp file: %v", err)
-		}
-	}()
+	defer os.Remove(filepath)
 
 	storeCalled := false
 	abortCalled := false
@@ -75,11 +71,7 @@ func TestWriteValidate(t *testing.T) {
 	}
 
 	filepath := fh.Name()
-	defer func() {
-		if err := os.Remove(filepath); err != nil {
-			t.Logf("Failed to remove temp file: %v", err)
-		}
-	}()
+	defer os.Remove(filepath)
 
 	storeCalled := false
 
@@ -113,11 +105,7 @@ func TestMultipleWriteCalls(t *testing.T) {
 	}
 
 	filepath := fh.Name()
-	defer func() {
-		if err := os.Remove(filepath); err != nil {
-			t.Logf("Failed to remove temp file: %v", err)
-		}
-	}()
+	defer os.Remove(filepath)
 
 	storeCalled := false
 
@@ -151,11 +139,7 @@ func TestAbort(t *testing.T) {
 	}
 
 	filepath := fh.Name()
-	defer func() {
-		if err := os.Remove(filepath); err != nil {
-			t.Logf("Failed to remove temp file: %v", err)
-		}
-	}()
+	defer os.Remove(filepath)
 
 	storeCalled := false
 	abortCalled := false
@@ -196,11 +180,7 @@ func TestPyramidReadFile(t *testing.T) {
 	if err := os.WriteFile(filepath, []byte(content), os.ModePerm); err != nil {
 		t.Fatalf("Failed to write file %s: %s", filepath, err)
 	}
-	defer func() {
-		if err := os.Remove(filepath); err != nil {
-			t.Logf("Failed to remove file %s: %s", filepath, err)
-		}
-	}()
+	defer os.Remove(filepath)
 
 	mockEv := newMockEviction()
 

@@ -668,11 +668,7 @@ func checkFileWasGarbageCollected(t *testing.T, presignedURLs map[string]string,
 	if err != nil {
 		t.Fatalf("%s, expected no error, got err=%s", "Http request to presigned url", err)
 	}
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			t.Logf("Failed to close response body: %v", err)
-		}
-	}()
+	defer r.Body.Close()
 	if r.StatusCode > 299 && r.StatusCode != 404 {
 		t.Fatalf("Unexpected status code in http request: %d", r.StatusCode)
 	}

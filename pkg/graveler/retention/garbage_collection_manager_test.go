@@ -90,11 +90,7 @@ func TestGarbageCollectionManager_SaveGarbageCollectionUncommitted(t *testing.T)
 			testLine := "TestLine"
 			lineCount := 5
 			createTestFile(t, filename, testLine, lineCount)
-			defer func() {
-				if err := os.Remove(filename); err != nil {
-					t.Error("Failed to cleanup test file:", err)
-				}
-			}()
+			defer os.Remove(filename)
 			err = gc.SaveGarbageCollectionUncommitted(ctx, &repositoryRec, filename, runID)
 			require.NoError(t, err)
 			reader, err := blockAdapter.Get(ctx, block.ObjectPointer{
