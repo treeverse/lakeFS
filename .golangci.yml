@@ -38,7 +38,7 @@ linters:
         - -ST1020
         - -ST1021
         - -ST1022
-        - -QF1001
+        - -QF1001 # Apply De Morgan’s law
   exclusions:
     generated: lax
     presets:
