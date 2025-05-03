@@ -13,7 +13,9 @@ import (
 func TestConcurrentCreateDeleteDir(t *testing.T) {
 	name, err := os.MkdirTemp("", "test-dir-")
 	require.NoError(t, err)
-	defer os.RemoveAll(name) // clean up
+	defer func() {
+		_ = os.RemoveAll(name) // clean up
+	}()
 
 	sut := directory{ceilingDir: name}
 
@@ -48,7 +50,9 @@ func TestConcurrentCreateDeleteDir(t *testing.T) {
 func TestConcurrentRenameDeleteDir(t *testing.T) {
 	name, err := os.MkdirTemp("", "test-dir-")
 	require.NoError(t, err)
-	defer os.RemoveAll(name) // clean up
+	defer func() {
+		_ = os.RemoveAll(name) // clean up
+	}()
 
 	sut := directory{ceilingDir: name}
 

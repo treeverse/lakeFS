@@ -90,7 +90,7 @@ func (m *metaRangeManager) GetRangeByKey(ctx context.Context, ns graveler.Storag
 		return nil, fmt.Errorf("unmarshal %s: %w", string(v.Key), err)
 	}
 
-	if !(bytes.Compare(rng.MinKey, key) <= 0 && bytes.Compare(key, rng.MaxKey) <= 0) {
+	if bytes.Compare(rng.MinKey, key) > 0 || bytes.Compare(key, rng.MaxKey) > 0 {
 		return nil, ErrNotFound
 	}
 

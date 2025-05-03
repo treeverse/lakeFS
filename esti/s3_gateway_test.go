@@ -758,7 +758,9 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get uploaded object: %s", err)
 	}
-	defer uploadedReader.Close()
+	defer func() {
+		_ = uploadedReader.Close()
+	}()
 	uploadedCRC, err := testutil.ChecksumReader(uploadedReader)
 	if err != nil {
 		t.Fatalf("Read uploaded object: %s", err)
@@ -771,7 +773,9 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get copied object: %s", err)
 	}
-	defer copiedReader.Close()
+	defer func() {
+		_ = copiedReader.Close()
+	}()
 	copiedCRC, err := testutil.ChecksumReader(copiedReader)
 	if err != nil {
 		t.Fatalf("Read copied object: %s", err)

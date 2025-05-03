@@ -87,10 +87,12 @@ var setupCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("Setup failed: %s\n", err)
 			os.Exit(1)
+			return
 		}
 		if credentials == nil {
 			fmt.Printf("Setup is already complete.\n")
 			os.Exit(1)
+			return
 		}
 
 		ctx, cancelFn := context.WithCancel(ctx)

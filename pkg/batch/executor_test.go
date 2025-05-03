@@ -231,7 +231,7 @@ func testBatchByKey(t *testing.T) {
 
 	r1Succeeded := te1.WasExecuted()
 	r2Succeeded := te2.WasExecuted()
-	if !(r1Succeeded && r2Succeeded) {
+	if !r1Succeeded || !r2Succeeded {
 		t.Errorf("both r1's and r2's exec functions should be executed but r1Succeeded=%t and r2Succeeded=%t", r1Succeeded, r2Succeeded)
 	}
 }

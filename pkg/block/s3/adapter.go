@@ -921,7 +921,7 @@ func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
 	if a.disablePreSigned {
 		info.PreSignSupport = false
 	}
-	if !(a.disablePreSignedUI || a.disablePreSigned) {
+	if !a.disablePreSignedUI && !a.disablePreSigned {
 		info.PreSignSupportUI = true
 	}
 	if !a.disablePreSignedMultipart && info.PreSignSupport {
