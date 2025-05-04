@@ -99,7 +99,7 @@ func writeFuseSymlink(c *GSClient) lua.Function {
 		}
 
 		w := obj.NewWriter(c.ctx)
-		w.ObjectAttrs.Metadata = map[string]string{
+		w.Metadata = map[string]string{
 			"gcsfuse_symlink_target": physicalAddress,
 		}
 		err = w.Close()

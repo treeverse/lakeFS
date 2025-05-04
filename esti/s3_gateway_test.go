@@ -153,7 +153,7 @@ func TestS3UploadAndDownload(t *testing.T) {
 
 			clt := newMinioClient(t, sig.GetCredentials)
 			wg.Add(parallelism)
-			for i := 0; i < parallelism; i++ {
+			for range parallelism {
 				go func() {
 					defer wg.Done()
 					for o := range objects {
@@ -376,6 +376,7 @@ func TestListMultipartUploads(t *testing.T) {
 	_, err = s3Client.CreateMultipartUpload(ctx, input2)
 	require.NoError(t, err, "failed to create multipart upload")
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	require.NoError(t, err, "failed to list multipart uploads")
 	keys = extractUploadKeys(output)
 	require.Contains(t, keys, obj1)
 	require.Contains(t, keys, obj2)
@@ -405,7 +406,6 @@ func TestListMultipartUploads(t *testing.T) {
 	keys = extractUploadKeys(output)
 	require.NotContains(t, keys, obj1)
 	require.Contains(t, keys, obj2)
-
 }
 
 func TestListMultipartUploadsUnsupported(t *testing.T) {
@@ -758,7 +758,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get uploaded object: %s", err)
 	}
-	defer uploadedReader.Close()
+	defer func() { _ = uploadedReader.Close() }()
 	uploadedCRC, err := testutil.ChecksumReader(uploadedReader)
 	if err != nil {
 		t.Fatalf("Read uploaded object: %s", err)
@@ -771,7 +771,7 @@ func TestS3CopyObjectMultipart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get copied object: %s", err)
 	}
-	defer copiedReader.Close()
+	defer func() { _ = copiedReader.Close() }()
 	copiedCRC, err := testutil.ChecksumReader(copiedReader)
 	if err != nil {
 		t.Fatalf("Read copied object: %s", err)
@@ -1058,13 +1058,8 @@ func TestDeleteObjects(t *testing.T) {
 	ctx, _, repo := setupTest(t)
 	defer tearDownTest(repo)
 	const numOfObjects = 10
-	identifiers := make([]types.ObjectIdentifier, 0, numOfObjects)
-
 	for i := 1; i <= numOfObjects; i++ {
 		file := strconv.Itoa(i) + ".txt"
-		identifiers = append(identifiers, types.ObjectIdentifier{
-			Key: aws.String(mainBranch + "/" + file),
-		})
 		_, _ = UploadFileRandomData(ctx, t, repo, mainBranch, file, nil)
 	}
 

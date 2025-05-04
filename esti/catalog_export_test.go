@@ -111,7 +111,7 @@ func uploadAndCommitObjects(t *testing.T, ctx context.Context, repo, branch stri
 	commitResp, err := client.CommitWithResponse(ctx, repo, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "Table Data",
 	})
-	require.NoErrorf(t, err, "failed commiting uploaded objects to lakefs://%s/%s", repo, branch)
+	require.NoErrorf(t, err, "failed committing uploaded objects to lakefs://%s/%s", repo, branch)
 	require.Equal(t, http.StatusCreated, commitResp.StatusCode())
 	return commitResp.JSON201
 }
@@ -144,7 +144,6 @@ func testSymlinkS3Exporter(t *testing.T, ctx context.Context, repo string, tmplD
 	t.Helper()
 
 	tableYaml, err := yaml.Marshal(&testData.TableSpec)
-
 	if err != nil {
 		require.NoError(t, err, "failed marshaling table spec to YAML")
 	}
@@ -301,7 +300,7 @@ func TestAWSCatalogExport(t *testing.T) {
 	}
 
 	t.Run("symlink_exporter", func(t *testing.T) {
-		var columns = []string{"name", "color"}
+		columns := []string{"name", "color"}
 		csvData := genCSVData(t, columns, 3)
 		tablePaths := map[string]string{
 			testData.TableSpec.Path + "/type=axolotl/weight=22/b.csv": csvData,
@@ -444,7 +443,8 @@ func validateExportTestByStorageType(t *testing.T, ctx context.Context, commit s
 		key := fmt.Sprintf(keyTempl, strings.TrimPrefix(namespaceURL.Path, "/"), mainBranch, commit[:6])
 		readResp, err := clt.GetObject(ctx, &s3.GetObjectInput{
 			Bucket: aws.String(namespaceURL.Host),
-			Key:    aws.String(key)})
+			Key:    aws.String(key),
+		})
 		require.NoError(t, err)
 		reader = readResp.Body
 

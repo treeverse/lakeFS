@@ -192,13 +192,12 @@ func TestSingleChunkPut(t *testing.T) {
 
 func TestStreaming(t *testing.T) {
 	const (
-		method = http.MethodPut
 		host   = "s3.amazonaws.com"
 		path   = "examplebucket/chunkObject.txt"
 		ID     = "AKIAIOSFODNN7EXAMPLE"
 		SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	)
-	req, err := http.NewRequest(method, fmt.Sprintf("https://%s/%s", host, path), nil)
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("https://%s/%s", host, path), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,18 +211,24 @@ func TestStreaming(t *testing.T) {
 		"X-Amz-Decoded-Content-Length": []string{"66560"},
 		"Content-Length":               []string{"66824"},
 	}
-	chunk1Size := 65536
-	a := bytes.Repeat([]byte("a"), chunk1Size)
-	a = append(a, '\r', '\n')
-	chunk1 := append([]byte("10000;chunk-signature=ad80c730a21e5b8d04586a2213dd63b9a0e99e0e2307b0ade35a65485a288648\r\n"), a...)
-	chunk2Size := 1024
-	b := bytes.Repeat([]byte("a"), chunk2Size)
-	b = append(b, '\r', '\n')
-	chunk2 := append([]byte("400;chunk-signature=0055627c9e194cb4542bae2aa5492e3c1575bbb81b612b7d234b86a503ef5497\r\n"), b...)
-	chunk3 := []byte("0;chunk-signature=b6c6ea8a5354eaf15b3cb7646744f4275b71ea724fed81ceb9323e279d449df9\r\n\r\n")
-	body := append(chunk1, chunk2...)
-	body = append(body, chunk3...)
-	req.Body = io.NopCloser(bytes.NewReader(body))
+	var body bytes.Buffer
+
+	// chunk1
+	body.Write([]byte("10000;chunk-signature=ad80c730a21e5b8d04586a2213dd63b9a0e99e0e2307b0ade35a65485a288648\r\n"))
+	const chunk1Size = 65536
+	body.Write(bytes.Repeat([]byte("a"), chunk1Size))
+	body.Write([]byte("\r\n"))
+
+	// chunk2
+	body.Write([]byte("400;chunk-signature=0055627c9e194cb4542bae2aa5492e3c1575bbb81b612b7d234b86a503ef5497\r\n"))
+	const chunk2Size = 1024
+	body.Write(bytes.Repeat([]byte("a"), chunk2Size))
+	body.Write([]byte("\r\n"))
+
+	// chunk3
+	body.Write([]byte("0;chunk-signature=b6c6ea8a5354eaf15b3cb7646744f4275b71ea724fed81ceb9323e279d449df9\r\n\r\n"))
+
+	req.Body = io.NopCloser(bytes.NewReader(body.Bytes()))
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
@@ -253,11 +258,10 @@ func TestStreaming(t *testing.T) {
 
 func TestStreamingLastByteWrong(t *testing.T) {
 	const (
-		method = http.MethodPut
-		ID     = "AKIAIOSFODNN7EXAMPLE"
-		SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		key    = "AKIAIOSFODNN7EXAMPLE"
+		secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	)
-	req, err := http.NewRequest(method, "https://s3.amazonaws.com/examplebucket/chunkObject.txt", nil)
+	req, err := http.NewRequest(http.MethodPut, "https://s3.amazonaws.com/examplebucket/chunkObject.txt", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,8 +296,8 @@ func TestStreamingLastByteWrong(t *testing.T) {
 
 	err = authenticator.Verify(&model.Credential{
 		BaseCredential: model.BaseCredential{
-			AccessKeyID:     ID,
-			SecretAccessKey: SECRET,
+			AccessKeyID:     key,
+			SecretAccessKey: secret,
 			IssuedDate:      time.Now(),
 		},
 	})
@@ -302,7 +306,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 	}
 
 	_, err = io.ReadAll(req.Body)
-	if err != gtwerrors.ErrSignatureDoesNotMatch {
+	if !errors.Is(err, gtwerrors.ErrSignatureDoesNotMatch) {
 		t.Errorf("expect %v, got %v", gtwerrors.ErrSignatureDoesNotMatch, err)
 	}
 }

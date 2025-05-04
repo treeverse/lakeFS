@@ -76,7 +76,7 @@ func (swc StdoutWriterCloser) Close() error {
 }
 
 func (sw *StdoutWriter) GetFileWriter(name string) (io.WriteCloser, error) {
-	fmt.Fprintf(os.Stdout, "\n// ------------------ %s ------------------\n", name)
+	_, _ = fmt.Fprintf(os.Stdout, "\n// ------------------ %s ------------------\n", name)
 	return StdoutWriterCloser{os.Stdout}, nil
 }
 

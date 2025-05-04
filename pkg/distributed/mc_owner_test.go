@@ -12,6 +12,7 @@ package distributed_test
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -114,12 +115,14 @@ func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
+	errChan := make(chan error, 1)
 	go func() {
 		log.Info("Goroutine start")
 		defer wg.Done()
 		releaseB, err := w.Own(ctx, "us", "xyz")
 		if err != nil {
-			t.Fatalf("Own goroutine us: %s", err)
+			errChan <- fmt.Errorf("Own goroutine us: %s", err)
+			return
 		}
 		defer func() {
 			releaseB()
@@ -132,6 +135,12 @@ func TestMostlyCorrectOwnerConsecutiveReleased(t *testing.T) {
 	events.Add("release: me")
 	releaseA()
 	wg.Wait()
+
+	select {
+	case err := <-errChan:
+		t.Fatal(err)
+	default:
+	}
 
 	if diffs := deep.Equal(events.Slice(), []string{
 		"owner: me",

@@ -403,7 +403,7 @@ func getCommitFlags(cmd *cobra.Command) (string, map[string]string) {
 	return message, kvPairs
 }
 
-func getKV(cmd *cobra.Command, name string) (map[string]string, error) { //nolint:unparam
+func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	kvList, err := cmd.Flags().GetStringSlice(name)
 	if err != nil {
 		return nil, err

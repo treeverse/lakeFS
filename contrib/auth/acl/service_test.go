@@ -227,7 +227,7 @@ func TestAuthService_ListPaged(t *testing.T) {
 				}
 				letters := model.ConvertUsersDataList(values)
 				for _, c := range letters {
-					got = got + c.Username
+					got += c.Username
 				}
 				if paginator.NextPageToken == "" {
 					if size > 0 && len(letters) > size {

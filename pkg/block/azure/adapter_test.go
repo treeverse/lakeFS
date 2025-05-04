@@ -199,6 +199,7 @@ func TestAzureParseURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
 			uri, err := url.Parse(tt.Url)
+			require.NoError(t, err)
 			account, dom, err := azure.ParseURL(uri)
 			if tt.InvalidDomain {
 				require.ErrorIs(t, err, azure.ErrAzureInvalidURL)

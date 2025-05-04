@@ -14,7 +14,7 @@ OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
 PY_OPENAPI_GENERATOR=$(DOCKER) run -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python-static/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
-GOLANGCI_LINT_VERSION=v1.63.4
+GOLANGCI_LINT=github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.5
 BUF_CLI_VERSION=v1.28.1
 
 ifndef PACKAGE_VERSION
@@ -105,7 +105,7 @@ gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/ -o pkg/metastore/hive pkg/metastore/hive/hive_metastore.thrift
 
 tools: ## Install tools
-	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	$(GOCMD) install $(GOLANGCI_LINT)
 	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
 client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
@@ -185,7 +185,7 @@ build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
 lint: ## Lint code
-	$(GOCMD) run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run $(GOLANGCI_LINT_FLAGS)
+	$(GOCMD) run $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS)
 	npx eslint@8.57.0 $(UI_DIR)/src --ext .js,.jsx,.ts,.tsx
 
 esti: ## run esti (system testing)

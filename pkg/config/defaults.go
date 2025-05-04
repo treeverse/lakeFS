@@ -14,7 +14,7 @@ const (
 	DefaultQuickstartUsername   = "quickstart"
 	// quickstart creds, safe
 	DefaultQuickstartKeyID           = "AKIAIOSFOLQUICKSTART"                     //nolint:gosec
-	DefaultQuickstartSecretKey       = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" // nolint:gosec
+	DefaultQuickstartSecretKey       = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
 	DefaultAuthAPIHealthCheckTimeout = 20 * time.Second
 	DefaultAuthSecret                = "THIS_MUST_BE_CHANGED_IN_PRODUCTION"   // #nosec
 	DefaultSigningSecretKey          = "OVERRIDE_THIS_SIGNING_SECRET_DEFAULT" // #nosec
