@@ -112,7 +112,7 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
     if (!viewer) return null;
 
     return <div>
-        <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
+        <DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/>
         {
             viewer === DiffViewerType.GEOJSON
                 ? <GeoJSONPreview data={right?.response} />
