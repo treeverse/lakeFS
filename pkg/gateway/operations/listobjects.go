@@ -240,11 +240,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 	// handle ListObjects (v1)
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")
-	descend := true
-	if len(delimiter) >= 1 {
-		descend = false
-	}
-
+	descend := len(delimiter) < 1
 	maxKeys := controller.getMaxKeys(req, o)
 
 	var results []*catalog.DBEntry
@@ -446,7 +442,6 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, opts)
-
 	if err != nil {
 		o.Log(req).WithError(err).Error("list multipart uploads failed")
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))

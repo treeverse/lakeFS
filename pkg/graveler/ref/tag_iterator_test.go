@@ -2,12 +2,12 @@ package ref_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/kv/mock"

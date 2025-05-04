@@ -179,6 +179,7 @@ func TestPreSign(t *testing.T) {
 		req.Header.Set("Content-Type", "application/octet-stream")
 		httpResp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err, "failed to execute PUT request")
+		defer httpResp.Body.Close()
 		require.Truef(t, httpResp.StatusCode < 400, "got a bad response from pre-signed URL for PUT: %s", httpResp.Status)
 
 		// Let's link this physical address

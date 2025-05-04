@@ -79,7 +79,7 @@ func CaseSensitiveFS() *PathMapFS {
 // CaseInsensitiveFS fakes a case-sensitive fileutil.FS.
 func CaseInsensitiveFS() *PathMapFS {
 	return &PathMapFS{
-		PathMapper: func(p string) string { return strings.ToLower(p) },
+		PathMapper: strings.ToLower,
 		Paths:      make(PathSet),
 	}
 }
@@ -128,7 +128,6 @@ func TestOSIsCaseInsensitiveLocation(t *testing.T) {
 	fs := fileutil.NewOSFS()
 	tempDir := t.TempDir()
 	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fs, tempDir, fatal(t))
-
 	if err != nil {
 		t.Errorf("IsCaseInsensitiveLocation failed: %s", err)
 	}

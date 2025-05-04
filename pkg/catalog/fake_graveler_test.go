@@ -319,7 +319,6 @@ func (g *FakeGraveler) GetPullRequest(context.Context, *graveler.RepositoryRecor
 }
 
 func (g *FakeGraveler) CreatePullRequest(context.Context, *graveler.RepositoryRecord, *graveler.PullRequestRecord) error {
-	//TODO implement me
 	panic("implement me")
 }
 

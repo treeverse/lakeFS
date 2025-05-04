@@ -104,8 +104,10 @@ var importCmd = &cobra.Command{
 				if status.Error != nil {
 					DieFmt("Import failed: %s", status.Error.Message)
 				}
-				_ = bar.Set64(*status.IngestedObjects)
-				if updatedAt == status.UpdateTime {
+				if status.IngestedObjects != nil {
+					_ = bar.Set64(*status.IngestedObjects)
+				}
+				if updatedAt.Equal(status.UpdateTime) {
 					updateFailures += 1
 				}
 				if updateFailures >= maxUpdateFailures {
@@ -194,7 +196,7 @@ func branchExists(ctx context.Context, client *apigen.ClientWithResponses, repos
 	return RetrieveError(resp, err), false
 }
 
-//nolint:gochecknoinits,mnd
+//nolint:gochecknoinits
 func init() {
 	importCmd.Flags().String("from", "", "prefix to read from (e.g. \"s3://bucket/sub/path/\"). must not be in a storage namespace")
 	_ = importCmd.MarkFlagRequired("from")

@@ -33,7 +33,7 @@ func waitForHealth(ctx context.Context, url string, pool *dockertest.Pool) error
 			return err
 		}
 		if res != nil && res.Body != nil {
-			defer res.Body.Close()
+			defer func() { _ = res.Body.Close() }()
 		}
 		return helpers.HTTPResponseAsError(res)
 	})

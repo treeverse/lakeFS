@@ -119,8 +119,8 @@ func MakeHeader(m map[string]string) http.Header {
 }
 
 const (
-	keyID     = "AKIAIOSFODNN7EXAMPLE"
-	secretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+	keyID     = "AKIAIOSFODNN7EXAMPLE"                     //nolint:gosec
+	secretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" //nolint:gosec
 	domain    = "s3.lakefs.test"
 	location  = "lu-alpha-1"
 )

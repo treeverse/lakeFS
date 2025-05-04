@@ -1349,7 +1349,7 @@ func (c *Catalog) CreateCommitRecord(ctx context.Context, repositoryID string, c
 		Parents:      commitParents,
 		Metadata:     metadata,
 		// cast from int32 to int32
-		Generation: graveler.CommitGeneration(generation), //nolint:gosec
+		Generation: graveler.CommitGeneration(generation),
 	}
 	return c.Store.CreateCommitRecord(ctx, repository, graveler.CommitID(commitID), commit, opts...)
 }

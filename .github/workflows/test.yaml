@@ -30,8 +30,6 @@ jobs:
           make gen
           make validate-clients-untracked-files
       - name: Checks validator
-        env:
-          GOLANGCI_LINT_FLAGS: --out-format github-actions
         run: make checks-validator
 
   test-go:

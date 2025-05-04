@@ -34,12 +34,12 @@ const (
 )
 
 type ActionStatsMockCollector struct {
-	Hits map[string]int
+	Hits map[string]uint64
 }
 
 func NewActionStatsMockCollector() ActionStatsMockCollector {
 	return ActionStatsMockCollector{
-		Hits: make(map[string]int),
+		Hits: make(map[string]uint64),
 	}
 }
 
@@ -48,7 +48,7 @@ func (c *ActionStatsMockCollector) CollectEvent(ev stats.Event) {
 }
 
 func (c *ActionStatsMockCollector) CollectEvents(ev stats.Event, count uint64) {
-	c.Hits[ev.Name] += int(count)
+	c.Hits[ev.Name] += count
 }
 
 func (c *ActionStatsMockCollector) CollectMetadata(_ *stats.Metadata)  {}
@@ -114,10 +114,7 @@ hooks:
 		name           string
 		actionsService getService
 	}{
-		{
-			name:           "KV service test",
-			actionsService: GetKVService,
-		},
+		{name: "KV service test", actionsService: GetKVService},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -239,7 +236,7 @@ hooks:
 				t.Errorf("GetRunResult() result MergedCommitID=%s, expect=%s", runResult.CommitID, expectedCommitID)
 			}
 
-			require.Equal(t, 3, mockStatsCollector.Hits["pre-commit"])
+			require.Equal(t, uint64(3), mockStatsCollector.Hits["pre-commit"])
 
 			// get run - not found
 			runResult, err = actionsService.GetRunResult(ctx, record.Repository.RepositoryID.String(), "not-run-id")
@@ -289,7 +286,7 @@ func TestDisableHooksRun(t *testing.T) {
 			if !errors.Is(err, actions.ErrNotFound) || runResult != nil {
 				t.Fatal("GetRunResult() shouldn't get run result", err, runResult)
 			}
-			require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
+			require.Equal(t, uint64(0), mockStatsCollector.Hits["pre-commit"])
 		})
 	}
 }
@@ -338,7 +335,7 @@ hooks:
 			defer actionsService.Stop()
 
 			require.Error(t, actionsService.Run(ctx, record))
-			require.Equal(t, 0, mockStatsCollector.Hits["pre-commit"])
+			require.Equal(t, uint64(0), mockStatsCollector.Hits["pre-commit"])
 		})
 	}
 }
@@ -561,7 +558,8 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 			return
 		}
 
-		if r.URL.Path == "/webhook" {
+		switch r.URL.Path {
+		case "/webhook":
 			queryParams := map[string][]string(r.URL.Query())
 			require.Len(t, queryParams["prefix"], 1)
 			require.Equal(t, "public/", queryParams["prefix"][0])
@@ -577,7 +575,7 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 			}
 
 			checkEvent(t, record, eventInfo, testActionName, testWebhookID)
-		} else if r.URL.Path == "/airflow/api/v1/dags/some_dag_id/dagRuns" {
+		case "/airflow/api/v1/dags/some_dag_id/dagRuns":
 			var req actions.DagRunReq
 
 			withConf := r.URL.Query().Get("conf") == "true"
@@ -607,7 +605,7 @@ func setupTest(t *testing.T) (*mock.MockOutputWriter, *gomock.Controller, *httpt
 			require.NoError(t, json.Unmarshal(b, &event))
 
 			checkEvent(t, record, event, testActionName, expectedID)
-		} else {
+		default:
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

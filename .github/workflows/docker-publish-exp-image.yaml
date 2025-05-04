@@ -54,8 +54,6 @@ jobs:
 
       - name: Checks validator
         run: make checks-validator
-        env:
-          GOLANGCI_LINT_FLAGS: --out-format github-actions
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

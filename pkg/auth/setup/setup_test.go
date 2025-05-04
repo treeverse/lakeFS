@@ -58,7 +58,7 @@ func TestAddAdminUser(t *testing.T) {
 	}
 
 	// delete admin user should work
-	err = authService.DeleteUser(ctx, superuser.User.Username)
+	err = authService.DeleteUser(ctx, superuser.Username)
 	if err != nil {
 		t.Fatal("failed to delete admin user:", err)
 	}
