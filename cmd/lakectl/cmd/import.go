@@ -97,10 +97,10 @@ var importCmd = &cobra.Command{
 			case <-ticker.C:
 				statusResp, err = client.ImportStatusWithResponse(ctx, toURI.Repository, toURI.Ref, &apigen.ImportStatusParams{Id: importID})
 				DieOnErrorOrUnexpectedStatusCode(statusResp, err, http.StatusOK)
-				if statusResp.JSON200 == nil {
+				status := statusResp.JSON200
+				if status == nil {
 					Die("Bad response from server", 1)
 				}
-				status := statusResp.JSON200
 				if status.Error != nil {
 					DieFmt("Import failed: %s", status.Error.Message)
 				}
