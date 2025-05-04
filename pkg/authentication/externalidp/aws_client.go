@@ -60,8 +60,8 @@ type AWSIdentityTokenInfo struct {
 	SecurityToken      string   `json:"security_token"`
 }
 type AWSProvider struct {
-	params AWSIAMParams
-	client ExternalPrincipalLoginClient
+	Params AWSIAMParams
+	Client ExternalPrincipalLoginClient
 }
 type AWSIAMParams struct {
 	ProviderType        string
@@ -72,8 +72,8 @@ type AWSIAMParams struct {
 
 func NewAWSProviderWithClient(params AWSIAMParams, client ExternalPrincipalLoginClient) *AWSProvider {
 	return &AWSProvider{
-		params: params,
-		client: client,
+		Params: params,
+		Client: client,
 	}
 }
 
@@ -91,7 +91,7 @@ func NewAWSProvider(params AWSIAMParams, lakeFSHost string) (*AWSProvider, error
 
 func (p *AWSProvider) Login() (LoginResponse, error) {
 	ctx := context.TODO()
-	creds, url, err := GetPresignedURL(ctx, &p.params)
+	creds, url, err := GetCredsAndPresignedURL(ctx, &p.Params)
 	if err != nil {
 		return LoginResponse{}, err
 	}
@@ -100,14 +100,14 @@ func (p *AWSProvider) Login() (LoginResponse, error) {
 		return LoginResponse{}, err
 	}
 
-	tokenTTL := int(p.params.TokenTTL.Seconds())
+	tokenTTL := int(p.Params.TokenTTL.Seconds())
 	externalLoginInfo := apigen.ExternalLoginInformation{
 		IdentityRequest: map[string]interface{}{
 			"identity_token": identityToken,
 		},
 		TokenExpirationDuration: &tokenTTL,
 	}
-	res, err := p.client.ExternalPrincipalLoginWithResponse(ctx, apigen.ExternalPrincipalLoginJSONRequestBody(externalLoginInfo))
+	res, err := p.Client.ExternalPrincipalLoginWithResponse(ctx, apigen.ExternalPrincipalLoginJSONRequestBody(externalLoginInfo))
 	if err != nil {
 		return LoginResponse{}, err
 	}
@@ -148,7 +148,7 @@ func NewIdentityTokenInfoFromURLAndCreds(creds *aws.Credentials, presignedURL st
 	return &identityTokenInfo, encodedIdentityTokenInfo, nil
 }
 
-func GetPresignedURL(ctx context.Context, params *AWSIAMParams) (*aws.Credentials, string, error) {
+func GetCredsAndPresignedURL(ctx context.Context, params *AWSIAMParams) (*aws.Credentials, string, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, "", err
