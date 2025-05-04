@@ -119,7 +119,6 @@ func (p *AWSProvider) Login() (LoginResponse, error) {
 }
 
 func NewIdentityTokenInfoFromURLAndCreds(creds *aws.Credentials, presignedURL string) (*AWSIdentityTokenInfo, string, error) {
-
 	parsedURL, err := url.Parse(presignedURL)
 	if err != nil {
 		return nil, "", err
@@ -189,9 +188,9 @@ func setHTTPHeaders(requestHeaders map[string]string, ttl time.Duration) func(*m
 				for header, value := range requestHeaders {
 					req.Header.Add(header, value)
 				}
-				queryParams := req.Request.URL.Query()
+				queryParams := req.URL.Query()
 				queryParams.Set(AWSAuthExpiresKey, fmt.Sprintf("%d", int(ttl.Seconds())))
-				req.Request.URL.RawQuery = queryParams.Encode()
+				req.URL.RawQuery = queryParams.Encode()
 			}
 			return next.HandleBuild(ctx, in)
 		}), middleware.Before)
