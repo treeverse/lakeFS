@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.14.3-demo-0"
+lazy val projectVersion = "0.14.3-demo-1"
 version := projectVersion
 lazy val hadoopVersion = "3.3.0"
 ThisBuild / isSnapshot := false
@@ -55,7 +55,7 @@ libraryDependencies ++= Seq(
   "com.azure" % "azure-storage-blob" % "12.9.0",
   "com.azure" % "azure-storage-blob-batch" % "12.7.0",
   "com.azure" % "azure-identity" % "1.2.0",
-  "com.amazonaws" % "aws-java-sdk-bundle" % "2.29.52" % "provided",
+  "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.783" % "provided",
   // Snappy is JNI :-(.  However it does claim to work with
   // ClassLoaders, and (even more importantly!) using a preloaded JNI
   // version will probably continue to work because the C language API
