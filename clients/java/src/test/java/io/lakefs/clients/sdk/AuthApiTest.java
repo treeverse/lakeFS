@@ -562,6 +562,16 @@ public class AuthApiTest {
     }
 
     /**
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void oauthCallbackTest() throws ApiException {
+        Error response = api.oauthCallback()
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
      * set ACL of group
      *
      * @throws ApiException if the Api call fails
