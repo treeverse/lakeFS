@@ -518,8 +518,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 			authenticator := sig.NewV4Authenticator(req)
 			sigContext, err := authenticator.Parse()
 			if err != nil {
-				t.Errorf("failed to parse request with STREAMING-UNSIGNED-PAYLOAD-TRAILER: %v", err)
-				return
+				t.Fatalf("failed to parse request with STREAMING-UNSIGNED-PAYLOAD-TRAILER: %v", err)
 			}
 
 			// Verify the signature
