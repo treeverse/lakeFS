@@ -1,11 +1,7 @@
 package io.treeverse.clients
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.auth.{
-  AWSCredentials,
-  BasicAWSCredentials,
-  BasicSessionCredentials
-}
+import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, BasicSessionCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
