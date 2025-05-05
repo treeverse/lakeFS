@@ -3,11 +3,17 @@ package factory
 import (
 	"fmt"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
+
+func MountAuthenticationRoutes(logger logging.Logger, c config.Config, r *chi.Mux, sessionStore sessions.Store) error {
+	return nil
+}
 
 func BuildAuthenticatorChain(c config.Config, logger logging.Logger, authService auth.Service) (auth.ChainAuthenticator, error) {
 	authConfig := c.AuthConfig()

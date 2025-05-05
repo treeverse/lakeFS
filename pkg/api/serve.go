@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/params"
@@ -80,6 +81,14 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 		rootHandler = NewS3GatewayEndpointErrorHandler(gatewayDomains)
 	}
 	r.Mount("/", rootHandler)
+
+	// mount authentication-related routes
+	err = authenticationfactory.MountAuthenticationRoutes(logger, cfg, r, sessionStore)
+	// TODO(yoni): how to handle this error?
+	if err != nil {
+		logger.Fatalf("Failed to mount authentication routes: %s", err)
+		return nil
+	}
 
 	return r
 }
