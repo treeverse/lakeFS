@@ -17,7 +17,6 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.util.concurrent.TimeUnit
-import java.lang.reflect.Method
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
