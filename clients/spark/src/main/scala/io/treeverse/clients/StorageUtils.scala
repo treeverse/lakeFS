@@ -3,7 +3,6 @@ package io.treeverse.clients
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.auth.{
   AWSCredentials,
-  AWSStaticCredentialsProvider,
   BasicAWSCredentials,
   BasicSessionCredentials
 }
