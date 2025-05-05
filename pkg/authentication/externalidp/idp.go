@@ -1,4 +1,4 @@
-package authentication
+package externalidp
 
 import (
 	"context"

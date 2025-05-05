@@ -1,4 +1,4 @@
-package authentication
+package externalidp
 
 import (
 	"context"
@@ -60,24 +60,25 @@ type AWSIdentityTokenInfo struct {
 	SecurityToken      string   `json:"security_token"`
 }
 type AWSProvider struct {
-	Params AWSIAMParams
+	Params IAMAuthParams
 	Client ExternalPrincipalLoginClient
 }
-type AWSIAMParams struct {
+type IAMAuthParams struct {
 	ProviderType        string
 	TokenRequestHeaders map[string]string
 	URLPresignTTL       time.Duration
 	TokenTTL            time.Duration
+	RefreshInterval     time.Duration
 }
 
-func NewAWSProviderWithClient(params AWSIAMParams, client ExternalPrincipalLoginClient) *AWSProvider {
+func NewAWSProviderWithClient(params IAMAuthParams, client ExternalPrincipalLoginClient) *AWSProvider {
 	return &AWSProvider{
 		Params: params,
 		Client: client,
 	}
 }
 
-func NewAWSProvider(params AWSIAMParams, lakeFSHost string) (*AWSProvider, error) {
+func NewAWSProvider(params IAMAuthParams, lakeFSHost string) (*AWSProvider, error) {
 	httpClient := &http.Client{}
 	client, err := apigen.NewClientWithResponses(
 		lakeFSHost,
@@ -148,7 +149,7 @@ func NewIdentityTokenInfoFromURLAndCreds(creds *aws.Credentials, presignedURL st
 	return &identityTokenInfo, encodedIdentityTokenInfo, nil
 }
 
-func GetCredsAndPresignedURL(ctx context.Context, params *AWSIAMParams) (*aws.Credentials, string, error) {
+func GetCredsAndPresignedURL(ctx context.Context, params *IAMAuthParams) (*aws.Credentials, string, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return nil, "", err
