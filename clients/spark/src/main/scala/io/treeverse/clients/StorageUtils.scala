@@ -27,10 +27,10 @@ object StorageUtils {
    *  @return object paths in a storage namespace
    */
   def concatKeysToStorageNamespace(
-      keys: Seq[String],
-      storageNamespace: String,
-      keepNsSchemeAndHost: Boolean = true
-  ): Seq[String] = {
+                                    keys: Seq[String],
+                                    storageNamespace: String,
+                                    keepNsSchemeAndHost: Boolean = true
+                                  ): Seq[String] = {
     var sanitizedNS = storageNamespace
     if (!keepNsSchemeAndHost) {
       val uri = new URI(storageNamespace)
@@ -92,13 +92,13 @@ object StorageUtils {
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
     def createAndValidateS3Client(
-        configuration: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
-        awsS3ClientBuilder: AmazonS3ClientBuilder,
-        endpoint: String,
-        region: String,
-        bucket: String
-    ): AmazonS3 = {
+                                   configuration: ClientConfiguration,
+                                   credentialsProvider: Option[AWSCredentialsProvider],
+                                   awsS3ClientBuilder: AmazonS3ClientBuilder,
+                                   endpoint: String,
+                                   region: String,
+                                   bucket: String
+                                 ): AmazonS3 = {
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
       val client =
@@ -119,12 +119,13 @@ object StorageUtils {
       if (bucketRegion == "") {
         bucketRegion = region
       }
-      initializeS3Client(configuration,
-                         credentialsProvider,
-                         awsS3ClientBuilder,
-                         endpoint,
-                         bucketRegion
-                        )
+      initializeS3Client(
+        configuration,
+        credentialsProvider,
+        awsS3ClientBuilder,
+        endpoint,
+        bucketRegion
+      )
     }
 
     /**
@@ -232,10 +233,10 @@ class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
   private val clock = java.time.Clock.systemDefaultZone
 
   override def shouldRetry(
-      originalRequest: AmazonWebServiceRequest,
-      exception: AmazonClientException,
-      retriesAttempted: Int
-  ): Boolean = {
+                            originalRequest: AmazonWebServiceRequest,
+                            exception: AmazonClientException,
+                            retriesAttempted: Int
+                          ): Boolean = {
     val now = clock.instant
     exception match {
       case ce: SdkClientException =>
