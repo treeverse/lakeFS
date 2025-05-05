@@ -1,12 +1,14 @@
 package io.treeverse.clients
 
 import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.{AWSCredentials, AWSStaticCredentialsProvider, BasicAWSCredentials, BasicSessionCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
 import com.amazonaws.services.s3.model.{Region, GetBucketLocationRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws._
+import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
@@ -125,13 +127,69 @@ object StorageUtils {
                         )
     }
 
+    /**
+     * Adapts a Hadoop AssumedRoleCredentialProvider to an AWSCredentialsProvider
+     * This fixes the compatibility issue with EMR 7.x
+     */
+    private def adaptAssumedRoleCredentialProvider(provider: Any): AWSCredentialsProvider = {
+      provider match {
+        case awsProvider: AWSCredentialsProvider =>
+          // If it's already an AWSCredentialsProvider, return it directly
+          awsProvider
+        case assumedRoleProvider if assumedRoleProvider.getClass.getSimpleName == "AssumedRoleCredentialProvider" =>
+          // If it's an AssumedRoleCredentialProvider, create an adapter
+          new AWSCredentialsProvider {
+            override def getCredentials: AWSCredentials = {
+              // Use reflection to safely get credentials without direct casting
+              try {
+                val getCredentialsMethod = assumedRoleProvider.getClass.getMethod("getCredentials")
+                val credentials = getCredentialsMethod.invoke(assumedRoleProvider)
+
+                // Extract username, password, and token using reflection
+                val getUserNameMethod = credentials.getClass.getMethod("getUserName")
+                val getPasswordMethod = credentials.getClass.getMethod("getPassword")
+                val getTokenMethod = credentials.getClass.getMethod("getToken")
+
+                val username = getUserNameMethod.invoke(credentials).toString
+                val password = getPasswordMethod.invoke(credentials).toString
+                val token = getTokenMethod.invoke(credentials)
+
+                if (token != null) {
+                  new BasicSessionCredentials(username, password, token.toString)
+                } else {
+                  new BasicAWSCredentials(username, password)
+                }
+              } catch {
+                case e: Exception =>
+                  logger.error("Failed to adapt AssumedRoleCredentialProvider", e)
+                  throw e
+              }
+            }
+
+            override def refresh(): Unit = {
+              // Try to refresh the credentials if possible
+              try {
+                val refreshMethod = assumedRoleProvider.getClass.getMethod("refresh")
+                refreshMethod.invoke(assumedRoleProvider)
+              } catch {
+                case _: Exception => // Ignore refresh failures
+              }
+            }
+          }
+        case other =>
+          // For any other type, log a warning and try to adapt as best we can
+          logger.warn(s"Unknown credential provider type: ${other.getClass.getName}")
+          throw new IllegalArgumentException(s"Unsupported credential provider type: ${other.getClass.getName}")
+      }
+    }
+
     private def initializeS3Client(
-        configuration: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
-        awsS3ClientBuilder: AmazonS3ClientBuilder,
-        endpoint: String,
-        region: String = null
-    ): AmazonS3 = {
+                                    configuration: ClientConfiguration,
+                                    credentialsProvider: Option[AWSCredentialsProvider],
+                                    awsS3ClientBuilder: AmazonS3ClientBuilder,
+                                    endpoint: String,
+                                    region: String = null
+                                  ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
       val builderWithEndpoint =
@@ -144,8 +202,16 @@ object StorageUtils {
         else
           builder
       val builderWithCredentials = credentialsProvider match {
-        case Some(cp) => builderWithEndpoint.withCredentials(cp)
-        case None     => builderWithEndpoint
+        case Some(cp) =>
+          // Use the adapter method to handle potential AssumedRoleCredentialProvider
+          try {
+            builderWithEndpoint.withCredentials(adaptAssumedRoleCredentialProvider(cp))
+          } catch {
+            case e: Exception =>
+              logger.warn(s"Failed to adapt credential provider, falling back to original: ${e.getMessage}")
+              builderWithEndpoint.withCredentials(cp)
+          }
+        case None => builderWithEndpoint
       }
       builderWithCredentials.build
     }
