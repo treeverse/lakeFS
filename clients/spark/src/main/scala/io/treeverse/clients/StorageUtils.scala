@@ -1,7 +1,12 @@
 package io.treeverse.clients
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, BasicSessionCredentials}
+import com.amazonaws.auth.{
+  AWSCredentials,
+  AWSStaticCredentialsProvider,
+  BasicAWSCredentials,
+  BasicSessionCredentials
+}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
@@ -12,6 +17,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import java.lang.reflect.Method
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
@@ -127,56 +133,77 @@ object StorageUtils {
       )
     }
 
-    /** Adapts a Hadoop AssumedRoleCredentialProvider to an AWSCredentialsProvider
-     *  This fixes the compatibility issue with EMR 7.x
+    /** Create a clean credentials provider that extracts credentials from any source
+     *  This handles the compatibility issue with AssumedRoleCredentialProvider in EMR 7.x
      */
-    private def adaptAssumedRoleCredentialProvider(provider: Any): AWSCredentialsProvider = {
-      provider match {
+    private def createCredentialsProviderWrapper(original: Any): AWSCredentialsProvider = {
+      // Check if it's already the right type
+      original match {
         case awsProvider: AWSCredentialsProvider =>
-          // If it's already an AWSCredentialsProvider, return it directly
+          logger.debug("Provider is already an AWSCredentialsProvider, using directly")
           awsProvider
-        case assumedRoleProvider
-            if assumedRoleProvider != null &&
-              assumedRoleProvider.getClass.getName.endsWith("AssumedRoleCredentialProvider") =>
-          // Create a more robust adapter for AssumedRoleCredentialProvider
+        case _ =>
+          logger.info(s"Creating wrapper for credential provider: ${if (original == null) "null"
+          else original.getClass.getName}")
+
+          // Create a safe wrapper provider
           new AWSCredentialsProvider {
             override def getCredentials: AWSCredentials = {
+              if (original == null) {
+                throw new RuntimeException("Cannot extract credentials from null provider")
+              }
+
               try {
-                // Get the credentials from the provider
-                val getCredentialsMethod = assumedRoleProvider.getClass.getMethod("getCredentials")
-                val credentials = getCredentialsMethod.invoke(assumedRoleProvider)
+                // Get the credentials method using reflection
+                val getCredentialsMethod: Method = original.getClass.getMethod("getCredentials")
+                val credentials: Object = getCredentialsMethod.invoke(original)
 
                 if (credentials == null) {
-                  throw new RuntimeException("Failed to obtain credentials from provider")
+                  throw new RuntimeException(
+                    s"Null credentials returned from provider ${original.getClass.getName}"
+                  )
                 }
 
-                // Create a simpler way to access the credential fields
-                val accessMethod = (name: String) => {
-                  try {
-                    val method = credentials.getClass.getMethod(name)
-                    val result = method.invoke(credentials)
-                    if (result != null) Some(result.toString) else None
-                  } catch {
-                    case _: Exception => None
+                logger.debug(
+                  s"Successfully retrieved credentials of type ${credentials.getClass.getName}"
+                )
+
+                // Extract credential components using reflection
+                def safeGetString(obj: Object, methodNames: String*): String = {
+                  for (methodName <- methodNames) {
+                    try {
+                      val method = obj.getClass.getMethod(methodName)
+                      val result = method.invoke(obj)
+                      if (result != null) {
+                        return result.toString
+                      }
+                    } catch {
+                      case _: NoSuchMethodException => // Try next method
+                      case e: Exception =>
+                        logger.debug(s"Failed to invoke $methodName: ${e.getMessage}")
+                    }
                   }
+                  "" // Return empty string if all methods fail
                 }
 
-                // Extract credential components safely
-                val accessKey = accessMethod("getUserName").getOrElse(
-                  accessMethod("getAccessKey").getOrElse(
-                    accessMethod("getAWSAccessKeyId").getOrElse("")
-                  )
+                // Try common credential methods
+                val accessKey =
+                  safeGetString(credentials, "getUserName", "getAccessKey", "getAWSAccessKeyId")
+                val secretKey =
+                  safeGetString(credentials, "getPassword", "getSecretKey", "getAWSSecretKey")
+                val token = safeGetString(credentials, "getToken", "getSessionToken")
+
+                logger.debug(
+                  s"Extracted credentials - has access key: ${accessKey.nonEmpty}, has secret: ${secretKey.nonEmpty}, has token: ${token.nonEmpty}"
                 )
 
-                val secretKey = accessMethod("getPassword").getOrElse(
-                  accessMethod("getSecretKey").getOrElse(
-                    accessMethod("getAWSSecretKey").getOrElse("")
+                if (accessKey.isEmpty || secretKey.isEmpty) {
+                  throw new RuntimeException(
+                    "Could not extract valid AWS credentials - missing access key or secret key"
                   )
-                )
+                }
 
-                val token =
-                  accessMethod("getToken").getOrElse(accessMethod("getSessionToken").getOrElse(""))
-
+                // Create the appropriate credentials object
                 if (token.nonEmpty) {
                   new BasicSessionCredentials(accessKey, secretKey, token)
                 } else {
@@ -184,33 +211,23 @@ object StorageUtils {
                 }
               } catch {
                 case e: Exception =>
-                  logger.error(s"Failed to adapt AssumedRoleCredentialProvider: ${e.getMessage}", e)
-                  throw new RuntimeException(
-                    s"Failed to adapt credential provider: ${e.getMessage}",
-                    e
-                  )
+                  logger.error(s"Failed to extract credentials from provider: ${e.getMessage}", e)
+                  throw new RuntimeException(s"Failed to extract credentials: ${e.getMessage}", e)
               }
             }
 
             override def refresh(): Unit = {
               try {
-                assumedRoleProvider.getClass.getMethods
-                  .find(_.getName == "refresh")
-                  .foreach(_.invoke(assumedRoleProvider))
+                if (original != null) {
+                  original.getClass.getMethods
+                    .find(_.getName == "refresh")
+                    .foreach(_.invoke(original))
+                }
               } catch {
                 case e: Exception =>
                   logger.debug(s"Failed to refresh credentials: ${e.getMessage}")
               }
             }
-          }
-        case other =>
-          if (other == null) {
-            throw new IllegalArgumentException("Credential provider is null")
-          } else {
-            logger.warn(s"Unknown credential provider type: ${other.getClass.getName}")
-            throw new IllegalArgumentException(
-              s"Unsupported credential provider type: ${other.getClass.getName}"
-            )
           }
       }
     }
@@ -222,9 +239,8 @@ object StorageUtils {
         endpoint: String,
         region: String = null
     ): AmazonS3 = {
-      val builder = awsS3ClientBuilder
-        .withClientConfiguration(configuration)
-
+      // Configure client with endpoint/region
+      val builder = awsS3ClientBuilder.withClientConfiguration(configuration)
       val builderWithEndpoint =
         if (endpoint != null)
           builder.withEndpointConfiguration(
@@ -235,32 +251,34 @@ object StorageUtils {
         else
           builder
 
+      // Handle credentials
       val builderWithCredentials = credentialsProvider match {
         case Some(cp) =>
-          logger.info(s"Configuring S3 client with credential provider: ${cp.getClass.getName}")
-
-          // First try with direct credentials if available
           try {
-            val creds = cp.getCredentials
-            if (creds != null) {
-              logger.info("Using direct AWSCredentials from provider")
-              val staticProvider = new AWSStaticCredentialsProvider(creds)
-              return builderWithEndpoint.withCredentials(staticProvider).build
+            // Try to create a static provider from direct credentials first
+            logger.info(s"Creating S3 client with credential provider: ${cp.getClass.getName}")
+
+            try {
+              // If we can get credentials directly, use them with a static provider
+              val creds = cp.getCredentials
+              if (creds != null) {
+                logger.info("Using static credentials provider with direct credentials")
+                builderWithEndpoint.withCredentials(new AWSStaticCredentialsProvider(creds))
+              } else {
+                throw new RuntimeException("Null credentials from provider")
+              }
+            } catch {
+              case e: Exception =>
+                // If direct access fails, use our wrapper approach
+                logger.info(s"Direct credential access failed: ${e.getMessage}, using wrapper")
+                val wrapper = createCredentialsProviderWrapper(cp)
+                builderWithEndpoint.withCredentials(wrapper)
             }
           } catch {
             case e: Exception =>
-              logger.info(s"Could not get direct credentials: ${e.getMessage}")
-          }
-
-          // Try with our adapter approach
-          try {
-            logger.info("Attempting to adapt credential provider")
-            val adaptedProvider = adaptAssumedRoleCredentialProvider(cp)
-            builderWithEndpoint.withCredentials(adaptedProvider)
-          } catch {
-            case e: Exception =>
-              logger.warn(s"Failed to adapt credential provider: ${e.getMessage}", e)
-              logger.warn("Falling back to original provider")
+              // Fall back to original provider if all else fails
+              logger.warn(s"All credential extraction approaches failed: ${e.getMessage}")
+              logger.warn("Falling back to original provider, which may fail in EMR 7.x")
               builderWithEndpoint.withCredentials(cp)
           }
         case None =>
@@ -268,6 +286,7 @@ object StorageUtils {
           builderWithEndpoint
       }
 
+      // Build the final client
       builderWithCredentials.build
     }
 
