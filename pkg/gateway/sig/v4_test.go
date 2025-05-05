@@ -533,8 +533,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 				}
 				return // Skip the rest of the test for invalid cases
 			} else if err != nil {
-				t.Errorf("failed to verify request with STREAMING-UNSIGNED-PAYLOAD-TRAILER: %v", err)
-				return
+				t.Fatalf("failed to verify request with STREAMING-UNSIGNED-PAYLOAD-TRAILER: %v", err)
 			}
 
 			// Check that it properly identified the auth type
