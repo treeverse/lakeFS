@@ -242,8 +242,8 @@ function extractChecksumFromResponse(parsedHeaders) {
   return null;
 }
 
-const uploadFile = async (config, repo, reference, path, file, onProgress) => {  
-  const fpath = destinationPath(path, file);  
+const uploadFile = async (config, repo, reference, path, file, onProgress, isMultiple) => {
+  const fpath = destinationPath(path, file, isMultiple);
   if (config.pre_sign_support_ui) {
     let additionalHeaders;
     if (config.blockstore_type === "azure") {
@@ -263,12 +263,19 @@ const uploadFile = async (config, repo, reference, path, file, onProgress) => {
     }
 };
 
-const destinationPath = (path, file) => {
-  return `${path ? path : ""}${file.path.replace(/\\/g, '/').replace(/^\//, '')}`;
+const destinationPath = (path, file, isMultiple) => {
+    const cleanPath = file.path.replace(/\\/g, '/').replace(/^\//, '');
+    if (typeof path === "string" && path.trim() !== "") {
+        if (isMultiple) {
+            return `${path.replace(/\/$/, '')}/${cleanPath}`;
+        }
+        return path;
+    }
+    return cleanPath;
 };
 
-const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }) => {
-  const fpath = destinationPath(path, file)
+const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null, isMultiple}) => {
+  const fpath = destinationPath(path, file, isMultiple)
   let uploadIndicator = null;
   if (state && state.status === "uploading") {
     uploadIndicator = <ProgressBar variant="success" now={state.percent}/>
@@ -366,7 +373,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
         setFileStates(next => ( {...next, [file.path]: {status: 'uploading', percent: 0}}))
         await uploadFile(config, repo, reference, currentPath, file, progress => {
           setFileStates(next => ( {...next, [file.path]: {status: 'uploading', percent: progress}}))
-        })
+        }, files.length > 1)
       } catch (error) {
         setFileStates(next => ( {...next, [file.path]: {status: 'error'}}))
         setUploadState({ ...initialState, error });
@@ -450,6 +457,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
                       path={currentPath}
                       state={fileStates[file.path]}
                       onRemove={!uploadState.inProgress ? onRemoveCandidate(file) : null}
+                      isMultiple={files.length > 1}
                     />
                 )}
               </aside>
