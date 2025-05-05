@@ -8,7 +8,6 @@ import com.amazonaws.retry.RetryUtils
 import com.amazonaws.services.s3.model.{Region, GetBucketLocationRequest}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws._
-import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
