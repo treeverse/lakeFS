@@ -10,7 +10,6 @@ import {useStorageConfigs} from "../../hooks/storageConfig";
 import {AppContext} from "../../hooks/appContext";
 import {useRefs} from "../../hooks/repo";
 import {getRepoStorageConfig} from "../../../pages/repositories/repository/utils";
-import {GeoJSONPreview} from "./GeoJSONPreview";
 
 const maxDiffSizeBytes = 120 << 10;
 const DiffViewerType = {
@@ -113,17 +112,14 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
 
     return <div>
         <DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/>
-        {
-            viewer === DiffViewerType.GEOJSON
-                ? <GeoJSONPreview data={right?.response} />
-                : <ReactDiffViewer
-                    oldValue={left?.response}
-                    newValue={right?.response}
-                    splitView={false}
-                    useDarkTheme={state.settings.darkMode}
-                    compareMethod={DiffMethod.WORDS}
-                />
-        }
+        <ReactDiffViewer
+            oldValue={left?.response}
+            newValue={right?.response}
+            splitView={false}
+            useDarkTheme={state.settings.darkMode}
+            compareMethod={DiffMethod.WORDS}
+        />
+
     </div>;
 }
 
