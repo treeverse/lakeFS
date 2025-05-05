@@ -136,52 +136,82 @@ object StorageUtils {
           // If it's already an AWSCredentialsProvider, return it directly
           awsProvider
         case assumedRoleProvider
-            if assumedRoleProvider.getClass.getSimpleName == "AssumedRoleCredentialProvider" =>
-          // If it's an AssumedRoleCredentialProvider, create an adapter
+            if assumedRoleProvider != null &&
+              assumedRoleProvider.getClass.getName.endsWith("AssumedRoleCredentialProvider") =>
+          // Create a more robust adapter for AssumedRoleCredentialProvider
           new AWSCredentialsProvider {
             override def getCredentials: AWSCredentials = {
-              // Use reflection to safely get credentials without direct casting
               try {
+                // Get the credentials from the provider
                 val getCredentialsMethod = assumedRoleProvider.getClass.getMethod("getCredentials")
                 val credentials = getCredentialsMethod.invoke(assumedRoleProvider)
 
-                // Extract username, password, and token using reflection
-                val getUserNameMethod = credentials.getClass.getMethod("getUserName")
-                val getPasswordMethod = credentials.getClass.getMethod("getPassword")
-                val getTokenMethod = credentials.getClass.getMethod("getToken")
+                if (credentials == null) {
+                  throw new RuntimeException("Failed to obtain credentials from provider")
+                }
 
-                val username = getUserNameMethod.invoke(credentials).toString
-                val password = getPasswordMethod.invoke(credentials).toString
-                val token = getTokenMethod.invoke(credentials)
+                // Create a simpler way to access the credential fields
+                val accessMethod = (name: String) => {
+                  try {
+                    val method = credentials.getClass.getMethod(name)
+                    val result = method.invoke(credentials)
+                    if (result != null) Some(result.toString) else None
+                  } catch {
+                    case _: Exception => None
+                  }
+                }
 
-                if (token != null) {
-                  new BasicSessionCredentials(username, password, token.toString)
+                // Extract credential components safely
+                val accessKey = accessMethod("getUserName").getOrElse(
+                  accessMethod("getAccessKey").getOrElse(
+                    accessMethod("getAWSAccessKeyId").getOrElse("")
+                  )
+                )
+
+                val secretKey = accessMethod("getPassword").getOrElse(
+                  accessMethod("getSecretKey").getOrElse(
+                    accessMethod("getAWSSecretKey").getOrElse("")
+                  )
+                )
+
+                val token =
+                  accessMethod("getToken").getOrElse(accessMethod("getSessionToken").getOrElse(""))
+
+                if (token.nonEmpty) {
+                  new BasicSessionCredentials(accessKey, secretKey, token)
                 } else {
-                  new BasicAWSCredentials(username, password)
+                  new BasicAWSCredentials(accessKey, secretKey)
                 }
               } catch {
                 case e: Exception =>
-                  logger.error("Failed to adapt AssumedRoleCredentialProvider", e)
-                  throw e
+                  logger.error(s"Failed to adapt AssumedRoleCredentialProvider: ${e.getMessage}", e)
+                  throw new RuntimeException(
+                    s"Failed to adapt credential provider: ${e.getMessage}",
+                    e
+                  )
               }
             }
 
             override def refresh(): Unit = {
-              // Try to refresh the credentials if possible
               try {
-                val refreshMethod = assumedRoleProvider.getClass.getMethod("refresh")
-                refreshMethod.invoke(assumedRoleProvider)
+                assumedRoleProvider.getClass.getMethods
+                  .find(_.getName == "refresh")
+                  .foreach(_.invoke(assumedRoleProvider))
               } catch {
-                case _: Exception => // Ignore refresh failures
+                case e: Exception =>
+                  logger.debug(s"Failed to refresh credentials: ${e.getMessage}")
               }
             }
           }
         case other =>
-          // For any other type, log a warning and try to adapt as best we can
-          logger.warn(s"Unknown credential provider type: ${other.getClass.getName}")
-          throw new IllegalArgumentException(
-            s"Unsupported credential provider type: ${other.getClass.getName}"
-          )
+          if (other == null) {
+            throw new IllegalArgumentException("Credential provider is null")
+          } else {
+            logger.warn(s"Unknown credential provider type: ${other.getClass.getName}")
+            throw new IllegalArgumentException(
+              s"Unsupported credential provider type: ${other.getClass.getName}"
+            )
+          }
       }
     }
 
@@ -194,6 +224,7 @@ object StorageUtils {
     ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
+
       val builderWithEndpoint =
         if (endpoint != null)
           builder.withEndpointConfiguration(
@@ -203,20 +234,40 @@ object StorageUtils {
           builder.withRegion(region)
         else
           builder
+
       val builderWithCredentials = credentialsProvider match {
         case Some(cp) =>
-          // Use the adapter method to handle potential AssumedRoleCredentialProvider
+          logger.info(s"Configuring S3 client with credential provider: ${cp.getClass.getName}")
+
+          // First try with direct credentials if available
           try {
-            builderWithEndpoint.withCredentials(adaptAssumedRoleCredentialProvider(cp))
+            val creds = cp.getCredentials
+            if (creds != null) {
+              logger.info("Using direct AWSCredentials from provider")
+              val staticProvider = new AWSStaticCredentialsProvider(creds)
+              return builderWithEndpoint.withCredentials(staticProvider).build
+            }
           } catch {
             case e: Exception =>
-              logger.warn(
-                s"Failed to adapt credential provider, falling back to original: ${e.getMessage}"
-              )
+              logger.info(s"Could not get direct credentials: ${e.getMessage}")
+          }
+
+          // Try with our adapter approach
+          try {
+            logger.info("Attempting to adapt credential provider")
+            val adaptedProvider = adaptAssumedRoleCredentialProvider(cp)
+            builderWithEndpoint.withCredentials(adaptedProvider)
+          } catch {
+            case e: Exception =>
+              logger.warn(s"Failed to adapt credential provider: ${e.getMessage}", e)
+              logger.warn("Falling back to original provider")
               builderWithEndpoint.withCredentials(cp)
           }
-        case None => builderWithEndpoint
+        case None =>
+          logger.info("No credential provider specified, using default")
+          builderWithEndpoint
       }
+
       builderWithCredentials.build
     }
 
