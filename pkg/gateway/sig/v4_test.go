@@ -550,8 +550,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 			// Read the body to verify the chunks are correctly parsed
 			bodyData, err := io.ReadAll(req.Body)
 			if err != nil {
-				t.Errorf("failed to read parsed body: %v", err)
-				return
+				t.Fatalf("failed to read parsed body: %v", err)
 			}
 
 			// Verify that the decoded body contains exactly what we expect
