@@ -1,7 +1,12 @@
 package io.treeverse.clients
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.auth.{AWSCredentials, AWSStaticCredentialsProvider, BasicAWSCredentials, BasicSessionCredentials}
+import com.amazonaws.auth.{
+  AWSCredentials,
+  AWSStaticCredentialsProvider,
+  BasicAWSCredentials,
+  BasicSessionCredentials
+}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
@@ -27,10 +32,10 @@ object StorageUtils {
    *  @return object paths in a storage namespace
    */
   def concatKeysToStorageNamespace(
-                                    keys: Seq[String],
-                                    storageNamespace: String,
-                                    keepNsSchemeAndHost: Boolean = true
-                                  ): Seq[String] = {
+      keys: Seq[String],
+      storageNamespace: String,
+      keepNsSchemeAndHost: Boolean = true
+  ): Seq[String] = {
     var sanitizedNS = storageNamespace
     if (!keepNsSchemeAndHost) {
       val uri = new URI(storageNamespace)
@@ -92,13 +97,13 @@ object StorageUtils {
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
     def createAndValidateS3Client(
-                                   configuration: ClientConfiguration,
-                                   credentialsProvider: Option[AWSCredentialsProvider],
-                                   awsS3ClientBuilder: AmazonS3ClientBuilder,
-                                   endpoint: String,
-                                   region: String,
-                                   bucket: String
-                                 ): AmazonS3 = {
+        configuration: ClientConfiguration,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        awsS3ClientBuilder: AmazonS3ClientBuilder,
+        endpoint: String,
+        region: String,
+        bucket: String
+    ): AmazonS3 = {
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
       val client =
@@ -128,16 +133,16 @@ object StorageUtils {
       )
     }
 
-    /**
-     * Adapts a Hadoop AssumedRoleCredentialProvider to an AWSCredentialsProvider
-     * This fixes the compatibility issue with EMR 7.x
+    /** Adapts a Hadoop AssumedRoleCredentialProvider to an AWSCredentialsProvider
+     *  This fixes the compatibility issue with EMR 7.x
      */
     private def adaptAssumedRoleCredentialProvider(provider: Any): AWSCredentialsProvider = {
       provider match {
         case awsProvider: AWSCredentialsProvider =>
           // If it's already an AWSCredentialsProvider, return it directly
           awsProvider
-        case assumedRoleProvider if assumedRoleProvider.getClass.getSimpleName == "AssumedRoleCredentialProvider" =>
+        case assumedRoleProvider
+            if assumedRoleProvider.getClass.getSimpleName == "AssumedRoleCredentialProvider" =>
           // If it's an AssumedRoleCredentialProvider, create an adapter
           new AWSCredentialsProvider {
             override def getCredentials: AWSCredentials = {
@@ -180,17 +185,19 @@ object StorageUtils {
         case other =>
           // For any other type, log a warning and try to adapt as best we can
           logger.warn(s"Unknown credential provider type: ${other.getClass.getName}")
-          throw new IllegalArgumentException(s"Unsupported credential provider type: ${other.getClass.getName}")
+          throw new IllegalArgumentException(
+            s"Unsupported credential provider type: ${other.getClass.getName}"
+          )
       }
     }
 
     private def initializeS3Client(
-                                    configuration: ClientConfiguration,
-                                    credentialsProvider: Option[AWSCredentialsProvider],
-                                    awsS3ClientBuilder: AmazonS3ClientBuilder,
-                                    endpoint: String,
-                                    region: String = null
-                                  ): AmazonS3 = {
+        configuration: ClientConfiguration,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        awsS3ClientBuilder: AmazonS3ClientBuilder,
+        endpoint: String,
+        region: String = null
+    ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
       val builderWithEndpoint =
@@ -209,7 +216,9 @@ object StorageUtils {
             builderWithEndpoint.withCredentials(adaptAssumedRoleCredentialProvider(cp))
           } catch {
             case e: Exception =>
-              logger.warn(s"Failed to adapt credential provider, falling back to original: ${e.getMessage}")
+              logger.warn(
+                s"Failed to adapt credential provider, falling back to original: ${e.getMessage}"
+              )
               builderWithEndpoint.withCredentials(cp)
           }
         case None => builderWithEndpoint
@@ -233,10 +242,10 @@ class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
   private val clock = java.time.Clock.systemDefaultZone
 
   override def shouldRetry(
-                            originalRequest: AmazonWebServiceRequest,
-                            exception: AmazonClientException,
-                            retriesAttempted: Int
-                          ): Boolean = {
+      originalRequest: AmazonWebServiceRequest,
+      exception: AmazonClientException,
+      retriesAttempted: Int
+  ): Boolean = {
     val now = clock.instant
     exception match {
       case ce: SdkClientException =>
