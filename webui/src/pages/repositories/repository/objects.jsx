@@ -263,15 +263,21 @@ const uploadFile = async (config, repo, reference, path, file, onProgress, isMul
     }
 };
 
-const destinationPath = (path, file, isMultiple) => {
-    const cleanPath = file.path.replace(/\\/g, '/').replace(/^\//, '');
-    if (typeof path === "string" && path.trim() !== "") {
+export const destinationPath = (path, file, isMultiple) => {
+    const cleanFilePath = file.path.replace(/\\/g, '/').replace(/^\/+/, '');
+    let cleanUserPath = path?.replace(/\\/g, '/').trim();
+
+    if (cleanUserPath) {
+        cleanUserPath = cleanUserPath.replace(/^\/+|\/+$/g, '');
+        cleanUserPath = cleanUserPath.replace(/\/+/g, '/');
+
         if (isMultiple) {
-            return `${path.replace(/\/$/, '')}/${cleanPath}`;
+            return `${cleanUserPath}/${cleanFilePath}`;
         }
-        return path;
+        return cleanUserPath;
     }
-    return cleanPath;
+
+    return cleanFilePath;
 };
 
 const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null, isMultiple}) => {
