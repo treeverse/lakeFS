@@ -2,6 +2,7 @@ package io.treeverse.clients
 
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.auth.{
+  AWSCredentials,
   AWSStaticCredentialsProvider,
   BasicAWSCredentials,
   BasicSessionCredentials
@@ -96,7 +97,7 @@ object StorageUtils {
 
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
+        credentialsProvider: Option[_], // Use Any type to avoid casting
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String,
@@ -105,41 +106,20 @@ object StorageUtils {
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
 
-      // Extract credentials early and create a new static provider
-      val safeCredentialsProvider: Option[AWSCredentialsProvider] =
-        credentialsProvider.flatMap(cp => {
-          try {
-            logger.info(s"Processing credential provider type: ${cp.getClass.getName}")
+      // Create a safe credentials provider without any casting
+      val safeProvider = credentialsProvider match {
+        case Some(provider) =>
+          logger.info(s"Processing credential provider of type: ${provider.getClass.getName}")
+          extractCredentialsAsStaticProvider(provider)
+        case None =>
+          logger.info("No credential provider specified")
+          None
+      }
 
-            // First attempt to directly get credentials
-            try {
-              val creds = cp.getCredentials
-              if (creds != null) {
-                logger.info("Successfully extracted credentials directly")
-                Some(new AWSStaticCredentialsProvider(creds))
-              } else {
-                logger.warn("Credentials provider returned null credentials")
-                None
-              }
-            } catch {
-              case e: Exception =>
-                // If direct method fails, try reflection
-                logger.info(
-                  s"Direct credential extraction failed: ${e.getMessage}, trying reflection"
-                )
-                extractCredentialsUsingReflection(cp)
-            }
-          } catch {
-            case e: Exception =>
-              logger.error(s"All credential extraction methods failed: ${e.getMessage}", e)
-              None
-          }
-        })
+      // Create the initial client
+      val client = buildS3Client(configuration, safeProvider, awsS3ClientBuilder, endpoint)
 
-      // Now use our safe provider for all S3 operations
-      val client =
-        createS3Client(configuration, safeCredentialsProvider, awsS3ClientBuilder, endpoint)
-
+      // Determine region
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
@@ -159,24 +139,42 @@ object StorageUtils {
         bucketRegion = region
       }
 
-      // Create the final client with the right region
-      createS3Client(configuration,
-                     safeCredentialsProvider,
-                     awsS3ClientBuilder,
-                     endpoint,
-                     bucketRegion
-                    )
+      // Create the final client with region
+      buildS3Client(configuration, safeProvider, awsS3ClientBuilder, endpoint, bucketRegion)
     }
 
-    /** Extract credentials using reflection from any type of provider
+    /** Extract credentials and return a safe static provider
      */
-    private def extractCredentialsUsingReflection(provider: Any): Option[AWSCredentialsProvider] = {
+    private def extractCredentialsAsStaticProvider(
+        provider: Any
+    ): Option[AWSCredentialsProvider] = {
       if (provider == null) {
-        logger.warn("Provider is null, cannot extract credentials")
+        logger.warn("Provider is null")
         return None
       }
 
+      logger.info(s"Extracting credentials from provider type: ${provider.getClass.getName}")
+
       try {
+        // If it's already an AWSCredentialsProvider, try to get credentials directly
+        if (provider.isInstanceOf[AWSCredentialsProvider]) {
+          try {
+            // Use pattern matching to avoid casting
+            provider match {
+              case awsProvider: AWSCredentialsProvider =>
+                val creds = awsProvider.getCredentials
+                if (creds != null) {
+                  logger.info("Successfully extracted credentials from AWSCredentialsProvider")
+                  return Some(new AWSStaticCredentialsProvider(creds))
+                }
+            }
+          } catch {
+            case e: Exception =>
+              logger.info(s"Failed to get credentials directly: ${e.getMessage}")
+            // Continue to try reflection approach
+          }
+        }
+
         // Helper function to safely extract a string value using reflection
         def safeGetString(obj: Any, methodNames: String*): String = {
           if (obj == null) return ""
@@ -191,13 +189,15 @@ object StorageUtils {
             } catch {
               case _: NoSuchMethodException => // Try next method
               case e: Exception =>
-                logger.debug(s"Failed to invoke $methodName: ${e.getMessage}")
+                logger.debug(
+                  s"Failed to invoke $methodName on ${obj.getClass.getName}: ${e.getMessage}"
+                )
             }
           }
           "" // Return empty string if all methods fail
         }
 
-        // Get the credentials object using reflection
+        // Try to get credentials object
         val credentials =
           try {
             val getCredMethod = provider.getClass.getMethod("getCredentials")
@@ -205,7 +205,7 @@ object StorageUtils {
           } catch {
             case e: Exception =>
               logger.debug(s"Failed to get credentials via reflection: ${e.getMessage}")
-              provider // Fall back to treating the provider itself as credentials
+              provider // Use the provider itself as potential credentials source
           }
 
         // Extract credential components
@@ -215,11 +215,11 @@ object StorageUtils {
         val token = safeGetString(credentials, "getToken", "getSessionToken")
 
         logger.info(
-          s"Extracted credential components via reflection - has access key: ${accessKey.nonEmpty}, has secret: ${secretKey.nonEmpty}, has token: ${token.nonEmpty}"
+          s"Extracted credential components - has access key: ${accessKey.nonEmpty}, has secret: ${secretKey.nonEmpty}, has token: ${token.nonEmpty}"
         )
 
         if (accessKey.isEmpty || secretKey.isEmpty) {
-          logger.warn("Could not extract valid credentials - missing access key or secret key")
+          logger.warn("Failed to extract valid credentials - missing access key or secret key")
           None
         } else {
           val awsCredentials = if (token.nonEmpty) {
@@ -232,15 +232,14 @@ object StorageUtils {
         }
       } catch {
         case e: Exception =>
-          logger.error(s"Failed to extract credentials via reflection: ${e.getMessage}", e)
+          logger.error(s"Failed to extract credentials: ${e.getMessage}", e)
           None
       }
     }
 
-    /** Create an S3 client with the given configuration
-     *  This completely replaces the old initializeS3Client method
+    /** Build an S3 client without any provider casting
      */
-    private def createS3Client(
+    private def buildS3Client(
         configuration: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
         awsS3ClientBuilder: AmazonS3ClientBuilder,
@@ -263,10 +262,10 @@ object StorageUtils {
       // Add credentials if available, otherwise use default
       val finalBuilder = credentialsProvider match {
         case Some(provider) =>
-          logger.info(s"Using credentials provider: ${provider.getClass.getName}")
+          logger.info(s"Using static credentials provider")
           builderWithEndpoint.withCredentials(provider)
         case None =>
-          logger.info("No credentials provider available, using default credentials chain")
+          logger.info("No credentials provider available, using default")
           builderWithEndpoint
       }
 
