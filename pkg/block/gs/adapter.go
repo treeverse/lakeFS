@@ -34,6 +34,7 @@ var (
 	ErrMaxMultipartObjects = errors.New("maximum multipart object reached")
 	ErrPartListMismatch    = errors.New("multipart part list mismatch")
 	ErrMissingTargetAttrs  = errors.New("missing target attributes")
+	ErrUploadIDNotFound    = errors.New("upload ID not found")
 )
 
 type Adapter struct {
@@ -769,6 +770,9 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 	bucketParts, nextPartNumberMarker, err := a.listMultipartUploadParts(ctx, bucketName, uploadID, opts)
 	if err != nil {
 		return nil, err
+	}
+	if len(bucketParts) == 0 {
+		return nil, ErrUploadIDNotFound
 	}
 	parts := make([]block.MultipartPart, len(bucketParts))
 	for i, part := range bucketParts {
