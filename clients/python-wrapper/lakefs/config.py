@@ -39,15 +39,11 @@ def parse_credentials_provider(data) -> Optional[ClientConfig.IAMProvider]:
     :return: The corresponding ProviderType enum, or None if not found.
     """
     provider_type: Optional[str] = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_TYPE, None)
-    print("Provider type (from env vars): ", provider_type)
     if provider_type is None and "credentials" in data and "provider" in data["credentials"]:
         provider = data["credentials"]["provider"]
         provider_type = provider["type"]
-        print("Provider type (from config file): ", provider_type)
     if provider_type is not None:
-        print("Found provider")
         if provider_type == "aws_iam":
-            print("Provider is aws_iam")
             aws_iam = provider["aws_iam"]
             token_ttl_seconds = _DEFAULT_AWS_IAM_TOKEN_TTL_SECONDS
             url_presign_ttl_seconds = _DEFAULT_AWS_IAM_URL_PRESIGN_TTL_SECONDS
@@ -70,7 +66,6 @@ def parse_credentials_provider(data) -> Optional[ClientConfig.IAMProvider]:
                 url_presign_ttl_seconds=url_presign_ttl_seconds,
                 token_request_headers=token_request_headers
             )
-            print(f"AWS Provider Config: {iam}")
             return ClientConfig.IAMProvider(
                 type=ClientConfig.ProviderType.AWS_IAM,
                 aws_iam=iam
