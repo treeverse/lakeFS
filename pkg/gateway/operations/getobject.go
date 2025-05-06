@@ -222,6 +222,13 @@ func handleListParts(w http.ResponseWriter, req *http.Request, o *PathOperation)
 	}
 	parts := make([]serde.MultipartUploadPart, len(partsResp.Parts))
 	for i, part := range partsResp.Parts {
+		if part.PartNumber > 10000 || part.PartNumber < 0 {
+			o.Log(req).WithField("uploadId", uploadID).
+				WithField("partNumber", part.PartNumber).
+				Error("part number out of range")
+			_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+			return
+		}
 		parts[i] = serde.MultipartUploadPart{
 			// PartNumber <= 10000, safe
 			PartNumber:   int32(part.PartNumber), //nolint:gosec
