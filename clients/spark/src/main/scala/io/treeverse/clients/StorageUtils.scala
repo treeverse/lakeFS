@@ -115,10 +115,8 @@ object StorageUtils {
           None
       }
 
-      // Create the initial client
       val client = buildS3Client(configuration, safeProvider, awsS3ClientBuilder, endpoint)
 
-      // Determine region
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
@@ -138,7 +136,6 @@ object StorageUtils {
         bucketRegion = region
       }
 
-      // Create the final client with region
       buildS3Client(configuration, safeProvider, awsS3ClientBuilder, endpoint, bucketRegion)
     }
 
@@ -193,10 +190,9 @@ object StorageUtils {
                 )
             }
           }
-          "" // Return empty string if all methods fail
+          "" // All methods failed
         }
 
-        // Try to get credentials object
         val credentials =
           try {
             val getCredMethod = provider.getClass.getMethod("getCredentials")
@@ -204,10 +200,9 @@ object StorageUtils {
           } catch {
             case e: Exception =>
               logger.debug(s"Failed to get credentials via reflection: ${e.getMessage}")
-              provider // Use the provider itself as potential credentials source
+              provider
           }
 
-        // Extract credential components
         val accessKey =
           safeGetString(credentials, "getUserName", "getAccessKey", "getAWSAccessKeyId")
         val secretKey = safeGetString(credentials, "getPassword", "getSecretKey", "getAWSSecretKey")
@@ -236,8 +231,6 @@ object StorageUtils {
       }
     }
 
-    /** Build an S3 client without any provider casting
-     */
     private def buildS3Client(
         configuration: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
@@ -247,7 +240,6 @@ object StorageUtils {
     ): AmazonS3 = {
       val builder = awsS3ClientBuilder.withClientConfiguration(configuration)
 
-      // Configure endpoint or region
       val builderWithEndpoint =
         if (endpoint != null)
           builder.withEndpointConfiguration(
