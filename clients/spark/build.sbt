@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.14.3-demo-14"
+lazy val projectVersion = "0.14.3-demo-15"
 version := projectVersion
 lazy val hadoopVersion = "3.3.4"
 ThisBuild / isSnapshot := false
@@ -74,7 +74,9 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
   // Test with an up-to-date fasterxml.
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.2" % "test",
-  "com.storm-enroute" %% "scalameter" % "0.19" % "test"
+  "com.storm-enroute" %% "scalameter" % "0.19" % "test"ת
+  "software.amazon.awssdk" % "s3" % "2.20.109",
+  "software.amazon.awssdk" % "auth" % "2.20.109"
 )
 
 def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
