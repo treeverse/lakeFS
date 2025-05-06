@@ -16,7 +16,6 @@ import {
 import "react-ipynb-renderer/dist/styles/default.css";
 import { useMarkdownProcessor } from "./useMarkdownProcessor";
 import { AppContext } from "../../../../lib/hooks/appContext";
-import { dark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {GeoJSONPreview} from "../../../../lib/components/repository/GeoJSONPreview";
 
 export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
