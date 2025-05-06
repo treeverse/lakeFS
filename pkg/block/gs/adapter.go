@@ -791,6 +791,7 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 	return &block.ListPartsResponse{
 		Parts:                parts,
 		NextPartNumberMarker: nextPartNumberMarker,
+		IsTruncated:          nextPartNumberMarker != nil,
 	}, nil
 }
 
