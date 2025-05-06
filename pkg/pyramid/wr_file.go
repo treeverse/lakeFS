@@ -77,7 +77,7 @@ func (f *WRFile) Abort(ctx context.Context) error {
 
 // idempotentClose is like Close(), but doesn't fail when the file is already closed.
 func (f *WRFile) idempotentClose() error {
-	err := f.File.Close()
+	err := f.Close()
 	if err != nil && !errors.Is(err, os.ErrClosed) {
 		return fmt.Errorf("closing file: %w", err)
 	}

@@ -220,5 +220,4 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 
 	body := string(getObjResp.Body)
 	require.Equalf(t, objContent, body, "path: %s, expected: %s, actual:%s", objPath, objContent, body)
-
 }

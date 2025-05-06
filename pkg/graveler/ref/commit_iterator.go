@@ -38,10 +38,10 @@ func (c *commitsPriorityQueue) Len() int {
 
 func (c *commitsPriorityQueue) Less(i, j int) bool {
 	pq := *c
-	if pq[i].Commit.CreationDate.Equal(pq[j].Commit.CreationDate) {
+	if pq[i].CreationDate.Equal(pq[j].CreationDate) {
 		return pq[i].CommitID > pq[j].CommitID
 	}
-	return pq[i].Commit.CreationDate.After(pq[j].Commit.CreationDate)
+	return pq[i].CreationDate.After(pq[j].CreationDate)
 }
 
 func (c *commitsPriorityQueue) Swap(i, j int) {
@@ -111,7 +111,7 @@ func (ci *CommitIterator) Next() bool {
 			return false
 		}
 		// skip commits that are older than since time
-		if ci.since == nil || !rec.Commit.CreationDate.Before(*ci.since) {
+		if ci.since == nil || !rec.CreationDate.Before(*ci.since) {
 			ci.queue.Push(rec)
 		}
 	}
@@ -144,7 +144,7 @@ func (ci *CommitIterator) Next() bool {
 		ci.visit[rec.CommitID] = struct{}{}
 
 		// skip commits that are older than since time
-		if ci.since != nil && rec.Commit.CreationDate.Before(*ci.since) {
+		if ci.since != nil && rec.CreationDate.Before(*ci.since) {
 			continue
 		}
 

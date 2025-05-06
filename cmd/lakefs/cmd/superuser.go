@@ -67,6 +67,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 			fmt.Printf("Failed to open KV store: %s\n", err)
 			os.Exit(1)
 		}
+		defer kvStore.Close()
 
 		var authService auth.Service
 		secretStore := crypt.NewSecretStore([]byte(authConfig.Encrypt.SecretKey))

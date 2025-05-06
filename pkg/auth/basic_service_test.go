@@ -270,6 +270,7 @@ func createOldCreds(t *testing.T, ctx context.Context, store kv.Store, s *auth.B
 		UserId:                        []byte(username),
 	}
 	credsData, err := proto.Marshal(creds)
+	require.NoError(t, err)
 	require.NoError(t, store.Set(ctx, []byte(model.PartitionKey), model.CredentialPath(username, creds.AccessKeyId), credsData))
 	return creds
 }

@@ -1988,10 +1988,10 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 
 	// check key in committed - do we need tombstone?
 	var metaRangeID MetaRangeID
-	if branchRecord.Branch.CompactedBaseMetaRangeID != "" {
-		metaRangeID = branchRecord.Branch.CompactedBaseMetaRangeID
+	if branchRecord.CompactedBaseMetaRangeID != "" {
+		metaRangeID = branchRecord.CompactedBaseMetaRangeID
 	} else {
-		commit, err := g.RefManager.GetCommit(ctx, repository, branchRecord.Branch.CommitID)
+		commit, err := g.RefManager.GetCommit(ctx, repository, branchRecord.CommitID)
 		if err != nil {
 			return err
 		}
@@ -2081,7 +2081,7 @@ func (g *Graveler) List(ctx context.Context, repository *RepositoryRecord, ref R
 		return nil, err
 	}
 	if reference.StagingToken != "" {
-		stagingList, err := g.listStagingAreaWithoutCompaction(ctx, reference.BranchRecord.Branch, batchSize)
+		stagingList, err := g.listStagingAreaWithoutCompaction(ctx, reference.Branch, batchSize)
 		if err != nil {
 			listing.Close()
 			return nil, err
@@ -2520,12 +2520,12 @@ func (g *Graveler) Reset(ctx context.Context, repository *RepositoryRecord, bran
 
 // deleteAndNotify deletes a key from the staging area and notifies the delete sensor
 func (g *Graveler) deleteAndNotify(ctx context.Context, repositoryID RepositoryID, branchRecord BranchRecord, key Key, requireExists bool) error {
-	err := g.StagingManager.Set(ctx, branchRecord.Branch.StagingToken, key, nil, requireExists)
+	err := g.StagingManager.Set(ctx, branchRecord.StagingToken, key, nil, requireExists)
 	if err != nil {
 		return err
 	}
 	if g.deleteSensor != nil {
-		g.deleteSensor.CountDelete(ctx, repositoryID, branchRecord.BranchID, branchRecord.Branch.StagingToken)
+		g.deleteSensor.CountDelete(ctx, repositoryID, branchRecord.BranchID, branchRecord.StagingToken)
 	}
 	return nil
 }

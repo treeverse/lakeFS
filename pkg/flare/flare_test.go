@@ -100,8 +100,12 @@ LAKEFS_AWS_ACCESS_KEY_ID=<REDACTED>
 
 			b := new(bytes.Buffer)
 			bw := bufio.NewWriter(b)
-			flr.processEnvVars(bw)
-			bw.Flush()
+			if err := flr.processEnvVars(bw); err != nil {
+				t.Errorf("failed to process env vars: %s", err)
+			}
+			if err := bw.Flush(); err != nil {
+				t.Errorf("failed to flush buffer: %s", err)
+			}
 			assert.Equal(t, tc.Expected, b.String())
 		})
 	}
@@ -158,8 +162,12 @@ LAKEFS_TEST_OTHER=test2
 			assert.NoError(t, err)
 			b := new(bytes.Buffer)
 			bw := bufio.NewWriter(b)
-			flr.processEnvVars(bw)
-			bw.Flush()
+			if err := flr.processEnvVars(bw); err != nil {
+				t.Errorf("failed to process env vars: %s", err)
+			}
+			if err := bw.Flush(); err != nil {
+				t.Errorf("failed to flush buffer: %s", err)
+			}
 			assert.Equal(t, tc.Expected, b.String())
 		})
 	}
@@ -198,11 +206,14 @@ func TestDefaultReplacerFunc(t *testing.T) {
 				hasher := sha512.New()
 				v := strings.SplitN(kv, "=", 2)
 				hasher.Write([]byte(v[1]))
-				expected = expected +
-					fmt.Sprintf("%s=%x\n", v[0], hasher.Sum(nil))
+				expected += fmt.Sprintf("%s=%x\n", v[0], hasher.Sum(nil))
 			}
-			flr.processEnvVars(bw)
-			bw.Flush()
+			if err := flr.processEnvVars(bw); err != nil {
+				t.Errorf("failed to process env vars: %s", err)
+			}
+			if err := bw.Flush(); err != nil {
+				t.Errorf("failed to flush buffer: %s", err)
+			}
 			assert.Equal(t, expected, b.String())
 		})
 	}
