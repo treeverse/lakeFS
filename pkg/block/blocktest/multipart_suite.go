@@ -81,7 +81,15 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				require.NoError(t, err)
 				require.Equal(t, int(maxParts), len(listResp.Parts))
 				require.True(t, listResp.IsTruncated)
-				require.Equal(t, strconv.Itoa(int(maxParts)), *listResp.NextPartNumberMarker)
+				require.NotNil(t, listResp.NextPartNumberMarker)
+				// check pagination with marker
+				listResp, err = adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{
+					PartNumberMarker: listResp.NextPartNumberMarker,
+				})
+				require.NoError(t, err)
+				require.Equal(t, len(parts)-maxPartsConst, len(listResp.Parts))
+				require.False(t, listResp.IsTruncated)
+				require.Nil(t, listResp.NextPartNumberMarker)
 			}
 
 			_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
