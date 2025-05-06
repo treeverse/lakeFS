@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/params"
@@ -34,7 +33,7 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, gatewayDomains []string, snippets []params.CodeSnippet, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) http.Handler {
+func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, gatewayDomains []string, snippets []params.CodeSnippet, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager, oidcProvider authentication.OIDCProvider) http.Handler {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
 	if err != nil {
@@ -57,7 +56,7 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
 		MetricsMiddleware(swagger),
 	)
-	controller := NewController(cfg, catalog, authenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter, licenseManager)
+	controller := NewController(cfg, catalog, authenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter, licenseManager, oidcProvider)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
 	r.Mount("/_health", httputil.ServeHealth())
@@ -82,13 +81,7 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 	}
 	r.Mount("/", rootHandler)
 
-	// mount authentication-related routes
-	err = authenticationfactory.MountAuthenticationRoutes(logger, cfg, r, sessionStore)
-	// TODO(yoni): how to handle this error?
-	if err != nil {
-		logger.Fatalf("Failed to mount authentication routes: %s", err)
-		return nil
-	}
+	oidcProvider.RegisterOIDCRoutes(r, sessionStore)
 
 	return r
 }

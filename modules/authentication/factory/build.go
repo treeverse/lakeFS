@@ -1,15 +1,34 @@
 package factory
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
+	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
+
+type nopOidcProvider struct {
+}
+
+func (n *nopOidcProvider) RegisterOIDCRoutes(_ *chi.Mux, _ sessions.Store) {
+	// nop
+}
+
+func (n *nopOidcProvider) OIDCCallback(w http.ResponseWriter, _ *http.Request, _ sessions.Store) {
+	// respond with bad request, as OIDC is not implemented
+	w.WriteHeader(http.StatusBadRequest)
+}
+
+func NewOIDCProvider(_ context.Context, _ config.Config, _ logging.Logger) (authentication.OIDCProvider, error) {
+	return &nopOidcProvider{}, nil
+}
 
 func MountAuthenticationRoutes(logger logging.Logger, c config.Config, r *chi.Mux, sessionStore sessions.Store) error {
 	return nil

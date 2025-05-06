@@ -150,6 +150,8 @@ var runCmd = &cobra.Command{
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 
+		oidcProvider, err := authenticationfactory.NewOIDCProvider(ctx, cfg, logger)
+
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:       cfg,
 			KVStore:      kvStore,
@@ -245,6 +247,7 @@ var runCmd = &cobra.Command{
 			upload.DefaultPathProvider,
 			usageReporter,
 			licenseManager,
+			oidcProvider,
 		)
 
 		// init gateway server
