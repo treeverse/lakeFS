@@ -74,7 +74,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
   // Test with an up-to-date fasterxml.
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.2" % "test",
-  "com.storm-enroute" %% "scalameter" % "0.19" % "test"ת
+  "com.storm-enroute" %% "scalameter" % "0.19" % "test",
   "software.amazon.awssdk" % "s3" % "2.20.109",
   "software.amazon.awssdk" % "auth" % "2.20.109"
 )
