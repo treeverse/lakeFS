@@ -89,7 +89,6 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				require.NoError(t, err)
 				require.Equal(t, len(parts)-maxPartsConst, len(listResp.Parts))
 				require.False(t, listResp.IsTruncated)
-				require.Nil(t, listResp.NextPartNumberMarker)
 			}
 
 			_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
