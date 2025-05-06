@@ -37,7 +37,6 @@ func TestSimpleWriteRead(t *testing.T) {
 	writeToFile(t, ctx, config.SingleBlockstoreID, namespace, filename, content)
 	err := checkContent(t, ctx, config.SingleBlockstoreID, namespace, filename, content)
 	require.NoError(t, err)
-
 }
 
 func TestReadFailDuringWrite(t *testing.T) {

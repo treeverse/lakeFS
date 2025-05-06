@@ -308,7 +308,7 @@ func TestLakectlLocal_posix_permissions(t *testing.T) {
 		sanitizedResult := runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
 		require.Contains(t, sanitizedResult, "No diff found")
 
-		err = os.Chmod(filepath.Join(dataDir, "with-diff.txt"), 0755)
+		err = os.Chmod(filepath.Join(dataDir, "with-diff.txt"), 0o755)
 		require.NoError(t, err)
 
 		sanitizedResult = runCmd(t, lakectl+" local status "+dataDir, false, false, vars)
@@ -818,7 +818,7 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 			withForceFlag:   false,
 		},
 		{
-			name: "uncommitted_changes_-_on_boundry",
+			name: "uncommitted_changes_-_on_boundary",
 			uncommittedRemote: []string{
 				fmt.Sprintf("%s0", vars["PREFIX"]),
 			},
@@ -858,7 +858,6 @@ func TestLakectlLocal_commit_remote_uncommitted(t *testing.T) {
 				for _, f := range tc.uncommittedRemote {
 					vars["FILE_PATH"] = f
 					runCmd(t, fmt.Sprintf("%s fs upload -s files/ro_1k lakefs://%s/%s/%s", Lakectl(), vars["REPO"], vars["BRANCH"], vars["FILE_PATH"]), false, false, vars)
-
 				}
 			}
 

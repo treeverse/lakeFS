@@ -8,16 +8,16 @@ import (
 )
 
 func printMsgAndExit(params ...any) {
-	fmt.Fprintln(os.Stderr, "Error:", fmt.Sprint(params...))
+	_, _ = fmt.Fprintln(os.Stderr, "Error:", fmt.Sprint(params...))
 	os.Exit(1)
 }
 
 func printInfo(params ...any) {
 	colorMsg := text.FgHiBlue.Sprintf("Info: %s", fmt.Sprint(params...))
-	fmt.Fprintln(os.Stderr, colorMsg)
+	_, _ = fmt.Fprintln(os.Stderr, colorMsg)
 }
 
 func printNonFatalError(params ...any) {
 	colorMsg := text.FgHiRed.Sprintf("Error: %s", fmt.Sprint(params...))
-	fmt.Fprintln(os.Stderr, colorMsg)
+	_, _ = fmt.Fprintln(os.Stderr, colorMsg)
 }

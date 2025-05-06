@@ -34,8 +34,8 @@ func (c *CommitsGenerationPriorityQueue) Pop() interface{} {
 }
 
 func (c CommitsGenerationPriorityQueue) Less(i, j int) bool {
-	if c[i].Commit.Generation == c[j].Commit.Generation {
-		return c[i].Commit.CreationDate.After(c[j].Commit.CreationDate)
+	if c[i].Generation == c[j].Generation {
+		return c[i].CreationDate.After(c[j].CreationDate)
 	}
-	return c[i].Commit.Generation > c[j].Commit.Generation
+	return c[i].Generation > c[j].Generation
 }

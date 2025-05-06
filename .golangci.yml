@@ -1,42 +1,64 @@
+version: "2"
 run:
   tests: false
-  timeout: 5m
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - bodyclose
+    - copyloopvar
     - dogsled
+    - err113
     - errcheck
     - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
-    - err113
-    - gofmt
-    - goimports
-    - mnd
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
+    - mnd
     - nakedret
-    - copyloopvar
     - staticcheck
-    - stylecheck
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
-
-linters-settings:
-  mnd:
-    ignored-files:
-      - 'pkg/actions/lua/.*'
-
-issues:
-  exclude-dirs:
-    - pkg/metastore/hive/gen-go
+  settings:
+    mnd:
+      ignored-files:
+        - pkg/actions/lua/.*
+    staticcheck:
+      checks:
+        - all
+        - -ST1000
+        - -ST1003
+        - -ST1016
+        - -ST1020
+        - -ST1021
+        - -ST1022
+        - -QF1001 # Apply De Morgan’s law
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - pkg/metastore/hive/gen-go
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - pkg/metastore/hive/gen-go
+      - third_party$
+      - builtin$
+      - examples$

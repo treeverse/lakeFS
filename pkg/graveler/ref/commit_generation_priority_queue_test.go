@@ -88,7 +88,6 @@ func TestCommitsGenerationPriorityQueue_Less(t *testing.T) {
 		{Name: "same_generation_and_creation", Commit1: graveler.Commit{Generation: 0, CreationDate: ts1}, Commit2: graveler.Commit{Generation: 0, CreationDate: ts1}, Expected: false},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.Name, func(t *testing.T) {
 			// setup
 			q := ref.NewCommitsGenerationPriorityQueue()

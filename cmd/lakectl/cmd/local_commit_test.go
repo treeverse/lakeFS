@@ -167,7 +167,7 @@ func TestUncommittedOutsideOfPrefix(t *testing.T) {
 			expectedResult: true,
 		},
 		{
-			name: "Uncommitted changes - on the boundry",
+			name: "Uncommitted changes - on the boundary",
 			h: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var res *apigen.DiffList
 				w.Header().Set("Content-Type", "application/json")

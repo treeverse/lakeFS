@@ -143,6 +143,7 @@
   font-size: .9rem;
   color: var(--bs-body-color);
   width: 95%;
+  min-width: 0;
 }
 
 .lakefs-uri strong {
@@ -922,4 +923,14 @@ td.entry-type-indicator {
 
 .pull-details .description {
   min-height: 160px;
+}
+
+.geojson-map-wrapper {
+  height: 400px;
+  width: 100%;
+}
+
+.geojson-map-container {
+  height: 100%;
+  width: 100%;
 }

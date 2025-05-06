@@ -71,7 +71,6 @@ func TestStorageIDForRepositoryIterator(t *testing.T) {
 				}
 			}
 		})
-
 	}
 }
 

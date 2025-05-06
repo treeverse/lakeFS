@@ -90,7 +90,7 @@ func TestSuperPermissions(t *testing.T) {
 	require.Equal(t, http.StatusOK, resCommit.StatusCode(), "Super unexpectedly failed to read branch commit")
 
 	// creating a branch should succeed
-	branch1 := "feature-1"
+	const branch1 = "feature-1"
 	resAddBranch, err := superClient.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   branch1,
 		Source: mainBranch,
@@ -146,7 +146,7 @@ func TestWriterPermissions(t *testing.T) {
 	require.Equal(t, http.StatusOK, resCommit.StatusCode(), "Writer unexpectedly failed to read branch commit")
 
 	// creating a branch should succeed
-	branch1 := "feature-1"
+	const branch1 = "feature-1"
 	resAddBranch, err := writerClient.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
 		Name:   branch1,
 		Source: mainBranch,
@@ -315,7 +315,7 @@ func TestCreatePolicy(t *testing.T) {
 		})
 		require.NoError(t, err)
 		// TODO (niro): https://github.com/treeverse/fluffy/issues/320
-		//require.NotNil(t, resp.JSON400, "wrong response: %s", resp.Status())
+		// require.NotNil(t, resp.JSON400, "wrong response: %s", resp.Status())
 		require.Nil(t, resp.JSON201)
 	})
 }
