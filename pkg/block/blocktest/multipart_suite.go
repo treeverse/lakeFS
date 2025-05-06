@@ -214,7 +214,6 @@ func expectOperationNotSupported(blockstoreType string) bool {
 		block.BlockstoreTypeAzure,
 		block.BlockstoreTypeMem,
 		block.BlockstoreTypeTransient,
-		block.BlockstoreTypeGS,
 	}
 	return slices.Contains(unsupportedList, blockstoreType)
 }
