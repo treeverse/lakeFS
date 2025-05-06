@@ -56,6 +56,10 @@ class NoAuthenticationFound(LakeFSException):
     Raised when no authentication method could be found on Client instantiation
     """
 
+class UnsupportedCredentialsProviderType(LakeFSException):
+    """
+    Raised when the credentials provider type is not supported
+    """
 
 class BadRequestException(ServerException):
     """
