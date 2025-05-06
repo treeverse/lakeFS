@@ -35,6 +35,7 @@ var (
 	ErrPartListMismatch    = errors.New("multipart part list mismatch")
 	ErrMissingTargetAttrs  = errors.New("missing target attributes")
 	ErrUploadIDNotFound    = errors.New("upload ID not found")
+	ErrInvalidPartName     = errors.New("invalid part name")
 )
 
 type Adapter struct {
@@ -740,7 +741,7 @@ func formatMultipartFilename(uploadID string, partNumber int) string {
 
 func extractPartNumber(filename string) (int, error) {
 	if !isPartName(filename) {
-		return 0, fmt.Errorf("invalid part name: %s", filename)
+		return 0, fmt.Errorf("invalid part name '%s': %w", filename, ErrInvalidPartName)
 	}
 
 	partNumberStr := filename[len(filename)-5:]
