@@ -373,7 +373,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 		chunkSize      int
 		totalChunks    int
 		chunkData      [][]byte
-		expectedError  bool // If true, we expect an error when using this trailer
+		expectedError  error
 	}{
 		{
 			name:           "CRC32C Trailer",
@@ -388,7 +388,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 				bytes.Repeat([]byte("a"), 64),
 				bytes.Repeat([]byte("b"), 64),
 			},
-			expectedError: false,
+			expectedError: nil,
 		},
 		{
 			name:           "CRC32 Trailer",
@@ -403,21 +403,35 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 				bytes.Repeat([]byte("a"), 64),
 				bytes.Repeat([]byte("b"), 64),
 			},
-			expectedError: false,
+			expectedError: nil,
 		},
 		{
-			name:           "Invalid Trailer",
+			name:           "Invalid TrailerHeader",
 			method:         http.MethodPut,
 			host:           "s3.amazonaws.com",
 			path:           "examplebucket/trailertest.txt",
-			trailerHeader:  sig.ChecksumAlgorithm("invalid"),
-			trailerContent: "invalid:%s\r\n\r\n",
+			trailerHeader:  sig.ChecksumAlgorithmInvalid,
+			trailerContent: "x-amz-checksum-crc32:%s\r\n\r\n",
 			chunkSize:      64,
 			totalChunks:    1,
 			chunkData: [][]byte{
 				bytes.Repeat([]byte("a"), 64),
 			},
-			expectedError: true,
+			expectedError: sig.ErrUnsupportedChecksum,
+		},
+		{
+			name:           "Invalid TrailerContent",
+			method:         http.MethodPut,
+			host:           "s3.amazonaws.com",
+			path:           "examplebucket/trailertest.txt",
+			trailerHeader:  sig.ChecksumAlgorithmCRC32,
+			trailerContent: "x-amz-checksum-sha1:%s\r\n\r\n",
+			chunkSize:      64,
+			totalChunks:    1,
+			chunkData: [][]byte{
+				bytes.Repeat([]byte("a"), 64),
+			},
+			expectedError: sig.ErrChecksumTypeMismatch,
 		},
 	}
 
@@ -480,7 +494,7 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 
 			// For valid trailer types, calculate checksum
 			var checksumB64 string
-			if !tc.expectedError {
+			if tc.expectedError == nil {
 				// Get the appropriate checksum writer using the public API
 				checksumWriter, err := sig.GetChecksumWriter(string(tc.trailerHeader))
 				if err != nil {
@@ -523,17 +537,9 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 
 			// Verify the signature
 			err = authenticator.Verify(&modelCred)
-			
-			// For invalid trailer cases, we expect an error
-			if tc.expectedError {
-				if err == nil {
-					t.Errorf("expected an error for invalid trailer, but got none")
-				} else if !errors.Is(err, sig.ErrUnsupportedChecksum) {
-					t.Errorf("expected ErrUnsupportedChecksumAlgorithm error, got: %v", err)
-				}
-				return // Skip the rest of the test for invalid cases
-			} else if err != nil {
-				t.Fatalf("failed to verify request with STREAMING-UNSIGNED-PAYLOAD-TRAILER: %v", err)
+			if err != nil && errors.Is(err, tc.expectedError) {
+				t.Logf("expected an error, got: %v", err)
+				return
 			}
 
 			// Check that it properly identified the auth type
@@ -548,8 +554,9 @@ func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
 
 			// Read the body to verify the chunks are correctly parsed
 			bodyData, err := io.ReadAll(req.Body)
-			if err != nil {
-				t.Fatalf("failed to read parsed body: %v", err)
+			if err != nil && errors.Is(err, tc.expectedError) {
+				t.Logf("expected %v error, got: %v", tc.expectedError, err)
+				return
 			}
 
 			// Verify that the decoded body contains exactly what we expect

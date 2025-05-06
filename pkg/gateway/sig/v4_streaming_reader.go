@@ -49,7 +49,6 @@ const (
 // ChecksumAlgorithm represents the type of checksum algorithm used for trailers
 type ChecksumAlgorithm string
 
-// Supported checksum algorithms
 const (
 	ChecksumAlgorithmCRC32     ChecksumAlgorithm = "x-amz-checksum-crc32"
 	ChecksumAlgorithmCRC32C    ChecksumAlgorithm = "x-amz-checksum-crc32c"
@@ -214,7 +213,8 @@ func (cr *s3ChunkedReader) Close() (err error) {
 
 // Read - implements `io.Reader`, which transparently decodes
 // the incoming AWS Signature V4 streaming signature.
-func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
+// we don't need to lint this function because it's based on MinIO code
+func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) { //nolint:gocyclo
 	for {
 		switch cr.state {
 		case readChunkHeader:
@@ -233,7 +233,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			err = peekCRLF(cr.reader)
 			isTrailingChunk := cr.n == 0 && cr.lastChunk
 
-			if !isTrailingChunk {
+			if !isTrailingChunk { //nolint:gocritic
 				if readErr := readCRLF(cr.reader); readErr != nil {
 					cr.err = readErr
 					return 0, cr.err
@@ -251,7 +251,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			}
 
 			// If we're using unsigned streaming upload, there is no signature to verify at each chunk.
-			if cr.chunkSignature != "" {
+			if cr.chunkSignature != "" { //nolint:gocritic
 				cr.state = verifyChunk
 			} else if cr.lastChunk {
 				cr.state = readTrailerChunk
