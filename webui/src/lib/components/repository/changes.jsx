@@ -165,7 +165,27 @@ export const TreeEntryPaginator = ({ path, setAfterUpdated, nextPage, depth=0, l
     );
 };
 
-
+/**
+ * A container component for entries that represent a diff between refs. This container is used by the compare, commit changes,
+ * and uncommitted changes views.
+ *
+ * @param results to be displayed in the changes tree container
+ * @param delimiter objects delimiter ('' or '/')
+ * @param uriNavigator to navigate in the page using the changes container
+ * @param leftDiffRefID commitID / branch
+ * @param rightDiffRefID commitID / branch
+ * @param repo Repository
+ * @param reference commitID / branch
+ * @param internalRefresh to be called when the page refreshes manually
+ * @param prefix for which changes are displayed
+ * @param getMore to be called when requesting more diff results for a prefix
+ * @param loading of API response state to get changes
+ * @param nextPage of API response state to get changes
+ * @param setAfterUpdated state of pagination of the item's children
+ * @param onNavigate to be called when navigating to a prefix
+ * @param onRevert to be called when an object/prefix is requested to be reverted
+ * @param changesTreeMessage
+ */
 export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
                                          leftDiffRefID, rightDiffRefID, repo, reference, internalRefresh, prefix,
                                          getMore, loading, nextPage, setAfterUpdated, onNavigate, onRevert,
