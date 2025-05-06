@@ -1,17 +1,10 @@
 package externalidp
 
-import (
-	"context"
+import "github.com/treeverse/lakefs/pkg/authentication/externalidp/awsiam"
 
-	"github.com/treeverse/lakefs/pkg/api/apigen"
-)
-
-type LoginResponse struct {
-	Token *apigen.AuthenticationToken
-}
-type ExternalPrincipalLoginClient interface {
-	ExternalPrincipalLoginWithResponse(ctx context.Context, body apigen.ExternalPrincipalLoginJSONRequestBody, reqEditors ...apigen.RequestEditorFn) (*apigen.ExternalPrincipalLoginResponse, error)
-}
 type Provider interface {
-	Login() (LoginResponse, error)
+	NewRequest() *TokenInfo
+}
+type TokenInfo struct {
+	AWSInfo *awsiam.AWSIdentityTokenInfo
 }

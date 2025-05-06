@@ -99,6 +99,12 @@ require (
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/puzpuzpuz/xsync v1.5.2
+	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20250505194829-76aa2e5fda8c
+	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20250505194829-76aa2e5fda8c
+	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20250505194829-76aa2e5fda8c
+	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250505194829-76aa2e5fda8c
+	github.com/treeverse/lakefs/modules/license/factory v0.0.0-20250505194829-76aa2e5fda8c
+	github.com/treeverse/lakefs/webui v0.0.0-20250505194829-76aa2e5fda8c
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )
@@ -155,6 +161,7 @@ require (
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.0 // indirect
+	github.com/octarinesec/secret-detector v1.0.11 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.8 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
