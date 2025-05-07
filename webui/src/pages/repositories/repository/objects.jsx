@@ -271,10 +271,8 @@ export const destinationPath = (path, file, isMultiple) => {
         cleanUserPath = cleanUserPath.replace(/^\/+|\/+$/g, '');
         cleanUserPath = cleanUserPath.replace(/\/+/g, '/');
 
-        if (isMultiple) {
-            return `${cleanUserPath}/${cleanFilePath}`;
-        }
-        return cleanUserPath;
+        const isFilePath = !isMultiple && /\.[^/]+$/.test(cleanUserPath);
+        return isFilePath ? cleanUserPath : `${cleanUserPath}/${cleanFilePath}`;
     }
 
     return cleanFilePath;
