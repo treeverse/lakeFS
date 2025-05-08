@@ -1,17 +1,16 @@
 package io.treeverse.clients
 
-import software.amazon.awssdk.auth.credentials.{AwsCredentialsProvider, DefaultCredentialsProvider}
-import software.amazon.awssdk.core.client.config.{ClientOverrideConfiguration, RetryPolicy}
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration
+import software.amazon.awssdk.core.retry.RetryPolicy
 import software.amazon.awssdk.core.retry.RetryPolicyContext
 import software.amazon.awssdk.core.retry.conditions.RetryCondition
-import software.amazon.awssdk.core.retry.backoff.BackoffStrategy
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
-import software.amazon.awssdk.services.s3.model.{HeadBucketRequest, HeadObjectRequest, S3Exception}
+import software.amazon.awssdk.services.s3.model.{HeadBucketRequest, S3Exception}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
-import java.time.Duration
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
@@ -186,6 +185,29 @@ class S3RetryCondition extends RetryCondition {
         logger.info(s"Do not retry $originalRequest: Non-S3 exception: $e")
         false
       }
+    }
+  }
+}
+
+class S3RetryDeleteObjectsCondition extends RetryCondition {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+
+  override def shouldRetry(context: RetryPolicyContext): Boolean = {
+    val exception = context.exception()
+    val originalRequest = context.originalRequest()
+
+    exception match {
+      case s3e: S3Exception =>
+        if (s3e.statusCode() == 429 || (s3e.statusCode() >= 500 && s3e.statusCode() < 600)) {
+          logger.info(s"Retry $originalRequest: Throttled or server error: $s3e")
+          true
+        } else {
+          logger.info(s"Don't retry $originalRequest: Other S3 exception: $s3e")
+          false
+        }
+      case e: Exception =>
+        logger.info(s"Don't retry $originalRequest: Non-S3 exception: $e")
+        false
     }
   }
 }
