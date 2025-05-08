@@ -298,9 +298,8 @@ func MakeRepositoryName(name string) string {
 
 func setupTest(t testing.TB) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
-	name := MakeRepositoryName(t.Name())
-	log := logger.WithField("testName", name)
 	repo := createRepositoryUnique(ctx, t)
+	log := logger.WithField("testName", t.Name())
 	log.WithField("repo", repo).Info("Created repository")
 	return ctx, log, repo
 }
