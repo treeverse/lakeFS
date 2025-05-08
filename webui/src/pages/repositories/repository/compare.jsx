@@ -16,14 +16,21 @@ const CompareContainer = () => {
     if (error) return <RepoError error={error}/>;
 
     return (
-        <CompareBranches
-            repo={repo}
-            reference={reference}
-            compareReference={compare}
-            showActionsBar={true}
-            prefix={prefix}
-            baseSelectURL={"/repositories/:repoId/compare"}
-        />
+        <div className="mt-3">
+            <h2>Branch Comparison</h2>
+            <p className="text-muted">
+                Compare files and data between branches. Select two branches to see their differences.
+            </p>
+
+            <CompareBranches
+                repo={repo}
+                reference={reference}
+                compareReference={compare}
+                showActionsBar={true}
+                prefix={prefix}
+                baseSelectURL={"/repositories/:repoId/compare"}
+            />
+        </div>
     );
 };
 

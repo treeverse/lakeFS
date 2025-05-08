@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 // styles
 import 'bootstrap/dist/css/bootstrap.css';
 import './styles/globals.css';
+import './styles/compare.css';
 
 // app and plugins system
 import LakeFSApp from "./extendable/lakefsApp";

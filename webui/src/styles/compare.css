@@ -1,0 +1,80 @@
+/* Styles for the compare page */
+
+.data-comparison-container {
+    margin-top: 20px;
+}
+
+.file-card {
+    transition: all 0.2s ease-in-out;
+}
+
+.file-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.diff-highlight {
+    background-color: rgba(255, 220, 0, 0.2);
+}
+
+.diff-added {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.diff-removed {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.nlp-query-container {
+    position: relative;
+}
+
+.nlp-query-input {
+    padding-right: 50px;
+    border-radius: 0.25rem;
+}
+
+.nlp-query-button {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Table styling */
+.data-table-container {
+    max-height: 400px;
+    overflow: auto;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+}
+
+.modified-row {
+    background-color: #f8f9fa;
+    font-weight: 500;
+}
+
+/* Animation for loading */
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.6;
+    }
+}
+
+.loading-pulse {
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .file-selector-container {
+        margin-bottom: 20px;
+    }
+}

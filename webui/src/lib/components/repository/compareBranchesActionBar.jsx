@@ -3,7 +3,7 @@ import {refs as refsAPI} from "../../../lib/api";
 import {RefTypeBranch} from "../../../constants";
 import {ActionGroup, ActionsBar, AlertError, RefreshButton} from "../controls";
 import {MetadataFields} from "./changes";
-import {GitMergeIcon} from "@primer/octicons-react";
+import { GitMergeIcon, DatabaseIcon } from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
@@ -11,7 +11,7 @@ import {FormControl, FormHelperText, InputLabel, MenuItem, Select} from "@mui/ma
 import CompareBranchesSelection from "./compareBranchesSelection";
 
 const CompareBranchesActionsBar = (
-    {repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff}
+    { repo, reference, compareReference, baseSelectURL, doRefresh, isEmptyDiff, maxDisplayRows, onMaxDisplayRowsChange }
 ) => {
     return <ActionsBar>
         <ActionGroup orientation="left">
@@ -25,6 +25,26 @@ const CompareBranchesActionsBar = (
         </ActionGroup>
 
         <ActionGroup orientation="right">
+            <div className="d-flex align-items-center me-2">
+                <span className="badge bg-dark me-2">
+                    <DatabaseIcon className="me-1" />
+                    Parquet Diff
+                </span>
+                <Form.Group className="mb-0 d-flex align-items-center">
+                    <Form.Label className="mb-0 me-2 text-sm" style={{ fontSize: '0.85rem' }}>
+                        Max rows:
+                    </Form.Label>
+                    <Form.Control
+                        type="number"
+                        size="sm"
+                        value={maxDisplayRows}
+                        onChange={onMaxDisplayRowsChange}
+                        min="1"
+                        max="5000"
+                        style={{ width: '70px' }}
+                    />
+                </Form.Group>
+            </div>
 
             <RefreshButton onClick={doRefresh}/>
 

@@ -35,6 +35,18 @@ export default ({ command }) => {
       server: {
         port: 3000,
         proxy: {
+          '/api/compare': {
+            target: 'http://localhost:9000',
+            changeOrigin: true,
+            secure: false,
+            rewrite: (path) => path.replace(/^\/api/, '')
+          },
+          '/api/nlp': {
+            target: 'http://localhost:9000',
+            changeOrigin: true,
+            secure: false,
+            rewrite: (path) => path.replace(/^\/api/, '')
+          },
           '/api': {
             target: 'http://localhost:8000',
             changeOrigin: true,
