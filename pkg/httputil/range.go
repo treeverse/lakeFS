@@ -7,10 +7,8 @@ import (
 	"strings"
 )
 
-var (
-	ErrBadRange           = errors.New("invalid range")
-	ErrUnsatisfiableRange = errors.New("unsatisfiable range")
-)
+var ErrBadRange = errors.New("invalid range")
+var ErrUnsatisfiableRange = errors.New("unsatisfiable range")
 
 // Range represents an RFC 2616 HTTP Range
 type Range struct {
