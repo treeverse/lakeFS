@@ -3,7 +3,7 @@ package mem
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -82,7 +82,7 @@ func New(_ context.Context, opts ...func(a *Adapter)) *Adapter {
 }
 
 func calcETag(data []byte) string {
-	etag := md5.Sum(data) //nolint:sec
+	etag := md5.Sum(data) //nolint:nosec
 	return hex.EncodeToString(etag[:])
 }
 
