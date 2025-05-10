@@ -7,8 +7,10 @@ import (
 	"strings"
 )
 
-var ErrBadRange = errors.New("invalid range")
-var ErrUnsatisfiableRange = errors.New("unsatisfiable range")
+var (
+	ErrBadRange           = errors.New("invalid range")
+	ErrUnsatisfiableRange = errors.New("unsatisfiable range")
+)
 
 // Range represents an RFC 2616 HTTP Range
 type Range struct {
@@ -47,9 +49,6 @@ func ParseRange(spec string, length int64) (Range, error) {
 	if len(fromString) == 0 {
 		endOffset, err := strconv.ParseInt(toString, 10, 64) //nolint: mnd
 		if err != nil {
-			return r, ErrBadRange
-		}
-		if endOffset == 0 {
 			return r, ErrBadRange
 		}
 		r.StartOffset = length - endOffset
