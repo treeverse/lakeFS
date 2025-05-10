@@ -211,7 +211,7 @@ func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter,
 	if expectOperationNotSupported(adapter.BlockstoreType()) {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 	} else {
-		require.NotNil(t, err)
+		require.NotNil(t, err, "ListParts should have failed with invalid uploadID")
 	}
 }
 
@@ -219,7 +219,6 @@ func expectOperationNotSupported(blockstoreType string) bool {
 	unsupportedList := []string{
 		block.BlockstoreTypeLocal,
 		block.BlockstoreTypeAzure,
-		block.BlockstoreTypeMem,
 		block.BlockstoreTypeTransient,
 	}
 	return slices.Contains(unsupportedList, blockstoreType)
@@ -247,7 +246,7 @@ func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj
 	var startPosition int64 = 0
 	for i := 0; i < multipartNumberOfParts; i++ {
 		partNumber := i + 1
-		var endPosition = startPosition + multipartPartSize
+		endPosition := startPosition + multipartPartSize
 		partResp, err := adapter.UploadCopyPartRange(ctx, obj, objCopy, uploadID, partNumber, startPosition, endPosition)
 		if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
 			require.ErrorContains(t, err, "not implemented") // azurite block store emulator did not yet implement this
@@ -304,24 +303,24 @@ func requireEqualBigByteSlice(t *testing.T, exp, actual []byte) {
 	}
 
 	for i := 0; i < sliceCount; i++ {
-		var start = i * sliceLen
-		var end = min((i+1)*sliceLen, len(exp)-1)
+		start := i * sliceLen
+		end := min((i+1)*sliceLen, len(exp)-1)
 
-		var expSlice = exp[start:end]
-		var actualSlice = actual[start:end]
+		expSlice := exp[start:end]
+		actualSlice := actual[start:end]
 		require.Equalf(t, expSlice, actualSlice, "Failed on slice "+strconv.Itoa(i+1)+"/"+strconv.Itoa(sliceCount))
 	}
 }
 
 func objPointers(storageNamespace string) (block.ObjectPointer, block.ObjectPointer) {
-	var obj = block.ObjectPointer{
+	obj := block.ObjectPointer{
 		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "abc",
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
 
-	var objCopy = block.ObjectPointer{
+	objCopy := block.ObjectPointer{
 		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "abcCopy",

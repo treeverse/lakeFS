@@ -145,6 +145,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 					prefix = testPrefix
 				}
 
+				require.Lenf(t, results, filesAndFolders*filesAndFolders+1, "expected %d results, got %d", filesAndFolders*filesAndFolders+1, len(results))
 				require.Equal(t, path.Join(prefix, "folder_0.txt"), results[0])
 				results = results[1:]
 				for i := 0; i < filesAndFolders; i++ {
@@ -156,6 +157,7 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
 					prefix = tt.prefix
 				}
+				require.Lenf(t, results, filesAndFolders, "expected %d results, got %d", filesAndFolders, len(results))
 				for j := 0; j < filesAndFolders; j++ {
 					require.Equal(t, path.Join(prefix, fmt.Sprintf("test_file_%d", j)), results[j])
 				}
