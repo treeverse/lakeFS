@@ -41,7 +41,8 @@ func ParseRange(spec string, length int64) (Range, error) {
 	if len(parts) != 2 {
 		return r, ErrBadRange
 	}
-	fromString, toString := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+	fromString := strings.TrimSpace(parts[0])
+	toString := strings.TrimSpace(parts[1])
 	if fromString == "" && toString == "" {
 		return r, ErrBadRange
 	}
