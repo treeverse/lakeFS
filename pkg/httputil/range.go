@@ -49,6 +49,9 @@ func ParseRange(spec string, length int64) (Range, error) {
 		if err != nil {
 			return r, ErrBadRange
 		}
+		if endOffset == 0 {
+			return r, ErrBadRange
+		}
 		r.StartOffset = length - endOffset
 		if length-endOffset < 0 {
 			r.StartOffset = 0

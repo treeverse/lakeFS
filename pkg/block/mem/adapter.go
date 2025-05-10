@@ -82,7 +82,7 @@ func New(_ context.Context, opts ...func(a *Adapter)) *Adapter {
 }
 
 func calcETag(data []byte) string {
-	etag := md5.Sum(data) //nolint:nosec
+	etag := md5.Sum(data) //nolint:gosec
 	return hex.EncodeToString(etag[:])
 }
 
