@@ -37,8 +37,10 @@ func ParseRange(spec string, length int64) (Range, error) {
 		// Amazon S3 doesn't support retrieving multiple ranges of data per GET request.
 		return r, ErrBadRange
 	}
-	parts := strings.SplitN(spec, "-", 2)
-	if len(parts) != 2 {
+
+	const rangeParts = 2
+	parts := strings.SplitN(spec, "-", rangeParts)
+	if len(parts) != rangeParts {
 		return r, ErrBadRange
 	}
 	fromString := strings.TrimSpace(parts[0])
