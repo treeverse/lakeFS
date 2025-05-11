@@ -111,7 +111,7 @@ object StorageUtils {
 
       if (!bucketExists && (regionName == null || regionName.isEmpty)) {
         throw new IllegalArgumentException(
-          s"""Could not access bucket "$bucket" and no region was provided"""
+          s"""Could not fetch region for bucket "$bucket" and no region was provided"""
         )
       }
 
