@@ -130,7 +130,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
         US_WEST_2,
         BUCKET_NAME
       )
-      server.getRequestCount should equal(1)
+      server.getRequestCount should equal(2)
       val getLocationRequest: RecordedRequest = server.takeRequest()
       initializedClient should not be null
       initializedClient.getRegion.toString should equal(US_WEST_2)
