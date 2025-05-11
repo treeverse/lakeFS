@@ -100,70 +100,71 @@ object StorageUtils {
     ): AmazonS3 = {
       require(bucket.nonEmpty)
 
-      // For testing compatibility, determine the actual bucket region
-      // In real AWS, we'd use getBucketLocation, but for the test we'll get it from headBucket
-      var actualRegion = regionName
+      // Create a client to use just for getting the bucket location
+      val tempClient = AmazonS3ClientBuilder
+        .standard()
+        .withClientConfiguration(clientConfig)
+        .withPathStyleAccessEnabled(true)
 
-      // Make one temporary client to get bucket location
-      // This is a workaround for the test, which mocks bucket location in headBucket
-      val tempClient = initializeS3Client(
-        clientConfig,
-        credentialsProvider,
-        AmazonS3ClientBuilder
-          .standard()
-          .withClientConfiguration(clientConfig)
-          .withPathStyleAccessEnabled(true),
-        endpoint,
-        regionName
-      )
+      credentialsProvider.foreach(tempClient.withCredentials)
 
-      try {
-        // Although headBucket doesn't normally return location info, the test mocks it
-        tempClient.headBucket(new HeadBucketRequest(bucket))
-
-        // In the test, mock is set to return bucket location as US_WEST_2 or empty string
-        val location = tempClient.getBucketLocation(bucket)
-        // US_EAST_1/us-standard is represented as empty string or null
-        actualRegion = if (location == null || location.isEmpty) null else location
-      } catch {
-        case e: Exception =>
-          logger.info(f"Could not determine region for bucket $bucket, using provided region", e)
-      }
-
-      // Now create the real client with the actual region
-      val client =
-        initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, actualRegion)
-      client
-    }
-
-    private def initializeS3Client(
-        clientConfig: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
-        builder: AmazonS3ClientBuilder,
-        endpoint: String,
-        regionName: String
-    ): AmazonS3 = {
-      // Use the provided builder
-      builder.withClientConfiguration(clientConfig)
-
-      // Configure credentials if provided
-      credentialsProvider.foreach(builder.withCredentials)
-
-      // Cannot set both region and endpoint configuration - must choose one
       if (endpoint != null && !endpoint.isEmpty) {
-        // If endpoint is provided, use endpointConfiguration with region
-        builder.withEndpointConfiguration(
+        tempClient.withEndpointConfiguration(
           new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
                                                                                   regionName
                                                                                  )
         )
       } else if (regionName != null && !regionName.isEmpty) {
-        // If only region is provided, use withRegion
-        builder.withRegion(regionName)
+        tempClient.withRegion(regionName)
       }
 
-      // Build the client
-      builder.build()
+      // Get the bucket location using the proper client
+      var bucketRegion = regionName
+      try {
+        val location = tempClient.build().getBucketLocation(bucket)
+        bucketRegion = if (location == null || location.isEmpty) null else location
+      } catch {
+        case e: Exception =>
+          logger.info(f"Could not determine region for bucket $bucket, using provided region", e)
+      }
+
+      // Now create the final client with the correct region
+      val finalClient = AmazonS3ClientBuilder
+        .standard()
+        .withClientConfiguration(clientConfig)
+        .withPathStyleAccessEnabled(builder.isPathStyleAccessEnabled)
+
+      credentialsProvider.foreach(finalClient.withCredentials)
+
+      if (endpoint != null && !endpoint.isEmpty) {
+        finalClient.withEndpointConfiguration(
+          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
+                                                                                  bucketRegion
+                                                                                 )
+        )
+      } else if (bucketRegion != null && !bucketRegion.isEmpty) {
+        finalClient.withRegion(bucketRegion)
+      }
+
+      val client = finalClient.build()
+
+      // Just to confirm bucket exists
+      var bucketExists = false
+      try {
+        client.headBucket(new HeadBucketRequest(bucket))
+        bucketExists = true
+      } catch {
+        case e: Exception =>
+          logger.info(f"Could not fetch info for bucket $bucket", e)
+      }
+
+      if (!bucketExists && (regionName == null || regionName.isEmpty)) {
+        throw new IllegalArgumentException(
+          s"""Could not access bucket "$bucket" and no region was provided"""
+        )
+      }
+
+      client
     }
   }
 }
