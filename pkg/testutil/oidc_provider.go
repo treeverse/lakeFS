@@ -1,9 +1,10 @@
 package testutil
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
-	"net/http"
 )
 
 // MockOidcProvider is a nop implementation of the OidcProvider interface.
