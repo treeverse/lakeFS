@@ -74,15 +74,15 @@ func NewAWSProvider(params IAMAuthParams) *AWSProvider {
 
 func (p *AWSProvider) NewRequest() (*AWSIdentityTokenInfo, error) {
 	ctx := context.TODO()
-	cfg, err := GetConfig(ctx)
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return &AWSIdentityTokenInfo{}, err
 	}
-	creds, err := GetCreds(ctx, cfg)
+	creds, err := GetCreds(ctx, &cfg)
 	if err != nil {
 		return &AWSIdentityTokenInfo{}, err
 	}
-	url, err := GetPresignedURL(ctx, &p.Params, cfg, creds)
+	url, err := GetPresignedURL(ctx, &p.Params, &cfg, creds)
 	if err != nil {
 		return &AWSIdentityTokenInfo{}, err
 	}
@@ -91,22 +91,7 @@ func (p *AWSProvider) NewRequest() (*AWSIdentityTokenInfo, error) {
 		return &AWSIdentityTokenInfo{}, err
 	}
 	return tokenInfo, nil
-	// tokenTTL := int(p.Params.TokenTTL.Seconds())
-	// externalLoginInfo := apigen.ExternalLoginInformation{
-	// 	IdentityRequest: map[string]interface{}{
-	// 		"identity_token": identityToken,
-	// 	},
-	// 	TokenExpirationDuration: &tokenTTL,
-	// }
-	// res, err := p.Client.ExternalPrincipalLoginWithResponse(ctx, apigen.ExternalPrincipalLoginJSONRequestBody(externalLoginInfo))
-	// if err != nil {
-	// 	return LoginResponse{}, err
-	// }
-	// err = helpers.ResponseAsError(res)
-	// if err != nil {
-	// 	return LoginResponse{}, err
-	// }
-	// return LoginResponse{Token: res.JSON200}, nil
+
 }
 
 func NewIdentityTokenInfo(creds *aws.Credentials, presignedURL string) (*AWSIdentityTokenInfo, error) {
@@ -134,9 +119,6 @@ func NewIdentityTokenInfo(creds *aws.Credentials, presignedURL string) (*AWSIden
 		SecurityToken:      queryParams.Get(authSecurityTokenKey),
 	}
 	return &identityTokenInfo, nil
-	// marshaledIdentityTokenInfo, _ := json.Marshal(identityTokenInfo)
-	// encodedIdentityTokenInfo := base64.StdEncoding.EncodeToString(marshaledIdentityTokenInfo)
-	// return &identityTokenInfo, encodedIdentityTokenInfo, nil
 }
 
 func GetPresignedURL(ctx context.Context, params *IAMAuthParams, cfg *aws.Config, creds *aws.Credentials) (string, error) {
@@ -148,7 +130,7 @@ func GetPresignedURL(ctx context.Context, params *IAMAuthParams, cfg *aws.Config
 	})
 
 	presign, err := stsPresignClient.PresignGetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{},
-		sts.WithPresignClientFromClientOptions(sts.WithAPIOptions(setHTTPHeaders(params.TokenRequestHeaders, params.URLPresignTTL))),
+		sts.WithPresignClientFromClientOptions(sts.WithAPIOptions(SetHTTPHeaders(params.TokenRequestHeaders, params.URLPresignTTL))),
 	)
 	if err != nil {
 		return "", err
@@ -166,15 +148,8 @@ func GetCreds(ctx context.Context, cfg *aws.Config) (*aws.Credentials, error) {
 	}
 	return &creds, err
 }
-func GetConfig(ctx context.Context) (*aws.Config, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &cfg, err
-}
 
-func setHTTPHeaders(requestHeaders map[string]string, ttl time.Duration) func(*middleware.Stack) error {
+func SetHTTPHeaders(requestHeaders map[string]string, ttl time.Duration) func(*middleware.Stack) error {
 	return func(stack *middleware.Stack) error {
 		return stack.Build.Add(middleware.BuildMiddlewareFunc("AddHeaders", func(
 			ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler,

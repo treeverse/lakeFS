@@ -73,6 +73,7 @@ type Configuration struct {
 			AWSIAM struct {
 				TokenTTL            time.Duration     `mapstructure:"token_ttl_seconds"`
 				URLPresignTTL       time.Duration     `mapstructure:"url_presign_ttl_seconds"`
+				RefreshInterval     time.Duration     `mapstructure:"refresh_interval"`
 				TokenRequestHeaders map[string]string `mapstructure:"token_request_headers"`
 			} `mapstructure:"aws_iam"`
 		} `mapstructure:"provider"`
@@ -195,8 +196,9 @@ const (
 	defaultMaxRetryInterval = 30 * time.Second
 	defaultMinRetryInterval = 200 * time.Millisecond
 
-	defaultTokenTTL      = 3600 * time.Second
-	defaultURLPresignTTL = 60 * time.Second
+	defaultTokenTTL        = 3600 * time.Second
+	defaultURLPresignTTL   = 60 * time.Second
+	defaultRefreshInterval = 300 * time.Second
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -679,5 +681,6 @@ func initConfig() {
 	viper.SetDefault("local.skip_non_regular_files", false)
 	viper.SetDefault("credentials.provider.aws_iam.token_ttl_seconds", defaultTokenTTL)
 	viper.SetDefault("credentials.provider.aws_iam.url_presign_ttl_seconds", defaultURLPresignTTL)
+	viper.SetDefault("credentials.provider.aws_iam.refresh_interval", defaultRefreshInterval)
 	cfgErr = viper.ReadInConfig()
 }
