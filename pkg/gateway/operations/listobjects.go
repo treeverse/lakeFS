@@ -29,9 +29,9 @@ const (
 	QueryParamUploadIDMarker = "upload-id-marker"
 	QueryParamKeyMarker      = "key-marker"
 	// missing implementation - will return error
-	QueryParampPrefix       = "prefix"
-	QueryParampEncodingType = "encoding-type"
-	QueryParampDelimiter    = "delimiter"
+	QueryParamPrefix       = "prefix"
+	QueryParamEncodingType = "encoding-type"
+	QueryParamDelimiter    = "delimiter"
 )
 
 type ListObjects struct{}
@@ -411,9 +411,9 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	maxUploadsStr := query.Get(QueryParamMaxUploads)
 	uploadIDMarker := query.Get(QueryParamUploadIDMarker)
 	keyMarker := query.Get(QueryParamKeyMarker)
-	prefix := query.Get(QueryParampPrefix)
-	delimiter := query.Get(QueryParampDelimiter)
-	encodingType := query.Get(QueryParampEncodingType)
+	prefix := query.Get(QueryParamPrefix)
+	delimiter := query.Get(QueryParamDelimiter)
+	encodingType := query.Get(QueryParamEncodingType)
 	if prefix != "" || delimiter != "" || encodingType != "" {
 		_ = o.EncodeError(w, req, gatewayerrors.ErrNotImplemented, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))
 		return
