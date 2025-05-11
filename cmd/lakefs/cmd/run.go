@@ -151,6 +151,9 @@ var runCmd = &cobra.Command{
 		bufferedCollector.CollectMetadata(metadata)
 
 		oidcProvider, err := authenticationfactory.NewOIDCProvider(ctx, cfg, logger)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create OIDC provider")
+		}
 
 		c, err := catalog.New(ctx, catalog.Config{
 			Config:       cfg,

@@ -15,23 +15,22 @@ import (
 )
 
 type nopOidcProvider struct {
+	logger logging.Logger
 }
 
 func (n *nopOidcProvider) RegisterOIDCRoutes(_ *chi.Mux, _ sessions.Store) {
-	// nop
+	n.logger.Warn("OIDC is not implemented")
 }
 
 func (n *nopOidcProvider) OIDCCallback(w http.ResponseWriter, _ *http.Request, _ sessions.Store) {
-	// respond with bad request, as OIDC is not implemented
+	n.logger.Warn("OIDC is not implemented")
 	w.WriteHeader(http.StatusBadRequest)
 }
 
-func NewOIDCProvider(_ context.Context, _ config.Config, _ logging.Logger) (authentication.OIDCProvider, error) {
-	return &nopOidcProvider{}, nil
-}
-
-func MountAuthenticationRoutes(logger logging.Logger, c config.Config, r *chi.Mux, sessionStore sessions.Store) error {
-	return nil
+func NewOIDCProvider(_ context.Context, _ config.Config, logger logging.Logger) (authentication.OIDCProvider, error) {
+	return &nopOidcProvider{
+		logger: logger,
+	}, nil
 }
 
 func BuildAuthenticatorChain(c config.Config, logger logging.Logger, authService auth.Service) (auth.ChainAuthenticator, error) {
