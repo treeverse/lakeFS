@@ -93,33 +93,46 @@ class Client:
         self._conf = ClientConfig(**kwargs)
         self._client = LakeFSClient(self._conf, header_name='X-Lakefs-Client',
                                     header_value='python-lakefs')
+        self._server_conf = None
+        self._reset_token_time = None
+        self._boto3_session = None
+
+        # Initialize auth if using IAM provider
         if self._conf.get_auth_type() is ClientConfig.AuthType.IAM:
             iam_provider = self._conf.get_iam_provider()
-            if iam_provider.type == ClientConfig.ProviderType.AWS_IAM:
+            if iam_provider.type is ClientConfig.ProviderType.AWS_IAM:
                 self._boto3_session = Session()
                 lakefs_host = urlparse(self._conf.host).hostname
-                self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(self._client,
-                                                                          lakefs_host,
-                                                                          self._boto3_session,
-                                                                          iam_provider.aws_iam)
+                self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
+                    self._client,
+                    lakefs_host,
+                    self._boto3_session,
+                    iam_provider.aws_iam
+                )
+
     def __getattribute__(self, name):
         if name == "sdk_client":
-            current_time = datetime.datetime.now(datetime.timezone.utc)
-            print(f"Auth type is: {self._conf.get_auth_type()}, reset time is: {self._reset_token_time}, current time is: {current_time}")
-            if (self._conf.get_auth_type() is ClientConfig.AuthType.IAM and self._reset_token_time is not None and
-                    current_time >= self._reset_token_time):
-                print(f"Token expired, trying to re-authenticate (token expiration: {self._reset_token_time},"
-                      f"current time: {current_time}")
-                # Refresh token:
-                iam_provider = self._conf.get_iam_provider()
-                if iam_provider.type == ClientConfig.ProviderType.AWS_IAM:
-                    lakefs_host = urlparse(self._conf.host).hostname
-                    self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(self._client,
-                                                                      lakefs_host,
-                                                                      self._boto3_session,
-                                                                      iam_provider.aws_iam)
-        # Always use super() to avoid infinite recursion
-        return super().__getattribute__(name)
+            object.__getattribute__(self, "_refresh_token_if_necessary")()
+        return object.__getattribute__(self, name)
+
+    def _refresh_token_if_necessary(self):
+        """
+        Refresh the token if necessary
+        """
+        current_time = datetime.datetime.now(datetime.timezone.utc)
+        if (self._conf.get_auth_type() is ClientConfig.AuthType.IAM and
+                self._reset_token_time is not None and
+                current_time >= self._reset_token_time):
+            # Refresh token:
+            iam_provider = self._conf.get_iam_provider()
+            if iam_provider.type == ClientConfig.ProviderType.AWS_IAM:
+                lakefs_host = urlparse(self._conf.host).hostname
+                self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
+                    self._client,
+                    lakefs_host,
+                    self._boto3_session,
+                    iam_provider.aws_iam
+                )
 
     @property
     def config(self):
@@ -177,13 +190,17 @@ def from_aws_role(
     """
     client = Client(**kwargs)
     lakefs_host = urlparse(client.config.host).hostname
-    aws_provider_pros = ClientConfig.AWSIAMProviderConfig(token_ttl_seconds=ttl_seconds,
-                                                          url_presign_ttl_seconds= presigned_ttl,
-                                                          token_request_headers=additional_headers)
-    access_token, reset_time = access_token_from_aws_iam_role(client.sdk_client,
-                                               lakefs_host,
-                                               session,
-                                                aws_provider_pros)
+    aws_provider_pros = ClientConfig.AWSIAMProviderConfig(
+        token_ttl_seconds=ttl_seconds,
+        url_presign_ttl_seconds=presigned_ttl,
+        token_request_headers=additional_headers
+    )
+    access_token, reset_time = access_token_from_aws_iam_role(
+        client.sdk_client,
+        lakefs_host,
+        session,
+        aws_provider_pros
+    )
     client.config.access_token = access_token
     client._reset_token_time = reset_time
     return client
