@@ -211,7 +211,8 @@ func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter,
 	if expectOperationNotSupported(adapter.BlockstoreType()) {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 	} else {
-		require.NotNil(t, err, "ListParts should have failed with invalid uploadID")
+		// currently each adapter returns a different error, so we just check that it is not nil
+		require.NotNil(t, err, "ListParts should fail with invalid uploadID")
 	}
 }
 
@@ -304,7 +305,7 @@ func requireEqualBigByteSlice(t *testing.T, exp, actual []byte) {
 
 	for i := 0; i < sliceCount; i++ {
 		start := i * sliceLen
-		end := min((i+1)*sliceLen, len(exp)-1)
+		end := min((i+1)*sliceLen, len(exp))
 
 		expSlice := exp[start:end]
 		actualSlice := actual[start:end]

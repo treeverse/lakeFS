@@ -49,6 +49,8 @@ func newMPU(objectKey string) *mpu {
 	}
 }
 
+// get returns the concatenated data of all parts in the mpu.
+// assumed that the caller had already acquired the lock.
 func (m *mpu) get() []byte {
 	buf := bytes.NewBuffer(nil)
 	keys := make([]int, 0, len(m.parts))
@@ -81,6 +83,8 @@ func New(_ context.Context, opts ...func(a *Adapter)) *Adapter {
 	return a
 }
 
+// calcETag calculates the ETag for the given data using MD5 hash,
+// similar to AWS S3 ETag calculation
 func calcETag(data []byte) string {
 	etag := md5.Sum(data) //nolint:gosec
 	return hex.EncodeToString(etag[:])

@@ -139,29 +139,33 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 				return nil
 			})
 			require.NoError(t, err)
-			var prefix string
+
+			// prepare expectedResults
+			var (
+				expectedResults []string
+				prefix          string
+			)
 			if tt.prefix == "" {
 				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
 					prefix = testPrefix
 				}
-
-				require.Lenf(t, results, filesAndFolders*filesAndFolders+1, "expected %d results, got %d", filesAndFolders*filesAndFolders+1, len(results))
-				require.Equal(t, path.Join(prefix, "folder_0.txt"), results[0])
-				results = results[1:]
+				expectedResults = append(expectedResults, path.Join(prefix, "folder_0.txt"))
 				for i := 0; i < filesAndFolders; i++ {
 					for j := 0; j < filesAndFolders; j++ {
-						require.Equal(t, path.Join(prefix, fmt.Sprintf("folder_%d/test_file_%d", i, j)), results[i*filesAndFolders+j])
+						expectedResults = append(expectedResults, path.Join(prefix, fmt.Sprintf("folder_%d/test_file_%d", i, j)))
 					}
 				}
 			} else {
 				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
 					prefix = tt.prefix
 				}
+
 				require.Lenf(t, results, filesAndFolders, "expected %d results, got %d", filesAndFolders, len(results))
 				for j := 0; j < filesAndFolders; j++ {
-					require.Equal(t, path.Join(prefix, fmt.Sprintf("test_file_%d", j)), results[j])
+					expectedResults = append(expectedResults, path.Join(prefix, fmt.Sprintf("test_file_%d", j)))
 				}
 			}
+			require.Equal(t, expectedResults, results)
 		})
 	}
 }
