@@ -1,5 +1,18 @@
 # Changelog
 
+# v1.56.0
+
+:new: What's new:
+
+- UI : Add GeoJSON preview support (#8996,#9014)
+- S3 Gateway: Add support for list parts for Google storage adapter (#9019)
+- S3 Gateway: SigV4 Support Unsigned Payload Trailers (#9009)
+- UI: Enable expand/collapse functionality for directory trees  (#8978)
+
+:bug: Bugs fixed:
+
+-  UI: Fix repository tree layout and link behavior (#8999)
+
 # v1.55.0
 
 :new: What's new:

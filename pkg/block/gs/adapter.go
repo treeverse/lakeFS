@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,6 +34,7 @@ var (
 	ErrMaxMultipartObjects = errors.New("maximum multipart object reached")
 	ErrPartListMismatch    = errors.New("multipart part list mismatch")
 	ErrMissingTargetAttrs  = errors.New("missing target attributes")
+	ErrInvalidPartName     = errors.New("invalid part name")
 )
 
 type Adapter struct {
@@ -549,7 +551,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 
 func (a *Adapter) getPartNamesWithValidation(ctx context.Context, bucketName, uploadID string, multipartList *block.MultipartUploadCompletion) ([]string, error) {
 	// list bucket parts and validate request match
-	bucketParts, err := a.listMultipartUploadParts(ctx, bucketName, uploadID)
+	bucketParts, _, err := a.listMultipartUploadParts(ctx, bucketName, uploadID, block.ListPartsOpts{})
 	if err != nil {
 		return nil, err
 	}
@@ -583,16 +585,23 @@ func (a *Adapter) validateMultipartUploadParts(uploadID string, multipartList *b
 	return nil
 }
 
-func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName string, uploadID string) ([]*storage.ObjectAttrs, error) {
+// listMultipartUploadParts retrieves the parts of a multipart upload for a given bucket and upload ID.
+// It supports filtering and pagination using the provided options.
+// It returns a slice of ObjectAttrs representing the parts, a continuation token for pagination, and any error encountered.
+func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName string, uploadID string, opts block.ListPartsOpts) ([]*storage.ObjectAttrs, *string, error) {
 	bucket := a.client.Bucket(bucketName)
 	var bucketParts []*storage.ObjectAttrs
 	query := &storage.Query{
 		Delimiter: delimiter,
 		Prefix:    uploadID + partSuffix,
 	}
+	if opts.PartNumberMarker != nil {
+		query.StartOffset = *opts.PartNumberMarker
+	}
+	var partNumberMarker *string
 	err := query.SetAttrSelection([]string{"Name", "Etag"})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	it := bucket.Objects(ctx, query)
 	for {
@@ -601,28 +610,33 @@ func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName strin
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("listing bucket '%s' upload '%s': %w", bucketName, uploadID, err)
+			return nil, nil, fmt.Errorf("listing bucket '%s' upload '%s': %w", bucketName, uploadID, err)
 		}
 
 		// filter out invalid part names
-		if !a.isPartName(attrs.Name) {
+		attrsName := attrs.Name
+		if !isPartName(attrsName) {
 			continue
 		}
 
-		bucketParts = append(bucketParts, attrs)
 		if len(bucketParts) > MaxMultipartObjects {
-			return nil, fmt.Errorf("listing bucket '%s' upload '%s': %w", bucketName, uploadID, ErrMaxMultipartObjects)
+			return nil, nil, fmt.Errorf("listing bucket '%s' upload '%s': %w", bucketName, uploadID, ErrMaxMultipartObjects)
 		}
+		if opts.MaxParts != nil && len(bucketParts) >= int(*opts.MaxParts) {
+			partNumberMarker = &attrsName
+			break
+		}
+		bucketParts = append(bucketParts, attrs)
 	}
 	// sort by name - assume natual sort order
 	sort.Slice(bucketParts, func(i, j int) bool {
 		return bucketParts[i].Name < bucketParts[j].Name
 	})
-	return bucketParts, nil
+	return bucketParts, partNumberMarker, nil
 }
 
 // isPartName checks it's a valid part name, as opposed to an already merged group of parts
-func (a *Adapter) isPartName(name string) bool {
+func isPartName(name string) bool {
 	if len(name) < len(partSuffix)+5 {
 		return false
 	}
@@ -724,6 +738,21 @@ func formatMultipartFilename(uploadID string, partNumber int) string {
 	return fmt.Sprintf("%s"+partSuffix+"%05d", uploadID, partNumber)
 }
 
+func extractPartNumber(filename string) (int, error) {
+	if !isPartName(filename) {
+		return 0, fmt.Errorf("invalid part name '%s': %w", filename, ErrInvalidPartName)
+	}
+
+	partNumberStr := filename[len(filename)-5:]
+
+	partNumber, err := strconv.Atoi(partNumberStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid part number in filename: %w", err)
+	}
+
+	return partNumber, nil
+}
+
 func formatMultipartMarkerFilename(uploadID string) string {
 	return uploadID + markerSuffix
 }
@@ -732,8 +761,41 @@ func (a *Adapter) GetPresignUploadPartURL(_ context.Context, _ block.ObjectPoint
 	return "", block.ErrOperationNotSupported
 }
 
-func (a *Adapter) ListParts(_ context.Context, _ block.ObjectPointer, _ string, _ block.ListPartsOpts) (*block.ListPartsResponse, error) {
-	return nil, block.ErrOperationNotSupported
+func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, uploadID string, opts block.ListPartsOpts) (*block.ListPartsResponse, error) {
+	bucketName, _, err := a.extractParamsFromObj(obj)
+	if err != nil {
+		return nil, err
+	}
+	// validate uploadID exists
+	bucket := a.client.Bucket(bucketName)
+	objMarker := bucket.Object(formatMultipartMarkerFilename(uploadID))
+	_, err = objMarker.Attrs(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	bucketParts, nextPartNumberMarker, err := a.listMultipartUploadParts(ctx, bucketName, uploadID, opts)
+	if err != nil {
+		return nil, err
+	}
+	parts := make([]block.MultipartPart, len(bucketParts))
+	for i, part := range bucketParts {
+		partNumber, err := extractPartNumber(part.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract part number: %w", err)
+		}
+		parts[i] = block.MultipartPart{
+			ETag:         part.Etag,
+			PartNumber:   partNumber,
+			LastModified: part.Updated,
+			Size:         part.Size,
+		}
+	}
+	return &block.ListPartsResponse{
+		Parts:                parts,
+		NextPartNumberMarker: nextPartNumberMarker,
+		IsTruncated:          nextPartNumberMarker != nil,
+	}, nil
 }
 
 func (a *Adapter) ListMultipartUploads(_ context.Context, _ block.ObjectPointer, _ block.ListMultipartUploadsOpts) (*block.ListMultipartUploadsResponse, error) {

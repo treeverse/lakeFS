@@ -21,14 +21,19 @@ package sig
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha1" //nolint:gosec
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
+	"hash/crc32"
 	"io"
 	"strings"
 	"time"
 
+	"github.com/minio/crc64nvme"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	gwerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
 )
@@ -39,6 +44,18 @@ const (
 	emptySHA256            = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" //nolint:gosec
 	signV4ChunkedAlgorithm = "AWS4-HMAC-SHA256-PAYLOAD"                                         //nolint:gosec
 	SlashSeparator         = "/"
+)
+
+// ChecksumAlgorithm represents the type of checksum algorithm used for trailers
+type ChecksumAlgorithm string
+
+const (
+	ChecksumAlgorithmCRC32     ChecksumAlgorithm = "x-amz-checksum-crc32"
+	ChecksumAlgorithmCRC32C    ChecksumAlgorithm = "x-amz-checksum-crc32c"
+	ChecksumAlgorithmCRC64NVME ChecksumAlgorithm = "x-amz-checksum-crc64nvme"
+	ChecksumAlgorithmSHA256    ChecksumAlgorithm = "x-amz-checksum-sha256"
+	ChecksumAlgorithmSHA1      ChecksumAlgorithm = "x-amz-checksum-sha1"
+	ChecksumAlgorithmInvalid   ChecksumAlgorithm = ""
 )
 
 // getScope generate a string of a specific date, an AWS region, and a service.
@@ -80,8 +97,11 @@ var (
 	// Malformed encoding is generated when a chunk header is wrongly formed.
 	errMalformedEncoding = errors.New("malformed chunked encoding")
 
-	ErrInvalidByte   = errors.New("invalid byte in chunk length")
-	ErrChunkTooLarge = errors.New("http chunk length too large")
+	ErrInvalidByte          = errors.New("invalid byte in chunk length")
+	ErrChunkTooLarge        = errors.New("http chunk length too large")
+	ErrUnsupportedChecksum  = errors.New("unsupported checksum algorithm")
+	ErrChecksumMismatch     = errors.New("checksum mismatch")
+	ErrChecksumTypeMismatch = errors.New("checksum type mismatch")
 )
 
 // newSignV4ChunkedReader returns a new s3ChunkedReader that translates the data read from r
@@ -90,11 +110,20 @@ var (
 //
 // NewChunkedReader is not needed by normal applications. The http package
 // automatically decodes chunking when reading response bodies.
-func newSignV4ChunkedReader(reader *bufio.Reader, amzDate string, auth V4Auth, creds *model.Credential) (io.ReadCloser, error) {
+func newSignV4ChunkedReader(reader *bufio.Reader, amzDate string, auth V4Auth, signatureMethod string, creds *model.Credential) (io.ReadCloser, error) {
 	seedDate, err := time.Parse(v4timeFormat, amzDate)
 	if err != nil {
 		return nil, err
 	}
+
+	var checksumWriter hash.Hash
+	if signatureMethod == v4UnsignedPayloadTrailer {
+		checksumWriter, err = GetChecksumWriter(auth.ChecksumAlgorithm)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &s3ChunkedReader{
 		reader:            reader,
 		cred:              creds,
@@ -104,6 +133,8 @@ func newSignV4ChunkedReader(reader *bufio.Reader, amzDate string, auth V4Auth, c
 		service:           auth.Service,
 		chunkSHA256Writer: sha256.New(),
 		state:             readChunkHeader,
+		checksumAlgorithm: auth.ChecksumAlgorithm,
+		checksumWriter:    checksumWriter,
 	}, nil
 }
 
@@ -122,6 +153,8 @@ type s3ChunkedReader struct {
 	chunkSHA256Writer hash.Hash // Calculates sha256 of chunk data.
 	n                 uint64    // Unread bytes in chunk
 	err               error
+	checksumAlgorithm string
+	checksumWriter    hash.Hash
 }
 
 // Read chunk reads the chunk token signature portion.
@@ -148,9 +181,10 @@ type chunkState int
 
 const (
 	readChunkHeader chunkState = iota
-	readChunkTrailer
+	readChunkTerm
 	readChunk
 	verifyChunk
+	readTrailerChunk
 	eofChunk
 )
 
@@ -159,12 +193,14 @@ func (cs chunkState) String() string {
 	switch cs {
 	case readChunkHeader:
 		stateString = "readChunkHeader"
-	case readChunkTrailer:
-		stateString = "readChunkTrailer"
+	case readChunkTerm:
+		stateString = "readChunkTerm"
 	case readChunk:
 		stateString = "readChunk"
 	case verifyChunk:
 		stateString = "verifyChunk"
+	case readTrailerChunk:
+		stateString = "readTrailerChunk"
 	case eofChunk:
 		stateString = "eofChunk"
 	}
@@ -177,14 +213,15 @@ func (cr *s3ChunkedReader) Close() (err error) {
 
 // Read - implements `io.Reader`, which transparently decodes
 // the incoming AWS Signature V4 streaming signature.
-func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
+// we don't need to lint this function because it's based on MinIO code
+func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) { //nolint:gocyclo
 	for {
 		switch cr.state {
 		case readChunkHeader:
 			cr.readS3ChunkHeader()
 			// If we're at the end of a chunk.
 			if cr.n == 0 && cr.err == io.EOF {
-				cr.state = readChunkTrailer
+				cr.state = readChunkTerm
 				cr.lastChunk = true
 				continue
 			}
@@ -192,12 +229,57 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 				return 0, cr.err
 			}
 			cr.state = readChunk
-		case readChunkTrailer:
-			cr.err = readCRLF(cr.reader)
-			if cr.err != nil {
-				return 0, errMalformedEncoding
+		case readChunkTerm:
+			err = peekCRLF(cr.reader)
+			isTrailingChunk := cr.n == 0 && cr.lastChunk
+
+			if !isTrailingChunk { //nolint:gocritic
+				if readErr := readCRLF(cr.reader); readErr != nil {
+					cr.err = readErr
+					return 0, cr.err
+				}
+				cr.err = err
+			} else if err != nil && !errors.Is(err, errMalformedEncoding) {
+				cr.err = err
+			} else if err == nil {
+				// Some clients send an additional CRLF after the chunk trailer.
+				// This is not part of the spec, but we handle it gracefully.
+				if readErr := readCRLF(cr.reader); readErr != nil {
+					cr.err = readErr
+					return 0, cr.err
+				}
 			}
-			cr.state = verifyChunk
+
+			// If we're using unsigned streaming upload, there is no signature to verify at each chunk.
+			if cr.chunkSignature != "" { //nolint:gocritic
+				cr.state = verifyChunk
+			} else if cr.lastChunk {
+				cr.state = readTrailerChunk
+			} else {
+				cr.state = readChunkHeader
+			}
+		case readTrailerChunk:
+			checksumAlgorithm, checksumValue := getTrailerChecksum(cr.reader)
+
+			if checksumAlgorithm != cr.checksumAlgorithm {
+				cr.err = fmt.Errorf("checksum type mismatch: %s != %s: %w", checksumAlgorithm, cr.checksumAlgorithm, ErrChecksumTypeMismatch)
+				return 0, cr.err
+			}
+
+			computedChecksum := cr.checksumWriter.Sum(nil)
+			b64checksum := base64.StdEncoding.EncodeToString(computedChecksum)
+			if b64checksum != checksumValue {
+				cr.err = ErrChecksumMismatch
+				return 0, cr.err
+			}
+
+			// Read the final CRLF sequence
+			if err := readCRLF(cr.reader); err != nil {
+				cr.err = err
+				return 0, err
+			}
+
+			cr.state = eofChunk
 		case readChunk:
 			// There is no more space left in the request buffer.
 			if len(buf) == 0 {
@@ -223,6 +305,12 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			if _, err := cr.chunkSHA256Writer.Write(rbuf[:n0]); err != nil {
 				return 0, err
 			}
+
+			// Compute checksum
+			if cr.checksumWriter != nil {
+				cr.checksumWriter.Write(rbuf[:n0])
+			}
+
 			// Update the bytes read into request buffer so far.
 			n += n0
 			buf = buf[n0:]
@@ -232,7 +320,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 
 			// If we're at the end of a chunk.
 			if cr.n == 0 {
-				cr.state = readChunkTrailer
+				cr.state = readChunkTerm
 				continue
 			}
 		case verifyChunk:
@@ -266,7 +354,21 @@ func readCRLF(reader io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if buf[0] != '\r' || buf[1] != '\n' {
+	return checkCRLF(buf)
+}
+
+// peekCRLF - peeks at the next two bytes to check for CRLF without consuming them.
+func peekCRLF(reader *bufio.Reader) error {
+	peeked, err := reader.Peek(2) //nolint:mnd
+	if err != nil {
+		return err
+	}
+	return checkCRLF(peeked)
+}
+
+// checkCRLF - checks if the buffer contains '\r\n' CRLF character.
+func checkCRLF(buf []byte) error {
+	if len(buf) != 2 || buf[0] != '\r' || buf[1] != '\n' {
 		return errMalformedEncoding
 	}
 	return nil
@@ -323,13 +425,7 @@ func parseS3ChunkExtension(buf []byte) ([]byte, []byte) {
 	if semi == -1 {
 		return buf, nil
 	}
-	return buf[:semi], parseChunkSignature(buf[semi:])
-}
-
-// parseChunkSignature - parse chunk signature.
-func parseChunkSignature(chunk []byte) []byte {
-	chunkSplits := bytes.SplitN(chunk, []byte(s3ChunkSignatureStr), 2) //nolint: mnd
-	return chunkSplits[1]
+	return buf[:semi], buf[semi+len(s3ChunkSignatureStr):]
 }
 
 // parse hex to uint64.
@@ -354,4 +450,51 @@ func parseHexUint(v []byte) (n uint64, err error) {
 		n |= uint64(b)
 	}
 	return
+}
+
+func getTrailerChecksum(reader *bufio.Reader) (string, string) {
+	// When using unsigned upload, this would be the raw contents of  the trailer chunk:
+	//
+	// x-amz-checksum-crc32:YABb/g==\n\r\n\r\n      // Trailer chunk (note optional \n character)
+	// \r\n                                         // CRLF
+	//
+	// When using signed upload with an additional checksum algorithm, this would be the raw contents of the trailer chunk:
+	//
+	// x-amz-checksum-crc32:YABb/g==\n\r\n            // Trailer chunk (note optional \n character)
+	// trailer-signature\r\n
+	// \r\n                                           // CRLF
+	//
+	bytesRead, err := reader.ReadSlice('\n')
+	if err != nil {
+		return "", ""
+	}
+
+	parts := bytes.SplitN(bytesRead, []byte(":"), 2) //nolint:mnd
+	if len(parts) != 2 {                             //nolint:mnd
+		return "", ""
+	}
+
+	checksumAlgorithm := string(parts[0])
+	checksumValue := string(trimTrailingWhitespace(parts[1]))
+
+	return checksumAlgorithm, checksumValue
+}
+
+// GetChecksumWriter returns the appropriate hash.Hash implementation for the given checksum algorithm
+func GetChecksumWriter(name string) (hash.Hash, error) {
+	switch ChecksumAlgorithm(name) {
+	case ChecksumAlgorithmCRC32C:
+		return crc32.New(crc32.MakeTable(crc32.Castagnoli)), nil
+	case ChecksumAlgorithmCRC32:
+		return crc32.NewIEEE(), nil
+	case ChecksumAlgorithmCRC64NVME:
+		return crc64nvme.New(), nil
+	case ChecksumAlgorithmSHA256:
+		return sha256.New(), nil
+	case ChecksumAlgorithmSHA1:
+		// could be a security risk, but some clients might use it
+		return sha1.New(), nil //nolint:gosec
+	default:
+		return nil, ErrUnsupportedChecksum
+	}
 }
