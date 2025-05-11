@@ -265,14 +265,16 @@ const uploadFile = async (config, repo, reference, path, file, onProgress, isMul
 
 export const destinationPath = (path, file, isMultiple) => {
     const cleanFilePath = file.path.replace(/\\/g, '/').replace(/^\/+/, '');
-    let cleanUserPath = path?.replace(/\\/g, '/').trim();
 
-    if (cleanUserPath) {
-        cleanUserPath = cleanUserPath.replace(/^\/+|\/+$/g, '');
-        cleanUserPath = cleanUserPath.replace(/\/+/g, '/');
+    const normalizedPath = (path || '')
+        .replace(/\\/g, '/')
+        .trim()
+        .replace(/^\/+|\/+$/g, '')
+        .replace(/\/+/g, '/');
 
-        const isFilePath = !isMultiple && /\.[^/]+$/.test(cleanUserPath);
-        return isFilePath ? cleanUserPath : `${cleanUserPath}/${cleanFilePath}`;
+    if (normalizedPath) {
+        const isFilePath = !isMultiple && /\.[^/]+$/.test(normalizedPath);
+        return isFilePath ? normalizedPath : `${normalizedPath}/${cleanFilePath}`;
     }
 
     return cleanFilePath;
