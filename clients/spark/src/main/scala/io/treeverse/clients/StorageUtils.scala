@@ -88,17 +88,18 @@ object StorageUtils {
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
     def createAndValidateS3Client(
-                                   clientConfig: ClientConfiguration,
-                                   credentialsProvider: Option[AWSCredentialsProvider],
-                                   builder: AmazonS3ClientBuilder,
-                                   endpoint: String,
-                                   regionName: String,
-                                   bucket: String
-                                 ): AmazonS3 = {
+        clientConfig: ClientConfiguration,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        builder: AmazonS3ClientBuilder,
+        endpoint: String,
+        regionName: String,
+        bucket: String
+    ): AmazonS3 = {
       require(bucket.nonEmpty)
 
       // First create a temp client to check bucket location
-      val tempClient = AmazonS3ClientBuilder.standard()
+      val tempClient = AmazonS3ClientBuilder
+        .standard()
         .withClientConfiguration(clientConfig)
         .withPathStyleAccessEnabled(true)
 
@@ -108,7 +109,10 @@ object StorageUtils {
       // Configure endpoint or region
       if (endpoint != null && !endpoint.isEmpty) {
         tempClient.withEndpointConfiguration(
-          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint, normalizeRegionName(regionName))
+          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(
+            endpoint,
+            normalizeRegionName(regionName)
+          )
         )
       } else if (regionName != null && !regionName.isEmpty) {
         tempClient.withRegion(normalizeRegionName(regionName))
@@ -138,7 +142,8 @@ object StorageUtils {
       }
 
       // Now create the actual client with the bucket's region
-      val client = initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, bucketRegion)
+      val client =
+        initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, bucketRegion)
       client
     }
 
