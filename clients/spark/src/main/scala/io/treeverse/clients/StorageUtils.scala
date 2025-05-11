@@ -101,13 +101,27 @@ object StorageUtils {
       require(bucket.nonEmpty)
 
       // First create a temporary client to check the bucket location
-      val tempClient =
-        initializeS3Client(clientConfig, credentialsProvider, builder.clone(), endpoint, regionName)
+      // Instead of clone, create a new builder with same settings
+      val tempBuilder = AmazonS3ClientBuilder
+        .standard()
+        .withClientConfiguration(clientConfig)
+        .withPathStyleAccessEnabled(builder.isPathStyleAccessEnabled)
+      credentialsProvider.foreach(tempBuilder.withCredentials)
+      if (endpoint != null && !endpoint.isEmpty) {
+        tempBuilder.withEndpointConfiguration(
+          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
+                                                                                  regionName
+                                                                                 )
+        )
+      } else if (regionName != null && !regionName.isEmpty) {
+        tempBuilder.withRegion(regionName)
+      }
+      val tempClient = tempBuilder.build()
 
       // Attempt to get the bucket's actual region
       var actualRegion = regionName
       try {
-        val location = tempClient.getBucketLocation(new GetBucketLocationRequest(bucket))
+        val location = tempClient.getBucketLocation(bucket)
         // US_EAST_1 is returned as empty string or null from getBucketLocation
         actualRegion = if (location == null || location.isEmpty) null else location
       } catch {
@@ -165,6 +179,31 @@ object StorageUtils {
 
       // Build the client
       builder.build()
+    }
+  }
+}
+
+// Define S3RetryDeleteObjectsCondition class in the same package so it can be found
+class S3RetryDeleteObjectsCondition extends RetryPolicy.RetryCondition {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+
+  override def shouldRetry(
+      originalRequest: AmazonWebServiceRequest,
+      exception: AmazonClientException,
+      retriesAttempted: Int
+  ): Boolean = {
+    exception match {
+      case s3e: AmazonS3Exception =>
+        if (s3e.getStatusCode == 429 || (s3e.getStatusCode >= 500 && s3e.getStatusCode < 600)) {
+          logger.info(s"Retry $originalRequest: Throttled or server error: $s3e")
+          true
+        } else {
+          logger.info(s"Don't retry $originalRequest: Other S3 exception: $s3e")
+          false
+        }
+      case e: Exception =>
+        logger.info(s"Don't retry $originalRequest: Non-S3 exception: $e")
+        false
     }
   }
 }
