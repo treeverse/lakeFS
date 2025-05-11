@@ -1,15 +1,16 @@
 package io.treeverse.clients
 
 import com.amazonaws.ClientConfiguration
-import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.{AWSCredentials, AWSCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.services.s3.model.AmazonS3Exception
+import com.amazonaws.services.s3.model.{HeadBucketRequest, AmazonS3Exception}
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.AmazonClientException
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
+import java.lang.reflect.Method
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
@@ -88,7 +89,7 @@ object StorageUtils {
 
     def createAndValidateS3Client(
         clientConfig: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
+        credentialsProvider: Option[Any], // Changed to Any to accept any type
         builder: AmazonS3ClientBuilder,
         endpoint: String,
         regionName: String,
@@ -96,24 +97,25 @@ object StorageUtils {
     ): AmazonS3 = {
       require(bucket.nonEmpty)
 
-      // Check bucket location
-      val tempClient = AmazonS3ClientBuilder
+      // First create a temp client to check bucket location
+      val tempBuilder = AmazonS3ClientBuilder
         .standard()
         .withClientConfiguration(clientConfig)
         .withPathStyleAccessEnabled(true)
 
-      credentialsProvider.foreach(tempClient.withCredentials)
+      // Apply credentials if provided, handling different types
+      applyCredentials(tempBuilder, credentialsProvider)
 
       // Configure endpoint or region
+      val normalizedRegion = normalizeRegionName(regionName)
       if (endpoint != null && !endpoint.isEmpty) {
-        tempClient.withEndpointConfiguration(
-          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(
-            endpoint,
-            normalizeRegionName(regionName)
-          )
+        tempBuilder.withEndpointConfiguration(
+          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
+                                                                                  normalizedRegion
+                                                                                 )
         )
-      } else if (regionName != null && !regionName.isEmpty) {
-        tempClient.withRegion(normalizeRegionName(regionName))
+      } else if (normalizedRegion != null && !normalizedRegion.isEmpty) {
+        tempBuilder.withRegion(normalizedRegion)
       }
 
       // Get bucket's actual region
@@ -121,11 +123,10 @@ object StorageUtils {
       var bucketExists = false
 
       try {
-        bucketExists = true
-        val location = tempClient.build().getBucketLocation(bucket)
-
-        // Empty or null location means us-east-1 (default region)
+        val tempClient = tempBuilder.build()
+        val location = tempClient.getBucketLocation(bucket)
         bucketRegion = if (location == null || location.isEmpty) null else location
+        bucketExists = true
       } catch {
         case e: Exception =>
           logger.info(f"Could not fetch info for bucket $bucket", e)
@@ -138,41 +139,116 @@ object StorageUtils {
         )
       }
 
-      val client =
-        initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, bucketRegion)
-      client
-    }
-
-    private def initializeS3Client(
-        clientConfig: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
-        builder: AmazonS3ClientBuilder,
-        endpoint: String,
-        regionName: String
-    ): AmazonS3 = {
-      // Use the provided builder
+      // Now create the final client with the bucket's region
       builder.withClientConfiguration(clientConfig)
+      applyCredentials(builder, credentialsProvider)
 
-      // Configure credentials if provided
-      credentialsProvider.foreach(builder.withCredentials)
-
-      // Map region name to the proper format for SDK v1
-      val normalizedRegion = normalizeRegionName(regionName)
-
-      // Cannot set both region and endpoint configuration - must choose one
       if (endpoint != null && !endpoint.isEmpty) {
-        // If endpoint is provided, use endpointConfiguration with region
         builder.withEndpointConfiguration(
           new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
-                                                                                  normalizedRegion
+                                                                                  bucketRegion
                                                                                  )
         )
-      } else if (normalizedRegion != null && !normalizedRegion.isEmpty) {
-        // If only region is provided, use withRegion
-        builder.withRegion(normalizedRegion)
+      } else if (bucketRegion != null && !bucketRegion.isEmpty) {
+        builder.withRegion(bucketRegion)
       }
 
       builder.build()
+    }
+
+    // Helper method to safely apply credentials to the builder
+    private def applyCredentials(
+        builder: AmazonS3ClientBuilder,
+        credentialsProvider: Option[Any]
+    ): Unit = {
+      if (credentialsProvider.isEmpty) {
+        return
+      }
+
+      val provider = credentialsProvider.get
+
+      provider match {
+        // If it's already the right type, use it directly
+        case awsProvider: AWSCredentialsProvider =>
+          builder.withCredentials(awsProvider)
+
+        // If it's a Hadoop's AssumedRoleCredentialProvider, extract AWS credentials via reflection
+        case _
+            if provider.getClass.getName == "org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider" =>
+          try {
+            // Use reflection to get credentials from the provider
+            val getCredentialsMethod = provider.getClass.getMethod("getCredentials")
+            val credentials = getCredentialsMethod.invoke(provider)
+
+            // Extract access key and secret key using reflection
+            val accessKeyMethod = credentials.getClass.getMethod("getAWSAccessKeyId")
+            val secretKeyMethod = credentials.getClass.getMethod("getAWSSecretKey")
+
+            val accessKey = accessKeyMethod.invoke(credentials).toString
+            val secretKey = secretKeyMethod.invoke(credentials).toString
+
+            // Create a basic credentials provider with the keys
+            val basicCreds = new BasicAWSCredentials(accessKey, secretKey)
+            builder.withCredentials(new AWSCredentialsProvider {
+              override def getCredentials: AWSCredentials = basicCreds
+              override def refresh(): Unit = {}
+            })
+
+            logger.info("Successfully adapted Hadoop S3A credentials to AWS SDK credentials")
+          } catch {
+            case e: Exception =>
+              logger.warn(s"Failed to adapt credentials from ${provider.getClass.getName}", e)
+          }
+
+        // For other types, try to extract credentials using common methods
+        case _ =>
+          try {
+            // Try common credential getter methods
+            val methods = provider.getClass.getMethods
+            val getCredentialsMethod = methods.find(_.getName == "getCredentials")
+
+            if (getCredentialsMethod.isDefined) {
+              val credentials = getCredentialsMethod.get.invoke(provider)
+
+              // Try to get access key and secret key
+              val credClass = credentials.getClass
+              val accessKeyMethod =
+                findMethodByNames(credClass, "getAWSAccessKeyId", "getAccessKeyId")
+              val secretKeyMethod = findMethodByNames(credClass, "getAWSSecretKey", "getSecretKey")
+
+              if (accessKeyMethod.isDefined && secretKeyMethod.isDefined) {
+                val accessKey = accessKeyMethod.get.invoke(credentials).toString
+                val secretKey = secretKeyMethod.get.invoke(credentials).toString
+
+                val basicCreds = new BasicAWSCredentials(accessKey, secretKey)
+                builder.withCredentials(new AWSCredentialsProvider {
+                  override def getCredentials: AWSCredentials = basicCreds
+                  override def refresh(): Unit = {}
+                })
+
+                logger.info(
+                  s"Successfully adapted ${provider.getClass.getName} to AWS SDK credentials"
+                )
+              }
+            }
+          } catch {
+            case e: Exception =>
+              logger.warn(s"Failed to extract credentials from ${provider.getClass.getName}", e)
+          }
+      }
+    }
+
+    // Helper method to find a method by multiple possible names
+    private def findMethodByNames(clazz: Class[_], names: String*): Option[Method] = {
+      names
+        .flatMap(name =>
+          try {
+            Some(clazz.getMethod(name))
+          } catch {
+            case _: NoSuchMethodException => None
+          }
+        )
+        .headOption
     }
 
     // Helper method to normalize region names between SDK v1 and v2
