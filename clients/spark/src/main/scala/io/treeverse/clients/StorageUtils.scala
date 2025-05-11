@@ -4,13 +4,10 @@ import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.services.s3.model.{
-  HeadBucketRequest,
-  AmazonS3Exception,
-  GetBucketLocationRequest
-}
+import com.amazonaws.services.s3.model.{HeadBucketRequest, AmazonS3Exception}
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.AmazonClientException
+import com.amazonaws.regions.Regions
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
@@ -100,55 +97,9 @@ object StorageUtils {
     ): AmazonS3 = {
       require(bucket.nonEmpty)
 
-      // Create a client to use just for getting the bucket location
-      val tempClient = AmazonS3ClientBuilder
-        .standard()
-        .withClientConfiguration(clientConfig)
-        .withPathStyleAccessEnabled(true)
+      val client =
+        initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, regionName)
 
-      credentialsProvider.foreach(tempClient.withCredentials)
-
-      if (endpoint != null && !endpoint.isEmpty) {
-        tempClient.withEndpointConfiguration(
-          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
-                                                                                  regionName
-                                                                                 )
-        )
-      } else if (regionName != null && !regionName.isEmpty) {
-        tempClient.withRegion(regionName)
-      }
-
-      // Get the bucket location using the proper client
-      var bucketRegion = regionName
-      try {
-        val location = tempClient.build().getBucketLocation(bucket)
-        bucketRegion = if (location == null || location.isEmpty) null else location
-      } catch {
-        case e: Exception =>
-          logger.info(f"Could not determine region for bucket $bucket, using provided region", e)
-      }
-
-      // Now create the final client with the correct region
-      val finalClient = AmazonS3ClientBuilder
-        .standard()
-        .withClientConfiguration(clientConfig)
-        .withPathStyleAccessEnabled(builder.isPathStyleAccessEnabled)
-
-      credentialsProvider.foreach(finalClient.withCredentials)
-
-      if (endpoint != null && !endpoint.isEmpty) {
-        finalClient.withEndpointConfiguration(
-          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
-                                                                                  bucketRegion
-                                                                                 )
-        )
-      } else if (bucketRegion != null && !bucketRegion.isEmpty) {
-        finalClient.withRegion(bucketRegion)
-      }
-
-      val client = finalClient.build()
-
-      // Just to confirm bucket exists
       var bucketExists = false
       try {
         client.headBucket(new HeadBucketRequest(bucket))
@@ -165,6 +116,86 @@ object StorageUtils {
       }
 
       client
+    }
+
+    private def initializeS3Client(
+        clientConfig: ClientConfiguration,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        builder: AmazonS3ClientBuilder,
+        endpoint: String,
+        regionName: String
+    ): AmazonS3 = {
+      // Use the provided builder
+      builder.withClientConfiguration(clientConfig)
+
+      // Configure credentials if provided
+      credentialsProvider.foreach(builder.withCredentials)
+
+      // Map region name to the proper format for SDK v1
+      val normalizedRegion = normalizeRegionName(regionName)
+
+      // Cannot set both region and endpoint configuration - must choose one
+      if (endpoint != null && !endpoint.isEmpty) {
+        // If endpoint is provided, use endpointConfiguration with region
+        builder.withEndpointConfiguration(
+          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
+                                                                                  normalizedRegion
+                                                                                 )
+        )
+      } else if (normalizedRegion != null && !normalizedRegion.isEmpty) {
+        // If only region is provided, use withRegion
+        builder.withRegion(normalizedRegion)
+      }
+
+      // Build the client
+      builder.build()
+    }
+
+    // Helper method to normalize region names between SDK v1 and v2
+    private def normalizeRegionName(regionName: String): String = {
+      if (regionName == null || regionName.isEmpty) {
+        return null
+      }
+
+      regionName.toUpperCase match {
+        case "US" | "US_STANDARD" =>
+          "us-east-1"
+        case _ =>
+          regionName.toLowerCase
+      }
+    }
+  }
+}
+
+class S3RetryCondition extends RetryPolicy.RetryCondition {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+  private val XML_PARSE_BROKEN = "Failed to parse XML document"
+
+  override def shouldRetry(
+      originalRequest: AmazonWebServiceRequest,
+      exception: AmazonClientException,
+      retriesAttempted: Int
+  ): Boolean = {
+    exception match {
+      case s3e: AmazonS3Exception =>
+        val message = s3e.getMessage
+        if (message != null && message.contains(XML_PARSE_BROKEN)) {
+          logger.info(s"Retry $originalRequest: Received non-XML: $s3e")
+          true
+        } else if (
+          s3e.getStatusCode == 429 ||
+          (s3e.getStatusCode >= 500 && s3e.getStatusCode < 600)
+        ) {
+          logger.info(s"Retry $originalRequest: Throttled or server error: $s3e")
+          true
+        } else {
+          logger.info(s"Retry $originalRequest: Other S3 exception: $s3e")
+          true
+        }
+      case e: Exception => {
+        logger.info(s"Do not retry $originalRequest: Non-S3 exception: $e")
+        false
+      }
     }
   }
 }
