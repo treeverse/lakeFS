@@ -4,10 +4,9 @@ import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.services.s3.model.{HeadBucketRequest, AmazonS3Exception}
+import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.AmazonClientException
-import com.amazonaws.regions.Regions
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
