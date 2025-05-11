@@ -3,6 +3,8 @@ package api_test
 import (
 	"context"
 	"fmt"
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -102,6 +104,17 @@ func createDefaultAdminUser(t testing.TB, clt apigen.ClientWithResponsesInterfac
 	}
 }
 
+type mockOidcProvider struct {
+}
+
+func (m *mockOidcProvider) RegisterOIDCRoutes(_ *chi.Mux, _ sessions.Store) {
+	// nop
+}
+
+func (m *mockOidcProvider) OIDCCallback(_ http.ResponseWriter, _ *http.Request, _ sessions.Store) {
+	// nop
+}
+
 func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	t.Helper()
 	ctx := context.Background()
@@ -164,7 +177,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
+	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager, &mockOidcProvider{})
 
 	// reset cloud metadata - faster setup, the cloud metadata maintain its own tests
 	cloud.Reset()
