@@ -7,7 +7,7 @@ Includes authentication util functions
 import base64
 import datetime
 import json
-from typing import Any
+from typing import Any, Optional, Dict
 from urllib.parse import urlparse, parse_qs
 
 import boto3
@@ -32,8 +32,8 @@ def access_token_from_aws_iam_role(sdk_client: LakeFSClient,
     :param aws_provider_auth_params: ClientConfig.AWSIAMProviderConfig
     :return: An access token for lakeFS authentication.
     """
-    presigned_ttl = aws_provider_auth_params.url_presign_ttl_seconds
-    token_ttl_seconds = aws_provider_auth_params.token_ttl_seconds
+    presigned_ttl = int(aws_provider_auth_params.url_presign_ttl_seconds)
+    token_ttl_seconds = int(aws_provider_auth_params.token_ttl_seconds)
     token_req_headers = aws_provider_auth_params.token_request_headers
 
     identity_token = _get_identity_token(boto3_session, lakefs_host, presign_expiry=presigned_ttl,
@@ -54,7 +54,7 @@ def access_token_from_aws_iam_role(sdk_client: LakeFSClient,
 def _get_identity_token(
         session: boto3.Session,
         lakefs_host: str,
-        additional_headers: dict[str, str],
+        additional_headers: Optional[dict[str, str]],
         presign_expiry
 ) -> str:
     """
@@ -98,14 +98,12 @@ def _get_identity_token(
         'headers': additional_headers,
         'context': {}
     }
-
     presigned_url = signer.generate_presigned_url(
         params,
         region_name=region,
         expires_in=presign_expiry,
         operation_name=''
     )
-    print(f"Presigned URL: {presigned_url}")
     parsed_url = urlparse(presigned_url)
     query_params = parse_qs(parsed_url.query)
 
@@ -125,7 +123,6 @@ def _get_identity_token(
         "security_token": query_params.get('X-Amz-Security-Token', [None])[0]
     }
     json_string = json.dumps(json_object)
-    print(f"JSON STRING:\n{json_string}")
     return base64.b64encode(json_string.encode('utf-8')).decode('utf-8')
 
 def _extract_region_from_endpoint(endpoint):
