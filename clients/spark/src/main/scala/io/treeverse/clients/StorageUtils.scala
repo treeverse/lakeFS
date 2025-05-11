@@ -89,15 +89,15 @@ object StorageUtils {
     def createAndValidateS3Client(
         clientConfig: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
+        builder: AmazonS3ClientBuilder,
         endpoint: String,
         regionName: String,
-        bucket: String,
-        pathStyleAccess: Boolean = false
+        bucket: String
     ): AmazonS3 = {
       require(bucket.nonEmpty)
 
       val client =
-        initializeS3Client(clientConfig, credentialsProvider, endpoint, regionName, pathStyleAccess)
+        initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, regionName)
 
       var bucketExists = false
       try {
@@ -120,15 +120,12 @@ object StorageUtils {
     private def initializeS3Client(
         clientConfig: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
+        builder: AmazonS3ClientBuilder,
         endpoint: String,
-        regionName: String,
-        pathStyleAccess: Boolean
+        regionName: String
     ): AmazonS3 = {
-      // Create S3 client builder
-      val builder = AmazonS3ClientBuilder
-        .standard()
-        .withClientConfiguration(clientConfig)
-        .withPathStyleAccessEnabled(pathStyleAccess)
+      // Use the provided builder
+      builder.withClientConfiguration(clientConfig)
 
       // Configure region if provided
       if (regionName != null && !regionName.isEmpty) {
