@@ -157,12 +157,13 @@ object StorageUtils {
         return null
       }
 
-      regionName.toUpperCase match {
-        case "US" | "US_STANDARD" =>
-          "us-east-1"
-        case _ =>
-          regionName.toLowerCase
+      // Special case: US_STANDARD is a legacy alias for US_EAST_1
+      if (regionName.equalsIgnoreCase("US") || regionName.equalsIgnoreCase("US_STANDARD")) {
+        return "us-east-1"
       }
+
+      // Convert SDK v2 uppercase with underscores to SDK v1 lowercase with hyphens
+      regionName.toLowerCase.replace("_", "-")
     }
   }
 }
