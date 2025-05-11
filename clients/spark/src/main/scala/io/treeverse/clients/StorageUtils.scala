@@ -2,9 +2,11 @@ package io.treeverse.clients
 
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.retry.{PredefinedRetryPolicies, RetryPolicy}
+import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.services.s3.model.{HeadBucketRequest, S3Exception}
+import com.amazonaws.services.s3.model.{HeadBucketRequest, AmazonS3Exception}
+import com.amazonaws.AmazonWebServiceRequest
+import com.amazonaws.AmazonClientException
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
@@ -41,7 +43,42 @@ object StorageUtils {
   }
 
   object AzureBlob {
-    // ... Azure code unchanged ...
+    val AccountAuthType =
+      "fs.azure.account.auth.type.%s.dfs.core.windows.net"
+    val AccountOAuthProviderType =
+      "fs.azure.account.oauth.provider.type.%s.dfs.core.windows.net"
+    val AccountOAuthClientId =
+      "fs.azure.account.oauth2.client.id.%s.dfs.core.windows.net"
+    val AccountOAuthClientSecret =
+      "fs.azure.account.oauth2.client.secret.%s.dfs.core.windows.net"
+    val AccountOAuthClientEndpoint =
+      "fs.azure.account.oauth2.client.endpoint.%s.dfs.core.windows.net"
+    val StorageAccountKeyProperty =
+      "fs.azure.account.key.%s.dfs.core.windows.net"
+    val AzureBlobMaxBulkSize = 256
+
+    /** Converts storage namespace URIs of the form https://<storageAccountName>.blob.core.windows.net/<container>/<path-in-container>
+     *  to storage account URL of the form https://<storageAccountName>.blob.core.windows.net
+     *
+     *  @param storageNsURI
+     *  @return
+     */
+    def uriToStorageAccountUrl(storageNsURI: URI): String = {
+      storageNsURI.getScheme + "://" + storageNsURI.getHost
+    }
+
+    def uriToStorageAccountName(storageNsURI: URI): String = {
+      storageNsURI.getHost.split('.')(0)
+    }
+
+    // https://<storage_account>.blob.core.windows.net/<container>/<blob/path>
+    def uriToContainerName(storageNsURI: URI): String = {
+      storageNsURI.getPath.split('/')(1)
+    }
+
+    def getTenantId(authorityHost: URI): String = {
+      authorityHost.getPath.split('/')(1)
+    }
   }
 
   object S3 {
@@ -50,17 +87,17 @@ object StorageUtils {
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
     def createAndValidateS3Client(
-        retryPolicy: RetryPolicy,
+        clientConfig: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
         endpoint: String,
         regionName: String,
         bucket: String,
-        pathStyleAccess: Boolean = false // Added the missing parameter
+        pathStyleAccess: Boolean = false
     ): AmazonS3 = {
       require(bucket.nonEmpty)
 
       val client =
-        initializeS3Client(retryPolicy, credentialsProvider, endpoint, regionName, pathStyleAccess)
+        initializeS3Client(clientConfig, credentialsProvider, endpoint, regionName, pathStyleAccess)
 
       var bucketExists = false
       try {
@@ -81,16 +118,12 @@ object StorageUtils {
     }
 
     private def initializeS3Client(
-        retryPolicy: RetryPolicy,
+        clientConfig: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
         endpoint: String,
         regionName: String,
         pathStyleAccess: Boolean
     ): AmazonS3 = {
-      // Create client configuration
-      val clientConfig = new ClientConfiguration()
-        .withRetryPolicy(retryPolicy)
-
       // Create S3 client builder
       val builder = AmazonS3ClientBuilder
         .standard()
@@ -105,7 +138,9 @@ object StorageUtils {
       // Configure endpoint if provided
       if (endpoint != null && !endpoint.isEmpty) {
         builder.withEndpointConfiguration(
-          new AmazonS3ClientBuilder.EndpointConfiguration(endpoint, regionName)
+          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
+                                                                                  regionName
+                                                                                 )
         )
       }
 
@@ -118,7 +153,6 @@ object StorageUtils {
   }
 }
 
-// Using v1 RetryPolicy.RetryCondition
 class S3RetryCondition extends RetryPolicy.RetryCondition {
   private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
   private val XML_PARSE_BROKEN = "Failed to parse XML document"
