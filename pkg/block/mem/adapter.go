@@ -555,13 +555,20 @@ func (a *Adapter) ListMultipartUploads(_ context.Context, obj block.ObjectPointe
 				startIdx = i
 				break
 			}
-		}
-	}
-	if opts.UploadIDMarker != nil && *opts.UploadIDMarker != "" {
-		for i, entry := range mpuList[startIdx:] {
-			if entry.id > *opts.UploadIDMarker {
-				startIdx += i
-				break
+			if entry.mpu.objectKey == *opts.KeyMarker {
+				// If UploadIDMarker is set, skip up to and including that upload ID
+				if opts.UploadIDMarker != nil && *opts.UploadIDMarker != "" {
+					if entry.id > *opts.UploadIDMarker {
+						startIdx = i
+						break
+					}
+					if entry.id == *opts.UploadIDMarker {
+						startIdx = i + 1
+					}
+				} else {
+					// If only KeyMarker is set, skip all uploads for that key
+					startIdx = i + 1
+				}
 			}
 		}
 	}
