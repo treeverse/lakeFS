@@ -88,33 +88,57 @@ object StorageUtils {
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
     def createAndValidateS3Client(
-        clientConfig: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
-        builder: AmazonS3ClientBuilder,
-        endpoint: String,
-        regionName: String,
-        bucket: String
-    ): AmazonS3 = {
+                                   clientConfig: ClientConfiguration,
+                                   credentialsProvider: Option[AWSCredentialsProvider],
+                                   builder: AmazonS3ClientBuilder,
+                                   endpoint: String,
+                                   regionName: String,
+                                   bucket: String
+                                 ): AmazonS3 = {
       require(bucket.nonEmpty)
 
-      val client =
-        initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, regionName)
+      // First create a temp client to check bucket location
+      val tempClient = AmazonS3ClientBuilder.standard()
+        .withClientConfiguration(clientConfig)
+        .withPathStyleAccessEnabled(true)
 
+      // Apply credentials if provided
+      credentialsProvider.foreach(tempClient.withCredentials)
+
+      // Configure endpoint or region
+      if (endpoint != null && !endpoint.isEmpty) {
+        tempClient.withEndpointConfiguration(
+          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint, normalizeRegionName(regionName))
+        )
+      } else if (regionName != null && !regionName.isEmpty) {
+        tempClient.withRegion(normalizeRegionName(regionName))
+      }
+
+      // Get bucket's actual region
+      var bucketRegion = regionName
       var bucketExists = false
+
       try {
-        client.headBucket(new HeadBucketRequest(bucket))
+        // Check if bucket exists and get its region
         bucketExists = true
+        val location = tempClient.build().getBucketLocation(bucket)
+
+        // Empty or null location means us-east-1 (default region)
+        bucketRegion = if (location == null || location.isEmpty) null else location
       } catch {
         case e: Exception =>
           logger.info(f"Could not fetch info for bucket $bucket", e)
       }
 
+      // If we can't determine bucket region and no region was provided, fail
       if (!bucketExists && (regionName == null || regionName.isEmpty)) {
         throw new IllegalArgumentException(
           s"""Could not fetch region for bucket "$bucket" and no region was provided"""
         )
       }
 
+      // Now create the actual client with the bucket's region
+      val client = initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, bucketRegion)
       client
     }
 
