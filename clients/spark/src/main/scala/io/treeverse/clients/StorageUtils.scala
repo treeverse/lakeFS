@@ -4,11 +4,7 @@ import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.services.s3.model.{
-  HeadBucketRequest,
-  AmazonS3Exception,
-  GetBucketLocationRequest
-}
+import com.amazonaws.services.s3.model.{HeadBucketRequest, AmazonS3Exception}
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.AmazonClientException
 import org.slf4j.{Logger, LoggerFactory}
@@ -100,24 +96,8 @@ object StorageUtils {
     ): AmazonS3 = {
       require(bucket.nonEmpty)
 
-      // First create a temporary client to check the bucket location
-      val tempClient =
-        initializeS3Client(clientConfig, credentialsProvider, builder.clone(), endpoint, regionName)
-
-      // Attempt to get the bucket's actual region
-      var actualRegion = regionName
-      try {
-        val location = tempClient.getBucketLocation(new GetBucketLocationRequest(bucket))
-        // US_EAST_1 is returned as empty string or null from getBucketLocation
-        actualRegion = if (location == null || location.isEmpty) null else location
-      } catch {
-        case e: Exception =>
-          logger.info(f"Could not determine region for bucket $bucket, using provided region", e)
-      }
-
-      // Now create the client with the actual region
       val client =
-        initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, actualRegion)
+        initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, regionName)
 
       var bucketExists = false
       try {
@@ -165,39 +145,6 @@ object StorageUtils {
 
       // Build the client
       builder.build()
-    }
-  }
-}
-
-class S3RetryCondition extends RetryPolicy.RetryCondition {
-  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
-  private val XML_PARSE_BROKEN = "Failed to parse XML document"
-
-  override def shouldRetry(
-      originalRequest: AmazonWebServiceRequest,
-      exception: AmazonClientException,
-      retriesAttempted: Int
-  ): Boolean = {
-    exception match {
-      case s3e: AmazonS3Exception =>
-        val message = s3e.getMessage
-        if (message != null && message.contains(XML_PARSE_BROKEN)) {
-          logger.info(s"Retry $originalRequest: Received non-XML: $s3e")
-          true
-        } else if (
-          s3e.getStatusCode == 429 ||
-          (s3e.getStatusCode >= 500 && s3e.getStatusCode < 600)
-        ) {
-          logger.info(s"Retry $originalRequest: Throttled or server error: $s3e")
-          true
-        } else {
-          logger.info(s"Retry $originalRequest: Other S3 exception: $s3e")
-          true
-        }
-      case e: Exception => {
-        logger.info(s"Do not retry $originalRequest: Non-S3 exception: $e")
-        false
-      }
     }
   }
 }
