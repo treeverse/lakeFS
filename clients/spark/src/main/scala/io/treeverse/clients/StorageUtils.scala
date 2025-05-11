@@ -206,10 +206,6 @@ object StorageUtils {
         val secretKey = safeGetString(credentials, "getPassword", "getSecretKey", "getAWSSecretKey")
         val token = safeGetString(credentials, "getToken", "getSessionToken")
 
-        logger.info(
-          s"Extracted credential components - has access key: ${accessKey.nonEmpty}, has secret: ${secretKey.nonEmpty}, has token: ${token.nonEmpty}"
-        )
-
         if (accessKey.isEmpty || secretKey.isEmpty) {
           logger.warn("Failed to extract valid credentials - missing access key or secret key")
           None
