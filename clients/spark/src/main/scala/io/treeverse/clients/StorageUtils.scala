@@ -167,3 +167,27 @@ object StorageUtils {
     }
   }
 }
+
+class S3RetryDeleteObjectsCondition extends RetryPolicy.RetryCondition {
+  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+
+  override def shouldRetry(
+      originalRequest: AmazonWebServiceRequest,
+      exception: AmazonClientException,
+      retriesAttempted: Int
+  ): Boolean = {
+    exception match {
+      case s3e: AmazonS3Exception =>
+        if (s3e.getStatusCode == 429 || (s3e.getStatusCode >= 500 && s3e.getStatusCode < 600)) {
+          logger.info(s"Retry $originalRequest: Throttled or server error: $s3e")
+          true
+        } else {
+          logger.info(s"Don't retry $originalRequest: Other S3 exception: $s3e")
+          false
+        }
+      case e: Exception =>
+        logger.info(s"Don't retry $originalRequest: Non-S3 exception: $e")
+        false
+    }
+  }
+}
