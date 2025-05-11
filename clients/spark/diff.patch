@@ -1,0 +1,311 @@
+diff --git a/clients/spark/build.sbt b/clients/spark/build.sbt
+index 66b41079a..5976b1760 100644
+--- a/clients/spark/build.sbt
++++ b/clients/spark/build.sbt
+@@ -1,6 +1,6 @@
+-lazy val projectVersion = "0.14.2"
++lazy val projectVersion = "0.15.0"
+ version := projectVersion
+-lazy val hadoopVersion = "3.2.1"
++lazy val hadoopVersion = "3.3.4"
+ ThisBuild / isSnapshot := false
+ ThisBuild / scalaVersion := "2.12.12"
+ 
+@@ -55,7 +55,7 @@ libraryDependencies ++= Seq(
+   "com.azure" % "azure-storage-blob" % "12.9.0",
+   "com.azure" % "azure-storage-blob-batch" % "12.7.0",
+   "com.azure" % "azure-identity" % "1.2.0",
+-  "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
++  "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.367" % "provided",
+   // Snappy is JNI :-(.  However it does claim to work with
+   // ClassLoaders, and (even more importantly!) using a preloaded JNI
+   // version will probably continue to work because the C language API
+@@ -74,7 +74,9 @@ libraryDependencies ++= Seq(
+   "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
+   // Test with an up-to-date fasterxml.
+   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.2" % "test",
+-  "com.storm-enroute" %% "scalameter" % "0.19" % "test"
++  "com.storm-enroute" %% "scalameter" % "0.19" % "test",
++  "software.amazon.awssdk" % "s3" % "2.20.109",
++  "software.amazon.awssdk" % "auth" % "2.20.109"
+ )
+ 
+ def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
+diff --git a/clients/spark/src/main/scala/io/treeverse/clients/StorageUtils.scala b/clients/spark/src/main/scala/io/treeverse/clients/StorageUtils.scala
+index c360c6a53..80635fca1 100644
+--- a/clients/spark/src/main/scala/io/treeverse/clients/StorageUtils.scala
++++ b/clients/spark/src/main/scala/io/treeverse/clients/StorageUtils.scala
+@@ -1,16 +1,19 @@
+ package io.treeverse.clients
+ 
++import com.amazonaws.ClientConfiguration
+ import com.amazonaws.auth.AWSCredentialsProvider
+-import com.amazonaws.client.builder.AwsClientBuilder
+-import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
+-import com.amazonaws.retry.RetryUtils
+-import com.amazonaws.services.s3.model.{Region, GetBucketLocationRequest}
++import com.amazonaws.retry.RetryPolicy
+ import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+-import com.amazonaws._
++import com.amazonaws.services.s3.model.{
++  HeadBucketRequest,
++  AmazonS3Exception,
++  GetBucketLocationRequest
++}
++import com.amazonaws.AmazonWebServiceRequest
++import com.amazonaws.AmazonClientException
+ import org.slf4j.{Logger, LoggerFactory}
+ 
+ import java.net.URI
+-import java.util.concurrent.TimeUnit
+ 
+ object StorageUtils {
+   val StorageTypeS3 = "s3"
+@@ -56,12 +59,10 @@ object StorageUtils {
+       "fs.azure.account.oauth2.client.endpoint.%s.dfs.core.windows.net"
+     val StorageAccountKeyProperty =
+       "fs.azure.account.key.%s.dfs.core.windows.net"
+-    // https://docs.microsoft.com/en-us/dotnet/api/overview/azure/storage.blobs.batch-readme#key-concepts
+-    // Note that there is no official java SDK documentation of the max batch size, therefore assuming the above.
+     val AzureBlobMaxBulkSize = 256
+ 
+     /** Converts storage namespace URIs of the form https://<storageAccountName>.blob.core.windows.net/<container>/<path-in-container>
+-     *  to storage account URL of the form https://<storageAccountName>.blob.core.windows.net and storage namespace format is
++     *  to storage account URL of the form https://<storageAccountName>.blob.core.windows.net
+      *
+      *  @param storageNsURI
+      *  @return
+@@ -90,101 +91,104 @@ object StorageUtils {
+     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+ 
+     def createAndValidateS3Client(
+-        configuration: ClientConfiguration,
++        clientConfig: ClientConfiguration,
+         credentialsProvider: Option[AWSCredentialsProvider],
+-        awsS3ClientBuilder: AmazonS3ClientBuilder,
++        builder: AmazonS3ClientBuilder,
+         endpoint: String,
+-        region: String,
++        regionName: String,
+         bucket: String
+     ): AmazonS3 = {
+-      require(awsS3ClientBuilder != null)
+       require(bucket.nonEmpty)
+-      val client =
+-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
+-      var bucketRegion =
+-        try {
+-          getAWSS3Region(client, bucket)
+-        } catch {
+-          case e: Throwable =>
+-            logger.info(f"Could not fetch region for bucket $bucket", e)
+-            ""
+-        }
+-      if (bucketRegion == "" && region == "") {
+-        throw new IllegalArgumentException(
+-          s"""Could not fetch region for bucket "$bucket" and no region was provided"""
++
++      // Create a client to use just for getting the bucket location
++      val tempClient = AmazonS3ClientBuilder
++        .standard()
++        .withClientConfiguration(clientConfig)
++        .withPathStyleAccessEnabled(true)
++
++      credentialsProvider.foreach(tempClient.withCredentials)
++
++      if (endpoint != null && !endpoint.isEmpty) {
++        tempClient.withEndpointConfiguration(
++          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
++                                                                                  regionName
++                                                                                 )
+         )
++      } else if (regionName != null && !regionName.isEmpty) {
++        tempClient.withRegion(regionName)
+       }
+-      if (bucketRegion == "") {
+-        bucketRegion = region
++
++      // Get the bucket location using the proper client
++      var bucketRegion = regionName
++      try {
++        val location = tempClient.build().getBucketLocation(bucket)
++        bucketRegion = if (location == null || location.isEmpty) null else location
++      } catch {
++        case e: Exception =>
++          logger.info(f"Could not determine region for bucket $bucket, using provided region", e)
+       }
+-      initializeS3Client(configuration,
+-                         credentialsProvider,
+-                         awsS3ClientBuilder,
+-                         endpoint,
+-                         bucketRegion
+-                        )
+-    }
+ 
+-    private def initializeS3Client(
+-        configuration: ClientConfiguration,
+-        credentialsProvider: Option[AWSCredentialsProvider],
+-        awsS3ClientBuilder: AmazonS3ClientBuilder,
+-        endpoint: String,
+-        region: String = null
+-    ): AmazonS3 = {
+-      val builder = awsS3ClientBuilder
+-        .withClientConfiguration(configuration)
+-      val builderWithEndpoint =
+-        if (endpoint != null)
+-          builder.withEndpointConfiguration(
+-            new AwsClientBuilder.EndpointConfiguration(endpoint, region)
+-          )
+-        else if (region != null)
+-          builder.withRegion(region)
+-        else
+-          builder
+-      val builderWithCredentials = credentialsProvider match {
+-        case Some(cp) => builderWithEndpoint.withCredentials(cp)
+-        case None     => builderWithEndpoint
++      // Now create the final client with the correct region
++      val finalClient = AmazonS3ClientBuilder
++        .standard()
++        .withClientConfiguration(clientConfig)
++        .withPathStyleAccessEnabled(builder.isPathStyleAccessEnabled)
++
++      credentialsProvider.foreach(finalClient.withCredentials)
++
++      if (endpoint != null && !endpoint.isEmpty) {
++        finalClient.withEndpointConfiguration(
++          new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
++                                                                                  bucketRegion
++                                                                                 )
++        )
++      } else if (bucketRegion != null && !bucketRegion.isEmpty) {
++        finalClient.withRegion(bucketRegion)
++      }
++
++      val client = finalClient.build()
++
++      // Just to confirm bucket exists
++      var bucketExists = false
++      try {
++        client.headBucket(new HeadBucketRequest(bucket))
++        bucketExists = true
++      } catch {
++        case e: Exception =>
++          logger.info(f"Could not fetch info for bucket $bucket", e)
+       }
+-      builderWithCredentials.build
+-    }
+ 
+-    private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
+-      var request = new GetBucketLocationRequest(bucket)
+-      request = request.withSdkClientExecutionTimeout(TimeUnit.SECONDS.toMillis(1).intValue())
+-      val bucketRegion = client.getBucketLocation(request)
+-      Region.fromValue(bucketRegion).toAWSRegion().getName()
++      if (!bucketExists && (regionName == null || regionName.isEmpty)) {
++        throw new IllegalArgumentException(
++          s"""Could not access bucket "$bucket" and no region was provided"""
++        )
++      }
++
++      client
+     }
+   }
+ }
+ 
+-class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
++class S3RetryDeleteObjectsCondition extends RetryPolicy.RetryCondition {
+   private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
+-  private val XML_PARSE_BROKEN = "Failed to parse XML document"
+-
+-  private val clock = java.time.Clock.systemDefaultZone
+ 
+   override def shouldRetry(
+       originalRequest: AmazonWebServiceRequest,
+       exception: AmazonClientException,
+       retriesAttempted: Int
+   ): Boolean = {
+-    val now = clock.instant
+     exception match {
+-      case ce: SdkClientException =>
+-        if (ce.getMessage contains XML_PARSE_BROKEN) {
+-          logger.info(s"Retry $originalRequest @$now: Received non-XML: $ce")
+-        } else if (RetryUtils.isThrottlingException(ce)) {
+-          logger.info(s"Retry $originalRequest @$now: Throttled: $ce")
++      case s3e: AmazonS3Exception =>
++        if (s3e.getStatusCode == 429 || (s3e.getStatusCode >= 500 && s3e.getStatusCode < 600)) {
++          logger.info(s"Retry $originalRequest: Throttled or server error: $s3e")
++          true
+         } else {
+-          logger.info(s"Retry $originalRequest @$now: Other client exception: $ce")
++          logger.info(s"Don't retry $originalRequest: Other S3 exception: $s3e")
++          false
+         }
+-        true
+-      case e => {
+-        logger.info(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
+-        super.shouldRetry(originalRequest, exception, retriesAttempted)
+-      }
++      case e: Exception =>
++        logger.info(s"Don't retry $originalRequest: Non-S3 exception: $e")
++        false
+     }
+   }
+ }
+diff --git a/clients/spark/src/test/scala/io/treeverse/clients/LakeFSInputFormatSpec.scala b/clients/spark/src/test/scala/io/treeverse/clients/LakeFSInputFormatSpec.scala
+index b56c70af9..dbcf5e78e 100644
+--- a/clients/spark/src/test/scala/io/treeverse/clients/LakeFSInputFormatSpec.scala
++++ b/clients/spark/src/test/scala/io/treeverse/clients/LakeFSInputFormatSpec.scala
+@@ -13,14 +13,12 @@ import scala.collection.JavaConverters._
+ 
+ import scala.collection.mutable
+ import org.scalatest.OneInstancePerTest
+-import org.checkerframework.checker.units.qual.m
+ import org.apache.hadoop.fs.FileSystem
+ import org.apache.hadoop.fs.LocatedFileStatus
+ import org.apache.hadoop.fs.Path
+ import org.apache.hadoop.fs.BlockLocation
+ import org.apache.hadoop.fs.FileStatus
+ import org.apache.hadoop.fs.RemoteIterator
+-import org.apache.hadoop.fs.BatchedRemoteIterator
+ 
+ object LakeFSInputFormatSpec {
+   def getItem(rangeID: String): Item[RangeData] = new Item(
+diff --git a/clients/spark/src/test/scala/io/treeverse/clients/StorageUtilsSpec.scala b/clients/spark/src/test/scala/io/treeverse/clients/StorageUtilsSpec.scala
+index 3d9259a10..fa37521df 100644
+--- a/clients/spark/src/test/scala/io/treeverse/clients/StorageUtilsSpec.scala
++++ b/clients/spark/src/test/scala/io/treeverse/clients/StorageUtilsSpec.scala
+@@ -61,7 +61,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar
+         BUCKET_NAME
+       )
+ 
+-      server.getRequestCount should equal(1)
++      server.getRequestCount should equal(2)
+       val request: RecordedRequest = server.takeRequest()
+       initializedClient should not be null
+       initializedClient.getRegion.toString should equal(US_WEST_2)
+@@ -84,7 +84,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar
+         BUCKET_NAME
+       )
+ 
+-      server.getRequestCount should equal(1)
++      server.getRequestCount should equal(2)
+       val request: RecordedRequest = server.takeRequest()
+       initializedClient should not be null
+       initializedClient.getRegion.toString should equal(US_WEST_2)
+@@ -109,7 +109,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar
+         BUCKET_NAME
+       )
+ 
+-      server.getRequestCount should equal(1)
++      server.getRequestCount should equal(2)
+       val request: RecordedRequest = server.takeRequest()
+       initializedClient should not be null
+       initializedClient.getRegion.toString should be(null)
+@@ -130,7 +130,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar
+         US_WEST_2,
+         BUCKET_NAME
+       )
+-      server.getRequestCount should equal(1)
++      server.getRequestCount should equal(2)
+       val getLocationRequest: RecordedRequest = server.takeRequest()
+       initializedClient should not be null
+       initializedClient.getRegion.toString should equal(US_WEST_2)

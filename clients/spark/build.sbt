@@ -1,6 +1,6 @@
-lazy val projectVersion = "0.15.0"
+lazy val projectVersion = "0.15.0-demo-3"
 version := projectVersion
-lazy val hadoopVersion = "3.3.4"
+lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
 
@@ -55,7 +55,7 @@ libraryDependencies ++= Seq(
   "com.azure" % "azure-storage-blob" % "12.9.0",
   "com.azure" % "azure-storage-blob-batch" % "12.7.0",
   "com.azure" % "azure-identity" % "1.2.0",
-  "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.367" % "provided",
+  "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.569" % "provided",
   // Snappy is JNI :-(.  However it does claim to work with
   // ClassLoaders, and (even more importantly!) using a preloaded JNI
   // version will probably continue to work because the C language API
@@ -74,9 +74,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
   // Test with an up-to-date fasterxml.
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.2" % "test",
-  "com.storm-enroute" %% "scalameter" % "0.19" % "test",
-  "software.amazon.awssdk" % "s3" % "2.20.109",
-  "software.amazon.awssdk" % "auth" % "2.20.109"
+  "com.storm-enroute" %% "scalameter" % "0.19" % "test"
 )
 
 def rename(prefix: String) = ShadeRule.rename(prefix -> "io.lakefs.spark.shade.@0")
