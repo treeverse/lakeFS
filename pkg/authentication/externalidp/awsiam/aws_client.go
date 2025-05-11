@@ -91,7 +91,6 @@ func (p *AWSProvider) NewRequest() (*AWSIdentityTokenInfo, error) {
 		return &AWSIdentityTokenInfo{}, err
 	}
 	return tokenInfo, nil
-
 }
 
 func NewIdentityTokenInfo(creds *aws.Credentials, presignedURL string) (*AWSIdentityTokenInfo, error) {
