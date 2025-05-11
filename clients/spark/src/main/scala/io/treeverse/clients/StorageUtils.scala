@@ -96,13 +96,12 @@ object StorageUtils {
     ): AmazonS3 = {
       require(bucket.nonEmpty)
 
-      // First create a temp client to check bucket location
+      // Check bucket location
       val tempClient = AmazonS3ClientBuilder
         .standard()
         .withClientConfiguration(clientConfig)
         .withPathStyleAccessEnabled(true)
 
-      // Apply credentials if provided
       credentialsProvider.foreach(tempClient.withCredentials)
 
       // Configure endpoint or region
@@ -122,7 +121,6 @@ object StorageUtils {
       var bucketExists = false
 
       try {
-        // Check if bucket exists and get its region
         bucketExists = true
         val location = tempClient.build().getBucketLocation(bucket)
 
@@ -140,7 +138,6 @@ object StorageUtils {
         )
       }
 
-      // Now create the actual client with the bucket's region
       val client =
         initializeS3Client(clientConfig, credentialsProvider, builder, endpoint, bucketRegion)
       client
@@ -175,7 +172,6 @@ object StorageUtils {
         builder.withRegion(normalizedRegion)
       }
 
-      // Build the client
       builder.build()
     }
 
