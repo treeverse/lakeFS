@@ -127,22 +127,21 @@ object StorageUtils {
       // Use the provided builder
       builder.withClientConfiguration(clientConfig)
 
-      // Configure region if provided
-      if (regionName != null && !regionName.isEmpty) {
-        builder.withRegion(regionName)
-      }
+      // Configure credentials if provided
+      credentialsProvider.foreach(builder.withCredentials)
 
-      // Configure endpoint if provided
+      // Cannot set both region and endpoint configuration - must choose one
       if (endpoint != null && !endpoint.isEmpty) {
+        // If endpoint is provided, use endpointConfiguration with region
         builder.withEndpointConfiguration(
           new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(endpoint,
                                                                                   regionName
                                                                                  )
         )
+      } else if (regionName != null && !regionName.isEmpty) {
+        // If only region is provided, use withRegion
+        builder.withRegion(regionName)
       }
-
-      // Configure credentials if provided
-      credentialsProvider.foreach(builder.withCredentials)
 
       // Build the client
       builder.build()
