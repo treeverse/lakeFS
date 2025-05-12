@@ -35,6 +35,8 @@ const (
 	DatetimeFormat        = "20060102T150405Z"
 	CredentialTimeFormat  = "20060102"
 	DefaultSTSLoginExpire = 15 * time.Minute
+
+	mimLengthSplitCreds = 3
 )
 
 type AWSIdentityTokenInfo struct {
@@ -81,7 +83,7 @@ func ParsePresignedURL(presignedURL string) (*AWSIdentityTokenInfo, error) {
 	queryParams := parsedURL.Query()
 	credentials := queryParams.Get(AuthCredentialKey)
 	splitedCreds := strings.Split(credentials, "/")
-	if len(splitedCreds) < 3 {
+	if len(splitedCreds) < mimLengthSplitCreds {
 		return nil, fmt.Errorf("invalid credentials format: %s", credentials)
 	}
 	calculatedRegion := splitedCreds[2]
