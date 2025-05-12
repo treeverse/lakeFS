@@ -163,7 +163,7 @@ object StorageUtils {
             val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
             val stsProvider =
               new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
-                .withCredentials(new DefaultAWSCredentialsProviderChain())
+                .withLongLivedCredentialsProvider(new DefaultAWSCredentialsProviderChain())
                 .build()
 
             builderWithEndpoint.withCredentials(stsProvider)
