@@ -50,7 +50,7 @@ func newMPU(objectKey string) *mpu {
 }
 
 // get returns the concatenated data of all parts in the mpu.
-// assumed that the caller had already acquired the lock.
+// not thread safe: lock around calls.
 func (m *mpu) get() []byte {
 	buf := bytes.NewBuffer(nil)
 	keys := make([]int, 0, len(m.parts))

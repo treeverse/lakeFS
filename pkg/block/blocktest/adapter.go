@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 )
@@ -159,13 +160,14 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
 					prefix = tt.prefix
 				}
-
-				require.Lenf(t, results, filesAndFolders, "expected %d results, got %d", filesAndFolders, len(results))
 				for j := 0; j < filesAndFolders; j++ {
 					expectedResults = append(expectedResults, path.Join(prefix, fmt.Sprintf("test_file_%d", j)))
 				}
 			}
-			require.Equal(t, expectedResults, results)
+			// check that the results match the expected results
+			if diff := deep.Equal(expectedResults, results); diff != nil {
+				t.Errorf("Mismatch in expected results: %v", diff)
+			}
 		})
 	}
 }

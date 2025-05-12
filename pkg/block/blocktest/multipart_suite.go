@@ -5,9 +5,9 @@ import (
 	"context"
 	"io"
 	"slices"
-	"strconv"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -289,27 +289,8 @@ func getAndCheckContents(t *testing.T, ctx context.Context, adapter block.Adapte
 	require.NoError(t, err, "Get Object failed")
 	got, err := io.ReadAll(reader)
 	require.NoError(t, err, "ReadAll returned error")
-	requireEqualBigByteSlice(t, exp, got)
-}
-
-// compare two big bytearrays one slice at a time(so that we don't blow up the console on error)
-func requireEqualBigByteSlice(t *testing.T, exp, actual []byte) {
-	t.Helper()
-	require.Equal(t, len(exp), len(actual))
-
-	const sliceLen = 100
-	sliceCount := len(exp) / sliceLen
-	if len(exp)%sliceLen > 0 {
-		sliceCount++
-	}
-
-	for i := 0; i < sliceCount; i++ {
-		start := i * sliceLen
-		end := min((i+1)*sliceLen, len(exp))
-
-		expSlice := exp[start:end]
-		actualSlice := actual[start:end]
-		require.Equalf(t, expSlice, actualSlice, "Failed on slice "+strconv.Itoa(i+1)+"/"+strconv.Itoa(sliceCount))
+	if diff := deep.Equal(exp, got); diff != nil {
+		t.Errorf("Get returned different content: %v", diff)
 	}
 }
 
