@@ -905,8 +905,6 @@ github.com/nats-io/nuid v1.0.1/go.mod h1:19wcPz3Ph3q0Jbyiqsd0kePYG7A95tJPxeL+1OS
 github.com/ncw/swift v1.0.52/go.mod h1:23YIA4yWVnGwv2dQlN4bB7egfYX6YLn0Yo/S6zZO/ZM=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
-github.com/octarinesec/secret-detector v1.0.11 h1:+EkBkVwgByec+/TFfFrheiZcEa07BMfA6tTswt4ujzA=
-github.com/octarinesec/secret-detector v1.0.11/go.mod h1:1GciC4jz9uF6EtdsWUpE3PNM0gv92EY3tuTPGwNlNpQ=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.10.3/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
@@ -1059,18 +1057,6 @@ github.com/thanhpk/randstr v1.0.6 h1:psAOktJFD4vV9NEVb3qkhRSMvYh4ORRaj1+w/hn4B+o
 github.com/thanhpk/randstr v1.0.6/go.mod h1:M/H2P1eNLZzlDwAzpkkkUvoyNNMbzRGhESZuEQk3r0U=
 github.com/treeverse/delta-go v0.0.0-20250325160917-8c0ebb032f43 h1:Akw9T/gnKAbAZ363hFcs43496ft+4yEFMYQlgiKL2Es=
 github.com/treeverse/delta-go v0.0.0-20250325160917-8c0ebb032f43/go.mod h1:E7uPCvF9rw8UQt6uDMN05snxpD45/I/UXAZxzVIYTgI=
-github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20250505194829-76aa2e5fda8c h1:iGREtNz0zjeJopCNGsgCfqR9X9Sv2BAcYlT5AANXZY0=
-github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20250505194829-76aa2e5fda8c/go.mod h1:vUVQSq2UlCZaeLouvwtLwuj7/wTKfPi9ofrWHwbvt9U=
-github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20250505194829-76aa2e5fda8c h1:49Khuv+QLLoIOZ+t13qgvnwMhVb7BWRBSVGco90zR9o=
-github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20250505194829-76aa2e5fda8c/go.mod h1:w3fEsh6mlvjw9Z35rrEOXNnXA6VCvMr5AqqZqMipXTA=
-github.com/treeverse/lakefs/modules/block/factory v0.0.0-20250505194829-76aa2e5fda8c h1:UMTPqU+li74goChBIy6VnPvGNNxsuUSlnTCFIttKW+8=
-github.com/treeverse/lakefs/modules/block/factory v0.0.0-20250505194829-76aa2e5fda8c/go.mod h1:bYtQY05xiSm3g1jOq2GLZK6lL6sFz5GF1TvOLRDz9qI=
-github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250505194829-76aa2e5fda8c h1:4pd7Fo2KVQIm8XCILlrE7EzV383TRKfy83/eeBOec5k=
-github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250505194829-76aa2e5fda8c/go.mod h1:GFXmE0+H5eOozu66Pj8RhrULWQUrn19SUpD5QEb3JH8=
-github.com/treeverse/lakefs/modules/license/factory v0.0.0-20250505194829-76aa2e5fda8c h1:7BwZXbtRxzNxaHKt3z0coUvO8iE6t4E8atDeMHA1n1Y=
-github.com/treeverse/lakefs/modules/license/factory v0.0.0-20250505194829-76aa2e5fda8c/go.mod h1:qwWHkpoe1ycZPCOUdh8AUPb4AhjFY9cf8PkxUi0lAf8=
-github.com/treeverse/lakefs/webui v0.0.0-20250505194829-76aa2e5fda8c h1:MXasFu5W6Txvd0Z+3lQtF8SSbQAykfTQq1rHITCFPI8=
-github.com/treeverse/lakefs/webui v0.0.0-20250505194829-76aa2e5fda8c/go.mod h1:wYBH4vk8GMg/r2o3gqI3rrhv/6t2V4n/PV9tD/eYkHs=
 github.com/treeverse/secret-detector v0.0.0-20250429145544-8c655b974a5f h1:7FOJn/bWOYZWYVSnYqTWWQzrk//rYxVxoQIEJJMX3mA=
 github.com/treeverse/secret-detector v0.0.0-20250429145544-8c655b974a5f/go.mod h1:hqKBnS0lrpUZlrQLecveNbK7WCQdlVOzWo1yVmDoyvs=
 github.com/tsenart/vegeta/v12 v12.11.1 h1:Rbwe7Zxr7sJ+BDTReemeQalYPvKiSV+O7nwmUs20B3E=
