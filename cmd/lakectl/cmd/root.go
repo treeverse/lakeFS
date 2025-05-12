@@ -196,7 +196,7 @@ const (
 	defaultMaxRetryInterval = 30 * time.Second
 	defaultMinRetryInterval = 200 * time.Millisecond
 
-	defaultTokenTTL        = 3600 * time.Second
+	defaultTokenTTL        = 0 * time.Second
 	defaultURLPresignTTL   = 60 * time.Second
 	defaultRefreshInterval = 300 * time.Second
 )

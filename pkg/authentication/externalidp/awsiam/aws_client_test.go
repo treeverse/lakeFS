@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,30 +37,10 @@ func TestGetCreds_Success(t *testing.T) {
 		},
 	}
 
-	creds, err := GetCredsIfValid(context.Background(), &cfg)
+	creds, err := RetrieveCredentials(context.Background(), &cfg)
 	require.NoError(t, err)
 	require.Equal(t, expectedCreds.AccessKeyID, creds.AccessKeyID)
 	require.Equal(t, expectedCreds.SecretAccessKey, creds.SecretAccessKey)
-}
-
-func TestGetCreds_Expired(t *testing.T) {
-	expiredCreds := aws.Credentials{
-		AccessKeyID: "EXPIRED",
-		CanExpire:   true,
-		Expires:     time.Now().Add(-1 * time.Minute),
-	}
-
-	cfg := aws.Config{
-		Credentials: mockCredentialsProvider{
-			creds: expiredCreds,
-			err:   nil,
-		},
-	}
-
-	creds, err := GetCredsIfValid(context.Background(), &cfg)
-	require.Error(t, err)
-	require.Equal(t, ErrAWSCredentialsExpired, err)
-	require.Nil(t, creds)
 }
 
 func TestGetCreds_Failure(t *testing.T) {
@@ -69,7 +50,7 @@ func TestGetCreds_Failure(t *testing.T) {
 		},
 	}
 
-	creds, err := GetCredsIfValid(context.Background(), &cfg)
+	creds, err := RetrieveCredentials(context.Background(), &cfg)
 	require.Error(t, err)
 	require.EqualError(t, err, "failed to load creds")
 	require.Nil(t, creds)
@@ -88,8 +69,8 @@ func TestGetPresignedURL_Integration(t *testing.T) {
 			err:   nil,
 		},
 	}
-	credits, err := GetCredsIfValid(context.TODO(), &cfg)
-	require.NoError(t, err)
+	stsClient := sts.NewFromConfig(cfg)
+	require.NotNil(t, stsClient)
 
 	params := &IAMAuthParams{
 		TokenRequestHeaders: map[string]string{
@@ -98,7 +79,7 @@ func TestGetPresignedURL_Integration(t *testing.T) {
 		URLPresignTTL: 10 * time.Minute,
 	}
 
-	url, err := GeneratePresignedURL(context.TODO(), params, &cfg, credits)
+	url, err := PresignGetCallerIdentityFromAuthParams(context.TODO(), params, stsClient)
 	fmt.Println("url!!", url)
 	require.NoError(t, err)
 	require.Contains(t, url, "sts.")            // loosely validates STS domain
@@ -119,10 +100,7 @@ func TestGeneratePresignedURL_Integration(t *testing.T) {
 			err:   nil,
 		},
 	}
-
-	creds, err := GetCredsIfValid(context.Background(), &cfg)
-	require.NoError(t, err)
-	require.False(t, creds.Expired())
+	stsClient := sts.NewFromConfig(cfg)
 
 	params := &IAMAuthParams{
 		TokenRequestHeaders: map[string]string{
@@ -132,7 +110,7 @@ func TestGeneratePresignedURL_Integration(t *testing.T) {
 		URLPresignTTL: 6 * time.Minute,
 	}
 
-	url, err := GeneratePresignedURL(context.Background(), params, &cfg, creds)
+	url, err := PresignGetCallerIdentityFromAuthParams(context.TODO(), params, stsClient)
 	require.NoError(t, err)
 	require.NotEmpty(t, url)
 
