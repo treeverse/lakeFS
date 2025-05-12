@@ -34,7 +34,7 @@ jobs:
           go work sync
           echo "Git status after go work sync:"
           git status
-          [ -n "$(git status --porcelain)" ] && exit 1 || exit 0
+          [ ! -n "$(git status --porcelain)" ]
       - name: Checks validator
         run: make checks-validator
 
