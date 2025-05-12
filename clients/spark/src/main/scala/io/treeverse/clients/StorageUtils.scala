@@ -1,11 +1,6 @@
 package io.treeverse.clients
 
 import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.auth.{
-  AWSStaticCredentialsProvider,
-  BasicAWSCredentials,
-  BasicSessionCredentials
-}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
@@ -96,7 +91,7 @@ object StorageUtils {
 
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[_], // Use Any type to avoid casting
+        credentialsProvider: Option[AWSCredentialsProvider],
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String,
@@ -104,19 +99,8 @@ object StorageUtils {
     ): AmazonS3 = {
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
-
-      // Create a safe credentials provider without any casting
-      val safeProvider = credentialsProvider match {
-        case Some(provider) =>
-          logger.info(s"Processing credential provider of type: ${provider.getClass.getName}")
-          extractCredentialsAsStaticProvider(provider)
-        case None =>
-          logger.info("No credential provider specified")
-          None
-      }
-
-      val client = buildS3Client(configuration, safeProvider, awsS3ClientBuilder, endpoint)
-
+      val client =
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
@@ -133,99 +117,15 @@ object StorageUtils {
       if (bucketRegion == "") {
         bucketRegion = region
       }
-
-      buildS3Client(configuration, safeProvider, awsS3ClientBuilder, endpoint, bucketRegion)
+      initializeS3Client(configuration,
+                         credentialsProvider,
+                         awsS3ClientBuilder,
+                         endpoint,
+                         bucketRegion
+                        )
     }
 
-    /** Extract credentials and return a safe static provider
-     */
-    private def extractCredentialsAsStaticProvider(
-        provider: Any
-    ): Option[AWSCredentialsProvider] = {
-      if (provider == null) {
-        logger.warn("Provider is null")
-        return None
-      }
-
-      logger.info(s"Extracting credentials from provider type: ${provider.getClass.getName}")
-
-      try {
-        // If it's already an AWSCredentialsProvider, try to get credentials directly
-        if (provider.isInstanceOf[AWSCredentialsProvider]) {
-          try {
-            // Use pattern matching to avoid casting
-            provider match {
-              case awsProvider: AWSCredentialsProvider =>
-                val creds = awsProvider.getCredentials
-                if (creds != null) {
-                  logger.info("Successfully extracted credentials from AWSCredentialsProvider")
-                  return Some(new AWSStaticCredentialsProvider(creds))
-                }
-            }
-          } catch {
-            case e: Exception =>
-              logger.info(s"Failed to get credentials directly: ${e.getMessage}")
-            // Continue to try reflection approach
-          }
-        }
-
-        // Helper function to safely extract a string value using reflection
-        def safeGetString(obj: Any, methodNames: String*): String = {
-          if (obj == null) return ""
-
-          for (methodName <- methodNames) {
-            try {
-              val method = obj.getClass.getMethod(methodName)
-              val result = method.invoke(obj)
-              if (result != null) {
-                return result.toString
-              }
-            } catch {
-              case _: NoSuchMethodException => // Try next method
-              case e: Exception =>
-                logger.debug(
-                  s"Failed to invoke $methodName on ${obj.getClass.getName}: ${e.getMessage}"
-                )
-            }
-          }
-          "" // All methods failed
-        }
-
-        val credentials =
-          try {
-            val getCredMethod = provider.getClass.getMethod("getCredentials")
-            getCredMethod.invoke(provider)
-          } catch {
-            case e: Exception =>
-              logger.debug(s"Failed to get credentials via reflection: ${e.getMessage}")
-              provider
-          }
-
-        val accessKey =
-          safeGetString(credentials, "getUserName", "getAccessKey", "getAWSAccessKeyId")
-        val secretKey = safeGetString(credentials, "getPassword", "getSecretKey", "getAWSSecretKey")
-        val token = safeGetString(credentials, "getToken", "getSessionToken")
-
-        if (accessKey.isEmpty || secretKey.isEmpty) {
-          logger.warn("Failed to extract valid credentials - missing access key or secret key")
-          None
-        } else {
-          val awsCredentials = if (token.nonEmpty) {
-            new BasicSessionCredentials(accessKey, secretKey, token)
-          } else {
-            new BasicAWSCredentials(accessKey, secretKey)
-          }
-
-          Some(new AWSStaticCredentialsProvider(awsCredentials))
-        }
-      } catch {
-        case e: Exception =>
-          logger.error(s"Failed to extract credentials: ${e.getMessage}", e)
-          None
-      }
-    }
-
-    private def buildS3Client(
+    private def initializeS3Client(
         configuration: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
         awsS3ClientBuilder: AmazonS3ClientBuilder,
@@ -243,17 +143,11 @@ object StorageUtils {
           builder.withRegion(region)
         else
           builder
-
-      // Add credentials if available, otherwise use default
-      val finalBuilder = credentialsProvider match {
-        case Some(provider) =>
-          logger.info(s"Using static credentials provider")
-          builderWithEndpoint.withCredentials(provider)
-        case None =>
-          logger.info("No credentials provider available, using default")
-          builderWithEndpoint
+      val builderWithCredentials = credentialsProvider match {
+        case Some(cp) => builderWithEndpoint.withCredentials(cp)
+        case None     => builderWithEndpoint
       }
-      finalBuilder.build
+      builderWithCredentials.build
     }
 
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
