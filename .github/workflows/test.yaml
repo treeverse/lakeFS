@@ -29,6 +29,12 @@ jobs:
         run: |
           make gen
           make validate-clients-untracked-files
+      - name: Ensure Go workspace is synced
+        run: |
+          go work sync
+          echo "Git status after go work sync:"
+          git status
+          [ -n "$(git status --porcelain)" ] && exit 1 || exit 0
       - name: Checks validator
         run: make checks-validator
 
