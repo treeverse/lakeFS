@@ -102,12 +102,12 @@ func TestMultipartUploadWithMD5(t *testing.T) {
 	// Upload first part
 	partResp1, err := adapter.UploadPart(ctx, obj, int64(len(content[:10])), bytes.NewReader(content[:10]), uploadID, 1)
 	require.NoError(t, err)
-	require.Equal(t, calculateMD5(content[:10]), partResp1.ETag)
+	require.Equal(t, calcETag(content[:10]), partResp1.ETag)
 
 	// Upload second part
 	partResp2, err := adapter.UploadPart(ctx, obj, int64(len(content[10:])), bytes.NewReader(content[10:]), uploadID, 2)
 	require.NoError(t, err)
-	require.Equal(t, calculateMD5(content[10:]), partResp2.ETag)
+	require.Equal(t, calcETag(content[10:]), partResp2.ETag)
 
 	// Complete multipart upload
 	completion := &block.MultipartUploadCompletion{
@@ -130,8 +130,7 @@ func TestMultipartUploadWithMD5(t *testing.T) {
 	require.Equal(t, content, readContent)
 }
 
-func calculateMD5(data []byte) string {
-	hash := md5.New()
-	hash.Write(data)
-	return hex.EncodeToString(hash.Sum(nil))
+func calcETag(data []byte) string {
+	etag := md5.Sum(data) //nolint:gosec
+	return hex.EncodeToString(etag[:])
 }
