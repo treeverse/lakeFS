@@ -476,7 +476,7 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 		return nil, fmt.Errorf("object.Attrs: %w", err)
 	}
 	return &block.UploadPartResponse{
-		ETag: attrs.Etag,
+		ETag: hex.EncodeToString(attrs.MD5),
 	}, nil
 }
 
@@ -544,7 +544,8 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}
 	lg.Debug("completed multipart upload")
 	return &block.CompleteMultiPartUploadResponse{
-		ETag:          hex.EncodeToString(targetAttrs.MD5),
+		// composite does not return MD5 - it's OK because S3 complete multipart upload does not return MD5 either
+		ETag:          targetAttrs.Etag,
 		MTime:         &targetAttrs.Created,
 		ContentLength: targetAttrs.Size,
 	}, nil
