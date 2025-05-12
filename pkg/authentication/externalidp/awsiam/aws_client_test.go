@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -77,10 +76,19 @@ func TestGetCreds_Failure(t *testing.T) {
 }
 
 func TestGetPresignedURL_Integration(t *testing.T) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	require.NoError(t, err)
+	creds := aws.Credentials{
+		AccessKeyID: "ahalan",
+		CanExpire:   true,
+		Expires:     time.Now().Add(+1 * time.Minute),
+	}
 
-	creds, err := GetCredsIfValid(context.TODO(), &cfg)
+	cfg := aws.Config{
+		Credentials: mockCredentialsProvider{
+			creds: creds,
+			err:   nil,
+		},
+	}
+	credits, err := GetCredsIfValid(context.TODO(), &cfg)
 	require.NoError(t, err)
 
 	params := &IAMAuthParams{
@@ -90,7 +98,7 @@ func TestGetPresignedURL_Integration(t *testing.T) {
 		URLPresignTTL: 10 * time.Minute,
 	}
 
-	url, err := GeneratePresignedURL(context.TODO(), params, &cfg, creds)
+	url, err := GeneratePresignedURL(context.TODO(), params, &cfg, credits)
 	fmt.Println("url!!", url)
 	require.NoError(t, err)
 	require.Contains(t, url, "sts.")            // loosely validates STS domain
@@ -98,7 +106,7 @@ func TestGetPresignedURL_Integration(t *testing.T) {
 	require.Contains(t, url, "X-Amz-Signature") // ensures it's signed
 }
 func TestGeneratePresignedURL_Integration(t *testing.T) {
-	expiredCreds := aws.Credentials{
+	validCreds := aws.Credentials{
 		AccessKeyID: "valid",
 		CanExpire:   true,
 		Expires:     time.Now().Add(+1 * time.Minute),
@@ -107,7 +115,7 @@ func TestGeneratePresignedURL_Integration(t *testing.T) {
 	cfg := aws.Config{
 		Region: "us-east-1",
 		Credentials: mockCredentialsProvider{
-			creds: expiredCreds,
+			creds: validCreds,
 			err:   nil,
 		},
 	}
