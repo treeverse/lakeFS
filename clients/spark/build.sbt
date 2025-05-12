@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.15.0-demo-8"
+lazy val projectVersion = "0.15.0-demo-9"
 version := projectVersion
 lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
