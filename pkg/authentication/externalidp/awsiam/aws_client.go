@@ -2,6 +2,7 @@ package awsiam
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,6 +15,8 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/uuid"
 )
+
+var ErrInvalidCredentialsFormat = errors.New("missing required parts in credentials")
 
 const (
 	AuthVersion       = "2011-06-15"
@@ -84,7 +87,7 @@ func ParsePresignedURL(presignedURL string) (*AWSIdentityTokenInfo, error) {
 	credentials := queryParams.Get(AuthCredentialKey)
 	splitedCreds := strings.Split(credentials, "/")
 	if len(splitedCreds) < mimLengthSplitCreds {
-		return nil, fmt.Errorf("invalid credentials format: %s", credentials)
+		return nil, fmt.Errorf("invalid credentials format: %w", ErrInvalidCredentialsFormat)
 	}
 	calculatedRegion := splitedCreds[2]
 	return &AWSIdentityTokenInfo{
