@@ -81,14 +81,14 @@ func (p *AWSProvider) GenerateIdentityTokenInfo(cfg aws.Config) (*AWSIdentityTok
 	if err != nil {
 		return &AWSIdentityTokenInfo{}, err
 	}
-	tokenInfo, err := GenerateIdentityTokenInfo(creds, url)
+	tokenInfo, err := ParsePresignedURL(creds, url)
 	if err != nil {
 		return &AWSIdentityTokenInfo{}, err
 	}
 	return tokenInfo, nil
 }
 
-func GenerateIdentityTokenInfo(creds *aws.Credentials, presignedURL string) (*AWSIdentityTokenInfo, error) {
+func ParsePresignedURL(creds *aws.Credentials, presignedURL string) (*AWSIdentityTokenInfo, error) {
 	parsedURL, err := url.Parse(presignedURL)
 	if err != nil {
 		return nil, err
