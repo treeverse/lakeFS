@@ -1,6 +1,10 @@
 package io.treeverse.clients
 
-import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.auth.{
+  AWSCredentialsProvider,
+  DefaultAWSCredentialsProviderChain,
+  STSAssumeRoleSessionCredentialsProvider
+}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
@@ -11,6 +15,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import java.util.UUID
 import scala.util.Try
 
 object StorageUtils {
@@ -92,7 +97,7 @@ object StorageUtils {
 
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[Any],
+        credentialsProvider: Option[Any], // Changed to Any to accept any credential type
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String,
@@ -128,13 +133,14 @@ object StorageUtils {
 
     private def initializeS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[Any],
+        credentialsProvider: Option[Any], // Changed to Any
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String = null
     ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
+
       val builderWithEndpoint =
         if (endpoint != null)
           builder.withEndpointConfiguration(
@@ -145,17 +151,42 @@ object StorageUtils {
         else
           builder
 
-      // Handle credentials without casting to avoid ClassCastException
-      val builderWithCredentials = credentialsProvider match {
-        case Some(provider) if provider.isInstanceOf[AWSCredentialsProvider] =>
-          // Use if it's already an AWS SDK provider
-          builderWithEndpoint.withCredentials(provider.asInstanceOf[AWSCredentialsProvider])
-        case _ =>
-          // Otherwise, use the DefaultAWSCredentialsProviderChain
-          // This will use the same chain that Hadoop is using for the assumed role
+      // Check for Hadoop's assumed role configuration
+      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
+
+      // Apply credentials based on configuration
+      val builderWithCredentials =
+        if (roleArn != null && !roleArn.isEmpty) {
+          // If we have a role ARN configured, assume that role
+          logger.info(s"Assuming role: $roleArn for S3 client")
+          try {
+            val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
+            val stsProvider =
+              new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
+                .withCredentials(new DefaultAWSCredentialsProviderChain())
+                .build()
+
+            builderWithEndpoint.withCredentials(stsProvider)
+          } catch {
+            case e: Exception =>
+              logger.warn(s"Failed to assume role $roleArn: ${e.getMessage}", e)
+              logger.info("Falling back to DefaultAWSCredentialsProviderChain")
+              builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
+          }
+        } else if (
+          credentialsProvider.isDefined && credentialsProvider.get
+            .isInstanceOf[AWSCredentialsProvider]
+        ) {
+          // Use standard AWSCredentialsProvider if available
+          builderWithEndpoint.withCredentials(
+            credentialsProvider.get.asInstanceOf[AWSCredentialsProvider]
+          )
+        } else {
+          // Use default credential chain
           logger.info("Using DefaultAWSCredentialsProviderChain for S3 client")
           builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
-      }
+        }
+
       builderWithCredentials.build
     }
 
