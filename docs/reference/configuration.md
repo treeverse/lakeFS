@@ -242,7 +242,7 @@ Configuration section when using `database.type="local"`
 
 An object describing the local (on-disk) cache of metadata from permanent storage.
 * `committed.local_cache.size_bytes` (`int` : `1073741824`) - bytes for local cache to use on disk.  The cache may use more storage for short periods of time.
-* `committed.local_cache.dir` (`string`, `~/lakefs/local_tier`) - directory to store local cache.
+* `committed.local_cache.dir` (`string`, `~/lakefs/data/cache`) - directory to store local cache.
 * `committed.local_cache.range_proportion` (`float` : `0.9`) - proportion of local cache to
   use for storing ranges (leaves of committed metadata storage).
 * `committed.local_cache.range.open_readers` (`int` : `500`) - maximal number of unused open
