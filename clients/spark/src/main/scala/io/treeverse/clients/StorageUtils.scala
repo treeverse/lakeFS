@@ -1,6 +1,7 @@
 package io.treeverse.clients
 
 import com.amazonaws.auth.{
+  AWSCredentials,
   AWSCredentialsProvider,
   DefaultAWSCredentialsProviderChain,
   STSAssumeRoleSessionCredentialsProvider
@@ -96,7 +97,9 @@ object StorageUtils {
 
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[Any],
+        credentialsProvider: Option[
+          Any
+        ], // Generic type to accept both EMR 6.9.0 and 7.0.0 credential providers
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String,
@@ -104,6 +107,11 @@ object StorageUtils {
     ): AmazonS3 = {
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
+
+      // Check for Hadoop's assumed role configuration (common in EMR 7.0.0)
+      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
+      val usingAssumedRole = roleArn != null && !roleArn.isEmpty
+
       val client =
         initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
       var bucketRegion =
@@ -140,59 +148,70 @@ object StorageUtils {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
       val builderWithEndpoint =
-        if (endpoint != null)
+        if (endpoint != null && !endpoint.isEmpty)
           builder.withEndpointConfiguration(
             new AwsClientBuilder.EndpointConfiguration(endpoint, region)
           )
-        else if (region != null)
+        else if (region != null && !region.isEmpty)
           builder.withRegion(region)
         else
           builder
 
-      // Check for Hadoop's assumed role configuration
-      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
+      // Detection for credential provider type with version-adaptive logic
+      val builderWithCredentials = credentialsProvider match {
+        case Some(provider) if provider.isInstanceOf[AWSCredentialsProvider] =>
+          // EMR 6.9.0 path - direct SDK v1 credential provider
+          logger.info("Using AWS SDK v1 credentials provider directly")
+          builderWithEndpoint.withCredentials(provider.asInstanceOf[AWSCredentialsProvider])
 
-      // Apply credentials based on configuration
-      val builderWithCredentials =
-        if (roleArn != null && !roleArn.isEmpty) {
-          // If we have a role ARN configured, assume that role
-          logger.info(s"Assuming role: $roleArn for S3 client")
-          try {
-            val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
-            val stsProvider =
-              new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
-                .withLongLivedCredentialsProvider(new DefaultAWSCredentialsProviderChain())
-                .build()
+        case Some(provider) if provider.getClass.getName.contains("hadoop.fs.s3a.auth") =>
+          // EMR 7.0.0 path - Hadoop credential provider
+          handleHadoopCredentials(builderWithEndpoint, provider)
 
-            builderWithEndpoint.withCredentials(stsProvider)
-          } catch {
-            case e: Exception =>
-              logger.warn(s"Failed to assume role $roleArn: ${e.getMessage}", e)
-              logger.info("Falling back to DefaultAWSCredentialsProviderChain")
-              builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
-          }
-        } else if (
-          credentialsProvider.isDefined && credentialsProvider.get
-            .isInstanceOf[AWSCredentialsProvider]
-        ) {
-          // Use standard AWSCredentialsProvider if available
-          builderWithEndpoint.withCredentials(
-            credentialsProvider.get.asInstanceOf[AWSCredentialsProvider]
-          )
-        } else {
-          // Use default credential chain
-          logger.info("Using DefaultAWSCredentialsProviderChain for S3 client")
+        case _ =>
+          // Default fallback path
+          logger.info("Using DefaultAWSCredentialsProviderChain")
           builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
-        }
-
+      }
       builderWithCredentials.build
+    }
+
+    // Helper method for Hadoop credential handling (EMR 7.0.0 compatibility)
+    private def handleHadoopCredentials(
+        builder: AmazonS3ClientBuilder,
+        provider: Any
+    ): AmazonS3ClientBuilder = {
+      // Check for assumed role configuration
+      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
+      if (roleArn != null && !roleArn.isEmpty) {
+        // Role-based auth (use our STS provider)
+        logger.info(s"Assuming role: $roleArn for S3 client")
+        try {
+          val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
+          val stsProvider =
+            new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
+              .withLongLivedCredentialsProvider(new DefaultAWSCredentialsProviderChain())
+              .build()
+
+          builder.withCredentials(stsProvider)
+        } catch {
+          case e: Exception =>
+            logger.warn(s"Failed to assume role $roleArn: ${e.getMessage}", e)
+            logger.info("Falling back to DefaultAWSCredentialsProviderChain")
+            builder.withCredentials(new DefaultAWSCredentialsProviderChain())
+        }
+      } else {
+        // Fall back to default credential chain
+        logger.info("Using DefaultAWSCredentialsProviderChain (Hadoop provider with no role)")
+        builder.withCredentials(new DefaultAWSCredentialsProviderChain())
+      }
     }
 
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
       var request = new GetBucketLocationRequest(bucket)
       request = request.withSdkClientExecutionTimeout(TimeUnit.SECONDS.toMillis(1).intValue())
       val bucketRegion = client.getBucketLocation(request)
-      Region.fromValue(bucketRegion).toAWSRegion().getName()
+      Try(Region.fromValue(bucketRegion).toAWSRegion().getName()).getOrElse("")
     }
   }
 }
