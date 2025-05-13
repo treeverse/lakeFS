@@ -1,7 +1,6 @@
 package io.treeverse.clients
 
 import com.amazonaws.auth.{
-  AWSCredentials,
   AWSCredentialsProvider,
   DefaultAWSCredentialsProviderChain,
   STSAssumeRoleSessionCredentialsProvider
