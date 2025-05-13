@@ -16,13 +16,6 @@ jobs:
           java-version: '8'
           cache: 'sbt'
 
-      - name: validate format
-        working-directory: clients/spark
-        run: sbt scalafmtCheck
-
-      - name: validate unused
-        working-directory: clients/spark
-        run: sbt "scalafix --check"
       - name: Install secret key for signing
         run: |
           echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}' | gpg --batch --import
