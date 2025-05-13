@@ -9,15 +9,12 @@ import com.amazonaws.auth.{
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws.services.s3.model.{HeadBucketRequest, AmazonS3Exception}
+import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.amazonaws.AmazonWebServiceRequest
 import com.amazonaws.AmazonClientException
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
-import java.util.concurrent.TimeUnit
-import java.util.UUID
-import scala.util.Try
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
