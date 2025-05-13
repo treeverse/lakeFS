@@ -7,7 +7,7 @@ import lakefs_sdk
 import lakefs.repository
 from lakefs import config as client_config
 
-TEST_SERVER = "https://test_server/api/v1"
+TEST_SERVER = "https://test_server"
 TEST_ACCESS_KEY_ID = "test_access_key_id"
 TEST_SECRET_ACCESS_KEY = "test_secret_access_key"
 TEST_CONFIG = f'''

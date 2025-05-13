@@ -19,7 +19,7 @@ from tests.utests.common import (
     lakectl_no_config_context,
     env_var_context,
     expect_exception_context,
-    TEST_SERVER,
+    TEST_SERVER, TEST_ENDPOINT_PATH,
 )
 
 MOCK_PRESIGNED_URL = """
@@ -204,7 +204,7 @@ class TestAuthenticationFlow:
                 clt = client.Client()
 
                 # Verify credentials from environment
-                assert clt.config.host == TEST_SERVER
+                assert clt.config.host == TEST_SERVER + TEST_ENDPOINT_PATH
                 assert clt.config.username == "env_access_key"
                 assert clt.config.password == "env_secret_key"
                 assert clt.config.get_auth_type() == ClientConfig.AuthType.CREDENTIALS
@@ -222,7 +222,7 @@ class TestAuthenticationFlow:
                 clt = client.Client()
 
                 # Verify session token from environment
-                assert clt.config.host == TEST_SERVER
+                assert clt.config.host == TEST_SERVER + TEST_ENDPOINT_PATH
                 assert clt.config.access_token == "env_session_token"
                 assert clt.config.get_auth_type() == ClientConfig.AuthType.SESSION_TOKEN
 
