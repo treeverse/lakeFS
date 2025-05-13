@@ -101,7 +101,7 @@ class Client:
             iam_provider = self._conf.get_iam_provider()
             if iam_provider.type is ClientConfig.ProviderType.AWS_IAM:
                 # boto3 session lazy loading (only if an AWS IAM provider is used)
-                import boto3
+                import boto3 # pylint: disable=import-outside-toplevel, import-error
                 self._session = boto3.Session()
                 lakefs_host = urlparse(self._conf.host).hostname
                 self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
@@ -156,6 +156,17 @@ class Client:
         """
         return self.storage_config_by_id()
 
+    @property
+    def reset_time(self):
+        """
+        The time when the access token will expire.
+        """
+        return self._reset_token_time
+
+    @reset_time.setter
+    def reset_time(self, time: datetime):
+        self._reset_token_time = time
+
     def storage_config_by_id(self, storage_id=SINGLE_STORAGE_ID):
         """
         Returns lakeFS SDK storage config object, defaults to a single storage ID.
@@ -203,7 +214,7 @@ def from_aws_role(
         aws_provider_pros
     )
     client.config.access_token = access_token
-    client._reset_token_time = reset_time
+    client.reset_time = reset_time
     return client
 
 def from_web_identity(code: str, state: str, redirect_uri: str, ttl_seconds: int = 3600, **kwargs) -> Client:

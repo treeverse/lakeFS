@@ -74,7 +74,7 @@ class ClientConfig(Configuration):
         Enum for the supported authentication provider types
         """
         AWS_IAM = "aws_iam"
-        Unknown = "unknown"
+        UNKNOWN = "unknown"
 
     class AWSIAMProviderConfig(LenientNamedTuple):
         """
@@ -128,10 +128,10 @@ class ClientConfig(Configuration):
                         self.credentials = ClientConfig.Credentials(**data["credentials"])
                         self.username = self.credentials.access_key_id
                         self.password = self.credentials.secret_access_key
-                    except Exception:
+                    except TypeError:
                         pass
                 self._config_data = data
-        except Exception:
+        except FileNotFoundError:
             self._config_data = None
 
     def _load_from_environment(self):
@@ -198,72 +198,71 @@ def get_iam_provider_from_env_or_file(data: Optional[Dict] = None) -> Optional[C
     :param data: Optional config data from YAML file
     :return: IAMProvider if configured, None otherwise
     """
-    # Check if provider type is set in environment
-    provider_type = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_TYPE)
-
-    if provider_type is None and data:
-        if not (data.get("credentials") and
-                data["credentials"].get("provider") and
-                data["credentials"]["provider"].get("type")):
-            return None  # No provider config in file
-
-        provider = data["credentials"]["provider"]
-        provider_type = provider["type"]
-
-    if provider_type is None:
+    provider_type = _get_provider_type(data)
+    if not provider_type:
         return None
+
     if provider_type not in SUPPORTED_IAM_PROVIDERS:
         raise UnsupportedCredentialsProviderType(provider_type)
 
-    env_token_ttl = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_TTL_SECONDS)
-    env_url_ttl = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_URL_PRESIGN_TTL_SECONDS)
-    env_headers = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS)
-
-    # Set default values
-    token_ttl_seconds = int(_DEFAULT_IAM_TOKEN_TTL_SECONDS)
-    url_presign_ttl_seconds = int(_DEFAULT_IAM_URL_PRESIGN_TTL_SECONDS)
-    token_request_headers = None
-    # Set values from yaml config file if available
-    if data and provider_type in data["credentials"]["provider"]:
-        file_config = data["credentials"]["provider"][provider_type]
-        if file_config:
-            try:
-                if "token_ttl_seconds" in file_config:
-                    token_ttl_seconds = int(file_config["token_ttl_seconds"])
-            except (ValueError, TypeError):
-                pass
-
-            try:
-                if "url_presign_ttl_seconds" in file_config:
-                    url_presign_ttl_seconds = int(file_config["url_presign_ttl_seconds"])
-            except (ValueError, TypeError):
-                pass
-
-            if "token_request_headers" in file_config:
-                token_request_headers = file_config["token_request_headers"]
-    # Environment variables override config file values if specified
-    if env_token_ttl is not None:
-        try:
-            token_ttl_seconds = int(env_token_ttl)
-        except (ValueError, TypeError):
-            pass
-    if env_url_ttl is not None:
-        try:
-            url_presign_ttl_seconds = int(env_url_ttl)
-        except (ValueError, TypeError):
-            pass
-    if env_headers is not None:
-        token_request_headers = env_headers
-
     if provider_type == "aws_iam":
-        aws_config = ClientConfig.AWSIAMProviderConfig(
-            token_ttl_seconds=token_ttl_seconds,
-            url_presign_ttl_seconds=url_presign_ttl_seconds,
-            token_request_headers=token_request_headers
-        )
+        aws_config = _get_aws_iam_config(data)
         return ClientConfig.IAMProvider(
             type=ClientConfig.ProviderType.AWS_IAM,
             aws_iam=aws_config
         )
 
     return None
+
+def _get_provider_type(data: Optional[Dict] = None) -> Optional[str]:
+    """Extract provider type from environment or config data."""
+    provider_type = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_TYPE)
+    if provider_type:
+        return provider_type
+    if data and data.get("credentials", {}).get("provider", {}).get("type"):
+        return data["credentials"]["provider"]["type"]
+
+    return None
+
+def _get_aws_iam_config(data: Optional[Dict] = None) -> ClientConfig.AWSIAMProviderConfig:
+    """Build AWS IAM provider configuration from environment and config file."""
+    env_token_ttl = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_TTL_SECONDS)
+    env_url_ttl = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_URL_PRESIGN_TTL_SECONDS)
+    env_headers = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS)
+
+    # Default values
+    token_ttl_seconds = int(_DEFAULT_IAM_TOKEN_TTL_SECONDS)
+    url_presign_ttl_seconds = int(_DEFAULT_IAM_URL_PRESIGN_TTL_SECONDS)
+    token_request_headers = None
+
+    if (data and "credentials" in data and
+            "provider" in data["credentials"] and
+            "aws_iam" in data["credentials"]["provider"]):
+        file_config = data["credentials"]["provider"]["aws_iam"]
+        if file_config:
+            token_ttl_seconds = _safe_int_or_default(file_config.get("token_ttl_seconds"), token_ttl_seconds)
+            url_presign_ttl_seconds = _safe_int_or_default(
+                file_config.get("url_presign_ttl_seconds"), url_presign_ttl_seconds)
+            if "token_request_headers" in file_config:
+                token_request_headers = file_config["token_request_headers"]
+
+    # Environment variables override
+    token_ttl_seconds = _safe_int_or_default(env_token_ttl, token_ttl_seconds)
+    url_presign_ttl_seconds = _safe_int_or_default(env_url_ttl, url_presign_ttl_seconds)
+
+    if env_headers is not None:
+        token_request_headers = env_headers
+
+    return ClientConfig.AWSIAMProviderConfig(
+        token_ttl_seconds=token_ttl_seconds,
+        url_presign_ttl_seconds=url_presign_ttl_seconds,
+        token_request_headers=token_request_headers
+    )
+
+def _safe_int_or_default(value: Optional[str], default: int) -> int:
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
