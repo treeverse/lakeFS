@@ -11,7 +11,6 @@ from threading import Lock
 from typing import Optional
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
-from boto3 import Session
 
 import lakefs_sdk
 from lakefs_sdk.client import LakeFSClient
@@ -19,7 +18,7 @@ from lakefs_sdk.client import LakeFSClient
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NotAuthorizedException, ServerException, api_exception_handler
 from lakefs.models import ServerStorageConfiguration
-from lakefs.auth_utils import access_token_from_aws_iam_role
+from lakefs.auth import access_token_from_aws_iam_role
 
 
 if TYPE_CHECKING:
@@ -95,18 +94,20 @@ class Client:
                                     header_value='python-lakefs')
         self._server_conf = None
         self._reset_token_time = None
-        self._boto3_session = None
+        self._session = None
 
         # Initialize auth if using IAM provider
         if self._conf.get_auth_type() is ClientConfig.AuthType.IAM:
             iam_provider = self._conf.get_iam_provider()
             if iam_provider.type is ClientConfig.ProviderType.AWS_IAM:
-                self._boto3_session = Session()
+                # boto3 session lazy loading (only if an AWS IAM provider is used)
+                import boto3
+                self._session = boto3.Session()
                 lakefs_host = urlparse(self._conf.host).hostname
                 self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
                     self._client,
                     lakefs_host,
-                    self._boto3_session,
+                    self._session,
                     iam_provider.aws_iam
                 )
 
@@ -130,7 +131,7 @@ class Client:
                 self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(
                     self._client,
                     lakefs_host,
-                    self._boto3_session,
+                    self._session,
                     iam_provider.aws_iam
                 )
 
