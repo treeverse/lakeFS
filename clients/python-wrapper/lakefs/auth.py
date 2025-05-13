@@ -7,11 +7,9 @@ Includes authentication util functions
 import base64
 import datetime
 import json
-from typing import Any, Optional, Dict
+from typing import Any, Optional, TYPE_CHECKING
 from urllib.parse import urlparse, parse_qs
 
-import boto3
-from boto3 import Session
 from lakefs_sdk import ExternalLoginInformation
 from lakefs_sdk.client import LakeFSClient
 
@@ -20,9 +18,12 @@ from lakefs.exceptions import api_exception_handler
 
 DEFAULT_AWS_REGION = "us-east-1"
 
+if TYPE_CHECKING:
+    import boto3
+
 def access_token_from_aws_iam_role(sdk_client: LakeFSClient,
                                    lakefs_host: str,
-                                   boto3_session: Session,
+                                   boto3_session: "boto3.Session",
                                    aws_provider_auth_params: ClientConfig.AWSIAMProviderConfig) -> tuple[Any, datetime]:
     """
     Generate an access token for lakeFS authentication using AWS IAM role.
@@ -52,7 +53,7 @@ def access_token_from_aws_iam_role(sdk_client: LakeFSClient,
     return auth_token.token, reset_token_time
 
 def _get_identity_token(
-        session: boto3.Session,
+        session: "boto3.Session",
         lakefs_host: str,
         additional_headers: Optional[dict[str, str]],
         presign_expiry

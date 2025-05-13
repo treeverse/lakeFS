@@ -321,7 +321,7 @@ class TestAuthenticationFlow:
 
     def test_region_extraction(self, monkeypatch):
         """Test region extraction from STS endpoint"""
-        from lakefs.auth_utils import _extract_region_from_endpoint
+        from lakefs.auth import _extract_region_from_endpoint
 
         # Test standard regional endpoint
         assert _extract_region_from_endpoint("https://sts.eu-central-1.amazonaws.com/") == "eu-central-1"
