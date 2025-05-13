@@ -21,16 +21,18 @@ import (
 )
 
 const (
-	V4authHeaderName        = "Authorization"
-	V4authHeaderPrefix      = "AWS4-HMAC-SHA256"
-	AmzDecodedContentLength = "X-Amz-Decoded-Content-Length"
-	v4StreamingPayloadHash  = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
-	v4UnsignedPayload       = "UNSIGNED-PAYLOAD"
-	v4authHeaderPayload     = "x-amz-content-sha256"
-	v4scopeTerminator       = "aws4_request"
-	v4timeFormat            = "20060102T150405Z"
-	v4shortTimeFormat       = "20060102"
-	v4SignatureHeader       = "X-Amz-Signature"
+	V4authHeaderName         = "Authorization"
+	V4authHeaderPrefix       = "AWS4-HMAC-SHA256"
+	v4TrailerHeader          = "X-Amz-Trailer"
+	v4SignatureHeader        = "X-Amz-Signature"
+	AmzDecodedContentLength  = "X-Amz-Decoded-Content-Length"
+	v4StreamingPayloadHash   = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
+	v4UnsignedPayloadTrailer = "STREAMING-UNSIGNED-PAYLOAD-TRAILER"
+	v4UnsignedPayload        = "UNSIGNED-PAYLOAD"
+	v4authHeaderPayload      = "x-amz-content-sha256"
+	v4scopeTerminator        = "aws4_request"
+	v4timeFormat             = "20060102T150405Z"
+	v4shortTimeFormat        = "20060102"
 )
 
 var (
@@ -46,6 +48,7 @@ type V4Auth struct {
 	SignedHeaders       []string
 	SignedHeadersString string
 	Signature           string
+	ChecksumAlgorithm   string
 }
 
 func (a V4Auth) GetAccessKeyID() string {
@@ -60,6 +63,8 @@ func splitHeaders(headers string) []string {
 
 func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	var ctx V4Auth
+
+	ctx.ChecksumAlgorithm = r.Header.Get(v4TrailerHeader)
 
 	// start by trying to extract the data from the Authorization header
 	headerValue := r.Header.Get(V4authHeaderName)
@@ -328,7 +333,8 @@ func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, 
 
 func (ctx *verificationCtx) isStreaming() bool {
 	payloadHash := ctx.payloadHash()
-	return strings.EqualFold(payloadHash, v4StreamingPayloadHash)
+	return strings.EqualFold(payloadHash, v4StreamingPayloadHash) ||
+		strings.EqualFold(payloadHash, v4UnsignedPayloadTrailer)
 }
 
 func (ctx *verificationCtx) isUnsigned() bool {
@@ -358,7 +364,8 @@ func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential
 		if err != nil {
 			return nil, err
 		}
-		chunkReader, err := newSignV4ChunkedReader(bufio.NewReader(reader), amzDate, ctx.AuthValue, creds)
+
+		chunkReader, err := newSignV4ChunkedReader(bufio.NewReader(reader), amzDate, ctx.AuthValue, ctx.payloadHash(), creds)
 		if err != nil {
 			return nil, err
 		}
