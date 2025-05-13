@@ -169,7 +169,7 @@ class ClientConfig(Configuration):
             return True
         return False
 
-    def get_auth_type(self) -> Optional[AuthType]:
+    def get_auth_type(self) -> Optional[ClientConfig.AuthType]:
         """
         Returns the type of authentication used: either SessionToken, Credentials, or IAMProvider
         :return: ClientConfig.AuthType
