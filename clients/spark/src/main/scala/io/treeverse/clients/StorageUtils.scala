@@ -1,16 +1,17 @@
 package io.treeverse.clients
 
+import com.amazonaws.ClientConfiguration
 import com.amazonaws.auth.{
   AWSCredentialsProvider,
   DefaultAWSCredentialsProviderChain,
   STSAssumeRoleSessionCredentialsProvider
 }
 import com.amazonaws.client.builder.AwsClientBuilder
-import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
-import com.amazonaws.retry.RetryUtils
-import com.amazonaws.services.s3.model.{Region, GetBucketLocationRequest}
+import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-import com.amazonaws._
+import com.amazonaws.services.s3.model.{HeadBucketRequest, AmazonS3Exception}
+import com.amazonaws.AmazonWebServiceRequest
+import com.amazonaws.AmazonClientException
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
@@ -21,26 +22,6 @@ import scala.util.Try
 object StorageUtils {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
-
-  // Initialize with environment detection
-  private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
-
-  // Detect which EMR environment we're running in
-  private val isEMR7Plus = detectEMR7()
-
-  /** Detect if running on EMR 7.0.0 or later */
-  private def detectEMR7(): Boolean = {
-    try {
-      // Try to load AWS SDK v2 class - exists in EMR 7.0.0, not in 6.x
-      Class.forName("software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider")
-      logger.info("Detected EMR 7.0.0+ environment (AWS SDK v2 classes available)")
-      true
-    } catch {
-      case _: ClassNotFoundException =>
-        logger.info("Detected EMR 6.x environment (AWS SDK v2 classes not available)")
-        false
-    }
-  }
 
   /** Constructs object paths in a storage namespace.
    *
@@ -115,48 +96,35 @@ object StorageUtils {
 
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[
-          Any
-        ], // Generic type to accept both EMR 6.9.0 and 7.0.0 credential providers
-        awsS3ClientBuilder: AmazonS3ClientBuilder,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        builder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String,
         bucket: String
     ): AmazonS3 = {
-      require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
 
       // Check for Hadoop's assumed role configuration
       val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
-      val usingAssumedRole = roleArn != null && !roleArn.isEmpty
+      val isAssumeRoleProvider = roleArn != null && !roleArn.isEmpty
 
-      // Check for EMR 6.9.0 specific credential provider that uses assumed role
-      val emr69AssumedRole = !isEMR7Plus &&
-        System
-          .getProperty("spark.hadoop.fs.s3a.aws.credentials.provider", "")
-          .contains("TemporaryAWSCredentialsProvider")
-
-      // When using an assumed role or running on EMR 6.9.0 with assumed role, skip bucket location check
-      if (usingAssumedRole || emr69AssumedRole) {
-        logger.info(
-          s"Using role auth or EMR 6.9.0 with assumed role, skipping bucket location check and using provided region: $region"
-        )
-        return initializeS3Client(configuration,
-                                  credentialsProvider,
-                                  awsS3ClientBuilder,
-                                  endpoint,
-                                  region
-                                 )
+      // When using AssumedRoleCredentialProvider, avoid extra checks that may fail due to permissions
+      if (isAssumeRoleProvider) {
+        logger.info(s"Using role ARN: $roleArn, skipping bucket location check")
+        val client =
+          initializeS3Client(configuration, credentialsProvider, builder, endpoint, region)
+        return client
       }
 
-      // Only try to get the bucket location in appropriate scenarios
-      val client =
-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
+      // Standard flow for non-role based auth
+      val client = initializeS3Client(configuration, credentialsProvider, builder, endpoint)
+
       var bucketRegion =
         try {
-          getAWSS3Region(client, bucket)
+          val location = client.getBucketLocation(bucket)
+          if (location == null || location.isEmpty) null else location
         } catch {
-          case e: Throwable =>
+          case e: Exception =>
             logger.info(f"Could not fetch region for bucket $bucket", e)
             ""
         }
@@ -168,153 +136,62 @@ object StorageUtils {
       if (bucketRegion == "") {
         bucketRegion = region
       }
-      initializeS3Client(configuration,
-                         credentialsProvider,
-                         awsS3ClientBuilder,
-                         endpoint,
-                         bucketRegion
-                        )
+      initializeS3Client(configuration, credentialsProvider, builder, endpoint, bucketRegion)
     }
 
     private def initializeS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[Any], // Generic type
-        awsS3ClientBuilder: AmazonS3ClientBuilder,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        builder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String = null
     ): AmazonS3 = {
-      val builder = awsS3ClientBuilder
-        .withClientConfiguration(configuration)
+      val configuredBuilder = builder.withClientConfiguration(configuration)
 
-      val builderWithEndpoint =
-        if (endpoint != null && !endpoint.isEmpty)
-          builder.withEndpointConfiguration(
-            new AwsClientBuilder.EndpointConfiguration(endpoint, region)
-          )
-        else if (region != null && !region.isEmpty)
-          builder.withRegion(region)
-        else
-          builder
-
-      // EMR version-adaptive credential provider handling
-      val builderWithCredentials = if (isEMR7Plus) {
-        // EMR 7.0.0+ handling logic
-        credentialsProvider match {
-          case Some(provider) if provider.isInstanceOf[AWSCredentialsProvider] =>
-            logger.info("Using AWS SDK v1 credentials provider directly for EMR 7.0.0")
-            builderWithEndpoint.withCredentials(provider.asInstanceOf[AWSCredentialsProvider])
-
-          case Some(provider) if provider.getClass.getName.contains("hadoop.fs.s3a.auth") =>
-            // EMR 7.0.0 Hadoop credential provider
-            logger.info(
-              s"Using Hadoop credential provider adapter for: ${provider.getClass.getName}"
-            )
-            handleEMR7CredentialProvider(builderWithEndpoint)
-
-          case _ =>
-            logger.info("Using DefaultAWSCredentialsProviderChain for EMR 7.0.0")
-            builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
-        }
-      } else {
-        // EMR 6.9.0 handling logic
-        credentialsProvider match {
-          case Some(provider) if provider.isInstanceOf[AWSCredentialsProvider] =>
-            logger.info("Using AWS SDK v1 credentials provider directly for EMR 6.9.0")
-            builderWithEndpoint.withCredentials(provider.asInstanceOf[AWSCredentialsProvider])
-
-          case _ =>
-            // For EMR 6.9.0, check if we should assume a role
-            val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
-            if (roleArn != null && !roleArn.isEmpty) {
-              logger.info(s"EMR 6.9.0: Assuming role: $roleArn for S3 client")
-              try {
-                val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
-                val stsProvider =
-                  new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
-                    .withLongLivedCredentialsProvider(new DefaultAWSCredentialsProviderChain())
-                    .build()
-
-                builderWithEndpoint.withCredentials(stsProvider)
-              } catch {
-                case e: Exception =>
-                  logger.warn(s"Failed to assume role $roleArn: ${e.getMessage}", e)
-                  logger.info("Falling back to DefaultAWSCredentialsProviderChain")
-                  builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
-              }
-            } else {
-              logger.info("Using DefaultAWSCredentialsProviderChain for EMR 6.9.0")
-              builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
-            }
-        }
+      if (endpoint != null && !endpoint.isEmpty) {
+        configuredBuilder.withEndpointConfiguration(
+          new AwsClientBuilder.EndpointConfiguration(endpoint, region)
+        )
+      } else if (region != null && !region.isEmpty) {
+        configuredBuilder.withRegion(region)
       }
 
-      builderWithCredentials.build
-    }
+      // Apply credentials if provided
+      credentialsProvider.foreach(configuredBuilder.withCredentials)
 
-    // Helper specifically for EMR 7.0.0 credential handling
-    private def handleEMR7CredentialProvider(
-        builder: AmazonS3ClientBuilder
-    ): AmazonS3ClientBuilder = {
-      // Check for assumed role configuration
-      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
-      if (roleArn != null && !roleArn.isEmpty) {
-        // Role-based auth (use our STS provider)
-        logger.info(s"EMR 7.0.0: Assuming role: $roleArn for S3 client")
-        try {
-          val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
-          val stsProvider =
-            new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
-              .withLongLivedCredentialsProvider(new DefaultAWSCredentialsProviderChain())
-              .build()
-
-          builder.withCredentials(stsProvider)
-        } catch {
-          case e: Exception =>
-            logger.warn(s"Failed to assume role $roleArn: ${e.getMessage}", e)
-            logger.info("Falling back to DefaultAWSCredentialsProviderChain")
-            builder.withCredentials(new DefaultAWSCredentialsProviderChain())
-        }
-      } else {
-        // Fall back to default credential chain
-        logger.info("Using DefaultAWSCredentialsProviderChain (Hadoop provider with no role)")
-        builder.withCredentials(new DefaultAWSCredentialsProviderChain())
-      }
-    }
-
-    private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
-      var request = new GetBucketLocationRequest(bucket)
-      request = request.withSdkClientExecutionTimeout(TimeUnit.SECONDS.toMillis(1).intValue())
-      val bucketRegion = client.getBucketLocation(request)
-      Try(Region.fromValue(bucketRegion).toAWSRegion().getName()).getOrElse("")
+      configuredBuilder.build()
     }
   }
 }
 
-class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
+class S3RetryDeleteObjectsCondition extends RetryPolicy.RetryCondition {
   private val logger: Logger = LoggerFactory.getLogger(getClass.toString)
   private val XML_PARSE_BROKEN = "Failed to parse XML document"
-
-  private val clock = java.time.Clock.systemDefaultZone
 
   override def shouldRetry(
       originalRequest: AmazonWebServiceRequest,
       exception: AmazonClientException,
       retriesAttempted: Int
   ): Boolean = {
-    val now = clock.instant
     exception match {
-      case ce: SdkClientException =>
-        if (ce.getMessage contains XML_PARSE_BROKEN) {
-          logger.info(s"Retry $originalRequest @$now: Received non-XML: $ce")
-        } else if (RetryUtils.isThrottlingException(ce)) {
-          logger.info(s"Retry $originalRequest @$now: Throttled: $ce")
+      case s3e: AmazonS3Exception =>
+        val message = s3e.getMessage
+        if (message != null && message.contains(XML_PARSE_BROKEN)) {
+          logger.info(s"Retry $originalRequest: Received non-XML: $s3e")
+          true
+        } else if (
+          s3e.getStatusCode == 429 ||
+          (s3e.getStatusCode >= 500 && s3e.getStatusCode < 600)
+        ) {
+          logger.info(s"Retry $originalRequest: Throttled or server error: $s3e")
+          true
         } else {
-          logger.info(s"Retry $originalRequest @$now: Other client exception: $ce")
+          logger.info(s"Retry $originalRequest: Other S3 exception: $s3e")
+          true
         }
-        true
-      case e => {
-        logger.info(s"Do not retry $originalRequest @$now: Non-AWS exception: $e")
-        super.shouldRetry(originalRequest, exception, retriesAttempted)
+      case e: Exception => {
+        logger.info(s"Do not retry $originalRequest: Non-S3 exception: $e")
+        false
       }
     }
   }
