@@ -3,10 +3,6 @@ package factory
 import (
 	"context"
 	"fmt"
-	"net/http"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/auth"
 	authremote "github.com/treeverse/lakefs/pkg/auth/remoteauthenticator"
 	"github.com/treeverse/lakefs/pkg/authentication"
@@ -14,23 +10,12 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-type nopOidcProvider struct {
-	logger logging.Logger
-}
-
-func (n *nopOidcProvider) RegisterOIDCRoutes(_ *chi.Mux, _ sessions.Store) {
-	n.logger.Warn("OIDC is not implemented")
-}
-
-func (n *nopOidcProvider) OIDCCallback(w http.ResponseWriter, _ *http.Request, _ sessions.Store) {
-	n.logger.Warn("OIDC is not implemented")
-	w.WriteHeader(http.StatusBadRequest)
-}
-
-func NewOIDCProvider(_ context.Context, _ config.Config, logger logging.Logger) (authentication.OIDCProvider, error) {
-	return &nopOidcProvider{
-		logger: logger,
-	}, nil
+func NewAuthenticationService(_ context.Context, c config.Config, logger logging.Logger) (authentication.Service, error) {
+	authCfg := c.AuthConfig()
+	if authCfg.IsAuthenticationTypeAPI() {
+		return authentication.NewAPIService(authCfg.AuthenticationAPI.Endpoint, authCfg.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), authCfg.AuthenticationAPI.ExternalPrincipalsEnabled)
+	}
+	return authentication.NewDummyService(), nil
 }
 
 func BuildAuthenticatorChain(c config.Config, logger logging.Logger, authService auth.Service) (auth.ChainAuthenticator, error) {

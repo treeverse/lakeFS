@@ -93,46 +93,44 @@ type Migrator interface {
 }
 
 type Controller struct {
-	Config              config.Config
-	Catalog             *catalog.Catalog
-	Authenticator       auth.Authenticator
-	Auth                auth.Service
-	Authentication      authentication.Service
-	BlockAdapter        block.Adapter
-	MetadataManager     auth.MetadataManager
-	Migrator            Migrator
-	Collector           stats.Collector
-	Actions             actionsHandler
-	AuditChecker        AuditChecker
-	Logger              logging.Logger
-	sessionStore        sessions.Store
-	PathProvider        upload.PathProvider
-	usageReporter       stats.UsageReporterOperations
-	licenseManager      license.Manager
-	oidcCallbackHandler authentication.OIDCCallbackHandler
+	Config          config.Config
+	Catalog         *catalog.Catalog
+	Authenticator   auth.Authenticator
+	Auth            auth.Service
+	Authentication  authentication.Service
+	BlockAdapter    block.Adapter
+	MetadataManager auth.MetadataManager
+	Migrator        Migrator
+	Collector       stats.Collector
+	Actions         actionsHandler
+	AuditChecker    AuditChecker
+	Logger          logging.Logger
+	sessionStore    sessions.Store
+	PathProvider    upload.PathProvider
+	usageReporter   stats.UsageReporterOperations
+	licenseManager  license.Manager
 }
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager, oidcCallbackHandler authentication.OIDCCallbackHandler) *Controller {
+func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *Controller {
 	return &Controller{
-		Config:              cfg,
-		Catalog:             catalog,
-		Authenticator:       authenticator,
-		Auth:                authService,
-		Authentication:      authenticationService,
-		BlockAdapter:        blockAdapter,
-		MetadataManager:     metadataManager,
-		Migrator:            migrator,
-		Collector:           collector,
-		Actions:             actions,
-		AuditChecker:        auditChecker,
-		Logger:              logger,
-		sessionStore:        sessionStore,
-		PathProvider:        pathProvider,
-		usageReporter:       usageReporter,
-		licenseManager:      licenseManager,
-		oidcCallbackHandler: oidcCallbackHandler,
+		Config:          cfg,
+		Catalog:         catalog,
+		Authenticator:   authenticator,
+		Auth:            authService,
+		Authentication:  authenticationService,
+		BlockAdapter:    blockAdapter,
+		MetadataManager: metadataManager,
+		Migrator:        migrator,
+		Collector:       collector,
+		Actions:         actions,
+		AuditChecker:    auditChecker,
+		Logger:          logger,
+		sessionStore:    sessionStore,
+		PathProvider:    pathProvider,
+		usageReporter:   usageReporter,
+		licenseManager:  licenseManager,
 	}
 }
 
@@ -6160,5 +6158,5 @@ func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
-	c.oidcCallbackHandler.OIDCCallback(w, r, c.sessionStore)
+	c.Authentication.OIDCCallback(w, r, c.sessionStore)
 }

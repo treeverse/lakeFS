@@ -9,6 +9,8 @@ import (
 	"net/http"
 
 	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -18,6 +20,8 @@ type Service interface {
 	ExternalPrincipalLogin(ctx context.Context, identityRequest map[string]interface{}) (*apiclient.ExternalPrincipal, error)
 	// ValidateSTS validates the STS parameters and returns the external user ID
 	ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error)
+	RegisterAdditionalRoutes(r *chi.Mux, sessionStore sessions.Store)
+	OIDCCallback(w http.ResponseWriter, r *http.Request, sessionStore sessions.Store)
 }
 
 type DummyService struct{}
@@ -37,6 +41,10 @@ func (d DummyService) ExternalPrincipalLogin(_ context.Context, _ map[string]int
 func (d DummyService) IsExternalPrincipalsEnabled() bool {
 	return false
 }
+
+func (d DummyService) RegisterAdditionalRoutes(_ *chi.Mux, _ sessions.Store) {}
+
+func (d DummyService) OIDCCallback(_ http.ResponseWriter, _ *http.Request, _ sessions.Store) {}
 
 type APIService struct {
 	validateIDTokenClaims     map[string]string
@@ -142,4 +150,12 @@ func (s *APIService) ExternalPrincipalLogin(ctx context.Context, identityRequest
 
 func (s *APIService) IsExternalPrincipalsEnabled() bool {
 	return s.externalPrincipalsEnabled
+}
+
+func (s *APIService) RegisterAdditionalRoutes(_ *chi.Mux, _ sessions.Store) {
+	s.logger.Trace("no additional routes to register")
+}
+
+func (s *APIService) OIDCCallback(_ http.ResponseWriter, _ *http.Request, _ sessions.Store) {
+	s.logger.Warn("OIDC is not implemented")
 }
