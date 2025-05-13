@@ -1,21 +1,17 @@
 import datetime
-import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
-from urllib.parse import urlparse
+from unittest.mock import MagicMock, patch
 
-from lakefs_sdk import ExternalLoginInformation, AuthenticationToken
-from pydantic import StrictInt, StrictStr
 import sys
+from lakefs_sdk import AuthenticationToken
+from pydantic import StrictInt, StrictStr
 
 # Mock boto3 if it's not installed
 try:
     import boto3
 except ImportError:
-    from unittest.mock import MagicMock
     boto3 = MagicMock()
     sys.modules['boto3'] = boto3
 
-from lakefs.client import Client
 from lakefs.config import ClientConfig
 from lakefs.exceptions import NoAuthenticationFound
 from tests.utests.common import (
@@ -24,9 +20,6 @@ from tests.utests.common import (
     env_var_context,
     expect_exception_context,
     TEST_SERVER,
-    TEST_ACCESS_KEY_ID,
-    TEST_SECRET_ACCESS_KEY,
-    TEST_ENDPOINT_PATH
 )
 
 MOCK_PRESIGNED_URL = """
@@ -68,7 +61,7 @@ class TestAuthenticationFlow:
             clt.config._iam_provider = iam_provider
             assert clt.config.get_auth_type() == ClientConfig.AuthType.IAM
 
-    @patch('lakefs.auth_utils.access_token_from_aws_iam_role')
+    @patch('lakefs.auth.access_token_from_aws_iam_role')
     def test_client_iam_auth_initialization(self, mock_access_token, monkeypatch, tmp_path):
         """Test client initialization with IAM auth"""
         # Mock response from access_token_from_aws_iam_role
@@ -87,7 +80,7 @@ class TestAuthenticationFlow:
                             token_request_headers=None
                         )
                 )):
-                    with patch('boto3.Session') as mock_session:
+                    with patch('boto3.Session'):
                         # Initialize client with IAM authentication
                         clt = client_module.Client(host=TEST_SERVER)
 
@@ -98,7 +91,7 @@ class TestAuthenticationFlow:
                         assert clt._conf.access_token == mock_token
                         assert clt._reset_token_time == reset_time
 
-    @patch('lakefs.auth_utils.access_token_from_aws_iam_role')
+    @patch('lakefs.auth.access_token_from_aws_iam_role')
     def test_token_refresh_on_expiry(self, mock_access_token, monkeypatch, tmp_path):
         """Test token refresh when token expires"""
         # First token and expiry time
@@ -150,50 +143,52 @@ class TestAuthenticationFlow:
                 clt._reset_token_time = expired_time
 
                 # This should NOT trigger a refresh for SESSION_TOKEN auth
-                with patch('lakefs.auth_utils.access_token_from_aws_iam_role') as mock_access_token:
+                with patch('lakefs.auth.access_token_from_aws_iam_role') as mock_access_token:
                     _ = clt.sdk_client
                     mock_access_token.assert_not_called()
 
-    @patch('lakefs.auth_utils.access_token_from_aws_iam_role')
+    @patch('lakefs.auth.access_token_from_aws_iam_role')
     @patch('botocore.signers.RequestSigner.generate_presigned_url')
-    @patch('lakefs_sdk.api.auth_api.AuthApi.external_principal_login')
-    def test_from_aws_role_factory_method(self, mock_external_principal_login, mock_request_signer, mock_access_token, monkeypatch, tmp_path):
+    def test_from_aws_role_factory_method(self, mock_request_signer, mock_access_token, monkeypatch, tmp_path):
         """Test the from_aws_role factory method for creating client"""
-        test_token = "aws_role_token"
-        test_reset_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
-        mock_access_token.return_value = (test_token, test_reset_time)
+        with patch('lakefs_sdk.api.auth_api.AuthApi.external_principal_login') as mock_external_principal_login:
+            test_token = "aws_role_token"
+            test_reset_time = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+            mock_access_token.return_value = (test_token, test_reset_time)
 
-        mock_request_signer.return_value = MOCK_PRESIGNED_URL
-        mock_external_principal_login.return_value = AuthenticationToken(token=StrictStr("test_token"), token_expiration=StrictInt(1))
-        with lakectl_test_config_context(monkeypatch, tmp_path) as client_module:
-            # Create mock session
-            mock_session = MagicMock(spec=boto3.Session)
-
-            # Create client using factory method
-            clt = client_module.from_aws_role(
-                session=mock_session,
-                ttl_seconds=7200,  # Custom TTL
-                presigned_ttl=120,  # Custom presigned TTL
-                additional_headers={"X-Custom-Header": "value"},
-                host=TEST_SERVER
+            mock_request_signer.return_value = MOCK_PRESIGNED_URL
+            mock_external_principal_login.return_value = (
+                AuthenticationToken(token=StrictStr("test_token"), token_expiration=StrictInt(1))
             )
+            with lakectl_test_config_context(monkeypatch, tmp_path) as client_module:
+                # Create mock session
+                mock_session = MagicMock(spec=boto3.Session)
 
-            # Verify client was created with correct parameters
-            mock_access_token.assert_called_once()
-            args, kwargs = mock_access_token.call_args
+                # Create client using factory method
+                clt = client_module.from_aws_role(
+                    session=mock_session,
+                    ttl_seconds=7200,  # Custom TTL
+                    presigned_ttl=120,  # Custom presigned TTL
+                    additional_headers={"X-Custom-Header": "value"},
+                    host=TEST_SERVER
+                )
 
-            # Verify the AWS provider config was passed correctly
-            aws_provider = kwargs.get('aws_provider_auth_params', None)
-            if not aws_provider:
-                aws_provider = args[3]  # Fallback to positional args
+                # Verify client was created with correct parameters
+                mock_access_token.assert_called_once()
+                args, kwargs = mock_access_token.call_args
 
-            assert aws_provider.token_ttl_seconds == 7200
-            assert aws_provider.url_presign_ttl_seconds == 120
-            assert aws_provider.token_request_headers == {"X-Custom-Header": "value"}
+                # Verify the AWS provider config was passed correctly
+                aws_provider = kwargs.get('aws_provider_auth_params', None)
+                if not aws_provider:
+                    aws_provider = args[3]  # Fallback to positional args
 
-            # Verify token was set in client
-            assert clt.config.access_token == test_token
-            assert clt._reset_token_time == test_reset_time
+                assert aws_provider.token_ttl_seconds == 7200
+                assert aws_provider.url_presign_ttl_seconds == 120
+                assert aws_provider.token_request_headers == {"X-Custom-Header": "value"}
+
+                # Verify token was set in client
+                assert clt.config.access_token == test_token
+                assert clt._reset_token_time == test_reset_time
 
     def test_environment_variables_auth(self, monkeypatch):
         """Test authentication using environment variables"""
@@ -223,8 +218,6 @@ class TestAuthenticationFlow:
                 monkeypatch.setenv("LAKECTL_CREDENTIALS_SESSION_TOKEN", "env_session_token")
 
                 from lakefs import client
-                # client = monkeypatch.syspath_prepend(client)
-
                 # Create client using environment vars
                 clt = client.Client()
 
@@ -276,7 +269,7 @@ class TestAuthenticationFlow:
                         # Verify the token was set
                         assert clt.config.access_token == test_token
 
-    @patch('lakefs.auth_utils.access_token_from_aws_iam_role')
+    @patch('lakefs.auth.access_token_from_aws_iam_role')
     def test_token_request_headers(self, mock_access_token, monkeypatch, tmp_path):
         """Test that token request headers are passed correctly"""
         test_token = "token_with_headers"
@@ -289,7 +282,7 @@ class TestAuthenticationFlow:
 
             # Create client using factory method
             mock_session = MagicMock(spec=boto3.Session)
-            clt = client_module.from_aws_role(
+            client_module.from_aws_role(
                 session=mock_session,
                 additional_headers=headers,
                 host=TEST_SERVER
@@ -313,8 +306,6 @@ class TestAuthenticationFlow:
                 # No environment variables set
 
                 from lakefs import client
-                # client = monkeypatch.syspath_prepend(client)
-
                 # Attempt to create client without authentication
                 with expect_exception_context(NoAuthenticationFound):
                     client.Client()
@@ -349,7 +340,7 @@ class TestAuthenticationFlow:
                 mock_client_class.return_value = mock_client_instance
 
                 # Call from_web_identity
-                client = client_module.from_web_identity(
+                client_module.from_web_identity(
                     code="auth_code",
                     state="state_token",
                     redirect_uri="https://redirect.example.com",
