@@ -26,4 +26,6 @@ jobs:
 
       - name: run tests, validate and package
         working-directory: clients/spark
+        env:
+          SPARK_LOCAL_IP: "127.0.0.1"
         run: sbt test "scalafix --check" package
