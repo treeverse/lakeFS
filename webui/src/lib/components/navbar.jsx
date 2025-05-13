@@ -47,7 +47,7 @@ const NavUserInfo = () => {
             <NavDropdown.Divider/>
             {!versionLoading && !versionError && <>
             <NavDropdown.Item disabled={true}>
-                <small>lakeFS {versionResponse.version}</small>
+                {`lakeFS${versionResponse.version_context ? '-Enterprise' : ''} ${versionResponse.version}`}
             </NavDropdown.Item></>}
         </NavDropdown>
     );

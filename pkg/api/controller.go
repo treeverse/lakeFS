@@ -5464,6 +5464,7 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
+		VersionContext:     swag.String(c.Config.AuthConfig().UIConfig.VersionContext),
 	}
 }
 

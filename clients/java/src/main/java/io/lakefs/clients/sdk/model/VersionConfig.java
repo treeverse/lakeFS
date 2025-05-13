@@ -55,6 +55,10 @@ public class VersionConfig {
   @SerializedName(SERIALIZED_NAME_VERSION)
   private String version;
 
+  public static final String SERIALIZED_NAME_VERSION_CONTEXT = "version_context";
+  @SerializedName(SERIALIZED_NAME_VERSION_CONTEXT)
+  private String versionContext;
+
   public static final String SERIALIZED_NAME_LATEST_VERSION = "latest_version";
   @SerializedName(SERIALIZED_NAME_LATEST_VERSION)
   private String latestVersion;
@@ -88,6 +92,27 @@ public class VersionConfig {
 
   public void setVersion(String version) {
     this.version = version;
+  }
+
+
+  public VersionConfig versionContext(String versionContext) {
+    
+    this.versionContext = versionContext;
+    return this;
+  }
+
+   /**
+   * Get versionContext
+   * @return versionContext
+  **/
+  @javax.annotation.Nullable
+  public String getVersionContext() {
+    return versionContext;
+  }
+
+
+  public void setVersionContext(String versionContext) {
+    this.versionContext = versionContext;
   }
 
 
@@ -209,6 +234,7 @@ public class VersionConfig {
     }
     VersionConfig versionConfig = (VersionConfig) o;
     return Objects.equals(this.version, versionConfig.version) &&
+        Objects.equals(this.versionContext, versionConfig.versionContext) &&
         Objects.equals(this.latestVersion, versionConfig.latestVersion) &&
         Objects.equals(this.upgradeRecommended, versionConfig.upgradeRecommended) &&
         Objects.equals(this.upgradeUrl, versionConfig.upgradeUrl)&&
@@ -217,7 +243,7 @@ public class VersionConfig {
 
   @Override
   public int hashCode() {
-    return Objects.hash(version, latestVersion, upgradeRecommended, upgradeUrl, additionalProperties);
+    return Objects.hash(version, versionContext, latestVersion, upgradeRecommended, upgradeUrl, additionalProperties);
   }
 
   @Override
@@ -225,6 +251,7 @@ public class VersionConfig {
     StringBuilder sb = new StringBuilder();
     sb.append("class VersionConfig {\n");
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
+    sb.append("    versionContext: ").append(toIndentedString(versionContext)).append("\n");
     sb.append("    latestVersion: ").append(toIndentedString(latestVersion)).append("\n");
     sb.append("    upgradeRecommended: ").append(toIndentedString(upgradeRecommended)).append("\n");
     sb.append("    upgradeUrl: ").append(toIndentedString(upgradeUrl)).append("\n");
@@ -252,6 +279,7 @@ public class VersionConfig {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("version");
+    openapiFields.add("version_context");
     openapiFields.add("latest_version");
     openapiFields.add("upgrade_recommended");
     openapiFields.add("upgrade_url");
@@ -275,6 +303,9 @@ public class VersionConfig {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if ((jsonObj.get("version") != null && !jsonObj.get("version").isJsonNull()) && !jsonObj.get("version").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `version` to be a primitive type in the JSON string but got `%s`", jsonObj.get("version").toString()));
+      }
+      if ((jsonObj.get("version_context") != null && !jsonObj.get("version_context").isJsonNull()) && !jsonObj.get("version_context").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `version_context` to be a primitive type in the JSON string but got `%s`", jsonObj.get("version_context").toString()));
       }
       if ((jsonObj.get("latest_version") != null && !jsonObj.get("latest_version").isJsonNull()) && !jsonObj.get("latest_version").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `latest_version` to be a primitive type in the JSON string but got `%s`", jsonObj.get("latest_version").toString()));

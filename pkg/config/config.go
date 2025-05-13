@@ -675,6 +675,7 @@ type Auth struct {
 		LoginCookieNames     []string `mapstructure:"login_cookie_names"`
 		LogoutURL            string   `mapstructure:"logout_url"`
 		UseLoginPlaceholders bool     `mapstructure:"use_login_placeholders"`
+		VersionContext       string   `mapstructure:"version_context"`
 	} `mapstructure:"ui_config"`
 }
 
