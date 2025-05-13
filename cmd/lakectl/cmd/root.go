@@ -196,7 +196,6 @@ const (
 	defaultMaxRetryInterval = 30 * time.Second
 	defaultMinRetryInterval = 200 * time.Millisecond
 
-	defaultTokenTTL        = 0 * time.Second
 	defaultURLPresignTTL   = 60 * time.Second
 	defaultRefreshInterval = 300 * time.Second
 )
@@ -679,7 +678,6 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
-	viper.SetDefault("credentials.provider.aws_iam.token_ttl_seconds", defaultTokenTTL)
 	viper.SetDefault("credentials.provider.aws_iam.url_presign_ttl_seconds", defaultURLPresignTTL)
 	viper.SetDefault("credentials.provider.aws_iam.refresh_interval", defaultRefreshInterval)
 	cfgErr = viper.ReadInConfig()

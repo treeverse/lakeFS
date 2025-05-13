@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var ErrInvalidCredentialsFormat = errors.New("missing required parts in credentials")
+var ErrInvalidCredentialsFormat = errors.New("missing required parts in query param X-Amz-Credential")
 
 const (
 	AuthVersion       = "2011-06-15"
@@ -32,14 +32,16 @@ const (
 	AuthDateKey       = "X-Amz-Date"
 	AuthExpiresKey    = "X-Amz-Expires"
 	//nolint:gosec
-	AuthSecurityTokenKey  = "X-Amz-Security-Token"
-	AuthSignedHeadersKey  = "X-Amz-SignedHeaders"
-	AuthSignatureKey      = "X-Amz-Signature"
-	DatetimeFormat        = "20060102T150405Z"
-	CredentialTimeFormat  = "20060102"
+	AuthSecurityTokenKey = "X-Amz-Security-Token"
+	AuthSignedHeadersKey = "X-Amz-SignedHeaders"
+	AuthSignatureKey     = "X-Amz-Signature"
+	DatetimeFormat       = "20060102T150405Z"
+	CredentialTimeFormat = "20060102"
+)
+const (
 	DefaultSTSLoginExpire = 15 * time.Minute
 
-	mimLengthSplitCreds = 3
+	minLengthSplitCreds = 3
 )
 
 type AWSIdentityTokenInfo struct {
@@ -86,10 +88,11 @@ func ParsePresignedURL(presignedURL string) (*AWSIdentityTokenInfo, error) {
 	queryParams := parsedURL.Query()
 	credentials := queryParams.Get(AuthCredentialKey)
 	splitedCreds := strings.Split(credentials, "/")
-	if len(splitedCreds) < mimLengthSplitCreds {
-		return nil, fmt.Errorf("invalid credentials format: %w", ErrInvalidCredentialsFormat)
+	if len(splitedCreds) < minLengthSplitCreds {
+		return nil, fmt.Errorf("min length for query param not '%d' ('%s'): %w", minLengthSplitCreds, splitedCreds, ErrInvalidCredentialsFormat)
 	}
 	calculatedRegion := splitedCreds[2]
+	accessKeyID := splitedCreds[0]
 	return &AWSIdentityTokenInfo{
 		Method:             "POST",
 		Host:               parsedURL.Host,
@@ -97,7 +100,7 @@ func ParsePresignedURL(presignedURL string) (*AWSIdentityTokenInfo, error) {
 		Action:             AuthAction,
 		Date:               queryParams.Get(AuthDateKey),
 		ExpirationDuration: queryParams.Get(AuthExpiresKey),
-		AccessKeyID:        splitedCreds[0],
+		AccessKeyID:        accessKeyID,
 		Signature:          queryParams.Get(AuthSignatureKey),
 		SignedHeaders:      strings.Split(queryParams.Get(AuthSignedHeadersKey), ";"),
 		Version:            queryParams.Get(AuthVersionKey),
@@ -142,12 +145,4 @@ func PresignGetCallerIdentityFromAuthParams(ctx context.Context, params *IAMAuth
 		return "", err
 	}
 	return presign.URL, err
-}
-
-func RetrieveCredentials(ctx context.Context, cfg *aws.Config) (*aws.Credentials, error) {
-	creds, err := cfg.Credentials.Retrieve(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &creds, err
 }
