@@ -2984,6 +2984,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress),
 		errors.Is(err, block.ErrOperationNotSupported),
+		errors.Is(err, auth.ErrInvalidRequest),
 		errors.Is(err, authentication.ErrInvalidRequest),
 		errors.Is(err, graveler.ErrSameBranch),
 		errors.Is(err, graveler.ErrInvalidPullRequestStatus),
