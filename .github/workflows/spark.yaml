@@ -26,4 +26,4 @@ jobs:
 
       - name: run tests, validate and package
         working-directory: clients/spark
-        run: sbt test "scalafix --check" package
+        run: sbt -Dspark.driver.bindAddress=127.0.0.1 -Dspark.driver.host=localhost test "scalafix --check" package
