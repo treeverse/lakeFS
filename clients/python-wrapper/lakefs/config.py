@@ -182,7 +182,7 @@ class ClientConfig(Configuration):
             return ClientConfig.AuthType.CREDENTIALS
         return None
 
-    def get_iam_provider(self) -> Optional[IAMProvider]:
+    def get_iam_provider(self) -> Optional[ClientConfig.IAMProvider]:
         """
         Returns the IAM provider used for authentication.
         :return: ClientConfig.IAMProvider
