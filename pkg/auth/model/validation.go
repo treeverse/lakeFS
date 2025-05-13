@@ -23,7 +23,11 @@ func ValidateAuthEntityID(name string) error {
 }
 
 func ValidateActionName(name string) error {
-	return permissions.IsValidAction(name)
+	err := permissions.IsValidAction(name)
+	if err != nil {
+		return fmt.Errorf("%w: %w", ErrValidationError, err)
+	}
+	return nil
 }
 
 func ValidateArn(name string) error {
