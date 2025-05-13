@@ -1,6 +1,7 @@
 package io.treeverse.clients
 
 import com.amazonaws.ClientConfiguration
+import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
