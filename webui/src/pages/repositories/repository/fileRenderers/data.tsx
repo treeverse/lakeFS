@@ -19,7 +19,7 @@ export const DataLoader: FC = () => {
 }
 
 export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, fileExtension }) => {
-    let initialQuery = `SELECT * FROM READ_PARQUET('lakefs://${repoId}/${refId}/${path}') LIMIT 20`;
+    let initialQuery = `SELECT * FROM READ_PARQUET('lakefs://${repoId}/${refId}/${path}', hive_partitioning=false) LIMIT 20`;
     if (fileExtension === 'csv') {
         initialQuery = `SELECT *  FROM READ_CSV('lakefs://${repoId}/${refId}/${path}', AUTO_DETECT = TRUE) LIMIT 20`
     } else if (fileExtension === 'tsv') {
