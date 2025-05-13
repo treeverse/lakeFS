@@ -10,6 +10,8 @@ trait SparkSessionSetup {
       .setAppName("Spark test")
       .set("spark.sql.shuffle.partitions", "17")
       .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+      .set("spark.driver.bindAddress", "127.0.0.1")
+      .set("spark.driver.host", "localhost")
     val spark = new SparkSession.Builder().config(conf).getOrCreate
     testMethod(spark)
     // TODO(ariels): Can/should we "finally spark.stop()" just once, at the
