@@ -2,6 +2,7 @@ package gs
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -410,7 +411,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		return nil, fmt.Errorf("object.Attrs: %w", err)
 	}
 	return &block.UploadPartResponse{
-		ETag: attrs.Etag,
+		ETag: hex.EncodeToString(attrs.MD5),
 	}, nil
 }
 
@@ -437,7 +438,7 @@ func (a *Adapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj 
 		return nil, fmt.Errorf("CopierFrom: %w", err)
 	}
 	return &block.UploadPartResponse{
-		ETag: attrs.Etag,
+		ETag: hex.EncodeToString(attrs.MD5),
 	}, nil
 }
 
@@ -475,7 +476,7 @@ func (a *Adapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinatio
 		return nil, fmt.Errorf("object.Attrs: %w", err)
 	}
 	return &block.UploadPartResponse{
-		ETag: attrs.Etag,
+		ETag: hex.EncodeToString(attrs.MD5),
 	}, nil
 }
 
@@ -543,6 +544,7 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	}
 	lg.Debug("completed multipart upload")
 	return &block.CompleteMultiPartUploadResponse{
+		// composite does not return MD5 - it's OK because S3 complete multipart upload does not return MD5 either
 		ETag:          targetAttrs.Etag,
 		MTime:         &targetAttrs.Created,
 		ContentLength: targetAttrs.Size,
@@ -578,7 +580,8 @@ func (a *Adapter) validateMultipartUploadParts(uploadID string, multipartList *b
 		if objName != bucketParts[i].Name {
 			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartName)
 		}
-		if p.ETag != bucketParts[i].Etag {
+		// client ETag == GCS MD5
+		if p.ETag != hex.EncodeToString(bucketParts[i].MD5) {
 			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartETag)
 		}
 	}
@@ -599,7 +602,7 @@ func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName strin
 		query.StartOffset = *opts.PartNumberMarker
 	}
 	var partNumberMarker *string
-	err := query.SetAttrSelection([]string{"Name", "Etag"})
+	err := query.SetAttrSelection([]string{"Name", "Etag", "MD5"})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -628,7 +631,7 @@ func (a *Adapter) listMultipartUploadParts(ctx context.Context, bucketName strin
 		}
 		bucketParts = append(bucketParts, attrs)
 	}
-	// sort by name - assume natual sort order
+	// sort by name - assume natural sort order
 	sort.Slice(bucketParts, func(i, j int) bool {
 		return bucketParts[i].Name < bucketParts[j].Name
 	})
@@ -785,7 +788,8 @@ func (a *Adapter) ListParts(ctx context.Context, obj block.ObjectPointer, upload
 			return nil, fmt.Errorf("failed to extract part number: %w", err)
 		}
 		parts[i] = block.MultipartPart{
-			ETag:         part.Etag,
+			// Using MD5 as the ETag - AWS S3 uses MD5 as the ETag, and some clients rely on this behavior to validate that the part ETag matches the MD5 checksum.
+			ETag:         hex.EncodeToString(part.MD5),
 			PartNumber:   partNumber,
 			LastModified: part.Updated,
 			Size:         part.Size,
