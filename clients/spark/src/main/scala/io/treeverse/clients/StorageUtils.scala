@@ -97,19 +97,18 @@ object StorageUtils {
     ): AmazonS3 = {
       require(bucket.nonEmpty)
 
-      // Check for Hadoop's assumed role configuration
-      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
-      val isAssumeRoleProvider = roleArn != null && !roleArn.isEmpty
+      // ONLY FOR EMR 7.0.0: Check for Hadoop's assumed role configuration
+      val emr7AssumedRole = Option(System.getProperty("fs.s3a.assumed.role.arn"))
+        .orElse(Option(System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")))
 
-      // When using AssumedRoleCredentialProvider, avoid extra checks that may fail due to permissions
-      if (isAssumeRoleProvider) {
-        logger.info(s"Using role ARN: $roleArn, skipping bucket location check")
-        val client =
-          initializeS3Client(configuration, credentialsProvider, builder, endpoint, region)
-        return client
+      // Skip bucket location check only if running on EMR 7.0.0 with assumed role
+      if (emr7AssumedRole.isDefined) {
+        logger.info(s"EMR 7.0.0 detected with assumed role: ${emr7AssumedRole.get}")
+        logger.info("Skipping bucket location check to avoid credential provider issues")
+        return initializeS3Client(configuration, credentialsProvider, builder, endpoint, region)
       }
 
-      // Standard flow for non-role based auth
+      // For all other cases (including EMR 6.9.0) - use the original flow unchanged
       val client = initializeS3Client(configuration, credentialsProvider, builder, endpoint)
 
       var bucketRegion =
