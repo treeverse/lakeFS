@@ -17,6 +17,7 @@ import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 import io.treeverse.clients.StorageClientType.StorageClientType
 import io.treeverse.clients.StorageUtils.StorageTypeAzure
 import io.treeverse.clients.StorageUtils.StorageTypeS3
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.time.Duration
@@ -33,6 +34,7 @@ object StorageClientType extends Enumeration {
 }
 
 object ApiClient {
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
   val NUM_CACHED_API_CLIENTS = 30
   val TIMEOUT_NOT_SET = -1
 
@@ -47,20 +49,44 @@ object ApiClient {
 
   /** @return an ApiClient, reusing an existing one for this URL if possible.
    */
-  def get(conf: APIConfigurations): ApiClient = clients.get(
-    ClientKey(conf.apiUrl, conf.accessKey),
-    new Callable[ApiClient] {
-      def call() = new ApiClient(
-        APIConfigurations(conf.apiUrl,
-                          conf.accessKey,
-                          conf.secretKey,
-                          conf.connectionTimeoutSec,
-                          conf.readTimeoutSec,
-                          conf.source
-                         )
-      )
+  def get(conf: APIConfigurations): ApiClient = {
+    // Enhanced logging for debugging authentication issues
+    logger.info("Creating ApiClient with configuration:")
+    logger.info(s"API URL: ${conf.apiUrl}")
+    logger.info(s"Access Key: ${if (conf.accessKey != null && conf.accessKey.length > 4)
+      conf.accessKey.substring(0, 4) + "..."
+    else "null or empty"}")
+    logger.info(s"Secret Key present: ${conf.secretKey != null && conf.secretKey.nonEmpty}")
+    logger.info(s"Connection Timeout: ${conf.connectionTimeoutSec}")
+    logger.info(s"Read Timeout: ${conf.readTimeoutSec}")
+    logger.info(s"Source: ${conf.source}")
+
+    // Validate critical parameters
+    if (conf.apiUrl == null || conf.apiUrl.isEmpty) {
+      logger.error("API URL is null or empty - lakeFS API calls will fail")
     }
-  )
+    if (conf.accessKey == null || conf.accessKey.isEmpty) {
+      logger.error("Access Key is null or empty - lakeFS API calls will fail")
+    }
+    if (conf.secretKey == null || conf.secretKey.isEmpty) {
+      logger.error("Secret Key is null or empty - lakeFS API calls will fail")
+    }
+
+    clients.get(
+      ClientKey(conf.apiUrl, conf.accessKey),
+      new Callable[ApiClient] {
+        def call() = new ApiClient(
+          APIConfigurations(conf.apiUrl,
+                            conf.accessKey,
+                            conf.secretKey,
+                            conf.connectionTimeoutSec,
+                            conf.readTimeoutSec,
+                            conf.source
+                           )
+        )
+      }
+    )
+  }
 
   /** Translate uri according to two cases:
    *  If the storage type is s3 then translate the protocol of uri from "standard"-ish "s3" to "s3a", to
@@ -126,20 +152,30 @@ case class APIConfigurations(
 // Only cached instances of ApiClient can be constructed.  The actual
 // constructor is private.
 class ApiClient private (conf: APIConfigurations) {
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   val client = new sdk.ApiClient
   client.addDefaultHeader(
     "X-Lakefs-Client",
     s"lakefs-metaclient/${BuildInfo.version}${if (conf.source.nonEmpty) "/" + conf.source else ""}"
   )
+
+  // Enhanced logging for API initialization
+  logger.info(s"Initializing lakeFS API client with URL: ${conf.apiUrl.stripSuffix("/")}")
+  logger.info(s"Using access key: ${if (conf.accessKey != null && conf.accessKey.length > 4)
+    conf.accessKey.substring(0, 4) + "..."
+  else "null or empty"}")
+
   client.setUsername(conf.accessKey)
   client.setPassword(conf.secretKey)
   client.setBasePath(conf.apiUrl.stripSuffix("/"))
   if (TIMEOUT_NOT_SET != conf.connectionTimeoutMillisec) {
     client.setConnectTimeout(conf.connectionTimeoutMillisec)
+    logger.info(s"Set connection timeout: ${conf.connectionTimeoutMillisec}ms")
   }
   if (TIMEOUT_NOT_SET != conf.readTimeoutMillisec) {
     client.setReadTimeout(conf.readTimeoutMillisec)
+    logger.info(s"Set read timeout: ${conf.readTimeoutMillisec}ms")
   }
 
   private val repositoriesApi = new sdk.RepositoriesApi(client)
@@ -211,10 +247,28 @@ class ApiClient private (conf: APIConfigurations) {
   }
 
   def getRepository(repoName: String): Repository = {
+    logger.info(s"Getting repository: $repoName")
+
     val getRepo = new dev.failsafe.function.CheckedSupplier[Repository]() {
       def get(): Repository = repositoriesApi.getRepository(repoName).execute()
     }
-    retryWrapper.wrapWithRetry(getRepo)
+
+    try {
+      val repo = retryWrapper.wrapWithRetry(getRepo)
+      logger.info(s"Successfully retrieved repository: ${repo.getId}")
+      repo
+    } catch {
+      case e: sdk.ApiException =>
+        logger.error(s"lakeFS API error (${e.getCode}): ${e.getResponseBody}")
+        logger.error(s"Response headers: ${e.getResponseHeaders}")
+        logger.error(
+          "This may indicate authentication issues - check that lakeFS credentials are correctly configured"
+        )
+        throw e
+      case e: Exception =>
+        logger.error(s"Error getting repository: ${e.getMessage}", e)
+        throw e
+    }
   }
 
   def getBlockstoreType(storageID: String): String = {

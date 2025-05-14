@@ -100,9 +100,74 @@ object GarbageCollection {
     }
   }
 
+  // Helper method to get configuration value with fallbacks for EMR 7.0.0 compatibility
+  private def getConfigValue(key: String, fallbacks: String*): Option[String] = {
+    val hc = spark.sparkContext.hadoopConfiguration
+    val sparkConf = spark.sparkContext.getConf
+
+    // Try from Hadoop config with original key
+    val value = Option(hc.get(key))
+    if (value.isDefined) {
+      return value
+    }
+
+    // Try from Spark config with original key
+    val sparkValue = sparkConf.getOption(key)
+    if (sparkValue.isDefined) {
+      return sparkValue
+    }
+
+    // Try fallback keys
+    for (fallbackKey <- fallbacks) {
+      val fallbackValue = Option(hc.get(fallbackKey))
+      if (fallbackValue.isDefined) {
+        logger.info(s"Using fallback config key: $fallbackKey")
+        return fallbackValue
+      }
+
+      // Try fallback in Spark config
+      val sparkFallbackValue = sparkConf.getOption(fallbackKey)
+      if (sparkFallbackValue.isDefined) {
+        logger.info(s"Using fallback Spark config key: $fallbackKey")
+        return sparkFallbackValue
+      }
+    }
+
+    // Try system properties as last resort
+    val sysValue = Option(System.getProperty(key))
+    if (sysValue.isDefined) {
+      logger.info(s"Using system property: $key")
+      return sysValue
+    }
+
+    for (fallback <- fallbacks) {
+      val sysFallbackValue = Option(System.getProperty(fallback))
+      if (sysFallbackValue.isDefined) {
+        logger.info(s"Using fallback system property: $fallback")
+        return sysFallbackValue
+      }
+    }
+
+    None
+  }
+
   def main(args: Array[String]): Unit = {
     val region = if (args.length == 2) args(1) else ""
     val repo = args(0)
+
+    // Copy Spark config to Hadoop config for EMR 7.0.0 compatibility
+    val sparkConf = spark.sparkContext.getConf
+    val hc = spark.sparkContext.hadoopConfiguration
+
+    // Copy spark.hadoop.* properties to Hadoop configuration
+    for (entry <- sparkConf.getAll) {
+      if (entry._1.startsWith("spark.hadoop.")) {
+        val hadoopKey = entry._1.substring("spark.hadoop.".length)
+        hc.set(hadoopKey, entry._2)
+        logger.info(s"Copied Spark config to Hadoop config: $hadoopKey")
+      }
+    }
+
     run(region, repo)
   }
 
@@ -119,11 +184,53 @@ object GarbageCollection {
     var success = false
     var addressesToDelete = spark.emptyDataFrame.withColumn("address", lit(""))
     val hc = spark.sparkContext.hadoopConfiguration
-    val apiURL = hc.get(LAKEFS_CONF_API_URL_KEY)
-    val accessKey = hc.get(LAKEFS_CONF_API_ACCESS_KEY_KEY)
-    val secretKey = hc.get(LAKEFS_CONF_API_SECRET_KEY_KEY)
-    val connectionTimeout = hc.get(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY)
-    val readTimeout = hc.get(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY)
+
+    // Enhanced config retrieval for EMR 7.0.0 compatibility
+    logger.info("Getting lakeFS API configuration...")
+    val apiURL = getConfigValue(LAKEFS_CONF_API_URL_KEY, "lakefs.api.url")
+      .getOrElse {
+        logger.error(
+          s"Missing API URL configuration! Tried keys: $LAKEFS_CONF_API_URL_KEY, lakefs.api.url"
+        )
+        throw new IllegalArgumentException(
+          s"Missing required configuration: $LAKEFS_CONF_API_URL_KEY"
+        )
+      }
+
+    val accessKey = getConfigValue(LAKEFS_CONF_API_ACCESS_KEY_KEY, "lakefs.api.access_key")
+      .getOrElse {
+        logger.error(
+          s"Missing Access Key configuration! Tried keys: $LAKEFS_CONF_API_ACCESS_KEY_KEY, lakefs.api.access_key"
+        )
+        throw new IllegalArgumentException(
+          s"Missing required configuration: $LAKEFS_CONF_API_ACCESS_KEY_KEY"
+        )
+      }
+
+    val secretKey = getConfigValue(LAKEFS_CONF_API_SECRET_KEY_KEY, "lakefs.api.secret_key")
+      .getOrElse {
+        logger.error(
+          s"Missing Secret Key configuration! Tried keys: $LAKEFS_CONF_API_SECRET_KEY_KEY, lakefs.api.secret_key"
+        )
+        throw new IllegalArgumentException(
+          s"Missing required configuration: $LAKEFS_CONF_API_SECRET_KEY_KEY"
+        )
+      }
+
+    val connectionTimeout = getConfigValue(LAKEFS_CONF_API_CONNECTION_TIMEOUT_SEC_KEY,
+                                           "lakefs.api.connection.timeout_seconds"
+                                          ).orNull
+    val readTimeout =
+      getConfigValue(LAKEFS_CONF_API_READ_TIMEOUT_SEC_KEY, "lakefs.api.read.timeout_seconds").orNull
+
+    // Log configuration values (safely)
+    logger.info(s"API URL: $apiURL")
+    logger.info(
+      s"Access Key: ${if (accessKey != null && accessKey.length > 4) accessKey.substring(0, 4) + "..."
+      else "null"}"
+    )
+    logger.info(s"Secret Key present: ${secretKey != null && secretKey.nonEmpty}")
+
     val minAgeStr = hc.get(LAKEFS_CONF_DEBUG_GC_UNCOMMITTED_MIN_AGE_SECONDS_KEY)
     val minAgeSeconds = {
       if (minAgeStr != null && minAgeStr.nonEmpty && minAgeStr.toInt > 0) {
@@ -142,98 +249,117 @@ object GarbageCollection {
     validateRunModeConfigs(shouldMark, shouldSweep, markID)
     val apiConf =
       APIConfigurations(apiURL, accessKey, secretKey, connectionTimeout, readTimeout, sourceName)
+
+    logger.info("Creating ApiClient...")
     val apiClient = ApiClient.get(apiConf)
-    val storageID = apiClient.getRepository(repo).getStorageId
-    val storageType = apiClient.getBlockstoreType(storageID)
-    var storageNamespace = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
-    if (!storageNamespace.endsWith("/")) {
-      storageNamespace += "/"
-    }
 
+    logger.info(s"Getting repository info for: $repo")
     try {
-      if (shouldMark) {
-        // Read objects directly from object storage
-        val dataDF = listObjects(storageNamespace, cutoffTime)
+      val storageID = apiClient.getRepository(repo).getStorageId
+      val storageType = apiClient.getBlockstoreType(storageID)
+      var storageNamespace = apiClient.getStorageNamespace(repo, StorageClientType.HadoopFS)
+      if (!storageNamespace.endsWith("/")) {
+        storageNamespace += "/"
+      }
 
-        // Get first Slice
-        firstSlice = getFirstSlice(dataDF, repo)
+      logger.info(
+        s"Successfully retrieved repository info. StorageID: $storageID, Type: $storageType"
+      )
+      logger.info(s"Storage namespace: $storageNamespace")
 
-        // Process uncommitted
-        val uncommittedGCRunInfo =
-          new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
-        var uncommittedDF =
-          spark.emptyDataFrame.withColumn("physical_address", lit(""))
+      try {
+        if (shouldMark) {
+          // Read objects directly from object storage
+          val dataDF = listObjects(storageNamespace, cutoffTime)
 
-        if (uncommittedGCRunInfo.uncommittedLocation != "") {
-          val uncommittedLocation = ApiClient
-            .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
-          val uncommittedPath = new Path(uncommittedLocation)
-          val fs = uncommittedPath.getFileSystem(hc)
-          // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
-          if (fs.exists(uncommittedPath)) {
-            uncommittedDF = spark.read.parquet(uncommittedLocation.toString)
+          // Get first Slice
+          firstSlice = getFirstSlice(dataDF, repo)
+
+          // Process uncommitted
+          val uncommittedGCRunInfo =
+            new APIUncommittedAddressLister(apiClient).listUncommittedAddresses(spark, repo)
+          var uncommittedDF =
+            spark.emptyDataFrame.withColumn("physical_address", lit(""))
+
+          if (uncommittedGCRunInfo.uncommittedLocation != "") {
+            val uncommittedLocation = ApiClient
+              .translateURI(new URI(uncommittedGCRunInfo.uncommittedLocation), storageType)
+            val uncommittedPath = new Path(uncommittedLocation)
+            val fs = uncommittedPath.getFileSystem(hc)
+            // Backwards compatibility with lakefs servers that return address even when there's no uncommitted data
+            if (fs.exists(uncommittedPath)) {
+              uncommittedDF = spark.read.parquet(uncommittedLocation.toString)
+            }
           }
-        }
-        uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
-        uncommittedDF = uncommittedDF.repartition(uncommittedDF.col("address"))
-        runID = uncommittedGCRunInfo.runID
+          uncommittedDF = uncommittedDF.select(uncommittedDF("physical_address").as("address"))
+          uncommittedDF = uncommittedDF.repartition(uncommittedDF.col("address"))
+          runID = uncommittedGCRunInfo.runID
 
-        // Process committed
-        val clientStorageNamespace =
-          apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
-        val committedLister =
-          if (uncommittedOnly) new NaiveCommittedAddressLister()
-          else new ActiveCommitsAddressLister(apiClient, repo, storageType)
-        val committedDF =
-          committedLister.listCommittedAddresses(spark, storageNamespace, clientStorageNamespace)
+          // Process committed
+          val clientStorageNamespace =
+            apiClient.getStorageNamespace(repo, StorageClientType.SDKClient)
+          val committedLister =
+            if (uncommittedOnly) new NaiveCommittedAddressLister()
+            else new ActiveCommitsAddressLister(apiClient, repo, storageType)
+          val committedDF =
+            committedLister.listCommittedAddresses(spark, storageNamespace, clientStorageNamespace)
 
-        addressesToDelete = dataDF
-          .select("address")
-          .repartition(dataDF.col("address"))
-          .except(committedDF)
-          .except(uncommittedDF)
-          .cache()
+          addressesToDelete = dataDF
+            .select("address")
+            .repartition(dataDF.col("address"))
+            .except(committedDF)
+            .except(uncommittedDF)
+            .cache()
 
-        committedDF.unpersist()
-        uncommittedDF.unpersist()
-      }
-
-      // delete marked addresses
-      if (shouldSweep) {
-        val markedAddresses = if (shouldMark) {
-          logger.info("deleting marked addresses from run ID: " + runID)
-          addressesToDelete
-        } else {
-          logger.info("deleting marked addresses from mark ID: " + markID)
-          readMarkedAddresses(storageNamespace, markID, outputPrefix)
+          committedDF.unpersist()
+          uncommittedDF.unpersist()
         }
 
-        val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
-        val hcValues = spark.sparkContext.broadcast(
-          HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
-        )
-        val configMapper = new ConfigMapper(hcValues)
-        bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
-        logger.info("finished deleting")
-      }
+        // delete marked addresses
+        if (shouldSweep) {
+          val markedAddresses = if (shouldMark) {
+            logger.info("deleting marked addresses from run ID: " + runID)
+            addressesToDelete
+          } else {
+            logger.info("deleting marked addresses from mark ID: " + markID)
+            readMarkedAddresses(storageNamespace, markID, outputPrefix)
+          }
 
-      // Flow completed successfully - set success to true
-      success = true
-    } finally {
-      if (runID.nonEmpty && shouldMark) {
-        writeReports(
-          storageNamespace,
-          runID,
-          firstSlice,
-          startTime,
-          cutoffTime.toInstant,
-          success,
-          addressesToDelete,
-          outputPrefix
-        )
-      }
+          val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
+          val hcValues = spark.sparkContext.broadcast(
+            HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
+          )
+          val configMapper = new ConfigMapper(hcValues)
+          bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)
+          logger.info("finished deleting")
+        }
 
-      spark.close()
+        // Flow completed successfully - set success to true
+        success = true
+      } catch {
+        case e: Exception =>
+          logger.error(s"Error during GC execution: ${e.getMessage}", e)
+          throw e
+      } finally {
+        if (runID.nonEmpty && shouldMark) {
+          writeReports(
+            storageNamespace,
+            runID,
+            firstSlice,
+            startTime,
+            cutoffTime.toInstant,
+            success,
+            addressesToDelete,
+            outputPrefix
+          )
+        }
+
+        spark.close()
+      }
+    } catch {
+      case e: Exception =>
+        logger.error(s"Error getting repository from lakeFS API: ${e.getMessage}", e)
+        throw e
     }
   }
 

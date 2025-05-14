@@ -15,6 +15,7 @@ import java.net.URI
 object StorageUtils {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
+  private val logger: Logger = LoggerFactory.getLogger(getClass)
 
   /** Constructs object paths in a storage namespace.
    *
@@ -96,38 +97,74 @@ object StorageUtils {
         bucket: String
     ): AmazonS3 = {
       require(bucket.nonEmpty)
+      logger.info(s"Creating S3 client for bucket: $bucket, endpoint: $endpoint, region: $region")
 
-      // ONLY FOR EMR 7.0.0: Check for Hadoop's assumed role configuration
-      val emr7AssumedRole = Option(System.getProperty("fs.s3a.assumed.role.arn"))
-        .orElse(Option(System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")))
+      // DEBUG: Log all system properties related to AWS or S3 for debugging
+      logger.info("S3-related System Properties:")
+      System.getProperties
+        .stringPropertyNames()
+        .toArray
+        .filter(_.toString.contains("s3") || _.toString.contains("aws"))
+        .foreach(prop => {
+          val key = prop.toString
+          val value = if (key.toLowerCase.contains("secret") || key.toLowerCase.contains("key")) {
+            "<CREDENTIAL REDACTED>"
+          } else {
+            System.getProperty(key)
+          }
+          logger.info(s"  $key=$value")
+        })
 
-      // Skip bucket location check only if running on EMR 7.0.0 with assumed role
-      if (emr7AssumedRole.isDefined) {
-        logger.info(s"EMR 7.0.0 detected with assumed role: ${emr7AssumedRole.get}")
-        logger.info("Skipping bucket location check to avoid credential provider issues")
-        return initializeS3Client(configuration, credentialsProvider, builder, endpoint, region)
+      // Check for Hadoop's assumed role configuration
+      val roleArn = System.getProperty("fs.s3a.assumed.role.arn")
+      val sparkHadoopRoleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
+      val isAssumeRoleProvider = (roleArn != null && !roleArn.isEmpty) ||
+        (sparkHadoopRoleArn != null && !sparkHadoopRoleArn.isEmpty)
+
+      logger.info(s"Using role ARN? $isAssumeRoleProvider")
+      if (isAssumeRoleProvider) {
+        val actualRoleArn = if (roleArn != null && !roleArn.isEmpty) roleArn else sparkHadoopRoleArn
+        logger.info(
+          s"Using role ARN: $actualRoleArn, skipping bucket location check for EMR 7.0.0 compatibility"
+        )
+        val client =
+          initializeS3Client(configuration, credentialsProvider, builder, endpoint, region)
+        return client
       }
 
-      // For all other cases (including EMR 6.9.0) - use the original flow unchanged
+      // Standard flow for non-role based auth
+      logger.info("Using standard credential flow")
       val client = initializeS3Client(configuration, credentialsProvider, builder, endpoint)
 
       var bucketRegion =
         try {
+          logger.info("Attempting to get bucket location")
           val location = client.getBucketLocation(bucket)
+          logger.info(
+            s"Got bucket location: ${if (location == null || location.isEmpty) "null/empty"
+            else location}"
+          )
           if (location == null || location.isEmpty) null else location
         } catch {
           case e: Exception =>
-            logger.info(f"Could not fetch region for bucket $bucket", e)
+            logger.info(f"Could not fetch region for bucket $bucket: ${e.getMessage}", e)
             ""
         }
+
       if (bucketRegion == "" && region == "") {
+        logger.error(s"Could not determine region for bucket $bucket and no region provided")
         throw new IllegalArgumentException(
           s"""Could not fetch region for bucket "$bucket" and no region was provided"""
         )
       }
+
       if (bucketRegion == "") {
+        logger.info(s"Using provided region: $region")
         bucketRegion = region
+      } else {
+        logger.info(s"Using bucket region: $bucketRegion")
       }
+
       initializeS3Client(configuration, credentialsProvider, builder, endpoint, bucketRegion)
     }
 
@@ -138,20 +175,38 @@ object StorageUtils {
         endpoint: String,
         region: String = null
     ): AmazonS3 = {
+      logger.info("Initializing S3 client:")
+      logger.info(s"  Endpoint: $endpoint")
+      logger.info(s"  Region: ${if (region == null) "null" else region}")
+      logger.info(s"  Credentials provided: ${credentialsProvider.isDefined}")
+
       val configuredBuilder = builder.withClientConfiguration(configuration)
 
       if (endpoint != null && !endpoint.isEmpty) {
+        logger.info(
+          s"Setting endpoint configuration: $endpoint, region: ${if (region == null) "null"
+          else region}"
+        )
         configuredBuilder.withEndpointConfiguration(
           new AwsClientBuilder.EndpointConfiguration(endpoint, region)
         )
       } else if (region != null && !region.isEmpty) {
+        logger.info(s"Setting region: $region")
         configuredBuilder.withRegion(region)
       }
 
       // Apply credentials if provided
-      credentialsProvider.foreach(configuredBuilder.withCredentials)
+      if (credentialsProvider.isDefined) {
+        logger.info("Applying credentials provider to builder")
+        configuredBuilder.withCredentials(credentialsProvider.get)
+      } else {
+        logger.info("No explicit credentials provided")
+      }
 
-      configuredBuilder.build()
+      logger.info("Building S3 client")
+      val client = configuredBuilder.build()
+      logger.info("S3 client created successfully")
+      client
     }
   }
 }
