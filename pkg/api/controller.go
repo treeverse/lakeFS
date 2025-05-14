@@ -25,6 +25,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
+	"github.com/treeverse/lakefs/modules/config/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -5465,7 +5466,7 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
-		VersionContext:     swag.String(c.Config.AuthConfig().UIConfig.VersionContext),
+		VersionContext:     swag.String(factory.GetServerName()),
 	}
 }
 
