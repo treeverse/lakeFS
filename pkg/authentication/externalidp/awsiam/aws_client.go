@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"github.com/google/uuid"
 )
 
 var ErrInvalidCredentialsFormat = errors.New("missing required parts in query param X-Amz-Credential")
@@ -28,9 +27,10 @@ const (
 	AuthVersionKey    = "Version"
 	AuthAlgorithmKey  = "X-Amz-Algorithm"
 	//nolint:gosec
-	AuthCredentialKey = "X-Amz-Credential"
-	AuthDateKey       = "X-Amz-Date"
-	AuthExpiresKey    = "X-Amz-Expires"
+	AuthCredentialKey  = "X-Amz-Credential"
+	AuthDateKey        = "X-Amz-Date"
+	HostServerIDHeader = "X-LakeFS-Server-ID"
+	AuthExpiresKey     = "X-Amz-Expires"
 	//nolint:gosec
 	AuthSecurityTokenKey = "X-Amz-Security-Token"
 	AuthSignedHeadersKey = "X-Amz-SignedHeaders"
@@ -62,7 +62,6 @@ type AWSIdentityTokenInfo struct {
 }
 
 type IAMAuthParams struct {
-	ProviderType        string
 	TokenRequestHeaders map[string]string
 	URLPresignTTL       time.Duration
 	TokenTTL            time.Duration
@@ -71,11 +70,6 @@ type IAMAuthParams struct {
 
 type IAMAuthParamsOptions = func(params *IAMAuthParams)
 
-func WithProviderType(provider string) IAMAuthParamsOptions {
-	return func(params *IAMAuthParams) {
-		params.ProviderType = provider
-	}
-}
 func WithRefreshInterval(refreshInterval time.Duration) IAMAuthParamsOptions {
 	return func(params *IAMAuthParams) {
 		params.RefreshInterval = refreshInterval
@@ -99,7 +93,7 @@ func WithTokenRequestHeaders(tokenRequestHeaders map[string]string) IAMAuthParam
 
 func NewIAMAuthParams(lakeFSHost string, opts ...IAMAuthParamsOptions) *IAMAuthParams {
 	headers := map[string]string{
-		"X-LakeFS-Server-ID": lakeFSHost,
+		HostServerIDHeader: lakeFSHost,
 	}
 	p := &IAMAuthParams{
 		RefreshInterval:     DefaultRefreshInterval,
@@ -157,7 +151,7 @@ func ParsePresignedURL(presignedURL string) (*AWSIdentityTokenInfo, error) {
 
 func PresignGetCallerIdentityFromAuthParams(ctx context.Context, params *IAMAuthParams, stsClient *sts.Client) (string, error) {
 	setHTTPHeaders := func(requestHeaders map[string]string, ttl time.Duration) func(*middleware.Stack) error {
-		middlewareName := "AddHeaders" + uuid.New().String()
+		middlewareName := "AddHeaders"
 		return func(stack *middleware.Stack) error {
 			return stack.Build.Add(middleware.BuildMiddlewareFunc(middlewareName, func(
 				ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler,
@@ -165,7 +159,7 @@ func PresignGetCallerIdentityFromAuthParams(ctx context.Context, params *IAMAuth
 				middleware.BuildOutput, middleware.Metadata, error,
 			) {
 				if req, ok := in.Request.(*smithyhttp.Request); ok {
-					req.Method = "POST"
+					req.Method = AuthMethod
 					for header, value := range requestHeaders {
 						req.Header.Add(header, value)
 					}
@@ -190,5 +184,5 @@ func PresignGetCallerIdentityFromAuthParams(ctx context.Context, params *IAMAuth
 	if err != nil {
 		return "", err
 	}
-	return presign.URL, err
+	return presign.URL, nil
 }
