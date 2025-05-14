@@ -25,10 +25,10 @@ object StorageUtils {
    *  @return object paths in a storage namespace
    */
   def concatKeysToStorageNamespace(
-                                    keys: Seq[String],
-                                    storageNamespace: String,
-                                    keepNsSchemeAndHost: Boolean = true
-                                  ): Seq[String] = {
+      keys: Seq[String],
+      storageNamespace: String,
+      keepNsSchemeAndHost: Boolean = true
+  ): Seq[String] = {
     var sanitizedNS = storageNamespace
     if (!keepNsSchemeAndHost) {
       val uri = new URI(storageNamespace)
@@ -87,14 +87,30 @@ object StorageUtils {
     val S3NumRetries = 20
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
+    // Map for translating S3 region names to their canonical form
+    private val regionMap = Map(
+      "US" -> "us-east-1",
+      "" -> "us-east-1", // Empty string also means US Standard
+      null -> "us-east-1" // Null also means US Standard
+    )
+
+    /** Normalize S3 region name to the format expected by S3 API
+     *
+     *  @param region The region name returned by getBucketLocation
+     *  @return The normalized region name
+     */
+    private def normalizeRegion(region: String): String = {
+      regionMap.getOrElse(region, region)
+    }
+
     def createAndValidateS3Client(
-                                   configuration: ClientConfiguration,
-                                   credentialsProvider: Option[AWSCredentialsProvider],
-                                   builder: AmazonS3ClientBuilder,
-                                   endpoint: String,
-                                   region: String,
-                                   bucket: String
-                                 ): AmazonS3 = {
+        configuration: ClientConfiguration,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        builder: AmazonS3ClientBuilder,
+        endpoint: String,
+        region: String,
+        bucket: String
+    ): AmazonS3 = {
       require(bucket.nonEmpty)
       logger.info(s"Creating S3 client for bucket: $bucket, endpoint: $endpoint, region: $region")
 
@@ -107,9 +123,19 @@ object StorageUtils {
       // When using AssumedRoleCredentialProvider, avoid extra checks that may fail due to permissions
       if (isAssumeRoleProvider) {
         val actualRoleArn = if (roleArn != null && !roleArn.isEmpty) roleArn else sparkHadoopRoleArn
-        logger.info(s"Using role ARN: $actualRoleArn, skipping bucket location check for EMR 7.0.0 compatibility")
-        val client =
-          initializeS3Client(configuration, credentialsProvider, builder, endpoint, region)
+        logger.info(
+          s"Using role ARN: $actualRoleArn, skipping bucket location check for EMR 7.0.0 compatibility"
+        )
+        val normalizedRegion = normalizeRegion(region)
+        if (normalizedRegion != region) {
+          logger.info(s"Normalized region from '$region' to '$normalizedRegion'")
+        }
+        val client = initializeS3Client(configuration,
+                                        credentialsProvider,
+                                        builder,
+                                        endpoint,
+                                        normalizedRegion
+                                       )
         return client
       }
 
@@ -121,8 +147,11 @@ object StorageUtils {
         try {
           logger.info("Attempting to get bucket location")
           val location = client.getBucketLocation(bucket)
-          logger.info(s"Got bucket location: ${if (location == null || location.isEmpty) "null/empty" else location}")
-          if (location == null || location.isEmpty) null else location
+          logger.info(
+            s"Got bucket location: ${if (location == null || location.isEmpty) "null/empty"
+            else location}"
+          )
+          normalizeRegion(location)
         } catch {
           case e: Exception =>
             logger.info(f"Could not fetch region for bucket $bucket: ${e.getMessage}", e)
@@ -138,7 +167,7 @@ object StorageUtils {
 
       if (bucketRegion == "") {
         logger.info(s"Using provided region: $region")
-        bucketRegion = region
+        bucketRegion = normalizeRegion(region)
       } else {
         logger.info(s"Using bucket region: $bucketRegion")
       }
@@ -147,12 +176,12 @@ object StorageUtils {
     }
 
     private def initializeS3Client(
-                                    configuration: ClientConfiguration,
-                                    credentialsProvider: Option[AWSCredentialsProvider],
-                                    builder: AmazonS3ClientBuilder,
-                                    endpoint: String,
-                                    region: String = null
-                                  ): AmazonS3 = {
+        configuration: ClientConfiguration,
+        credentialsProvider: Option[AWSCredentialsProvider],
+        builder: AmazonS3ClientBuilder,
+        endpoint: String,
+        region: String = null
+    ): AmazonS3 = {
       logger.info("Initializing S3 client:")
       logger.info(s"  Endpoint: $endpoint")
       logger.info(s"  Region: ${if (region == null) "null" else region}")
@@ -161,7 +190,10 @@ object StorageUtils {
       val configuredBuilder = builder.withClientConfiguration(configuration)
 
       if (endpoint != null && !endpoint.isEmpty) {
-        logger.info(s"Setting endpoint configuration: $endpoint, region: ${if (region == null) "null" else region}")
+        logger.info(
+          s"Setting endpoint configuration: $endpoint, region: ${if (region == null) "null"
+          else region}"
+        )
         configuredBuilder.withEndpointConfiguration(
           new AwsClientBuilder.EndpointConfiguration(endpoint, region)
         )
@@ -191,10 +223,10 @@ class S3RetryDeleteObjectsCondition extends RetryPolicy.RetryCondition {
   private val XML_PARSE_BROKEN = "Failed to parse XML document"
 
   override def shouldRetry(
-                            originalRequest: AmazonWebServiceRequest,
-                            exception: AmazonClientException,
-                            retriesAttempted: Int
-                          ): Boolean = {
+      originalRequest: AmazonWebServiceRequest,
+      exception: AmazonClientException,
+      retriesAttempted: Int
+  ): Boolean = {
     exception match {
       case s3e: AmazonS3Exception =>
         val message = s3e.getMessage
@@ -203,9 +235,15 @@ class S3RetryDeleteObjectsCondition extends RetryPolicy.RetryCondition {
           true
         } else if (
           s3e.getStatusCode == 429 ||
-            (s3e.getStatusCode >= 500 && s3e.getStatusCode < 600)
+          (s3e.getStatusCode >= 500 && s3e.getStatusCode < 600)
         ) {
           logger.info(s"Retry $originalRequest: Throttled or server error: $s3e")
+          true
+        } else if (message != null && message.contains("AuthorizationHeaderMalformed")) {
+          // This is often a region mismatch issue
+          logger.info(
+            s"Retry $originalRequest: Authorization header malformed (possible region mismatch): $s3e"
+          )
           true
         } else {
           logger.info(s"Retry $originalRequest: Other S3 exception: $s3e")
