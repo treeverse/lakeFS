@@ -79,6 +79,7 @@ func setBaseDefaults(cfgType string) {
 	viper.SetDefault("auth.ui_config.login_failed_message", "The credentials don't match.")
 	viper.SetDefault("auth.ui_config.login_cookie_names", "internal_auth_session")
 	viper.SetDefault("auth.ui_config.use_login_placeholders", false)
+	viper.SetDefault("auth.ui_config.version_context", "")
 
 	viper.SetDefault("auth.remote_authenticator.default_user_group", "Viewers")
 	viper.SetDefault("auth.remote_authenticator.request_timeout", 10*time.Second)
