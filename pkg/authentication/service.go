@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/sessions"
 	"github.com/treeverse/lakefs/pkg/authentication/apiclient"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -156,6 +157,7 @@ func (s *APIService) RegisterAdditionalRoutes(_ *chi.Mux, _ sessions.Store) {
 	s.logger.Trace("no additional routes to register")
 }
 
-func (s *APIService) OIDCCallback(_ http.ResponseWriter, _ *http.Request, _ sessions.Store) {
+func (s *APIService) OIDCCallback(w http.ResponseWriter, r *http.Request, _ sessions.Store) {
 	s.logger.Warn("OIDC is not implemented")
+	httputil.WriteError(w, r, http.StatusBadRequest, ErrNotImplemented)
 }

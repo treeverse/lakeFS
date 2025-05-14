@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -13,7 +14,7 @@ func NewLogoutHandler(sessionStore sessions.Store, logger logging.Logger, logout
 		err := clearSession(w, r, sessionStore, InternalAuthSessionName)
 		if err != nil {
 			logger.WithError(err).Error("Failed to clear internal session during logout")
-			writeError(w, r, http.StatusInternalServerError, err)
+			httputil.WriteError(w, r, http.StatusInternalServerError, err)
 			return
 		}
 		http.Redirect(w, r, logoutRedirectURL, http.StatusTemporaryRedirect)
