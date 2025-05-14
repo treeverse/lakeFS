@@ -21,7 +21,7 @@ func (m mockCredentialsProvider) Retrieve(ctx context.Context) (aws.Credentials,
 	return m.creds, m.err
 }
 
-func TestGeneratePresignedURL_Integration(t *testing.T) {
+func TestPresignGetCallerIdentityFromAuthParams(t *testing.T) {
 	numSeconds := 360
 	validCreds := aws.Credentials{
 		AccessKeyID:     "accesKey",

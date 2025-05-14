@@ -134,7 +134,7 @@ func ParsePresignedURL(presignedURL string) (*AWSIdentityTokenInfo, error) {
 	calculatedRegion := splitedCreds[2]
 	accessKeyID := splitedCreds[0]
 	return &AWSIdentityTokenInfo{
-		Method:             "POST",
+		Method:             AuthMethod,
 		Host:               parsedURL.Host,
 		Region:             calculatedRegion,
 		Action:             AuthAction,
