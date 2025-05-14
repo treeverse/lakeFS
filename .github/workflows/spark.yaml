@@ -19,3 +19,11 @@ jobs:
           distribution: 'adopt-hotspot'
           java-version: '8'
           cache: 'sbt'
+
+      - name: validate format
+        working-directory: clients/spark
+        run: sbt scalafmtCheck
+
+      - name: run tests, validate and package
+        working-directory: clients/spark
+        run: sbt test "scalafix --check" package
