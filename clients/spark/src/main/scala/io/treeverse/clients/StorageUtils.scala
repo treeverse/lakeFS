@@ -16,7 +16,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import java.util.UUID
-import scala.util.Try
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
