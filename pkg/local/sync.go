@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -73,10 +74,18 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	s.progressBar.Start()
 	defer s.progressBar.Stop()
 
+	// Use sync.Map to collect directories where local deletes happen
+	var dirsToCheck sync.Map
+
 	wg, ctx := errgroup.WithContext(s.ctx)
 	for i := 0; i < s.cfg.Parallelism; i++ {
 		wg.Go(func() error {
 			for change := range changeSet {
+				// Collect directory for local delete
+				if change.Type == ChangeTypeRemoved && change.Source == ChangeSourceRemote {
+					dir := filepath.Dir(filepath.Join(rootPath, change.Path))
+					dirsToCheck.Store(dir, struct{}{})
+				}
 				if err := s.apply(ctx, rootPath, remote, change); err != nil {
 					return err
 				}
@@ -90,8 +99,22 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	if s.cfg.IncludePerm {
 		return nil // Do not prune directories in this case to preserve directories and permissions
 	}
-	_, err := fileutil.PruneEmptyDirectories(rootPath)
-	return err
+
+	// Remove empty directories that were affected by deletes
+	dirsToCheck.Range(func(key, _ any) bool {
+		dir := key.(string)
+		for dir != rootPath {
+			if empty, err := fileutil.IsDirEmpty(dir); err == nil && empty {
+				_ = os.Remove(dir) // ignore error, best effort
+				dir = filepath.Dir(dir)
+			} else {
+				break
+			}
+		}
+		return true
+	})
+
+	return nil
 }
 
 func (s *SyncManager) apply(ctx context.Context, rootPath string, remote *uri.URI, change *Change) error {
