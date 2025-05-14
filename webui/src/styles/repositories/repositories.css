@@ -1,0 +1,224 @@
+/* Repository Item */
+.repository-item .card {
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.repository-item .card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.repository-item h5 {
+  margin-bottom: var(--spacing-xs);
+}
+
+.repository-item p {
+  color: var(--text-light);
+  margin-bottom: 0;
+}
+
+.repository-item code {
+  color: var(--primary-dark);
+  background-color: var(--border-light);
+}
+
+/* Enhanced Repository Card Styling */
+.repository-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: all var(--transition);
+  overflow: hidden;
+  padding: var(--spacing-sm);
+}
+
+.repository-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-light);
+}
+
+/* Repository Title Styling */
+.repository-title a {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: var(--text-dark);
+  transition: color var(--transition-fast);
+}
+
+.repository-title a:hover {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+/* Repository Created Date Styling */
+.repository-created-date {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  margin-top: 0.25rem;
+}
+
+/* Repository Details Styling */
+.repository-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-alt);
+  border-radius: var(--radius);
+  padding: var(--spacing-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.detail-item:hover {
+  background-color: var(--border-light);
+}
+
+.detail-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: var(--spacing-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.detail-value code {
+  color: var(--primary-dark);
+  background-color: rgba(59, 130, 246, 0.1);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  border: none;
+  word-break: break-all;
+}
+
+/* Compact Repository Details Styling */
+.repository-details-compact {
+  margin-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-light);
+  padding-top: var(--spacing-sm);
+}
+
+.detail-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.detail-item-compact {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-alt);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  transition: background-color var(--transition-fast);
+  flex: 1;
+  min-width: 120px;
+}
+
+.detail-item-compact:hover {
+  background-color: var(--border-light);
+}
+
+.detail-label-compact {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value-compact {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-top: 0.1rem;
+}
+
+.detail-value-compact code {
+  color: var(--primary-dark);
+  background-color: rgba(59, 130, 246, 0.1);
+  padding: 0.1rem 0.3rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  border: none;
+  word-break: break-all;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.storage-namespace {
+  flex: 2;
+  min-width: 200px;
+}
+
+/* Dark Mode Adjustments */
+[data-bs-theme="dark"] .repository-card {
+  background-color: var(--surface);
+  border-color: var(--border);
+}
+
+[data-bs-theme="dark"] .repository-card:hover {
+  border-color: var(--primary);
+}
+
+[data-bs-theme="dark"] .detail-item {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+[data-bs-theme="dark"] .detail-item:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+[data-bs-theme="dark"] .detail-value code {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: var(--primary-light);
+}
+
+/* Dark mode fix for repo item code */
+[data-bs-theme="dark"] .repository-item code {
+  background-color: #374151;
+  color: #93c5fd;
+  border: 1px solid #4b5563;
+}
+
+/* Commit List */
+.commit-list .list-group-item {
+  border-left: none;
+  border-right: none;
+  padding: var(--spacing-md) var(--spacing-lg);
+  transition: background-color var(--transition-fast);
+}
+
+.commit-list .list-group-item:hover {
+  background-color: var(--border-light);
+}
+
+.commit-list .list-group-item:nth-of-type(even) {
+  background-color: var(--background-alt);
+}
+
+.commit-list .list-group-item:nth-of-type(even):hover {
+  background-color: var(--border-light);
+}
+
+/* Commit Actions */
+.commit-actions .btn, 
+.branch-actions .btn, 
+.run-commit {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+} 

@@ -19,7 +19,43 @@ import {ChangesTreeContainer, MetadataFields} from "../../../lib/components/repo
 import {useRouter} from "../../../lib/hooks/router";
 import {URINavigator} from "../../../lib/components/repository/tree";
 import {RepoError} from "./error";
+import { Link } from "../../../lib/components/nav";
+import Card from "react-bootstrap/Card";
+import {PlusIcon} from "@primer/octicons-react";
 
+
+/**
+ * A component to display when there are no changes in the repository.
+ * This is used specifically for the uncommitted changes page.
+ * 
+ * @param repo Repository
+ * @param reference commitID / branch
+ */
+export const EmptyChangesState = ({ repo, reference }) => {
+    return (
+        <div className="tree-container">
+            <Card className="border-0 shadow-sm">
+                <Card.Body className="text-center p-5">
+                    <h3 className="mb-3">No Changes Yet</h3>
+                    <p className="text-muted mb-4">
+                        No uncommitted changes on <code>{reference.id}</code>!
+                        <br />Upload or modify files to see them appear here.
+                    </p>
+                    <Link 
+                        href={{
+                            pathname: "/repositories/:repoId/objects",
+                            params: { repoId: repo.id },
+                            query: { ref: reference.id }
+                        }}
+                        className="btn btn-primary"
+                    >
+                        <PlusIcon className="me-1" /> Upload Files
+                    </Link>
+                </Card.Body>
+            </Card>
+        </div>
+    );
+};
 
 const CommitButton = ({repo, onCommit, enabled = false}) => {
 
@@ -226,7 +262,10 @@ const ChangesBrowser = ({repo, reference, prefix, onSelectRef, }) => {
                                   repo={repo} reference={reference} internalReferesh={internalRefresh} prefix={prefix}
                                   getMore={getMoreUncommittedChanges}
                                   loading={loading} nextPage={nextPage} setAfterUpdated={setAfterUpdated}
-                                  onNavigate={onNavigate} onRevert={onReset} changesTreeMessage={changesTreeMessage}/>
+                                  onNavigate={onNavigate} onRevert={onReset} changesTreeMessage={changesTreeMessage}
+                                  noChangesText="No changes - you can modify this branch by uploading data using the UI or any of the supported SDKs"
+                                  emptyStateComponent={<EmptyChangesState repo={repo} reference={reference} />}
+                                  />
         </>
     )
 }

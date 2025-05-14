@@ -97,7 +97,7 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
     );
 };
 const PrefixExpansionSection = ({dirExpanded, onClick}) => {
-    return (<span onClick={onClick}>
+    return (<span onClick={onClick} className="prefix-expand-icon">
                 {dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
             </span>)
 }
