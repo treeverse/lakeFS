@@ -58,10 +58,7 @@ func TestPresignGetCallerIdentityFromAuthParams(t *testing.T) {
 	require.Equal(t, "accesKey/20250514/us-east-1/sts/aws4_request", q.Get("X-Amz-Credential"))
 	require.NotEmpty(t, q.Get("X-Amz-Date"))
 	require.Equal(t, "a-nice-header;host;x-custom-test", q.Get("X-Amz-SignedHeaders"))
-	signedHeaders := q.Get("X-Amz-SignedHeaders")
-	require.Contains(t, signedHeaders, "a-nice-header")
-	require.Contains(t, signedHeaders, "x-custom-test")
-	require.NotEmpty(t, q.Get("X-Amz-Security-Token"))
+	require.Contains(t, q.Get("X-Amz-Security-Token"), "securityToken")
 	require.Equal(t, "sts.us-east-1.amazonaws.com", u.Host)
 
 }
