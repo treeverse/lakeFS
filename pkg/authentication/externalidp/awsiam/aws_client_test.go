@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// A custom credentials provider for mocking
 type mockCredentialsProvider struct {
 	creds aws.Credentials
 	err   error
@@ -44,6 +43,7 @@ func TestGeneratePresignedURL_Integration(t *testing.T) {
 	}
 
 	url, err := PresignGetCallerIdentityFromAuthParams(context.TODO(), params, stsClient)
+	fmt.Println("\n\n", url)
 	require.NoError(t, err)
 	require.NotEmpty(t, url)
 	// Basic validations
@@ -56,4 +56,19 @@ func TestGeneratePresignedURL_Integration(t *testing.T) {
 	require.Contains(t, url, fmt.Sprintf("X-Amz-Expires=%d", numSeconds))
 	require.Contains(t, url, "a-nice-header")
 	require.Contains(t, url, "x-custom-test")
+}
+
+func TestNewIAMAuthParams(t *testing.T) {
+	params := NewIAMAuthParams("")
+	require.Equal(t, params.TokenTTL, 3600*time.Minute)
+	require.Equal(t, params.RefreshInterval, 5*time.Minute)
+	require.Equal(t, params.TokenRequestHeaders["X-LakeFS-Server-ID"], "")
+
+	newheaders := map[string]string{"header": "hallo"}
+	newparams := NewIAMAuthParams("host", WithRefreshInterval(13*time.Minute), WithTokenTTL(9*time.Minute), WithProviderType("aws_iam"), WithTokenRequestHeaders(newheaders))
+	require.Equal(t, newparams.TokenTTL, 9*time.Minute)
+	require.Equal(t, newparams.RefreshInterval, 13*time.Minute)
+	require.Equal(t, newparams.ProviderType, "aws_iam")
+	require.NotContains(t, newparams.TokenRequestHeaders["X-LakeFS-Server-ID"], "host")
+	require.Equal(t, newparams.TokenRequestHeaders["header"], "hallo")
 }

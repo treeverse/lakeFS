@@ -39,9 +39,11 @@ const (
 	CredentialTimeFormat = "20060102"
 )
 const (
-	DefaultSTSLoginExpire = 15 * time.Minute
-
-	minLengthSplitCreds = 3
+	DefaultSTSLoginExpire  = 15 * time.Minute
+	DefaultRefreshInterval = 5 * time.Minute
+	DefaultURLPresignTTL   = 1 * time.Minute
+	DefaultTokenTTL        = 3600 * time.Minute
+	minLengthSplitCreds    = 3
 )
 
 type AWSIdentityTokenInfo struct {
@@ -65,6 +67,50 @@ type IAMAuthParams struct {
 	URLPresignTTL       time.Duration
 	TokenTTL            time.Duration
 	RefreshInterval     time.Duration
+}
+
+type IAMAuthParamsOptions = func(params *IAMAuthParams)
+
+func WithProviderType(provider string) IAMAuthParamsOptions {
+	return func(params *IAMAuthParams) {
+		params.ProviderType = provider
+	}
+}
+func WithRefreshInterval(refreshInterval time.Duration) IAMAuthParamsOptions {
+	return func(params *IAMAuthParams) {
+		params.RefreshInterval = refreshInterval
+	}
+}
+func WithURLPresignTTL(urlPresignTTL time.Duration) IAMAuthParamsOptions {
+	return func(params *IAMAuthParams) {
+		params.URLPresignTTL = urlPresignTTL
+	}
+}
+func WithTokenTTL(tokenTTL time.Duration) IAMAuthParamsOptions {
+	return func(params *IAMAuthParams) {
+		params.TokenTTL = tokenTTL
+	}
+}
+func WithTokenRequestHeaders(tokenRequestHeaders map[string]string) IAMAuthParamsOptions {
+	return func(params *IAMAuthParams) {
+		params.TokenRequestHeaders = tokenRequestHeaders
+	}
+}
+
+func NewIAMAuthParams(lakeFSHost string, opts ...IAMAuthParamsOptions) *IAMAuthParams {
+	headers := map[string]string{
+		"X-LakeFS-Server-ID": lakeFSHost,
+	}
+	p := &IAMAuthParams{
+		RefreshInterval:     DefaultRefreshInterval,
+		URLPresignTTL:       DefaultURLPresignTTL,
+		TokenTTL:            DefaultTokenTTL,
+		TokenRequestHeaders: headers,
+	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
 func GenerateIdentityTokenInfo(ctx context.Context, params *IAMAuthParams, stsClient *sts.Client) (*AWSIdentityTokenInfo, error) {
