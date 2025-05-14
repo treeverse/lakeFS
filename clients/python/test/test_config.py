@@ -39,7 +39,7 @@ class TestConfig(unittest.TestCase):
             return Config(
                 version_config = lakefs_sdk.models.version_config.VersionConfig(
                     version = '', 
-                    version_context = '', 
+                    server_name = '', 
                     latest_version = '', 
                     upgrade_recommended = True, 
                     upgrade_url = '', ),

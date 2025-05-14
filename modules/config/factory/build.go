@@ -5,7 +5,7 @@ import (
 )
 
 func GetServerName() string {
-	return ""
+	return "lakeFS"
 }
 
 func BuildConfig(cfgType string) (config.Config, error) {

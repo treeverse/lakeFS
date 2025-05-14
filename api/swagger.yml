@@ -1291,7 +1291,7 @@ components:
       properties:
         version:
           type: string
-        version_context:
+        server_name:
           type: string
         latest_version:
           type: string

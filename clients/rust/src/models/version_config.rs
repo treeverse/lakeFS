@@ -14,8 +14,8 @@ use crate::models;
 pub struct VersionConfig {
     #[serde(rename = "version", skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
-    #[serde(rename = "version_context", skip_serializing_if = "Option::is_none")]
-    pub version_context: Option<String>,
+    #[serde(rename = "server_name", skip_serializing_if = "Option::is_none")]
+    pub server_name: Option<String>,
     #[serde(rename = "latest_version", skip_serializing_if = "Option::is_none")]
     pub latest_version: Option<String>,
     #[serde(rename = "upgrade_recommended", skip_serializing_if = "Option::is_none")]
@@ -28,7 +28,7 @@ impl VersionConfig {
     pub fn new() -> VersionConfig {
         VersionConfig {
             version: None,
-            version_context: None,
+            server_name: None,
             latest_version: None,
             upgrade_recommended: None,
             upgrade_url: None,
