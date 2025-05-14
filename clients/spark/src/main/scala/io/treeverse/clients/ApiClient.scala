@@ -52,12 +52,12 @@ object ApiClient {
     new Callable[ApiClient] {
       def call() = new ApiClient(
         APIConfigurations(conf.apiUrl,
-          conf.accessKey,
-          conf.secretKey,
-          conf.connectionTimeoutSec,
-          conf.readTimeoutSec,
-          conf.source
-        )
+                          conf.accessKey,
+                          conf.secretKey,
+                          conf.connectionTimeoutSec,
+                          conf.readTimeoutSec,
+                          conf.source
+                         )
       )
     }
   )
@@ -70,13 +70,13 @@ object ApiClient {
   def translateURI(uri: URI, storageType: String): URI = {
     if ((storageType == StorageTypeS3) && (uri.getScheme == "s3")) {
       return new URI("s3a",
-        uri.getUserInfo,
-        uri.getHost,
-        uri.getPort,
-        uri.getPath,
-        uri.getQuery,
-        uri.getFragment
-      )
+                     uri.getUserInfo,
+                     uri.getHost,
+                     uri.getPort,
+                     uri.getPath,
+                     uri.getQuery,
+                     uri.getFragment
+                    )
     } else if (storageType == StorageTypeAzure) {
 
       /** get the host and path from url of type: https://StorageAccountName.blob.core.windows.net/Container[/BlobName],
@@ -103,13 +103,13 @@ object ApiClient {
 /** @param source a string describing the application using the client. Will be sent as part of the X-Lakefs-Client header.
  */
 case class APIConfigurations(
-                              apiUrl: String,
-                              accessKey: String,
-                              secretKey: String,
-                              connectionTimeoutSec: String = "",
-                              readTimeoutSec: String = "",
-                              source: String = ""
-                            ) {
+    apiUrl: String,
+    accessKey: String,
+    secretKey: String,
+    connectionTimeoutSec: String = "",
+    readTimeoutSec: String = "",
+    source: String = ""
+) {
   val FROM_SEC_TO_MILLISEC = 1000
 
   val connectionTimeoutMillisec: Int = stringAsMillisec(connectionTimeoutSec)
@@ -182,9 +182,9 @@ class ApiClient private (conf: APIConfigurations) {
   }
 
   def prepareGarbageCollectionUncommitted(
-                                           repoName: String,
-                                           continuationToken: String
-                                         ): PrepareGCUncommittedResponse = {
+      repoName: String,
+      continuationToken: String
+  ): PrepareGCUncommittedResponse = {
     val prepareGcUncommitted =
       new dev.failsafe.function.CheckedSupplier[PrepareGCUncommittedResponse]() {
         def get(): PrepareGCUncommittedResponse = {
@@ -200,8 +200,8 @@ class ApiClient private (conf: APIConfigurations) {
   }
 
   def prepareGarbageCollectionCommits(
-                                       repoName: String
-                                     ): GarbageCollectionPrepareResponse = {
+      repoName: String
+  ): GarbageCollectionPrepareResponse = {
     val prepareGcCommits =
       new dev.failsafe.function.CheckedSupplier[GarbageCollectionPrepareResponse]() {
         def get(): GarbageCollectionPrepareResponse =
@@ -293,16 +293,16 @@ class ApiClient private (conf: APIConfigurations) {
 
   // Instances of case classes are compared by structure and not by reference https://docs.scala-lang.org/tour/case-classes.html.
   case class StorageNamespaceCacheKey(
-                                       repoName: String,
-                                       storageClientType: StorageClientType
-                                     )
+      repoName: String,
+      storageClientType: StorageClientType
+  )
 }
 
 class RequestRetryWrapper(
-                           val readTimeout: Int,
-                           val maxDurationSeconds: Double = -1,
-                           val maxNumRetries: Int = 5
-                         ) {
+    val readTimeout: Int,
+    val maxDurationSeconds: Double = -1,
+    val maxNumRetries: Int = 5
+) {
   val UnsetMaxDuration = -1
 
   var maxDuration = maxDurationSeconds

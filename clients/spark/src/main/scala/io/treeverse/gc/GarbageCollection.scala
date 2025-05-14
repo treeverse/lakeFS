@@ -81,10 +81,10 @@ object GarbageCollection {
   }
 
   def validateRunModeConfigs(
-                              shouldMark: Boolean,
-                              shouldSweep: Boolean,
-                              markID: String
-                            ): Unit = {
+      shouldMark: Boolean,
+      shouldSweep: Boolean,
+      markID: String
+  ): Unit = {
     if (!shouldMark && !shouldSweep) {
       throw new ParameterValidationException(
         "Nothing to do, must specify at least one of mark, sweep. Exiting..."
@@ -107,13 +107,13 @@ object GarbageCollection {
   }
 
   def run(
-           region: String,
-           repo: String,
-           uncommittedOnly: Boolean = false,
-           sourceName: String = UNIFIED_GC_SOURCE_NAME,
-           outputPrefix: String =
-           "unified" // TODO (johnnyaug): remove this parameter when we remove old GC
-         ): Unit = {
+      region: String,
+      repo: String,
+      uncommittedOnly: Boolean = false,
+      sourceName: String = UNIFIED_GC_SOURCE_NAME,
+      outputPrefix: String =
+        "unified" // TODO (johnnyaug): remove this parameter when we remove old GC
+  ): Unit = {
     var runID = ""
     var firstSlice = ""
     var success = false
@@ -238,12 +238,12 @@ object GarbageCollection {
   }
 
   def bulkRemove(
-                  configMapper: ConfigMapper,
-                  readKeysDF: DataFrame,
-                  storageNamespace: String,
-                  region: String,
-                  storageType: String
-                ): Unit = {
+      configMapper: ConfigMapper,
+      readKeysDF: DataFrame,
+      storageNamespace: String,
+      region: String,
+      storageType: String
+  ): Unit = {
     import spark.implicits._
 
     val it = readKeysDF
@@ -263,15 +263,15 @@ object GarbageCollection {
   }
 
   def writeReports(
-                    storageNamespace: String,
-                    runID: String,
-                    firstSlice: String,
-                    startTime: java.time.Instant,
-                    cutoffTime: java.time.Instant,
-                    success: Boolean,
-                    expiredAddresses: DataFrame,
-                    outputPrefix: String = "unified"
-                  ): Unit = {
+      storageNamespace: String,
+      runID: String,
+      firstSlice: String,
+      startTime: java.time.Instant,
+      cutoffTime: java.time.Instant,
+      success: Boolean,
+      expiredAddresses: DataFrame,
+      outputPrefix: String = "unified"
+  ): Unit = {
     val reportDst = formatRunPath(storageNamespace, runID, outputPrefix)
     logger.info(s"Report for mark_id=$runID path=$reportDst")
 
@@ -280,29 +280,29 @@ object GarbageCollection {
 
     val summary =
       writeJsonSummary(reportDst,
-        runID,
-        firstSlice,
-        startTime,
-        cutoffTime,
-        success,
-        expiredAddresses.count()
-      )
+                       runID,
+                       firstSlice,
+                       startTime,
+                       cutoffTime,
+                       success,
+                       expiredAddresses.count()
+                      )
     logger.info(s"Report summary=$summary")
   }
 
   private def formatRunPath(
-                             storageNamespace: String,
-                             runID: String,
-                             outputPrefix: String
-                           ): String = {
+      storageNamespace: String,
+      runID: String,
+      outputPrefix: String
+  ): String = {
     s"${storageNamespace}_lakefs/retention/gc/$outputPrefix/$runID"
   }
 
   def readMarkedAddresses(
-                           storageNamespace: String,
-                           markID: String,
-                           outputPrefix: String = "unified"
-                         ): DataFrame = {
+      storageNamespace: String,
+      markID: String,
+      outputPrefix: String = "unified"
+  ): DataFrame = {
     val reportPath = new Path(
       formatRunPath(storageNamespace, markID, outputPrefix) + "/summary.json"
     )
@@ -325,14 +325,14 @@ object GarbageCollection {
   }
 
   def writeJsonSummary(
-                        dst: String,
-                        runID: String,
-                        firstSlice: String,
-                        startTime: java.time.Instant,
-                        cutoffTime: java.time.Instant,
-                        success: Boolean,
-                        numDeletedObjects: Long
-                      ): String = {
+      dst: String,
+      runID: String,
+      firstSlice: String,
+      startTime: java.time.Instant,
+      cutoffTime: java.time.Instant,
+      success: Boolean,
+      numDeletedObjects: Long
+  ): String = {
     val dstPath = new Path(s"$dst/summary.json")
     val dstFS = dstPath.getFileSystem(spark.sparkContext.hadoopConfiguration)
     val jsonSummary = JObject(
