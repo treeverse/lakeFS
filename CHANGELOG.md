@@ -1,5 +1,14 @@
 # Changelog
 
+# v1.56.1
+
+:bug: Bugs fixed:
+
+- Fix ParseRange to fail on bytes=-0 (#9032)
+- Fix S3 ListMultipartUploads response missing NextUploadIDMarker (#9036)
+- Use MD5 as ETag in gs adapter (#9041)
+- lakectl - add AWS IAM login config (ignored) (#8994)
+
 # v1.56.0
 
 :new: What's new:
