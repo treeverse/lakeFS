@@ -17,7 +17,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	oidcencoding "github.com/treeverse/lakefs/pkg/auth/oidc/encoding"
-	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
@@ -71,7 +70,7 @@ func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticat
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
-				httputil.WriteError(w, r, http.StatusUnauthorized, err)
+				writeError(w, r, http.StatusUnauthorized, err)
 				return
 			}
 			if user != nil {
@@ -97,12 +96,12 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authentica
 			}
 			securityRequirements, err := extractSecurityRequirements(router, r)
 			if err != nil {
-				httputil.WriteError(w, r, http.StatusBadRequest, err)
+				writeError(w, r, http.StatusBadRequest, err)
 				return
 			}
 			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
-				httputil.WriteError(w, r, http.StatusUnauthorized, err)
+				writeError(w, r, http.StatusUnauthorized, err)
 				return
 			}
 			if user != nil {

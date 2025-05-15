@@ -115,7 +115,7 @@ func OapiRequestValidatorWithOptions(swagger *openapi3.Swagger, options *openapi
 			route, m, err := router.FindRoute(r)
 			if err != nil {
 				// We failed to find a matching route for the request.
-				httputil.WriteError(w, r, http.StatusBadRequest, err.Error())
+				writeError(w, r, http.StatusBadRequest, err.Error())
 				return
 			}
 
@@ -125,7 +125,7 @@ func OapiRequestValidatorWithOptions(swagger *openapi3.Swagger, options *openapi
 			// validate request
 			statusCode, err := validateRequest(r, route, m, options)
 			if err != nil {
-				httputil.WriteError(w, r, statusCode, err.Error())
+				writeError(w, r, statusCode, err.Error())
 				return
 			}
 			// serve
@@ -167,5 +167,5 @@ func validateRequest(r *http.Request, route *routers.Route, pathParams map[strin
 // that routes under the pattern it is used with in chi.Router.Mount (i.e. /api/v1) are
 // not accessible.
 func InvalidAPIEndpointHandler(w http.ResponseWriter, r *http.Request) {
-	httputil.WriteError(w, r, http.StatusInternalServerError, ErrInvalidAPIEndpoint)
+	writeError(w, r, http.StatusInternalServerError, ErrInvalidAPIEndpoint)
 }
