@@ -126,21 +126,22 @@ class ClientConfig(Configuration):
         """Load configuration from .lakectl.yaml file if it exists"""
         try:
             with open(_LAKECTL_YAML_PATH, encoding="utf-8") as fd:
-                self._config_data = yaml.load(fd, Loader=yaml.Loader)
-                if "server" in self._config_data:
-                    self.server = ClientConfig.Server(**self._config_data["server"])
-                if "credentials" in self._config_data:
+                config_data = yaml.load(fd, Loader=yaml.Loader)
+                if "server" in config_data:
+                    self.server = ClientConfig.Server(**config_data["server"])
+                if "credentials" in config_data:
                     try:
-                        self.credentials = ClientConfig.Credentials(**self._config_data["credentials"])
+                        self.credentials = ClientConfig.Credentials(**config_data["credentials"])
                         self.username = self.credentials.access_key_id
                         self.password = self.credentials.secret_access_key
                     except TypeError:
                         pass
 
                 if self.username is None or self.password is None:
-                    self._set_iam_provider_from_config_file()
+                    self._set_iam_provider_from_config_file(config_data)
         except FileNotFoundError:
-            self._config_data = None
+            pass
+
 
     def _load_from_environment(self):
         """Load configuration from environment variables, which take precedence"""
@@ -210,16 +211,16 @@ class ClientConfig(Configuration):
             return self._iam_provider
         return None
 
-    def _set_iam_provider_from_config_file(self):
+    def _set_iam_provider_from_config_file(self, config_data: Dict):
         """
         Set the IAM provider from the configuration file.
         """
-        provider_type = _get_provider_type_from_config_file(self._config_data)
+        provider_type = _get_provider_type_from_config_file(config_data)
         if provider_type is None:
             self._iam_provider = None
         if provider_type not in SUPPORTED_IAM_PROVIDERS:
             raise UnsupportedCredentialsProviderType(provider_type)
-        provider_config = _get_provider_config_from_config_data(self._config_data, provider_type)
+        provider_config = _get_provider_config_from_config_data(config_data, provider_type)
         if provider_config is not None:
             if provider_type == AWS_IAM_PROVIDER_TYPE:
                 aws_iam_provider_config = _generate_aws_iam_provider_config(provider_config)
