@@ -45,17 +45,18 @@ func TestPresignGetCallerIdentityFromAuthParams(t *testing.T) {
 		URLPresignTTL: time.Duration(numSeconds) * time.Second,
 	}
 
-	presignedURL, err := PresignGetCallerIdentityFromAuthParams(context.TODO(), params, stsClient)
+	presignedURL, err := PresignGetCallerIdentityFromAuthParams(context.Background(), params, stsClient)
 	require.NoError(t, err)
 	u, err := url.Parse(presignedURL)
 	require.NoError(t, err)
 
 	q := u.Query()
+	expectedTime := time.Now().UTC().Format("20060102")
 
 	require.Equal(t, fmt.Sprintf("%d", numSeconds), q.Get("X-Amz-Expires"))
 	require.Equal(t, "AWS4-HMAC-SHA256", q.Get("X-Amz-Algorithm"))
 	require.NotEmpty(t, q.Get("X-Amz-Signature"))
-	require.Equal(t, fmt.Sprintf("accesKey/%s/us-east-1/sts/aws4_request", time.Now().UTC().Format("20060102")), q.Get("X-Amz-Credential"))
+	require.Equal(t, fmt.Sprintf("accesKey/%s/us-east-1/sts/aws4_request", expectedTime), q.Get("X-Amz-Credential"))
 	require.NotEmpty(t, q.Get("X-Amz-Date"))
 	require.Equal(t, "a-nice-header;host;x-custom-test", q.Get("X-Amz-SignedHeaders"))
 	require.Contains(t, q.Get("X-Amz-Security-Token"), "securityToken")
