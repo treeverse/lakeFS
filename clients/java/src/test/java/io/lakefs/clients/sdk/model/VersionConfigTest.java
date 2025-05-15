@@ -46,6 +46,14 @@ public class VersionConfigTest {
     }
 
     /**
+     * Test the property 'serverName'
+     */
+    @Test
+    public void serverNameTest() {
+        // TODO: test serverName
+    }
+
+    /**
      * Test the property 'latestVersion'
      */
     @Test

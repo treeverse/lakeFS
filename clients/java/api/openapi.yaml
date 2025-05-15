@@ -9290,6 +9290,7 @@ components:
           default_namespace_prefix: default_namespace_prefix
           pre_sign_support: true
         version_config:
+          server_name: server_name
           latest_version: latest_version
           version: version
           upgrade_recommended: true
@@ -9306,12 +9307,15 @@ components:
       type: object
     VersionConfig:
       example:
+        server_name: server_name
         latest_version: latest_version
         version: version
         upgrade_recommended: true
         upgrade_url: upgrade_url
       properties:
         version:
+          type: string
+        server_name:
           type: string
         latest_version:
           type: string

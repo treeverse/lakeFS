@@ -4,6 +4,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 )
 
+func GetServerName() string {
+	return "lakeFS"
+}
+
 func BuildConfig(cfgType string) (config.Config, error) {
 	c := &ConfigWithAuth{}
 	_, err := config.NewConfig(cfgType, c)

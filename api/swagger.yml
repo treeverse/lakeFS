@@ -1291,6 +1291,8 @@ components:
       properties:
         version:
           type: string
+        server_name:
+          type: string
         latest_version:
           type: string
         upgrade_recommended:
