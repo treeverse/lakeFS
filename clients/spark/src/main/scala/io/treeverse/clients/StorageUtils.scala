@@ -171,19 +171,13 @@ object StorageUtils {
               logger.info("Falling back to DefaultAWSCredentialsProviderChain")
               builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
           }
-        } else if (
-          credentialsProvider.isDefined && credentialsProvider.get
-            .isInstanceOf[AWSCredentialsProvider]
-        ) {
-          // Use standard AWSCredentialsProvider if available
-          builderWithEndpoint.withCredentials(
-            credentialsProvider.get.asInstanceOf[AWSCredentialsProvider]
+        } else
+          (
+            // Use standard AWSCredentialsProvider if available
+            builderWithEndpoint.withCredentials(
+              credentialsProvider.get.asInstanceOf[AWSCredentialsProvider]
+            )
           )
-        } else {
-          // Use default credential chain
-          logger.info("Using DefaultAWSCredentialsProviderChain for S3 client")
-          builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
-        }
       builderWithCredentials.build
     }
 
