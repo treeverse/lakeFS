@@ -99,16 +99,28 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 
     val gravelerSplit = split.asInstanceOf[GravelerSplit]
 
+    // Log the path before processing
+    logger.info(s"Processing file: ${gravelerSplit.path}")
+
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
     fs.copyToLocalFile(false, gravelerSplit.path, new Path(localFile.getAbsolutePath), true)
     // TODO(johnnyaug) should we cache this?
     sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
     if (!gravelerSplit.isValidated) {
       // this file may not be a valid range file, validate it
-      val props = sstableReader.getProperties
-      logger.debug(s"Props: $props")
-      if (new String(props("type")) != "ranges" || props.contains("entity")) {
-        return
+      try {
+        val props = sstableReader.getProperties
+        logger.debug(s"Props: $props")
+        if (new String(props("type")) != "ranges" || props.contains("entity")) {
+          return
+        }
+      } catch {
+        case e: io.treeverse.jpebble.BadFileFormatException =>
+          logger.error(s"File format validation failed for: ${gravelerSplit.path}", e)
+          throw new io.treeverse.jpebble.BadFileFormatException(
+            s"Bad file format in ${gravelerSplit.path}: ${e.getMessage}",
+            e
+          )
       }
     }
     rangeID = gravelerSplit.rangeID

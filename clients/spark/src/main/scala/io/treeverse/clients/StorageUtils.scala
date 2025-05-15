@@ -1,6 +1,10 @@
 package io.treeverse.clients
 
-import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.{
+  AWSCredentialsProvider,
+  DefaultAWSCredentialsProviderChain,
+  STSAssumeRoleSessionCredentialsProvider
+}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
@@ -11,6 +15,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import java.util.UUID
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
@@ -143,10 +148,36 @@ object StorageUtils {
           builder.withRegion(region)
         else
           builder
-      val builderWithCredentials = credentialsProvider match {
-        case Some(cp) => builderWithEndpoint.withCredentials(cp)
-        case None     => builderWithEndpoint
-      }
+
+      // Check for Hadoop's assumed role configuration
+      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
+
+      // Apply credentials based on configuration
+      val builderWithCredentials =
+        if (roleArn != null && !roleArn.isEmpty) {
+          // If we have a role ARN configured, assume that role
+          logger.info(s"Assuming role: $roleArn for S3 client")
+          try {
+            val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
+            val stsProvider =
+              new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
+                .withLongLivedCredentialsProvider(new DefaultAWSCredentialsProviderChain())
+                .build()
+
+            builderWithEndpoint.withCredentials(stsProvider)
+          } catch {
+            case e: Exception =>
+              logger.warn(s"Failed to assume role $roleArn: ${e.getMessage}", e)
+              logger.info("Falling back to DefaultAWSCredentialsProviderChain")
+              builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
+          }
+        } else
+          (
+            // Use standard AWSCredentialsProvider if available
+            builderWithEndpoint.withCredentials(
+              credentialsProvider.get.asInstanceOf[AWSCredentialsProvider]
+            )
+          )
       builderWithCredentials.build
     }
 
