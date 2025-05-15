@@ -192,6 +192,9 @@ class ClientConfig(Configuration):
     def get_auth_type(self) -> Optional[ClientConfig.AuthType]:
         """
         Returns the type of authentication used: either SessionToken, Credentials, or IAMProvider
+        ORDER MATTERS! SessionToken > Credentials > IAMProvider. self._iam_provider will be none if Session Token auth
+        is used. self.access_token will be populated for both Session Token and IAMProvider auth, therefore it's tested
+        after self._iam_provider.
         :return: ClientConfig.AuthType
         """
         if self._iam_provider is not None:
