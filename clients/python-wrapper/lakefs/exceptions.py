@@ -61,6 +61,11 @@ class UnsupportedCredentialsProviderType(LakeFSException):
     Raised when the credentials provider type is not supported
     """
 
+class InvalidEnvVarFormat(LakeFSException):
+    """
+    Raised when the passed env var is not of expected format
+    """
+
 class BadRequestException(ServerException):
     """
     Bad Request
