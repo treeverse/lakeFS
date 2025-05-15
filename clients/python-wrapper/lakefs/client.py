@@ -98,7 +98,7 @@ class Client:
 
         # Initialize auth if using IAM provider
         if self._conf.get_auth_type() is ClientConfig.AuthType.IAM:
-            iam_provider = self._conf.get_iam_provider()
+            iam_provider = self._conf.iam_provider
             if iam_provider.type is ClientConfig.ProviderType.AWS_IAM:
                 # boto3 session lazy loading (only if an AWS IAM provider is used)
                 import boto3 # pylint: disable=import-outside-toplevel, import-error
@@ -125,7 +125,7 @@ class Client:
                 self._reset_token_time is not None and
                 current_time >= self._reset_token_time):
             # Refresh token:
-            iam_provider = self._conf.get_iam_provider()
+            iam_provider = self._conf.iam_provider
             if iam_provider.type == ClientConfig.ProviderType.AWS_IAM:
                 lakefs_host = urlparse(self._conf.host).hostname
                 self._conf.access_token, self._reset_token_time = access_token_from_aws_iam_role(

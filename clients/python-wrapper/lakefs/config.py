@@ -205,14 +205,13 @@ class ClientConfig(Configuration):
             return ClientConfig.AuthType.CREDENTIALS
         return None
 
-    def get_iam_provider(self) -> Optional[ClientConfig.IAMProvider]:
+    @property
+    def iam_provider(self) -> Optional[ClientConfig.IAMProvider]:
         """
         Returns the IAM provider used for authentication.
         :return: ClientConfig.IAMProvider
         """
-        if self._iam_provider is not None:
-            return self._iam_provider
-        return None
+        return self._iam_provider
 
     def _set_iam_provider_from_config_file(self, config_data: Dict):
         """
@@ -249,15 +248,13 @@ class ClientConfig(Configuration):
                         token_request_headers=None
                     )
                 )
-            env_token_ttl = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_TTL_SECONDS)
-            if env_token_ttl is not None:
-                self._iam_provider.aws_iam.token_ttl_seconds = (
-                    _safe_int_or_default(env_token_ttl, self._iam_provider.aws_iam.token_ttl_seconds))
-            env_presign_url_ttl = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_PRESIGNED_URL_TTL_SECONDS)
-            if env_presign_url_ttl is not None:
-                self._iam_provider.aws_iam.url_presign_ttl_seconds = (
-                    _safe_int_or_default(env_presign_url_ttl, self._iam_provider.aws_iam.url_presign_ttl_seconds))
-            env_headers = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS)
+            env_token_ttl = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_TTL_SECONDS,
+                                      self._iam_provider.aws_iam.token_ttl_seconds)
+            self._iam_provider.aws_iam.token_ttl_seconds = int(env_token_ttl)
+            env_presign_url_ttl = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_PRESIGNED_URL_TTL_SECONDS,
+                                            self._iam_provider.aws_iam.url_presign_ttl_seconds)
+            self._iam_provider.aws_iam.url_presign_ttl_seconds= int(env_presign_url_ttl)
+            env_headers = os.getenv(_LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS, None)
             if env_headers is not None:
                 try:
                     token_request_headers = json.loads(env_headers)
@@ -271,8 +268,11 @@ class ClientConfig(Configuration):
 
 def _get_provider_type_from_config_file(data: Optional[Dict] = None) -> Optional[str]:
     """Extract provider type from environment or config data."""
-    if data and data.get("credentials", {}).get("provider", {}).get("type"):
-        return data["credentials"]["provider"]["type"]
+    if data is not None:
+        try:
+            return data['credentials']['provider']['type']
+        except KeyError:
+            return None
     return None
 
 def _get_iam_provider_type_from_env_vars() -> Optional[str]:
@@ -288,19 +288,20 @@ def _get_iam_provider_type_from_env_vars() -> Optional[str]:
 
 
 def _safe_int_or_default(value: Optional[str], default: int) -> int:
-    if value is None:
-        return default
+    """
+    Safely convert a value to an int, returning a default if conversion fails.
+    """
     try:
         return int(value)
     except (ValueError, TypeError):
         return default
 
 def _get_provider_config_from_config_data(data: Optional[Dict], provider: str) -> Optional[Dict]:
-    if (data is not None and
-            "credentials" in data and
-            "provider" in data["credentials"] and
-            provider in data["credentials"]["provider"]):
-        return data["credentials"]["provider"][provider]
+    if data is not None:
+        try:
+            return data['credentials']['provider'][provider]
+        except KeyError:
+            return None
     return None
 
 def _generate_aws_iam_provider_config(aws_config: Dict) -> ClientConfig.AWSIAMProviderConfig:
