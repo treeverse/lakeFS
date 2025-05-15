@@ -96,7 +96,7 @@ object StorageUtils {
 
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[Any],
+        credentialsProvider: Option[credentialsProvider],
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String,
@@ -132,7 +132,7 @@ object StorageUtils {
 
     private def initializeS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[Any],
+        credentialsProvider: Option[AWSCredentialsProvider],
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String = null
