@@ -172,7 +172,7 @@ class ClientConfig(Configuration):
             )
             self._iam_provider = None
             return
-        # If no other method was specified, try to set IAM provider from env vars if no credentials are set in the config file
+        # If no other method was specified, try to set IAM provider from env vars
         if self.username is None or self.password is None:
             self._set_iam_provider_from_env_vars()
 
@@ -259,10 +259,10 @@ class ClientConfig(Configuration):
                 try:
                     token_request_headers = json.loads(env_headers)
                     self._iam_provider.aws_iam.token_request_headers = token_request_headers
-                except JSONDecodeError:
+                except JSONDecodeError as e:
                     raise InvalidEnvVarFormat(
                         f"Invalid format for {env_headers} environment variable. Expected JSON format."
-                    )
+                    ) from e
         else:
             raise UnsupportedCredentialsProviderType(provider_type)
 
