@@ -55,7 +55,7 @@ func TestPresignGetCallerIdentityFromAuthParams(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("%d", numSeconds), q.Get("X-Amz-Expires"))
 	require.Equal(t, "AWS4-HMAC-SHA256", q.Get("X-Amz-Algorithm"))
 	require.NotEmpty(t, q.Get("X-Amz-Signature"))
-	require.Equal(t, "accesKey/20250514/us-east-1/sts/aws4_request", q.Get("X-Amz-Credential"))
+	require.Equal(t, fmt.Sprintf("accesKey/%s/us-east-1/sts/aws4_request", time.Now().UTC().Format("20060102")), q.Get("X-Amz-Credential"))
 	require.NotEmpty(t, q.Get("X-Amz-Date"))
 	require.Equal(t, "a-nice-header;host;x-custom-test", q.Get("X-Amz-SignedHeaders"))
 	require.Contains(t, q.Get("X-Amz-Security-Token"), "securityToken")
