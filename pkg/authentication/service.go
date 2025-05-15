@@ -156,6 +156,7 @@ func (s *APIService) RegisterAdditionalRoutes(_ *chi.Mux, _ sessions.Store) {
 	s.logger.Trace("no additional routes to register")
 }
 
-func (s *APIService) OIDCCallback(_ http.ResponseWriter, _ *http.Request, _ sessions.Store) {
+func (s *APIService) OIDCCallback(w http.ResponseWriter, r *http.Request, _ sessions.Store) {
 	s.logger.Warn("OIDC is not implemented")
+	http.Redirect(w, r, "/auth/login", http.StatusNotImplemented)
 }
