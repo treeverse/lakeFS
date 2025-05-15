@@ -1,5 +1,5 @@
 import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, PropertyMock
 
 import sys
 from lakefs_sdk import AuthenticationToken
@@ -72,14 +72,15 @@ class TestAuthenticationFlow:
         with lakectl_test_config_context(monkeypatch, tmp_path) as client_module:
             # Set up IAM provider configuration
             with patch.object(ClientConfig, 'get_auth_type', return_value=ClientConfig.AuthType.IAM):
-                with patch.object(ClientConfig, 'get_iam_provider', return_value=ClientConfig.IAMProvider(
+                with patch('lakefs.client.ClientConfig.iam_provider', new_callable=PropertyMock) as mock_iam_provider:
+                    mock_iam_provider.return_value = ClientConfig.IAMProvider(
                         type=ClientConfig.ProviderType.AWS_IAM,
                         aws_iam=ClientConfig.AWSIAMProviderConfig(
                             token_ttl_seconds=3600,
                             url_presign_ttl_seconds=60,
                             token_request_headers=None
                         )
-                )):
+                    )
                     with patch('boto3.Session'):
                         # Initialize client with IAM authentication
                         clt = client_module.Client(host=TEST_SERVER)
@@ -108,27 +109,27 @@ class TestAuthenticationFlow:
         with lakectl_test_config_context(monkeypatch, tmp_path) as client_module:
             # Set up for IAM provider
             with patch.object(ClientConfig, 'get_auth_type', return_value=ClientConfig.AuthType.IAM):
-                with patch.object(ClientConfig, 'get_iam_provider', return_value=ClientConfig.IAMProvider(
+                with patch('lakefs.client.ClientConfig.iam_provider', new_callable=PropertyMock) as mock_iam_provider:
+                    mock_iam_provider.return_value = ClientConfig.IAMProvider(
                         type=ClientConfig.ProviderType.AWS_IAM,
                         aws_iam=ClientConfig.AWSIAMProviderConfig(
                             token_ttl_seconds=3600,
                             url_presign_ttl_seconds=60,
                             token_request_headers=None
                         )
-                )):
+                    )
                     with patch('boto3.Session'):
                         # Initialize client
                         clt = client_module.Client(host=TEST_SERVER)
-
                         # First token setup
-                        assert clt._conf.access_token == initial_token
+                        assert clt.config.access_token == initial_token
                         assert clt._reset_token_time == initial_expiry
 
                         # This should trigger a token refresh since the token is expired
                         _ = clt.sdk_client
 
                         # Verify token was refreshed
-                        assert clt._conf.access_token == refreshed_token
+                        assert clt.config.access_token == refreshed_token
                         assert clt._reset_token_time == refreshed_expiry
 
     def test_no_token_refresh_for_non_iam_auth(self, monkeypatch, tmp_path):
