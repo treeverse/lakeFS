@@ -1,5 +1,5 @@
 """
-lakeFS Authentication Utils Module
+lakeFS Authentication Module
 
 Includes authentication util functions
 """
@@ -33,8 +33,8 @@ def access_token_from_aws_iam_role(sdk_client: LakeFSClient,
     :param aws_provider_auth_params: ClientConfig.AWSIAMProviderConfig
     :return: An access token for lakeFS authentication.
     """
-    presigned_ttl = int(aws_provider_auth_params.url_presign_ttl_seconds)
-    token_ttl_seconds = int(aws_provider_auth_params.token_ttl_seconds)
+    presigned_ttl = aws_provider_auth_params.url_presign_ttl_seconds
+    token_ttl_seconds = aws_provider_auth_params.token_ttl_seconds
     token_req_headers = aws_provider_auth_params.token_request_headers
 
     identity_token = _get_identity_token(boto3_session, lakefs_host, presign_expiry=presigned_ttl,
