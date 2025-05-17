@@ -124,7 +124,7 @@ def test_create_repository_no_authentication(monkeypatch):
         with env_var_context():
             from lakefs import config as client_config
             # Create a new client with env vars
-            os.environ[client_config._LAKECTL_ENDPOINT_ENV] = "endpoint"
+            os.environ[client_config._LAKECTL_ENDPOINT_URL_ENV] = "endpoint"
             os.environ[client_config._LAKECTL_SECRET_ACCESS_KEY_ENV] = "secret"
             os.environ[client_config._LAKECTL_ACCESS_KEY_ID_ENV] = "key"
             repo.create(storage_namespace=TEST_REPO_ARGS.storage_namespace,
