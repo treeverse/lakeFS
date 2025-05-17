@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 NAME = "lakefs"
-VERSION = "0.10.0"
+VERSION = "0.10.1"
 # To install the library, run the following
 #
 # python setup.py install
@@ -45,4 +45,5 @@ setup(
         "all": ["boto3 >= 1.26.0"],
         "aws-iam": ["boto3 >= 1.26.0"],
     },
+    package_data={"lakefs": ["py.typed"]},
 )
