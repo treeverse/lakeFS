@@ -38,6 +38,7 @@ Method | HTTP request | Description
 [**list_user_policies**](AuthApi.md#list_user_policies) | **GET** /auth/users/{userId}/policies | list user policies
 [**list_users**](AuthApi.md#list_users) | **GET** /auth/users | list users
 [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login
+[**oauth_callback**](AuthApi.md#oauth_callback) | **GET** /oidc/callback | 
 [**set_group_acl**](AuthApi.md#set_group_acl) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 [**update_policy**](AuthApi.md#update_policy) | **PUT** /auth/policies/{policyId} | update policy
 
@@ -3735,6 +3736,71 @@ No authorization required
 **200** | successful login |  * Set-Cookie -  <br>  |
 **401** | Unauthorized |  -  |
 **420** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **oauth_callback**
+> Error oauth_callback()
+
+
+
+### Example
+
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.models.error import Error
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.AuthApi(api_client)
+
+    try:
+        api_response = api_instance.oauth_callback()
+        print("The response of AuthApi->oauth_callback:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling AuthApi->oauth_callback: %s\n" % e)
+```
+
+
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**Error**](Error.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**302** | successfully got token |  -  |
+**401** | failed to exchange authorization code for token |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

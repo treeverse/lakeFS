@@ -7551,6 +7551,24 @@ paths:
       - license
       - experimental
       x-accepts: application/json
+  /oidc/callback:
+    get:
+      operationId: oauthCallback
+      responses:
+        "302":
+          description: successfully got token
+        "401":
+          description: failed to exchange authorization code for token
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      tags:
+      - auth
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:

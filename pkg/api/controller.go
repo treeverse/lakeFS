@@ -6157,3 +6157,7 @@ func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 	}
 	writeResponse(w, r, http.StatusOK, apigen.License{Token: token})
 }
+
+func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
+	c.Authentication.OIDCCallback(w, r, c.sessionStore)
+}

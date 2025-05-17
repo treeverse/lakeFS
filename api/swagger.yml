@@ -6293,3 +6293,16 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
           
+  /oidc/callback:
+    get:
+      tags:
+        - auth
+      operationId: oauthCallback
+      security: [ ]
+      responses:
+        302:
+          description: successfully got token
+        401:
+          description: failed to exchange authorization code for token
+        default:
+          $ref: "#/components/responses/ServerError"
