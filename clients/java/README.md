@@ -181,6 +181,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**listUserPolicies**](docs/AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**listUsers**](docs/AuthApi.md#listUsers) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
+*AuthApi* | [**oauthCallback**](docs/AuthApi.md#oauthCallback) | **GET** /oidc/callback | 
 *AuthApi* | [**setGroupACL**](docs/AuthApi.md#setGroupACL) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 *AuthApi* | [**updatePolicy**](docs/AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**cherryPick**](docs/BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch

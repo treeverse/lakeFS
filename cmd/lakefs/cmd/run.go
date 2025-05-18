@@ -25,7 +25,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -118,16 +117,10 @@ var runCmd = &cobra.Command{
 		idGen := &actions.DecreasingIDGenerator{}
 
 		authService := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
-		// initialize authentication service
-		var authenticationService authentication.Service
-		authCfg := cfg.AuthConfig()
-		if authCfg.IsAuthenticationTypeAPI() {
-			authenticationService, err = authentication.NewAPIService(authCfg.AuthenticationAPI.Endpoint, authCfg.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), authCfg.AuthenticationAPI.ExternalPrincipalsEnabled)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create authentication service")
-			}
-		} else {
-			authenticationService = authentication.NewDummyService()
+
+		authenticationService, err := authenticationfactory.NewAuthenticationService(ctx, cfg, logger)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create authentication service")
 		}
 
 		blockstoreType := baseCfg.Blockstore.Type
@@ -257,6 +250,7 @@ var runCmd = &cobra.Command{
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
+		authCfg := cfg.AuthConfig()
 		oidcConfig := api.OIDCConfig(authCfg.OIDC)
 		cookieAuthConfig := api.CookieAuthConfig(authCfg.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(

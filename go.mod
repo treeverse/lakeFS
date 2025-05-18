@@ -47,7 +47,7 @@ require (
 	github.com/xitongsys/parquet-go v1.6.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20230607234618-40034c8066df
 	golang.org/x/crypto v0.37.0
-	golang.org/x/oauth2 v0.15.0
+	golang.org/x/oauth2 v0.28.0
 	golang.org/x/term v0.31.0
 	google.golang.org/api v0.152.0
 	google.golang.org/protobuf v1.33.0
@@ -55,13 +55,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require (
-	cloud.google.com/go/compute v1.23.3 // indirect
-	golang.org/x/sync v0.13.0
-)
+require golang.org/x/sync v0.13.0
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.3
+	cloud.google.com/go/compute/metadata v0.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos v1.2.0
@@ -252,7 +249,6 @@ require (
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
-	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20231127180814-3a041ad873d4 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

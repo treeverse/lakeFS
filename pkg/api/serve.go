@@ -81,6 +81,8 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 	}
 	r.Mount("/", rootHandler)
 
+	authenticationService.RegisterAdditionalRoutes(r, sessionStore)
+
 	return r
 }
 
