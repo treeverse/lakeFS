@@ -369,6 +369,7 @@ type Config interface {
 	StorageConfig() StorageConfig
 	AuthConfig() *Auth
 	Validate() error
+	GetVersionContext() string
 }
 
 type StorageConfig interface {
@@ -505,6 +506,10 @@ type BaseConfig struct {
 		Enabled       bool          `mapstructure:"enabled"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`
 	} `mapstructure:"usage_report"`
+}
+
+func (c *BaseConfig) GetVersionContext() string {
+	return "lakeFS"
 }
 
 func ValidateBlockstore(c *Blockstore) error {
