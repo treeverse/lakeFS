@@ -1764,6 +1764,7 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID stri
 		CreationDate: u.CreatedAt.Unix(),
 		Email:        u.Email,
 		Id:           u.Username,
+		FriendlyName: u.FriendlyName,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
