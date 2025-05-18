@@ -166,7 +166,6 @@ object StorageUtils {
             builderWithEndpoint.withCredentials(stsProvider)
           } catch {
             case e: Exception =>
-              logger.warn(s"Failed to assume role $roleArn: ${e.getMessage}", e)
               logger.info("Falling back to DefaultAWSCredentialsProviderChain")
               builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
           }
