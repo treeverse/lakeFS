@@ -271,8 +271,8 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
     while (it.hasNext) {
       val file = it.next()
       breakable {
-        if (file.getPath.getName == DummyFileName) {
-          logger.debug(s"Skipping dummy file ${file.getPath}")
+        if (file.getPath.getName == DummyFileName || file.getPath.getName.endsWith(".json")) {
+          logger.debug(s"Skipping file ${file.getPath}")
           break
         }
         splits += new GravelerSplit(
