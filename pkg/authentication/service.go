@@ -21,7 +21,7 @@ type Service interface {
 	// ValidateSTS validates the STS parameters and returns the external user ID
 	ValidateSTS(ctx context.Context, code, redirectURI, state string) (string, error)
 	RegisterAdditionalRoutes(r *chi.Mux, sessionStore sessions.Store)
-	OIDCCallback(w http.ResponseWriter, r *http.Request, sessionStore sessions.Store)
+	OauthCallback(w http.ResponseWriter, r *http.Request, sessionStore sessions.Store)
 }
 
 type DummyService struct{}
@@ -44,7 +44,7 @@ func (d DummyService) IsExternalPrincipalsEnabled() bool {
 
 func (d DummyService) RegisterAdditionalRoutes(_ *chi.Mux, _ sessions.Store) {}
 
-func (d DummyService) OIDCCallback(_ http.ResponseWriter, _ *http.Request, _ sessions.Store) {}
+func (d DummyService) OauthCallback(_ http.ResponseWriter, _ *http.Request, _ sessions.Store) {}
 
 type APIService struct {
 	validateIDTokenClaims     map[string]string
@@ -156,7 +156,7 @@ func (s *APIService) RegisterAdditionalRoutes(_ *chi.Mux, _ sessions.Store) {
 	s.logger.Trace("no additional routes to register")
 }
 
-func (s *APIService) OIDCCallback(w http.ResponseWriter, r *http.Request, _ sessions.Store) {
+func (s *APIService) OauthCallback(w http.ResponseWriter, r *http.Request, _ sessions.Store) {
 	s.logger.Warn("OIDC is not implemented")
 	http.Redirect(w, r, "/auth/login", http.StatusNotImplemented)
 }

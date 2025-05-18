@@ -6160,5 +6160,5 @@ func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
-	c.Authentication.OIDCCallback(w, r, c.sessionStore)
+	c.Authentication.OauthCallback(w, r, c.sessionStore)
 }
