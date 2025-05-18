@@ -130,12 +130,9 @@ class ClientConfig(Configuration):
                 if "server" in config_data:
                     self.server = ClientConfig.Server(**config_data["server"])
                 if "credentials" in config_data:
-                    try:
-                        self.credentials = ClientConfig.Credentials(**config_data["credentials"])
-                        self.username = self.credentials.access_key_id
-                        self.password = self.credentials.secret_access_key
-                    except TypeError:
-                        pass
+                    self.credentials = ClientConfig.Credentials(**config_data["credentials"])
+                    self.username = self.credentials.access_key_id
+                    self.password = self.credentials.secret_access_key
 
                 if self.username is None or self.password is None:
                     self._set_iam_provider_from_config_file(config_data)
@@ -220,16 +217,17 @@ class ClientConfig(Configuration):
         provider_type = _get_provider_type_from_config_file(config_data)
         if provider_type is None:
             self._iam_provider = None
-        if provider_type not in SUPPORTED_IAM_PROVIDERS:
+        elif provider_type not in SUPPORTED_IAM_PROVIDERS:
             raise UnsupportedCredentialsProviderType(provider_type)
-        provider_config = _get_provider_config_from_config_data(config_data, provider_type)
-        if provider_config is not None:
-            if provider_type == AWS_IAM_PROVIDER_TYPE:
-                aws_iam_provider_config = _generate_aws_iam_provider_config(provider_config)
-                self._iam_provider = ClientConfig.IAMProvider(
-                    type=ClientConfig.ProviderType.AWS_IAM,
-                    aws_iam=aws_iam_provider_config
-                )
+        else:
+            provider_config = _get_provider_config_from_config_data(config_data, provider_type)
+            if provider_config is not None:
+                if provider_type == AWS_IAM_PROVIDER_TYPE:
+                    aws_iam_provider_config = _generate_aws_iam_provider_config(provider_config)
+                    self._iam_provider = ClientConfig.IAMProvider(
+                        type=ClientConfig.ProviderType.AWS_IAM,
+                        aws_iam=aws_iam_provider_config
+                    )
 
     def _set_iam_provider_from_env_vars(self):
         """
