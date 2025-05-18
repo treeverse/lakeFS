@@ -156,7 +156,6 @@ object StorageUtils {
       val builderWithCredentials =
         if (roleArn != null && !roleArn.isEmpty) {
           // If we have a role ARN configured, assume that role
-          logger.info(s"Assuming role: $roleArn for S3 client")
           try {
             val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
             val stsProvider =

@@ -116,7 +116,7 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
         }
       } catch {
         case e: io.treeverse.jpebble.BadFileFormatException =>
-          logger.error(s"File format validation failed for: ${gravelerSplit.path}", e)
+          logger.error(s"Failed to read sstable, bad file format: ${gravelerSplit.path}", e)
           throw new io.treeverse.jpebble.BadFileFormatException(
             s"Bad file format in ${gravelerSplit.path}: ${e.getMessage}",
             e
