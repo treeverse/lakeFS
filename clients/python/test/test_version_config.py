@@ -38,7 +38,7 @@ class TestVersionConfig(unittest.TestCase):
         if include_optional:
             return VersionConfig(
                 version = '',
-                server_name = '',
+                version_context = '',
                 latest_version = '',
                 upgrade_recommended = True,
                 upgrade_url = ''

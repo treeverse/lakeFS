@@ -47,7 +47,7 @@ const NavUserInfo = () => {
             <NavDropdown.Divider/>
             {!versionLoading && !versionError && <>
             <NavDropdown.Item disabled={true}>
-                {`${versionResponse.server_name} ${versionResponse.version}`}
+                {`${versionResponse.version_context} ${versionResponse.version}`}
             </NavDropdown.Item></>}
         </NavDropdown>
     );

@@ -46,11 +46,11 @@ public class VersionConfigTest {
     }
 
     /**
-     * Test the property 'serverName'
+     * Test the property 'versionContext'
      */
     @Test
-    public void serverNameTest() {
-        // TODO: test serverName
+    public void versionContextTest() {
+        // TODO: test versionContext
     }
 
     /**
