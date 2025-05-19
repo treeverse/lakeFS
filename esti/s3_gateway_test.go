@@ -374,8 +374,8 @@ func TestListMultipartUploads(t *testing.T) {
 
 	// create second mpu check both appear
 	mpuRes, err := s3Client.CreateMultipartUpload(ctx, input2)
-	uploadID := mpuRes.UploadId
 	require.NoError(t, err, "failed to create multipart upload")
+	uploadID := mpuRes.UploadId
 	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, UploadIdMarker: uploadID})
 	require.NoError(t, err, "failed to list multipart uploads")
 	keys = extractUploadKeys(output)
