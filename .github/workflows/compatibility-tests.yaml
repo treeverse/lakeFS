@@ -229,6 +229,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          COMPOSE_PARALLEL_LIMIT: 10 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
 
       - name: Retrieve client
         uses: actions/download-artifact@v4.1.8
