@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.11.0
+
+:new: What's new:
+
+- Auth: Authenticate or fallback to AWS IAM authentication (if no other method provided) (#9039)
+
 ## v0.10.0
 
 :new: What's new:
