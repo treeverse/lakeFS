@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 var ErrInvalidCredentialsFormat = errors.New("missing required parts in query param X-Amz-Credential")
@@ -171,10 +172,14 @@ func PresignGetCallerIdentityFromAuthParams(ctx context.Context, params *IAMAuth
 			}), middleware.Before)
 		}
 	}
+	logger := logging.FromContext(ctx)
+	logIAMInfo := logger.IsDebugging() || logger.IsTracing()
 
 	stsPresignClient := sts.NewPresignClient(stsClient, func(o *sts.PresignOptions) {
 		o.ClientOptions = append(o.ClientOptions, func(opts *sts.Options) {
-			opts.ClientLogMode = aws.LogSigning
+			if logIAMInfo {
+				opts.ClientLogMode = aws.LogSigning
+			}
 		})
 	})
 
