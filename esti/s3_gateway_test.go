@@ -373,9 +373,10 @@ func TestListMultipartUploads(t *testing.T) {
 	require.Contains(t, keys, obj1)
 
 	// create second mpu check both appear
-	_, err = s3Client.CreateMultipartUpload(ctx, input2)
+	mpuRes, err := s3Client.CreateMultipartUpload(ctx, input2)
 	require.NoError(t, err, "failed to create multipart upload")
-	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket})
+	uploadID := mpuRes.UploadId
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, UploadIdMarker: uploadID})
 	require.NoError(t, err, "failed to list multipart uploads")
 	keys = extractUploadKeys(output)
 	require.Contains(t, keys, obj1)
@@ -383,7 +384,7 @@ func TestListMultipartUploads(t *testing.T) {
 
 	// testing maxuploads - only first upload should return
 	maxUploads := aws.Int32(1)
-	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, MaxUploads: maxUploads})
+	output, err = s3Client.ListMultipartUploads(ctx, &s3.ListMultipartUploadsInput{Bucket: resp1.Bucket, MaxUploads: maxUploads, UploadIdMarker: uploadID})
 	require.NoError(t, err, "failed to list multipart uploads")
 	keys = extractUploadKeys(output)
 	require.Contains(t, keys, obj1)
