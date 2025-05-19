@@ -8,6 +8,10 @@
 
 - Auth: Authenticate or fallback to AWS IAM authentication (if no other method provided) (#9039)
 
+:bug: Bugs fixed:
+
+- Fixed: Python library is missing a py.typed file (#7737)
+
 ## v0.10.0
 
 :new: What's new:
