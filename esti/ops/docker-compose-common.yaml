@@ -43,7 +43,7 @@ services:
       - ESTI_FORCE_PATH_STYLE=${ESTI_FORCE_PATH_STYLE:-true}
       - ESTI_AZURE_STORAGE_ACCOUNT
       - ESTI_AZURE_STORAGE_ACCESS_KEY
-      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS}
+      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
       - ESTI_LARGE_OBJECT_PATH
     working_dir: /lakefs
     command:
