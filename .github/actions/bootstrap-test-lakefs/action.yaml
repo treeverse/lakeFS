@@ -36,7 +36,7 @@ runs:
       env:
         LAKEFS_STATS_ENABLED: "false"
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
-        COMPOSE_PARALLEL_LIMIT: 10 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
+        COMPOSE_PARALLEL_LIMIT: 1 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
       shell: bash
       run: |
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
