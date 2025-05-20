@@ -122,7 +122,7 @@ func hookHandlerFunc(respCh chan HookResponse) func(http.ResponseWriter, *http.R
 		case <-time.After(time.Second):
 		}
 		respCh <- HookResponse{Path: request.URL.Path, Data: data, QueryParams: request.URL.Query()}
-		writer.WriteHeader(http.StatusOK)
 		_, _ = io.WriteString(writer, "OK")
+		writer.WriteHeader(http.StatusOK)
 	}
 }
