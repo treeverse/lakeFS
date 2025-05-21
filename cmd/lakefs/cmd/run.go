@@ -18,6 +18,7 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
@@ -305,6 +306,21 @@ var runCmd = &cobra.Command{
 		}
 
 		actionsService.SetEndpoint(server)
+
+		// register additional API services
+		err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
+			Config:                cfg,
+			Authenticator:         middlewareAuthenticator,
+			AuthService:           authService,
+			AuthenticationService: authenticationService,
+			BlockAdapter:          blockStore,
+			Collector:             bufferedCollector,
+			Logger:                logger,
+			LicenseManager:        licenseManager,
+		}, apiHandler)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to register services on router")
+		}
 
 		go func() {
 			var err error
