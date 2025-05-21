@@ -10,6 +10,8 @@ import (
 type JitterFn func() time.Duration
 type SetFn func() (v interface{}, err error)
 
+type EvictionCallback func(k interface{}, v interface{})
+
 // SetWithExpiry is a function called to set a value in the cache.  It
 // returns the desired value and when to expire it from the cache.  The
 // cache default expiration value is used if it returns a zero expiration.
@@ -28,7 +30,11 @@ type GetSetCache struct {
 }
 
 func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
-	c, _ := lru.New(size)
+	return NewCacheWithEviction(size, expiry, jitterFn, nil)
+}
+
+func NewCacheWithEviction(size int, expiry time.Duration, jitterFn JitterFn, eviction EvictionCallback) *GetSetCache {
+	c, _ := lru.NewWithEvict(size, eviction)
 	return &GetSetCache{
 		lru:          c,
 		computations: NewChanOnlyOne(),
