@@ -1,5 +1,14 @@
 # Changelog
 
+# v1.57.0
+
+:new: What's new:
+
+- UI: turn off hive partitioning while select parquet using DuckDB (#9056)
+- Add friendly name Auth GetUser API (#9065)
+- Add product name field to About (#9052)
+- Extend authentication service to enable OIDC support (#9038)
+
 # v1.56.1
 
 :bug: Bugs fixed:
