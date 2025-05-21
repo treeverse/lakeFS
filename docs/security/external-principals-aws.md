@@ -144,8 +144,10 @@ To install the required packages, run the following command:
 ```
 
 There are two ways in which external principals can be used to authenticate to lakeFS:
+
 1. If no other authentication flow is provided, and the `credentials.provider.type` configuration is set to `aws_iam` in `.lakectl.yaml`, the client will use the machine's AWS role authenticate to lakeFS:
-    ```yaml
+    
+   ```yaml
     credentials:
       provider:
         type: aws_iam
@@ -162,8 +164,10 @@ There are two ways in which external principals can be used to authenticate to l
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_PRESIGNED_URL_TTL_SECONDS="60"
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS='{"HeaderName":"HeaderValue"}'
     ```
+   
 2. Generate a lakeFS client with the assumed role by initiating a boto3 session with the desired role and call `lakefs.client.frow_aws_role`:
-    ```python
+    
+   ```python
     import lakefs
     import boto3    
     session = boto3.Session()
@@ -174,7 +178,6 @@ There are two ways in which external principals can be used to authenticate to l
     for r in repos:
         print(r)
     ```
-
 
 [external-principal-admin]:  {% link reference/api.md %}#external
 [login-api]: {% link reference/api.md %}#auth/externalPrincipalLogin
