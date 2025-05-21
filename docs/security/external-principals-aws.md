@@ -145,7 +145,7 @@ To install the required packages, run the following command:
 
 There are two ways in which external principals can be used to authenticate to lakeFS:
 
-1. If no other authentication flow is provided, and the `credentials.provider.type` configuration is set to `aws_iam` in `.lakectl.yaml`, the client will use the machine's AWS role authenticate to lakeFS:
+1. If no other authentication flow is provided, and the `credentials.provider.type` configuration is set to `aws_iam` in `.lakectl.yaml`, the client will use the machine's AWS role to authenticate with lakeFS:
     
    ```yaml
     credentials:
