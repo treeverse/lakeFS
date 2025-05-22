@@ -85,3 +85,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+volumes:
+  lakefs-code:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LAKEFS_ROOT:-.}
+  lakefs-app:
+  shared-metaclient:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./esti/ops/test/spark/metaclient
