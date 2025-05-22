@@ -31,9 +31,11 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     return (
         <Row>
             <Col md={{offset: 4, span: 4}}>
-                <Card className="login-widget">
-                    <Card.Header>Login</Card.Header>
-                    <Card.Body>
+                <Card className="login-widget shadow-lg border-0">
+                    <Card.Header className="text">
+                        <h4 className="mb-0">Login</h4>
+                    </Card.Header>
+                    <Card.Body className="p-4">
                         <Form onSubmit={async (e) => {
                             e.preventDefault()
                             try {
@@ -50,16 +52,31 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             }
                         }}>
                             <Form.Group controlId="username" className="mb-3">
-                                <Form.Control type="text" placeholder={usernamePlaceholder} autoFocus/>
+                                <Form.Control 
+                                    type="text" 
+                                    placeholder={usernamePlaceholder} 
+                                    autoFocus
+                                    className="bg-light"
+                                />
                             </Form.Group>
 
                             <Form.Group controlId="password" className="mb-3">
-                                <Form.Control type="password" placeholder={passwordPlaceholder}/>
+                                <Form.Control 
+                                    type="password" 
+                                    placeholder={passwordPlaceholder}
+                                    className="bg-light"
+                                />
                             </Form.Group>
 
                             {(!!loginError) && <AlertError error={loginError}/>}
 
-                            <Button variant="primary" type="submit">Login</Button>
+                            <Button 
+                                variant="primary" 
+                                type="submit" 
+                                className="w-100 mt-3 py-2"
+                            >
+                                Login
+                            </Button>
                         </Form>
                         <div className={"mt-2 mb-1"}>
                             { loginConfig.fallback_login_url ?

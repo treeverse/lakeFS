@@ -1,0 +1,86 @@
+/* Tree Table */
+.tree-container {
+  margin-bottom: var(--spacing-xl);
+}
+
+.tree-container .card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tree-container .card-header {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.tree-container .card-body {
+  padding: 0;
+}
+
+.tree-entry-row,
+.change-entry-row {
+  transition: background-color var(--transition-fast);
+}
+
+.tree-entry-row:hover,
+.change-entry-row:hover {
+  background-color: var(--border-light);
+}
+
+.tree-path {
+  font-size: 0.9rem;
+}
+
+.tree-path .octicon {
+  color: inherit;
+  margin-right: var(--spacing-xs);
+}
+
+/* Make icons in diff rows match their text color */
+.diff-changed .tree-path .octicon {
+  color: inherit;
+}
+
+.diff-added .tree-path .octicon {
+  color: inherit;
+}
+
+.diff-removed .tree-path .octicon {
+  color: inherit;
+}
+
+.diff-conflict .tree-path .octicon {
+  color: inherit;
+}
+
+.prefix-expand-icon {
+  margin-left: 10px;
+  cursor: pointer;
+  color: var(--bs-nav-link-color);
+}
+
+.tree-path-action {
+  cursor: pointer;
+  color: var(--bs-nav-link-color);
+}
+
+/* Gear icon visibility and alignment */
+.change-entry-row-actions .dropdown-toggle,
+.row-hover .btn-outline-danger {
+  visibility: hidden;
+  float: right;
+}
+
+.change-entry-row:hover .change-entry-row-actions .dropdown-toggle,
+tr:hover .row-hover .btn-outline-danger {
+  visibility: visible;
+}
+
+/* Fix for object browser gear icon dropdown */
+.tree-container .dropdown-menu,
+.change-entry-row .dropdown-menu {
+  position: fixed !important; /* Use fixed positioning to avoid container constraints */
+  max-height: 80vh; /* Limit height to 80% of viewport height */
+  overflow-y: auto; /* Add scrolling if needed */
+} 

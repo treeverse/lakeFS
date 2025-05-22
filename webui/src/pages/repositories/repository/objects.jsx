@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { useOutletContext } from "react-router-dom";
-import {CheckboxIcon, UploadIcon, XIcon} from "@primer/octicons-react";
+import {CheckboxIcon, UploadIcon, XIcon, AlertIcon, PencilIcon} from "@primer/octicons-react";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
     ActionGroup,
@@ -41,9 +41,6 @@ import { useSearchParams } from "react-router-dom";
 import { useStorageConfigs } from "../../../lib/hooks/storageConfig";
 import { getRepoStorageConfig } from "./utils";
 import {useDropzone} from "react-dropzone";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 import pMap from "p-map";
 
 const README_FILE_NAME = "README.md";
@@ -242,69 +239,149 @@ function extractChecksumFromResponse(parsedHeaders) {
   return null;
 }
 
-const uploadFile = async (config, repo, reference, path, file, onProgress) => {  
-  const fpath = destinationPath(path, file);  
+const uploadFile = async (config, repo, reference, destinationPath, file, onProgress) => {  
   if (config.pre_sign_support_ui) {
     let additionalHeaders;
     if (config.blockstore_type === "azure") {
       additionalHeaders = { "x-ms-blob-type": "BlockBlob" }
     }
-    const getResp = await staging.get(repo.id, reference.id, fpath, config.pre_sign_support_ui);
+    const getResp = await staging.get(repo.id, reference.id, destinationPath, config.pre_sign_support_ui);
     try {
       const uploadResponse = await uploadWithProgress(getResp.presigned_url, file, 'PUT', onProgress, additionalHeaders);
       const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
       const checksum = extractChecksumFromResponse(parsedHeaders);
-      await staging.link(repo.id, reference.id, fpath, getResp, checksum, file.size, file.type);
+      await staging.link(repo.id, reference.id, destinationPath, getResp, checksum, file.size, file.type);
     } catch(error) {
        throw new Error(`Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ''}`);
     }
   } else {
-    await objects.upload(repo.id, reference.id, fpath, file, onProgress);
+    await objects.upload(repo.id, reference.id, destinationPath, file, onProgress);
     }
 };
 
-const destinationPath = (path, file) => {
-  return `${path ? path : ""}${file.path.replace(/\\/g, '/').replace(/^\//, '')}`;
+const joinPath = (basePath, filePath) => {
+    // 1. Normalize the file path first: remove leading slash
+    const normalizedFilePath = filePath.replace(/^\//, '');
+
+    // 2. Handle the base path
+    // If basePath is empty or just '/', the result is just the normalized file path
+    if (!basePath || basePath === '/') {
+        return normalizedFilePath;
+    }
+
+    // 3. If basePath is non-empty, ensure it ends with '/'
+    const normalizedBasePath = basePath.endsWith('/') ? basePath : basePath + '/';
+
+    // 4. Combine
+    return normalizedBasePath + normalizedFilePath;
+}
+
+const generateInitialDestination = (filePath, currentOverallPath) => {
+    const relativePathFromDrop = filePath.replace(/\\/g, '/');
+    return joinPath(currentOverallPath, relativePathFromDrop);
 };
 
-const UploadCandidate = ({ repo, reference, path, file, state, onRemove = null }) => {
-  const fpath = destinationPath(path, file)
-  let uploadIndicator = null;
+const UploadCandidate = ({ 
+  file, 
+  state, 
+  destination, 
+  onDestinationChange,
+  onRemove,
+  isUploading,
+  isEditing,
+  onEditToggle,
+}) => {
+  let statusIndicator = null;
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
   if (state && state.status === "uploading") {
-    uploadIndicator = <ProgressBar variant="success" now={state.percent}/>
+    statusIndicator = <ProgressBar 
+                          animated
+                          variant="success" 
+                          now={state.percent} 
+                          className="upload-progress" 
+                          title={`${state.percent}% uploaded`}
+                          style={{ height: '8px' }}
+                        />;
   } else if (state && state.status === "done") {
-    uploadIndicator = <strong><CheckboxIcon/></strong>
-  } else if (!state && onRemove !== null) {
-    uploadIndicator = (
-      <a  href="#" onClick={ e => {
-        e.preventDefault()
-        onRemove()
-      }}>
+    statusIndicator = <span className="text-success" title="Completed"><CheckboxIcon/></span>;
+  } else if (state && state.status === "error") {
+    statusIndicator = <span className="text-danger" title="Error"><AlertIcon/></span>;
+  } else if (onRemove !== null && !isUploading && state?.status !== 'uploading') {
+    statusIndicator = (
+      <button 
+        className="remove-button" 
+        onClick={e => { e.preventDefault(); onRemove(); }}
+        title="Remove file"
+        disabled={isUploading}
+      >
         <XIcon />
-      </a>
+      </button>
     );
   }
+  
+  const handleBlur = () => {
+    onEditToggle(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === 'Escape') {
+      onEditToggle(false);
+      e.preventDefault(); // Prevent form submission on Enter
+    }
+  };
+  
   return (
-    <Container>
-      <Row className={`upload-item upload-item-${state ? state.status : "none"}`}>
-          <Col
-              title={`lakefs://${repo.id}/${reference.id}/${fpath}`}
-              className="path text-nowrap overflow-hidden text-truncate align-middle"
-          >
-              lakefs://{repo.id}/{reference.id}/{fpath}
-        </Col>
-        <Col xs md="2">
-          <span className="size">
-            {humanSize(file.size)}
-          </span>
-        </Col>
-        <Col xs md="1">
-          <span className="upload-state">
-            {uploadIndicator ? uploadIndicator : <></>}
-          </span>
-        </Col>
-      </Row>
-    </Container>
+    <div className={`upload-item upload-item-${state ? state.status : "pending"}`}>
+      <div className="file-destination-column">
+        {isEditing ? (
+          <Form.Control
+            ref={inputRef}
+            size="sm"
+            type="text"
+            value={destination}
+            onChange={(e) => onDestinationChange(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            disabled={isUploading} 
+            placeholder="Destination path/name"
+          />
+        ) : (
+          <>
+            <span 
+              className="file-destination-display" 
+              title={destination} 
+              onClick={() => !isUploading && onEditToggle(true)} 
+            >
+              {destination || <span>&nbsp;</span>} 
+            </span>
+            {!isUploading && state?.status !== 'uploading' && state?.status !== 'done' && state?.status !== 'error' && (
+              <button 
+                className="edit-destination-button" 
+                onClick={(e) => {e.preventDefault(); onEditToggle(true);}}
+                title="Edit destination path"
+                disabled={isUploading}
+              >
+                <PencilIcon size={14}/>
+              </button>
+            )}
+          </>
+        )}
+      </div>
+      <div className="file-size" title={humanSize(file.size)}>
+        {humanSize(file.size)}
+      </div>
+      <div className="upload-status">
+        {statusIndicator}
+      </div>
+    </div>
   )
 };
 
@@ -314,108 +391,221 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
     error: null,
     done: false,
   };
-  const [currentPath, setCurrentPath] = useState(path);
+  const [overallPath, setOverallPath] = useState(path || "");
   const [uploadState, setUploadState] = useState(initialState);
   const [files, setFiles] = useState([]);
   const [fileStates, setFileStates] = useState({});
-  const [abortController, setAbortController] = useState(null)
+  const [fileDestinations, setFileDestinations] = useState({});
+  const [editingDestinations, setEditingDestinations] = useState({});
+  const [manuallyEditedDestinations, setManuallyEditedDestinations] = useState({});
+  const [abortController, setAbortController] = useState(null);
+
   const onDrop = useCallback(acceptedFiles => {
     if (uploadState.inProgress) return;
-    setFiles([...acceptedFiles])
-  }, [files, uploadState.inProgress])
+    
+    const newFiles = acceptedFiles.filter(f => !files.some(existing => existing.path === f.path));
+    if (newFiles.length === 0) return;
+
+    const nextFiles = [...files, ...newFiles];
+    const nextDestinations = { ...fileDestinations };
+    const nextStates = { ...fileStates };
+    const nextEditing = { ...editingDestinations };
+    const nextManualEditFlags = { ...manuallyEditedDestinations };
+
+    newFiles.forEach(file => {
+      const initialDest = generateInitialDestination(file.path, overallPath);
+      nextDestinations[file.path] = initialDest;
+      nextStates[file.path] = { status: 'pending', percent: 0 };
+      nextEditing[file.path] = false;
+      nextManualEditFlags[file.path] = false;
+    });
+
+    setFiles(nextFiles);
+    setFileDestinations(nextDestinations);
+    setFileStates(nextStates);
+    setEditingDestinations(nextEditing);
+    setManuallyEditedDestinations(nextManualEditFlags);
+
+  }, [files, fileDestinations, fileStates, editingDestinations, manuallyEditedDestinations, overallPath, uploadState.inProgress]);
 
   const { getRootProps, getInputProps, isDragAccept } = useDropzone({
     onDrop,
     disabled: uploadState.inProgress,
-    noClick: uploadState.inProgress,
-    noKeyboard: uploadState.inProgress
   })
+
+  useEffect(() => {
+    setFileDestinations(currentDestinations => {
+      const nextDestinations = { ...currentDestinations };
+      let changed = false;
+      files.forEach(file => {
+        if (!manuallyEditedDestinations[file.path]) {
+          const newDest = generateInitialDestination(file.path, overallPath);
+          if (nextDestinations[file.path] !== newDest) {
+             nextDestinations[file.path] = newDest;
+             changed = true;
+          }
+        }
+      });
+      return changed ? nextDestinations : currentDestinations;
+    });
+  }, [overallPath, files, manuallyEditedDestinations]);
+
 
   if (!reference || reference.type !== RefTypeBranch) return <></>;
 
   const hide = () => {
     if (uploadState.inProgress) {
       if (abortController !== null) {
-          abortController.abort()
+          abortController.abort();
       } else {
-        return
+        return;
       }
     }
     setUploadState(initialState);
-    setFileStates({});
     setFiles([]);
-    setCurrentPath(path);
-    setAbortController(null)
+    setFileStates({});
+    setFileDestinations({});
+    setEditingDestinations({});
+    setManuallyEditedDestinations({});
+    setOverallPath(path || "");
+    setAbortController(null);
     onHide();
   };
 
   useEffect(() => {
-    setCurrentPath(path)
+    setOverallPath(path || "")
   }, [path])
 
   const upload = async () => {
-    if (files.length < 1) {
+    if (files.length < 1 || uploadState.inProgress) {
       return
     }
 
-    const abortController = new AbortController()
-    setAbortController(abortController)
+    setEditingDestinations({});
+
+    const controller = new AbortController();
+    setAbortController(controller);
+    setUploadState({ ...initialState, inProgress: true });
 
     const mapper = async (file) => {
+      const currentDestination = fileDestinations[file.path];
+      if (!currentDestination) {
+        console.error(`No destination path found for file: ${file.path}`);
+        setFileStates(next => ({ ...next, [file.path]: { status: 'error', percent: 0 } }));
+        throw new Error(`Missing destination for ${file.path}`);
+      }
       try {
-        setFileStates(next => ( {...next, [file.path]: {status: 'uploading', percent: 0}}))
-        await uploadFile(config, repo, reference, currentPath, file, progress => {
-          setFileStates(next => ( {...next, [file.path]: {status: 'uploading', percent: progress}}))
-        })
+        setFileStates(next => ({ ...next, [file.path]: { status: 'uploading', percent: 0 } }));
+        
+        const handleProgress = (progress) => {
+          if (controller.signal.aborted) return;
+          setFileStates(next => {
+            if (next[file.path]?.status === 'uploading') {
+                return { ...next, [file.path]: { status: 'uploading', percent: progress } };
+            }
+            return next;
+          });
+        };
+
+        await uploadFile(config, repo, reference, currentDestination, file, handleProgress);
+        
+        if (controller.signal.aborted) return;
+        setFileStates(next => ({ ...next, [file.path]: { status: 'done', percent: 100 } }));
+
       } catch (error) {
-        setFileStates(next => ( {...next, [file.path]: {status: 'error'}}))
-        setUploadState({ ...initialState, error });
+        if (controller.signal.aborted) return;
+        console.error("Upload error for:", file.path, error);
+        setFileStates(next => ({ ...next, [file.path]: { status: 'error', percent: 0 } }));
+        if (!(error instanceof DOMException && error.name === 'AbortError') && !controller.signal.aborted) {
+          setUploadState(prev => ({ ...prev, error: error }));
+        }                                                                       
         throw error;
       }
-      setFileStates(next => ( {...next, [file.path]: {status: 'done'}}))
     }
 
-    setUploadState({...initialState,  inProgress: true });
     try {
       await pMap(files, mapper, {
         concurrency: MAX_PARALLEL_UPLOADS,
-        signal: abortController.signal
+        signal: controller.signal,
+        stopOnError: true
       });
-      onDone();
-      hide();
-    } catch (error) {
-      if (error instanceof DOMException) {
-        // abort!
-        onDone();
-        hide();
-      } else {
-        setUploadState({ ...initialState, error });
+      if (!controller.signal.aborted) {
+          setUploadState(prev => ({ ...prev, inProgress: false, done: true, error: null }));
+          onDone();
+          hide(); 
       }
+    } catch (error) {
+       if (!(error instanceof DOMException && error.name === 'AbortError') && !controller.signal.aborted) {
+           console.error("pMap upload error:", error);
+           setUploadState(prev => ({...prev, inProgress: false, error: prev.error || error })); 
+       } else {
+           console.log("Upload process aborted.");
+           setUploadState(prev => ({...prev, inProgress: false}));
+       }
+    } finally {
+       setUploadState(prev => ({...prev, inProgress: false}));
+       setAbortController(null);
     }
-
-
   };
 
-  const changeCurrentPath = useCallback(e => {
-    setCurrentPath(e.target.value)
-  }, [setCurrentPath])
+  const handleOverallPathChange = useCallback(e => {
+    setOverallPath(e.target.value)
+  }, [])
 
-  const onRemoveCandidate = useCallback(file => {
-    return () => setFiles(current => current.filter(f => f !== file))
-  }, [setFiles])
+  const handleIndividualDestinationChange = useCallback((originalPath, newDestination) => {
+    setFileDestinations(prev => ({ ...prev, [originalPath]: newDestination }));
+    setManuallyEditedDestinations(prev => ({ ...prev, [originalPath]: true }));
+  }, []);
+
+  const handleRemoveFile = useCallback(originalPath => {
+    setFiles(prev => prev.filter(f => f.path !== originalPath));
+    setFileDestinations(prev => {
+      const next = { ...prev };
+      delete next[originalPath];
+      return next;
+    });
+    setFileStates(prev => {
+      const next = { ...prev };
+      delete next[originalPath];
+      return next;
+    });
+    setEditingDestinations(prev => {
+      const next = { ...prev };
+      delete next[originalPath];
+      return next;
+    });
+    setManuallyEditedDestinations(prev => {
+      const next = { ...prev };
+      delete next[originalPath];
+      return next;
+    });
+  }, []);
+
+  const handleEditToggle = useCallback((originalPath, editMode) => {
+    setEditingDestinations(prev => ({ ...prev, [originalPath]: editMode }));
+  }, []);
+
+  const totalSize = files.reduce((a, f) => a + f.size, 0);
+  const canUpload = files.length > 0 && !uploadState.inProgress;
+
+  const totalProgress = files.reduce((sum, file) => sum + (fileStates[file.path]?.percent || 0), 0);
+  const averageProgress = files.length > 0 ? Math.round(totalProgress / files.length) : 0;
+  const uploadingCount = files.filter(f => fileStates[f.path]?.status === 'uploading').length;
 
   return (
     <>
-      <Modal size="xl" show={show} onHide={hide}>
-        <Modal.Header closeButton>
-          <Modal.Title>Upload Object</Modal.Title>
+      <Modal size="xl" show={show} onHide={hide} backdrop="static" keyboard={!uploadState.inProgress}>
+        <Modal.Header closeButton={!uploadState.inProgress}>
+          <Modal.Title>
+            <UploadIcon className="me-2" />
+            Upload Objects to Branch &apos;{reference.id}&apos;
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form
             onSubmit={(e) => {
-              if (uploadState.inProgress) return;
               e.preventDefault();
-              upload();
+              if (canUpload) upload();
             }}
           >
             {config?.warnings && (
@@ -424,60 +614,98 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
               </Form.Group>
             )}
 
-            <Form.Group controlId="path" className="mb-3">
-              <Form.Text>Path</Form.Text>
-              <Form.Control disabled={uploadState.inProgress} defaultValue={currentPath} onChange={changeCurrentPath}/>
+            <Form.Group controlId="dropzone" className="mb-3">
+              <div {...getRootProps({className: 'dropzone', 'aria-disabled': uploadState.inProgress})}>
+                <input {...getInputProps({'aria-disabled': uploadState.inProgress})} />
+                <div className={isDragAccept ? "file-drop-zone file-drop-zone-focus" : "file-drop-zone"}>
+                  <UploadIcon size={24} className="file-drop-zone-icon" />
+                   <div className="file-drop-zone-text">
+                     {isDragAccept ? "Drop files here" : "Drag & drop files or folders here"}
+                   </div>
+                   <div className="file-drop-zone-hint">or click to browse</div>
+                 </div>
+              </div>
             </Form.Group>
 
-            <Form.Group controlId="content" className="mb-3">
-              <div {...getRootProps({className: 'dropzone', disabled: uploadState.inProgress})}>
-                  <input {...getInputProps({disabled: uploadState.inProgress})} />
-                  <div className={isDragAccept ? "file-drop-zone file-drop-zone-focus" : "file-drop-zone"}>
-                    {uploadState.inProgress ? "Upload in progress..." : "Drag 'n' drop files or folders here (or click to select)"}
-                  </div>
-              </div>
-              <aside className="mt-3">
-                {(files && files.length > 0) &&
-                  <h5>{files.length} File{files.length > 1 ? "s":""} to upload ({humanSize(files.reduce((a,f) => a + f.size ,0))})</h5>
-                }
-                {files && files.map(file =>
+            <Form.Group controlId="overallPath" className="mb-3">
+              <Form.Label>Common Destination Directory (Optional)</Form.Label>
+              <Form.Control 
+                type="text"
+                disabled={uploadState.inProgress} 
+                value={overallPath} 
+                onChange={handleOverallPathChange}
+                placeholder="e.g., data/images/ (leave empty for root)"
+                title="Prefix for all uploaded files. Can be overridden individually below."
+              />
+            </Form.Group>
+
+            {files.length > 0 && (
+              <div className="upload-items-container">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <h5 className="mb-0">Files to Upload ({files.length})</h5>
+                  <span className="text-muted">Total size: {humanSize(totalSize)}</span>
+                </div>
+
+                <div className="upload-items-header d-none d-md-grid">
+                  <div>File (Original / Destination)</div>
+                  <div>Size</div>
+                  <div>Status</div>
+                </div>
+
+                <div className="upload-items-list">
+                  {files.map(file =>
                     <UploadCandidate
                       key={file.path}
-                      config={config}
-                      repo={repo}
-                      reference={reference}
                       file={file}
-                      path={currentPath}
+                      destination={fileDestinations[file.path] || ''}
                       state={fileStates[file.path]}
-                      onRemove={!uploadState.inProgress ? onRemoveCandidate(file) : null}
+                      onDestinationChange={(newDest) => handleIndividualDestinationChange(file.path, newDest)}
+                      onRemove={() => handleRemoveFile(file.path)}
+                      isUploading={uploadState.inProgress || fileStates[file.path]?.status === 'uploading'}
+                      isEditing={editingDestinations[file.path] || false}
+                      onEditToggle={(editMode) => handleEditToggle(file.path, editMode)}
                     />
-                )}
-              </aside>
-            </Form.Group>
+                  )}
+                </div>
+              </div>
+            )}
           </Form>
-        {(uploadState.error) ? (<AlertError error={uploadState.error}/>) : (<></>)}
-      </Modal.Body>
-    <Modal.Footer>
-        <Button variant="secondary" onClick={hide}>
-            Cancel
-        </Button>
-        <Button variant="success" disabled={uploadState.inProgress || files.length < 1} onClick={() => {
-            if (uploadState.inProgress) return;
-            upload()
-        }}>
-            {(uploadState.inProgress) ? 'Uploading...' : 'Upload'}
-        </Button>
-    </Modal.Footer>
-  </Modal>
+          {(uploadState.error && !(uploadState.error instanceof DOMException && uploadState.error.name === 'AbortError')) && 
+             <AlertError error={uploadState.error} onDismiss={() => setUploadState(prev => ({...prev, error: null}))}/>
+          } 
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={hide} disabled={uploadState.inProgress}>
+            {uploadState.inProgress ? "Cancel Upload" : "Close"}
+          </Button>
+          <Button 
+            variant="success" 
+            disabled={!canUpload} 
+            onClick={upload} 
+          >
+            {uploadState.inProgress ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Uploading {uploadingCount > 0 ? `${uploadingCount} / ${files.length}` : averageProgress + '%'}...
+              </>
+            ) : (
+              <>
+                <UploadIcon className="me-2" /> Upload {files.length || ''} File{files.length !== 1 ? 's' : ''}
+              </>
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
-    <Button
-      variant={!config.import_support ? "success" : "light"}
-      disabled={disabled}
-      onClick={onClick}
+      <Button
+        variant={!config.import_support ? "success" : "light"}
+        disabled={disabled || !reference || reference.type !== RefTypeBranch}
+        onClick={onClick}
+        title={(!reference || reference.type !== RefTypeBranch) ? "Select a branch to upload" : "Upload objects"}
       >
-      <UploadIcon /> Upload Object
-    </Button>
-  </>
+        <UploadIcon /> Upload Object
+      </Button>
+    </>
   );
 };
 
