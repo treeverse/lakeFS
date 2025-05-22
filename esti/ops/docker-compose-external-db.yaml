@@ -4,6 +4,8 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: lakefs
+    depends_on:
+      - spark
     environment:
       - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-simplified}
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
@@ -22,15 +24,29 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
+    depends_on:
+      spark:
+        condition: service_healthy
     command:
       - /bin/sh
       - -c
       - |
-        apk add --no-cache util-linux
+        apk add --no-cache util-linux docker curl go bash
         go test -timeout 20m $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
+      - shared-spark:/opt/bitnami/spark
+      - shared-metaclient:/opt/metaclient
+
+  spark:
+    extends:
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      service: spark
+    container_name: lakefs-spark
+    volumes:
+      - shared-metaclient:/opt/metaclient
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   lakefs-code:
@@ -41,3 +57,4 @@ volumes:
       device: ${LAKEFS_ROOT:-.}
   lakefs-app:
   shared-metaclient:
+  shared-spark:

@@ -27,6 +27,22 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
+    depends_on:
+      spark:
+        condition: service_healthy
+    volumes:
+      - lakefs-code:/lakefs
+      - lakefs-app:/app:ro
+      - shared-spark:/opt/bitnami/spark
+
+  spark:
+    extends:
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      service: spark
+    container_name: lakefs-spark
+    volumes:
+      - shared-metaclient:/opt/metaclient
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   lakefs-code:
@@ -37,3 +53,4 @@ volumes:
       device: ${LAKEFS_ROOT:-.}
   lakefs-app:
   shared-metaclient:
+  shared-spark:
