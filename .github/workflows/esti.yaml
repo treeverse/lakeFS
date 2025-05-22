@@ -779,7 +779,7 @@ jobs:
       - name: Download Spark metaclient JAR
         uses: actions/download-artifact@v4
         with:
-          name: spark-metaclient
+          name: metaclient-jar
           path: test/spark/metaclient
       - name: Ensure Spark JAR has correct name
         run: |
