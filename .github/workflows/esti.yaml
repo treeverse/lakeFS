@@ -792,7 +792,9 @@ jobs:
       - name: Ensure mount directory exists (even if JAR is missing)
         run: mkdir -p esti/ops/test/spark/metaclient
       - name: Copy JAR into correct location for Docker Compose mount
-        run: cp test/spark/metaclient/spark-assembly.jar esti/ops/test/spark/metaclient/
+        run: |
+          mkdir -p esti/ops/test/spark/metaclient
+          cp test/spark/metaclient/spark-assembly.jar esti/ops/test/spark/metaclient/spark-assembly.jar
       - name: Ensure spark-assembly.jar is in the correct volume path
         run: |
           ls -la test/spark/metaclient/
