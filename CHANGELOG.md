@@ -1,5 +1,12 @@
 # Changelog
 
+# v1.57.0
+
+:new: What's new:
+
+- UI: turn off hive partitioning while select parquet using DuckDB (#9056)
+- Add friendly name to GetUser API response (#9065)
+
 # v1.56.1
 
 :bug: Bugs fixed:

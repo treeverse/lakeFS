@@ -1222,49 +1222,6 @@ jobs:
         with:
           paths: webui/test-results.xml
           output: "test-results.md"
-      # will test and move to using the composite action once it's merged to master (GH limitation)
-      - uses: actions/github-script@v6
-        if: ${{ github.event_name == 'pull_request' && (success() || failure()) }}
-        env:
-          PLAYWRIGHT_PROJECT: "DynamoDB Local - Local Block Adapter"
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require("fs");
-            // 1. Retrieve existing bot comments for the PR
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            })
-            const botComment = comments.find(comment => {
-              return comment.user.type === 'Bot' && comment.body.includes(`E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}`)
-            })
-            // 2. Read markdown files
-            const content = fs.readFileSync("test-results.md");
-            // 3. Prepare format of the comment
-            const output = `
-              # E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}
-
-              ${content}
-            `;
-
-            // 4. If we have a comment, update it, otherwise create a new one
-            if (botComment) {
-              github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: output
-              })
-            } else {
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: output
-              })
-            }
 
   quickstart:
     name: Quickstart
@@ -1341,49 +1298,6 @@ jobs:
         with:
           paths: webui/test-results.xml
           output: "quickstart-test-results.md"
-      # will test and move to using the composite action once it's merged to master (GH limitation)
-      - uses: actions/github-script@v6
-        if: ${{ github.event_name == 'pull_request' && (success() || failure()) }}
-        env:
-          PLAYWRIGHT_PROJECT: "Quickstart"
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require("fs");
-            // 1. Retrieve existing bot comments for the PR
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            })
-            const botComment = comments.find(comment => {
-              return comment.user.type === 'Bot' && comment.body.includes(`E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}`)
-            })
-            // 2. Read markdown files
-            const content = fs.readFileSync("quickstart-test-results.md");
-            // 3. Prepare format of the comment
-            const output = `
-              # E2E Test Results - ${process.env.PLAYWRIGHT_PROJECT}
-
-              ${content}
-            `;
-
-            // 4. If we have a comment, update it, otherwise create a new one
-            if (botComment) {
-              github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: output
-              })
-            } else {
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: output
-              })
-            }
 
   run-system-aws-s3-basic-auth:
     name: Run latest lakeFS app on AWS S3 + Basic Auth
