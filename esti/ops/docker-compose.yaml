@@ -47,6 +47,7 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: spark
+    container_name: lakefs-spark
     volumes:
       - shared-spark:/opt/bitnami/spark
 
