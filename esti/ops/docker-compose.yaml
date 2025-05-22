@@ -50,6 +50,7 @@ services:
     container_name: lakefs-spark
     volumes:
       - shared-spark:/opt/bitnami/spark
+      - ./test/spark/metaclient:/opt/metaclient
 
 volumes:
   lakefs-code:
