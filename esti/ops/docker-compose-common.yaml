@@ -51,6 +51,8 @@ services:
       - -c
       - |
         apk add --no-cache util-linux docker curl go
+        curl -sL https://downloads.apache.org/spark/spark-3.5.5/spark-3.5.5-bin-hadoop3.tgz | tar -xz -C /opt &&
+        ln -s /opt/spark-3.5.5-bin-hadoop3/bin/spark-submit /usr/local/bin/spark-submit
         go test $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
