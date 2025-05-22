@@ -752,15 +752,6 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    services:
-      spark:
-        image: docker.io/bitnami/spark:3.5.5
-        options: --name lakefs-spark
-        ports:
-          - '8080:8080'
-          - '7077:7077'
-        volumes:
-          - ./test/spark/metaclient:/opt/metaclient
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
