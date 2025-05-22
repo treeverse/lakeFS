@@ -113,6 +113,11 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	// Add endpoint so that 'IsAdvancedAuth' will be in effect
 	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
 
+	// Set minimal cache sizes for testing to reduce memory consumption
+	// Default production values are too large for test environments
+	viper.Set("committed.local_cache.size_bytes", 8*1024*1024)          // 8MB instead of 1GB
+	viper.Set("committed.sstable.memory.cache_size_bytes", 2*1024*1024) // 2MB instead of 400MB
+
 	collector := &memCollector{}
 	cfg := &configfactory.ConfigWithAuth{}
 	baseCfg, err := config.NewConfig("", cfg)

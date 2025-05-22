@@ -25,8 +25,22 @@ const (
 func newRistrettoEviction(capacity int64, evict func(rPath params.RelativePath, cost int64)) (params.Eviction, error) {
 	re := &ristrettoEviction{evictCallback: evict}
 
+	// Scale numCounters based on capacity to avoid excessive memory usage for small caches
+	// Default 10M counters is too much for test environments with small cache sizes
+	var numCountersToUse int64 = numCounters
+	if capacity < 100*1024*1024 { // If capacity < 100MB
+		// Use a more reasonable ratio: ~100 counters per 1MB of capacity
+		numCountersToUse = capacity / (1024 * 10) // ~100 counters per 10KB
+		if numCountersToUse < 1000 {
+			numCountersToUse = 1000 // Minimum threshold
+		}
+		if numCountersToUse > numCounters {
+			numCountersToUse = numCounters // Don't exceed default for large caches
+		}
+	}
+
 	cache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: numCounters,
+		NumCounters: numCountersToUse,
 		MaxCost:     capacity,
 		BufferItems: bufferItems,
 		OnEvict:     re.onEvict,
