@@ -56,5 +56,11 @@ volumes:
       type: none
       device: ${LAKEFS_ROOT:-.}
   lakefs-app:
-  shared-metaclient:
   shared-spark:
+  shared-metaclient:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./esti/ops/test/spark/metaclient
+
