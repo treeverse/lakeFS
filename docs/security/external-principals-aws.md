@@ -174,7 +174,10 @@ There are two ways in which external principals can be used to authenticate to l
    for r in repos:
         print(r)
    ```
-   
+   {: .warning }
+   > Please note, using the IAM provider configurations will not work with the lakectl command line tool, and will stop you from running it.
+
+
 2. Generate a lakeFS client with the assumed role by initiating a boto3 session with the desired role and call `lakefs.client.frow_aws_role`:
     
    ```python
