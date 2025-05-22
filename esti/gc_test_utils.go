@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 
@@ -105,20 +104,19 @@ type SparkSubmitConfig struct {
 }
 
 func RunSparkSubmit(config *SparkSubmitConfig) error {
-	workingDirectory, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
-	}
-	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
-	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", config.SparkVersion), "spark-submit")
-	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
-	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
-	args := dockerArgs
-	args = append(args, sparkSubmitArgs...)
-	args = append(args, "/opt/metaclient/client.jar")
-	args = append(args, config.ProgramArgs...)
-	cmd := exec.Command("docker", args...)
-	logger.Infof("Running command: %s", cmd.String())
+	cmd := exec.Command(
+		"docker", "exec", "lakefs-spark",
+		"spark-submit",
+		"--master", "spark://localhost:7077",
+		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
+		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000"+apiutil.BaseURL,
+		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
+		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+		"--class", config.EntryPoint,
+		"/opt/metaclient/spark-assembly.jar",
+	)
+	cmd.Args = append(cmd.Args, config.ProgramArgs...)
+
+	logger.Infof("Running command: %s", strings.Join(cmd.Args, " "))
 	return runCommand(config.LogSource, cmd)
 }

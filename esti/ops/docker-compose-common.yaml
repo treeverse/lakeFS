@@ -51,10 +51,13 @@ services:
       - -c
       - |
         apk add --no-cache util-linux 
+        curl -sL https://downloads.apache.org/spark/spark-3.5.5/spark-3.5.5-bin-hadoop3.tgz | tar -xz -C /opt &&
+        ln -s /opt/spark-3.5.5-bin-hadoop3/bin/spark-submit /usr/local/bin/spark-submit
         go test $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
+      - ./test/spark/metaclient:/opt/metaclient
 
   postgres:
     image: "postgres:11"
@@ -68,3 +71,12 @@ services:
     image: "amazon/dynamodb-local:2.5.2"
     ports:
       - "6432:8000"
+
+  spark:
+    image: "bitnami/spark:3.5.5"
+    container_name: "lakefs-spark"
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - ./test/spark/metaclient:/opt/metaclient

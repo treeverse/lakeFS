@@ -32,6 +32,8 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
+    depends_on:
+      - spark
     environment:
       - ESTI_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
     volumes:

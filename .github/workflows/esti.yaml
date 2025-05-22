@@ -521,7 +521,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=2500 lakefs      
+        run: docker-compose logs --tail=2500 lakefs
 
       - name: Spark${{ matrix.spark.tag }} + lakeFS GW + Redirect
         if: env.SPARK_TAG == '3'
@@ -762,7 +762,7 @@ jobs:
 
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -833,7 +833,7 @@ jobs:
 
   run-system-aws-s3:
     name: Run latest lakeFS app on AWS S3
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -908,7 +908,7 @@ jobs:
 
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -960,7 +960,7 @@ jobs:
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -1019,7 +1019,7 @@ jobs:
 
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -1225,7 +1225,7 @@ jobs:
   # e2e-<db type>-<block adapter type>
   e2e-ddb-local-local:
     name: E2E - DynamoDB Local - Local Block Adapter
-    needs: 
+    needs:
       - deploy-image
       - login-to-amazon-ecr
     runs-on: ubuntu-22.04-8-cores
@@ -1344,7 +1344,7 @@ jobs:
 
   quickstart:
     name: Quickstart
-    needs: 
+    needs:
       - deploy-image
       - login-to-amazon-ecr
     runs-on: ubuntu-22.04-8-cores
@@ -1463,7 +1463,7 @@ jobs:
 
   run-system-aws-s3-basic-auth:
     name: Run latest lakeFS app on AWS S3 + Basic Auth
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
