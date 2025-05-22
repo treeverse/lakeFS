@@ -104,19 +104,21 @@ type SparkSubmitConfig struct {
 }
 
 func RunSparkSubmit(config *SparkSubmitConfig) error {
-	cmd := exec.Command(
-		"docker", "exec", "lakefs-spark",
+	cmdArgs := []string{
+		"exec", "lakefs-spark",
 		"spark-submit",
 		"--master", "spark://spark:7077",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
-		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000"+apiutil.BaseURL,
+		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000" + apiutil.BaseURL,
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
 		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		"--class", config.EntryPoint,
-		"/opt/metaclient/spark-assembly.jar", // שים לב: קובץ ה־JAR חייב להיות גם בקונטיינר spark
-	)
-	cmd.Args = append(cmd.Args, config.ProgramArgs...)
+		"/opt/metaclient/spark-assembly.jar",
+	}
+	cmdArgs = append(cmdArgs, config.ProgramArgs...)
 
-	logger.Infof("Running command: %s", strings.Join(cmd.Args, " "))
+	logger.Infof("Running command: docker %s", strings.Join(cmdArgs, " "))
+
+	cmd := exec.Command("docker", cmdArgs...)
 	return runCommand(config.LogSource, cmd)
 }
