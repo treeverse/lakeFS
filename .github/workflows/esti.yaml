@@ -780,10 +780,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: spark-metaclient
-      - name: Move Spark JAR to expected path
+          path: test/spark/metaclient
+      - name: Ensure Spark JAR has correct name
         run: |
-          mkdir -p test/spark/metaclient
-          mv spark-metaclient/spark-assembly.jar test/spark/metaclient/
+          ls -la test/spark/metaclient
+          if [ ! -f test/spark/metaclient/spark-assembly.jar ]; then
+            JAR=$(find test/spark/metaclient -name "*.jar" | head -n 1)
+            mv "$JAR" test/spark/metaclient/spark-assembly.jar
+          fi
       - name: Copy JAR into correct location for Docker Compose mount
         run: |
           mkdir -p esti/ops/test/spark/metaclient

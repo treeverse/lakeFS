@@ -55,7 +55,7 @@ services:
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
-      - ./test/spark/metaclient:/opt/metaclient
+      - shared-metaclient:/opt/metaclient
       - /var/run/docker.sock:/var/run/docker.sock
 
   postgres:
@@ -78,7 +78,7 @@ services:
       - "8080:8080"
       - "7077:7077"
     volumes:
-      - ./test/spark/metaclient:/opt/metaclient
+      - shared-metaclient:/opt/metaclient
       - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
