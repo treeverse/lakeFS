@@ -52,6 +52,48 @@ Searching for lakeFS credentials and server endpoint in the following order:
 - `LAKECTL_*` Environment variables
 - `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
 
+# Authenticating with AWS IAM Role
+
+Starting from **lakeFS ≥ v1.57.0** and **Everest ≥ v0.13.0**, authenticating with IAM roles is supported!
+
+## Overview
+
+When IAM authentication is configured, Everest will use your machine's **default AWS profile credentials** to generate a **session token** used for authenticating against lakeFS.  
+This token is seamlessly refreshed as long as the AWS session remains valid.
+
+Because IAM roles are linked to users, lakeFS must map each role to a user.  
+To do this, make sure the IAM role is attached to a lakeFS user using [`createUserExternalPrincipal`](docs/ExperimentalApi.md#createuserexternalprincipal).
+
+---
+
+## Authentication Chain
+
+When running an Everest `mount` command, authentication occurs in the following order:
+
+1. **Session token** from the environment variable `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN`.  
+   If the token is expired, authentication will fail.
+2. **Static credentials** from the `.lakectl.yaml` file.
+3. **IAM authentication**, if configured.
+
+---
+
+## Configuration
+
+Since IAM authentication is used as a fallback method, `.lakectl.yaml` **must not contain static credentials**.
+
+IAM authentication configuration fields:
+
+```yaml
+credentials:
+  provider:
+    type: aws_iam          # Required
+    aws_iam:
+      token_ttl_seconds: 60m              # Optional, default: 1h
+      url_presign_ttl_seconds: 15m        # Optional, default: 15m
+      refresh_interval: 5m                # Optional, default: 5m
+      token_request_headers:              # Required
+        x-lakefs-server-id: localhost     # Replace with your actual lakeFS host
+
 ## Command Line Interface
 
 ### Mount Command
