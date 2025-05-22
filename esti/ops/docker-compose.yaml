@@ -49,8 +49,7 @@ services:
       service: spark
     container_name: lakefs-spark
     volumes:
-      - shared-spark:/opt/bitnami/spark
-      - ../test/spark/metaclient:/opt/metaclient
+      - shared-metaclient:/opt/metaclient
 
 volumes:
   lakefs-code:
@@ -61,3 +60,4 @@ volumes:
       device: ${LAKEFS_ROOT:-.}
   lakefs-app:
   shared-spark:
+  shared-metaclient:
