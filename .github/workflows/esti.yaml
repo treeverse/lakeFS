@@ -781,6 +781,10 @@ jobs:
         with:
             name: metaclient-jar
             path: test/spark/metaclient
+      - name: Copy JAR into correct location for Docker Compose mount
+        run: |
+          mkdir -p esti/ops/test/spark/metaclient
+          cp test/spark/metaclient/spark-assembly.jar esti/ops/test/spark/metaclient/
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
