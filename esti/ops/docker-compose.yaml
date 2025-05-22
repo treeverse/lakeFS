@@ -40,6 +40,11 @@ services:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
 
+  spark:
+    extends:
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      service: spark
+
 volumes:
   lakefs-code:
     driver: local
