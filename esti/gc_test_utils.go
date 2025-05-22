@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -104,14 +105,20 @@ type SparkSubmitConfig struct {
 }
 
 func RunSparkSubmit(config *SparkSubmitConfig) error {
+	accessKey := os.Getenv("LAKEFS_ACCESS_KEY_ID")
+	secretKey := os.Getenv("LAKEFS_SECRET_ACCESS_KEY")
+	if accessKey == "" || secretKey == "" {
+		return fmt.Errorf("missing lakeFS credentials in environment variables")
+	}
+
 	cmdArgs := []string{
 		"exec", "lakefs-spark",
 		"spark-submit",
 		"--master", "spark://spark:7077",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
-		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
-		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+		"--conf", fmt.Sprintf("spark.hadoop.lakefs.access.key=%s", accessKey),
+		"--conf", fmt.Sprintf("spark.hadoop.lakefs.secret.key=%s", secretKey),
 		"--class", config.EntryPoint,
 		"/opt/metaclient/spark-assembly.jar",
 	}
