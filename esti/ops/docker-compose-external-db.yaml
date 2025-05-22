@@ -40,3 +40,4 @@ volumes:
       type: none
       device: ${LAKEFS_ROOT:-.}
   lakefs-app:
+  shared-metaclient:
