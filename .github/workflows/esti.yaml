@@ -776,11 +776,14 @@ jobs:
           ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
-      - name: Download metaclient jar
+      - name: Download Spark metaclient JAR
         uses: actions/download-artifact@v4
         with:
-            name: metaclient-jar
-            path: test/spark/metaclient
+          name: spark-metaclient
+      - name: Move Spark JAR to expected path
+        run: |
+          mkdir -p test/spark/metaclient
+          mv spark-metaclient/spark-assembly.jar test/spark/metaclient/
       - name: Copy JAR into correct location for Docker Compose mount
         run: |
           mkdir -p esti/ops/test/spark/metaclient
