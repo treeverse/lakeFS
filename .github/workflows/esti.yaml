@@ -792,6 +792,10 @@ jobs:
         run: |
           mkdir -p esti/ops/test/spark/metaclient
           cp test/spark/metaclient/spark-assembly.jar esti/ops/test/spark/metaclient/
+      - name: Ensure spark-assembly.jar is in the correct volume path
+        run: |
+          ls -la test/spark/metaclient/
+          ls -la esti/ops/test/spark/metaclient/
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
