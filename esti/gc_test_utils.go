@@ -105,6 +105,7 @@ type SparkSubmitConfig struct {
 
 func RunSparkSubmit(config *SparkSubmitConfig) error {
 	cmd := exec.Command(
+		"docker", "exec", "lakefs-spark",
 		"spark-submit",
 		"--master", "spark://spark:7077",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
@@ -112,7 +113,7 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
 		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		"--class", config.EntryPoint,
-		"/opt/metaclient/spark-assembly.jar",
+		"/opt/metaclient/spark-assembly.jar", // שים לב: קובץ ה־JAR חייב להיות גם בקונטיינר spark
 	)
 	cmd.Args = append(cmd.Args, config.ProgramArgs...)
 
