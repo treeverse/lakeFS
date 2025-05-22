@@ -115,7 +115,7 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 		"/opt/metaclient/spark-assembly.jar",
 	)
 	cmd.Args = append(cmd.Args, config.ProgramArgs...)
-
+	//a
 	logger.Infof("Running command: %s", strings.Join(cmd.Args, " "))
 	return runCommand(config.LogSource, cmd)
 }
