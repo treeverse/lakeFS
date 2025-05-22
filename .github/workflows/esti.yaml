@@ -755,7 +755,8 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
-
+      - name: Ensure mount directory exists
+        run: mkdir -p esti/ops/test/spark/metaclient
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
