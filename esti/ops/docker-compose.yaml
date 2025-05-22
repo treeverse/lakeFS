@@ -40,14 +40,14 @@ services:
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
-      - shared-spark:/opt/bitnami/spark:ro
+      - shared-spark:/opt/bitnami/spark
 
   spark:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: spark
     volumes:
-      - shared-spark:/opt/bitnami/spark:ro
+      - shared-spark:/opt/bitnami/spark
 
 volumes:
   lakefs-code:
