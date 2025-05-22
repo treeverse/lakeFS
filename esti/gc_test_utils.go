@@ -105,9 +105,8 @@ type SparkSubmitConfig struct {
 
 func RunSparkSubmit(config *SparkSubmitConfig) error {
 	cmd := exec.Command(
-		"docker", "exec", "lakefs-spark",
 		"spark-submit",
-		"--master", "spark://localhost:7077",
+		"--master", "spark://spark:7077",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000"+apiutil.BaseURL,
 		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
