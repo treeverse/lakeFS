@@ -80,3 +80,8 @@ services:
     volumes:
       - ./test/spark/metaclient:/opt/metaclient
       - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

@@ -33,7 +33,8 @@ services:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
     depends_on:
-      - spark
+      spark:
+        condition: service_healthy
     environment:
       - ESTI_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - PATH=/opt/bitnami/spark/bin:${PATH}
