@@ -164,6 +164,16 @@ There are two ways in which external principals can be used to authenticate to l
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_PRESIGNED_URL_TTL_SECONDS="60"
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS='{"HeaderName":"HeaderValue"}'
     ```
+   To use the client, merely import and initialize it:
+   ```python
+   from lakefs.client import Client
+   my_client = Client()
+   
+   # list repositories
+   repos = lakefs.repositories(client=my_client)
+   for r in repos:
+        print(r)
+   ```
    
 2. Generate a lakeFS client with the assumed role by initiating a boto3 session with the desired role and call `lakefs.client.frow_aws_role`:
     
