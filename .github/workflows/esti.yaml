@@ -703,6 +703,39 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
+      # Ensure mount directory exists BEFORE Docker Compose
+      - name: Ensure metaclient directory exists for volume mount
+        run: mkdir -p ./esti/ops/test/spark/metaclient
+
+      - name: Download Spark metaclient JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: metaclient-jar
+          path: ./esti/ops/test/spark/metaclient
+
+      - name: Verify Spark metaclient JAR and ensure correct name
+        working-directory: ./esti/ops/test/spark/metaclient
+        run: |
+          echo "Listing files in $(pwd) before rename/check:"
+          ls -la .
+          ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
+          if [ -z "$ACTUAL_JAR_FILE" ]; then
+            echo "ERROR: No JAR file found in artifact path!"
+            exit 1
+          fi
+          if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
+            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
+            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
+          else
+            echo "'spark-assembly.jar' already exists with the correct name."
+          fi
+          if [ ! -f "./spark-assembly.jar" ]; then
+            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
+            exit 1
+          fi
+          echo "Final listing of files in $(pwd):"
+          ls -la .
+
       - name: Test lakeFS with S3 tests KV
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -869,6 +902,39 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
+      # Ensure mount directory exists BEFORE Docker Compose
+      - name: Ensure metaclient directory exists for volume mount
+        run: mkdir -p ./esti/ops/test/spark/metaclient
+
+      - name: Download Spark metaclient JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: metaclient-jar
+          path: ./esti/ops/test/spark/metaclient
+
+      - name: Verify Spark metaclient JAR and ensure correct name
+        working-directory: ./esti/ops/test/spark/metaclient
+        run: |
+          echo "Listing files in $(pwd) before rename/check:"
+          ls -la .
+          ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
+          if [ -z "$ACTUAL_JAR_FILE" ]; then
+            echo "ERROR: No JAR file found in artifact path!"
+            exit 1
+          fi
+          if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
+            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
+            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
+          else
+            echo "'spark-assembly.jar' already exists with the correct name."
+          fi
+          if [ ! -f "./spark-assembly.jar" ]; then
+            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
+            exit 1
+          fi
+          echo "Final listing of files in $(pwd):"
+          ls -la .
+
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -985,6 +1051,39 @@ jobs:
           ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
+
+      # Ensure mount directory exists BEFORE Docker Compose
+      - name: Ensure metaclient directory exists for volume mount
+        run: mkdir -p ./esti/ops/test/spark/metaclient
+
+      - name: Download Spark metaclient JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: metaclient-jar
+          path: ./esti/ops/test/spark/metaclient
+
+      - name: Verify Spark metaclient JAR and ensure correct name
+        working-directory: ./esti/ops/test/spark/metaclient
+        run: |
+          echo "Listing files in $(pwd) before rename/check:"
+          ls -la .
+          ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
+          if [ -z "$ACTUAL_JAR_FILE" ]; then
+            echo "ERROR: No JAR file found in artifact path!"
+            exit 1
+          fi
+          if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
+            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
+            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
+          else
+            echo "'spark-assembly.jar' already exists with the correct name."
+          fi
+          if [ ! -f "./spark-assembly.jar" ]; then
+            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
+            exit 1
+          fi
+          echo "Final listing of files in $(pwd):"
+          ls -la .
 
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -1320,6 +1419,39 @@ jobs:
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
+
+      # Ensure mount directory exists BEFORE Docker Compose
+      - name: Ensure metaclient directory exists for volume mount
+        run: mkdir -p ./esti/ops/test/spark/metaclient
+
+      - name: Download Spark metaclient JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: metaclient-jar
+          path: ./esti/ops/test/spark/metaclient
+
+      - name: Verify Spark metaclient JAR and ensure correct name
+        working-directory: ./esti/ops/test/spark/metaclient
+        run: |
+          echo "Listing files in $(pwd) before rename/check:"
+          ls -la .
+          ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
+          if [ -z "$ACTUAL_JAR_FILE" ]; then
+            echo "ERROR: No JAR file found in artifact path!"
+            exit 1
+          fi
+          if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
+            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
+            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
+          else
+            echo "'spark-assembly.jar' already exists with the correct name."
+          fi
+          if [ ! -f "./spark-assembly.jar" ]; then
+            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
+            exit 1
+          fi
+          echo "Final listing of files in $(pwd):"
+          ls -la .
 
       - name: Test lakeFS with S3 tests + Basic Auth
         uses: ./.github/actions/bootstrap-test-lakefs
