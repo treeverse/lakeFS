@@ -762,24 +762,8 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      # Retrieve ACL server binary from cache
-      - name: Retrieve generated code
-        uses: actions/download-artifact@v4.1.8
-        with:
-          name: generated-code
-          path: /tmp/
-
-      - name: Unpack generated code
-        run: tar -xzvf /tmp/generated.tar.gz
-
-      # Run ACL server
-      - name: Run ACL server
-        env:
-          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
-          ACLSERVER_DATABASE_TYPE: local
-        run: ./acl run &
-
-      - name: Create directory for Spark metaclient JAR
+      # Ensure mount directory exists BEFORE Docker Compose
+      - name: Ensure metaclient directory exists for volume mount
         run: mkdir -p ./esti/ops/test/spark/metaclient
 
       - name: Download Spark metaclient JAR
