@@ -120,7 +120,7 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 		"spark-submit",
 		"--master", "spark://spark:7077",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
-		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
+		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000",
 		"--conf", fmt.Sprintf("spark.hadoop.lakefs.access.key=%s", accessKey),
 		"--conf", fmt.Sprintf("spark.hadoop.lakefs.secret.key=%s", secretKey),
 		"--class", config.EntryPoint,
