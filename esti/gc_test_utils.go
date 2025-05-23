@@ -112,7 +112,10 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	}
 
 	cmdArgs := []string{
-		"exec", "lakefs-spark",
+		"exec",
+		"-e", fmt.Sprintf("LAKEFS_ACCESS_KEY_ID=%s", accessKey),
+		"-e", fmt.Sprintf("LAKEFS_SECRET_ACCESS_KEY=%s", secretKey),
+		"lakefs-spark",
 		"spark-submit",
 		"--master", "spark://spark:7077",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
@@ -124,8 +127,8 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	}
 	cmdArgs = append(cmdArgs, config.ProgramArgs...)
 
-	logger.Infof("Running command: docker %s", strings.Join(cmdArgs, " "))
-
 	cmd := exec.Command("docker", cmdArgs...)
+	cmd.Env = os.Environ()
+
 	return runCommand(config.LogSource, cmd)
 }
