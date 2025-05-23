@@ -115,7 +115,7 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 
 	fmt.Printf("Using lakeFS credentials:\n")
 	fmt.Printf("  LAKEFS_ACCESS_KEY_ID=%s\n", accessKey)
-	fmt.Printf("  LAKEFS_SECRET_ACCESS_KEY length=%d\n", secretKey)
+	fmt.Printf("  LAKEFS_SECRET_ACCESS_KEY length=%s\n", secretKey)
 
 	cmdArgs := []string{
 		"exec",
