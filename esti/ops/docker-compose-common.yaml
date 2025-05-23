@@ -45,6 +45,8 @@ services:
       - ESTI_AZURE_STORAGE_ACCESS_KEY
       - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS}
       - ESTI_LARGE_OBJECT_PATH
+      - LAKEFS_ACCESS_KEY_ID
+      - LAKEFS_SECRET_ACCESS_KEY
     working_dir: /lakefs
     command:
       - /bin/sh
