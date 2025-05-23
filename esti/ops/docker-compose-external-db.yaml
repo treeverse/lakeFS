@@ -27,6 +27,9 @@ services:
     depends_on:
       spark:
         condition: service_healthy
+    environment:
+      - LAKEFS_ACCESS_KEY_ID=${LAKEFS_ACCESS_KEY_ID}
+      - LAKEFS_SECRET_ACCESS_KEY=${LAKEFS_SECRET_ACCESS_KEY}
     command:
       - /bin/sh
       - -c
