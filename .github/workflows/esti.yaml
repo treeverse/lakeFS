@@ -746,17 +746,18 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        branch_ownership: [false, true]
+        branch_ownership: [ false, true ]
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      LAKEFS_ACCESS_KEY_ID_FOR_SPARK: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+      LAKEFS_SECRET_ACCESS_KEY_FOR_SPARK: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
-      - name: Ensure mount directory exists
-        run: mkdir -p esti/ops/test/spark/metaclient
+
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
@@ -777,37 +778,48 @@ jobs:
           ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
+
+      - name: Create directory for Spark metaclient JAR
+        run: mkdir -p ./esti/ops/test/spark/metaclient
+
       - name: Download Spark metaclient JAR
         uses: actions/download-artifact@v4
         with:
           name: metaclient-jar
-          path: test/spark/metaclient
-      - name: Ensure Spark JAR has correct name
+          path: ./esti/ops/test/spark/metaclient
+
+      - name: Verify Spark metaclient JAR and ensure correct name
+        working-directory: ./esti/ops/test/spark/metaclient
         run: |
-          ls -la test/spark/metaclient
-          if [ ! -f test/spark/metaclient/spark-assembly.jar ]; then
-            JAR=$(find test/spark/metaclient -name "*.jar" | head -n 1)
-            mv "$JAR" test/spark/metaclient/spark-assembly.jar
+          echo "Listing files in $(pwd) before rename/check:"
+          ls -la .
+          ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
+          if [ -z "$ACTUAL_JAR_FILE" ]; then
+            echo "ERROR: No JAR file found in artifact path!"
+            exit 1
           fi
-      - name: Ensure mount directory exists (even if JAR is missing)
-        run: mkdir -p esti/ops/test/spark/metaclient
-      - name: Copy JAR into correct location for Docker Compose mount
-        run: |
-          mkdir -p esti/ops/test/spark/metaclient
-          cp test/spark/metaclient/spark-assembly.jar esti/ops/test/spark/metaclient/spark-assembly.jar
-      - name: Ensure spark-assembly.jar is in the correct volume path
-        run: |
-          ls -la test/spark/metaclient/
-          ls -la esti/ops/test/spark/metaclient/
+          if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
+            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
+            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
+          else
+            echo "'spark-assembly.jar' already exists with the correct name."
+          fi
+          if [ ! -f "./spark-assembly.jar" ]; then
+            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
+            exit 1
+          fi
+          echo "Final listing of files in $(pwd):"
+          ls -la .
+
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
+          LAKEFS_ACCESS_KEY_ID: ${{ env.LAKEFS_ACCESS_KEY_ID_FOR_SPARK }}
+          LAKEFS_SECRET_ACCESS_KEY: ${{ env.LAKEFS_SECRET_ACCESS_KEY_FOR_SPARK }}
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
-          LAKEFS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
