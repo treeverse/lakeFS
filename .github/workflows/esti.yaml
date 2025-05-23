@@ -989,6 +989,32 @@ jobs:
           ACLSERVER_DATABASE_TYPE: local
         run: ./acl run &
 
+      - name: Ensure metaclient directory exists for volume mount
+        run: mkdir -p ./esti/ops/test/spark/metaclient
+
+      - name: Download Spark metaclient JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: metaclient-jar
+          path: ./esti/ops/test/spark/metaclient
+
+      - name: Ensure metaclient JAR exists and correctly named
+        working-directory: ./esti/ops/test/spark/metaclient
+        run: |
+          echo "Listing current metaclient directory:"
+          ls -la .
+          ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
+          if [ -z "$ACTUAL_JAR_FILE" ]; then
+            echo "ERROR: No .jar found in $(pwd)"
+            exit 1
+          fi
+          if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
+            echo "Renaming $ACTUAL_JAR_FILE to spark-assembly.jar"
+            mv "$ACTUAL_JAR_FILE" spark-assembly.jar
+          fi
+          echo "Final listing:"
+          ls -la .
+
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
