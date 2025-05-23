@@ -713,27 +713,21 @@ jobs:
           name: metaclient-jar
           path: ./esti/ops/test/spark/metaclient
 
-      - name: Verify Spark metaclient JAR and ensure correct name
+      - name: Ensure metaclient JAR exists and correctly named
         working-directory: ./esti/ops/test/spark/metaclient
         run: |
-          echo "Listing files in $(pwd) before rename/check:"
+          echo "Listing current metaclient directory:"
           ls -la .
           ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
           if [ -z "$ACTUAL_JAR_FILE" ]; then
-            echo "ERROR: No JAR file found in artifact path!"
+            echo "ERROR: No .jar found in $(pwd)"
             exit 1
           fi
           if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
-            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
-            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
-          else
-            echo "'spark-assembly.jar' already exists with the correct name."
+            echo "Renaming $ACTUAL_JAR_FILE to spark-assembly.jar"
+            mv "$ACTUAL_JAR_FILE" spark-assembly.jar
           fi
-          if [ ! -f "./spark-assembly.jar" ]; then
-            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
-            exit 1
-          fi
-          echo "Final listing of files in $(pwd):"
+          echo "Final listing:"
           ls -la .
 
       - name: Test lakeFS with S3 tests KV
@@ -822,27 +816,21 @@ jobs:
           name: metaclient-jar
           path: ./esti/ops/test/spark/metaclient
 
-      - name: Verify Spark metaclient JAR and ensure correct name
+      - name: Ensure metaclient JAR exists and correctly named
         working-directory: ./esti/ops/test/spark/metaclient
         run: |
-          echo "Listing files in $(pwd) before rename/check:"
+          echo "Listing current metaclient directory:"
           ls -la .
           ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
           if [ -z "$ACTUAL_JAR_FILE" ]; then
-            echo "ERROR: No JAR file found in artifact path!"
+            echo "ERROR: No .jar found in $(pwd)"
             exit 1
           fi
           if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
-            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
-            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
-          else
-            echo "'spark-assembly.jar' already exists with the correct name."
+            echo "Renaming $ACTUAL_JAR_FILE to spark-assembly.jar"
+            mv "$ACTUAL_JAR_FILE" spark-assembly.jar
           fi
-          if [ ! -f "./spark-assembly.jar" ]; then
-            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
-            exit 1
-          fi
-          echo "Final listing of files in $(pwd):"
+          echo "Final listing:"
           ls -la .
 
       - name: Test lakeFS with S3 tests
@@ -929,27 +917,21 @@ jobs:
           name: metaclient-jar
           path: ./esti/ops/test/spark/metaclient
 
-      - name: Verify Spark metaclient JAR and ensure correct name
+      - name: Ensure metaclient JAR exists and correctly named
         working-directory: ./esti/ops/test/spark/metaclient
         run: |
-          echo "Listing files in $(pwd) before rename/check:"
+          echo "Listing current metaclient directory:"
           ls -la .
           ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
           if [ -z "$ACTUAL_JAR_FILE" ]; then
-            echo "ERROR: No JAR file found in artifact path!"
+            echo "ERROR: No .jar found in $(pwd)"
             exit 1
           fi
           if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
-            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
-            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
-          else
-            echo "'spark-assembly.jar' already exists with the correct name."
+            echo "Renaming $ACTUAL_JAR_FILE to spark-assembly.jar"
+            mv "$ACTUAL_JAR_FILE" spark-assembly.jar
           fi
-          if [ ! -f "./spark-assembly.jar" ]; then
-            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
-            exit 1
-          fi
-          echo "Final listing of files in $(pwd):"
+          echo "Final listing:"
           ls -la .
 
       - name: Start lakeFS with GS tests
@@ -1079,27 +1061,21 @@ jobs:
           name: metaclient-jar
           path: ./esti/ops/test/spark/metaclient
 
-      - name: Verify Spark metaclient JAR and ensure correct name
+      - name: Ensure metaclient JAR exists and correctly named
         working-directory: ./esti/ops/test/spark/metaclient
         run: |
-          echo "Listing files in $(pwd) before rename/check:"
+          echo "Listing current metaclient directory:"
           ls -la .
           ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
           if [ -z "$ACTUAL_JAR_FILE" ]; then
-            echo "ERROR: No JAR file found in artifact path!"
+            echo "ERROR: No .jar found in $(pwd)"
             exit 1
           fi
           if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
-            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
-            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
-          else
-            echo "'spark-assembly.jar' already exists with the correct name."
+            echo "Renaming $ACTUAL_JAR_FILE to spark-assembly.jar"
+            mv "$ACTUAL_JAR_FILE" spark-assembly.jar
           fi
-          if [ ! -f "./spark-assembly.jar" ]; then
-            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
-            exit 1
-          fi
-          echo "Final listing of files in $(pwd):"
+          echo "Final listing:"
           ls -la .
 
       - name: Start lakeFS with Azure tests
@@ -1447,27 +1423,21 @@ jobs:
           name: metaclient-jar
           path: ./esti/ops/test/spark/metaclient
 
-      - name: Verify Spark metaclient JAR and ensure correct name
+      - name: Ensure metaclient JAR exists and correctly named
         working-directory: ./esti/ops/test/spark/metaclient
         run: |
-          echo "Listing files in $(pwd) before rename/check:"
+          echo "Listing current metaclient directory:"
           ls -la .
           ACTUAL_JAR_FILE=$(find . -name "*.jar" -print -quit)
           if [ -z "$ACTUAL_JAR_FILE" ]; then
-            echo "ERROR: No JAR file found in artifact path!"
+            echo "ERROR: No .jar found in $(pwd)"
             exit 1
           fi
           if [ "$ACTUAL_JAR_FILE" != "./spark-assembly.jar" ]; then
-            echo "Renaming '$ACTUAL_JAR_FILE' to './spark-assembly.jar'"
-            mv "$ACTUAL_JAR_FILE" ./spark-assembly.jar
-          else
-            echo "'spark-assembly.jar' already exists with the correct name."
+            echo "Renaming $ACTUAL_JAR_FILE to spark-assembly.jar"
+            mv "$ACTUAL_JAR_FILE" spark-assembly.jar
           fi
-          if [ ! -f "./spark-assembly.jar" ]; then
-            echo "ERROR: spark-assembly.jar not found after download and rename/check!"
-            exit 1
-          fi
-          echo "Final listing of files in $(pwd):"
+          echo "Final listing:"
           ls -la .
 
       - name: Test lakeFS with S3 tests + Basic Auth
