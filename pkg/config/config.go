@@ -43,6 +43,17 @@ const (
 	AuthRBACInternal   = "internal"
 )
 
+type Logging struct {
+	Format        string   `mapstructure:"format"`
+	Level         string   `mapstructure:"level"`
+	Output        []string `mapstructure:"output"`
+	FileMaxSizeMB int      `mapstructure:"file_max_size_mb"`
+	FilesKeep     int      `mapstructure:"files_keep"`
+	AuditLogLevel string   `mapstructure:"audit_log_level"`
+	// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
+	TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
+}
+
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
 	CredentialsFile string `mapstructure:"credentials_file"`
@@ -401,17 +412,8 @@ type BaseConfig struct {
 		} `mapstructure:"env"`
 	} `mapstructure:"actions"`
 
-	Logging struct {
-		Format        string   `mapstructure:"format"`
-		Level         string   `mapstructure:"level"`
-		Output        []string `mapstructure:"output"`
-		FileMaxSizeMB int      `mapstructure:"file_max_size_mb"`
-		FilesKeep     int      `mapstructure:"files_keep"`
-		AuditLogLevel string   `mapstructure:"audit_log_level"`
-		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
-		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
-	}
-	Database   Database
+	Logging    Logging    `mapstructure:"logging"`
+	Database   Database   `mapstructure:"database"`
 	Blockstore Blockstore `mapstructure:"blockstore"`
 	Committed  struct {
 		LocalCache struct {

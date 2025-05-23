@@ -10,6 +10,8 @@ const (
 	DefaultListenAddress        = "0.0.0.0:8000"
 	DefaultLoggingLevel         = "INFO"
 	DefaultLoggingAuditLogLevel = "DEBUG"
+	DefaultFilesKeep            = 100
+	DefaultFileMaxSizeMB        = 1024 * 100 // 100MiB
 	BlockstoreTypeKey           = "blockstore.type"
 	DefaultQuickstartUsername   = "quickstart"
 	// quickstart creds, safe
@@ -54,12 +56,7 @@ func setBaseDefaults(cfgType string) {
 
 	viper.SetDefault("listen_address", DefaultListenAddress)
 
-	viper.SetDefault("logging.format", "text")
-	viper.SetDefault("logging.level", DefaultLoggingLevel)
-	viper.SetDefault("logging.output", "-")
-	viper.SetDefault("logging.files_keep", 100)
-	viper.SetDefault("logging.audit_log_level", DefaultLoggingAuditLogLevel)
-	viper.SetDefault("logging.file_max_size_mb", (1<<10)*100) // 100MiB
+	SetLoggingDefaults()
 
 	viper.SetDefault("actions.enabled", true)
 	viper.SetDefault("actions.env.enabled", true)
@@ -193,4 +190,14 @@ func setBaseDefaults(cfgType string) {
 
 	viper.SetDefault("usage_report.enabled", true)
 	viper.SetDefault("usage_report.flush_interval", 5*time.Minute)
+}
+
+func SetLoggingDefaults() {
+	viper.SetDefault("logging.format", "text")
+	viper.SetDefault("logging.level", DefaultLoggingLevel)
+	viper.SetDefault("logging.output", "-")
+
+	viper.SetDefault("logging.files_keep", DefaultFilesKeep)
+	viper.SetDefault("logging.audit_log_level", DefaultLoggingAuditLogLevel)
+	viper.SetDefault("logging.file_max_size_mb", DefaultFileMaxSizeMB)
 }
