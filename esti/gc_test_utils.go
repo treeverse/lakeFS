@@ -2,6 +2,7 @@ package esti
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -130,5 +131,19 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	cmd := exec.Command("docker", cmdArgs...)
 	cmd.Env = os.Environ()
 
-	return runCommand(config.LogSource, cmd)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	fmt.Printf("Running Spark job: %s\n", cmd.String())
+
+	err := cmd.Run()
+
+	fmt.Printf("=== STDOUT (%s) ===\n%s\n", config.LogSource, stdout.String())
+	fmt.Printf("=== STDERR (%s) ===\n%s\n", config.LogSource, stderr.String())
+
+	if err != nil {
+		return fmt.Errorf("spark-submit failed: %w", err)
+	}
+	return nil
 }
