@@ -795,6 +795,23 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
+      # Retrieve ACL server binary from cache
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: generated-code
+          path: /tmp/
+
+      - name: Unpack generated code
+        run: tar -xzvf /tmp/generated.tar.gz
+
+      # Run ACL server
+      - name: Run ACL server
+        env:
+          ACLSERVER_ENCRYPT_SECRET_KEY: some random secret string # Must be the same as lakeFS
+          ACLSERVER_DATABASE_TYPE: local
+        run: ./acl run &
+
       # Ensure mount directory exists BEFORE Docker Compose
       - name: Ensure metaclient directory exists for volume mount
         run: mkdir -p ./esti/ops/test/spark/metaclient
@@ -836,7 +853,7 @@ jobs:
         env:
           LAKEFS_ACCESS_KEY_ID: ${{ env.LAKEFS_ACCESS_KEY_ID_FOR_SPARK }}
           LAKEFS_SECRET_ACCESS_KEY: ${{ env.LAKEFS_SECRET_ACCESS_KEY_FOR_SPARK }}
-          LAKEFS_AUTH_UI_CONFIG_RBAC: disabled
+          LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
