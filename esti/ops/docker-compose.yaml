@@ -38,6 +38,8 @@ services:
     environment:
       - ESTI_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       - PATH=/opt/bitnami/spark/bin:${PATH}
+      - LAKEFS_ACCESS_KEY_ID=${LAKEFS_ACCESS_KEY_ID}
+      - LAKEFS_SECRET_ACCESS_KEY=${LAKEFS_SECRET_ACCESS_KEY}
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
