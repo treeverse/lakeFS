@@ -82,11 +82,25 @@ services:
     volumes:
       - shared-metaclient:/opt/metaclient
       - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - HADOOP_USER_NAME=spark
+      - LAKEFS_ACCESS_KEY_ID=${LAKEFS_ACCESS_KEY_ID}
+      - LAKEFS_SECRET_ACCESS_KEY=${LAKEFS_SECRET_ACCESS_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 5s
       timeout: 5s
       retries: 10
+    command: >
+      spark-submit \
+        --master spark://spark:7077 \
+        --conf spark.hadoop.hadoop.security.authentication=Simple \
+        --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1 \
+        --conf spark.hadoop.lakefs.api.access_key=${LAKEFS_ACCESS_KEY_ID} \
+        --conf spark.hadoop.lakefs.api.secret_key=${LAKEFS_SECRET_ACCESS_KEY} \
+        --conf spark.driver.extraJavaOptions=-Dhadoop.job.ugi=spark \
+        --conf spark.executor.extraJavaOptions=-Dhadoop.job.ugi=spark \
+        --class io.treeverse.gc.GarbageCollection /opt/metaclient/spark-assembly.jar
 
 volumes:
   lakefs-code:
