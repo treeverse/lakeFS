@@ -51,7 +51,7 @@ services:
       service: spark
     container_name: lakefs-spark
     volumes:
-      - ./metaclient:/opt/metaclient:ro
+      - shared-metaclient:/opt/metaclient
     environment:
       - LAKEFS_ACCESS_KEY_ID=${LAKEFS_ACCESS_KEY_ID}
       - LAKEFS_SECRET_ACCESS_KEY=${LAKEFS_SECRET_ACCESS_KEY}
