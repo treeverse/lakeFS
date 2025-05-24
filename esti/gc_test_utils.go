@@ -122,10 +122,8 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 		"--conf", "spark.hadoop.user.name=spark",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
-		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
-		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-		//"--conf", fmt.Sprintf("spark.hadoop.lakefs.api.access_key=%s", accessKey),
-		//"--conf", fmt.Sprintf("spark.hadoop.lakefs.api.secret_key=%s", secretKey),
+		"--conf", "spark.hadoop.lakefs.access.key=AKIAIOSFDNN7EXAMPLEQ",
+		"--conf", "spark.hadoop.lakefs.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 		"--class", config.EntryPoint,
 		"/opt/metaclient/spark-assembly.jar",
 	}
