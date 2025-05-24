@@ -7,6 +7,8 @@ services:
     volumes:
       - lakefs-app:/app:ro
     environment:
+      - LAKEFS_INSTALLATION_ACCESS_KEY_ID=${LAKEFS_ACCESS_KEY_ID}
+      - LAKEFS_INSTALLATION_SECRET_ACCESS_KEY=${LAKEFS_SECRET_ACCESS_KEY}
       - LAKEFS_AUTH_API_ENDPOINT=${LAKEFS_AUTH_API_ENDPOINT:-http://host.docker.internal:8001/api/v1}
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
       - LAKEFS_AUTH_UI_CONFIG_RBAC=${LAKEFS_AUTH_UI_CONFIG_RBAC:-none}
@@ -43,18 +45,22 @@ services:
       - ESTI_FORCE_PATH_STYLE=${ESTI_FORCE_PATH_STYLE:-true}
       - ESTI_AZURE_STORAGE_ACCOUNT
       - ESTI_AZURE_STORAGE_ACCESS_KEY
-      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
+      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS}
       - ESTI_LARGE_OBJECT_PATH
+      - LAKEFS_ACCESS_KEY_ID
+      - LAKEFS_SECRET_ACCESS_KEY
     working_dir: /lakefs
     command:
       - /bin/sh
       - -c
       - |
-        apk add --no-cache util-linux 
+        apk add --no-cache util-linux docker curl go bash
         go test $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
+      - shared-metaclient:/opt/metaclient
+      - /var/run/docker.sock:/var/run/docker.sock
 
   postgres:
     image: "postgres:11"
@@ -68,3 +74,47 @@ services:
     image: "amazon/dynamodb-local:2.5.2"
     ports:
       - "6432:8000"
+
+  spark:
+    image: "bitnami/spark:3.5.5"
+    container_name: "lakefs-spark"
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - shared-metaclient:/opt/metaclient
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - HADOOP_USER_NAME=spark
+      - LAKEFS_ACCESS_KEY_ID=${LAKEFS_ACCESS_KEY_ID}
+      - LAKEFS_SECRET_ACCESS_KEY=${LAKEFS_SECRET_ACCESS_KEY}
+    command: >
+      spark-submit
+        --master spark://spark:7077
+        --conf spark.hadoop.hadoop.security.authentication=Simple
+        --conf spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1
+        --conf spark.hadoop.lakefs.api.access_key=${LAKEFS_ACCESS_KEY_ID}
+        --conf spark.hadoop.lakefs.api.secret_key=${LAKEFS_SECRET_ACCESS_KEY}
+        --conf spark.driver.extraJavaOptions=-Dhadoop.job.ugi=spark
+        --conf spark.executor.extraJavaOptions=-Dhadoop.job.ugi=spark
+        --class io.treeverse.gc.GarbageCollection /opt/metaclient/spark-assembly.jar
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  lakefs-code:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LAKEFS_ROOT:-.}
+  lakefs-app:
+  shared-metaclient:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./esti/ops/test/spark/metaclient

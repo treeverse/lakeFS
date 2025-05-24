@@ -2,6 +2,7 @@ package esti
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -105,20 +106,47 @@ type SparkSubmitConfig struct {
 }
 
 func RunSparkSubmit(config *SparkSubmitConfig) error {
-	workingDirectory, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
+	accessKey := os.Getenv("LAKEFS_ACCESS_KEY_ID")
+	secretKey := os.Getenv("LAKEFS_SECRET_ACCESS_KEY")
+	if accessKey == "" || secretKey == "" {
+		return fmt.Errorf("missing lakeFS credentials in environment variables")
 	}
-	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
-	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", config.SparkVersion), "spark-submit")
-	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
-	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
-	args := dockerArgs
-	args = append(args, sparkSubmitArgs...)
-	args = append(args, "/opt/metaclient/client.jar")
-	args = append(args, config.ProgramArgs...)
-	cmd := exec.Command("docker", args...)
-	logger.Infof("Running command: %s", cmd.String())
-	return runCommand(config.LogSource, cmd)
+
+	cmdArgs := []string{
+		"exec",
+		"-e", fmt.Sprintf("LAKEFS_ACCESS_KEY_ID=%s", accessKey),
+		"-e", fmt.Sprintf("LAKEFS_SECRET_ACCESS_KEY=%s", secretKey),
+		"-e", fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", accessKey),
+		"-e", fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", secretKey),
+		"-e", "HADOOP_USER_NAME=spark",
+		"lakefs-spark", "spark-submit",
+		"--master", "spark://spark:7077",
+		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp -Duser.name=spark",
+		"--conf", "spark.executor.extraJavaOptions=-Duser.name=spark",
+		"--conf", "spark.hadoop.user.name=spark",
+		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
+		"--conf", fmt.Sprintf("spark.hadoop.lakefs.api.access_key=%s", accessKey),
+		"--conf", fmt.Sprintf("spark.hadoop.lakefs.api.secret_key=%s", secretKey),
+		"--conf", "spark.sql.warehouse.dir=/tmp/spark-warehouse",
+		"--class", config.EntryPoint,
+		"/opt/metaclient/spark-assembly.jar",
+	}
+	cmdArgs = append(cmdArgs, config.ProgramArgs...)
+
+	cmd := exec.Command("docker", cmdArgs...)
+	cmd.Env = os.Environ()
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	fmt.Printf("Running Spark job: %s\n", cmd.String())
+	err := cmd.Run()
+	fmt.Printf("=== STDOUT (%s) ===\n%s\n", config.LogSource, stdout.String())
+	fmt.Printf("=== STDERR (%s) ===\n%s\n", config.LogSource, stderr.String())
+
+	if err != nil {
+		return fmt.Errorf("spark-submit failed: %w", err)
+	}
+	return nil
 }
