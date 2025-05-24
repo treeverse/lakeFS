@@ -116,19 +116,22 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 		"exec",
 		"-e", fmt.Sprintf("LAKEFS_ACCESS_KEY_ID=%s", accessKey),
 		"-e", fmt.Sprintf("LAKEFS_SECRET_ACCESS_KEY=%s", secretKey),
+		"-e", "HADOOP_USER_NAME=spark",
+
 		"lakefs-spark",
 		"spark-submit",
 		"--master", "spark://spark:7077",
 		"--conf", "spark.hadoop.user.name=spark",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
+		"--conf", "spark.sql.warehouse.dir=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
-		"--conf", "spark.hadoop.lakefs.access.key=AKIAIOSFDNN7EXAMPLEQ",
-		"--conf", "spark.hadoop.lakefs.secret.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+		"--conf", fmt.Sprintf("spark.hadoop.lakefs.api.access_key=%s", accessKey),
+		"--conf", fmt.Sprintf("spark.hadoop.lakefs.api.secret_key=%s", secretKey),
 		"--class", config.EntryPoint,
 		"/opt/metaclient/spark-assembly.jar",
 	}
-	cmdArgs = append(cmdArgs, config.ProgramArgs...)
 
+	cmdArgs = append(cmdArgs, config.ProgramArgs...)
 	cmd := exec.Command("docker", cmdArgs...)
 	cmd.Env = os.Environ()
 
