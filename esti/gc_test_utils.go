@@ -112,9 +112,6 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 		return fmt.Errorf("missing lakeFS credentials in environment variables")
 	}
 
-	fmt.Println("DEBUG - LAKEFS_ACCESS_KEY_ID:", accessKey)
-	fmt.Println("DEBUG - LAKEFS_SECRET_ACCESS_KEY length:", len(secretKey))
-
 	cmdArgs := []string{
 		"exec",
 		"-e", fmt.Sprintf("LAKEFS_ACCESS_KEY_ID=%s", accessKey),
@@ -122,16 +119,13 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 		"lakefs-spark",
 		"spark-submit",
 		"--master", "spark://spark:7077",
+		"--conf", "spark.hadoop.user.name=spark",
 		"--conf", "spark.driver.extraJavaOptions=-Divy.cache.dir=/tmp -Divy.home=/tmp",
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
-		"--conf", fmt.Sprintf("spark.hadoop.lakefs.access.key=%s", accessKey),
-		"--conf", fmt.Sprintf("spark.hadoop.lakefs.secret.key=%s", secretKey),
-
-		"--conf", fmt.Sprintf("spark.executorEnv.LAKEFS_ACCESS_KEY_ID=%s", accessKey),
-		"--conf", fmt.Sprintf("spark.executorEnv.LAKEFS_SECRET_ACCESS_KEY=%s", secretKey),
-		"--conf", fmt.Sprintf("spark.driverEnv.LAKEFS_ACCESS_KEY_ID=%s", accessKey),
-		"--conf", fmt.Sprintf("spark.driverEnv.LAKEFS_SECRET_ACCESS_KEY=%s", secretKey),
-
+		"--conf", "spark.hadoop.lakefs.api.access_key=AKIAIOSFDNN7EXAMPLEQ",
+		"--conf", "spark.hadoop.lakefs.api.secret_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+		//"--conf", fmt.Sprintf("spark.hadoop.lakefs.api.access_key=%s", accessKey),
+		//"--conf", fmt.Sprintf("spark.hadoop.lakefs.api.secret_key=%s", secretKey),
 		"--class", config.EntryPoint,
 		"/opt/metaclient/spark-assembly.jar",
 	}
