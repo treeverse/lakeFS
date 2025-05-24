@@ -108,14 +108,12 @@ type SparkSubmitConfig struct {
 func RunSparkSubmit(config *SparkSubmitConfig) error {
 	accessKey := os.Getenv("LAKEFS_ACCESS_KEY_ID")
 	secretKey := os.Getenv("LAKEFS_SECRET_ACCESS_KEY")
-
 	if accessKey == "" || secretKey == "" {
 		return fmt.Errorf("missing lakeFS credentials in environment variables")
 	}
 
-	fmt.Printf("Using lakeFS credentials:\n")
-	fmt.Printf("  LAKEFS_ACCESS_KEY_ID=%s\n", accessKey)
-	fmt.Printf("  LAKEFS_SECRET_ACCESS_KEY length=%s\n", secretKey)
+	fmt.Println("DEBUG - LAKEFS_ACCESS_KEY_ID:", accessKey)
+	fmt.Println("DEBUG - LAKEFS_SECRET_ACCESS_KEY length:", len(secretKey))
 
 	cmdArgs := []string{
 		"exec",
@@ -128,7 +126,12 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 		"--conf", "spark.hadoop.lakefs.api.url=http://lakefs:8000/api/v1",
 		"--conf", fmt.Sprintf("spark.hadoop.lakefs.access.key=%s", accessKey),
 		"--conf", fmt.Sprintf("spark.hadoop.lakefs.secret.key=%s", secretKey),
-		"--conf", "spark.hadoop.hadoop.security.authentication=Simple",
+
+		"--conf", fmt.Sprintf("spark.executorEnv.LAKEFS_ACCESS_KEY_ID=%s", accessKey),
+		"--conf", fmt.Sprintf("spark.executorEnv.LAKEFS_SECRET_ACCESS_KEY=%s", secretKey),
+		"--conf", fmt.Sprintf("spark.driverEnv.LAKEFS_ACCESS_KEY_ID=%s", accessKey),
+		"--conf", fmt.Sprintf("spark.driverEnv.LAKEFS_SECRET_ACCESS_KEY=%s", secretKey),
+
 		"--class", config.EntryPoint,
 		"/opt/metaclient/spark-assembly.jar",
 	}
@@ -141,7 +144,7 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	fmt.Printf("Running Spark job with docker command:\n  docker %s\n", strings.Join(cmdArgs, " "))
+	fmt.Printf("Running Spark job: %s\n", cmd.String())
 
 	err := cmd.Run()
 
