@@ -111,7 +111,15 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", config.SparkVersion), "spark-submit")
+	sparkVersion := config.SparkVersion
+	if sparkVersion == "" {
+		sparkVersion = os.Getenv("SPARK_IMAGE_TAG")
+		if sparkVersion == "" {
+			return fmt.Errorf("SPARK_IMAGE_TAG is not set in the environment and config.SparkVersion is empty")
+		}
+	}
+	image := fmt.Sprintf("docker.io/bitnami/spark:%s", sparkVersion)
+	dockerArgs = append(dockerArgs, image, "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
 	args := dockerArgs
