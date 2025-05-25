@@ -120,5 +120,5 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	args = append(args, config.ProgramArgs...)
 	cmd := exec.Command("docker", args...)
 	logger.Infof("Running command: %s", cmd.String())
-	return runCommand(config.LogSource, cmd)
+	return runCommand(config.LogSource, cmd) //
 }
