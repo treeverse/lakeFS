@@ -24,6 +24,7 @@ services:
       service: esti
     environment:
       - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.2.1}
+      - ESTI_FLAGS=-metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar -spark-image-tag=${SPARK_IMAGE_TAG:-3.2.1}
     command:
       - /bin/sh
       - -c
