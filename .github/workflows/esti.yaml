@@ -666,13 +666,16 @@ jobs:
 
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      ESTI_FLAGS: >-
+        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -816,13 +819,16 @@ jobs:
 
   run-system-gcp-gs:
     name: Run latest lakeFS app on Google Cloud Platform and Google Cloud Storage
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      ESTI_FLAGS: >-
+        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -868,7 +874,7 @@ jobs:
 
   run-system-azure-abfs:
     name: Run latest lakeFS app on Azure with Azure blobstore
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -878,6 +884,9 @@ jobs:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ESTI_FLAGS: >-
+        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -927,7 +936,7 @@ jobs:
 
   run-system-azure-adls-gen2:
     name: Run latest lakeFS app on Azure with Azure Data Lake Storage Gen2 and CosmosDB
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
@@ -939,6 +948,9 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       COSMOSDB_DATABASE: esti-db
       COSMOSDB_ACCOUNT: esti-e2e-tests
+      ESTI_FLAGS: >-
+        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
 
     steps:
       - name: Check-out code
@@ -1285,13 +1297,16 @@ jobs:
 
   run-system-aws-s3-basic-auth:
     name: Run latest lakeFS app on AWS S3 + Basic Auth
-    needs: [deploy-image, login-to-amazon-ecr]
+    needs: [deploy-image, login-to-amazon-ecr, build-spark3-metadata-client]
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ needs.deploy-image.outputs.tag }}
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      ESTI_FLAGS: >-
+        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
