@@ -27,6 +27,8 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
+    environment:
+      - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.3.2}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
