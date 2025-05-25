@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -24,12 +23,12 @@ func getSparkSubmitArgs(entryPoint string) []string {
 	}
 }
 
-func getDockerArgs(workingDirectory, localJar string) []string {
-	jarHostPath := filepath.Join(workingDirectory, localJar)
+func getDockerArgs(workingDirectory string) []string {
 	return []string{
-		"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
-		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
-		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar:ro", jarHostPath),
+		"run",
+		"--network", "host",
+		"--add-host", "lakefs:127.0.0.1",
+		"-v", fmt.Sprintf("lakefs-code:%s:ro", workingDirectory),
 		"--rm",
 		"-e", "AWS_ACCESS_KEY_ID",
 		"-e", "AWS_SECRET_ACCESS_KEY",
@@ -107,28 +106,27 @@ type SparkSubmitConfig struct {
 }
 
 func RunSparkSubmit(config *SparkSubmitConfig) error {
-	workingDirectory, err := os.Getwd()
+	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("getting working directory: %w", err)
 	}
-	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
-	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-
-	const defaultSparkTag = "3.2.1"
+	wd = strings.TrimSuffix(wd, "/")
+	dockerArgs := getDockerArgs(wd)
 	version := config.SparkVersion
 	if version == "" || strings.HasPrefix(version, "$") {
 		version = os.Getenv("SPARK_IMAGE_TAG")
 	}
 	if version == "" || strings.HasPrefix(version, "$") {
-		version = defaultSparkTag
+		version = "3.2.1"
 	}
 
 	image := fmt.Sprintf("docker.io/bitnami/spark:%s", version)
 	dockerArgs = append(dockerArgs, image, "spark-submit")
-	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
-	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
-	args := append(dockerArgs, sparkSubmitArgs...)
-	args = append(args, "/opt/metaclient/client.jar")
+	submitArgs := getSparkSubmitArgs(config.EntryPoint)
+	submitArgs = append(submitArgs, config.ExtraSubmitArgs...)
+	jarPathInContainer := fmt.Sprintf("%s/%s", wd, config.LocalJar)
+	args := append(dockerArgs, submitArgs...)
+	args = append(args, jarPathInContainer)
 	args = append(args, config.ProgramArgs...)
 	cmd := exec.Command("docker", args...)
 	logger.Infof("Running command: %s", cmd.String())
