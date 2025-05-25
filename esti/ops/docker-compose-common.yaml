@@ -1,3 +1,4 @@
+version: "3"
 services:
   lakefs:
     image: "${REGISTRY:-treeverse}/${REPO:-lakefs}:${TAG:-dev}"
@@ -16,6 +17,40 @@ services:
       - LAKEFSACTION_VAR=this_is_actions_var
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  spark:
+    image: "docker.io/bitnami/spark:${SPARK_IMAGE_TAG:-3.2.1}"
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+
+  spark-worker:
+    image: "docker.io/bitnami/spark:${SPARK_IMAGE_TAG:-3.2.1}"
+    depends_on:
+      - spark
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
   esti:
     image: "golang:1.23-alpine"
@@ -43,18 +78,23 @@ services:
       - ESTI_FORCE_PATH_STYLE=${ESTI_FORCE_PATH_STYLE:-true}
       - ESTI_AZURE_STORAGE_ACCOUNT
       - ESTI_AZURE_STORAGE_ACCESS_KEY
-      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS:-TestUnifiedGC}
+      - ESTI_SKIP_TESTS=${ESTI_SKIP_TESTS}
       - ESTI_LARGE_OBJECT_PATH
+      - SPARK_HOME=/opt/spark
     working_dir: /lakefs
     command:
       - /bin/sh
       - -c
       - |
-        apk add --no-cache util-linux 
+        apk add --no-cache util-linux docker-cli
         go test $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
+      - ./spark/ivy:/opt/bitnami/spark/.ivy2
+      - ./spark/spark-${SPARK_IMAGE_TAG:-3.2.1}-bin-hadoop3.2:/opt/spark:ro
+      - ./test/spark/metaclient/spark-assembly.jar:/lakefs/test/spark/metaclient/spark-assembly.jar:ro
+      - /var/run/docker.sock:/var/run/docker.sock
 
   postgres:
     image: "postgres:11"
@@ -68,3 +108,12 @@ services:
     image: "amazon/dynamodb-local:2.5.2"
     ports:
       - "6432:8000"
+
+volumes:
+  lakefs-code:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${LAKEFS_ROOT:-.}
+  lakefs-app:
