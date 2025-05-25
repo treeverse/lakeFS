@@ -31,20 +31,34 @@ import (
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
+	authparams "github.com/treeverse/lakefs/pkg/auth/params"
+	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/settings"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvparams"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	"github.com/treeverse/lakefs/pkg/kv/mem"
+	"github.com/treeverse/lakefs/pkg/license"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"github.com/treeverse/lakefs/pkg/version"
 )
 
 const DefaultUserID = "example_user"
@@ -79,6 +93,15 @@ func verifyResponseOK(t testing.TB, resp Statuser, err error) {
 func onBlock(deps *dependencies, path string) string {
 	return fmt.Sprintf("%s://%s", deps.blocks.BlockstoreType(), path)
 }
+
+type stubLicenseManager struct {
+	token string
+	err   error
+}
+
+func (s *stubLicenseManager) ValidateLicense() error    { return nil }
+func (s *stubLicenseManager) GetToken() (string, error) { return s.token, s.err }
+func (s *stubLicenseManager) InstallationID() string    { return "test-installation-id" }
 
 func TestController_ListRepositoriesHandler(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
@@ -6529,12 +6552,141 @@ func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, re
 }
 
 func TestController_GetLicense(t *testing.T) {
-	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
 
-	t.Run("Get license", func(t *testing.T) {
+	// A minimal clone of serve_test.go’s setupHandler, allowing us to inject a
+	// custom license manager.
+	setupHandlerWithLicenseManager := func(t testing.TB, lm license.Manager) (http.Handler, *dependencies) {
+		t.Helper()
+		ctx := context.Background()
+
+		if viper.Get(config.BlockstoreTypeKey) == nil {
+			viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
+		}
+		viper.Set("database.type", mem.DriverName)
+		viper.Set("auth.api.endpoint", config.DefaultListenAddress)
+
+		collector := &memCollector{}
+		cfg := &configfactory.ConfigWithAuth{}
+		baseCfg, err := config.NewConfig("", cfg)
+		require.NoError(t, err)
+
+		kvStore := kvtest.GetStore(ctx, t)
+		actionsStore := actions.NewActionsKVStore(kvStore)
+		idGen := &actions.DecreasingIDGenerator{}
+		authService := auth.NewBasicAuthService(
+			kvStore,
+			crypt.NewSecretStore([]byte("some secret")),
+			authparams.ServiceCache{Enabled: false},
+			logging.FromContext(ctx),
+		)
+		meta := auth.NewKVMetadataManager("license_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
+
+		catalogSvc, err := catalog.New(ctx, catalog.Config{
+			Config:                cfg,
+			KVStore:               kvStore,
+			SettingsManagerOption: settings.WithCache(cache.NoCache),
+			PathProvider:          upload.DefaultPathProvider,
+		})
+		require.NoError(t, err)
+
+		actionsCfg := actions.Config{Enabled: true}
+		actionsCfg.Lua.NetHTTPEnabled = true
+		actionsSvc := actions.NewService(
+			ctx,
+			actionsStore,
+			catalog.NewActionsSource(catalogSvc),
+			catalog.NewActionsOutputWriter(catalogSvc.BlockAdapter),
+			idGen,
+			collector,
+			actionsCfg,
+			"",
+		)
+		catalogSvc.SetHooksHandler(actionsSvc)
+
+		authenticator := auth.NewBuiltinAuthenticator(authService)
+		kvParams, err := kvparams.NewConfig(&baseCfg.Database)
+		require.NoError(t, err)
+		migrator := kv.NewDatabaseMigrator(kvParams)
+		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
+		authenticationSvc := authentication.NewDummyService()
+
+		handler := api.Serve(
+			cfg,
+			catalogSvc,
+			authenticator,
+			authService,
+			authenticationSvc,
+			catalogSvc.BlockAdapter,
+			meta,
+			migrator,
+			collector,
+			actionsSvc,
+			auditChecker,
+			logging.ContextUnavailable(),
+			nil,
+			nil,
+			upload.DefaultPathProvider,
+			stats.DefaultUsageReporter,
+			lm, // <-- our custom license manager
+		)
+
+		return handler, &dependencies{
+			blocks:      catalogSvc.BlockAdapter,
+			authService: authService,
+			catalog:     catalogSvc,
+			collector:   collector,
+		}
+	}
+
+	t.Run("unauthorized", func(t *testing.T) {
+		handler, _ := setupHandler(t)
+		server := setupServer(t, handler)
+		noAuthClient := setupClientByEndpoint(t, server.URL, "", "")
+
+		resp, err := noAuthClient.GetLicenseWithResponse(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, resp.JSON401, "expected HTTP-401 response, got %v", resp.StatusCode())
+	})
+
+	t.Run("not_implemented", func(t *testing.T) {
+		clt, _ := setupClientWithAdmin(t)
 		resp, err := clt.GetLicenseWithResponse(ctx)
 		require.NoError(t, err)
-		require.NotNil(t, resp.JSON501, "expected 501 (not implemented) got %v", resp.StatusCode)
+		require.NotNil(t, resp.JSON501, "expected HTTP-501 response, got %v", resp.StatusCode())
+	})
+
+	t.Run("success", func(t *testing.T) {
+		const expectedToken = "dummy-token"
+		handler, _ := setupHandlerWithLicenseManager(t, &stubLicenseManager{
+			token: expectedToken,
+		})
+		server := setupServer(t, handler)
+
+		clt := setupClientByEndpoint(t, server.URL, "", "")
+		cred := createDefaultAdminUser(t, clt)
+		clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
+
+		resp, err := clt.GetLicenseWithResponse(ctx)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode())
+		require.NotNil(t, resp.JSON200)
+		require.Equal(t, expectedToken, resp.JSON200.Token)
+	})
+
+	t.Run("internal_error", func(t *testing.T) {
+		handler, _ := setupHandlerWithLicenseManager(t, &stubLicenseManager{
+			err: errors.New("boom"),
+		})
+		server := setupServer(t, handler)
+
+		clt := setupClientByEndpoint(t, server.URL, "", "")
+		cred := createDefaultAdminUser(t, clt)
+		clt = setupClientByEndpoint(t, server.URL, cred.AccessKeyID, cred.SecretAccessKey)
+
+		resp, err := clt.GetLicenseWithResponse(ctx)
+		require.NoError(t, err)
+		require.Equal(t, http.StatusInternalServerError, resp.StatusCode())
+		require.NotNil(t, resp.JSONDefault, "expected HTTP-500 response body, got %v", resp.StatusCode())
 	})
 }
