@@ -1,4 +1,3 @@
-version: "3"
 services:
   lakefs:
     extends:
@@ -22,15 +21,15 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
-    environment:
-      - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.2.1}
-      - ESTI_FLAGS=-metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar -spark-image-tag=${SPARK_IMAGE_TAG:-3.2.1}
     command:
       - /bin/sh
       - -c
       - |
         apk add --no-cache docker-cli util-linux 
         go test -timeout 20m $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
+    environment:
+      - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.2.1}
+      - ESTI_FLAGS=-metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar -spark-image-tag=${SPARK_IMAGE_TAG:-3.2.1}
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
