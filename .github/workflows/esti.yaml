@@ -693,12 +693,6 @@ jobs:
       - name: Unpack generated code
         run: tar -xzvf /tmp/generated.tar.gz
 
-      - name: Prepare Spark binary
-        uses: actions/download-artifact@v4
-        with:
-          name: spark-binary
-          path: ./spark
-
       # Run ACL server
       - name: Run ACL server
         env:
@@ -777,12 +771,6 @@ jobs:
       - name: Unpack generated code
         run: tar -xzvf /tmp/generated.tar.gz
 
-      - name: Prepare Spark binary
-        uses: actions/download-artifact@v4
-        with:
-          name: spark-binary
-          path: ./spark
-
       # Run ACL server
       - name: Run ACL server
         env:
@@ -859,12 +847,6 @@ jobs:
       - name: Unpack generated code
         run: tar -xzvf /tmp/generated.tar.gz
 
-      - name: Prepare Spark binary
-        uses: actions/download-artifact@v4
-        with:
-          name: spark-binary
-          path: ./spark
-
       # Run ACL server
       - name: Run ACL server
         env:
@@ -923,12 +905,6 @@ jobs:
 
       - name: Unpack generated code
         run: tar -xzvf /tmp/generated.tar.gz
-
-      - name: Prepare Spark binary
-        uses: actions/download-artifact@v4
-        with:
-          name: spark-binary
-          path: ./spark
 
       # Run ACL server
       - name: Run ACL server
@@ -995,12 +971,6 @@ jobs:
 
       - name: Unpack generated code
         run: tar -xzvf /tmp/generated.tar.gz
-
-      - name: Prepare Spark binary
-        uses: actions/download-artifact@v4
-        with:
-          name: spark-binary
-          path: ./spark
 
       # Run ACL server
       - name: Run ACL server
@@ -1347,12 +1317,6 @@ jobs:
       - name: Generate uniquifying value
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-
-      - name: Prepare Spark binary
-        uses: actions/download-artifact@v4
-        with:
-          name: spark-binary
-          path: ./spark
 
       - name: Test lakeFS with S3 tests + Basic Auth
         uses: ./.github/actions/bootstrap-test-lakefs
