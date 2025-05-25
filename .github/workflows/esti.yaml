@@ -703,7 +703,7 @@ jobs:
       - name: Test lakeFS with S3 tests KV
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: -f esti/ops/docker-compose-common.yaml -f esti/ops/docker-compose-dynamodb.yaml
+          compose-file: esti/ops/docker-compose-common.yaml esti/ops/docker-compose-dynamodb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
@@ -779,7 +779,7 @@ jobs:
       - name: Test lakeFS with S3 tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: -f esti/ops/docker-compose-common.yaml -f esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-common.yaml esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
@@ -853,7 +853,7 @@ jobs:
       - name: Start lakeFS with GS tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: -f esti/ops/docker-compose-common.yaml -f esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-common.yaml esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -910,7 +910,7 @@ jobs:
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: -f esti/ops/docker-compose-common.yaml -f esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-common.yaml esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -974,7 +974,7 @@ jobs:
       - name: Start lakeFS with Azure tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: -f esti/ops/docker-compose-common.yaml -f esti/ops/docker-compose-external-db.yaml
+          compose-file: esti/ops/docker-compose-common.yaml esti/ops/docker-compose-external-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -1311,7 +1311,7 @@ jobs:
       - name: Test lakeFS with S3 tests + Basic Auth
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
-          compose-file: -f esti/ops/docker-compose-common.yaml -f esti/ops/docker-compose.yaml
+          compose-file: esti/ops/docker-compose-common.yaml esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_BLOCKSTORE_TYPE: s3
