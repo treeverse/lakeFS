@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -23,12 +24,14 @@ func getSparkSubmitArgs(entryPoint string) []string {
 	}
 }
 
-func getDockerArgs(workingDirectory string) []string {
+func getDockerArgs(workingDirectory, localJar string) []string {
+	jarHostPath := filepath.Join(workingDirectory, localJar)
 	return []string{
 		"run",
 		"--network", "host",
 		"--add-host", "lakefs:127.0.0.1",
-		"-v", fmt.Sprintf("lakefs-code:%s:ro", workingDirectory),
+		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
+		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar:ro", jarHostPath),
 		"--rm",
 		"-e", "AWS_ACCESS_KEY_ID",
 		"-e", "AWS_SECRET_ACCESS_KEY",
@@ -42,11 +45,12 @@ func handlePipe(pipe io.ReadCloser, log func(messages ...interface{}), ch chan<-
 	go func() {
 		var err error
 		for {
-			str, err := reader.ReadString('\n')
+			var line string
+			line, err = reader.ReadString('\n')
 			if err != nil {
 				break
 			}
-			log(strings.TrimSuffix(str, "\n"))
+			log(strings.TrimSuffix(line, "\n"))
 		}
 		if err == io.EOF {
 			err = nil
@@ -58,38 +62,20 @@ func handlePipe(pipe io.ReadCloser, log func(messages ...interface{}), ch chan<-
 // runCommand runs cmd. It logs the outputs of cmd with an appropriate field
 // to distinguish stdout from stderr.
 func runCommand(cmdName string, cmd *exec.Cmd) error {
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("failed to get stdout from command: %w", err)
-	}
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("failed to get stderr from command: %w", err)
-	}
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
+	errs := make(chan error, 2)
+	handlePipe(stdout, logger.WithFields(logging.Fields{"source": cmdName, "std": "out"}).Info, errs)
+	handlePipe(stderr, logger.WithFields(logging.Fields{"source": cmdName, "std": "err"}).Info, errs)
 
-	const channelSize = 2
-	cmdErrs := make(chan error, channelSize)
-	handlePipe(stdoutPipe, logger.WithFields(logging.Fields{
-		"source": cmdName,
-		"std":    "out",
-	}).Info, cmdErrs)
-	handlePipe(stderrPipe, logger.WithFields(logging.Fields{
-		"source": cmdName,
-		"std":    "err",
-	}).Info, cmdErrs)
-
-	err = cmd.Start()
-	if err != nil {
+	if err := cmd.Start(); err != nil {
 		return err
 	}
-
-	err = <-cmdErrs
-	if err != nil {
-		logger.WithFields(logging.Fields{"source": cmdName, "component": "handlePipe"}).WithError(err).Error("Error reading command pipe")
+	if e := <-errs; e != nil {
+		logger.WithFields(logging.Fields{"source": cmdName}).WithError(e).Error("pipe read error")
 	}
-	err = <-cmdErrs
-	if err != nil {
-		logger.WithFields(logging.Fields{"source": cmdName, "component": "handlePipe"}).WithError(err).Error("Error reading command pipe")
+	if e := <-errs; e != nil {
+		logger.WithFields(logging.Fields{"source": cmdName}).WithError(e).Error("pipe read error")
 	}
 	return cmd.Wait()
 }
@@ -111,7 +97,9 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 		return fmt.Errorf("getting working directory: %w", err)
 	}
 	wd = strings.TrimSuffix(wd, "/")
-	dockerArgs := getDockerArgs(wd)
+
+	dockerArgs := getDockerArgs(wd, config.LocalJar)
+
 	version := config.SparkVersion
 	if version == "" || strings.HasPrefix(version, "$") {
 		version = os.Getenv("SPARK_IMAGE_TAG")
@@ -124,39 +112,10 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	dockerArgs = append(dockerArgs, image, "spark-submit")
 	submitArgs := getSparkSubmitArgs(config.EntryPoint)
 	submitArgs = append(submitArgs, config.ExtraSubmitArgs...)
-	jarPathInContainer := fmt.Sprintf("%s/%s", wd, config.LocalJar)
-	args := append(dockerArgs, submitArgs...)
-	args = append(args, jarPathInContainer)
-	args = append(args, config.ProgramArgs...)
-	cmd := exec.Command("docker", args...)
+	submitArgs = append(submitArgs, "/opt/metaclient/client.jar")
+	submitArgs = append(submitArgs, config.ProgramArgs...)
+	cmd := exec.Command("docker", append(dockerArgs, submitArgs...)...)
 	logger.Infof("Running command: %s", cmd.String())
 
 	return runCommand(config.LogSource, cmd)
 }
-
-//func RunSparkSubmit(config *SparkSubmitConfig) error {
-//	workingDirectory, err := os.Getwd()
-//	if err != nil {
-//		return fmt.Errorf("getting working directory: %w", err)
-//	}
-//	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
-//	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-//	sparkVersion := config.SparkVersion
-//	if sparkVersion == "" {
-//		sparkVersion = os.Getenv("SPARK_IMAGE_TAG")
-//		if sparkVersion == "" {
-//			return fmt.Errorf("SPARK_IMAGE_TAG is not set in the environment and config.SparkVersion is empty")
-//		}
-//	}
-//	image := fmt.Sprintf("docker.io/bitnami/spark:%s", sparkVersion)
-//	dockerArgs = append(dockerArgs, image, "spark-submit")
-//	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
-//	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
-//	args := dockerArgs
-//	args = append(args, sparkSubmitArgs...)
-//	args = append(args, "/opt/metaclient/client.jar")
-//	args = append(args, config.ProgramArgs...)
-//	cmd := exec.Command("docker", args...)
-//	logger.Infof("Running command: %s", cmd.String())
-//	return runCommand(config.LogSource, cmd)
-//}
