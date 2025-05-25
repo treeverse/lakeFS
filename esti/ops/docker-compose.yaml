@@ -1,8 +1,8 @@
-version: "3.8"
+version: "3"
 services:
   lakefs:
     extends:
-      file: docker-compose-common.yaml
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: lakefs
     depends_on:
       - postgres
@@ -46,21 +46,15 @@ services:
       - shared-spark:/opt/bitnami/spark
 
   spark:
-    image: "bitnami/spark:3.5.5"
+    extends:
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      service: spark
     container_name: lakefs-spark
-    ports:
-      - "8080:8080"
-      - "7077:7077"
     volumes:
       - shared-metaclient:/opt/metaclient
     environment:
       - LAKEFS_ACCESS_KEY_ID=${LAKEFS_ACCESS_KEY_ID}
       - LAKEFS_SECRET_ACCESS_KEY=${LAKEFS_SECRET_ACCESS_KEY}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
     command: >
       spark-submit
         --master spark://spark:7077
