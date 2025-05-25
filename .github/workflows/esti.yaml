@@ -704,8 +704,8 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: |
-            esti/ops/docker-compose-common.yaml
-            esti/ops/docker-compose-dynamodb.yaml
+            -f  esti/ops/docker-compose-common.yaml
+            -f  esti/ops/docker-compose-dynamodb.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
@@ -782,8 +782,8 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: |
-            esti/ops/docker-compose-common.yaml
-            esti/ops/docker-compose.yaml
+            -f esti/ops/docker-compose-common.yaml
+            -f esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_AUTH_UI_CONFIG_RBAC: simplified
@@ -858,8 +858,8 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: |
-            esti/ops/docker-compose-common.yaml
-            esti/ops/docker-compose.yaml
+            -f esti/ops/docker-compose-common.yaml
+            -f esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -917,8 +917,8 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: |
-            esti/ops/docker-compose-common.yaml
-            esti/ops/docker-compose.yaml
+            -f esti/ops/docker-compose-common.yaml
+            -f esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -983,8 +983,8 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: |
-            esti/ops/docker-compose-common.yaml
-            esti/ops/docker-compose-external-db.yaml
+            -f esti/ops/docker-compose-common.yaml
+            -f esti/ops/docker-compose-external-db.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           DOCKER_REG: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -1322,8 +1322,8 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-file: |
-            esti/ops/docker-compose-common.yaml
-            esti/ops/docker-compose.yaml
+            -f esti/ops/docker-compose-common.yaml
+            -f esti/ops/docker-compose.yaml
           compose-flags: "--quiet-pull --exit-code-from=esti"
         env:
           LAKEFS_BLOCKSTORE_TYPE: s3
