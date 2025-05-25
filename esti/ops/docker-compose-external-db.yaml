@@ -50,6 +50,9 @@ services:
     volumes:
       - shared-metaclient:/opt/metaclient
       - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - STORAGE_NAMESPACE
+      - REPOSITORY
 
 volumes:
   lakefs-code:

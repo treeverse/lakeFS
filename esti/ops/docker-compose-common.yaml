@@ -88,6 +88,8 @@ services:
       - HADOOP_USER_NAME=spark
       - LAKEFS_ACCESS_KEY_ID=${LAKEFS_ACCESS_KEY_ID}
       - LAKEFS_SECRET_ACCESS_KEY=${LAKEFS_SECRET_ACCESS_KEY}
+      - STORAGE_NAMESPACE=${ESTI_STORAGE_NAMESPACE}
+      - REPOSITORY=${REPOSITORY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080"]
       interval: 5s
@@ -102,7 +104,7 @@ services:
         --conf spark.hadoop.lakefs.api.secret_key=${LAKEFS_SECRET_ACCESS_KEY}
         --conf spark.driver.extraJavaOptions=-Dhadoop.job.ugi=spark
         --conf spark.executor.extraJavaOptions=-Dhadoop.job.ugi=spark
-        --class io.treeverse.gc.GarbageCollection /opt/metaclient/spark-assembly.jar
+        --class io.treeverse.gc.GarbageCollection /opt/metaclient/spark-assembly.jar ${STORAGE_NAMESPACE} ${REPOSITORY}
 
 volumes:
   lakefs-code:
