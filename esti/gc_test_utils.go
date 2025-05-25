@@ -111,22 +111,52 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-	sparkVersion := config.SparkVersion
-	if sparkVersion == "" {
-		sparkVersion = os.Getenv("SPARK_IMAGE_TAG")
-		if sparkVersion == "" {
-			return fmt.Errorf("SPARK_IMAGE_TAG is not set in the environment and config.SparkVersion is empty")
-		}
+
+	const defaultSparkTag = "3.3.2"
+	version := config.SparkVersion
+	if version == "" || strings.HasPrefix(version, "$") {
+		version = os.Getenv("SPARK_IMAGE_TAG")
 	}
-	image := fmt.Sprintf("docker.io/bitnami/spark:%s", sparkVersion)
+	if version == "" || strings.HasPrefix(version, "$") {
+		version = defaultSparkTag
+	}
+
+	image := fmt.Sprintf("docker.io/bitnami/spark:%s", version)
 	dockerArgs = append(dockerArgs, image, "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
-	args := dockerArgs
-	args = append(args, sparkSubmitArgs...)
+	args := append(dockerArgs, sparkSubmitArgs...)
 	args = append(args, "/opt/metaclient/client.jar")
 	args = append(args, config.ProgramArgs...)
 	cmd := exec.Command("docker", args...)
 	logger.Infof("Running command: %s", cmd.String())
+
 	return runCommand(config.LogSource, cmd)
 }
+
+//func RunSparkSubmit(config *SparkSubmitConfig) error {
+//	workingDirectory, err := os.Getwd()
+//	if err != nil {
+//		return fmt.Errorf("getting working directory: %w", err)
+//	}
+//	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
+//	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
+//	sparkVersion := config.SparkVersion
+//	if sparkVersion == "" {
+//		sparkVersion = os.Getenv("SPARK_IMAGE_TAG")
+//		if sparkVersion == "" {
+//			return fmt.Errorf("SPARK_IMAGE_TAG is not set in the environment and config.SparkVersion is empty")
+//		}
+//	}
+//	image := fmt.Sprintf("docker.io/bitnami/spark:%s", sparkVersion)
+//	dockerArgs = append(dockerArgs, image, "spark-submit")
+//	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
+//	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
+//	args := dockerArgs
+//	args = append(args, sparkSubmitArgs...)
+//	args = append(args, "/opt/metaclient/client.jar")
+//	args = append(args, config.ProgramArgs...)
+//	cmd := exec.Command("docker", args...)
+//	logger.Infof("Running command: %s", cmd.String())
+//	return runCommand(config.LogSource, cmd)
+//}
