@@ -31,6 +31,7 @@ services:
       - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.3.2}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./test/spark/metaclient/spark-assembly.jar:/lakefs/test/spark/metaclient/spark-assembly.jar:ro
 
 volumes:
   lakefs-code:
