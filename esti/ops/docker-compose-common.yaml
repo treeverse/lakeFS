@@ -55,6 +55,8 @@ services:
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro
+      - /usr/bin/docker:/usr/bin/docker:ro
+      - /var/run/docker.sock:/var/run/docker.sock
 
   postgres:
     image: "postgres:11"
