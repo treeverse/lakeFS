@@ -675,7 +675,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SPARK_IMAGE_TAG: 3.2.1
       ESTI_FLAGS: >-
-        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -spark-image-tag=$SPARK_IMAGE_TAG
         -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
     steps:
       - name: Check-out code
@@ -753,7 +753,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SPARK_IMAGE_TAG: 3.2.1
       ESTI_FLAGS: >-
-        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -spark-image-tag=$SPARK_IMAGE_TAG
         -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
     steps:
       - name: Check-out code
@@ -829,7 +829,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SPARK_IMAGE_TAG: 3.2.1
       ESTI_FLAGS: >-
-        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -spark-image-tag=$SPARK_IMAGE_TAG
         -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
     steps:
       - name: Check-out code
@@ -888,7 +888,7 @@ jobs:
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       SPARK_IMAGE_TAG: 3.2.1
       ESTI_FLAGS: >-
-        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -spark-image-tag=$SPARK_IMAGE_TAG
         -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
     steps:
       - name: Check-out code
@@ -953,7 +953,7 @@ jobs:
       COSMOSDB_ACCOUNT: esti-e2e-tests
       SPARK_IMAGE_TAG: 3.2.1
       ESTI_FLAGS: >-
-        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -spark-image-tag=$SPARK_IMAGE_TAG
         -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
 
     steps:
@@ -1310,7 +1310,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SPARK_IMAGE_TAG: 3.2.1
       ESTI_FLAGS: >-
-        -spark-image-tag=${{ env.SPARK_IMAGE_TAG }}
+        -spark-image-tag=$SPARK_IMAGE_TAG
         -metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar
     steps:
       - name: Check-out code
