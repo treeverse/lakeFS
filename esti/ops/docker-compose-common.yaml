@@ -1,3 +1,4 @@
+version: "3"
 services:
   lakefs:
     image: "${REGISTRY:-treeverse}/${REPO:-lakefs}:${TAG:-dev}"
@@ -51,7 +52,7 @@ services:
       - /bin/sh
       - -c
       - |
-        apk add --no-cache docker-cli util-linux 
+        apk add --no-cache docker-cli util-linux
         go test $$ESTI_GOTEST_FLAGS -skip $$ESTI_SKIP_TESTS -v ./esti --system-tests $$ESTI_FLAGS
     volumes:
       - lakefs-code:/lakefs
@@ -73,6 +74,7 @@ services:
       - "6432:8000"
 
   spark:
+    container_name: spark-master
     image: docker.io/bitnami/spark:${SPARK_IMAGE_TAG:-3.2.1}
     environment:
       - SPARK_MODE=master
@@ -86,12 +88,14 @@ services:
     ports:
       - "7077:7077"
       - "8080:8080"
+    volumes:
+      - ./test/spark/metaclient/spark-assembly.jar:/opt/metaclient/client.jar:ro
 
   spark-worker:
     image: docker.io/bitnami/spark:${SPARK_IMAGE_TAG:-3.2.1}
     environment:
       - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=4G
       - SPARK_WORKER_CORES=1
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -101,3 +105,12 @@ services:
       - AWS_REGION=${AWS_REGION}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+volumes:
+  lakefs-code:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${LAKEFS_ROOT:-.}
+  lakefs-app:

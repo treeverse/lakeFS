@@ -27,18 +27,12 @@ services:
     extends:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
+    volumes:
+      - lakefs-code:/lakefs
+      - lakefs-app:/app:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./test/spark/metaclient/spark-assembly.jar:/lakefs/test/spark/metaclient/spark-assembly.jar:ro
     environment:
       - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.2.1}
       - ESTI_FLAGS=-metaclient-jar=/lakefs/test/spark/metaclient/spark-assembly.jar -spark-image-tag=${SPARK_IMAGE_TAG:-3.2.1}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./test/spark/metaclient/spark-assembly.jar:/lakefs/test/spark/metaclient/spark-assembly.jar:ro
 
-volumes:
-  lakefs-code:
-    driver: local
-    driver_opts:
-      o: bind
-      type: none
-      device: ${LAKEFS_ROOT:-.}
-  lakefs-app:

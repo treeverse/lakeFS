@@ -27,6 +27,7 @@ services:
     environment:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
+
   lakefs:
     <<: *lakefs-common
     ports:
@@ -54,6 +55,7 @@ services:
     entrypoint: ["sh", "-c", "/app/lakefs setup --user-name tester --access-key-id $${TESTER_ACCESS_KEY_ID} --secret-access-key $${TESTER_SECRET_ACCESS_KEY}"]
   spark:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
+    container_name: spark-master
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
@@ -63,12 +65,12 @@ services:
       - SPARK_SSL_ENABLED=no
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
-      - METACLIENT_JAR
-      - EXPORT_LOCATION
-      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      - METACLIENT_JAR=/opt/metaclient/client.jar
     ports:
-      - 18080:8080
+      - "18080:8080"
+      - "7077:7077"
+    volumes:
+      - ./test/spark/metaclient/spark-assembly.jar:/opt/metaclient/client.jar:ro
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "example.s3.docker.lakefs.io:10.5.0.55"
@@ -78,10 +80,10 @@ services:
   spark-worker:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
     ports:
-      - 8081
+      - "8081:8081"
     environment:
       - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=4G
       - SPARK_WORKER_CORES=8
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -91,8 +93,6 @@ services:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
-      - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-      - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "docker.lakefs.io:10.5.0.55"
@@ -100,11 +100,13 @@ services:
       - "gateway-test-spark2.s3.docker.lakefs.io:10.5.0.55"
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
+
   spark-submit:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
     profiles: ["command"]
     volumes:
       - ./:/local
+      - ./test/spark/metaclient/spark-assembly.jar:/opt/metaclient/client.jar:ro
       - ../../clients/hadoopfs/target:/target
     environment:
       - input
@@ -112,12 +114,12 @@ services:
       - s3input
       - s3output
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID
-      - CLIENT_JAR
-      - EXPORT_LOCATION
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
       - AWS_REGION
+      - CLIENT_JAR=/opt/metaclient/client.jar
+      - EXPORT_LOCATION
       - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
     extra_hosts:
