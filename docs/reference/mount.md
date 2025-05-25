@@ -52,32 +52,36 @@ Searching for lakeFS credentials and server endpoint in the following order:
 - `LAKECTL_*` Environment variables
 - `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
 
-# Authenticating with AWS IAM Role
+## Authenticating with AWS IAM Role
 
 Starting from **lakeFS ≥ v1.57.0** and **Everest ≥ v0.13.0**, authenticating with IAM roles is supported!
 
-## Overview
+### Overview
 
 When IAM authentication is configured, Everest will use your machine's **default AWS profile credentials** to generate a **session token** used for authenticating against lakeFS.  
 This token is seamlessly refreshed as long as the AWS session remains valid.
 
 Because IAM roles are linked to users, lakeFS must map each role to a user.  
-To do this, make sure the IAM role is attached to a lakeFS user using [`createUserExternalPrincipal`](docs/ExperimentalApi.md#createuserexternalprincipal).
+To do this, make sure the IAM role is attached to a lakeFS. For example:
 
----
+```python
+configuration = lakefs_sdk.Configuration(host = "<lakeFS host>",username="<access key id>",password="<secret access key>")
+username = "developer1"
+api = lakefs_sdk.ApiClient(configuration)
+auth_api = lakefs_sdk.AuthApi(api)
+auth_api.create_user_external_principal(user_id=username, principal_id='<arn:aws:sts::563456737:assumed-role/Developer/<user@example.com>')
+```
 
-## Authentication Chain
+### Authentication Chain
 
 When running an Everest `mount` command, authentication occurs in the following order:
 
 1. **Session token** from the environment variable `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN`.  
    If the token is expired, authentication will fail.
-2. **Static credentials** from the `.lakectl.yaml` file.
+2. **lakectl authentication**, using env vars or fallback to `.lakectl.yaml` file.
 3. **IAM authentication**, if configured.
 
----
-
-## Configuration
+### Configuration
 
 Since IAM authentication is used as a fallback method, `.lakectl.yaml` **must not contain static credentials**.
 
@@ -92,7 +96,8 @@ credentials:
       url_presign_ttl_seconds: 15m        # Optional, default: 15m
       refresh_interval: 5m                # Optional, default: 5m
       token_request_headers:              # Required
-        x-lakefs-server-id: localhost     # Replace with your actual lakeFS host
+        x-lakefs-server-id: <lakeFS host>     # Replace with your actual lakeFS host
+```
 
 ## Command Line Interface
 
