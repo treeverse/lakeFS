@@ -114,7 +114,7 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
 
-	const defaultSparkTag = "3.3.2"
+	const defaultSparkTag = "3.2.1"
 	version := config.SparkVersion
 	if version == "" || strings.HasPrefix(version, "$") {
 		version = os.Getenv("SPARK_IMAGE_TAG")

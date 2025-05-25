@@ -34,7 +34,7 @@ services:
       service: esti
     environment:
       - ESTI_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.3.2}
+      - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.2.1}
     volumes:
       - lakefs-code:/lakefs
       - lakefs-app:/app:ro

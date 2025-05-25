@@ -23,7 +23,7 @@ services:
       file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
       service: esti
     environment:
-      - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.3.2}
+      - SPARK_IMAGE_TAG=${SPARK_IMAGE_TAG:-3.2.1}
     command:
       - /bin/sh
       - -c
