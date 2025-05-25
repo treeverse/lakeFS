@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -23,11 +24,12 @@ func getSparkSubmitArgs(entryPoint string) []string {
 	}
 }
 
-func getDockerArgs(workingDirectory string, localJar string) []string {
+func getDockerArgs(workingDirectory, localJar string) []string {
+	jarHostPath := filepath.Join(workingDirectory, localJar)
 	return []string{
 		"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
 		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
-		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar", localJar),
+		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar:ro", jarHostPath),
 		"--rm",
 		"-e", "AWS_ACCESS_KEY_ID",
 		"-e", "AWS_SECRET_ACCESS_KEY",
