@@ -72,7 +72,7 @@ services:
       - "6432:8000"
 
   spark:
-    image: docker.io/bitnami/spark:${SPARK_IMAGE_TAG}
+    image: docker.io/bitnami/spark:${SPARK_IMAGE_TAG:-3.3.2}
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -87,7 +87,7 @@ services:
       - "8080:8080"
 
   spark-worker:
-    image: docker.io/bitnami/spark:${SPARK_IMAGE_TAG}
+    image: docker.io/bitnami/spark:${SPARK_IMAGE_TAG:-3.3.2}
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark:7077
