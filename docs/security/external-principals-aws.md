@@ -8,8 +8,6 @@ redirect_from:
 
 # Authenticate to lakeFS with AWS IAM Roles
 {: .d-inline-block }
-lakeFS Cloud
-{: .label .label-green }
 
 lakeFS Enterprise
 {: .label .label-purple }
