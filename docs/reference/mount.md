@@ -44,7 +44,16 @@ Everest mount supports writing to the file system for both NFS and FUSE protocol
 Currently, the implemented protocols are `nfs` and `fuse`.
 - NFS V3 (Network File System) is supported on macOS.
 
-## Authentication with lakeFS
+## Authentication Chain for lakeFS
+
+When running an Everest `mount` command, authentication occurs in the following order:
+
+1. **Session token** from the environment variable `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN` or `LAKECTL_CREDENTIALS_SESSION_TOKEN`.  
+   If the token is expired, authentication will fail.
+2. **lakeFS key pair**, using lakeFS access key ID and secret key. (picked up from lakectl if Everest not provided)
+3. **IAM authentication**, if configured and **no static credentials are set**.
+
+## Authentication with lakeFS (using Credentials)
 
 The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
 Searching for lakeFS credentials and server endpoint in the following order:
@@ -61,14 +70,6 @@ When IAM authentication is configured, Everest will use AWS SDK default behavior
 1. Make sure your lakeFS server supports [AWS IAM Role Login](https://docs.lakefs.io/security/external-principals-aws.html).
 2. Make sure your IAM role is attached to lakeFS. See [Administration of IAM Roles in lakeFS](https://docs.lakefs.io/security/external-principals-aws.html#administration-of-iam-roles-in-lakefs)
 
-### Authentication Chain
-
-When running an Everest `mount` command, authentication occurs in the following order:
-
-1. **Session token** from the environment variable `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN` or `LAKECTL_CREDENTIALS_SESSION_TOKEN`.  
-   If the token is expired, authentication will fail.
-2. **lakeFS key pair**, using lakeFS access key ID and secret key. (picked up from lakectl if Everest not provided)
-3. **IAM authentication**, if configured and **no static credentials are set**.
 
 ### Configure everest to use IAM
 
@@ -93,6 +94,8 @@ credentials:
       token_request_headers:              # Optional, if omitted then will set x-lakefs-server-id: <lakeFS host> by default, to override default set to '{}'
       # x-lakefs-server-id: <lakeFS host>     Added by default if token_request_headers is not set	
 	  custome-key:  custome-val
+server:
+  endpoint_url: <lakeFS endpoint url>
 ```
 
 To set using environment variables - those will start with the prefix `EVEREST_LAKEFS_*` or `LAKECTL_*`.
