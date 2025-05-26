@@ -165,7 +165,7 @@ There are two ways in which external principals can be used to authenticate to l
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_PRESIGNED_URL_TTL_SECONDS="60"
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS='{"HeaderName":"HeaderValue"}'
     ```
-   To use the client, merely import and initialize it:
+   To use the client, merely import it:
    ```python
    import lakefs
 
