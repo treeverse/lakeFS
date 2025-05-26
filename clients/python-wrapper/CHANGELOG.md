@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.11.1
+
+:bug: Bugs fixed:
+
+- Fixed: Configuration always demanded credentials' access key and secret. Now it supports IAM provider as well (#9105)
+
 ## v0.11.0
 
 :new: What's new:
