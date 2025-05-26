@@ -141,7 +141,7 @@ For other use cases authenticate to lakeFS via login endpoint, this will require
 To install the required packages, run the following command:
 
 ```sh
-  pip install lakefs[aws-iam]
+  pip install "lakefs[aws-iam]"
 ```
 
 There are two ways in which external principals can be used to authenticate to lakeFS:
