@@ -53,7 +53,7 @@ When running an Everest `mount` command, authentication occurs in the following 
 2. **lakeFS key pair**, using lakeFS access key ID and secret key. (picked up from lakectl if Everest not provided)
 3. **IAM authentication**, if configured and **no static credentials are set**.
 
-## Authentication with lakeFS (using Credentials)
+## Authenticate with lakeFS Credentials
 
 The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
 Searching for lakeFS credentials and server endpoint in the following order:
@@ -61,7 +61,7 @@ Searching for lakeFS credentials and server endpoint in the following order:
 - `LAKECTL_*` Environment variables
 - `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
 
-## Authenticating with lakeFS (using AWS IAM Role)
+## Authenticating with AWS IAM Role
 
 Starting from **lakeFS ≥ v1.57.0** and **Everest ≥ v0.4.0**, authenticating with IAM roles is supported!  
 When IAM authentication is configured, Everest will use AWS SDK default behavior that will pick your **AWS environment** to generate a **session token** used for authenticating against lakeFS (i.e use `AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc). This token is seamlessly refreshed as long as the AWS session remains valid.  
