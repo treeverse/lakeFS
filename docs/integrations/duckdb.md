@@ -13,7 +13,7 @@ parent: Integrations
 ## Accessing lakeFS from DuckDB
 ### Configuration
 
-Querying data in lakeFS from DuckDB is similar to querying data in S3 from DuckDB. It is done using the [httpfs extension](https://duckdb.org/docs/extensions/httpfs.html){:target="_blank"} connecting to the [S3 Gateway that lakeFS provides](https://docs.lakefs.io/understand/architecture.html#s3-gateway).
+Querying data in lakeFS from DuckDB is similar to querying data in S3 from DuckDB. It is done using the [httpfs extension](https://duckdb.org/docs/stable/core_extensions/httpfs/overview){:target="_blank"} connecting to the [S3 Gateway that lakeFS provides](https://docs.lakefs.io/understand/architecture.html#s3-gateway).
 
 If not loaded already, install and load the HTTPFS extension: 
 
