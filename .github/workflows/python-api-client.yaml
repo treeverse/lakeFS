@@ -11,7 +11,7 @@ on:
       skip_publish_pypi:
         description: Skip publishing to PyPI
         required: false
-        default: false
+        default: 'false'
 jobs:
   deploy:
     runs-on: ubuntu-22.04
@@ -34,7 +34,7 @@ jobs:
       run: make package-python-sdk PACKAGE_VERSION=${{ steps.version.outputs.tag }}
 
     - name: Python SDK publish package
-      if: ${{ inputs.skip_publish_pypi == 'false' }}
+      if: ${{ inputs.skip_publish_pypi != 'true' }}
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
