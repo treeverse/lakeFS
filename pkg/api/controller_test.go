@@ -44,6 +44,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/catalog"
+	"github.com/treeverse/lakefs/pkg/cloud"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/graveler/settings"
@@ -6551,93 +6552,99 @@ func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, re
 	return nil
 }
 
-func TestController_GetLicense(t *testing.T) {
+func setupHandlerWithLicenseManager(t testing.TB, licenseManager license.Manager) (http.Handler, *dependencies) {
+	t.Helper()
 	ctx := context.Background()
 
-	// A minimal clone of serve_test.go’s setupHandler, allowing us to inject a
-	// custom license manager.
-	setupHandlerWithLicenseManager := func(t testing.TB, lm license.Manager) (http.Handler, *dependencies) {
-		t.Helper()
-		ctx := context.Background()
-
-		if viper.Get(config.BlockstoreTypeKey) == nil {
-			viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
-		}
-		viper.Set("database.type", mem.DriverName)
-		viper.Set("auth.api.endpoint", config.DefaultListenAddress)
-
-		collector := &memCollector{}
-		cfg := &configfactory.ConfigWithAuth{}
-		baseCfg, err := config.NewConfig("", cfg)
-		require.NoError(t, err)
-
-		kvStore := kvtest.GetStore(ctx, t)
-		actionsStore := actions.NewActionsKVStore(kvStore)
-		idGen := &actions.DecreasingIDGenerator{}
-		authService := auth.NewBasicAuthService(
-			kvStore,
-			crypt.NewSecretStore([]byte("some secret")),
-			authparams.ServiceCache{Enabled: false},
-			logging.FromContext(ctx),
-		)
-		meta := auth.NewKVMetadataManager("license_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
-
-		catalogSvc, err := catalog.New(ctx, catalog.Config{
-			Config:                cfg,
-			KVStore:               kvStore,
-			SettingsManagerOption: settings.WithCache(cache.NoCache),
-			PathProvider:          upload.DefaultPathProvider,
-		})
-		require.NoError(t, err)
-
-		actionsCfg := actions.Config{Enabled: true}
-		actionsCfg.Lua.NetHTTPEnabled = true
-		actionsSvc := actions.NewService(
-			ctx,
-			actionsStore,
-			catalog.NewActionsSource(catalogSvc),
-			catalog.NewActionsOutputWriter(catalogSvc.BlockAdapter),
-			idGen,
-			collector,
-			actionsCfg,
-			"",
-		)
-		catalogSvc.SetHooksHandler(actionsSvc)
-
-		authenticator := auth.NewBuiltinAuthenticator(authService)
-		kvParams, err := kvparams.NewConfig(&baseCfg.Database)
-		require.NoError(t, err)
-		migrator := kv.NewDatabaseMigrator(kvParams)
-		auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
-		authenticationSvc := authentication.NewDummyService()
-
-		handler := api.Serve(
-			cfg,
-			catalogSvc,
-			authenticator,
-			authService,
-			authenticationSvc,
-			catalogSvc.BlockAdapter,
-			meta,
-			migrator,
-			collector,
-			actionsSvc,
-			auditChecker,
-			logging.ContextUnavailable(),
-			nil,
-			nil,
-			upload.DefaultPathProvider,
-			stats.DefaultUsageReporter,
-			lm, // <-- our custom license manager
-		)
-
-		return handler, &dependencies{
-			blocks:      catalogSvc.BlockAdapter,
-			authService: authService,
-			catalog:     catalogSvc,
-			collector:   collector,
-		}
+	if viper.Get(config.BlockstoreTypeKey) == nil {
+		viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeMem)
 	}
+	viper.Set("database.type", mem.DriverName)
+	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
+
+	collector := &memCollector{}
+	cfg := &configfactory.ConfigWithAuth{}
+	baseCfg, err := config.NewConfig("", cfg)
+	testutil.MustDo(t, "config", err)
+
+	kvStore := kvtest.GetStore(ctx, t)
+	actionsStore := actions.NewActionsKVStore(kvStore)
+	idGen := &actions.DecreasingIDGenerator{}
+	authService := auth.NewBasicAuthService(kvStore, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
+		Enabled: false},
+		logging.FromContext(ctx),
+	)
+	meta := auth.NewKVMetadataManager("license_test", baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
+
+	c, err := catalog.New(ctx, catalog.Config{
+		Config:                cfg,
+		KVStore:               kvStore,
+		SettingsManagerOption: settings.WithCache(cache.NoCache),
+		PathProvider:          upload.DefaultPathProvider,
+	})
+	testutil.MustDo(t, "build catalog", err)
+
+	actionsConfig := actions.Config{Enabled: true}
+	actionsConfig.Lua.NetHTTPEnabled = true
+	actionsService := actions.NewService(
+		ctx,
+		actionsStore,
+		catalog.NewActionsSource(c),
+		catalog.NewActionsOutputWriter(c.BlockAdapter),
+		idGen,
+		collector,
+		actionsConfig,
+		"",
+	)
+	c.SetHooksHandler(actionsService)
+
+	authenticator := auth.NewBuiltinAuthenticator(authService)
+	kvParams, err := kvparams.NewConfig(&baseCfg.Database)
+	testutil.Must(t, err)
+	migrator := kv.NewDatabaseMigrator(kvParams)
+
+	t.Cleanup(func() {
+		actionsService.Stop()
+		_ = c.Close()
+	})
+
+	auditChecker := version.NewDefaultAuditChecker(baseCfg.Security.AuditCheckURL, "", nil)
+
+	authenticationService := authentication.NewDummyService()
+
+	handler := api.Serve(
+		cfg,
+		c,
+		authenticator,
+		authService,
+		authenticationService,
+		c.BlockAdapter,
+		meta,
+		migrator,
+		collector,
+		actionsService,
+		auditChecker,
+		logging.ContextUnavailable(),
+		nil,
+		nil,
+		upload.DefaultPathProvider,
+		stats.DefaultUsageReporter,
+		licenseManager,
+	)
+
+	// reset cloud metadata - faster setup, the cloud metadata maintain its own tests
+	cloud.Reset()
+
+	return handler, &dependencies{
+		blocks:      c.BlockAdapter,
+		authService: authService,
+		catalog:     c,
+		collector:   collector,
+	}
+}
+
+func TestController_GetLicense(t *testing.T) {
+	ctx := context.Background()
 
 	t.Run("unauthorized", func(t *testing.T) {
 		handler, _ := setupHandler(t)
@@ -6646,6 +6653,7 @@ func TestController_GetLicense(t *testing.T) {
 
 		resp, err := noAuthClient.GetLicenseWithResponse(ctx)
 		require.NoError(t, err)
+		require.Equal(t, http.StatusUnauthorized, resp.StatusCode(), "Expected status Unauthorized")
 		require.NotNil(t, resp.JSON401, "expected HTTP-401 response, got %v", resp.StatusCode())
 	})
 
@@ -6653,14 +6661,13 @@ func TestController_GetLicense(t *testing.T) {
 		clt, _ := setupClientWithAdmin(t)
 		resp, err := clt.GetLicenseWithResponse(ctx)
 		require.NoError(t, err)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected status Not Implemented")
 		require.NotNil(t, resp.JSON501, "expected HTTP-501 response, got %v", resp.StatusCode())
 	})
 
 	t.Run("success", func(t *testing.T) {
 		const expectedToken = "dummy-token"
-		handler, _ := setupHandlerWithLicenseManager(t, &stubLicenseManager{
-			token: expectedToken,
-		})
+		handler, _ := setupHandlerWithLicenseManager(t, &stubLicenseManager{token: expectedToken})
 		server := setupServer(t, handler)
 
 		clt := setupClientByEndpoint(t, server.URL, "", "")
@@ -6669,15 +6676,13 @@ func TestController_GetLicense(t *testing.T) {
 
 		resp, err := clt.GetLicenseWithResponse(ctx)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, resp.StatusCode())
-		require.NotNil(t, resp.JSON200)
+		require.Equal(t, http.StatusOK, resp.StatusCode(), "Expected status OK")
+		require.NotNil(t, resp.JSON200, "expected HTTP-200 response body, got %v", resp.StatusCode())
 		require.Equal(t, expectedToken, resp.JSON200.Token)
 	})
 
 	t.Run("internal_error", func(t *testing.T) {
-		handler, _ := setupHandlerWithLicenseManager(t, &stubLicenseManager{
-			err: errors.New("boom"),
-		})
+		handler, _ := setupHandlerWithLicenseManager(t, &stubLicenseManager{err: errors.New("some error")})
 		server := setupServer(t, handler)
 
 		clt := setupClientByEndpoint(t, server.URL, "", "")
@@ -6686,7 +6691,7 @@ func TestController_GetLicense(t *testing.T) {
 
 		resp, err := clt.GetLicenseWithResponse(ctx)
 		require.NoError(t, err)
-		require.Equal(t, http.StatusInternalServerError, resp.StatusCode())
+		require.Equal(t, http.StatusInternalServerError, resp.StatusCode(), "Expected status Internal Server Error")
 		require.NotNil(t, resp.JSONDefault, "expected HTTP-500 response body, got %v", resp.StatusCode())
 	})
 }
