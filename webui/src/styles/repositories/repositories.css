@@ -221,4 +221,12 @@
   font-size: 0.8rem;
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
+}
+
+/* Inline Link Button */
+.inline-link-button {
+    padding: 0;
+    width: auto;
+    margin-left: 8px;
+    display: inline-block;
 } 

@@ -40,9 +40,9 @@ const CreateRepositoryButton = ({variant = "success", enabled = false, onClick})
     );
 }
 
-const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = false, onClick, creatingRepo, style = {}}) => {
+const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = false, onClick, creatingRepo, className = ""}) => {
     return (
-        <Button className="create-sample-repo-button" style={style} variant={variant} disabled={!enabled || creatingRepo} onClick={onClick}>
+        <Button className={`create-sample-repo-button ${className}`} variant={variant} disabled={!enabled || creatingRepo} onClick={onClick}>
             { creatingRepo && <><Spinner as="span" role="status" aria-hidden="true" animation="border" size="sm" className="me-2"/><span className="visually-hidden">Loading...</span></> }
             {text}
         </Button>
@@ -56,6 +56,13 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
     const [formValid, setFormValid] = useState(false);
 
     const {response: storageConfigs, error: err, loading} = useAPI(() => config.getStorageConfigs());
+
+    const buttonContent = inProgress ? (
+        <>
+            <Spinner as="span" size="sm" animation="border" role="status" className="me-2" />
+            Creating...
+        </>
+    ) : 'Create Repository';
 
     const showError = (error) ? error : err;
     if (loading) {
@@ -97,14 +104,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
                     className="ms-2"
                     disabled={!formValid || inProgress}
                 >
-                    {inProgress ? (
-                        <>
-                            <Spinner as="span" size="sm" animation="border" role="status" className="me-2" />
-                            Creating...
-                        </>
-                    ) : (
-                        'Create Repository'
-                    )}
+                    {buttonContent}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -144,7 +144,7 @@ const GetStarted = ({allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyR
                     <div className="d-flex align-items-center mt-4">
                         <span className="learn-more">Already working with lakeFS?</span>
                         <GettingStartedCreateRepoButton 
-                            style={{ padding: 0, width: "auto", marginLeft: "8px", display: "inline-block" }} 
+                            className="inline-link-button"
                             text="Create an empty repository" 
                             variant={"link"} 
                             enabled={true} 

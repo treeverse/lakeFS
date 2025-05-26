@@ -47,6 +47,10 @@ const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
 
+const isAbortedError = (error, controller) => {
+  return (error instanceof DOMException && error.name === 'AbortError') || controller.signal.aborted;
+};
+
 const ImportButton = ({ variant = "success", onClick, config }) => {
   const tip = config.import_support
     ? "Import data from a remote source"
@@ -385,6 +389,22 @@ const UploadCandidate = ({
   )
 };
 
+const UploadButtonText = ({ inProgress, uploadingCount, filesLength, averageProgress }) => {
+  if (inProgress) {
+    return (
+      <>
+        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Uploading {uploadingCount > 0 ? `${uploadingCount} / ${filesLength}` : averageProgress + '%'}...
+      </>
+    );
+  }
+  return (
+    <>
+      <UploadIcon className="me-2" /> Upload {filesLength || ''} File{filesLength !== 1 ? 's' : ''}
+    </>
+  );
+};
+
 const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, show = false, disabled = false}) => {
   const initialState = {
     inProgress: false,
@@ -516,7 +536,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
         if (controller.signal.aborted) return;
         console.error("Upload error for:", file.path, error);
         setFileStates(next => ({ ...next, [file.path]: { status: 'error', percent: 0 } }));
-        if (!(error instanceof DOMException && error.name === 'AbortError') && !controller.signal.aborted) {
+        if (!isAbortedError(error, controller)) {
           setUploadState(prev => ({ ...prev, error: error }));
         }                                                                       
         throw error;
@@ -535,7 +555,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
           hide(); 
       }
     } catch (error) {
-       if (!(error instanceof DOMException && error.name === 'AbortError') && !controller.signal.aborted) {
+       if (!isAbortedError(error, controller)) {
            console.error("pMap upload error:", error);
            setUploadState(prev => ({...prev, inProgress: false, error: prev.error || error })); 
        } else {
@@ -653,24 +673,28 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
                 </div>
 
                 <div className="upload-items-list">
-                  {files.map(file =>
-                    <UploadCandidate
-                      key={file.path}
-                      file={file}
-                      destination={fileDestinations[file.path] || ''}
-                      state={fileStates[file.path]}
-                      onDestinationChange={(newDest) => handleIndividualDestinationChange(file.path, newDest)}
-                      onRemove={() => handleRemoveFile(file.path)}
-                      isUploading={uploadState.inProgress || fileStates[file.path]?.status === 'uploading'}
-                      isEditing={editingDestinations[file.path] || false}
-                      onEditToggle={(editMode) => handleEditToggle(file.path, editMode)}
-                    />
-                  )}
+                  {files.map(file => {
+                    const fileState = fileStates[file.path];
+                    const isUploading = uploadState.inProgress || fileState?.status === 'uploading';
+                    return (
+                      <UploadCandidate
+                        key={file.path}
+                        file={file}
+                        destination={fileDestinations[file.path] || ''}
+                        state={fileState}
+                        onDestinationChange={(newDest) => handleIndividualDestinationChange(file.path, newDest)}
+                        onRemove={() => handleRemoveFile(file.path)}
+                        isUploading={isUploading}
+                        isEditing={editingDestinations[file.path] || false}
+                        onEditToggle={(editMode) => handleEditToggle(file.path, editMode)}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             )}
           </Form>
-          {(uploadState.error && !(uploadState.error instanceof DOMException && uploadState.error.name === 'AbortError')) && 
+          {(uploadState.error && !isAbortedError(uploadState.error, abortController)) && 
              <AlertError error={uploadState.error} onDismiss={() => setUploadState(prev => ({...prev, error: null}))}/>
           } 
         </Modal.Body>
@@ -683,16 +707,12 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             disabled={!canUpload} 
             onClick={upload} 
           >
-            {uploadState.inProgress ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Uploading {uploadingCount > 0 ? `${uploadingCount} / ${files.length}` : averageProgress + '%'}...
-              </>
-            ) : (
-              <>
-                <UploadIcon className="me-2" /> Upload {files.length || ''} File{files.length !== 1 ? 's' : ''}
-              </>
-            )}
+            <UploadButtonText 
+              inProgress={uploadState.inProgress}
+              uploadingCount={uploadingCount}
+              filesLength={files.length}
+              averageProgress={averageProgress}
+            />
           </Button>
         </Modal.Footer>
       </Modal>

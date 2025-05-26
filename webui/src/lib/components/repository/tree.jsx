@@ -37,6 +37,7 @@ import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
 import {CommitInfoCard} from "./commits";
 
+
 export const humanSize = (bytes) => {
   if (!bytes) return "0.0 B";
   const e = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -728,7 +729,7 @@ export const URINavigator = ({
   );
 };
 
-const GetStarted = ({ config, onUpload, onImport }) => {
+const GetStarted = ({ config, onUpload, onImport, readOnly = false }) => {
   const importDisabled = !config.config.import_support;
   
   return (
@@ -742,9 +743,9 @@ const GetStarted = ({ config, onUpload, onImport }) => {
       </div>
       
       <h2 className="mb-0">Your repository is ready!</h2>
-      <h6 className="lead mb-5">Let&apos;s add some data to get started</h6>
+      {!readOnly && <h6 className="lead mb-5">Let&apos;s add some data to get started</h6>}
       
-      <Row className="justify-content-center">
+      {!readOnly && <Row className="justify-content-center">
         <Col md={5} className="mb-4">
           <Card className="h-100 get-started-card">
             <Card.Body className="d-flex flex-column align-items-center p-4">
@@ -800,7 +801,7 @@ const GetStarted = ({ config, onUpload, onImport }) => {
             </Card.Footer>
           </Card>
         </Col>
-      </Row>
+      </Row>}
     </Container>
   );
 };
@@ -823,7 +824,7 @@ export const Tree = ({
   if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
     // empty state!
     body = (
-      <GetStarted config={config} onUpload={onUpload} onImport={onImport} />
+      <GetStarted config={config} onUpload={onUpload} onImport={onImport} readOnly={repo.readOnly} />
     );
   } else {
     body = (
