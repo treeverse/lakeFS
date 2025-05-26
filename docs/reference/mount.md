@@ -93,7 +93,7 @@ credentials:
       refresh_interval: 5m                # Optional, default: 5m
       token_request_headers:              # Optional, if omitted then will set x-lakefs-server-id: <lakeFS host> by default, to override default set to '{}'
       # x-lakefs-server-id: <lakeFS host>     Added by default if token_request_headers is not set	
-	  custome-key:  custome-val
+      custome-key:  custome-val
 server:
   endpoint_url: <lakeFS endpoint url>
 ```
