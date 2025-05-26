@@ -52,40 +52,39 @@ Searching for lakeFS credentials and server endpoint in the following order:
 - `LAKECTL_*` Environment variables
 - `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
 
-## Authenticating with AWS IAM Role
+## Authenticating with lakeFS (using AWS IAM Role)
 
-Starting from **lakeFS ≥ v1.57.0** and **Everest ≥ v0.13.0**, authenticating with IAM roles is supported!
-
-### Overview
-
+Starting from **lakeFS ≥ v1.57.0** and **Everest ≥ v0.4.0**, authenticating with IAM roles is supported!  
 When IAM authentication is configured, Everest will use your machine's **default AWS profile credentials** to generate a **session token** used for authenticating against lakeFS.  
-This token is seamlessly refreshed as long as the AWS session remains valid.
+This token is seamlessly refreshed as long as the AWS session remains valid.  
+For more information regarding IAM authentication, please check [external principals aws](https://docs.lakefs.io/security/external-principals-aws.html).
 
 Because IAM roles are linked to users, lakeFS must map each role to a user.  
-To do this, make sure the IAM role is attached to a lakeFS. For example:
-
-```python
-configuration = lakefs_sdk.Configuration(host = "<lakeFS host>",username="<access key id>",password="<secret access key>")
-username = "developer1"
-api = lakefs_sdk.ApiClient(configuration)
-auth_api = lakefs_sdk.AuthApi(api)
-auth_api.create_user_external_principal(user_id=username, principal_id='<arn:aws:sts::563456737:assumed-role/Developer/<user@example.com>')
-```
+To do this, make sure the IAM role is attached to lakeFS. See [Administration of IAM Roles in lakeFS](https://docs.lakefs.io/security/external-principals-aws.html#administration-of-iam-roles-in-lakefs)
 
 ### Authentication Chain
 
 When running an Everest `mount` command, authentication occurs in the following order:
 
-1. **Session token** from the environment variable `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN`.  
+1. **Session token** from the environment variable `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN` or `LAKECTL_CREDENTIALS_SESSION_TOKEN`.  
    If the token is expired, authentication will fail.
-2. **lakectl authentication**, using env vars or fallback to `.lakectl.yaml` file.
+2. **lakeFS key pair**, using lakeFS access key ID and secret key. (picked up from lakectl if Everest not provided)
 3. **IAM authentication**, if configured.
 
 ### Configuration
 
 Since IAM authentication is used as a fallback method, `.lakectl.yaml` **must not contain static credentials**.
 
-IAM authentication configuration fields:
+To use IAM authentication, new configuration fields were introduced:
+
+- `CREDENTIALS.PROVIDER.TYPE = aws_iam`: The identity provider type. Must be equal to `aws_iam`.
+- `CREDENTIALS.PROVIDER.AWS_IAM.TOKEN_TTL_SECONDS`: Session token's validation duration.  
+- `CREDENTIALS.PROVIDER.AWS_IAM.URL_PRESIGN_TTL_SECONDS`: AWS STS's presigned URL validation duration.  
+- `CREDENTIALS.PROVIDER.AWS_IAM.REFRESH_INTERVAL`: The amount of time before token expiration that Everest will try to fetch a new session token instead of using the current one.  
+- `CREDENTIALS.PROVIDER.AWS_IAM.TOKEN_REQUEST_HEADERS`: Map of required `<header>:<value>` to be signed by the AWS STS request.  
+- `CREDENTIALS.PROVIDER.AWS_IAM.TOKEN_REQUEST_HEADERS: x-lakefs-server-id:<lakeFS host>`: Required header.
+
+These configuration fields can be set via `.lakectl.yaml`: 
 
 ```yaml
 credentials:
@@ -98,6 +97,12 @@ credentials:
       token_request_headers:              # Required
         x-lakefs-server-id: <lakeFS host>     # Replace with your actual lakeFS host
 ```
+
+Or by setting the corresponding environment variables. Those will start with the prefix `EVEREST_LAKEFS_*` or `LAKECTL_*`.
+For example, setting the provider type using env vars:
+`export EVEREST_LAKEFS_CREDENTIALS_PROVIDER_TYPE=aws_iam` or `LAKECTL_CREDENTIALS_PROVIDER_TYPE=aws_iam`.
+
+**Important:** Users who choose to configure IAM authentication using .lakectl.yaml must upgrade the lakectl CLI tool to a compatible version (≥ v1.57.0).
 
 ## Command Line Interface
 
