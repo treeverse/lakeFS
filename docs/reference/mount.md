@@ -55,12 +55,11 @@ Searching for lakeFS credentials and server endpoint in the following order:
 ## Authenticating with lakeFS (using AWS IAM Role)
 
 Starting from **lakeFS ≥ v1.57.0** and **Everest ≥ v0.4.0**, authenticating with IAM roles is supported!  
-When IAM authentication is configured, Everest will use your machine's **default AWS profile credentials** to generate a **session token** used for authenticating against lakeFS.  
-This token is seamlessly refreshed as long as the AWS session remains valid.  
-For more information regarding IAM authentication, please check [external principals aws](https://docs.lakefs.io/security/external-principals-aws.html).
+When IAM authentication is configured, Everest will use AWS SDK default behavior that will pick your **AWS environment** to generate a **session token** used for authenticating against lakeFS (i.e use `AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc). This token is seamlessly refreshed as long as the AWS session remains valid.  
 
-Because IAM roles are linked to users, lakeFS must map each role to a user.  
-To do this, make sure the IAM role is attached to lakeFS. See [Administration of IAM Roles in lakeFS](https://docs.lakefs.io/security/external-principals-aws.html#administration-of-iam-roles-in-lakefs)
+### Prerequisites
+1. Make sure your lakeFS server supports [AWS IAM Role Login](https://docs.lakefs.io/security/external-principals-aws.html).
+2. Make sure your IAM role is attached to lakeFS. See [Administration of IAM Roles in lakeFS](https://docs.lakefs.io/security/external-principals-aws.html#administration-of-iam-roles-in-lakefs)
 
 ### Authentication Chain
 
@@ -69,20 +68,17 @@ When running an Everest `mount` command, authentication occurs in the following 
 1. **Session token** from the environment variable `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN` or `LAKECTL_CREDENTIALS_SESSION_TOKEN`.  
    If the token is expired, authentication will fail.
 2. **lakeFS key pair**, using lakeFS access key ID and secret key. (picked up from lakectl if Everest not provided)
-3. **IAM authentication**, if configured.
+3. **IAM authentication**, if configured and **no static credentials are set**.
 
-### Configuration
-
-Since IAM authentication is used as a fallback method, `.lakectl.yaml` **must not contain static credentials**.
+### Configure everest to use IAM
 
 To use IAM authentication, new configuration fields were introduced:
 
-- `CREDENTIALS.PROVIDER.TYPE = aws_iam`: The identity provider type. Must be equal to `aws_iam`.
-- `CREDENTIALS.PROVIDER.AWS_IAM.TOKEN_TTL_SECONDS`: Session token's validation duration.  
-- `CREDENTIALS.PROVIDER.AWS_IAM.URL_PRESIGN_TTL_SECONDS`: AWS STS's presigned URL validation duration.  
-- `CREDENTIALS.PROVIDER.AWS_IAM.REFRESH_INTERVAL`: The amount of time before token expiration that Everest will try to fetch a new session token instead of using the current one.  
-- `CREDENTIALS.PROVIDER.AWS_IAM.TOKEN_REQUEST_HEADERS`: Map of required `<header>:<value>` to be signed by the AWS STS request.  
-- `CREDENTIALS.PROVIDER.AWS_IAM.TOKEN_REQUEST_HEADERS: x-lakefs-server-id:<lakeFS host>`: Required header.
+- `credentials.provider.type` `(string: '')` - Settings this `aws_iam` will expect `aws_iam` block and try to use IAM.
+- `credentials.provider.aws_iam.token_ttl_second` `(duration: 60m)` - Optional: lakeFS token duration.
+- `credentials.provider.aws_iam.url_presign_ttl_seconds` `(duration: 15m)` - Optional: AWS STS's presigned URL validation duration.  
+- `credentials.provider.aws_iam.refresh_interval` `(duration: 15m)` - Optional: Amount of time before token expiration that Everest will try to fetch a new session token instead of using the current one.  
+- `credentials.provider.aws_iam.token_request_headers`: Map of required headers and their values to be signed by the AWS STS request as configured in your lakeFS server. If nothing is set the **default** behavior is adding `x-lakefs-server-id:<lakeFS host>`. If your lakeFS server doesn't require any headers (less secure) you can set this empty by setting `{}` empty map in your config. 
 
 These configuration fields can be set via `.lakectl.yaml`: 
 
@@ -94,15 +90,21 @@ credentials:
       token_ttl_seconds: 60m              # Optional, default: 1h
       url_presign_ttl_seconds: 15m        # Optional, default: 15m
       refresh_interval: 5m                # Optional, default: 5m
-      token_request_headers:              # Required
-        x-lakefs-server-id: <lakeFS host>     # Replace with your actual lakeFS host
+      token_request_headers:              # Optional, if omitted then will set x-lakefs-server-id: <lakeFS host> by default, to override default set to '{}'
+      # x-lakefs-server-id: <lakeFS host>     Added by default if token_request_headers is not set	
+	  custome-key:  custome-val
 ```
 
-Or by setting the corresponding environment variables. Those will start with the prefix `EVEREST_LAKEFS_*` or `LAKECTL_*`.
+To set using environment variables - those will start with the prefix `EVEREST_LAKEFS_*` or `LAKECTL_*`.
 For example, setting the provider type using env vars:
 `export EVEREST_LAKEFS_CREDENTIALS_PROVIDER_TYPE=aws_iam` or `LAKECTL_CREDENTIALS_PROVIDER_TYPE=aws_iam`.
 
-**Important:** Users who choose to configure IAM authentication using .lakectl.yaml must upgrade the lakectl CLI tool to a compatible version (≥ v1.57.0).
+Tip: To troubleshoot presign request issues, you can enable debug logging for presign requests using the environment variable:
+`EVEREST_LAKEFS_CREDENTIALS_PROVIDER_AWS_IAM_CLIENT_LOG_PRE_SIGNING_REQUEST=true`
+
+**Note**
+⚠️ If you choose to configure IAM provider using the same lakectl file (i.e `lakectl.yaml`) that you use for the **lakectl cli**, you must upgrade lakectl to version (`≥ v1.57.0`) otherwise lakectl will raise errors when using it.
+{: .note }
 
 ## Command Line Interface
 
