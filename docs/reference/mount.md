@@ -44,13 +44,70 @@ Everest mount supports writing to the file system for both NFS and FUSE protocol
 Currently, the implemented protocols are `nfs` and `fuse`.
 - NFS V3 (Network File System) is supported on macOS.
 
-## Authentication with lakeFS
+## Authentication Chain for lakeFS
+
+When running an Everest `mount` command, authentication occurs in the following order:
+
+1. **Session token** from the environment variable `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN` or `LAKECTL_CREDENTIALS_SESSION_TOKEN`.  
+   If the token is expired, authentication will fail.
+2. **lakeFS key pair**, using lakeFS access key ID and secret key. (picked up from lakectl if Everest not provided)
+3. **IAM authentication**, if configured and **no static credentials are set**.
+
+## Authenticate with lakeFS Credentials
 
 The authentication with the target lakeFS server is equal to [lakectl CLI][lakectl].
 Searching for lakeFS credentials and server endpoint in the following order:
 - Command line flags `--lakectl-access-key-id`, `--lakectl-secret-access-key` and `--lakectl-server-url`
 - `LAKECTL_*` Environment variables
 - `~/.lakectl.yaml` Configuration file or via `--lakectl-config` flag
+
+## Authenticating with AWS IAM Role
+
+Starting from **lakeFS ≥ v1.57.0** and **Everest ≥ v0.4.0**, authenticating with IAM roles is supported!  
+When IAM authentication is configured, Everest will use AWS SDK default behavior that will pick your **AWS environment** to generate a **session token** used for authenticating against lakeFS (i.e use `AWS_PROFILE`, `AWS_ACCESS_KEY_ID`, etc). This token is seamlessly refreshed as long as the AWS session remains valid.  
+
+### Prerequisites
+1. Make sure your lakeFS server supports [AWS IAM Role Login](https://docs.lakefs.io/security/external-principals-aws.html).
+2. Make sure your IAM role is attached to lakeFS. See [Administration of IAM Roles in lakeFS](https://docs.lakefs.io/security/external-principals-aws.html#administration-of-iam-roles-in-lakefs)
+
+
+### Configure everest to use IAM
+
+To use IAM authentication, new configuration fields were introduced:
+
+- `credentials.provider.type` `(string: '')` - Settings this `aws_iam` will expect `aws_iam` block and try to use IAM.
+- `credentials.provider.aws_iam.token_ttl_second` `(duration: 60m)` - Optional: lakeFS token duration.
+- `credentials.provider.aws_iam.url_presign_ttl_seconds` `(duration: 15m)` - Optional: AWS STS's presigned URL validation duration.  
+- `credentials.provider.aws_iam.refresh_interval` `(duration: 15m)` - Optional: Amount of time before token expiration that Everest will try to fetch a new session token instead of using the current one.  
+- `credentials.provider.aws_iam.token_request_headers`: Map of required headers and their values to be signed by the AWS STS request as configured in your lakeFS server. If nothing is set the **default** behavior is adding `x-lakefs-server-id:<lakeFS host>`. If your lakeFS server doesn't require any headers (less secure) you can set this empty by setting `{}` empty map in your config. 
+
+These configuration fields can be set via `.lakectl.yaml`: 
+
+```yaml
+credentials:
+  provider:
+    type: aws_iam          # Required
+    aws_iam:
+      token_ttl_seconds: 60m              # Optional, default: 1h
+      url_presign_ttl_seconds: 15m        # Optional, default: 15m
+      refresh_interval: 5m                # Optional, default: 5m
+      token_request_headers:              # Optional, if omitted then will set x-lakefs-server-id: <lakeFS host> by default, to override default set to '{}'
+      # x-lakefs-server-id: <lakeFS host>     Added by default if token_request_headers is not set	
+	  custome-key:  custome-val
+server:
+  endpoint_url: <lakeFS endpoint url>
+```
+
+To set using environment variables - those will start with the prefix `EVEREST_LAKEFS_*` or `LAKECTL_*`.
+For example, setting the provider type using env vars:
+`export EVEREST_LAKEFS_CREDENTIALS_PROVIDER_TYPE=aws_iam` or `LAKECTL_CREDENTIALS_PROVIDER_TYPE=aws_iam`.
+
+Tip: To troubleshoot presign request issues, you can enable debug logging for presign requests using the environment variable:
+`EVEREST_LAKEFS_CREDENTIALS_PROVIDER_AWS_IAM_CLIENT_LOG_PRE_SIGNING_REQUEST=true`
+
+**Note**
+⚠️ If you choose to configure IAM provider using the same lakectl file (i.e `lakectl.yaml`) that you use for the **lakectl cli**, you must upgrade lakectl to version (`≥ v1.57.0`) otherwise lakectl will raise errors when using it.
+{: .note }
 
 ## Command Line Interface
 
