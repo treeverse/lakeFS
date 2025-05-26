@@ -167,13 +167,10 @@ There are two ways in which external principals can be used to authenticate to l
     ```
    To use the client, merely import and initialize it:
    ```python
-   from lakefs.client import Client
-   my_client = Client()
-   
-   # list repositories
-   repos = lakefs.repositories(client=my_client)
-   for r in repos:
-        print(r)
+   import lakefs
+
+   for branch in lakefs.repository("example-repo").branches():
+    print(branch)
    ```
    {: .warning }
    > Please note, using the IAM provider configurations will not work with the lakectl command line tool, and will stop you from running it.
