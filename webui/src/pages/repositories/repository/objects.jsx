@@ -883,7 +883,7 @@ const NoGCRulesWarning = ({ repoId }) => {
 
 const ObjectsBrowser = ({ config }) => {
   const router = useRouter();
-  const { path, after, importDialog } = router.query;
+  const { path, after, importDialog, upload } = router.query;
   const [searchParams, setSearchParams] = useSearchParams();
   const { repo, reference, loading, error } = useRefs();
   const [showUpload, setShowUpload] = useState(false);
@@ -903,6 +903,14 @@ const ObjectsBrowser = ({ config }) => {
       setSearchParams(searchParams);
     }
   }, [router.route, importDialog, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (upload) {
+      setShowUpload(true);
+      searchParams.delete("upload");
+      setSearchParams(searchParams);
+    }
+  }, [router.route, upload, searchParams, setSearchParams]);
 
   if (loading) return <Loading />;
   if (error) return <RepoError error={error} />;

@@ -186,7 +186,6 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
                     <Col className={"mb-3 mt-1"}>
                         <Card className="h-100 repository-card">
                             <Card.Body className="d-flex flex-column p-3">
-                                {/* Repository Header with Icon, Name, Badge and Creation Date */}
                                 <div className="d-flex justify-content-between align-items-start">
                                     <div className="d-flex flex-column">
                                         <h5 className="repository-title mb-0">
@@ -213,7 +212,6 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
                                     </div>
                                 </div>
                                 
-                                {/* Repository Details in Horizontal Layout */}
                                 <div className="repository-details-compact mt-2">
                                     <div className="detail-row">
                                         <div className="detail-item-compact">

@@ -45,7 +45,7 @@ export const EmptyChangesState = ({ repo, reference }) => {
                         href={{
                             pathname: "/repositories/:repoId/objects",
                             params: { repoId: repo.id },
-                            query: { ref: reference.id }
+                            query: { ref: reference.id, upload: true }
                         }}
                         className="btn btn-primary"
                     >
