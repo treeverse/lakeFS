@@ -125,7 +125,7 @@ class ClientConfig(Configuration):
     def _load_from_config_file(self):
         """Load configuration from .lakectl.yaml file if it exists"""
         try:
-            with (open(_LAKECTL_YAML_PATH, encoding="utf-8") as fd):
+            with open(_LAKECTL_YAML_PATH, encoding="utf-8") as fd:
                 config_data = yaml.load(fd, Loader=yaml.Loader)
                 if "server" in config_data:
                     self.server = ClientConfig.Server(**config_data["server"])
