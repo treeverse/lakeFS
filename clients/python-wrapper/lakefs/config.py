@@ -125,12 +125,13 @@ class ClientConfig(Configuration):
     def _load_from_config_file(self):
         """Load configuration from .lakectl.yaml file if it exists"""
         try:
-            with open(_LAKECTL_YAML_PATH, encoding="utf-8") as fd:
+            with (open(_LAKECTL_YAML_PATH, encoding="utf-8") as fd):
                 config_data = yaml.load(fd, Loader=yaml.Loader)
                 if "server" in config_data:
                     self.server = ClientConfig.Server(**config_data["server"])
                 if "credentials" in config_data:
-                    if "access_key_id" in config_data["credentials"] and "secret_access_key" in config_data["credentials"]:
+                    if ("access_key_id" in config_data["credentials"]
+                        and "secret_access_key" in config_data["credentials"]):
                         self.credentials = ClientConfig.Credentials(**config_data["credentials"])
                         self.username = self.credentials.access_key_id
                         self.password = self.credentials.secret_access_key
