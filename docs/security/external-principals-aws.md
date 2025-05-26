@@ -128,11 +128,7 @@ The login to lakeFS is done by calling the [login API][login-api] with the `GetC
 Currently, the login operation is supported out of the box in:
 - [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark]
 - [python](#login-with-python)
-<<<<<<< HEAD
 - [Everest mount](https://docs.lakefs.io/reference/mount.html#authenticating-with-aws-iam-role)
-=======
-- [Everest mount](https://docs.lakefs.io/reference/mount.html#authentication-with-lakefs)
->>>>>>> master
 
 For other use cases authenticate to lakeFS via login endpoint, this will require building the request input.
 
