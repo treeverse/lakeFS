@@ -5691,6 +5691,8 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 
+	c.LogAction(ctx, "merge_pull_request", r, repository, "", "")
+
 	if pr.Status != graveler.PullRequestStatus_OPEN {
 		c.Logger.WithError(err).WithField("pr_status", pr.Status.String()).Error("pull request is not open")
 		writeError(w, r, http.StatusBadRequest, "bad pull request status")
