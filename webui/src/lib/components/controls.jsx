@@ -63,14 +63,21 @@ export const DebouncedFormControl = React.forwardRef((props, ref) => {
 });
 DebouncedFormControl.displayName = "DebouncedFormControl";
 
+
+export const Spinner = () => {
+    return (
+        <div className="loading-spinner mb-3">
+            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+                <span className="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    );
+};
+
 export const Loading = ({message = "Loading..."}) => {
     return (
         <div className="loading-container d-flex flex-column align-items-center justify-content-center py-5">
-            <div className="loading-spinner mb-3">
-                <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
-                    <span className="visually-hidden">Loading...</span>
-                </div>
-            </div>
+            <Spinner />
             <div className="loading-text text-center text-muted">
                 {message}
             </div>
@@ -93,34 +100,21 @@ export const AlertError = ({error, onDismiss = null, className = null}) => {
 
     const alertClassName = `${className} text-wrap text-break shadow-sm`.trim();
 
-    if (onDismiss !== null) {
-        return (
-            <Alert 
-                className={alertClassName} 
-                variant="danger" 
-                dismissible 
-                onClose={onDismiss}
-            >
-                <div className="d-flex align-items-center">
-                    <div className="me-3">
-                        <AlertFillIcon size={24} />
-                    </div>
-                    <div>{content}</div>
-                </div>
-            </Alert>
-        );
-    }
-    
     return (
-        <Alert className={alertClassName} variant="danger">
-            <div className="d-flex align-items-center">
+        <Alert 
+            className={alertClassName} 
+            variant="danger" 
+            dismissible={onDismiss !== null}
+            onClose={onDismiss}
+        >
+            <div className="alert-error-body">
                 <div className="me-3">
                     <AlertFillIcon size={24} />
                 </div>
                 <div>{content}</div>
             </div>
         </Alert>
-    );
+    );    
 };
 
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {

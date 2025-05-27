@@ -44,6 +44,16 @@
   border-color: var(--danger-light);
 }
 
+.alert-error-body {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.alert-error-body > div:first-child {
+  margin-right: 1rem;
+}
+
 /* Dark mode alert fixes */
 [data-bs-theme="dark"] .alert-info {
   background-color: #1e3a8a;

@@ -196,56 +196,58 @@ export const ChangesTreeContainer = ({results, delimiter, uriNavigator,
     if (results.length === 0) {
         if (emptyStateComponent) {
             return emptyStateComponent;
-        } else {
-            return <div className="tree-container">
+        } 
+        return (
+            <div className="tree-container">
                 <Alert variant="info">{noChangesText}</Alert>
             </div>
-        }
-    } else {
-        return <div className="tree-container">
+        );
+    } 
+    return (
+        <div className="tree-container">
             {changesTreeMessage && <div>{changesTreeMessage}</div>}
-                    <Card>
-                        <Card.Header className="d-flex justify-content-between align-items-center">
-                            {(delimiter !== "") && uriNavigator}
-                            <div className="d-flex gap-2">
-                                <TooltipButton tooltip="Expand All" size="sm" variant="outline-secondary" onClick={expandAll}>
-                                    <FileDirectoryFillIcon className="me-1" />
-                                    <FoldDownIcon />
-                                </TooltipButton>
-                                <TooltipButton tooltip="Collapse All" size="sm" variant="outline-secondary" onClick={collapseAll}>
-                                    <FileDirectoryFillIcon className="me-1" />
-                                    <FoldUpIcon />
-                                </TooltipButton>
-                            </div>
-                        </Card.Header>
+            <Card>
+                <Card.Header className="d-flex justify-content-between align-items-center">
+                    {(delimiter !== "") && uriNavigator}
+                    <div className="d-flex gap-2">
+                        <TooltipButton tooltip="Expand All" size="sm" variant="outline-secondary" onClick={expandAll}>
+                            <FileDirectoryFillIcon className="me-1" />
+                            <FoldDownIcon />
+                        </TooltipButton>
+                        <TooltipButton tooltip="Collapse All" size="sm" variant="outline-secondary" onClick={collapseAll}>
+                            <FileDirectoryFillIcon className="me-1" />
+                            <FoldUpIcon />
+                        </TooltipButton>
+                    </div>
+                </Card.Header>
 
-                        <Card.Body>
-                            <Table borderless size="sm">
-                                <tbody>
-                                {results.map(entry => {
-                                    return (
-                                        <TreeItemRow key={entry.path + "-item"} entry={entry} repo={repo}
-                                                     reference={reference}
-                                                     internalReferesh={internalRefresh} leftDiffRefID={leftDiffRefID}
-                                                     rightDiffRefID={rightDiffRefID} delimiter={delimiter}
-                                                     relativeTo={prefix}
-                                                     onNavigate={onNavigate}
-                                                     getMore={getMore}
-                                                     onRevert={onRevert}
-                                                     isAllExpanded={isAllExpanded}
-                                                     markDirAsManuallyToggled={markDirAsManuallyToggled}
-                                                     wasDirManuallyToggled={wasDirManuallyToggled}
-                                        />);
-                                })}
-                                {!!nextPage &&
-                                <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
-                                                    setAfterUpdated={setAfterUpdated}/>}
-                                </tbody>
-                            </Table>
-                        </Card.Body>
-                    </Card>
-            </div>
-    }
+                <Card.Body>
+                    <Table borderless size="sm">
+                        <tbody>
+                        {results.map(entry => {
+                            return (
+                                <TreeItemRow key={entry.path + "-item"} entry={entry} repo={repo}
+                                            reference={reference}
+                                            internalReferesh={internalRefresh} leftDiffRefID={leftDiffRefID}
+                                            rightDiffRefID={rightDiffRefID} delimiter={delimiter}
+                                            relativeTo={prefix}
+                                            onNavigate={onNavigate}
+                                            getMore={getMore}
+                                            onRevert={onRevert}
+                                            isAllExpanded={isAllExpanded}
+                                            markDirAsManuallyToggled={markDirAsManuallyToggled}
+                                            wasDirManuallyToggled={wasDirManuallyToggled}
+                                />);
+                        })}
+                        {!!nextPage &&
+                        <TreeEntryPaginator path={""} loading={loading} nextPage={nextPage}
+                                            setAfterUpdated={setAfterUpdated}/>}
+                        </tbody>
+                    </Table>
+                </Card.Body>
+            </Card>
+        </div>
+    );
 }
 
 export const defaultGetMoreChanges = (repo, leftRefId, rightRefId, delimiter) => (afterUpdated, path, useDelimiter= true, amount = -1) => {

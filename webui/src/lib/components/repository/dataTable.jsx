@@ -109,7 +109,9 @@ DataTable.propTypes = {
       Header: PropTypes.string.isRequired,
       accessor: PropTypes.string,
       Cell: PropTypes.func,
+      // className applies to the header cell (th element)
       className: PropTypes.string,
+      // cellClassName applies to all data cells (td elements) in this column
       cellClassName: PropTypes.string,
       description: PropTypes.string,
     })
