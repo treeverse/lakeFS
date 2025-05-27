@@ -128,6 +128,7 @@ components:
     User:
       type: object
       required:
+        - name
         - username
         - creation_date
         - encryptedPassword
@@ -166,8 +167,6 @@ components:
 
     UserCreation:
       type: object
-      required:
-        - username
       properties:
         username:
           type: string
@@ -405,7 +404,6 @@ paths:
         a function named listUsers.
       tags:
         - auth
-        - users
       operationId: listUsers
       summary: list users
       parameters:
@@ -452,7 +450,6 @@ paths:
         create the user. This endpoint should be implemented in a function named createUser.
       tags:
         - auth
-        - users
       operationId: createUser
       summary: create user
       requestBody:
@@ -495,7 +492,6 @@ paths:
         internally. This endpoint should be implemented in a function named getUser.
       tags:
         - auth
-        - users
       operationId: getUser
       summary: get user
       responses:
@@ -517,7 +513,6 @@ paths:
         be implemented in a function named deleteUser.
       tags:
         - auth
-        - users
       operationId: deleteUser
       summary: delete user
       responses:
@@ -541,7 +536,6 @@ paths:
       deprecated: true
       tags:
         - auth
-        - users
       operationId: updatePassword
       summary: update users password
       requestBody:
@@ -573,7 +567,6 @@ paths:
         should be implemented in a function named updateUserFriendlyName.
       tags:
         - auth
-        - users
       operationId: updateUserFriendlyName
       summary: update users friendly name
       requestBody:
@@ -606,7 +599,6 @@ paths:
         listGroups.
       tags:
         - auth
-        - groups
       operationId: listGroups
       summary: list groups
       parameters:
@@ -634,7 +626,6 @@ paths:
         createGroup.
       tags:
         - auth
-        - groups
       operationId: createGroup
       summary: create group
       requestBody:
@@ -672,7 +663,6 @@ paths:
         verify that the group was created. This endpoint should be implemented in a function named getGroup.
       tags:
         - auth
-        - groups
       operationId: getGroup
       summary: get group
       responses:
@@ -694,7 +684,6 @@ paths:
         implemented in a function named deleteGroup.
       tags:
         - auth
-        - groups
       operationId: deleteGroup
       summary: delete group
       responses:
@@ -719,7 +708,6 @@ paths:
 
       tags:
         - auth
-        - policies
       operationId: listPolicies
       summary: list policies
       parameters:
@@ -748,7 +736,6 @@ paths:
         implemented in a function named createPolicy.
       tags:
         - auth
-        - policies
       operationId: createPolicy
       summary: create policy
       requestBody:
@@ -787,7 +774,6 @@ paths:
         authentication server. This endpoint should be implemented in a function named getPolicy.
       tags:
         - auth
-        - policies
       operationId: getPolicy
       summary: get policy
       responses:
@@ -812,7 +798,6 @@ paths:
         named updatePolicy.
       tags:
         - auth
-        - policies
       operationId: updatePolicy
       summary: update policy
       requestBody:
@@ -841,7 +826,6 @@ paths:
         implemented in a function named deletePolicy.
       tags:
         - auth
-        - policies
       operationId: deletePolicy
       summary: delete policy
       responses:
@@ -871,7 +855,6 @@ paths:
         endpoint should be implemented in a function named listGroupMembers.
       tags:
         - auth
-        - groups
       operationId: listGroupMembers
       summary: list group members
       parameters:
@@ -908,7 +891,6 @@ paths:
         implemented in a function named addGroupMembership.
       tags:
         - auth
-        - groups
       operationId: addGroupMembership
       summary: add group membership
       responses:
@@ -927,7 +909,6 @@ paths:
         implemented in a function named deleteGroupMembership.
       tags:
         - auth
-        - groups
       operationId: deleteGroupMembership
       summary: delete group membership
       responses:
@@ -956,7 +937,6 @@ paths:
         listUserCredentials.
       tags:
         - auth
-        - credentials
       parameters:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
@@ -995,7 +975,6 @@ paths:
             type: string
       tags:
         - auth
-        - credentials
       operationId: createCredentials
       summary: create credentials
       responses:
@@ -1051,7 +1030,6 @@ paths:
         be implemented in a function named getCredentialsForUser.
       tags:
         - auth
-        - credentials
       operationId: getCredentialsForUser
       summary: get credentials for a user
       responses:
@@ -1082,7 +1060,6 @@ paths:
         the "required" label in this yaml. This endpoint should be implemented in a function named getCredentials.
       tags:
         - auth
-        - credentials
       operationId: getCredentials
       summary: get credentials
       responses:
@@ -1114,7 +1091,6 @@ paths:
         This endpoint should be implemented in a function named listUserGroups.
       tags:
         - auth
-        - users
       parameters:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
@@ -1155,7 +1131,6 @@ paths:
 
       tags:
         - auth
-        - users
       parameters:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
@@ -1201,7 +1176,6 @@ paths:
         attachPolicyToUser.
       tags:
         - auth
-        - users
       operationId: attachPolicyToUser
       summary: attach policy to user
       responses:
@@ -1219,7 +1193,6 @@ paths:
         detachPolicyFromUser.
       tags:
         - auth
-        - users
       operationId: detachPolicyFromUser
       summary: detach policy from user
       responses:
@@ -1288,7 +1261,6 @@ paths:
         attachPolicyToGroup.
       tags:
         - auth
-        - groups
       operationId: attachPolicyToGroup
       summary: attach policy to group
       responses:
@@ -1306,7 +1278,6 @@ paths:
         returned if the detachment is successful. This endpoint should be implemented in a function named detachPolicyFromGroup.
       tags:
         - auth
-        - groups
       operationId: detachPolicyFromGroup
       summary: detach policy from group
       responses:
