@@ -721,41 +721,10 @@ When deploying an ACL server for the first time, it is essential to establish a 
 
 **Define Standard Groups**
 
-Decide on a set of base groups that represent the typical roles in your system. Common examples include:
+**Define Standard Groups**
+Establish a set of base groups that represent the typical roles in your system, such as Admins (full privileges), Writers (read/write access), and Readers (read-only access). Each group should be mapped to a specific policy that defines the permissions for its members.
 
-- **Admins**: Users with full administrative privileges.
-- **Supers**: Users with elevated privileges, but not full admin rights.
-- **Writers**: Users who can read and modify data.
-- **Readers**: Users who can only view data.
-
-During the initial setup, each standard group must be mapped to a policy that clearly specifies what permissions its members have. Below is a detailed explanation of how to specify each policy, how each group maps to a policy, and what each policy should contain.
-
-The <https://docs.lakefs.io/security/rbac.html#actions-and-permissions> list the actions and permissions that lakeFS uses.
-
-#### Example Policy Structure
-
-For each group, the policy should be a clear, structured document (often in JSON or YAML) that lists:
-
-- **Allowed Actions:** The specific operations (e.g., read, write, delete, manage) the group can perform.
-- **Resources:** The resources (e.g., repositories, files, settings) those actions apply to.
-
-**Example Policy:**
-
-```json
-{
-  "Version": "2022-07-01",
-  "Statement": [
-    {
-      "Effect": "allow",
-      "Action": [
-        "fs:*"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
+You can reference the [lakeFS contrib ACL implementation](https://github.com/treeverse/lakeFS/blob/master/contrib/auth/acl/setup.go) to see practical examples of how standard groups are defined and structured, along with their associated permission policies.
 #### lakeFS Configuration
 
 Update your lakeFS configuration file (`config.yaml`) to include:
