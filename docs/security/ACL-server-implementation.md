@@ -23,7 +23,7 @@ Contents:
 
 Access Control List (ACL) in lakeFS manages permissions by associating a set of permissions directly with a specific object or a group of objects. In the context of the lakeFS authorization API, ACLs are represented within policies. These policies can then be attached to users or groups to grant them the specified permissions.
 
-## Setting Up the ACL Server
+## Implementation and Setup
 
 Follow these steps to implement an ACL server compatible with lakeFS.
 
@@ -176,7 +176,7 @@ Implement the following endpoints under the `users` tag in the
             $ref: "#/components/schemas/User"
       ```
 
-  - **Output Schema (`User` - relevant fields for ACL):**
+  - **Output Schema (`User`):**
 
       ```yaml
       type: object
@@ -203,7 +203,7 @@ Implement the following endpoints under the `users` tag in the
   - **Input:** Request body containing `UserCreation` object (`username`, optional `email`, `friendlyName`, `source`, `external_id`, `invite`).
   - **Output:** A `User` object representing the created user.
   - **Implementation Notes:** The `username` must be unique. The `external_id` and `encryptedPassword` fields in the input and output are not used internally by lakeFS in the ACL implementation. If `invite` is true, an invitation email should be sent (if supported by the implementation).
-  - **Input Schema (`UserCreation` - relevant fields for ACL):**
+  - **Input Schema (`UserCreation`):**
 
       ```yaml
       type: object
@@ -225,7 +225,7 @@ Implement the following endpoints under the `users` tag in the
           description: A boolean that determines whether an invitation email should be sent.
       ```
 
-  - **Output Schema (`User` - relevant fields for ACL):**
+  - **Output Schema (`User`):**
 
       ```yaml
       type: object
@@ -252,7 +252,7 @@ Implement the following endpoints under the `users` tag in the
   - **Input:** `userId` (path parameter).
   - **Output:** A `User` object representing the user.
   - **Implementation Notes:** Ensure the user exists. The `external_id` and `encryptedPassword` fields in the `User` object are not used internally by lakeFS in the ACL implementation.
-  - **Output Schema (`User` - relevant fields for ACL):**
+  - **Output Schema (`User`):**
 
       ```yaml
       type: object
@@ -279,21 +279,6 @@ Implement the following endpoints under the `users` tag in the
   - **Input:** `userId` (path parameter).
   - **Output:** No output on success (HTTP 204).
   - **Implementation Notes:** Ensure the user exists. When a user is deleted, their associated credentials, group memberships, and policy attachments should also be removed.
-- `PUT /auth/users/{userId}/friendly_name`:
-  - **Description:** Updates the friendly_name field of a user.
-  - **Input:** `userId` (path parameter), request body containing `friendly_name`.
-  - **Output:** No output on success (HTTP 204).
-  - **Implementation Notes:** Ensure the user exists.
-  - **Input Schema:**
-
-      ```yaml
-      type: object
-      required:
-        - friendly_name
-      properties:
-        friendly_name:
-          type: string
-      ```
 
 - `GET /auth/users/{userId}/groups`:
   - **Description:** Returns the list of groups that a specific user is associated with.
@@ -313,7 +298,7 @@ Implement the following endpoints under the `users` tag in the
             $ref: "#/components/schemas/Group"
       ```
 
-  - **Output Schema (`Group` - relevant fields for ACL):**
+  - **Output Schema (`Group`):**
 
       ```yaml
       type: object
@@ -336,7 +321,7 @@ Implement the following endpoints under the `users` tag in the
   - **Description:** Returns the list of policies associated with a specific user.
   - **Input:** `userId` (path parameter), pagination parameters (`prefix`, `after`, `amount`), optional query parameter `effective` (boolean).
   - **Output:** A `PolicyList` object containing a list of `Policy` objects and pagination information.
-  - **Implementation Notes:** If `effective` is true, return all distinct policies attached to the user directly or through their groups. If `effective` is false (default), return only policies directly attached to the user. The `acl` property in the `Policy` object is for internal use by lakeFS and is not needed for implementation.
+  - **Implementation Notes:** If `effective` is true, return all distinct policies attached to the user directly or through their groups. If `effective` is false (default), return only policies directly attached to the user.
   - **Output Schema (`PolicyList`):**
 
       ```yaml
@@ -350,7 +335,7 @@ Implement the following endpoints under the `users` tag in the
             $ref: "#/components/schemas/Policy"
       ```
 
-  - **Output Schema (`Policy` - relevant fields for ACL):**
+  - **Output Schema (`Policy`):**
 
       ```yaml
       type: object
@@ -372,6 +357,7 @@ Implement the following endpoints under the `users` tag in the
   - **Input:** `userId` (path parameter), `policyId` (path parameter).
   - **Output:** No output on success (HTTP 201).
   - **Implementation Notes:** Ensure the user and policy exist.
+
 - `DELETE /auth/users/{userId}/policies/{policyId}`:
   - **Description:** Detaches a policy from a specific user.
   - **Input:** `userId` (path parameter), `policyId` (path parameter).
@@ -402,7 +388,7 @@ Implement the following endpoints under the `groups` tag:
             $ref: "#/components/schemas/Group"
       ```
 
-  - **Output Schema (`Group` - relevant fields for ACL):**
+  - **Output Schema (`Group`):**
 
       ```yaml
       type: object
@@ -440,7 +426,7 @@ Implement the following endpoints under the `groups` tag:
           type: string
       ```
 
-  - **Output Schema (`Group` - relevant fields for ACL):**
+  - **Output Schema (`Group`):**
 
       ```yaml
       type: object
@@ -464,7 +450,7 @@ Implement the following endpoints under the `groups` tag:
   - **Input:** `groupId` (path parameter).
   - **Output:** A `Group` object representing the group.
   - **Implementation Notes:** Ensure the group exists.
-  - **Output Schema (`Group` - relevant fields for ACL):**
+  - **Output Schema (`Group`):**
 
       ```yaml
       type: object
@@ -488,6 +474,7 @@ Implement the following endpoints under the `groups` tag:
   - **Input:** `groupId` (path parameter).
   - **Output:** No output on success (HTTP 204).
   - **Implementation Notes:** Ensure the group exists. When a group is deleted, its associated user memberships and policy attachments should also be removed.
+
 - `GET /auth/groups/{groupId}/members`:
   - **Description:** Returns the list of users associated with a specific group.
   - **Input:** `groupId` (path parameter), pagination parameters (`prefix`, `after`, `amount`).
@@ -506,7 +493,7 @@ Implement the following endpoints under the `groups` tag:
             $ref: "#/components/schemas/User"
       ```
 
-  - **Output Schema (`User` - relevant fields for ACL):**
+  - **Output Schema (`User`):**
 
       ```yaml
       type: object
@@ -533,16 +520,18 @@ Implement the following endpoints under the `groups` tag:
   - **Input:** `groupId` (path parameter), `userId` (path parameter).
   - **Output:** No output on success (HTTP 201).
   - **Implementation Notes:** Ensure the group and user exist.
+
 - `DELETE /auth/groups/{groupId}/members/{userId}`:
   - **Description:** Removes a specific user from a specific group.
   - **Input:** `groupId` (path parameter), `userId` (path parameter).
   - **Output:** No output on success (HTTP 204).
   - **Implementation Notes:** Ensure the group and user membership exist.
+
 - `GET /auth/groups/{groupId}/policies`:
   - **Description:** Returns the list of policies attached to a specific group.
   - **Input:** `groupId` (path parameter), pagination parameters (`prefix`, `after`, `amount`).
   - **Output:** A `PolicyList` object containing a list of `Policy` objects and pagination information.
-  - **Implementation Notes:** The results must be sorted by the policy name. The `acl` property in the `Policy` object is for internal use by lakeFS and is not needed for implementation.
+  - **Implementation Notes:** The results must be sorted by the policy name.
   - **Output Schema (`PolicyList`):**
 
       ```yaml
@@ -556,7 +545,7 @@ Implement the following endpoints under the `groups` tag:
             $ref: "#/components/schemas/Policy"
       ```
 
-  - **Output Schema (`Policy` - relevant fields for ACL):**
+  - **Output Schema (`Policy`):**
 
       ```yaml
       type: object
@@ -578,6 +567,7 @@ Implement the following endpoints under the `groups` tag:
   - **Input:** `groupId` (path parameter), `policyId` (path parameter).
   - **Output:** No output on success (HTTP 201).
   - **Implementation Notes:** Ensure the group and policy exist.
+
 - `DELETE /auth/groups/{groupId}/policies/{policyId}`:
   - **Description:** Detaches a policy from a specific group.
   - **Input:** `groupId` (path parameter), `policyId` (path parameter).
@@ -594,7 +584,7 @@ Implement the following endpoints under the `policies` tag:
   - **Description:** Returns a list of policies.
   - **Input:** Pagination parameters (`prefix`, `after`, `amount`).
   - **Output:** A `PolicyList` object containing a list of `Policy` objects and pagination information.
-  - **Implementation Notes:** The results must be sorted by the policy name. The `acl` property in the `Policy` object is for internal use by lakeFS and is not needed for implementation.
+  - **Implementation Notes:** The results must be sorted by the policy name.
   - **Output Schema (`PolicyList`):**
 
       ```yaml
@@ -627,9 +617,9 @@ Implement the following endpoints under the `policies` tag:
 
 - `POST /auth/policies`:
   - **Description:** Creates a new policy.
-  - **Input:** Request body containing a `Policy` object (`name`, `statement`, optional `acl`).
+  - **Input:** Request body containing a `Policy` object (`name`, `statement` and `acl`).
   - **Output:** A `Policy` object representing the created policy.
-  - **Implementation Notes:** The `name` must be a unique, human-readable name for the policy. In the context of ACL, the `acl` property in the `Policy` object is used to define the permissions. The `statement` property is related to RBAC and is not used in the ACL implementation. This endpoint is called during setup to create default policies.
+  - **Implementation Notes:** The `name` must be a unique, human-readable name for the policy. The `acl` property in the `Policy` object is used to define the permissions. The `statement` property is not used in the ACL implementation. This endpoint is called during setup to create default policies.
   - **Input Schema (`Policy` - relevant fields for ACL):**
 
       ```yaml
@@ -643,7 +633,7 @@ Implement the following endpoints under the `policies` tag:
           description: Represents the access control list assigned to this policy.
       ```
 
-  - **Output Schema (`Policy` - relevant fields for ACL):**
+  - **Output Schema (`Policy`):**
 
       ```yaml
       type: object
@@ -664,8 +654,8 @@ Implement the following endpoints under the `policies` tag:
   - **Description:** Returns the details of a specific policy.
   - **Input:** `policyId` (path parameter).
   - **Output:** A `Policy` object representing the policy.
-  - **Implementation Notes:** Ensure the policy exists. The `acl` property in the `Policy` object is for internal use by lakeFS and is not needed for implementation. The `statement` property is related to RBAC and is not used in the ACL implementation.
-  - **Output Schema (`Policy` - relevant fields for ACL):**
+  - **Implementation Notes:** Ensure the policy exists. The `statement` property is not used in the ACL implementation.
+  - **Output Schema (`Policy`):**
 
       ```yaml
       type: object
@@ -686,8 +676,8 @@ Implement the following endpoints under the `policies` tag:
   - **Description:** Updates an existing policy.
   - **Input:** `policyId` (path parameter), request body containing the updated `Policy` object.
   - **Output:** A `Policy` object representing the updated policy.
-  - **Implementation Notes:** Ensure the policy exists and the provided `policyId` matches the `name` in the request body. In the context of ACL, only the `acl` property should be considered for updates. The `statement` property is related to RBAC and is not used in the ACL implementation.
-  - **Input Schema (`Policy` - relevant fields for ACL):**
+  - **Implementation Notes:** Ensure the policy exists and the provided `policyId` matches the `name` in the request body. The requestis to update the `acl` property. The `statement` property is not used in the ACL implementation.
+  - **Input Schema (`Policy`):**
 
       ```yaml
       type: object
@@ -700,7 +690,7 @@ Implement the following endpoints under the `policies` tag:
           description: Represents the access control list assigned to this policy.
       ```
 
-  - **Output Schema (`Policy` - relevant fields for ACL):**
+  - **Output Schema (`Policy`):**
 
       ```yaml
       type: object
@@ -723,7 +713,50 @@ Implement the following endpoints under the `policies` tag:
   - **Output:** No output on success (HTTP 204).
   - **Implementation Notes:** Ensure the policy exists. When a policy is deleted, its attachments to users and groups should also be removed.
 
-### 2. LakeFS Configuration
+### 2. Setup
+
+#### Key Steps in the Initial Setup
+
+When deploying an ACL server for the first time, it is essential to establish a set of standard user groups and assign each group a default set of permissions (policies). This process ensures that the system starts with a clear structure for access control, making it easy to manage users and their roles securely and consistently.
+
+**Define Standard Groups**
+
+Decide on a set of base groups that represent the typical roles in your system. Common examples include:
+
+- **Admins**: Users with full administrative privileges.
+- **Supers**: Users with elevated privileges, but not full admin rights.
+- **Writers**: Users who can read and modify data.
+- **Readers**: Users who can only view data.
+
+During the initial setup, each standard group must be mapped to a policy that clearly specifies what permissions its members have. Below is a detailed explanation of how to specify each policy, how each group maps to a policy, and what each policy should contain.
+
+The <https://docs.lakefs.io/security/rbac.html#actions-and-permissions> list the actions and permissions that lakeFS uses.
+
+#### Example Policy Structure
+
+For each group, the policy should be a clear, structured document (often in JSON or YAML) that lists:
+
+- **Allowed Actions:** The specific operations (e.g., read, write, delete, manage) the group can perform.
+- **Resources:** The resources (e.g., repositories, files, settings) those actions apply to.
+
+**Example Policy:**
+
+```json
+{
+  "Version": "2022-07-01",
+  "Statement": [
+    {
+      "Effect": "allow",
+      "Action": [
+        "fs:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+#### lakeFS Configuration
 
 Update your lakeFS configuration file (`config.yaml`) to include:
 
@@ -732,26 +765,12 @@ auth:
   encrypt:
     secret_key: "some_string"
   ui_config:
-    rbac: internal # Or 'external' if using an external ACL server
+    rbac: "simplified"
   api:
     endpoint: {ENDPOINT_TO_YOUR_ACL_SERVER} # e.g., http://localhost:9006/api/v1
-    token:
+    token: {ACL_SERVER_TOKEN} # Used as authentication bearer calling the ACL server
 ```
 
 {: .note}
 > The `auth.api.token` parameter is optional. If unspecified, lakeFS uses the `auth.encrypt.secret_key` as
-> the token. If specified, provide a JWT token directly or via the environment variable `LAKEFS_AUTH_API_TOKEN`.
-
-### Setup Considerations
-
-When lakeFS starts for the first time, it initializes users, groups, and policies. Once initialized,
-the authorization method cannot change. If lakeFS starts without an ACL server and later tries connecting to one,
-it will fail to authenticate. You must re-initialize lakeFS from scratch to connect to a new ACL server.
-
-### 3. Running the Server
-
-1. Run your ACL server.
-2. Run lakeFS with the updated configuration file:
-
-```shell
-./lakefs -c {PATH_TO_YOUR_CONFIG_FILE} run
+> the secret to generate JWT. If specified, provide a JWT token or via the environment variable `LAKEFS_AUTH_API_TOKEN`.
