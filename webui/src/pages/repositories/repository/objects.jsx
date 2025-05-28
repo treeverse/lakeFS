@@ -48,7 +48,7 @@ const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
 
 const isAbortedError = (error, controller) => {
-  return (error instanceof DOMException && error.name === 'AbortError') || controller.signal.aborted;
+  return (error instanceof DOMException && error.name === 'AbortError') || controller?.signal?.aborted;
 };
 
 const ImportButton = ({ variant = "success", onClick, config }) => {
@@ -695,7 +695,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             )}
           </Form>
           {(uploadState.error && !isAbortedError(uploadState.error, abortController)) && 
-             <AlertError error={uploadState.error} onDismiss={() => setUploadState(prev => ({...prev, error: null}))}/>
+             <AlertError className="mt-3" error={uploadState.error} onDismiss={() => setUploadState(prev => ({...prev, error: null}))}/>
           } 
         </Modal.Body>
         <Modal.Footer>
