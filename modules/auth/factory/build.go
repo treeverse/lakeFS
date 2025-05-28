@@ -10,6 +10,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) auth.Service {
-	return authfactoryhelper.NewAuthService(ctx, cfg, logger, kvStore, metadataManager)
+func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) (auth.Service, error) {
+	return authfactoryhelper.NewAuthService(ctx, cfg, logger, kvStore, metadataManager), nil
 }
