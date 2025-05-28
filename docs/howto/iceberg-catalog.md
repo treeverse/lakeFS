@@ -231,18 +231,28 @@ The following features are *not yet supported*, and are planned for future relea
 1. **Table Maintenance**:
    - See next section for details.
 
-1. **Catalog Sync**:
+2. **Catalog Sync**:
    - Push/pull operations with other catalogs.
    - Integration with external REST catalogs.
 
-2. **Advanced Features**:
-   - Views API.
+3. **Advanced Features**:
+   - Views (all view operations are unsupported).
    - Transactional changes (`stage-create`).
+   - Multi-table transactions.
+   - Server-side query planning.
+   - Table renaming.
    - Updating table's location (using Commit).
+   - Table statistics (set-statistics and remove-statistics operations).
 
-3. **Advaced Merging**:
+4. **Advanced Merging**:
    - Merging tables with conflicting changes.
    - Specialized merge strategies for different table operations.
+
+5. **Table Registration**:
+   - Registering existing Iceberg tables from other catalogs.
+   - Importing tables from external sources.
+
+In addition, currently only Iceberg `v2` table format is supported.
 
 ### Table Maintenance
 
