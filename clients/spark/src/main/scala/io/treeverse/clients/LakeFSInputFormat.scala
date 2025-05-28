@@ -99,8 +99,6 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 
     val gravelerSplit = split.asInstanceOf[GravelerSplit]
 
-    logger.info(s"Processing file: ${gravelerSplit.path}")
-
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
     fs.copyToLocalFile(false, gravelerSplit.path, new Path(localFile.getAbsolutePath), true)
     // TODO(johnnyaug) should we cache this?
