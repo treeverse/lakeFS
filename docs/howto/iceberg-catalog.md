@@ -17,7 +17,7 @@ lakeFS Enterprise
 
 ## What is Iceberg Catalog?
 
-lakeFS Iceberg Catalog enables you to use lakeFS as an Iceberg REST catalog, allowing Iceberg clients to interact with Iceberg tables through the standard Iceberg REST API protocol. This makes lakeFS a drop-in replacement for other Iceberg catalogs like AWS Glue, Nessie, or Hive Metastore.
+lakeFS Iceberg Catalog enables you to use lakeFS as an Apache Iceberg REST catalog, allowing Iceberg clients to manage Iceberg tables using REST API. This makes lakeFS a drop-in replacement for other Iceberg catalogs like AWS Glue, Nessie, or Hive Metastore.
 
 With Iceberg Catalog, you can:
 - Manage Iceberg tables with full version control capabilities.
