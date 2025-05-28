@@ -20,27 +20,26 @@ lakeFS Enterprise
 lakeFS Iceberg Catalog enables you to use lakeFS as an Iceberg REST catalog, allowing Iceberg clients to interact with Iceberg tables through the standard Iceberg REST API protocol. This makes lakeFS a drop-in replacement for other Iceberg catalogs like AWS Glue, Nessie, or Hive Metastore.
 
 With Iceberg Catalog, you can:
-- Manage Iceberg tables with full version control capabilities
-- Use standard Iceberg clients and tools without modification
-- Leverage lakeFS's branching and merging features for managing table's lifecycle 
-- Maintain data consistency across different environments
+- Manage Iceberg tables with full version control capabilities.
+- Use standard Iceberg clients and tools without modification.
+- Leverage lakeFS's branching and merging features for managing table's lifecycle.
+- Maintain data consistency across different environments.
 
 ## Use Cases
 
 1. **Version-Controlled Data Development**:
-   - Create feature branches for table schema changes
-   - Test table modifications in isolation
-   - Merge changes safely with conflict detection
-   - Maintain a clear audit trail of table changes
+   - Create feature branches for table schema changes.
+   - Test table modifications in isolation.
+   - Merge changes safely with conflict detection.
 
 2. **Multi-Environment Management**:
-   - Use branches to represent different environments (dev, staging, prod)
-   - Promote changes between environments through merges
-   - Maintain consistent table schemas across environments
+   - Use branches to represent different environments (dev, staging, prod).
+   - Promote changes between environments through merges.
+   - Maintain consistent table schemas across environments.
 
 3. **Collaborative Data Development**:
-   - Multiple teams can work on different table features simultaneously
-   - Maintain data quality through pre-merge validations
+   - Multiple teams can work on different table features simultaneously.
+   - Maintain data quality through pre-merge validations.
 
 ## Configuration
 
@@ -48,7 +47,7 @@ The Iceberg REST catalog API is exposed at `/catalog/iceberg/v1` in your lakeFS 
 
 To use it:
 
-1. Ensure you have a valid lakeFS Enterprise license.
+1. Enable the feature ([contact us](https://info.lakefs.io/thanks-iceberg-catalog) for details).
 2. Configure your Iceberg clients to use the lakeFS REST catalog endpoint.
 3. Use your lakeFS access key and secret for authentication.
 
@@ -84,10 +83,10 @@ from pyiceberg.catalog import load_catalog
 catalog = load_catalog(uri='http://lakefs.example.com/catalog/iceberg/v1')
 
 # List namespaces in a branch
-catalog.list_namespaces(('repo', 'main'))   # [('repo', 'main', 'inventory'), ...]
+catalog.list_namespaces(('repo', 'main'))
 
 # Query a table
-catalog.list_tables('repo.main.inventory')  # [('repo', 'main', 'inventory', 'books'), ....]
+catalog.list_tables('repo.main.inventory')
 table = catalog.load_table('repo.main.inventory.books')
 arrow_df = table.scan().to_arrow()
 ```
@@ -149,11 +148,11 @@ SELECT * FROM frosty.`repo_name.main.namespace`.table_name;
   </div>
 </div>
 
-## Working with Namespaces and Tables
+## Namespaces and Tables
 
 ### Namespace Operations
 
-The Iceberg Catalog fully supports Iceberg namespace operations:
+The Iceberg Catalog supports Iceberg namespace operations:
 
 - Create namespaces
 - List namespaces
@@ -164,9 +163,9 @@ The Iceberg Catalog fully supports Iceberg namespace operations:
 
 Namespaces in the Iceberg Catalog follow the pattern `"<repository>.<branch>.<namespace>(.<namespace>...)"` where:
 
-- `<repository>` must be a valid lakeFS repository name
-- `<branch>` must be a valid lakeFS branch name
-- `<namespace>` components can be nested using unit separator (e.g., `inventory.books`)
+- `<repository>` must be a valid lakeFS repository name.
+- `<branch>` must be a valid lakeFS branch name.
+- `<namespace>` components can be nested using unit separator (e.g., `inventory.books`).
 
 Examples:
 - `my-repo.main.inventory`
@@ -176,23 +175,29 @@ The repository and branch components must already exist in lakeFS before using t
 
 #### Namespace Restrictions
 
-- Repository and branch names must follow lakeFS naming conventions
-- Namespace components cannot contain special characters except dots (.) for nesting
-- The total namespace path length must be less than 255 characters
-- Namespaces are case-sensitive
-- Empty namespace components are not allowed
+- Repository and branch names must follow lakeFS naming conventions.
+- Namespace components cannot contain special characters except dots (.) for nesting.
+- The total namespace path length must be less than 255 characters.
+- Namespaces are case-sensitive.
+- Empty namespace components are not allowed.
 
 ### Table Operations
 
 The Iceberg Catalog supports all standard Iceberg table operations:
 
-- Create tables with schemas and partitioning
-- Update table schemas and partitioning
-- Commit changes to tables
-- Delete tables
-- List tables in namespaces
+- Create tables with schemas and partitioning.
+- Update table schemas and partitioning.
+- Commit changes to tables.
+- Delete tables.
+- List tables in namespaces.
 
 ### Version Control Features
+
+The Iceberg Catalog integrates with lakeFS's version control system, treating each table change as a commit. This provides a complete history of table modifications and enables branching and merging workflows.
+
+#### Catalog Changes as Commits
+
+Each modification to a table (schema changes, data updates, etc.) creates a new commit in lakeFS. Creating or deleting a namespace or a table results in a lakeFS commit on the relevant branch, as well as table data updates ("Iceberg table commit").
 
 #### Branching
 
@@ -218,22 +223,29 @@ branch.merge_into('main')
 main_table = catalog.load_table('repo.main.inventory.books')
 ```
 
+{: .note}
+Currently, lakeFS handles table changes as file operations during merges. This means that when merging branches with table changes, lakeFS treats the table metadata files as regular files. No special merge logic is applied to handle conflicting table changes, and if there are conflicting changes to the same table in different branches, the merge will fail with a conflict that needs to be resolved manually.
+
 ### Authentication
 
-To authenticate with the Iceberg catalog, you need to provide credentials in the format `access_key:secret_key`. These credentials can be passed directly in the catalog configuration or through environment variables.
+lakeFS provides an OAuth2 token endpoint at `/catalog/iceberg/v1/oauth/tokens` that clients need to configure. To authenticate, clients must provide their lakeFS access key and secret in the format `access_key:secret` as the credential.
+
+The authorization requirements are managed at the lakeFS level, meaning:
+- Users need appropriate lakeFS permissions to access repositories and branches.
+- Table operations require lakeFS permissions on the underlying objects.
+- The same lakeFS RBAC policies apply to Iceberg catalog operations.
 
 ## Limitations
 
 ### Current Limitations
 
-The following features are *not yet supported*, and are planned for future releases:
+The following features are *not yet supported or implemented* (and all these are candiadtes for future releases):
 
 1. **Table Maintenance**:
-   - See next section for details.
+   - See [Table Maintenance](#table-maintenance) section for details.
 
 2. **Catalog Sync**:
    - Push/pull operations with other catalogs.
-   - Integration with external REST catalogs.
 
 3. **Advanced Features**:
    - Views (all view operations are unsupported).
@@ -258,11 +270,12 @@ In addition, currently only Iceberg `v2` table format is supported.
 
 The following table maintenance operations are *not* supported in the current version:
 
-- [Compact data files](https://iceberg.apache.org/docs/1.5.1/maintenance/#compact-data-files)
-- [Rewrite manifests](https://iceberg.apache.org/docs/1.5.1/maintenance/#rewrite-manifests)
-- [Expire snapshots](https://iceberg.apache.org/docs/1.5.1/maintenance/#expire-snapshots)
-- [Remove old metadata files](https://iceberg.apache.org/docs/1.5.1/maintenance/#remove-old-metadata-files)
-- [Delete orphan files](https://iceberg.apache.org/docs/1.5.1/maintenance/#delete-orphan-files)
+- [Drop table with purge](https://iceberg.apache.org/docs/latest/spark-ddl/#drop-table-purge)
+- [Compact data files](https://iceberg.apache.org/docs/latest/maintenance/#compact-data-files)
+- [Rewrite manifests](https://iceberg.apache.org/docs/latest/maintenance/#rewrite-manifests)
+- [Expire snapshots](https://iceberg.apache.org/docs/latest/maintenance/#expire-snapshots)
+- [Remove old metadata files](https://iceberg.apache.org/docs/latest/maintenance/#remove-old-metadata-files)
+- [Delete orphan files](https://iceberg.apache.org/docs/latest/maintenance/#delete-orphan-files)
 
 {: .warning}
 > To prevent data loss, **clients should disable their own cleanup operations** by:
@@ -286,18 +299,14 @@ Other Iceberg-compatible clients should work but may require additional testing.
 
 The following frameworks were also compatible with S3 storage: `pyarrow`, `pandas`, `duckdb`, and `polars`.
 
-GCS
+#### GCS
 
 Using GCS is tested and fully supported using `pyiceberg` (and `pyarrow`, `pandas`, etc.).
 It might work with other clients as well, but this wasn't tested yet.
 
-S3
+#### Other Storages
 
-Currently not supported, will be in future releases.
-
-Local
-
-Local storage is currently no supported, but it will probably be in future releases.
+Using other storage backends, such as Azure or Locat storage is currently not supported, will be in future releases.
 
 ## Future Releases
 
