@@ -149,7 +149,38 @@ SELECT * FROM frosty.`repo_name.main.namespace`.table_name;
   </div>
 </div>
 
-## Working with Tables
+## Working with Namespaces and Tables
+
+### Namespace Operations
+
+The Iceberg Catalog fully supports Iceberg namespace operations:
+
+- Create namespaces
+- List namespaces
+- Drop namespaces
+- List tables within namespaces
+
+#### Namespace Usage
+
+Namespaces in the Iceberg Catalog follow the pattern `"<repository>.<branch>.<namespace>(.<namespace>...)"` where:
+
+- `<repository>` must be a valid lakeFS repository name
+- `<branch>` must be a valid lakeFS branch name
+- `<namespace>` components can be nested using unit separator (e.g., `inventory.books`)
+
+Examples:
+- `my-repo.main.inventory`
+- `my-repo.feature-branch.inventory.books`
+
+The repository and branch components must already exist in lakeFS before using them in the Iceberg catalog.
+
+#### Namespace Restrictions
+
+- Repository and branch names must follow lakeFS naming conventions
+- Namespace components cannot contain special characters except dots (.) for nesting
+- The total namespace path length must be less than 255 characters
+- Namespaces are case-sensitive
+- Empty namespace components are not allowed
 
 ### Table Operations
 
@@ -205,7 +236,7 @@ To authenticate with the Iceberg catalog, you need to provide credentials in the
 3. **Advanced Features**:
    - Views API is not yet supported.
    - Transactional changes (`stage-create`) are not yet supported.
-   - 
+   - Updating table's location (using Commit) is not yet supported.
 
 ### Table Maintenance
 
@@ -257,16 +288,16 @@ Local storage is currently no supported, but it will probably be in future relea
 The following features are planned for future releases:
 
 1. **Catalog Sync**:
-   - Support for pushing/pulling tables to/from other catalogs
-   - Integration with AWS Glue and other Iceberg-compatible catalogs
+   - Support for pushing/pulling tables to/from other catalogs.
+   - Integration with AWS Glue and other Iceberg-compatible catalogs.
 
 2. **Table Import**:
-   - Support for importing existing Iceberg tables from other catalogs
-   - Bulk import capabilities for large-scale migrations
+   - Support for importing existing Iceberg tables from other catalogs.
+   - Bulk import capabilities for large-scale migrations.
 
 3. **Advanced Features**:
-   - Views API support
-   - Table transactions
+   - Views API support.
+   - Table transactions.
 
 ## Related Resources
 
