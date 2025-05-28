@@ -4,7 +4,7 @@ description: Use lakeFS as an Iceberg REST catalog to manage and version your Ic
 parent: How-To
 ---
 
-# Iceberg Catalog
+# Iceberg REST Catalog
 
 lakeFS Enterprise
 {: .label .label-purple }
@@ -43,7 +43,7 @@ With Iceberg Catalog, you can:
 
 ## Configuration
 
-The Iceberg REST catalog API is exposed at `/catalog/iceberg/v1` in your lakeFS server. 
+The Iceberg REST catalog API is exposed at `/iceberg/api` in your lakeFS server. 
 
 To use it:
 
@@ -57,9 +57,9 @@ To use it:
 props = {
     "uri": f'{lakefs_endpoint}/iceberg/api',
     "oauth2-server-uri": f'{lakefs_endpoint}/iceberg/api/v1/oauth/tokens',
-    "credential": credential, # format: "client_id:client_secret"
+    "credential": f'{lakefs_client_key}:{lakefs_client_secret}',
 }
-catalgo = RestCatalog(name="my-ctatalog", **props)
+catalog = RestCatalog(name="my-catalog", **props)
 ```
 
 
@@ -80,7 +80,7 @@ import lakefs
 from pyiceberg.catalog import load_catalog
 
 # Initialize the catalog
-catalog = load_catalog(uri='http://lakefs.example.com/catalog/iceberg/v1')
+catalog = load_catalog(uri='https://lakefs.example.com/iceberg/api')
 
 # List namespaces in a branch
 catalog.list_namespaces(('repo', 'main'))
