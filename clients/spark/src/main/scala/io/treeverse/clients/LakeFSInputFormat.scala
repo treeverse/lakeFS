@@ -99,16 +99,27 @@ class EntryRecordReader[Proto <: GeneratedMessage with scalapb.Message[Proto]](
 
     val gravelerSplit = split.asInstanceOf[GravelerSplit]
 
+    logger.info(s"Processing file: ${gravelerSplit.path}")
+
     val fs = gravelerSplit.path.getFileSystem(context.getConfiguration)
     fs.copyToLocalFile(false, gravelerSplit.path, new Path(localFile.getAbsolutePath), true)
     // TODO(johnnyaug) should we cache this?
     sstableReader = new SSTableReader(localFile.getAbsolutePath, companion, true)
     if (!gravelerSplit.isValidated) {
       // this file may not be a valid range file, validate it
-      val props = sstableReader.getProperties
-      logger.debug(s"Props: $props")
-      if (new String(props("type")) != "ranges" || props.contains("entity")) {
-        return
+      try {
+        val props = sstableReader.getProperties
+        logger.debug(s"Props: $props")
+        if (new String(props("type")) != "ranges" || props.contains("entity")) {
+          return
+        }
+      } catch {
+        case e: io.treeverse.jpebble.BadFileFormatException =>
+          logger.error(s"Failed to read sstable, bad file format: ${gravelerSplit.path}", e)
+          throw new io.treeverse.jpebble.BadFileFormatException(
+            s"Bad file format in ${gravelerSplit.path}: ${e.getMessage}",
+            e
+          )
       }
     }
     rangeID = gravelerSplit.rangeID
@@ -259,8 +270,8 @@ class LakeFSAllRangesInputFormat extends LakeFSBaseInputFormat {
     while (it.hasNext) {
       val file = it.next()
       breakable {
-        if (file.getPath.getName == DummyFileName) {
-          logger.debug(s"Skipping dummy file ${file.getPath}")
+        if (file.getPath.getName == DummyFileName || file.getPath.getName.endsWith(".json")) {
+          logger.debug(s"Skipping file ${file.getPath}")
           break
         }
         splits += new GravelerSplit(
