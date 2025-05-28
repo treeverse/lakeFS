@@ -226,17 +226,23 @@ To authenticate with the Iceberg catalog, you need to provide credentials in the
 
 ### Current Limitations
 
+The following features are *not yet supported*, and are planned for future releases:
+
 1. **Table Maintenance**:
    - See next section for details.
 
-2. **Catalog Sync**:
-   - Push/pull operations with other catalogs are not yet supported.
-   - Integration with external REST catalogs is planned for future releases.
+1. **Catalog Sync**:
+   - Push/pull operations with other catalogs.
+   - Integration with external REST catalogs.
 
-3. **Advanced Features**:
-   - Views API is not yet supported.
-   - Transactional changes (`stage-create`) are not yet supported.
-   - Updating table's location (using Commit) is not yet supported.
+2. **Advanced Features**:
+   - Views API.
+   - Transactional changes (`stage-create`).
+   - Updating table's location (using Commit).
+
+3. **Advaced Merging**:
+   - Merging tables with conflicting changes.
+   - Specialized merge strategies for different table operations.
 
 ### Table Maintenance
 
