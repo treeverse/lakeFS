@@ -1,25 +1,29 @@
 ---
-title: Iceberg Catalog
-description: Use lakeFS as an Iceberg REST catalog to manage and version your Iceberg tables
+title: lakeFS Tables
+description: Use lakeFS to manage Iceberg Tables using a builtin Iceberg REST Catalog
 parent: How-To
 ---
 
-# Iceberg REST Catalog
+# lakeFS Tables
 
 lakeFS Enterprise
 {: .label .label-purple }
 
 {: .note}
-> Iceberg Catalog is only available to licensed [lakeFS Enterprise]({% link enterprise/index.md %}) customers.
+> lakeFS Tables are currently in private preview for [lakeFS Enterprise]({% link enterprise/index.md %}) customers.
 > [Contact us](https://info.lakefs.io/thanks-iceberg-catalog) to get started!
 
 {% include toc.html %}
 
-## What is Iceberg Catalog?
+## What are lakeFS Tables?
 
-lakeFS Iceberg Catalog enables you to use lakeFS as an Apache Iceberg REST catalog, allowing Iceberg clients to manage Iceberg tables using REST API. This makes lakeFS a drop-in replacement for other Iceberg catalogs like AWS Glue, Nessie, or Hive Metastore.
+lakeFS Tables allow you to use lakeFS as a [spec-compliant](https://github.com/apache/iceberg/blob/main/open-api/rest-catalog-open-api.yaml) Apache [Iceberg REST catalog](https://www.tabular.io/apache-iceberg-cookbook/getting-started-catalog-background/), 
+allowing Iceberg clients to manage Iceberg tables using a standard REST API. 
 
-With Iceberg Catalog, you can:
+Using lakeFS Tables, you can use lakeFS a drop-in replacement for other Iceberg catalogs like AWS Glue, Nessie, or Hive Metastore.
+
+With lakeFS Tables, you can:
+
 - Manage Iceberg tables with full version control capabilities.
 - Use standard Iceberg clients and tools without modification.
 - Leverage lakeFS's branching and merging features for managing table's lifecycle.
@@ -28,18 +32,24 @@ With Iceberg Catalog, you can:
 ## Use Cases
 
 1. **Version-Controlled Data Development**:
-   - Create feature branches for table schema changes.
-   - Test table modifications in isolation.
-   - Merge changes safely with conflict detection.
+   - Create feature branches for table schema changes or data migrations
+   - Test modifications in isolation, across multiple tables
+   - Merge changes safely with conflict detection
 
 2. **Multi-Environment Management**:
-   - Use branches to represent different environments (dev, staging, prod).
-   - Promote changes between environments through merges.
-   - Maintain consistent table schemas across environments.
+   - Use branches to represent different environments (dev, staging, prod)
+   - Promote changes between environments through merges, with automated testing
+   - Maintain consistent table schemas across environments
 
 3. **Collaborative Data Development**:
-   - Multiple teams can work on different table features simultaneously.
-   - Maintain data quality through pre-merge validations.
+   - Multiple teams can work on different table features simultaneously
+   - Maintain data quality through pre-merge validations
+   - Collaborate using [pull requests](./pull-requests.html) on changes to data and schema
+
+4. **Manage and Govern Access to data**:
+   - Use the built i, detailed commit log capturing who, what and how data is changed
+   - Manage access using fine grained access control to users and groups using RBAC policies
+   - Rollback changes atomically and safely to reduce time-to-recover and increase system stability
 
 ## Configuration
 
@@ -51,15 +61,16 @@ To use it:
 2. Configure your Iceberg clients to use the lakeFS REST catalog endpoint.
 3. Use your lakeFS access key and secret for authentication.
 
-#### Catalog Initialization Example (using `pyiceberg`)
+#### Catalog Initialization Example (using [`pyiceberg`](https://py.iceberg.apache.org/))
 
-```
-props = {
-    "uri": f'{lakefs_endpoint}/iceberg/api',
-    "oauth2-server-uri": f'{lakefs_endpoint}/iceberg/api/v1/oauth/tokens',
-    "credential": f'{lakefs_client_key}:{lakefs_client_secret}',
-}
-catalog = RestCatalog(name="my-catalog", **props)
+```python
+from pyiceberg.catalog import load_catalog
+
+catalog = RestCatalog(**{
+   'uri': f'{lakefs_endpoint}/iceberg/api',
+   'oauth2-server-uri': f'{lakefs_endpoint}/iceberg/api/v1/oauth/tokens',
+   'credential': f'{lakefs_client_key}:{lakefs_client_secret}',
+})
 ```
 
 
@@ -80,7 +91,11 @@ import lakefs
 from pyiceberg.catalog import load_catalog
 
 # Initialize the catalog
-catalog = load_catalog(uri='https://lakefs.example.com/iceberg/api')
+catalog = RestCatalog(**{
+   'uri': 'https://lakefs.example.com/iceberg/api',
+   'oauth2-server-uri': 'https://lakefs.example.com/iceberg/api/iceberg/api/v1/oauth/tokens',
+   'credential': f'AKIAlakefs12345EXAMPLE:abc/lakefs/1234567bPxRfiCYEXAMPLEKEY',
+})
 
 # List namespaces in a branch
 catalog.list_namespaces(('repo', 'main'))
@@ -193,11 +208,13 @@ The Iceberg Catalog supports all standard Iceberg table operations:
 
 ### Version Control Features
 
-The Iceberg Catalog integrates with lakeFS's version control system, treating each table change as a commit. This provides a complete history of table modifications and enables branching and merging workflows.
+The Iceberg Catalog integrates with lakeFS's version control system, treating each table change as a commit. 
+This provides a complete history of table modifications and enables branching and merging workflows.
 
 #### Catalog Changes as Commits
 
-Each modification to a table (schema changes, data updates, etc.) creates a new commit in lakeFS. Creating or deleting a namespace or a table results in a lakeFS commit on the relevant branch, as well as table data updates ("Iceberg table commit").
+Each modification to a table (schema changes, data updates, etc.) creates a new commit in lakeFS. 
+Creating or deleting a namespace or a table results in a lakeFS commit on the relevant branch, as well as table data updates ("Iceberg table commit").
 
 #### Branching
 
@@ -224,47 +241,52 @@ main_table = catalog.load_table('repo.main.inventory.books')
 ```
 
 {: .note}
-Currently, lakeFS handles table changes as file operations during merges. This means that when merging branches with table changes, lakeFS treats the table metadata files as regular files. No special merge logic is applied to handle conflicting table changes, and if there are conflicting changes to the same table in different branches, the merge will fail with a conflict that needs to be resolved manually.
+Currently, lakeFS handles table changes as file operations during merges. 
+This means that when merging branches with table changes, lakeFS treats the table metadata files as regular files. 
+No special merge logic is applied to handle conflicting table changes, and if there are conflicting changes to the same table in different branches, 
+the merge will fail with a conflict that needs to be resolved manually.
 
 ### Authentication
 
-lakeFS provides an OAuth2 token endpoint at `/catalog/iceberg/v1/oauth/tokens` that clients need to configure. To authenticate, clients must provide their lakeFS access key and secret in the format `access_key:secret` as the credential.
+lakeFS provides an OAuth2 token endpoint at `/catalog/iceberg/v1/oauth/tokens` that clients need to configure. 
+To authenticate, clients must provide their lakeFS access key and secret in the format `access_key:secret` as the credential.
 
 The authorization requirements are managed at the lakeFS level, meaning:
-- Users need appropriate lakeFS permissions to access repositories and branches.
-- Table operations require lakeFS permissions on the underlying objects.
-- The same lakeFS RBAC policies apply to Iceberg catalog operations.
+
+- Users need appropriate lakeFS permissions to access repositories and branches
+- Table operations require lakeFS permissions on the underlying objects
+- The same lakeFS RBAC policies apply to Iceberg catalog operations
 
 ## Limitations
 
 ### Current Limitations
 
-The following features are *not yet supported or implemented* (and all these are candiadtes for future releases):
+The following features are *not yet supported or implemented*:
 
 1. **Table Maintenance**:
-   - See [Table Maintenance](#table-maintenance) section for details.
+   - See [Table Maintenance](#table-maintenance) section for details
 
 2. **Catalog Sync**:
-   - Push/pull operations with other catalogs.
+   - Push/pull operations with other catalogs
 
 3. **Advanced Features**:
-   - Views (all view operations are unsupported).
-   - Transactional changes (`stage-create`).
-   - Multi-table transactions.
-   - Server-side query planning.
-   - Table renaming.
-   - Updating table's location (using Commit).
-   - Table statistics (set-statistics and remove-statistics operations).
+   - Views (all view operations are unsupported)
+   - Transactional changes (`stage-create`)
+   - Multi-table transactions
+   - Server-side query planning
+   - Table renaming
+   - Updating table's location (using Commit)
+   - Table statistics (set-statistics and remove-statistics operations)
 
 4. **Advanced Merging**:
-   - Merging tables with conflicting changes.
-   - Specialized merge strategies for different table operations.
+   - Merging tables with conflicting changes
+   - Specialized merge strategies for different table operations
 
 5. **Table Registration**:
-   - Registering existing Iceberg tables from other catalogs.
-   - Importing tables from external sources.
+   - Registering existing Iceberg tables from other catalogs
+   - Importing tables from external sources
 
-In addition, currently only Iceberg `v2` table format is supported.
+In addition, currently only [Iceberg `v2` table format](https://iceberg.apache.org/spec) is supported.
 
 ### Table Maintenance
 
@@ -284,29 +306,10 @@ The following table maintenance operations are *not* supported in the current ve
 > - Disabling snapshot expiration.
 > - Setting a very high value for `min-snapshots-to-keep` parameter.
 
-### Client and Storage Compatibility
+#### Storage Compatibility
 
-#### S3
-
-The following clients have been tested and are fully supported for S3 storage:
-
-- `pyiceberg`
-- `Trino`
-- `Apache Spark`
-- `StarRocks`
-
-Other Iceberg-compatible clients should work but may require additional testing.
-
-The following frameworks were also compatible with S3 storage: `pyarrow`, `pandas`, `duckdb`, and `polars`.
-
-#### GCS
-
-Using GCS is tested and fully supported using `pyiceberg` (and `pyarrow`, `pandas`, etc.).
-It might work with other clients as well, but this wasn't tested yet.
-
-#### Other Storages
-
-Using other storage backends, such as Azure or Locat storage is currently not supported, will be in future releases.
+lakeFS Tables were tested to work with Amazon S3 and Google Cloud Storage.
+Other storage backends, such as Azure or Local storage are currently not supported, but will be in future releases.
 
 ## Future Releases
 
@@ -323,6 +326,8 @@ The following features are planned for future releases:
 3. **Advanced Features**:
    - Views API support.
    - Table transactions.
+
+4. **Azure Storage Support**
 
 ## Related Resources
 
