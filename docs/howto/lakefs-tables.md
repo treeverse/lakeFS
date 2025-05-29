@@ -47,7 +47,7 @@ With lakeFS Tables, you can:
    - Collaborate using [pull requests](./pull-requests.html) on changes to data and schema
 
 4. **Manage and Govern Access to data**:
-   - Use the built i, detailed commit log capturing who, what and how data is changed
+   - Use the detailed built-in commit log capturing who, what and how data is changed
    - Manage access using fine grained access control to users and groups using RBAC policies
    - Rollback changes atomically and safely to reduce time-to-recover and increase system stability
 
