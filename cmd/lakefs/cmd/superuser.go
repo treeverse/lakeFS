@@ -25,13 +25,13 @@ var superuserCmd = &cobra.Command{
 	Use:   "superuser",
 	Short: "Create additional user with admin credentials",
 	Long: `Create additional user with admin credentials.
-This command can be used to import an admin user when moving from lakeFS version 
+This command can be used to import an admin user when moving from lakeFS version
 with previously configured users to a lakeFS with basic auth version.
-To do that provide the user name as well as the access key ID to import. 
+To do that provide the user name as well as the access key ID to import.
 If the wrong user or credentials were chosen it is possible to delete the user and perform the action again.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := loadConfig()
+		cfg := LoadConfig()
 		authConfig := cfg.AuthConfig()
 		baseConfig := cfg.GetBaseConfig()
 		if authConfig.UIConfig.RBAC == config.AuthRBACExternal {
