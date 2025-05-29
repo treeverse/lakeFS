@@ -11,7 +11,7 @@ lakeFS Enterprise
 
 {: .note}
 > lakeFS Tables are currently in private preview for [lakeFS Enterprise]({% link enterprise/index.md %}) customers.
-> [Contact us](https://info.lakefs.io/thanks-iceberg-catalog) to get started!
+> [Contact us](https://lakefs.io/book-a-demo/) to get started!
 
 {% include toc.html %}
 
