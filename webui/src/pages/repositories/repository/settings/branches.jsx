@@ -14,7 +14,7 @@ const BranchProtectionRulesList = ({ rulesResponse, deleteButtonDisabled, onDele
     if (!rulesResponse) return null;
     
     return (
-        <div className={"row mt-3 ms-1 pr-5"}>
+        <div className="row mt-3 ms-1 pr-5">
             <ListGroup>
                 {rulesResponse['rules'].length > 0 ? rulesResponse['rules'].map((r) => {
                     return <ListGroup.Item key={r.pattern}>
@@ -56,12 +56,12 @@ const SettingsContainer = () => {
     if (actionError) return <AlertError error={actionError}/>;
     return (<>
         <div className="mt-3 mb-5">
-            <div className={"section-title"}>
-                <h4 className={"mb-0"}>
-                    <div className={"ms-1 me-1 pl-0 d-flex"}>
+            <div className="section-title">
+                <h4 className="mb-0">
+                    <div className="ms-1 me-1 pl-0 d-flex">
                         <div className="flex-grow-1">Branch protection rules</div>
-                        <RefreshButton className={"ms-1"} onClick={() => {setRefresh(!refresh)}}/>
-                        <Button className={"ms-2"} onClick={() => setShowCreateModal(true)}>Add</Button>
+                        <RefreshButton className="ms-1" onClick={() => {setRefresh(!refresh)}}/>
+                        <Button className="ms-2" onClick={() => setShowCreateModal(true)}>Add</Button>
                     </div>
                 </h4>
             </div>
@@ -71,7 +71,7 @@ const SettingsContainer = () => {
                 {/* eslint-disable-next-line react/jsx-no-target-blank */}
                 <a href="https://docs.lakefs.io/reference/protected_branches.html" target="_blank">Learn more.</a>
             </div>
-            <div className={"mt-3 ms-1 pr-5"}>
+            <div className="mt-3 ms-1 pr-5">
                 {loading || rulesLoading ? <Loading/> :
                     <BranchProtectionRulesList 
                         rulesResponse={rulesResponse}
@@ -114,7 +114,7 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID, currentRulesResponse}
             <Modal.Title>Create Branch Protection Rule</Modal.Title>
         </Modal.Header>
 
-        <Modal.Body className={"w-100"}>
+        <Modal.Body className="w-100">
             <Form onSubmit={(e) => {
                 e.preventDefault();
                 createRule(patternField.current.value);

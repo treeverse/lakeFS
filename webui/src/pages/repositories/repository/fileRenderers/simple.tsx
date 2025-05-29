@@ -88,7 +88,6 @@ export const TextRenderer: FC<RendererComponentWithText> = ({
 
   return (
     <SyntaxHighlighter
-      style={{}}
       language={language}
       showInlineLineNumbers={true}
       showLineNumbers={true}

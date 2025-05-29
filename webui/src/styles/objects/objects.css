@@ -18,6 +18,10 @@
   padding: 0;
 }
 
+.tree-container  table > tbody > tr > td {
+  padding-left: 30px;
+}
+
 .tree-entry-row,
 .change-entry-row {
   transition: background-color var(--transition-fast);

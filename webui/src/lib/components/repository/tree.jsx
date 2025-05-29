@@ -586,7 +586,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
   return (
     <>
       <tr className={rowClass}>
-        <td className="diff-indicator">{diffIndicator}</td>
+        {diffIndicator && <td className="diff-indicator">{diffIndicator}</td>}
         <td className="tree-path">
           {entry.path_type === "common_prefix" ? (
             <FileDirectoryIcon />
