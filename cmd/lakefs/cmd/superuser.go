@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
+	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
