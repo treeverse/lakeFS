@@ -1,0 +1,106 @@
+/* Diff Styling */
+.diff-changed td {
+  background-color: var(--color-bg-changed);
+}
+
+.diff-added td {
+  background-color: var(--color-bg-added);
+}
+
+.diff-removed td {
+  background-color: var(--color-bg-removed);
+}
+
+.diff-conflict td {
+  background-color: var(--color-bg-conflict);
+}
+
+/* Improve link contrast on colored backgrounds */
+.diff-changed a, .diff-changed .btn-link {
+  color: #000000;
+  font-weight: 600;
+}
+
+.diff-added a, .diff-added .btn-link {
+  color: #003300;
+  font-weight: 600;
+}
+
+.diff-removed a, .diff-removed .btn-link {
+  color: #330000;
+  font-weight: 600;
+}
+
+.diff-conflict a, .diff-conflict .btn-link {
+  color: #330033;
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"] tr.diff-changed > td,
+[data-bs-theme="dark"] tr.diff-changed > td a,
+[data-bs-theme="dark"] tr.diff-added > td,
+[data-bs-theme="dark"] tr.diff-added > td a,
+[data-bs-theme="dark"] tr.diff-removed > td,
+[data-bs-theme="dark"] tr.diff-removed > td a,
+[data-bs-theme="dark"] tr.diff-conflict > td,
+[data-bs-theme="dark"] tr.diff-conflict > td a {
+  color: var(--surface);
+}
+
+/* Ensure hover states maintain contrast */
+.diff-changed a:hover, .diff-changed .btn-link:hover {
+  color: #333333;
+}
+
+.diff-added a:hover, .diff-added .btn-link:hover {
+  color: #006600;
+}
+
+.diff-removed a:hover, .diff-removed .btn-link:hover {
+  color: #660000;
+}
+
+.diff-conflict a:hover, .diff-conflict .btn-link:hover {
+  color: #660066;
+}
+
+[data-bs-theme="dark"] .diff-changed a:hover, 
+[data-bs-theme="dark"] .diff-changed .btn-link:hover {
+  color: #dddddd;
+}
+
+[data-bs-theme="dark"] .diff-added a:hover, 
+[data-bs-theme="dark"] .diff-added .btn-link:hover {
+  color: #88ff88;
+}
+
+[data-bs-theme="dark"] .diff-removed a:hover, 
+[data-bs-theme="dark"] .diff-removed .btn-link:hover {
+  color: #ff8888;
+}
+
+[data-bs-theme="dark"] .diff-conflict a:hover, 
+[data-bs-theme="dark"] .diff-conflict .btn-link:hover {
+  color: #ff88ff;
+}
+
+/* Diff status color classes */
+.color-fg-added {
+  color: var(--color-fg-added);
+  font-weight: 600;
+}
+
+.color-fg-removed {
+  color: var(--color-fg-removed);
+  font-weight: 600;
+}
+
+.color-fg-changed {
+  color: var(--color-fg-changed);
+  font-weight: 600;
+}
+
+.color-fg-conflict {
+  color: var(--color-fg-conflict);
+  font-weight: 600;
+} 

@@ -16,6 +16,7 @@ import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
 import {PolicyEditor} from "../../../../lib/components/policy";
 import Alert from "react-bootstrap/Alert";
+import { LightBulbIcon } from "@primer/octicons-react";
 
 const exampleJson = (defaultBranch) => {
     return {
@@ -85,13 +86,10 @@ const GCPolicy = ({repo}) => {
             </>
     } else {
         content = <>
-            <Table borderless>
-                <tbody>
-                <tr key={'branch-default'}>
-                    <td><code>Default retention days: {policy.default_retention_days}</code></td>
-                </tr>
-                </tbody>
-            </Table>
+            <Alert variant="info" className="mt-3">
+                <LightBulbIcon size={16} className="me-2" />
+                Default retention days: {policy.default_retention_days}
+            </Alert>
             <Card className={"mb-3"}>
                 {policy.branches && <Table>
                     <thead>
@@ -138,11 +136,11 @@ const GCPolicy = ({repo}) => {
                 </div>
             </h4>
         </div>
-        <div>
+        <p className="mt-3">
             {/* eslint-disable-next-line react/jsx-no-target-blank */}
             This policy determines for how long objects are kept in the storage after they are deleted in lakeFS. <a
             href="https://docs.lakefs.io/howto/garbage-collection/" target="_blank">Learn more.</a>
-        </div>
+        </p>
         <div className={"mt-3"}>
             {content}
         </div>

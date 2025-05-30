@@ -29,18 +29,17 @@ test.describe("Upload File", () => {
 			await repositoryPage.uploadObject(filePath);
 			
 			// upload file, check path 
-			await expect(page.getByRole('complementary')).toContainText(`lakefs://${TEST_REPO_NAME}/${TEST_BRANCH}/${FILE_NAME}`);
-			await page.getByRole('button', { name: 'Upload', exact: true }).click();
-            await expect(page.getByRole('rowgroup')).toContainText(FILE_NAME);
+			await expect(page.getByText(FILE_NAME)).toBeVisible();
+			await page.getByRole('button', { name: 'Upload 1 File' }).click();
+            await expect(page.getByRole('cell', {name: FILE_NAME})).toBeVisible();
 
 			// upload again with prefix, check path
 			await repositoryPage.uploadObject(filePath);
-			await page.locator('#path').click();
-			await page.locator('#path').fill(PREFIX);
-			await expect(page.getByRole('complementary')).toContainText(`lakefs://${TEST_REPO_NAME}/${TEST_BRANCH}/${PREFIX}${FILE_NAME}`);
-			await page.getByRole('button', { name: 'Upload', exact: true }).click();
-			await page.getByRole('link', { name: PREFIX }).click();
- 			await expect(page.getByRole('row')).toContainText(FILE_NAME);
+			await page.getByRole('textbox', { name: 'Common Destination Directory' }).fill(PREFIX);
+			await expect(page.getByText(PREFIX+FILE_NAME)).toBeVisible();
+			await page.getByRole('button', { name: 'Upload 1 File' }).click();
+			await page.getByRole('cell', { name: PREFIX }).click();
+ 			await expect(page.getByRole('cell', { name: FILE_NAME })).toBeVisible();
 
 	});
 })

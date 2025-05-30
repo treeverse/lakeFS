@@ -37,7 +37,7 @@ test.describe("Quickstart", () => {
 
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.clickObject(PARQUET_OBJECT_NAME);
-        await expect(page.getByText("Loading...")).not.toBeVisible();
+        await expect(page.getByRole("button", { name: "Execute" })).toBeVisible();
 
         const objectViewerPage = new ObjectViewerPage(page);
         await objectViewerPage.enterQuery(SELECT_QUERY);
@@ -55,7 +55,7 @@ test.describe("Quickstart", () => {
 
         await repositoryPage.gotoObjectsTab();
         await repositoryPage.clickObject(PARQUET_OBJECT_NAME);
-        await expect(page.getByText("Loading...")).not.toBeVisible();
+        await expect(page.getByRole("button", { name: "Execute" })).toBeVisible();
 
         const objectViewerPage = new ObjectViewerPage(page);
         await objectViewerPage.enterQuery(CREATE_TABLE_QUERY);
@@ -96,7 +96,7 @@ test.describe("Quickstart", () => {
         await repositoriesPage.goto();
         await repositoriesPage.goToRepository(QUICKSTART_REPO_NAME);
         await repositoryPage.clickObject(PARQUET_OBJECT_NAME);
-        await expect(page.getByText("Loading...")).not.toBeVisible();
+        await expect(page.getByRole("button", { name: "Execute" })).toBeVisible();
         const objectViewerPage = new ObjectViewerPage(page);
         await objectViewerPage.enterQuery(SELECT_QUERY);
         await objectViewerPage.clickExecuteButton();

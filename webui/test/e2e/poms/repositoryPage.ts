@@ -44,27 +44,12 @@ export class RepositoryPage {
   // file manipulation operations
 
   async deleteFirstObjectInDirectory(dirName: string): Promise<void> {
-    await this.page.getByRole("link", {name: dirName}).click();
-
-    const getFirstObjectRow = (page: Page) => page
-        .locator("table.table")
-        .locator("tbody")
-        .locator("tr")
-        .first();
-
-    await getFirstObjectRow(this.page)
-        .locator("div.dropdown")
-        .hover();
-    await getFirstObjectRow(this.page)
-        .locator("div.dropdown")
-        .locator("button")
-        .click();
-    await this.page
-        .locator("div.dropdown")
-        .locator(".dropdown-item")
-        .last()
-        .click();
-    await this.page.getByRole("button", {name: "Yes"}).click();
+    await this.page.getByRole("link", { name: dirName }).click();
+    const firstRow = this.page.locator('table tbody tr').first();
+    await firstRow.hover();
+    await firstRow.locator('button').last().click();
+    await this.page.getByRole('button', { name: 'Delete' }).click();
+    await this.page.getByRole("button", { name: "Yes" }).click();
   }
 
   // uncommitted changes operations
@@ -132,9 +117,9 @@ export class RepositoryPage {
   }
 
   async uploadObject(filePath: string): Promise<void> {
-	await this.page.getByRole("button", { name: "Upload Object" }).click();
-	await this.page.getByText("Drag 'n' drop files or").click();
-	const fileInput = await this.page.locator('input[type="file"]');
-	await fileInput.setInputFiles(filePath);
+    await this.page.getByRole("button", { name: "Upload Object" }).click();
+    await this.page.getByText("Drag & drop files or folders here").click();
+    const fileInput = await this.page.locator('input[type="file"]');
+    await fileInput.setInputFiles(filePath);
   }
 }

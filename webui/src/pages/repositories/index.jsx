@@ -8,7 +8,6 @@ import InputGroup from "react-bootstrap/InputGroup";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Modal from "react-bootstrap/Modal";
 import Spinner from "react-bootstrap/Spinner";
-import Stack from "react-bootstrap/Stack";
 
 import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import dayjs from "dayjs";
@@ -35,15 +34,15 @@ const LOCAL_BLOCKSTORE_SAMPLE_REPO_DEFAULT_BRANCH = "main";
 
 const CreateRepositoryButton = ({variant = "success", enabled = false, onClick}) => {
     return (
-        <Button variant={variant} disabled={!enabled} onClick={onClick}>
-            <RepoIcon/> Create Repository
+        <Button variant={variant} disabled={!enabled} onClick={onClick} className="d-flex align-items-center">
+            <RepoIcon className="me-2"/> Create Repository
         </Button>
     );
 }
 
-const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = false, onClick, creatingRepo, style = {}}) => {
+const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = false, onClick, creatingRepo, className = ""}) => {
     return (
-        <Button className="create-sample-repo-button" style={style} variant={variant} disabled={!enabled || creatingRepo} onClick={onClick}>
+        <Button className={`create-sample-repo-button ${className}`} variant={variant} disabled={!enabled || creatingRepo} onClick={onClick}>
             { creatingRepo && <><Spinner as="span" role="status" aria-hidden="true" animation="border" size="sm" className="me-2"/><span className="visually-hidden">Loading...</span></> }
             {text}
         </Button>
@@ -57,6 +56,13 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
     const [formValid, setFormValid] = useState(false);
 
     const {response: storageConfigs, error: err, loading} = useAPI(() => config.getStorageConfigs());
+
+    const buttonContent = inProgress ? (
+        <>
+            <Spinner as="span" size="sm" animation="border" role="status" className="me-2" />
+            Creating...
+        </>
+    ) : 'Create Repository';
 
     const showError = (error) ? error : err;
     if (loading) {
@@ -81,14 +87,24 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
                     onSubmit,
                 })}
             </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={(e) => {
-                    e.preventDefault();
-                    onCancel();
-                }}>Cancel</Button>
-                <Button variant="success" type="submit" form="repository-create-form" className="me-2"
-                        disabled={!formValid || inProgress}>
-                    {inProgress ? 'Creating...' : 'Create Repository'}
+            <Modal.Footer className="border-0 pt-0">
+                <Button 
+                    variant="outline-secondary" 
+                    onClick={(e) => {
+                        e.preventDefault();
+                        onCancel();
+                    }}
+                >
+                    Cancel
+                </Button>
+                <Button 
+                    variant="success" 
+                    type="submit" 
+                    form="repository-create-form" 
+                    className="ms-2"
+                    disabled={!formValid || inProgress}
+                >
+                    {buttonContent}
                 </Button>
             </Modal.Footer>
         </Modal>
@@ -100,33 +116,43 @@ const GetStarted = ({allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyR
         <Card className="getting-started-card">
             <h2 className="main-title">Welcome to lakeFS!</h2>
             <Row className="text-container">
-                <Col>
-                    <p>{`To get started, create your first sample repository.`}<br />
-                    {`This includes sample data, quickstart instructions, and more!`} <br />
-                    {`Let's dive in 🤿`}</p>
+                <Col md={7}>
+                    <p className="lead mb-4">
+                        Create your first sample repository to get started with lakeFS. 
+                        This includes sample data, quickstart instructions, and everything 
+                        you need to explore lakeFS capabilities.
+                    </p>
+                    
+                    {allowSampleRepoCreation && (
+                        <div className="mb-4">
+                            <GettingStartedCreateRepoButton 
+                                text={<span>Create Sample Repository</span>}
+                                creatingRepo={creatingRepo} 
+                                variant={"success"} 
+                                enabled={true} 
+                                onClick={onCreateSampleRepo}
+                            />
+                        </div>
+                    )}
+                    
+                    {createRepoError && (
+                        <Alert className="mb-3" variant={"danger"}>
+                            {createRepoError.message}
+                        </Alert>
+                    )}
+                    
+                    <div className="d-flex align-items-center mt-4">
+                        <span className="learn-more">Already working with lakeFS?</span>
+                        <GettingStartedCreateRepoButton 
+                            className="inline-link-button"
+                            text="Create an empty repository" 
+                            variant={"link"} 
+                            enabled={true} 
+                            onClick={onCreateEmptyRepo} 
+                        />
+                    </div>
                 </Col>
             </Row>
-            {allowSampleRepoCreation &&
-                <Row className="button-container">
-                    <Col>
-                        <GettingStartedCreateRepoButton text={
-                            <><span>Create Sample Repository</span> </>
-                        } creatingRepo={creatingRepo} variant={"success"} enabled={true} onClick={onCreateSampleRepo}/>
-                    </Col>
-                </Row>
-            }
-            {createRepoError &&
-                <Row>
-                    <Col sm={6}>
-                        <Alert className="mb-3" variant={"danger"}>{createRepoError.message}</Alert>
-                    </Col>
-                </Row>
-            }
-
-            <div className="d-flex flex-direction-row align-items-center">
-                <span className="learn-more">Already working with lakeFS and just need an empty repository?</span>
-                <GettingStartedCreateRepoButton style={{ padding: 0, width: "auto", marginLeft: "8px", display: "inline-block" }} text="Click here" variant={"link"} enabled={true} onClick={onCreateEmptyRepo} />
-            </div>
 
             <img src="/getting-started.png" alt="getting-started" className="getting-started-image" />
         </Card>
@@ -157,30 +183,61 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
         <div>
             {results.map(repo => (
                 <Row key={repo.id} className="repository-item">
-                    <Col className={"mb-2 mt-2"}>
-                        <Card>
-                            <Card.Body>
-                                <Stack direction="horizontal" gap={2} className="d-flex align-items-center">
-                                    <h5>
-                                        <Link href={{
-                                            pathname: `/repositories/:repoId/objects`,
-                                            params: {repoId: repo.id}
-                                        }}>
-                                            {repo.id}
-                                        </Link>
-                                    </h5>
-                                    <ReadOnlyBadge readOnly={repo?.read_only} style={{ marginBottom: 5 }} />
-                                </Stack>
-                                <p>
-                                    <small>
-                                        created at <code>{dayjs.unix(repo.creation_date).toISOString()}</code> ({dayjs.unix(repo.creation_date).fromNow()})<br/>
-                                        default branch: <code>{repo.default_branch}</code>,{' '}
+                    <Col className={"mb-3 mt-1"}>
+                        <Card className="h-100 repository-card">
+                            <Card.Body className="d-flex flex-column p-3">
+                                <div className="d-flex justify-content-between align-items-start">
+                                    <div className="d-flex flex-column">
+                                        <h5 className="repository-title mb-0">
+                                            <Link href={{
+                                                pathname: `/repositories/:repoId/objects`,
+                                                params: {repoId: repo.id}
+                                            }}>
+                                                <div className="d-flex align-items-center">
+                                                    <div className="repo-icon-wrapper me-2">
+                                                        <RepoIcon size={16} />
+                                                    </div>
+                                                    <span>{repo.id}</span>
+                                                </div>
+                                            </Link>
+                                        </h5>
+                                        <div className="repository-created-date">
+                                            <span title={dayjs.unix(repo.creation_date).toISOString()}>
+                                                Created {dayjs.unix(repo.creation_date).fromNow()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex align-items-center">
+                                        <ReadOnlyBadge readOnly={repo?.read_only} />
+                                    </div>
+                                </div>
+                                
+                                <div className="repository-details-compact mt-2">
+                                    <div className="detail-row">
+                                        <div className="detail-item-compact">
+                                            <div className="detail-label-compact">Branch</div>
+                                            <div className="detail-value-compact">
+                                                <code>{repo.default_branch}</code>
+                                            </div>
+                                        </div>
+                                        
                                         {repo.storage_id && repo.storage_id.length &&
-                                            <>storage: <code>{repo.storage_id}</code>,{' '}</>
+                                            <div className="detail-item-compact">
+                                                <div className="detail-label-compact">Storage</div>
+                                                <div className="detail-value-compact">
+                                                    <code>{repo.storage_id}</code>
+                                                </div>
+                                            </div>
                                         }
-                                        storage namespace: <code>{repo.storage_namespace}</code>
-                                    </small>
-                                </p>
+                                        
+                                        <div className="detail-item-compact storage-namespace">
+                                            <div className="detail-label-compact">Namespace</div>
+                                            <div className="detail-value-compact">
+                                                <code className="text-truncate">{repo.storage_namespace}</code>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </Card.Body>
                         </Card>
                     </Col>
@@ -258,28 +315,31 @@ const RepositoriesPage = () => {
 
     return (
         <Container fluid="xl" className="mt-3">
-            {showActionsBar && <ActionsBar>
-                <Form style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
-                    <Form.Group>
-                        <Col>
-                            <InputGroup>
-                                <InputGroup.Text>
-                                    <SearchIcon/>
-                                </InputGroup.Text>
-                                <Form.Control
-                                    placeholder="Find a repository..."
-                                    autoFocus
-                                    value={search}
-                                    onChange={event => setSearch(event.target.value)}
-                                />
-                            </InputGroup>
-                        </Col>
-                    </Form.Group>
-                </Form>
-                <ButtonToolbar className="ms-auto mb-2">
-                    <CreateRepositoryButton variant={"success"} enabled={true} onClick={createRepositoryButtonCallback} />
-                </ButtonToolbar>
-            </ActionsBar> }
+            {showActionsBar && 
+                <ActionsBar className="mb-4 p-3 bg-white rounded shadow-sm">
+                    <Form style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
+                        <Form.Group>
+                            <Col>
+                                <InputGroup className="search-input-group">
+                                    <InputGroup.Text className="bg-light border-end-0">
+                                        <SearchIcon/>
+                                    </InputGroup.Text>
+                                    <Form.Control
+                                        className="border-start-0 bg-light"
+                                        placeholder="Search repositories..."
+                                        autoFocus
+                                        value={search}
+                                        onChange={event => setSearch(event.target.value)}
+                                    />
+                                </InputGroup>
+                            </Col>
+                        </Form.Group>
+                    </Form>
+                    <ButtonToolbar className="ms-auto">
+                        <CreateRepositoryButton variant={"success"} enabled={true} onClick={createRepositoryButtonCallback} />
+                    </ButtonToolbar>
+                </ActionsBar>
+            }
 
                 <RepositoryList
                     search={routerPfx}

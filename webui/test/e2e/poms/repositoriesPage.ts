@@ -1,7 +1,7 @@
 import { Locator, Page, expect } from "@playwright/test";
 
 const SAMPLE_REPO_README_TITLE = "Welcome to the Lake!";
-const REGULAR_REPO_README_TITLE = "To get started with this repository:";
+const REGULAR_REPO_README_TITLE = "Your repository is ready!";
 
 export class RepositoriesPage {
     private page: Page;
@@ -16,9 +16,9 @@ export class RepositoriesPage {
         this.page = page;
         this.noRepositoriesTitleLocator = this.page.getByText("Welcome to LakeFS!");
         this.readOnlyIndicatorLocator = this.page.locator("text=Read-only");
-        this.uploadButtonLocator = this.page.locator("text=Upload Object");
+        this.uploadButtonLocator = this.page.locator("text=Upload Object").first();
         this.createRepositoryButtonLocator = this.page.getByRole("button", { name: "Create Repository" });
-        this.searchInputLocator = this.page.getByPlaceholder("Find a repository...");
+        this.searchInputLocator = this.page.getByPlaceholder("Search repositories...");
     }
 
     async goto(): Promise<void> {
@@ -36,9 +36,9 @@ export class RepositoriesPage {
 
     async createRepository(repoName: string, includeSampleData: boolean): Promise<void> {
         await this.createRepositoryButtonLocator.click();
-        await this.page.getByLabel("Repository ID").fill(repoName);
+        await this.page.getByRole('textbox', { name: 'Repository ID' }).fill(repoName);
         if (includeSampleData) {
-            await this.page.getByLabel("Add sample data, hooks, and configuration").check();
+            await this.page.getByRole('checkbox', { name: 'Add sample data, hooks' }).check();
         }
         await this.page.getByRole("dialog").getByRole("button", { name: "Create Repository", exact: true }).click();
         if (includeSampleData) {
