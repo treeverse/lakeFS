@@ -3,14 +3,13 @@ package cmd
 import (
 	"context"
 	"fmt"
+	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/auth/crypt"
 	"github.com/treeverse/lakefs/pkg/auth/model"
-	authparams "github.com/treeverse/lakefs/pkg/auth/params"
 	"github.com/treeverse/lakefs/pkg/auth/setup"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -69,33 +68,14 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		}
 		defer kvStore.Close()
 
-		var authService auth.Service
-		secretStore := crypt.NewSecretStore([]byte(authConfig.Encrypt.SecretKey))
-		authLogger := logger.WithField("service", "auth_api")
-		addToAdmins := true
-		switch {
-		case authConfig.IsAuthBasic():
-			authService = auth.NewBasicAuthService(kvStore, secretStore, authparams.ServiceCache(authConfig.Cache), authLogger)
-			addToAdmins = false
-		case authConfig.IsAuthUISimplified() && authConfig.IsAuthenticationTypeAPI(): // ACL server
-			authService, err = auth.NewAPIAuthService(
-				authConfig.API.Endpoint,
-				authConfig.API.Token.SecureValue(),
-				authConfig.IsAdvancedAuth(),
-				authConfig.AuthenticationAPI.ExternalPrincipalsEnabled,
-				secretStore,
-				authparams.ServiceCache(authConfig.Cache),
-				authLogger)
-			if err != nil {
-				fmt.Printf("Failed to initialize auth service: %s\n", err)
-				os.Exit(1)
-			}
-		default:
-			logger.Fatal("invalid auth mode for superuser command")
-		}
-
+		addToAdmins := !authConfig.IsAuthBasic()
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, baseConfig.StorageConfig())
+		authService, err := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		if err != nil {
+			fmt.Printf("Failed to initialize auth service: %s\n", err)
+			os.Exit(1)
+		}
 
 		credentials, err := setup.AddAdminUser(ctx, authService, &model.SuperuserConfiguration{
 			User: model.User{
