@@ -17,6 +17,8 @@ func LakefsWithParamsWithBasicAuth(connectionString string, basicAuth bool) stri
 		" LAKEFS_AUTH_ENCRYPT_SECRET_KEY='some random secret string' " + lakefsLocation()
 	if basicAuth {
 		lakefsCmdline = "LAKEFS_AUTH_UI_CONFIG_RBAC=none " + lakefsCmdline
+	} else {
+		lakefsCmdline = "LAKEFS_AUTH_UI_CONFIG_RBAC=simplified " + lakefsCmdline
 	}
 
 	return lakefsCmdline

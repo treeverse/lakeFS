@@ -5334,8 +5334,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	} else {
 		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
