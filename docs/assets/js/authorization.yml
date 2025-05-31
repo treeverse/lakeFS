@@ -40,7 +40,7 @@ components:
 
     PaginationAmount:
       description: Specifies the number of items the server should return. It is used to determine how many results to 
-        display on the current page.
+        display.
       in: query
       name: amount
       schema:
@@ -149,7 +149,6 @@ components:
           type: string
           description: User source. Based on implementation.
         encryptedPassword:
-          deprecated: true
           type: string
           format: byte
           description: Represents an encrypted password as a string.
@@ -181,7 +180,6 @@ components:
           type: string
           description: User source. Based on implementation.
         encryptedPassword:
-          deprecated: true
           type: string
           format: byte
           description: Represents an encrypted password as a string.
@@ -411,14 +409,12 @@ paths:
         - $ref: "#/components/parameters/PaginationAfter"
         - $ref: "#/components/parameters/PaginationAmount"
         - in: query
-          deprecated: true
           name: id
           allowEmptyValue: true
           schema:
             type: integer
             format: int64
         - in: query
-          deprecated: true
           name: email
           allowEmptyValue: true
           schema:
@@ -533,7 +529,6 @@ paths:
         schema:
           type: string
     put:
-      deprecated: true
       tags:
         - auth
       operationId: updatePassword
@@ -1011,7 +1006,6 @@ paths:
         successful. This endpoint should be implemented in a function named deleteCredentials.
       tags:
         - auth
-        - credentials
       operationId: deleteCredentials
       summary: delete credentials
       responses:
@@ -1222,7 +1216,6 @@ paths:
         implemented in a function named listGroupPolicies.
       tags:
         - auth
-        - groups
       parameters:
         - $ref: "#/components/parameters/PaginationPrefix"
         - $ref: "#/components/parameters/PaginationAfter"
@@ -1292,7 +1285,6 @@ paths:
 
   /auth/tokenid/claim:
     post:
-      deprecated: true
       description: For internal use only.
       tags:
         - auth
