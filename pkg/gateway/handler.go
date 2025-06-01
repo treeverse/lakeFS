@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -21,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
+	"golang.org/x/sync/semaphore"
 )
 
 type contextKey string
@@ -45,6 +47,7 @@ const (
 var usageCounter = stats.NewUsageCounter()
 
 type handler struct {
+	sem                *semaphore.Weighted
 	sc                 *ServerContext
 	ServerErrorHandler http.Handler
 	operationHandlers  map[operations.OperationID]http.Handler
@@ -62,7 +65,7 @@ type ServerContext struct {
 	verifyUnsupported bool
 }
 
-func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool) http.Handler {
+func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool, operationsSem *semaphore.Weighted) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -92,6 +95,7 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 	// setup routes
 	var h http.Handler
 	h = &handler{
+		sem:                operationsSem,
 		sc:                 sc,
 		ServerErrorHandler: nil,
 		operationHandlers: map[operations.OperationID]http.Handler{
@@ -131,6 +135,19 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	if h.sem != nil {
+		start := time.Now()
+		err := h.sem.Acquire(ctx, 1)
+		blockedFor := time.Since(start)
+		logger := logging.FromContext(ctx).WithError(err).WithField("block_time", blockedFor)
+		if err != nil {
+			logger.Warn("Failed to acquire semaphore; proceeding with action anyway")
+		} else {
+			logger.Debug("Perform gateway action")
+			defer h.sem.Release(1)
+		}
+	}
 	setDefaultContentType(w, req)
 	o := req.Context().Value(ContextKeyOperation).(*operations.Operation)
 	operationHandler := h.operationHandlers[o.OperationID]

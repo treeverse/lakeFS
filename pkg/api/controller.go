@@ -47,6 +47,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/validator"
 	"github.com/treeverse/lakefs/pkg/version"
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -93,6 +94,7 @@ type Migrator interface {
 }
 
 type Controller struct {
+	sem             *semaphore.Weighted
 	Config          config.Config
 	Catalog         *catalog.Catalog
 	Authenticator   auth.Authenticator
@@ -113,8 +115,9 @@ type Controller struct {
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *Controller {
+func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager, operationsSem *semaphore.Weighted) *Controller {
 	return &Controller{
+		sem:             operationsSem,
 		Config:          cfg,
 		Catalog:         catalog,
 		Authenticator:   authenticator,
@@ -145,7 +148,7 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID s
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_user", r, "", "", "")
+	c.StartAction(ctx, "delete_user", r, "", "", "")
 	err := c.Auth.DeleteUser(ctx, userID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "user not found")
@@ -167,7 +170,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_presign_multipart_upload", r, repository, branch, "")
+	c.StartAction(ctx, "create_presign_multipart_upload", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -278,7 +281,7 @@ func (c *Controller) UploadPart(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 
-	c.LogAction(ctx, "upload_part", r, dstRepository, dstPath, "")
+	c.StartAction(ctx, "upload_part", r, dstRepository, dstPath, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -350,7 +353,7 @@ func (c *Controller) UploadPartCopy(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	c.LogAction(ctx, "upload_part_copy", r, dstRepository, dstPath, srcPath)
+	c.StartAction(ctx, "upload_part_copy", r, dstRepository, dstPath, srcPath)
 
 	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -434,7 +437,7 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "abort_presign_multipart_upload", r, repository, branch, "")
+	c.StartAction(ctx, "abort_presign_multipart_upload", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -498,7 +501,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "complete_presign_multipart_upload", r, repository, branch, "")
+	c.StartAction(ctx, "complete_presign_multipart_upload", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -618,7 +621,7 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "prepare_garbage_collection_uncommitted", r, repository, "", "")
+	c.StartAction(ctx, "prepare_garbage_collection_uncommitted", r, repository, "", "")
 
 	continuationToken := swag.StringValue(body.ContinuationToken)
 	mark, err := decodeGCUncommittedMark(continuationToken)
@@ -667,7 +670,7 @@ func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request)
 
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body apigen.DeleteObjectsJSONRequestBody, repository, branch string, params apigen.DeleteObjectsParams) {
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_objects", r, repository, branch, "")
+	c.StartAction(ctx, "delete_objects", r, repository, branch, "")
 
 	// limit check
 	if len(body.Paths) > DefaultMaxDeleteObjects {
@@ -779,7 +782,7 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
-	c.LogAction(ctx, "external_principal_login", r, "", "", "")
+	c.StartAction(ctx, "external_principal_login", r, "", "", "")
 	c.Logger.Debug("external principal login")
 	externalPrincipal, err := c.Authentication.ExternalPrincipalLogin(ctx, body.IdentityRequest)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -855,7 +858,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "generate_physical_address", r, repository, branch, "")
+	c.StartAction(ctx, "generate_physical_address", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if errors.Is(err, graveler.ErrNotFound) {
@@ -915,7 +918,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "stage_object", r, repository, branch, "")
+	c.StartAction(ctx, "stage_object", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if errors.Is(err, graveler.ErrNotFound) {
@@ -1040,7 +1043,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params a
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "list_groups", r, "", "", "")
+	c.StartAction(ctx, "list_groups", r, "", "", "")
 	groups, paginator, err := c.Auth.ListGroups(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1080,7 +1083,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_group", r, "", "", "")
+	c.StartAction(ctx, "create_group", r, "", "", "")
 
 	// Check that group name is valid
 	valid, msg := c.isNameValid(body.Id, "Group")
@@ -1118,7 +1121,7 @@ func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_group", r, "", "", "")
+	c.StartAction(ctx, "delete_group", r, "", "", "")
 	err := c.Auth.DeleteGroup(ctx, groupID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "group not found")
@@ -1140,7 +1143,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_group", r, "", "", "")
+	c.StartAction(ctx, "get_group", r, "", "", "")
 	g, err := c.Auth.GetGroup(ctx, groupID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "group not found")
@@ -1181,7 +1184,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "get_group_acl", r, "", "", "")
+	c.StartAction(ctx, "get_group_acl", r, "", "", "")
 	policies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
 		Amount: 2, //nolint:mnd
 	})
@@ -1259,7 +1262,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body ap
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "set_group_acl", r, "", "", "")
+	c.StartAction(ctx, "set_group_acl", r, "", "", "")
 
 	newACL := model.ACL{
 		Permission: model.ACLPermission(body.Permission),
@@ -1283,7 +1286,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_group_users", r, "", "", "")
+	c.StartAction(ctx, "list_group_users", r, "", "", "")
 	users, paginator, err := c.Auth.ListGroupUsers(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1323,7 +1326,7 @@ func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "remove_user_from_group", r, "", "", "")
+	c.StartAction(ctx, "remove_user_from_group", r, "", "", "")
 	err := c.Auth.RemoveUserFromGroup(ctx, userID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1341,7 +1344,7 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "add_user_to_group", r, "", "", "")
+	c.StartAction(ctx, "add_user_to_group", r, "", "", "")
 	err := c.Auth.AddUserToGroup(ctx, userID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1364,7 +1367,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "list_group_policies", r, "", "", "")
+	c.StartAction(ctx, "list_group_policies", r, "", "", "")
 	policies, paginator, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1420,7 +1423,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "detach_policy_from_group", r, "", "", "")
+	c.StartAction(ctx, "detach_policy_from_group", r, "", "", "")
 	err := c.Auth.DetachPolicyFromGroup(ctx, policyID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1443,7 +1446,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "attach_policy_to_group", r, "", "", "")
+	c.StartAction(ctx, "attach_policy_to_group", r, "", "", "")
 	err := c.Auth.AttachPolicyToGroup(ctx, policyID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1466,7 +1469,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "list_policies", r, "", "", "")
+	c.StartAction(ctx, "list_policies", r, "", "", "")
 	policies, paginator, err := c.Auth.ListPolicies(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1504,7 +1507,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_policy", r, "", "", "")
+	c.StartAction(ctx, "create_policy", r, "", "", "")
 
 	// Check that policy ID is valid
 	valid, msg := c.isNameValid(body.Id, "Policy")
@@ -1550,7 +1553,7 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_policy", r, "", "", "")
+	c.StartAction(ctx, "delete_policy", r, "", "", "")
 	err := c.Auth.DeletePolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "policy not found")
@@ -1576,7 +1579,7 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_policy", r, "", "", "")
+	c.StartAction(ctx, "get_policy", r, "", "", "")
 	p, err := c.Auth.GetPolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "policy not found")
@@ -1610,7 +1613,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body a
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "update_policy", r, "", "", "")
+	c.StartAction(ctx, "update_policy", r, "", "", "")
 
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
@@ -1644,7 +1647,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_users", r, "", "", "")
+	c.StartAction(ctx, "list_users", r, "", "", "")
 	users, paginator, err := c.Auth.ListUsers(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1705,7 +1708,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_user", r, "", "", "")
+	c.StartAction(ctx, "create_user", r, "", "", "")
 	if invite {
 		inviter, ok := c.Auth.(auth.EmailInviter)
 		if !ok {
@@ -1751,7 +1754,7 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID stri
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_user", r, "", "", "")
+	c.StartAction(ctx, "get_user", r, "", "", "")
 	u, err := c.Auth.GetUser(ctx, userID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "user not found")
@@ -1779,7 +1782,7 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_user_credentials", r, "", "", "")
+	c.StartAction(ctx, "list_user_credentials", r, "", "", "")
 	credentials, paginator, err := c.Auth.ListUserCredentials(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1816,7 +1819,7 @@ func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_credentials", r, "", "", "")
+	c.StartAction(ctx, "create_credentials", r, "", "", "")
 	credentials, err := c.Auth.CreateCredentials(ctx, userID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1840,7 +1843,7 @@ func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, u
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_credentials", r, "", "", "")
+	c.StartAction(ctx, "delete_credentials", r, "", "", "")
 	err := c.Auth.DeleteCredentials(ctx, userID, accessKeyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "credentials not found")
@@ -1862,7 +1865,7 @@ func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, user
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_credentials_for_user", r, "", "", "")
+	c.StartAction(ctx, "get_credentials_for_user", r, "", "", "")
 	credentials, err := c.Auth.GetCredentialsForUser(ctx, userID, accessKeyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "credentials not found")
@@ -1889,7 +1892,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_user_groups", r, "", "", "")
+	c.StartAction(ctx, "list_user_groups", r, "", "", "")
 	groups, paginator, err := c.Auth.ListUserGroups(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1933,7 +1936,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "list_user_policies", r, "", "", "")
+	c.StartAction(ctx, "list_user_policies", r, "", "", "")
 	var listPolicies func(ctx context.Context, username string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 	if params.Effective != nil && *params.Effective {
 		listPolicies = c.Auth.ListEffectivePolicies
@@ -1977,7 +1980,7 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "detach_policy_from_user", r, "", "", "")
+	c.StartAction(ctx, "detach_policy_from_user", r, "", "", "")
 	err := c.Auth.DetachPolicyFromUser(ctx, policyID, userID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2000,7 +2003,7 @@ func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, 
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "attach_policy_to_user", r, "", "", "")
+	c.StartAction(ctx, "attach_policy_to_user", r, "", "", "")
 	err := c.Auth.AttachPolicyToUser(ctx, policyID, userID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2120,7 +2123,7 @@ func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, pa
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_repos", r, "", "", "")
+	c.StartAction(ctx, "list_repos", r, "", "", "")
 
 	repos, hasMore, err := c.Catalog.ListRepositories(ctx, paginationAmount(params.Amount), paginationPrefix(params.Prefix), search(params.Search), paginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
@@ -2182,9 +2185,9 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	}
 
 	sampleData := swag.BoolValue(body.SampleData)
-	c.LogAction(ctx, "create_repo", r, body.Name, "", "")
+	c.StartAction(ctx, "create_repo", r, body.Name, "", "")
 	if sampleData {
-		c.LogAction(ctx, "repo_sample_data", r, body.Name, "", "")
+		c.StartAction(ctx, "repo_sample_data", r, body.Name, "", "")
 	}
 
 	// Validate storage ID exists
@@ -2382,7 +2385,7 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_repo", r, repository, "", "")
+	c.StartAction(ctx, "delete_repo", r, repository, "", "")
 	err := c.Catalog.DeleteRepository(ctx, repository, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2400,7 +2403,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_repo", r, repository, "", "")
+	c.StartAction(ctx, "get_repo", r, repository, "", "")
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	switch {
 	case err == nil:
@@ -2435,7 +2438,7 @@ func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_repo_metadata", r, repository, "", "")
+	c.StartAction(ctx, "get_repo_metadata", r, repository, "", "")
 	metadata, err := c.Catalog.GetRepositoryMetadata(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2453,7 +2456,7 @@ func (c *Controller) SetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "update_repo_metadata", r, repository, "", "")
+	c.StartAction(ctx, "update_repo_metadata", r, repository, "", "")
 	err := c.Catalog.UpdateRepositoryMetadata(ctx, repository, body.Metadata.AdditionalProperties)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2471,7 +2474,7 @@ func (c *Controller) DeleteRepositoryMetadata(w http.ResponseWriter, r *http.Req
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_repo_metadata", r, repository, "", "")
+	c.StartAction(ctx, "delete_repo_metadata", r, repository, "", "")
 	err := c.Catalog.DeleteRepositoryMetadata(ctx, repository, body.Keys)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2513,7 +2516,7 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_branch_protection_rule", r, repository, "", "")
+	c.StartAction(ctx, "create_branch_protection_rule", r, repository, "", "")
 
 	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
 	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
@@ -2606,7 +2609,7 @@ func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "actions_repository_runs", r, repository, "", "")
+	c.StartAction(ctx, "actions_repository_runs", r, repository, "", "")
 
 	_, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -2674,7 +2677,7 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "actions_get_run", r, repository, "", "")
+	c.StartAction(ctx, "actions_get_run", r, repository, "", "")
 	_, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -2713,7 +2716,7 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "actions_list_run_hooks", r, repository, "", "")
+	c.StartAction(ctx, "actions_list_run_hooks", r, repository, "", "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -2778,7 +2781,7 @@ func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "actions_run_hook_output", r, repository, "", "")
+	c.StartAction(ctx, "actions_run_hook_output", r, repository, "", "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -2828,7 +2831,7 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_branches", r, repository, "", "")
+	c.StartAction(ctx, "list_branches", r, repository, "", "")
 	res, hasMore, err := c.Catalog.ListBranches(
 		ctx,
 		repository,
@@ -2864,7 +2867,7 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body a
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_branch", r, repository, body.Name, "")
+	c.StartAction(ctx, "create_branch", r, repository, body.Name, "")
 
 	commitLog, err := c.Catalog.CreateBranch(
 		ctx,
@@ -2891,7 +2894,7 @@ func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_branch", r, repository, branch, "")
+	c.StartAction(ctx, "delete_branch", r, repository, branch, "")
 
 	err := c.Catalog.DeleteBranch(ctx, repository, branch, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
@@ -2910,7 +2913,7 @@ func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_branch", r, repository, branch, "")
+	c.StartAction(ctx, "get_branch", r, repository, branch, "")
 	reference, err := c.Catalog.GetBranchReference(ctx, repository, branch)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -3050,7 +3053,7 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 	}
 	ctx := r.Context()
 
-	c.LogAction(ctx, "reset_branch", r, repository, branch, "")
+	c.StartAction(ctx, "reset_branch", r, repository, branch, "")
 
 	var err error
 
@@ -3084,7 +3087,7 @@ func (c *Controller) HardResetBranch(w http.ResponseWriter, r *http.Request, rep
 	}
 	ctx := r.Context()
 
-	c.LogAction(ctx, "hard_reset_branch", r, repository, branch, "")
+	c.StartAction(ctx, "hard_reset_branch", r, repository, branch, "")
 
 	err := c.Catalog.HardResetBranch(ctx, repository, branch, params.Ref, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
@@ -3129,7 +3132,7 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "import", r, repository, branch, "")
+	c.StartAction(ctx, "import", r, repository, branch, "")
 
 	user, err := auth.GetUser(ctx)
 	if err != nil {
@@ -3232,7 +3235,7 @@ func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "cancel_import", r, repository, branch, "")
+	c.StartAction(ctx, "cancel_import", r, repository, branch, "")
 	err := c.Catalog.CancelImport(ctx, repository, params.Id)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -3251,7 +3254,7 @@ func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_commit", r, repository, branch, "")
+	c.StartAction(ctx, "create_commit", r, repository, branch, "")
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "missing user")
@@ -3279,7 +3282,7 @@ func (c *Controller) CreateCommitRecord(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_commit_record", r, repository, body.CommitId, "")
+	c.StartAction(ctx, "create_commit_record", r, repository, body.CommitId, "")
 	_, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "missing user")
@@ -3318,7 +3321,7 @@ func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "diff_workspace", r, repository, branch, "")
+	c.StartAction(ctx, "diff_workspace", r, repository, branch, "")
 
 	diff, hasMore, err := c.Catalog.DiffUncommitted(
 		ctx,
@@ -3366,7 +3369,7 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_object", r, repository, branch, "")
+	c.StartAction(ctx, "delete_object", r, repository, branch, "")
 	err := c.Catalog.DeleteEntry(ctx, repository, branch, params.Path, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -3385,7 +3388,7 @@ func (c *Controller) UploadObjectPreflight(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "put_object_preflight", r, repository, branch, "")
+	c.StartAction(ctx, "put_object_preflight", r, repository, branch, "")
 
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
@@ -3400,7 +3403,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "put_object", r, repository, branch, "")
+	c.StartAction(ctx, "put_object", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -3570,7 +3573,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "stage_object", r, repository, branch, "")
+	c.StartAction(ctx, "stage_object", r, repository, branch, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -3660,7 +3663,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "copy_object", r, repository, branch, destPath)
+	c.StartAction(ctx, "copy_object", r, repository, branch, destPath)
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -3725,7 +3728,7 @@ func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body a
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "revert_branch", r, repository, branch, "")
+	c.StartAction(ctx, "revert_branch", r, repository, branch, "")
 
 	user, err := auth.GetUser(ctx)
 	if err != nil {
@@ -3767,7 +3770,7 @@ func (c *Controller) CherryPick(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "cherry_pick", r, repository, branch, body.Ref)
+	c.StartAction(ctx, "cherry_pick", r, repository, branch, body.Ref)
 
 	user, err := auth.GetUser(ctx)
 	if err != nil {
@@ -3813,7 +3816,7 @@ func (c *Controller) GetCommit(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_commit", r, repository, commitID, "")
+	c.StartAction(ctx, "get_commit", r, repository, commitID, "")
 	commit, err := c.Catalog.GetCommit(ctx, repository, commitID)
 	if errors.Is(err, graveler.ErrRepositoryNotFound) {
 		writeError(w, r, http.StatusNotFound, "repository not found")
@@ -3856,7 +3859,7 @@ func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "set_gc_collection_rules_preflight", r, repository, "", "")
+	c.StartAction(ctx, "set_gc_collection_rules_preflight", r, repository, "", "")
 
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
@@ -3879,7 +3882,7 @@ func (c *Controller) PrepareGarbageCollectionCommits(w http.ResponseWriter, r *h
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "prepare_garbage_collection_commits", r, repository, "", "")
+	c.StartAction(ctx, "prepare_garbage_collection_commits", r, repository, "", "")
 	gcRunMetadata, err := c.Catalog.PrepareExpiredCommits(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -3919,7 +3922,7 @@ func (c *Controller) InternalDeleteBranchProtectionRule(w http.ResponseWriter, r
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_branch_protection_rule", r, repository, "", "")
+	c.StartAction(ctx, "delete_branch_protection_rule", r, repository, "", "")
 
 	rules, _, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -3950,7 +3953,7 @@ func (c *Controller) CreateBranchProtectionRulePreflight(w http.ResponseWriter, 
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "create_branch_protection_rule_preflight", r, repository, "", "")
+	c.StartAction(ctx, "create_branch_protection_rule_preflight", r, repository, "", "")
 
 	writeResponse(w, r, http.StatusNoContent, nil)
 }
@@ -3965,7 +3968,7 @@ func (c *Controller) InternalCreateBranchProtectionRule(w http.ResponseWriter, r
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_branch_protection_rule", r, repository, "", "")
+	c.StartAction(ctx, "create_branch_protection_rule", r, repository, "", "")
 	rules, _, err := c.Catalog.GetBranchProtectionRules(ctx, repository)
 	if !errors.Is(err, graveler.ErrNotFound) {
 		if c.handleAPIError(ctx, w, r, err) {
@@ -4010,7 +4013,7 @@ func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "metadata_get_metarange", r, repository, "", "")
+	c.StartAction(ctx, "metadata_get_metarange", r, repository, "", "")
 
 	metarange, err := c.Catalog.GetMetaRange(ctx, repository, metaRange)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -4045,7 +4048,7 @@ func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "metadata_get_range", r, repository, "", "")
+	c.StartAction(ctx, "metadata_get_range", r, repository, "", "")
 
 	rng, err := c.Catalog.GetRange(ctx, repository, pRange)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -4085,7 +4088,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "dump_repository_refs", r, repository, "", "")
+	c.StartAction(ctx, "dump_repository_refs", r, repository, "", "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -4159,7 +4162,7 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body ap
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "restore_repository_refs", r, repository, "", "")
+	c.StartAction(ctx, "restore_repository_refs", r, repository, "", "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -4221,7 +4224,7 @@ func (c *Controller) DumpSubmit(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "dump_repository", r, repository, "", "")
+	c.StartAction(ctx, "dump_repository", r, repository, "", "")
 
 	taskID, err := c.Catalog.DumpRepositorySubmit(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -4314,7 +4317,7 @@ func (c *Controller) RestoreSubmit(w http.ResponseWriter, r *http.Request, body 
 	}
 
 	ctx := r.Context()
-	c.LogAction(ctx, "restore_repository", r, repository, "", "")
+	c.StartAction(ctx, "restore_repository", r, repository, "", "")
 
 	info := &catalog.RepositoryDumpInfo{
 		CommitsMetarangeId:  body.CommitsMetaRangeId,
@@ -4390,7 +4393,7 @@ func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, r
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_symlink", r, repository, branch, "")
+	c.StartAction(ctx, "create_symlink", r, repository, branch, "")
 
 	// read repo
 	repo, err := c.Catalog.GetRepository(ctx, repository)
@@ -4479,7 +4482,7 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "diff_refs", r, repository, rightRef, leftRef)
+	c.StartAction(ctx, "diff_refs", r, repository, rightRef, leftRef)
 	diffFunc := c.Catalog.Compare // default diff type is three-dot
 	if params.Type != nil && *params.Type == "two_dot" {
 		diffFunc = c.Catalog.Diff
@@ -4528,7 +4531,7 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_branch_commit_log", r, repository, ref, "")
+	c.StartAction(ctx, "get_branch_commit_log", r, repository, ref, "")
 
 	// get commit log
 	commitLog, hasMore, err := c.Catalog.ListCommits(ctx, repository, ref, catalog.LogParams{
@@ -4581,7 +4584,7 @@ func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "head_object", r, repository, ref, "")
+	c.StartAction(ctx, "head_object", r, repository, ref, "")
 
 	// read the FS entry
 	entry, err := c.Catalog.GetEntry(ctx, repository, ref, params.Path, catalog.GetEntryParams{})
@@ -4645,7 +4648,7 @@ func (c *Controller) GetMetadataObject(w http.ResponseWriter, r *http.Request, r
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_metadata_object", r, repository, "", "")
+	c.StartAction(ctx, "get_metadata_object", r, repository, "", "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -4721,7 +4724,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_object", r, repository, ref, "")
+	c.StartAction(ctx, "get_object", r, repository, ref, "")
 	requestStart := time.Now()
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
@@ -4836,7 +4839,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 	}
 	ctx := r.Context()
 	user, _ := auth.GetUser(ctx)
-	c.LogAction(ctx, "list_objects", r, repository, ref, "")
+	c.StartAction(ctx, "list_objects", r, repository, ref, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -4944,7 +4947,7 @@ func (c *Controller) StatObject(w http.ResponseWriter, r *http.Request, reposito
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "stat_object", r, repository, ref, "")
+	c.StartAction(ctx, "stat_object", r, repository, ref, "")
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -5012,7 +5015,7 @@ func (c *Controller) UpdateObjectUserMetadata(w http.ResponseWriter, r *http.Req
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "update_object_user_metadata", r, repository, branch, "")
+	c.StartAction(ctx, "update_object_user_metadata", r, repository, branch, "")
 
 	newUserMetadata := body.Set.AdditionalProperties
 	err := c.Catalog.UpdateEntryUserMetadata(ctx, repository, branch, params.Path, newUserMetadata)
@@ -5033,7 +5036,7 @@ func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "object_underlying_properties", r, repository, ref, "")
+	c.StartAction(ctx, "object_underlying_properties", r, repository, ref, "")
 
 	// read repo
 	repo, err := c.Catalog.GetRepository(ctx, repository)
@@ -5074,7 +5077,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "merge_branches", r, repository, destinationBranch, sourceRef)
+	c.StartAction(ctx, "merge_branches", r, repository, destinationBranch, sourceRef)
 	user, err := auth.GetUser(ctx)
 	if err != nil {
 		writeError(w, r, http.StatusUnauthorized, "user not found")
@@ -5120,7 +5123,7 @@ func (c *Controller) FindMergeBase(w http.ResponseWriter, r *http.Request, repos
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "find_merge_base", r, repository, destinationRef, sourceRef)
+	c.StartAction(ctx, "find_merge_base", r, repository, destinationRef, sourceRef)
 
 	source, dest, base, err := c.Catalog.FindMergeBase(ctx, repository, destinationRef, sourceRef)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -5143,7 +5146,7 @@ func (c *Controller) ListTags(w http.ResponseWriter, r *http.Request, repository
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_tags", r, repository, "", "")
+	c.StartAction(ctx, "list_tags", r, repository, "", "")
 
 	res, hasMore, err := c.Catalog.ListTags(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After))
 	if c.handleAPIError(ctx, w, r, err) {
@@ -5174,7 +5177,7 @@ func (c *Controller) CreateTag(w http.ResponseWriter, r *http.Request, body apig
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_tag", r, repository, body.Id, "")
+	c.StartAction(ctx, "create_tag", r, repository, body.Id, "")
 
 	commitID, err := c.Catalog.CreateTag(ctx, repository, body.Id, body.Ref, graveler.WithForce(swag.BoolValue(body.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
@@ -5197,7 +5200,7 @@ func (c *Controller) DeleteTag(w http.ResponseWriter, r *http.Request, repositor
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "delete_tag", r, repository, tag, "")
+	c.StartAction(ctx, "delete_tag", r, repository, tag, "")
 	err := c.Catalog.DeleteTag(ctx, repository, tag, graveler.WithForce(swag.BoolValue(params.Force)))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -5215,7 +5218,7 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_tag", r, repository, tag, "")
+	c.StartAction(ctx, "get_tag", r, repository, tag, "")
 	reference, err := c.Catalog.GetTag(ctx, repository, tag)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -5541,7 +5544,7 @@ func (c *Controller) ListPullRequests(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "list_pull_requests", r, repository, "", "")
+	c.StartAction(ctx, "list_pull_requests", r, repository, "", "")
 
 	res, hasMore, err := c.Catalog.ListPullRequest(ctx, repository, paginationPrefix(params.Prefix), paginationAmount(params.Amount), paginationAfter(params.After), pullRequestStatus(params.Status))
 	if c.handleAPIError(ctx, w, r, err) {
@@ -5583,7 +5586,7 @@ func (c *Controller) CreatePullRequest(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "create_pull_request", r, repository, body.DestinationBranch, body.SourceBranch)
+	c.StartAction(ctx, "create_pull_request", r, repository, body.DestinationBranch, body.SourceBranch)
 
 	user, err := auth.GetUser(ctx)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -5619,7 +5622,7 @@ func (c *Controller) GetPullRequest(w http.ResponseWriter, r *http.Request, repo
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "get_pull_request", r, repository, pullRequestID, "")
+	c.StartAction(ctx, "get_pull_request", r, repository, pullRequestID, "")
 	pr, err := c.Catalog.GetPullRequest(ctx, repository, pullRequestID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -5651,7 +5654,7 @@ func (c *Controller) UpdatePullRequest(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 	ctx := r.Context()
-	c.LogAction(ctx, "update_pull_request", r, repository, "", "")
+	c.StartAction(ctx, "update_pull_request", r, repository, "", "")
 
 	err := c.Catalog.UpdatePullRequest(ctx, repository, pullRequestID, &graveler.UpdatePullRequest{
 		Title:       body.Title,
@@ -5691,7 +5694,7 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 		return
 	}
 
-	c.LogAction(ctx, "merge_pull_request", r, repository, "", "")
+	c.StartAction(ctx, "merge_pull_request", r, repository, "", "")
 
 	if pr.Status != graveler.PullRequestStatus_OPEN {
 		c.Logger.WithError(err).WithField("pr_status", pr.Status.String()).Error("pull request is not open")
@@ -5838,7 +5841,39 @@ func resolvePathList(objects, prefixes *[]string) []catalog.PathRecord {
 	return pathRecords
 }
 
-func (c *Controller) LogAction(ctx context.Context, action string, r *http.Request, repository, ref, sourceRef string) {
+// StartAction waits for a token and then logs the start of performing action.  It returns a
+// func to return the token, which the caller _must_ call when it is done performing the action,
+// before returning.
+func (c *Controller) StartAction(ctx context.Context, action string, r *http.Request, repository, ref, sourceRef string) func() {
+	blockedFor, err := c.getToken(ctx, 1)
+	c.logAction(ctx, action, r, repository, ref, sourceRef, blockedFor, err)
+	if err != nil {
+		return func() {}
+	}
+	return func() {
+		c.releaseToken(1)
+	}
+}
+
+// getToken gets a token and measures how long it took.  It returns an error if the semaphore
+// failed.
+func (c *Controller) getToken(ctx context.Context, weight int64) (time.Duration, error) {
+	if c.sem == nil {
+		return 0, nil
+	}
+	start := time.Now()
+	err := c.sem.Acquire(ctx, weight)
+	return time.Since(start), err
+}
+
+func (c *Controller) releaseToken(weight int64) {
+	if c.sem == nil {
+		return
+	}
+	c.sem.Release(weight)
+}
+
+func (c *Controller) logAction(ctx context.Context, action string, r *http.Request, repository, ref, sourceRef string, blockedFor time.Duration, blockErr error) {
 	client := httputil.GetRequestLakeFSClient(r)
 	ev := stats.Event{
 		Class:      "api_server",
@@ -5855,7 +5890,7 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 
 	sourceIP := httputil.SourceIP(r)
 
-	c.Logger.WithContext(ctx).WithFields(logging.Fields{
+	logger := c.Logger.WithContext(ctx).WithFields(logging.Fields{
 		"class":      ev.Class,
 		"name":       ev.Name,
 		"repository": ev.Repository,
@@ -5864,7 +5899,13 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		"user_id":    ev.UserID,
 		"client":     ev.Client,
 		"source_ip":  sourceIP,
-	}).Debug("performing API action")
+		"block_time": blockedFor,
+	})
+	if blockErr != nil {
+		logger.WithError(blockErr).Warn("Failed to acquire semaphore; proceeding with action anyway")
+	} else {
+		logger.Debug("performing API action")
+	}
 	c.Collector.CollectEvent(ev)
 	usageCounter.Add(1)
 }
@@ -6038,7 +6079,7 @@ func (c *Controller) CreateUserExternalPrincipal(w http.ResponseWriter, r *http.
 		return
 	}
 
-	c.LogAction(ctx, "create_user_external_principal", r, "", "", "")
+	c.StartAction(ctx, "create_user_external_principal", r, "", "", "")
 
 	err := c.Auth.CreateUserExternalPrincipal(ctx, userID, params.PrincipalId)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -6061,7 +6102,7 @@ func (c *Controller) DeleteUserExternalPrincipal(w http.ResponseWriter, r *http.
 	}) {
 		return
 	}
-	c.LogAction(ctx, "delete_user_external_principal", r, "", "", "")
+	c.StartAction(ctx, "delete_user_external_principal", r, "", "", "")
 	err := c.Auth.DeleteUserExternalPrincipal(ctx, userID, params.PrincipalId)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -6083,7 +6124,7 @@ func (c *Controller) GetExternalPrincipal(w http.ResponseWriter, r *http.Request
 	}) {
 		return
 	}
-	c.LogAction(ctx, "get_external_principal", r, "", "", "")
+	c.StartAction(ctx, "get_external_principal", r, "", "", "")
 
 	principal, err := c.Auth.GetExternalPrincipal(ctx, params.PrincipalId)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -6111,7 +6152,7 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	c.LogAction(ctx, "list_user_external_principals", r, "", "", "")
+	c.StartAction(ctx, "list_user_external_principals", r, "", "", "")
 
 	principals, paginator, err := c.Auth.ListUserExternalPrincipals(ctx, userID, &model.PaginationParams{
 		Prefix: paginationPrefix(params.Prefix),
@@ -6148,7 +6189,7 @@ func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
 
 func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	c.LogAction(ctx, "get_license", r, "", "", "")
+	c.StartAction(ctx, "get_license", r, "", "", "")
 
 	_, err := auth.GetUser(ctx)
 	if err != nil {

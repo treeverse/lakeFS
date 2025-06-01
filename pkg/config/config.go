@@ -382,8 +382,9 @@ type StorageConfig interface {
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
 type BaseConfig struct {
-	ListenAddress string `mapstructure:"listen_address"`
-	TLS           struct {
+	ListenAddress        string `mapstructure:"listen_address"`
+	ConcurrentOperations int64  `mapstructure:"concurrent_operations"`
+	TLS                  struct {
 		Enabled  bool   `mapstructure:"enabled"`
 		CertFile string `mapstructure:"cert_file"`
 		KeyFile  string `mapstructure:"key_file"`
