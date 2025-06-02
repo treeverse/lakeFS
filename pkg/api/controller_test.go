@@ -2647,6 +2647,18 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 		require.Empty(t, string(resp.Body))
 	})
 
+	t.Run("head object not found", func(t *testing.T) {
+		resp, err := clt.HeadObjectWithResponse(ctx, repo, "main", &apigen.HeadObjectParams{Path: "foo/bar_not_found"})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusNotFound, resp.HTTPResponse.StatusCode)
+	})
+
+	t.Run("head object bad request", func(t *testing.T) {
+		resp, err := clt.HeadObjectWithResponse(ctx, repo, "invalid ref", &apigen.HeadObjectParams{Path: "foo/bar"})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.HTTPResponse.StatusCode)
+	})
+
 	t.Run("head object byte range", func(t *testing.T) {
 		rng := "bytes=0-9"
 		resp, err := clt.HeadObjectWithResponse(ctx, repo, "main", &apigen.HeadObjectParams{
@@ -2740,6 +2752,28 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("get object not found", func(t *testing.T) {
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{Path: "foo/bar_not_found"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedCode = http.StatusNotFound
+		if resp.HTTPResponse.StatusCode != expectedCode {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, expectedCode)
+		}
+	})
+
+	t.Run("get object bad request", func(t *testing.T) {
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "invalid ref", &apigen.GetObjectParams{Path: "foo/bar"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedCode = http.StatusBadRequest
+		if resp.HTTPResponse.StatusCode != expectedCode {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, expectedCode)
+		}
+	})
+
 	t.Run("get object byte range", func(t *testing.T) {
 		rng := "bytes=0-9"
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
@@ -2827,6 +2861,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		require.Equal(t, int64(37), resp.HTTPResponse.ContentLength)
 		require.Equal(t, "\"\"", resp.HTTPResponse.Header.Get("ETag"))
 	})
+
 	t.Run("get object with if-none-match returns expected response for empty etag", func(t *testing.T) {
 		eTagInput := "\"\""
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{

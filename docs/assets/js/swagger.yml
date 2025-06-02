@@ -4403,6 +4403,8 @@ paths:
                 type: string
         304:
           description: Content not modified
+        400:
+          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
@@ -4468,6 +4470,8 @@ paths:
             ETag:
               schema:
                 type: string
+        400:
+          description: Bad Request
         401:
           description: Unauthorized
         404:
