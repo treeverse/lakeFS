@@ -1000,6 +1000,14 @@ div.highlighter-rouge{
 	text-align: center;
 	border-radius: 6px;
 	font-size: x-small;
+	margin-left: 6px;
+	margin-right: 0;
+	color: $black;
+}
+
+.badge-enterprise {
+	background: #5e41d0;
+	color: $white;
 }
 
 .quickstart-steps {

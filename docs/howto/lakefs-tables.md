@@ -2,6 +2,7 @@
 title: lakeFS Tables
 description: Use lakeFS to manage Iceberg Tables using a builtin Iceberg REST Catalog
 parent: How-To
+badges: ["Enterprise"]
 ---
 
 # lakeFS Tables
