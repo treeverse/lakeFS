@@ -2,7 +2,9 @@
 title: Short-lived token (STS like) Authentication for lakeFS
 description: Authenticate with lakeFS using Secure Token Service (STS) by leveraging a remote authenticator. This feature enables integration with Identity Providers (IdPs) for secure and efficient user authentication.
 parent: Security
-badges: ["Enterprise"]
+badges:
+  - name: Enterprise
+    display_name: ENT
 redirect_from:
   - /reference/remote-authenticator.html
 ---

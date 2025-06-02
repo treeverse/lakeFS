@@ -30,7 +30,11 @@
            class="nav-list-link{% if page.url == node.url %} active{% endif %}">{{ node.title }}
            {%- if node.badges -%}
              {%- for badge in node.badges -%}
-               <span class="badge badge-{{ badge | downcase }}">{{ badge }}</span>
+               {%- if badge.name -%}
+                 <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
+               {%- else -%}
+                 <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
+               {%- endif -%}
              {%- endfor -%}
            {%- endif -%}
         </a>
@@ -52,7 +56,11 @@
                    class="nav-list-link{% if page.url == child.url %} active{% endif %}">{{ child.title }}
                    {%- if child.badges -%}
                      {%- for badge in child.badges -%}
-                       <span class="badge badge-{{ badge | downcase }}">{{ badge }}</span>
+                       {%- if badge.name -%}
+                         <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
+                       {%- else -%}
+                         <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
+                       {%- endif -%}
                      {%- endfor -%}
                    {%- endif -%}
                 </a>
@@ -65,7 +73,11 @@
                            class="nav-list-link{% if page.url == grand_child.url %} active{% endif %}">{{ grand_child.title }}
                            {%- if grand_child.badges -%}
                              {%- for badge in grand_child.badges -%}
-                               <span class="badge badge-{{ badge | downcase }}">{{ badge }}</span>
+                               {%- if badge.name -%}
+                                 <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
+                               {%- else -%}
+                                 <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
+                               {%- endif -%}
                              {%- endfor -%}
                            {%- endif -%}
                         </a>

@@ -2,7 +2,9 @@
 title: Single Sign On (SSO)
 description: How to configure Single Sign On (SSO) for lakeFS Cloud and lakeFS Enterprise.
 parent: Security
-badges: ["Enterprise"]
+badges:
+  - name: Enterprise
+    display_name: ENT
 redirect_from:
   - /cloud/sso.html
   - /enterprise/sso.html

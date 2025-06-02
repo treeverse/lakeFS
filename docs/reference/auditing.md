@@ -2,7 +2,9 @@
 title: Auditing
 parent: Reference
 description: Auditing is a solution for lakeFS Cloud which enables tracking of events and activities performed within the solution. These logs capture information such as who accessed the solution, what actions were taken, and when they occurred.
-badges: ["Enterprise"]
+badges:
+  - name: Enterprise
+    display_name: ENT
 redirect_from: 
   - /audit.html
   - /reference/audit.html

@@ -2,7 +2,9 @@
 title: Mirroring
 parent: How-To
 description: Mirroring allows replicating commits between lakeFS installations in different geo-locations/regions
-badges: ["Enterprise"]
+badges:
+  - name: Enterprise
+    display_name: ENT
 ---
 
 # Mirroring

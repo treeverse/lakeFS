@@ -2,7 +2,9 @@
 title: lakeFS Tables
 description: Use lakeFS to manage Iceberg Tables using a builtin Iceberg REST Catalog
 parent: How-To
-badges: ["Enterprise"]
+badges:
+  - name: Enterprise
+    display_name: ENT
 ---
 
 # lakeFS Tables
