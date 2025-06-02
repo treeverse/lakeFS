@@ -993,21 +993,23 @@ div.highlighter-rouge{
 	}
 }
 
-.badge {
+.badge, .nav-list .nav-list-item .nav-list-link.active .badge {
+	// override just-the-docs which loves setting !important on stuff
+	font-family: GalanoGrotesque !important; 
+	font-weight: 400 !important;
+
 	padding: 2px 4px;
-	background: $lightpink;
 	text-transform: uppercase;
 	text-align: center;
 	border-radius: 6px;
 	font-size: x-small;
 	margin-left: 6px;
 	margin-right: 0;
-	color: $black;
+	color: $white;
 }
 
 .badge-enterprise {
 	background: #5e41d0;
-	color: $white;
 }
 
 .quickstart-steps {
