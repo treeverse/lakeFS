@@ -1,7 +1,7 @@
 ---
 title: Mount Write Mode Semantics
 description: Everest mount file system semantics, limitations and and general info.
-grand_parent: Features
+grand_parent: Reference
 parent: Mount
 ---
 # Mount Write Mode Semantics
