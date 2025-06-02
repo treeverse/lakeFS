@@ -30,7 +30,7 @@ Follow these steps to implement an ACL server compatible with lakeFS.
 ### 1. Implementation
 
 To implement the ACL server, you need to implement a subset of the APIs defined in the
-[authorization.yaml specification](../reference/authorization-yaml.md).
+[authorization.yaml specification](./authorization-yaml.md).
 Not all APIs in the specification are required — only those listed below, grouped into the following categories:
 
 - **Credentials**
@@ -42,14 +42,14 @@ Implement all APIs under these categories.
 
 {: .note}
 > For detailed descriptions of the different schemas and each API, including their input and output parameters,
-> refer to each API in the [authorization.yaml specification](../reference/authorization-yaml.md).
+> refer to each API in the [authorization.yaml specification](./authorization-yaml.md).
 
 #### Credentials APIs
 
 These APIs are used to manage credentials (access key ID and secret access key) for users.
 
 Implement the following endpoints under the `credentials` tag in the
-[authorization.yaml specification](../reference/authorization-yaml.md):
+[authorization.yaml specification](./authorization-yaml.md):
 
 - `GET /auth/users/{userId}/credentials`:
   - **Description:** Returns a list of all access_key_ids and their creation dates for a specific user.
@@ -156,7 +156,7 @@ Implement the following endpoints under the `credentials` tag in the
 These APIs are used to manage users.
 
 Implement the following endpoints under the `users` tag in the
-[authorization.yaml specification](../reference/authorization-yaml.md):
+[authorization.yaml specification](./authorization-yaml.md):
 
 - `GET /auth/users`:
   - **Description:** Returns a list of all users.
