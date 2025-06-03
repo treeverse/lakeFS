@@ -4,6 +4,7 @@ description: Reduce the operational overhead of running garbage collection manua
 parent: Garbage Collection
 nav_order: 5
 grand_parent: How-To
+badges: ["Enterprise"]
 redirect_from:
   - /cloud/managed-gc.html
 ---
