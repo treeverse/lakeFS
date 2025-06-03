@@ -8,8 +8,6 @@ redirect_from:
 
 # Authenticate to lakeFS with AWS IAM Roles
 {: .d-inline-block }
-lakeFS Cloud
-{: .label .label-green }
 
 lakeFS Enterprise
 {: .label .label-purple }
@@ -128,6 +126,7 @@ The login to lakeFS is done by calling the [login API][login-api] with the `GetC
 Currently, the login operation is supported out of the box in:
 - [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark]
 - [python](#login-with-python)
+- [Everest mount](https://docs.lakefs.io/reference/mount.html#authenticating-with-aws-iam-role)
 
 For other use cases authenticate to lakeFS via login endpoint, this will require building the request input.
 
@@ -140,7 +139,7 @@ For other use cases authenticate to lakeFS via login endpoint, this will require
 To install the required packages, run the following command:
 
 ```sh
-  pip install lakefs[aws-iam]
+  pip install "lakefs[aws-iam]"
 ```
 
 There are two ways in which external principals can be used to authenticate to lakeFS:
@@ -164,15 +163,12 @@ There are two ways in which external principals can be used to authenticate to l
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_PRESIGNED_URL_TTL_SECONDS="60"
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS='{"HeaderName":"HeaderValue"}'
     ```
-   To use the client, merely import and initialize it:
+   To use the client, merely `import lakefs` and use it as you would normally do:
    ```python
-   from lakefs.client import Client
-   my_client = Client()
-   
-   # list repositories
-   repos = lakefs.repositories(client=my_client)
-   for r in repos:
-        print(r)
+   import lakefs
+
+   for branch in lakefs.repository("example-repo").branches():
+    print(branch)
    ```
    {: .warning }
    > Please note, using the IAM provider configurations will not work with the lakectl command line tool, and will stop you from running it.

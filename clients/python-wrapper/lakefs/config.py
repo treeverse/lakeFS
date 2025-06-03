@@ -130,9 +130,11 @@ class ClientConfig(Configuration):
                 if "server" in config_data:
                     self.server = ClientConfig.Server(**config_data["server"])
                 if "credentials" in config_data:
-                    self.credentials = ClientConfig.Credentials(**config_data["credentials"])
-                    self.username = self.credentials.access_key_id
-                    self.password = self.credentials.secret_access_key
+                    if ("access_key_id" in config_data["credentials"]
+                        and "secret_access_key" in config_data["credentials"]):
+                        self.credentials = ClientConfig.Credentials(**config_data["credentials"])
+                        self.username = self.credentials.access_key_id
+                        self.password = self.credentials.secret_access_key
 
                 if self.username is None or self.password is None:
                     self._set_iam_provider_from_config_file(config_data)

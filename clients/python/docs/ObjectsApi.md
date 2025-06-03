@@ -482,6 +482,7 @@ Name | Type | Description  | Notes
 **206** | partial object content |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 **304** | Content not modified |  -  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **410** | object expired |  -  |
@@ -712,6 +713,7 @@ void (empty response body)
 |-------------|-------------|------------------|
 **200** | object exists |  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
 **206** | partial object content info |  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  |
+**400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | object not found |  -  |
 **410** | object expired |  -  |

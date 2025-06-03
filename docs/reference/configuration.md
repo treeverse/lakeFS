@@ -125,7 +125,6 @@ Configuration section when using `database.type="local"`
 
 #### auth.authentication_api
 
-* `auth.authentication_api.endpoint` `(string: https://external.authentication-service/api/v1)` - URL to external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml)
 * `auth.authentication_api.endpoint` `(string : "")` - URL to external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml);
 * `auth.authentication_api.external_principals_enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
 

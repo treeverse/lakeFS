@@ -82,7 +82,10 @@ check-licenses-npm:
 docs/assets/js/swagger.yml: api/swagger.yml
 	@cp api/swagger.yml docs/assets/js/swagger.yml
 
-docs: docs/assets/js/swagger.yml
+docs/assets/js/authorization.yml: api/authorization.yml
+	@cp api/authorization.yml docs/assets/js/authorization.yml
+
+docs: docs/assets/js/swagger.yml docs/assets/js/authorization.yml
 
 docs-serve: ### Serve local docs
 	cd docs; bundle exec jekyll serve --livereload
