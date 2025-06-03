@@ -50,7 +50,9 @@ export const RepositoryPageLayout = ({ fluid = "sm" }) => {
             <div>
                 <RepoNav/>
 
-                <RepositoryNavTabs active={activePage}/>
+                <div className="full-width-tabs-border">
+                    <RepositoryNavTabs active={activePage}/>
+                </div>
 
                 <Container fluid={fluid}>
                     <div className="mt-4">

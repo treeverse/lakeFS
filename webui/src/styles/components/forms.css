@@ -1,0 +1,76 @@
+/* Forms */
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text);
+  background-color: var(--surface);
+  background-clip: padding-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-control:focus {
+  color: var(--text);
+  background-color: var(--surface);
+  border-color: var(--primary-light);
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+}
+
+.input-group-text {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  background-color: var(--border-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* Dark mode specific fixes */
+[data-bs-theme="dark"] .form-control {
+  background-color: #2d3748;
+  color: #f9fafb;
+  border-color: #4b5563;
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+  color: #9ca3af;
+}
+
+/* Fix search bar in dark mode */
+[data-bs-theme="dark"] .search-input-group .form-control,
+[data-bs-theme="dark"] .search-input-group .input-group-text {
+  background-color: #2d3748 !important;
+  color: #f9fafb !important;
+  border-color: #4b5563 !important;
+}
+
+/* Search prefix animation */
+.prefix-search-expanded {
+  animation: expandWidth 0.3s ease-out forwards;
+}
+
+.prefix-search-form {
+  display: flex;
+  align-items: center;
+}
+
+.prefix-search-input-group {
+  display: flex;
+  width: 250px;
+}
+
+.prefix-search-input-group .form-control {
+  flex: 1;
+} 

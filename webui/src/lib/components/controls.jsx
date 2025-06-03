@@ -8,7 +8,7 @@ import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 import Table from "react-bootstrap/Table";
 import {OverlayTrigger} from "react-bootstrap";
-import {CheckIcon, PasteIcon, SearchIcon, SyncIcon} from "@primer/octicons-react";
+import {CheckIcon, PasteIcon, SearchIcon, SyncIcon, AlertIcon, AlertFillIcon} from "@primer/octicons-react";
 import {Link} from "./nav";
 import {
     Box,
@@ -63,9 +63,25 @@ export const DebouncedFormControl = React.forwardRef((props, ref) => {
 });
 DebouncedFormControl.displayName = "DebouncedFormControl";
 
+
+export const Spinner = () => {
+    return (
+        <div className="loading-spinner mb-3">
+            <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+                <span className="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    );
+};
+
 export const Loading = ({message = "Loading..."}) => {
     return (
-        <Alert variant={"info"}>{message}</Alert>
+        <div className="loading-container d-flex flex-column align-items-center justify-content-center py-5">
+            <Spinner />
+            <div className="loading-text text-center text-muted">
+                {message}
+            </div>
+        </div>
     );
 };
 
@@ -82,15 +98,23 @@ export const AlertError = ({error, onDismiss = null, className = null}) => {
     while (err.error) err = err.error;
     if (err.message) content = err.message;
 
-    const alertClassName = `${className} text-wrap text-break`.trim();
+    const alertClassName = `${className} text-wrap text-break shadow-sm`.trim();
 
-    if (onDismiss !== null) {
-        return <Alert className={alertClassName} variant="danger" dismissible onClose={onDismiss}>{content}</Alert>;
-    }
-    
     return (
-        <Alert className={alertClassName} variant="danger">{content}</Alert>
-    );
+        <Alert 
+            className={alertClassName} 
+            variant="danger" 
+            dismissible={onDismiss !== null}
+            onClose={onDismiss}
+        >
+            <div className="alert-error-body">
+                <div className="me-3">
+                    <AlertFillIcon size={24} />
+                </div>
+                <div>{content}</div>
+            </div>
+        </Alert>
+    );    
 };
 
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
@@ -296,14 +320,15 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
 
     if (expanded) {
         return (
-            <Form onSubmit={handleSubmit}>
-                <InputGroup>
+            <Form onSubmit={handleSubmit} className="prefix-search-form">
+                <InputGroup className="prefix-search-input-group">
                     <Form.Control
                         ref={ref}
                         autoFocus
                         defaultValue={defaultValue}
                         placeholder={text}
                         aria-label={text}
+                        className="prefix-search-expanded"
                     />
                     <Button variant="light" onClick={toggle}>
                         <SearchIcon/>
@@ -421,8 +446,13 @@ export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
 
 export const Warning = (props) =>
 <>
-    <Alert variant="warning">
-    &#x26A0; { props.children }
+    <Alert variant="warning" className="shadow-sm">
+        <div className="d-flex align-items-center">
+            <div className="me-3">
+                <AlertIcon size={24} />
+            </div>
+            <div>{ props.children }</div>
+        </div>
     </Alert>
 </>;
 

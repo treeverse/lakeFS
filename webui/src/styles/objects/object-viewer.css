@@ -1,0 +1,140 @@
+/* Object viewer styles */
+.object-viewer-buttons {
+  display: flex;
+  align-items: center;
+}
+
+.object-viewer-buttons .btn {
+  margin-right: var(--spacing-md);
+}
+
+.object-viewer-buttons .btn:last-child {
+  margin-right: 0;
+}
+
+/* Make images in object viewer scale to fit their container */
+.object-viewer img,
+[class*="object-viewer"] img,
+[class*="fileViewer"] img,
+.file-content-body img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.object-viewer-pdf object {
+  width: 100%;
+  height: 600px;
+}
+
+/* Data Table Specific Styling */
+.object-viewer-sql-results {
+  margin-top: var(--spacing-md);
+  border-radius: var(--radius-md);
+  overflow: auto;
+  height: 70vh; /* Fixed height instead of max-height to ensure sticky headers work */
+  box-shadow: var(--shadow-md);
+  position: relative; /* Needed for sticky positioning context */
+}
+
+.object-viewer-sql-results .table {
+  margin-bottom: 0;
+  border: 1px solid var(--border);
+}
+
+.object-viewer-sql-results .table-dark th {
+  background-color: var(--surface);
+  color: var(--text);
+  border: none;
+  border-bottom: 2px solid var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: var(--spacing-md) var(--spacing-lg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.object-viewer-sql-results .table {
+  border-collapse: collapse;
+}
+
+.object-viewer-sql-results .table th,
+.object-viewer-sql-results .table td {
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.object-viewer-sql-results .table th:first-child,
+.object-viewer-sql-results .table td:first-child {
+  border-left: 1px solid var(--border);
+}
+
+.object-viewer-sql-results .table th:last-child,
+.object-viewer-sql-results .table td:last-child {
+  border-right: 1px solid var(--border);
+}
+
+.object-viewer-sql-results .table-dark th small {
+  color: var(--text-light);
+  font-size: 0.75rem;
+  display: block;
+  margin-top: 0.25rem;
+  font-weight: normal;
+}
+
+.object-viewer-sql-results tbody tr:nth-child(odd) {
+  background-color: var(--background-alt);
+}
+
+.object-viewer-sql-results tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.object-viewer-sql-results td {
+  font-size: 0.9rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-viewer-sql-results td.number-cell {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.object-viewer-sql-results td.string-cell {
+  font-family: var(--font-sans);
+}
+
+.object-viewer-sql-results td.date-cell {
+  font-family: var(--font-mono);
+  color: var(--text-light);
+}
+
+/* Dark mode adjustments for data tables */
+[data-bs-theme="dark"] .object-viewer-sql-results .table-dark th {
+  background-color: var(--background-alt);
+  color: var(--text-light);
+  border: none;
+  border-bottom: 2px solid var(--primary-dark);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+[data-bs-theme="dark"] .object-viewer-sql-results .table th,
+[data-bs-theme="dark"] .object-viewer-sql-results .table td {
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+[data-bs-theme="dark"] .object-viewer-sql-results tbody tr:nth-child(odd) {
+  background-color: rgba(31, 41, 55, 0.5);
+}
+
+[data-bs-theme="dark"] .object-viewer-sql-results tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+} 
