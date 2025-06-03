@@ -3,7 +3,6 @@ import React, { useCallback, useState } from "react";
 import dayjs from "dayjs";
 import {
   PasteIcon,
-  DotIcon,
   DownloadIcon,
   FileDirectoryIcon,
   FileIcon,
@@ -37,6 +36,7 @@ import {ClipboardButton, copyTextToClipboard, AlertError, Loading} from "../cont
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
 import {CommitInfoCard} from "./commits";
+
 
 export const humanSize = (bytes) => {
   if (!bytes) return "0.0 B";
@@ -586,7 +586,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
   return (
     <>
       <tr className={rowClass}>
-        <td className="diff-indicator">{diffIndicator}</td>
+        {diffIndicator && <td className="diff-indicator">{diffIndicator}</td>}
         <td className="tree-path">
           {entry.path_type === "common_prefix" ? (
             <FileDirectoryIcon />
@@ -729,67 +729,79 @@ export const URINavigator = ({
   );
 };
 
-const GetStarted = ({ config, onUpload, onImport }) => {
+const GetStarted = ({ config, onUpload, onImport, readOnly = false }) => {
   const importDisabled = !config.config.import_support;
+  
   return (
-    <Container className="m-4 mb-5">
-      <h2 className="mt-2">To get started with this repository:</h2>
-
-      <Row className="pt-2 ms-2">
-        <Col>
-          <DotIcon className="me-1 mt-3" />
-          <Button
-            variant="link"
-            className="mb-1"
-            disabled={importDisabled}
-            onClick={onImport}
-          >
-            Import
-          </Button>
-          &nbsp;data from {config.config.blockstore_type}. Or, see the&nbsp;
-          <a
-            href="https://docs.lakefs.io/howto/import.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            docs
-          </a>
-          &nbsp;for other ways to import data to your repository.
+    <Container className="get-started-container pb-5">
+      <div className="mb-4">
+        <img 
+          src="/getting-started.png" 
+          alt="Empty repository" 
+          className="img-fluid get-started-image"
+        />
+      </div>
+      
+      <h2 className="mb-0">Your repository is ready!</h2>
+      {!readOnly && <h6 className="lead mb-5">Let&apos;s add some data to get started</h6>}
+      
+      {!readOnly && <Row className="justify-content-center">
+        <Col md={5} className="mb-4">
+          <Card className="h-100 get-started-card">
+            <Card.Body className="d-flex flex-column align-items-center p-4">
+              <div className="get-started-icon-container mb-3">
+                <DownloadIcon size={24} />
+              </div>
+              <Card.Title>Import Data</Card.Title>
+              <Card.Text>
+                Import existing data from {config.config.blockstore_type}
+              </Card.Text>
+              <Button
+                variant="primary"
+                className="mt-auto"
+                disabled={importDisabled}
+                onClick={onImport}
+              >
+                Import Data
+              </Button>
+            </Card.Body>
+            <Card.Footer className="text-center bg-transparent border-0">
+              <a
+                href="https://docs.lakefs.io/howto/import.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-decoration-none"
+              >
+                Learn more about importing
+              </a>
+            </Card.Footer>
+          </Card>
         </Col>
-      </Row>
-
-      <Row className="pt-2 ms-2">
-        <Col>
-          <DotIcon className="me-1 mt-1" />
-          <Button variant="link" className="mb-1" onClick={onUpload}>
-            Upload
-          </Button>
-          &nbsp;an object.
+        
+        <Col md={5} className="mb-4">
+          <Card className="h-100 get-started-card">
+            <Card.Body className="d-flex flex-column align-items-center p-4">
+              <div className="get-started-icon-container mb-3">
+                <PlusIcon size={24} />
+              </div>
+              <Card.Title>Upload Objects</Card.Title>
+              <Card.Text>
+                Upload individual files directly to your repository
+              </Card.Text>
+              <Button
+                variant="primary"
+                className="mt-auto"
+                onClick={onUpload}
+              >
+                Upload Files
+              </Button>
+            </Card.Body>
+            <Card.Footer className="text-center bg-transparent border-0">
+              <span className="text-muted">Quick and easy for small files</span>
+            </Card.Footer>
+          </Card>
         </Col>
-      </Row>
-
-      <Row className="pt-2 ms-2">
-        <Col>
-          <DotIcon className="me-1 mt-1" />
-          Use&nbsp;
-          <a
-            href="https://docs.lakefs.io/howto/copying.html#using-distcp"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            DistCp
-          </a>
-          &nbsp;or&nbsp;
-          <a
-            href="https://docs.lakefs.io/howto/copying.html#using-rclone"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Rclone
-          </a>
-          &nbsp;to copy data into your repository.
-        </Col>
-      </Row>
+      </Row>}
     </Container>
   );
 };
@@ -812,7 +824,7 @@ export const Tree = ({
   if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
     // empty state!
     body = (
-      <GetStarted config={config} onUpload={onUpload} onImport={onImport} />
+      <GetStarted config={config} onUpload={onUpload} onImport={onImport} readOnly={repo.readOnly} />
     );
   } else {
     body = (
