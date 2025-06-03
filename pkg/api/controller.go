@@ -113,6 +113,12 @@ type Controller struct {
 
 var usageCounter = stats.NewUsageCounter()
 
+// Context key to skip CollectEvent and usageCounter update in LogAction
+// If set to true in the context, LogAction will not collect events or increment usageCounter.
+type logActionSkipKeyType struct{}
+
+var LogActionSkipKey = logActionSkipKeyType{}
+
 func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *Controller {
 	return &Controller{
 		Config:          cfg,
@@ -5865,6 +5871,10 @@ func (c *Controller) LogAction(ctx context.Context, action string, r *http.Reque
 		"client":     ev.Client,
 		"source_ip":  sourceIP,
 	}).Debug("performing API action")
+
+	if skip, ok := ctx.Value(LogActionSkipKey).(bool); ok && skip {
+		return
+	}
 	c.Collector.CollectEvent(ev)
 	usageCounter.Add(1)
 }
