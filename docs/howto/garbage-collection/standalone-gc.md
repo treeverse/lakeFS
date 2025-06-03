@@ -4,6 +4,7 @@ description: Run a limited version of garbage collection without any external de
 parent: Garbage Collection
 nav_order: 5
 grand_parent: How-To
+badges: ["Enterprise"]
 redirect_from:
   - /cloud/standalone-gc.html
 ---
