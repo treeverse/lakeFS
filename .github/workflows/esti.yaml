@@ -811,7 +811,6 @@ jobs:
           ESTI_AWS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           ESTI_AWS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
           ESTI_VERSION: ${{ needs.deploy-image.outputs.tag }}
-          ESTI_DATABASE_CONNECTION_STRING: "true"
 
       - name: Check files in S3 bucket KV
         run: |
