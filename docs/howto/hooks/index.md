@@ -142,8 +142,8 @@ For example, lakeFS will search and execute all the matching Action files with t
 | `post-create-branch` | Runs on the new branch after the branch was created                                              |
 | `pre-delete-branch`  | Runs prior to deleting a branch                                                                  |
 | `post-delete-branch` | Runs after the branch was deleted                                                                |
-| `pre-revert-branch`  | Runs prior to performing a revert operation on a branch                                          |
-| `post-revert-branch` | Runs after performing a revert operation on a branch                                             |
+| `pre-revert`         | Runs prior to performing a revert operation on a branch                                          |
+| `post-revert`        | Runs after performing a revert operation on a branch                                             |
 | `pre-create-tag`     | Runs prior to creating a new tag                                                                 |
 | `post-create-tag`    | Runs after the tag was created                                                                   |
 | `pre-delete-tag`     | Runs prior to deleting a tag                                                                     |
