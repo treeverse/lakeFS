@@ -2,9 +2,7 @@
 title: Login to lakeFS with AWS IAM Roles
 description: This section covers how to authenticate to lakeFS using AWS IAM.
 parent: Security
-badges:
-  - name: Enterprise
-    display_name: ENT
+badges: ["Enterprise"]
 redirect_from:
   - /reference/external-principals-aws.html
 ---
