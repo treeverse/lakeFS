@@ -26,6 +26,8 @@ services:
       - lakefs:testdeleteobjects.s3.local.lakefs.io
       - lakefs:testmigrate-testpremigratemultipart.s3.local.lakefs.io
       - lakefs:migrate.s3.local.lakefs.io
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - CGO_ENABLED=0
       - AWS_ACCESS_KEY_ID
