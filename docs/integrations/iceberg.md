@@ -48,7 +48,7 @@ With lakeFS Iceberg REST Catalog, you can:
 3. **Collaborative Data Development**:
    - Multiple teams can work on different table features simultaneously
    - Maintain data quality through pre-merge validations
-   - Collaborate using [pull requests](./pull-requests.html) on changes to data and schema
+   - Collaborate using [pull requests](../howto/pull-requests.md) on changes to data and schema
 
 4. **Manage and Govern Access to data**:
    - Use the detailed built-in commit log capturing who, what and how data is changed
