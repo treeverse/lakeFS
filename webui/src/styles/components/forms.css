@@ -44,10 +44,6 @@
   border-color: #4b5563;
 }
 
-[data-bs-theme="dark"] .form-control::placeholder {
-  color: #9ca3af;
-}
-
 /* Fix search bar in dark mode */
 [data-bs-theme="dark"] .search-input-group .form-control,
 [data-bs-theme="dark"] .search-input-group .input-group-text {
