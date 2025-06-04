@@ -27,8 +27,14 @@ export const GeoJSONPreview = ({ data }) => {
         <div className="geojson-map-wrapper">
             <MapContainer {...mapProps} className="geojson-map-container">
                 <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png"
+                    subdomains={['a', 'b', 'c']}
+                    attribution={`
+            &copy; <a href="https://openstreetmap.org/">OpenStreetMap</a>
+            &copy; <a href="https://openstreetmap.de/">OSM Germany</a>
+          `}
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
                 />
                 <GeoJSON data={geoJsonData} />
             </MapContainer>
