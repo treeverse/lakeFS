@@ -2,7 +2,6 @@
 title: The lakeFS Project
 description: lakeFS is an open-source project under the Apache 2.0 license, committed to fostering the open-source space. 
 nav_order: 100
-has_children: true
 has_toc: false
 redirect_from: 
   - /understand/licensing.html

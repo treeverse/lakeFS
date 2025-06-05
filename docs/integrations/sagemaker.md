@@ -1,7 +1,6 @@
 ---
 title: Amazon SageMaker
 description: This section explains how to integrate your Amazon SageMaker installation to work with lakeFS.
-parent: Integrations
 redirect_from: /using/sagemaker.html
 ---
 

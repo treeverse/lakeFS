@@ -1,7 +1,6 @@
 ---
 title: AWS CLI
 description: This section shows how to use the AWS CLI for AWS S3 to access lakeFS.
-parent: Integrations
 redirect_from: /using/aws_cli.html
 ---
 

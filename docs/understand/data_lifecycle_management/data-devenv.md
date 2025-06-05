@@ -1,7 +1,5 @@
 ---
 title: In Test
-parent: Data Lifecycle Management
-grand_parent: Understanding lakeFS
 description: lakeFS enables a safe test environment on your data lake without the need to copy or mock data
 redirect_from:
   - /data_lifecycle_management/data-devenv.html

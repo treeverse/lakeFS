@@ -3,8 +3,6 @@ description: lakeFS quickstart / Commit the change and merge it back into the ma
 next:
     - Rollback the changes
     - ./rollback.html
-parent: ⭐ Quickstart
-grand_parent: Getting Started
 previous:
     - Create a branch of the data
     - ./branch.html

@@ -1,7 +1,6 @@
 ---
 title: Glue Data Catalog
 description: Query data from lakeFS branches in AWS Athena or other services backed by Glue Data Catalog.
-parent: Integrations
 redirect_from: /using/glue_metastore.html
 ---
 

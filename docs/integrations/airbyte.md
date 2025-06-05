@@ -1,7 +1,6 @@
 ---
 title: Airbyte
 description: Use Airbyte with lakeFS to easily sync data between applications and S3 with lakeFS version control.
-parent: Integrations
 ---
 
 # Airbyte 

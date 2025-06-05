@@ -1,8 +1,6 @@
 ---
 title: Data Lifecycle Management
 description: Learn how lakeFS enables data lifecycle management.
-parent: Understanding lakeFS
-has_children: true
 has_toc: false
 redirect_from:
     - /branching/recommendations.html

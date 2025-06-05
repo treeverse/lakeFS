@@ -1,8 +1,6 @@
 ---
 title: Get Started
 description: Methods for getting started with lakeFS Enterprise
-parent: lakeFS Enterprise
-has_children: true
 has_toc: false
 nav_order: 200
 ---

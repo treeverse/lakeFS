@@ -1,8 +1,6 @@
 ---
 title: Garbage Collection
 description: Clean up expired objects using the garbage collection feature in lakeFS.
-parent: Garbage Collection
-grand_parent: How-To
 nav_order: 1
 redirect_from:
   - /howto/garbage-collection/index.html

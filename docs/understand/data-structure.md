@@ -1,6 +1,5 @@
 ---
 title: Data Structure
-parent: Understanding lakeFS
 description: Understand the data structure in lakeFS
 ---
 

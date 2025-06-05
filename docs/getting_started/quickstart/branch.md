@@ -3,8 +3,6 @@ description: lakeFS quickstart / Create a branch in lakeFS without copying data 
 next:
     - Merge the branch back into main
     - ./commit-and-merge.html
-grand_parent: Getting Started
-parent: ⭐ Quickstart
 previous:
     - Query the pre-populated data
     - ./query.html

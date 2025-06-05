@@ -3,8 +3,6 @@ description: lakeFS quickstart / Use Actions and Hooks to enforce conditions whe
 next:
     - Work with lakeFS data on your local environment
     - ./work-with-data-locally.html
-grand_parent: Getting Started
-parent: ⭐ Quickstart
 previous:
     - Rollback the changes
     - ./rollback.html

@@ -1,7 +1,5 @@
 ---
 title: AWS
-grand_parent: How-To
-parent: Install lakeFS
 description: How to deploy and set up a production-suitable lakeFS environment on AWS
 redirect_from:
    - /deploying-aws/index.html

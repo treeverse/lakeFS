@@ -1,7 +1,6 @@
 ---
 title: HuggingFace Datasets
 description: Read, write and version your HuggingFace datasets with lakeFS
-parent: Integrations
 
 ---
 # Versioning HuggingFace Datasets with lakeFS

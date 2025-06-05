@@ -1,6 +1,5 @@
 ---
 title: Red Hat OpenShift AI
-parent: Integrations
 redirect_from: 
 ---
 

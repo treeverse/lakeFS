@@ -1,7 +1,6 @@
 ---
 title: Authentication 
 description: This section covers Authentication of your lakeFS server.
-parent: Security
 redirect_from:
   - /reference/authentication.html
 ---

@@ -1,8 +1,7 @@
 ---
 title: How lakeFS Works
 description: This section includes all the details about the lakeFS open source project. 
-parent: Understanding lakeFS
-has_children: true
+nav_order: 1
 has_toc: false
 ---
 

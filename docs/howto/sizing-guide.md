@@ -1,6 +1,5 @@
 ---
 title: Sizing Guide
-parent: How-To
 description: This section provides a detailed sizing guide for deploying lakeFS.
 redirect_from:
     - /architecture/sizing-guide.html

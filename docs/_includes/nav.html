@@ -1,97 +1,236 @@
+{%- comment -%}
+Build navigation hierarchy automatically from filesystem paths
+This eliminates the need for manual parent/grand_parent entries in YAML front matter
+{%- endcomment -%}
+
+{%- comment -%}
+Get all pages that should be included in navigation and sort them
+{%- endcomment -%}
+{%- assign all_pages = site.html_pages | where_exp:"item", "item.nav_exclude != true" | where_exp:"item", "item.title != nil" | where_exp:"item", "item.title != ''" -%}
+
+{%- if site.nav_sort == 'case_insensitive' -%}
+  {%- assign sorted_pages = all_pages | sort_natural:"title" | sort_natural:"nav_order" -%}
+{%- else -%}
+  {%- assign sorted_pages = all_pages | sort:"title" | sort:"nav_order" -%}
+{%- endif -%}
+
+{%- comment -%}
+Single pass: categorize pages by hierarchy level based on path structure
+{%- endcomment -%}
+{%- assign root_pages = "" | split: "," -%}
+{%- assign child_pages = "" | split: "," -%}
+{%- assign grandchild_pages = "" | split: "," -%}
+
+{%- for page_item in sorted_pages -%}
+  {%- assign path_parts = page_item.path | split: "/" -%}
+  {%- assign depth = path_parts.size -%}
+  {%- assign filename = path_parts.last -%}
+  
+  {%- comment -%}
+  Root pages: files directly in root OR index.md files in top-level directories
+  {%- endcomment -%}
+  {%- if depth == 1 -%}
+    {%- assign root_pages = root_pages | push: page_item -%}
+  {%- elsif depth == 2 and filename == "index.md" -%}
+    {%- assign root_pages = root_pages | push: page_item -%}
+  {%- comment -%}
+  Child pages: non-index files in top-level directories OR index.md files in second-level directories
+  {%- endcomment -%}
+  {%- elsif depth == 2 and filename != "index.md" -%}
+    {%- assign child_pages = child_pages | push: page_item -%}
+  {%- elsif depth == 3 and filename == "index.md" -%}
+    {%- assign child_pages = child_pages | push: page_item -%}
+  {%- comment -%}
+  Grandchild pages: non-index files in second-level directories
+  {%- endcomment -%}
+  {%- elsif depth == 3 and filename != "index.md" -%}
+    {%- assign grandchild_pages = grandchild_pages | push: page_item -%}
+  {%- elsif depth == 4 -%}
+    {%- assign grandchild_pages = grandchild_pages | push: page_item -%}
+  {%- endif -%}
+{%- endfor -%}
+
 <ul class="nav-list">
-    {%- assign ordered_pages_list = site.html_pages | where_exp:"item", "item.nav_order != nil" -%}
-    {%- assign unordered_pages_list = site.html_pages | where_exp:"item", "item.nav_order == nil" -%}
-    {%- if site.nav_sort == 'case_insensitive' -%}
-    {%- assign sorted_ordered_pages_list = ordered_pages_list | sort_natural:"nav_order" -%}
-    {%- assign sorted_unordered_pages_list = unordered_pages_list | sort_natural:"title" -%}
-    {%- else -%}
-    {%- assign sorted_ordered_pages_list = ordered_pages_list | sort:"nav_order" -%}
-    {%- assign sorted_unordered_pages_list = unordered_pages_list | sort:"title" -%}
+{%- for root_page in root_pages -%}
+  {%- comment -%}
+  Show section headers if defined
+  {%- endcomment -%}
+  {%- if root_page.section -%}
+  <li class="nav-list-item header">
+    {{ root_page.section }}
+  </li>
+  {%- endif -%}
+  
+  {%- comment -%}
+  Get root directory for this page
+  {%- endcomment -%}
+  {%- assign root_path_parts = root_page.path | split: "/" -%}
+  {%- assign root_dir = root_path_parts.first -%}
+  
+  {%- comment -%}
+  Check if current page is in this section
+  {%- endcomment -%}
+  {%- assign current_path_parts = page.path | split: "/" -%}
+  {%- assign is_current_section = false -%}
+  {%- if current_path_parts.first == root_dir -%}
+    {%- assign is_current_section = true -%}
+  {%- endif -%}
+  
+  {%- comment -%}
+  Find children for this root page: pages in the same top-level directory
+  Use sorted_pages to preserve nav_order sorting, but filter properly to avoid duplicates
+  {%- endcomment -%}
+  {%- assign actual_children = "" | split: "," -%}
+  {%- for child in sorted_pages -%}
+    {%- assign child_path_parts = child.path | split: "/" -%}
+    {%- assign child_depth = child_path_parts.size -%}
+    {%- assign child_filename = child_path_parts.last -%}
+    {%- if child_path_parts.first == root_dir -%}
+      {%- comment -%}
+      Only include pages that should be children:
+      - depth 2 non-index files (direct children)
+      - depth 3 index files (subdirectory index pages)
+      {%- endcomment -%}
+      {%- assign should_include = false -%}
+      {%- if child_depth == 2 and child_filename != "index.md" -%}
+        {%- assign should_include = true -%}
+      {%- endif -%}
+      {%- if child_depth == 3 and child_filename == "index.md" -%}
+        {%- assign should_include = true -%}
+      {%- endif -%}
+      {%- if should_include -%}
+        {%- assign actual_children = actual_children | push: child -%}
+      {%- endif -%}
     {%- endif -%}
-    {%- assign pages_list = sorted_ordered_pages_list | concat: sorted_unordered_pages_list -%}
-    {%- for node in pages_list -%}
-    {%- unless node.nav_exclude -%}
-    {%- if node.section  -%}
-    <li class="nav-list-item header">
-        {{ node.section }}
-    </li>{%- endif -%}
-    {%- if node.parent == nil and node.title -%}
-    <li
-            class="nav-list-item{% if page.url == node.url or page.parent == node.title or page.grand_parent == node.title %} active{% endif %}">
-        {%- if page.parent == node.title or page.grand_parent == node.title -%}
-        {%- assign first_level_url = node.url | absolute_url -%}
+  {%- endfor -%}
+  
+  {%- comment -%}
+  Sort children by nav_order and title to ensure proper ordering within section
+  {%- endcomment -%}
+  {%- if site.nav_sort == 'case_insensitive' -%}
+    {%- assign actual_children = actual_children | sort_natural:"title" | sort_natural:"nav_order" -%}
+  {%- else -%}
+    {%- assign actual_children = actual_children | sort:"title" | sort:"nav_order" -%}
+  {%- endif -%}
+
+  <li class="nav-list-item{% if page.url == root_page.url or is_current_section %} active{% endif %}">
+    {%- if actual_children.size > 0 -%}
+    <a href="#" class="nav-list-expander"><svg viewBox="0 0 24 24">
+      <use xlink:href="#svg-arrow-right"></use>
+    </svg></a>
+    {%- endif -%}
+    
+    <a href="{{ root_page.url | absolute_url }}" class="nav-list-link{% if page.url == root_page.url %} active{% endif %}">
+      {{ root_page.title }}
+      {%- if root_page.badges -%}
+        {%- for badge in root_page.badges -%}
+          {%- if badge.name -%}
+            <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
+          {%- else -%}
+            <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+    </a>
+    
+    {%- if actual_children.size > 0 -%}
+    <ul class="nav-list">
+      {%- for child in actual_children -%}
+        {%- comment -%}
+        Get child directory path
+        {%- endcomment -%}
+        {%- assign child_path_parts = child.path | split: "/" -%}
+        {%- assign child_dir = "" -%}
+        {%- if child_path_parts.size == 3 -%}
+          {%- assign child_dir = child_path_parts[1] -%}
         {%- endif -%}
-        {%- if node.has_children -%}
-        <a href="#" class="nav-list-expander"><svg viewBox="0 0 24 24">
-                <use xlink:href="#svg-arrow-right"></use>
-            </svg></a>
+        
+        {%- comment -%}
+        Check if current page is under this child
+        {%- endcomment -%}
+        {%- assign is_current_child = false -%}
+        {%- if current_path_parts.size >= 2 and current_path_parts.first == root_dir -%}
+          {%- if child_path_parts.size == 2 or (current_path_parts.size >= 3 and current_path_parts[1] == child_dir) -%}
+            {%- assign is_current_child = true -%}
+          {%- endif -%}
         {%- endif -%}
-        <a href="{{ node.url | absolute_url }}"
-           class="nav-list-link{% if page.url == node.url %} active{% endif %}">{{ node.title }}
-           {%- if node.badges -%}
-             {%- for badge in node.badges -%}
-               {%- if badge.name -%}
-                 <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
-               {%- else -%}
-                 <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
-               {%- endif -%}
-             {%- endfor -%}
-           {%- endif -%}
-        </a>
-        {%- if node.has_children -%}
-        {%- assign children_list = pages_list | where: "parent", node.title -%}
-        <ul class="nav-list ">
-            {%- for child in children_list -%}
-            {%- unless child.nav_exclude -%}
-            <li class="nav-list-item {% if page.url == child.url or page.parent == child.title %} active{% endif %}">
-                {%- if page.url == child.url or page.parent == child.title -%}
-                {%- assign second_level_url = child.url | absolute_url -%}
+        
+        {%- comment -%}
+        Find grandchildren for this child
+        Use sorted_pages to preserve nav_order sorting, but filter properly to avoid duplicates
+        {%- endcomment -%}
+        {%- assign actual_grandchildren = "" | split: "," -%}
+        {%- if child_dir != "" -%}
+          {%- for grandchild in sorted_pages -%}
+            {%- assign grandchild_path_parts = grandchild.path | split: "/" -%}
+            {%- assign grandchild_depth = grandchild_path_parts.size -%}
+            {%- assign grandchild_filename = grandchild_path_parts.last -%}
+            {%- if grandchild_path_parts.first == root_dir and grandchild_path_parts[1] == child_dir -%}
+              {%- comment -%}
+              Only include pages that should be grandchildren:
+              - depth 3 non-index files (files in subdirectories)
+              - depth 4 files (deeper nested files)
+              {%- endcomment -%}
+              {%- if (grandchild_depth == 3 and grandchild_filename != "index.md") or grandchild_depth == 4 -%}
+                {%- assign actual_grandchildren = actual_grandchildren | push: grandchild -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          
+          {%- comment -%}
+          Sort grandchildren by nav_order and title to ensure proper ordering within section
+          {%- endcomment -%}
+          {%- if site.nav_sort == 'case_insensitive' -%}
+            {%- assign actual_grandchildren = actual_grandchildren | sort_natural:"title" | sort_natural:"nav_order" -%}
+          {%- else -%}
+            {%- assign actual_grandchildren = actual_grandchildren | sort:"title" | sort:"nav_order" -%}
+          {%- endif -%}
+        {%- endif -%}
+
+        <li class="nav-list-item{% if page.url == child.url or is_current_child %} active{% endif %}">
+          {%- if actual_grandchildren.size > 0 -%}
+          <a href="#" class="nav-list-expander"><svg viewBox="0 0 24 24">
+            <use xlink:href="#svg-arrow-right"></use>
+          </svg></a>
+          {%- endif -%}
+          
+          <a href="{{ child.url | absolute_url }}" class="nav-list-link{% if page.url == child.url %} active{% endif %}">
+            {{ child.title }}
+            {%- if child.badges -%}
+              {%- for badge in child.badges -%}
+                {%- if badge.name -%}
+                  <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
+                {%- else -%}
+                  <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
                 {%- endif -%}
-                {%- if child.has_children -%}
-                <a href="#" class="nav-list-expander"><svg viewBox="0 0 24 24">
-                        <use xlink:href="#svg-arrow-right"></use>
-                    </svg></a>
+              {%- endfor -%}
+            {%- endif -%}
+          </a>
+          
+          {%- if actual_grandchildren.size > 0 -%}
+          <ul class="nav-list">
+            {%- for grandchild in actual_grandchildren -%}
+            <li class="nav-list-item{% if page.url == grandchild.url %} active{% endif %}">
+              <a href="{{ grandchild.url | absolute_url }}" class="nav-list-link{% if page.url == grandchild.url %} active{% endif %}">
+                {{ grandchild.title }}
+                {%- if grandchild.badges -%}
+                  {%- for badge in grandchild.badges -%}
+                    {%- if badge.name -%}
+                      <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
+                    {%- else -%}
+                      <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
+                    {%- endif -%}
+                  {%- endfor -%}
                 {%- endif -%}
-                <a href="{{ child.url | absolute_url }}"
-                   class="nav-list-link{% if page.url == child.url %} active{% endif %}">{{ child.title }}
-                   {%- if child.badges -%}
-                     {%- for badge in child.badges -%}
-                       {%- if badge.name -%}
-                         <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
-                       {%- else -%}
-                         <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
-                       {%- endif -%}
-                     {%- endfor -%}
-                   {%- endif -%}
-                </a>
-                {%- if child.has_children -%}
-                {%- assign grand_children_list = pages_list | where: "parent", child.title | where: "grand_parent", node.title -%}
-                <ul class="nav-list">
-                    {%- for grand_child in grand_children_list -%}
-                    <li class="nav-list-item {% if page.url == grand_child.url %} active{% endif %}">
-                        <a href="{{ grand_child.url | absolute_url }}"
-                           class="nav-list-link{% if page.url == grand_child.url %} active{% endif %}">{{ grand_child.title }}
-                           {%- if grand_child.badges -%}
-                             {%- for badge in grand_child.badges -%}
-                               {%- if badge.name -%}
-                                 <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
-                               {%- else -%}
-                                 <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
-                               {%- endif -%}
-                             {%- endfor -%}
-                           {%- endif -%}
-                        </a>
-                    </li>
-                    {%- endfor -%}
-                </ul>
-                {%- endif -%}
+              </a>
             </li>
-            {%- endunless -%}
             {%- endfor -%}
-        </ul>
-        {%- endif -%}
-    </li>
+          </ul>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
     {%- endif -%}
-    {%- endunless -%}
-    {%- endfor -%}
+  </li>
+{%- endfor -%}
 </ul>

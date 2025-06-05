@@ -1,10 +1,8 @@
 ---
 description: lakeFS quickstart / Run lakeFS locally pre-populated with a sample repository
-grand_parent: Getting Started
 next:
     - Query the pre-populated data
     - ./query.html
-parent: ⭐ Quickstart
 previous:
     - Quickstart introduction
     - ./index.html

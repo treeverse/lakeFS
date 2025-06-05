@@ -1,8 +1,6 @@
 ---
 title: Mount CSI Driver
 description: This section covers the usage of CSI Driver with Everest feature for mounting a lakeFS path to Kubernetes.
-grand_parent: Reference
-parent: Mount
 ---
 
 # Mount CSI Driver (Everest on Kubernetes)

@@ -1,5 +1,4 @@
 ---
-parent: posts
 date: 2024-10-28
 search_exclude: true
 ---

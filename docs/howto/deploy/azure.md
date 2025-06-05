@@ -1,7 +1,5 @@
 ---
 title: Azure
-grand_parent: How-To
-parent: Install lakeFS
 description: How to deploy and set up a production-suitable lakeFS environment on Microsoft Azure
 redirect_from:
    - /setup/storage/blob.html 

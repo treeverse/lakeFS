@@ -1,8 +1,6 @@
 ---
 title: Documentation
 description: How to contribute to the lakeFS Documentation, including style guide
-parent: The lakeFS Project
-has_children: true
 has_toc: false
 redirect_from:
    - /README.html

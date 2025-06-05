@@ -1,7 +1,6 @@
 ---
 title: Apache Iceberg
 description: How to integrate lakeFS with Apache Iceberg
-parent: Integrations
 redirect_from: /howto/lakefs-tables.md
 badges: ["Enterprise"]
 ---

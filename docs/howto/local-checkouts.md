@@ -1,7 +1,6 @@
 ---
 title: Work with lakeFS data locally
 description: How to work with lakeFS data locally
-parent: How-To
 ---
 
 # Working with lakeFS Data Locally

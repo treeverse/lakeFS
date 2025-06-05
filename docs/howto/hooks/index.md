@@ -1,9 +1,7 @@
 ---
 title: Actions and Hooks
 description: Overview of lakeFS Actions and Hooks
-has_children: true  
 has_toc: false
-parent: How-To
 nav_order: 3
 redirect_from:
   - /reference/hooks.html

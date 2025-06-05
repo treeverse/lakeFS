@@ -1,7 +1,6 @@
 ---
 title: Integrations
 description: Integrate lakeFS with all modern data frameworks such as Spark, Apache Iceberg, Hive, AWS Athena, Presto, and more.
-has_children: true
 has_toc: false
 nav_order: 10
 redirect_from: /using

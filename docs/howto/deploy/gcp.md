@@ -1,7 +1,5 @@
 ---
 title: GCP
-grand_parent: How-To
-parent: Install lakeFS
 description: How to deploy and set up a production-suitable lakeFS environment on Google Cloud Platform (GCP).
 redirect_from:
    - /setup/storage/gcs.html 

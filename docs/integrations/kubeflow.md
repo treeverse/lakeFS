@@ -1,7 +1,6 @@
 ---
 title: Kubeflow
 description: Easily build reproducible data pipelines with Kubeflow and lakeFS using commits, without modifying the code or logic of your job.
-parent: Integrations
 
 ---
 # Using lakeFS with Kubeflow pipelines

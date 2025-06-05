@@ -1,7 +1,6 @@
 ---
 title: Vertex AI
 description: How to use Vertex Datasets and gcsfuse with lakeFS
-parent: Integrations
 ---
 
 # Using Vertex AI with lakeFS

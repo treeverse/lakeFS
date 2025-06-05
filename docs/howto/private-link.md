@@ -1,7 +1,6 @@
 ---
 title: Private Link
 description: Private Link enables lakeFS Cloud to interact with your infrastructure using private networking.
-parent: How-To
 redirect_from:
   - /cloud/private-link.html
 ---

@@ -1,8 +1,6 @@
 ---
 title: Migrate from lakeFS OSS
 description: How to migrate from lakeFS OSS to lakeFS Enterprise
-parent: Get Started
-grand_parent: lakeFS Enterprise
 nav_order: 203
 ---
 

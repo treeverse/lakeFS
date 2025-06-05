@@ -1,7 +1,5 @@
 ---
 title: In Production
-parent: Data Lifecycle Management
-grand_parent: Understanding lakeFS
 description: lakeFS helps recover from errors and find root case in production.
 redirect_from:
   - /data_lifecycle_management/production.html

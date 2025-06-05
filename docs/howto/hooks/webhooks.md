@@ -1,7 +1,5 @@
 ---
 title: Webhooks
-parent: Actions and Hooks
-grand_parent: How-To
 description: Webhooks reference
 redirect_from:
    - /hooks/webhooks.html

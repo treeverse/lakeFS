@@ -1,7 +1,6 @@
 ---
 title: Import Data
 description: Import existing data into a lakeFS repository
-parent: How-To
 redirect_from: 
   - /setup/import.html
 ---

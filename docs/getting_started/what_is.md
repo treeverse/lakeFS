@@ -1,6 +1,5 @@
 ---
 description: The lakeFS documentation provides guidance on how to use lakeFS to deliver resilience and manageability to data lakes.
-parent: Getting Started
 redirect_from:
     - /downloads.html
     - /index.md

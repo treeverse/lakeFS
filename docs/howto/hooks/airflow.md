@@ -1,7 +1,5 @@
 ---
 title: Airflow Hooks
-parent: Actions and Hooks
-grand_parent: How-To
 description: Airflow Hooks Reference
 redirect_from:
    - /hooks/airflow.html

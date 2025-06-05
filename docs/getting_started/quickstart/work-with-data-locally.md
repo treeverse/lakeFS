@@ -1,10 +1,8 @@
 ---
 description: lakeFS quickstart / Bring lakeFS data to a local environment to show how lakeFS can be used for ML experiments development.
-grand_parent: Getting Started
 next:
     - Resources for learning more about lakeFS
     - ./learning-more-lakefs.html
-parent: ⭐ Quickstart
 previous:
     - Using Actions and Hooks in lakeFS
     - ./actions-and-hooks.html

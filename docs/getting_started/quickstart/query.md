@@ -1,10 +1,8 @@
 ---
 description: lakeFS quickstart / Query the pre-populated data using DuckDB browser that's built into lakeFS
-grand_parent: Getting Started
 next:
     - Create a branch of the data
     - ./branch.html
-parent: ⭐ Quickstart
 previous:
     - Launch the quickstart environment
     - ./launch.html

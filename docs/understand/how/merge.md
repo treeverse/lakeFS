@@ -1,8 +1,6 @@
 ---
 title: Merge
 description: Using lakeFS, you can merge different commits and references into a branch. The purpose of this document is to explain how to use this feature.
-parent: How lakeFS Works
-grand_parent: Understanding lakeFS
 redirect_from:
   - /reference/merge.html
   - /understand/merge.html

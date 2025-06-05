@@ -1,7 +1,5 @@
 ---
 title: Lua Hooks
-parent: Actions and Hooks
-grand_parent: How-To
 description: Lua Hooks reference 
 redirect_from:
    - /hooks/lua.html

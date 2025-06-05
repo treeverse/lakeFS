@@ -1,6 +1,5 @@
 ---
 title: FAQ
-parent: Understanding lakeFS
 description: Have a question about lakeFS? Check out this list of Frequently Asked Questions
 redirect_from: 
     - /faq.html

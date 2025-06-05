@@ -1,7 +1,6 @@
 ---
 title: Concepts and  Model 
 description: The lakeFS object model blends the object models of Git and of object stores such as S3. Read this page to learn more.
-parent: Understanding lakeFS
 redirect_from: 
   - /reference/object-model.html
   - /understand/branching-model.html

@@ -1,7 +1,6 @@
 ---
 title: DuckDB
 description: How to use lakeFS with DuckDB, an open-source SQL OLAP database management system.
-parent: Integrations
 ---
 
 # Using lakeFS with DuckDB

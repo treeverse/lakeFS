@@ -1,12 +1,9 @@
 ---
 description: A hands-on quickstart for lakeFS that introduces key concepts including branching, merging, and rollback.
-has_children: true
 has_toc: false
-parent: Getting Started
 next:
     - Launch the quickstart environment
     - ./launch.html
-parent: Getting Started
 redirect_from:
     - /quickstart.html
     - /quickstart/installing.html
@@ -18,6 +15,7 @@ redirect_from:
     - /quickstart/first_commit.html
     - quickstart/index.md
 title: ⭐ Quickstart
+nav_order: 2
 ---
 
 

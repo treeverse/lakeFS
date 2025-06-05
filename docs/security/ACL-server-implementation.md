@@ -1,7 +1,7 @@
 ---
 title: ACL Server Implementation
 description: Instructions for implementing an ACL server to manage permissions in lakeFS OSS.
-parent: Security
+nav_order: 1
 ---
 
 # ACL Server Implementation

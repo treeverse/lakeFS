@@ -1,6 +1,5 @@
 ---
 title: Performance Best Practices
-parent: Understanding lakeFS
 description: This section suggests performance best practices to work with lakeFS.
 --- 
 # Performance Best Practices

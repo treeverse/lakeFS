@@ -1,7 +1,5 @@
 ---
 description: Learn more about lakeFS here with links to resources including quickstart, samples, installation guides, and more.
-grand_parent: Getting Started
-parent: ⭐ Quickstart
 previous:
     - Using Actions and Hooks in lakeFS
     - ./actions-and-hooks.html

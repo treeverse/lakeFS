@@ -1,7 +1,6 @@
 ---
 title: Backup and Restore Repository
 description: Use the lakeFS DumpRefs and RestoreRefs commands to backup and restore lakeFS repository
-parent: How-To
 ---
 
 # Backup and Restore Repository

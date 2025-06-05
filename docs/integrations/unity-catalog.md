@@ -1,7 +1,6 @@
 ---
 title: Unity Catalog
 description: Accessing lakeFS-exported Delta Lake tables from Unity Catalog.
-parent: Integrations
 redirect_from: /using/unity_catalog
 redirect_from: /integrations/unity_catalog
 ---

@@ -1,6 +1,5 @@
 ---
 title: Migrating to 1.0
-parent: The lakeFS Project
 description: Code migration guide detailing API and SDK upgrades, deprecated and new API operations, and SDK migration processes for both Java/JVM and Python with code refactoring examples for improved stability and compatibility.
 
 ---

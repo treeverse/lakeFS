@@ -1,7 +1,6 @@
 ---
 title: Migrating away from lakeFS
 description: The simplest way to migrate away from lakeFS is by copying data from a lakeFS repository to an S3 bucket.
-parent: How-To
 redirect_from: 
   - /deploying-aws/offboarding.html
   - /reference/offboarding.html

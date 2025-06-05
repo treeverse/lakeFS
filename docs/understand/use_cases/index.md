@@ -1,8 +1,6 @@
 ---
 title: Use Cases
 description: Better understand how to use the features of lakeFS for specific use cases.
-parent: Understanding lakeFS
-has_children: true
 has_toc: false
 redirect_from:
    - /use_cases/
