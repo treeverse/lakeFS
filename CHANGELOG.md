@@ -8,9 +8,12 @@
 
 :bug: Bugs fixed:
 
-- Fix GC failure on unknown files under the _lakefs folder (#9119)
 - Fix lakefs superuser (#9127)
 - Fix Add missing BadRequest 400 to object get/head API spec (#9130)
+
+# v1.58.0
+
+🏢 Includes only changes for Enterprise.
 
 # v1.57.0
 
