@@ -45,6 +45,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/upload"
 	"github.com/treeverse/lakefs/pkg/version"
+	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -220,6 +221,11 @@ var runCmd = &cobra.Command{
 			checkRepos(ctx, logger, cfg, authMetadataManager, blockStore, c)
 		}
 
+		var operationsSem *semaphore.Weighted
+		if baseCfg.ConcurrentOperations > 0 {
+			operationsSem = semaphore.NewWeighted(baseCfg.ConcurrentOperations)
+		}
+
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
 
@@ -242,6 +248,7 @@ var runCmd = &cobra.Command{
 			upload.DefaultPathProvider,
 			usageReporter,
 			licenseManager,
+			operationsSem,
 		)
 
 		// init gateway server
@@ -282,6 +289,7 @@ var runCmd = &cobra.Command{
 			baseCfg.Logging.TraceRequestHeaders,
 			baseCfg.Gateways.S3.VerifyUnsupported,
 			authService.IsAdvancedAuth(),
+			operationsSem,
 		)
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
