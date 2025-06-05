@@ -382,6 +382,12 @@ type StorageConfig interface {
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
 type BaseConfig struct {
+	// BUG(ariels): Be able to run in Cloud
+	License struct {
+		Path     *string
+		Contents *string
+	}
+	// end BUG(ariels)
 	ListenAddress        string `mapstructure:"listen_address"`
 	ConcurrentOperations int64  `mapstructure:"concurrent_operations"`
 	TLS                  struct {
@@ -632,6 +638,49 @@ func (c *BaseConfig) UISnippets() []apiparams.CodeSnippet {
 }
 
 type Auth struct {
+	// BUG(ariels): Be able to run in Cloud
+	Providers struct {
+		LDAP *struct {
+			ServerEndpoint           string       `mapstructure:"server_endpoint" validate:"required"`
+			BindDN                   string       `mapstructure:"bind_dn" validate:"required"`
+			BindPassword             SecureString `mapstructure:"bind_password" validate:"required"`
+			UsernameAttribute        string       `mapstructure:"username_attribute" validate:"required"`
+			UserBaseDN               string       `mapstructure:"user_base_dn" validate:"required"`
+			UserFilter               string       `mapstructure:"user_filter" validate:"required"`
+			ConnectionTimeoutSeconds int          `mapstructure:"connection_timeout_seconds" validate:"required"`
+			RequestTimeoutSeconds    int          `mapstructure:"request_timeout_seconds" validate:"required"`
+			DefaultUserGroup         string       `mapstructure:"default_user_group"`
+		}
+		OIDC struct {
+			Enabled bool `mapstructure:"enabled"`
+
+			// provider details:
+			URL          string       `mapstructure:"url"`
+			ClientID     string       `mapstructure:"client_id"`
+			ClientSecret SecureString `mapstructure:"client_secret"`
+
+			// configure the OIDC authentication flow:
+			CallbackBaseURL string `mapstructure:"callback_base_url"`
+			// CallbackBaseURLs is a list of URLs that the OIDC provider may redirect to.
+			// This allows lakeFS to be accessed from multiple hostnames while retaining federated auth capabilities.
+			// If the provider redirects to a URL not in this list, the login will fail.
+			// This property and callback_base_url are mutually exclusive.
+			CallbackBaseURLs                 []string          `mapstructure:"callback_base_urls"`
+			AuthorizeEndpointQueryParameters map[string]string `mapstructure:"authorize_endpoint_query_parameters"`
+			// LogoutEndpointQueryParameters is a list of query parameters of
+			// alternating keys, values.  This allows configuring non-lowercase
+			// keys.  Viper forces all map keys to lowercase, meaning the Auth0
+			// "returnTo" parameter cannot be passed.
+			LogoutEndpointQueryParameters []string `mapstructure:"logout_endpoint_query_parameters"`
+			LogoutClientIDQueryParameter  string   `mapstructure:"logout_client_id_query_parameter"`
+
+			// configure how users are handled on the lakeFS side:
+			AdditionalScopeClaims []string `mapstructure:"additional_scope_claims"`
+
+			PostLoginRedirectURL string `mapstructure:"post_login_redirect_url"`
+		}
+	}
+	// end BUG(ariels)
 	Cache struct {
 		Enabled bool          `mapstructure:"enabled"`
 		Size    int           `mapstructure:"size"`
