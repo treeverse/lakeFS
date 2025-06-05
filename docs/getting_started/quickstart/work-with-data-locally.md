@@ -1,11 +1,19 @@
 ---
-title: 7️⃣ Work with lakeFS data locally
-description: lakeFS quickstart / Bring lakeFS data to a local environment to show how lakeFS can be used for ML experiments development. 
+description: lakeFS quickstart / Bring lakeFS data to a local environment to show how lakeFS can be used for ML experiments development.
+grand_parent: Getting Started
+next:
+    - Resources for learning more about lakeFS
+    - ./learning-more-lakefs.html
 parent: ⭐ Quickstart
-nav_order: 35
-next: ["Resources for learning more about lakeFS", "./learning-more-lakefs.html"]
-previous: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
+previous:
+    - Using Actions and Hooks in lakeFS
+    - ./actions-and-hooks.html
+redirect_from:
+    - quickstart/work-with-data-locally.md
+title: 7️⃣ Work with lakeFS data locally
+nav_order: 8
 ---
+
 
 # Work with lakeFS Data Locally
 
@@ -20,7 +28,7 @@ lakeFS provides 2 ways to expose versioned data locally
 
 ## lakeFS Mount
 
-lakeFS Mount is available for [lakeFS Enterprise](../enterprise/index.html) and [lakeFS Cloud](../cloud/index.html) customers. <br/> 
+lakeFS Mount is available for [lakeFS Enterprise](../../enterprise/index.html) and [lakeFS Cloud](../../cloud/index.html) customers. <br/> 
 You can try it out by [signing up](https://info.lakefs.io/thanks-lakefs-mounts)
 {: .note }
 
@@ -69,7 +77,7 @@ Which will unmount the path and terminate the local mount-server.
 
 ## lakectl local
 
-Alternatively, we can use [lakectl local](../howto/local-checkouts.md#sync-a-local-directory-with-lakefs) to bring a subset of our lakeFS data to a local directory within the lakeFS
+Alternatively, we can use [lakectl local](../../howto/local-checkouts.md#sync-a-local-directory-with-lakefs) to bring a subset of our lakeFS data to a local directory within the lakeFS
 container and edit an image dataset used for ML model development. Unlike lakeFS Mount, using `lakectl local` requires copying data to/from lakeFS and your local machine.
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>

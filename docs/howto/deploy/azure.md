@@ -297,7 +297,7 @@ Check out Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-
 
 [config-envariables]:  {% link reference/configuration.md %}#using-environment-variables %}
 [config-reference-azure-block]:  {% link reference/configuration.md %}#example-azure-blob-storage
-[downloads]:  {% link index.md %}#downloads
+[downloads]:  /
 [openapi]:  {% link understand/architecture.md %}#openapi-server
 [s3-gateway]:  {% link understand/architecture.md %}#s3-gateway
 [understand-repository]:  {% link understand/model.md %}#repository

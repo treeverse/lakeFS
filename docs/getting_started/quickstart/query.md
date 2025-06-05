@@ -1,11 +1,19 @@
 ---
-title: 2️⃣ Query the data
 description: lakeFS quickstart / Query the pre-populated data using DuckDB browser that's built into lakeFS
+grand_parent: Getting Started
+next:
+    - Create a branch of the data
+    - ./branch.html
 parent: ⭐ Quickstart
-nav_order: 10
-next: ["Create a branch of the data", "./branch.html"]
-previous: ["Launch the quickstart environment", "./launch.html"]
+previous:
+    - Launch the quickstart environment
+    - ./launch.html
+redirect_from:
+    - quickstart/query.md
+title: 2️⃣ Query the data
+nav_order: 3
 ---
+
 
 # Let's Query Something 
 

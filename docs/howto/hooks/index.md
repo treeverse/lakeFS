@@ -30,7 +30,7 @@ Like other version control systems, lakeFS allows you to configure _Actions_ to 
 1. Notifying downstream consumers:
    Running a post-merge hook to trigger an Airflow DAG or to send a Webhook to an API, notifying it of the change that happened
 
-For step-by-step examples of hooks in action check out the [lakeFS Quickstart]({% link quickstart/actions-and-hooks.md %}) and the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
+For step-by-step examples of hooks in action check out the [lakeFS Quickstart]({% link getting_started/quickstart/actions-and-hooks.md %}) and the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/Joare70FlIA"></iframe>
 

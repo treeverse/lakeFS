@@ -385,7 +385,7 @@ lakeFS can authenticate with your AWS account using an AWS user, using an access
 
 {% include_relative includes/setup.md %}
 
-[downloads]:  {% link index.md %}#downloads
+[downloads]: / 
 [openapi]:  {% link understand/architecture.md %}#openapi-server
 [s3-gateway]:  {% link understand/architecture.md %}#s3-gateway
 [understand-repository]:  {% link understand/model.md %}#repository

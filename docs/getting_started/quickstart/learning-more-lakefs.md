@@ -1,14 +1,20 @@
 ---
-title: Learn more about lakeFS
-description: Learn more about lakeFS here with links to resources including quickstart, samples, installation guides, and more. 
+description: Learn more about lakeFS here with links to resources including quickstart, samples, installation guides, and more.
+grand_parent: Getting Started
 parent: ⭐ Quickstart
-nav_order: 99
-previous: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
+previous:
+    - Using Actions and Hooks in lakeFS
+    - ./actions-and-hooks.html
+redirect_from:
+    - quickstart/learning-more-lakefs.md
+title: Learn more about lakeFS
+nav_order: 100
 ---
+
 
 # Learn more about lakeFS
 
-The [lakeFS quickstart]({% link quickstart/index.md %}) is just the beginning of your lakeFS journey 🛣️
+The [lakeFS quickstart]({% link getting_started/quickstart/index.md %}) is just the beginning of your lakeFS journey 🛣️
 
 Here are some more resources to help you find out more about lakeFS. 
 

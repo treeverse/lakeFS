@@ -1,11 +1,19 @@
 ---
-title: 6️⃣ Using Actions and Hooks in lakeFS
 description: lakeFS quickstart / Use Actions and Hooks to enforce conditions when committing and merging changes
+next:
+    - Work with lakeFS data on your local environment
+    - ./work-with-data-locally.html
+grand_parent: Getting Started
 parent: ⭐ Quickstart
-nav_order: 30
-next: ["Work with lakeFS data on your local environment", "./work-with-data-locally.html"]
-previous: ["Rollback the changes", "./rollback.html"]
+previous:
+    - Rollback the changes
+    - ./rollback.html
+redirect_from:
+    - quickstart/actions-and-hooks.md
+title: 6️⃣ Using Actions and Hooks in lakeFS
+nav_order: 7
 ---
+
 
 # Actions and Hooks in lakeFS
 

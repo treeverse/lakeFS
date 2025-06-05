@@ -47,7 +47,7 @@ lakeFS supports UI, CLI (`lakectl` command-line utility) and several clients for
 There are two ways that you can try out lakeFS:
 
 * The lakeFS Playground on lakeFS Cloud - fully managed lakeFS with a 30-day free trial
-* Local Docker-based [quickstart]({% link quickstart/index.md %}) and [samples](https://github.com/treeverse/lakeFS-samples/)
+* Local Docker-based [quickstart]({% link getting_started/quickstart/index.md %}) and [samples](https://github.com/treeverse/lakeFS-samples/)
 
 You can also [deploy lakeFS]({% link howto/deploy/index.md %}) locally or self-managed on your cloud of choice.
 

@@ -154,7 +154,7 @@ Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-g
 {% include_relative includes/setup.md %}
 
 [config-envariables]:  {% link reference/configuration.md %}#using-environment-variables %}
-[downloads]:  {% link index.md %}#downloads
+[downloads]:  /#downloads
 [openapi]:  {% link understand/architecture.md %}#openapi-server
 [s3-gateway]:  {% link understand/architecture.md %}#s3-gateway
 [understand-repository]:  {% link understand/model.md %}#repository
