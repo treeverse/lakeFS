@@ -148,7 +148,7 @@ func (c *Controller) DeleteUser(w http.ResponseWriter, r *http.Request, userID s
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "delete_user", r, "", "", "")
+	defer c.StartAction(ctx, "delete_user", r, "", "", "")()
 	err := c.Auth.DeleteUser(ctx, userID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "user not found")
@@ -170,7 +170,7 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "create_presign_multipart_upload", r, repository, branch, "")
+	defer c.StartAction(ctx, "create_presign_multipart_upload", r, repository, branch, "")()
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -281,7 +281,7 @@ func (c *Controller) UploadPart(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 
-	c.StartAction(ctx, "upload_part", r, dstRepository, dstPath, "")
+	defer c.StartAction(ctx, "upload_part", r, dstRepository, dstPath, "")()
 
 	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -353,7 +353,7 @@ func (c *Controller) UploadPartCopy(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	c.StartAction(ctx, "upload_part_copy", r, dstRepository, dstPath, srcPath)
+	defer c.StartAction(ctx, "upload_part_copy", r, dstRepository, dstPath, srcPath)()
 
 	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -437,7 +437,7 @@ func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "abort_presign_multipart_upload", r, repository, branch, "")
+	defer c.StartAction(ctx, "abort_presign_multipart_upload", r, repository, branch, "")()
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -501,7 +501,7 @@ func (c *Controller) CompletePresignMultipartUpload(w http.ResponseWriter, r *ht
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "complete_presign_multipart_upload", r, repository, branch, "")
+	defer c.StartAction(ctx, "complete_presign_multipart_upload", r, repository, branch, "")()
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -621,7 +621,7 @@ func (c *Controller) PrepareGarbageCollectionUncommitted(w http.ResponseWriter, 
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "prepare_garbage_collection_uncommitted", r, repository, "", "")
+	defer c.StartAction(ctx, "prepare_garbage_collection_uncommitted", r, repository, "", "")()
 
 	continuationToken := swag.StringValue(body.ContinuationToken)
 	mark, err := decodeGCUncommittedMark(continuationToken)
@@ -670,7 +670,7 @@ func (c *Controller) GetAuthCapabilities(w http.ResponseWriter, r *http.Request)
 
 func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body apigen.DeleteObjectsJSONRequestBody, repository, branch string, params apigen.DeleteObjectsParams) {
 	ctx := r.Context()
-	c.StartAction(ctx, "delete_objects", r, repository, branch, "")
+	defer c.StartAction(ctx, "delete_objects", r, repository, branch, "")()
 
 	// limit check
 	if len(body.Paths) > DefaultMaxDeleteObjects {
@@ -782,7 +782,7 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
-	c.StartAction(ctx, "external_principal_login", r, "", "", "")
+	defer c.StartAction(ctx, "external_principal_login", r, "", "", "")()
 	c.Logger.Debug("external principal login")
 	externalPrincipal, err := c.Authentication.ExternalPrincipalLogin(ctx, body.IdentityRequest)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -858,7 +858,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "generate_physical_address", r, repository, branch, "")
+	defer c.StartAction(ctx, "generate_physical_address", r, repository, branch, "")()
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if errors.Is(err, graveler.ErrNotFound) {
@@ -918,7 +918,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "stage_object", r, repository, branch, "")
+	defer c.StartAction(ctx, "stage_object", r, repository, branch, "")()
 
 	repo, err := c.Catalog.GetRepository(ctx, repository)
 	if errors.Is(err, graveler.ErrNotFound) {
@@ -1043,7 +1043,7 @@ func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params a
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "list_groups", r, "", "", "")
+	defer c.StartAction(ctx, "list_groups", r, "", "", "")()
 	groups, paginator, err := c.Auth.ListGroups(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1083,7 +1083,7 @@ func (c *Controller) CreateGroup(w http.ResponseWriter, r *http.Request, body ap
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "create_group", r, "", "", "")
+	defer c.StartAction(ctx, "create_group", r, "", "", "")()
 
 	// Check that group name is valid
 	valid, msg := c.isNameValid(body.Id, "Group")
@@ -1121,7 +1121,7 @@ func (c *Controller) DeleteGroup(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "delete_group", r, "", "", "")
+	defer c.StartAction(ctx, "delete_group", r, "", "", "")()
 	err := c.Auth.DeleteGroup(ctx, groupID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "group not found")
@@ -1143,7 +1143,7 @@ func (c *Controller) GetGroup(w http.ResponseWriter, r *http.Request, groupID st
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "get_group", r, "", "", "")
+	defer c.StartAction(ctx, "get_group", r, "", "", "")()
 	g, err := c.Auth.GetGroup(ctx, groupID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "group not found")
@@ -1184,7 +1184,7 @@ func (c *Controller) GetGroupACL(w http.ResponseWriter, r *http.Request, groupID
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "get_group_acl", r, "", "", "")
+	defer c.StartAction(ctx, "get_group_acl", r, "", "", "")()
 	policies, _, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
 		Amount: 2, //nolint:mnd
 	})
@@ -1262,7 +1262,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body ap
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "set_group_acl", r, "", "", "")
+	defer c.StartAction(ctx, "set_group_acl", r, "", "", "")()
 
 	newACL := model.ACL{
 		Permission: model.ACLPermission(body.Permission),
@@ -1286,7 +1286,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "list_group_users", r, "", "", "")
+	defer c.StartAction(ctx, "list_group_users", r, "", "", "")()
 	users, paginator, err := c.Auth.ListGroupUsers(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1326,7 +1326,7 @@ func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Reques
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "remove_user_from_group", r, "", "", "")
+	defer c.StartAction(ctx, "remove_user_from_group", r, "", "", "")()
 	err := c.Auth.RemoveUserFromGroup(ctx, userID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1344,7 +1344,7 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "add_user_to_group", r, "", "", "")
+	defer c.StartAction(ctx, "add_user_to_group", r, "", "", "")()
 	err := c.Auth.AddUserToGroup(ctx, userID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1367,7 +1367,7 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "list_group_policies", r, "", "", "")
+	defer c.StartAction(ctx, "list_group_policies", r, "", "", "")()
 	policies, paginator, err := c.Auth.ListGroupPolicies(ctx, groupID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1423,7 +1423,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "detach_policy_from_group", r, "", "", "")
+	defer c.StartAction(ctx, "detach_policy_from_group", r, "", "", "")()
 	err := c.Auth.DetachPolicyFromGroup(ctx, policyID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1446,7 +1446,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "attach_policy_to_group", r, "", "", "")
+	defer c.StartAction(ctx, "attach_policy_to_group", r, "", "", "")()
 	err := c.Auth.AttachPolicyToGroup(ctx, policyID, groupID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1469,7 +1469,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "list_policies", r, "", "", "")
+	defer c.StartAction(ctx, "list_policies", r, "", "", "")()
 	policies, paginator, err := c.Auth.ListPolicies(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1507,7 +1507,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "create_policy", r, "", "", "")
+	defer c.StartAction(ctx, "create_policy", r, "", "", "")()
 
 	// Check that policy ID is valid
 	valid, msg := c.isNameValid(body.Id, "Policy")
@@ -1553,7 +1553,7 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "delete_policy", r, "", "", "")
+	defer c.StartAction(ctx, "delete_policy", r, "", "", "")()
 	err := c.Auth.DeletePolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "policy not found")
@@ -1579,7 +1579,7 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "get_policy", r, "", "", "")
+	defer c.StartAction(ctx, "get_policy", r, "", "", "")()
 	p, err := c.Auth.GetPolicy(ctx, policyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "policy not found")
@@ -1613,7 +1613,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body a
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "update_policy", r, "", "", "")
+	defer c.StartAction(ctx, "update_policy", r, "", "", "")()
 
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
@@ -1647,7 +1647,7 @@ func (c *Controller) ListUsers(w http.ResponseWriter, r *http.Request, params ap
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "list_users", r, "", "", "")
+	defer c.StartAction(ctx, "list_users", r, "", "", "")()
 	users, paginator, err := c.Auth.ListUsers(ctx, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1708,7 +1708,7 @@ func (c *Controller) CreateUser(w http.ResponseWriter, r *http.Request, body api
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "create_user", r, "", "", "")
+	defer c.StartAction(ctx, "create_user", r, "", "", "")()
 	if invite {
 		inviter, ok := c.Auth.(auth.EmailInviter)
 		if !ok {
@@ -1754,7 +1754,7 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID stri
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "get_user", r, "", "", "")
+	defer c.StartAction(ctx, "get_user", r, "", "", "")()
 	u, err := c.Auth.GetUser(ctx, userID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "user not found")
@@ -1782,7 +1782,7 @@ func (c *Controller) ListUserCredentials(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "list_user_credentials", r, "", "", "")
+	defer c.StartAction(ctx, "list_user_credentials", r, "", "", "")()
 	credentials, paginator, err := c.Auth.ListUserCredentials(ctx, userID, &model.PaginationParams{
 		After:  paginationAfter(params.After),
 		Prefix: paginationPrefix(params.Prefix),
@@ -1819,7 +1819,7 @@ func (c *Controller) CreateCredentials(w http.ResponseWriter, r *http.Request, u
 		return
 	}
 	ctx := r.Context()
-	c.StartAction(ctx, "create_credentials", r, "", "", "")
+	defer c.StartAction(ctx, "create_credentials", r, "", "", "")()
 	credentials, err := c.Auth.CreateCredentials(ctx, userID)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
@@ -1843,7 +1843,7 @@ func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, u
 	}
 
 	ctx := r.Context()
-	c.StartAction(ctx, "delete_credentials", r, "", "", "")
+	defer c.StartAction(ctx, "delete_credentials", r, "", "", "")()
 	err := c.Auth.DeleteCredentials(ctx, userID, accessKeyID)
 	if errors.Is(err, auth.ErrNotFound) {
 		writeError(w, r, http.StatusNotFound, "credentials not found")
