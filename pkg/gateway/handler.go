@@ -144,7 +144,11 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			logger.Warn("Failed to acquire semaphore; proceeding with action anyway")
 		} else {
-			logger.Debug("Perform gateway action")
+			l := logger.Debug
+			if blockedFor > time.Second {
+				l = logger.Warn
+			}
+			l("Perform gateway action")
 			defer h.sem.Release(1)
 		}
 	}

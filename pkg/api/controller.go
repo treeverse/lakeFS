@@ -5904,7 +5904,11 @@ func (c *Controller) logAction(ctx context.Context, action string, r *http.Reque
 	if blockErr != nil {
 		logger.WithError(blockErr).Warn("Failed to acquire semaphore; proceeding with action anyway")
 	} else {
-		logger.Debug("performing API action")
+		l := logger.Debug
+		if blockedFor > time.Second {
+			l = logger.Warn
+		}
+		l("performing API action")
 	}
 	c.Collector.CollectEvent(ev)
 	usageCounter.Add(1)
