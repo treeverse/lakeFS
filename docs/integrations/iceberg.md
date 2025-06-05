@@ -21,7 +21,7 @@ lakeFS Enterprise
 
 ### What is lakeFS Iceberg REST Catalog?
 
-lakeFS Iceberg REST Catalog allow you to use lakeFS as a [spec-compliant](https://github.com/apache/iceberg/blob/main/open-api/rest-catalog-open-api.yaml) Apache [Iceberg REST catalog](https://www.tabular.io/apache-iceberg-cookbook/getting-started-catalog-background/), 
+lakeFS Iceberg REST Catalog allow you to use lakeFS as a [spec-compliant](https://github.com/apache/iceberg/blob/main/open-api/rest-catalog-open-api.yaml) Apache [Iceberg REST catalog](https://editor-next.swagger.io/?url=https://raw.githubusercontent.com/apache/iceberg/main/open-api/rest-catalog-open-api.yaml), 
 allowing Iceberg clients to manage and access tables using a standard REST API. 
 
 Using lakeFS Iceberg REST Catalog, you can use lakeFS a drop-in replacement for other Iceberg catalogs like AWS Glue, Nessie, Hive Metastore - or the lakeFS HadoopCatalog (see [below](#deprecated-iceberg-hadoopcatalog))
@@ -74,9 +74,10 @@ To use it:
 from pyiceberg.catalog import load_catalog
 
 catalog = RestCatalog(**{
-   'uri': f'{lakefs_endpoint}/iceberg/api',
-   'oauth2-server-uri': f'{lakefs_endpoint}/iceberg/api/v1/oauth/tokens',
-   'credential': f'{lakefs_client_key}:{lakefs_client_secret}',
+    'prefix': 'lakefs',
+    'uri': f'{lakefs_endpoint}/iceberg/api',
+    'oauth2-server-uri': f'{lakefs_endpoint}/iceberg/api/v1/oauth/tokens',
+    'credential': f'{lakefs_client_key}:{lakefs_client_secret}',
 })
 ```
 
@@ -88,10 +89,9 @@ catalog = RestCatalog(**{
     <li><a href="#python">Python</a></li>
     <li><a href="#trino">Trino</a></li>
     <li><a href="#spark">Spark</a></li>
-    <li><a href="#starrocks">StarRocks</a></li>
   </ul>
 
-  <div markdown="1" id="python">
+  <div markdown="1" id="PyIceberg">
 
 ```python
 import lakefs
@@ -99,9 +99,10 @@ from pyiceberg.catalog import load_catalog
 
 # Initialize the catalog
 catalog = RestCatalog(**{
-   'uri': 'https://lakefs.example.com/iceberg/api',
-   'oauth2-server-uri': 'https://lakefs.example.com/iceberg/api/iceberg/api/v1/oauth/tokens',
-   'credential': f'AKIAlakefs12345EXAMPLE:abc/lakefs/1234567bPxRfiCYEXAMPLEKEY',
+    'prefix': 'lakefs',
+    'uri': 'https://lakefs.example.com/iceberg/api',
+    'oauth2-server-uri': 'https://lakefs.example.com/iceberg/api/iceberg/api/v1/oauth/tokens',
+    'credential': f'AKIAlakefs12345EXAMPLE:abc/lakefs/1234567bPxRfiCYEXAMPLEKEY',
 })
 
 # List namespaces in a branch
@@ -136,35 +137,17 @@ SELECT * FROM books;
 
 ```scala
 // Configure Spark to use the lakeFS REST catalog
-spark.sql("USE my_repo.main.namespace")
+spark.sql("USE my_repo.main.inventory")
 
 // List available tables
 spark.sql("SHOW TABLES").show()
 
 // Query data with branch isolation
-spark.sql("SELECT * FROM my_table").show()
+spark.sql("SELECT * FROM books").show()
 
 // Switch to a feature branch
-spark.sql("USE my_repo.new_branch.namespace")
-spark.sql("SELECT * FROM my_table").show()
-```
-
-  </div>
-
-  <div markdown="4" id="starrocks">
-
-```sql
-CREATE EXTERNAL CATALOG lakefs
-COMMENT "lakeFS REST Catalog"
-PROPERTIES (
-    "type"                          = "iceberg",
-    "iceberg.catalog.type"          = "rest",
-    "iceberg.catalog.uri"           = "https://lakefs.example.com/catalog/iceberg/v1",
-    "client.factory"                = "com.starrocks.connector.iceberg.IcebergAwsClientFactory"
-);
-
--- Use a specific repository and branch
-SELECT * FROM frosty.`repo_name.main.namespace`.table_name;
+spark.sql("USE my_repo.new_branch.inventory")
+spark.sql("SELECT * FROM books").show()
 ```
 
   </div>
@@ -223,7 +206,7 @@ This provides a complete history of table modifications and enables branching an
 Each modification to a table (schema changes, data updates, etc.) creates a new commit in lakeFS. 
 Creating or deleting a namespace or a table results in a lakeFS commit on the relevant branch, as well as table data updates ("Iceberg table commit").
 
-#### Branching
+#### Branching and Merging
 
 Create a new branch to work on table changes:
 
@@ -234,8 +217,6 @@ branch = lakefs.repository('repo').branch('new_branch').create(source_reference=
 # The table is now accessible in the new branch
 new_table = catalog.load_table(f'repo.{branch.id}.inventory.books')
 ```
-
-#### Merging
 
 Merge changes between branches:
 
@@ -266,21 +247,21 @@ The authorization requirements are managed at the lakeFS level, meaning:
 
 ### Limitations
 
-The following features are *not yet supported or implemented*:
-
 1. **Table Maintenance**:
    - See [Table Maintenance](#table-maintenance) section for details
 
 2. **Advanced Features**:
    - Views (all view operations are unsupported)
-   - Transactional changes (`stage-create`)
+   - Transactional DML (`stage-create`)
    - Server-side query planning
    - Table renaming
    - Updating table's location (using Commit)
-   - Table statistics (set-statistics and remove-statistics operations)
+   - Table statistics (`set-statistics` and `remove-statistics` operations are currently a no-op)
 
+3. lakeFS Iceberg REST Catalog is currently tested to work with Amazon S3 and Google Cloud Storage. Other storage backends, such as Azure or Local storage are currently not supported, but will be in future releases.
 
-3. Currently only [Iceberg `v2` table format](https://iceberg.apache.org/spec) is supported
+4. Currently only [Iceberg `v2` table format](https://iceberg.apache.org/spec) is supported
+
 
 ### Table Maintenance
 
@@ -301,11 +282,6 @@ The following table maintenance operations are not supported in the current vers
 > - Disabling snapshot expiration.
 > - Setting a very high value for `min-snapshots-to-keep` parameter.
 
-
-#### Storage Compatibility
-
-lakeFS Iceberg REST Catalog is currently tested to work with Amazon S3 and Google Cloud Storage.
-Other storage backends, such as Azure or Local storage are currently not supported, but will be in future releases.
 
 ### Roadmap
 
