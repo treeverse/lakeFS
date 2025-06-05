@@ -1,5 +1,17 @@
 # Changelog
 
+# v1.59.0
+
+:new: What's new:
+
+- UI: Overhaul lakeFS look & feel (#9022)
+
+:bug: Bugs fixed:
+
+- Fix GC failure on unknown files under the _lakefs folder (#9119)
+- Fix lakefs superuser (#9127)
+- Fix Add missing BadRequest 400 to object get/head API spec (#9130)
+
 # v1.57.0
 
 :new: What's new:
