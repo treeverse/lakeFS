@@ -41,6 +41,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/httputil"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/testutil"
@@ -3477,6 +3478,8 @@ func TestController_LogAction(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
 
+	deps.collector.Metrics = nil
+
 	// create repository
 	name := testUniqueRepoName()
 	resp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
@@ -3502,6 +3505,19 @@ func TestController_LogAction(t *testing.T) {
 	if len(m.Client) == 0 {
 		t.Fatalf("Expected client to be set, got empty Client")
 	}
+}
+
+func TestController_LogActionSkip(t *testing.T) {
+	memCollector := &memCollector{}
+	c := api.Controller{
+		Logger:    logging.Dummy(),
+		Collector: memCollector,
+	}
+	req, err := http.NewRequest(http.MethodGet, "/api/v1/test", nil)
+	require.NoError(t, err)
+	ctx := context.WithValue(context.Background(), api.LogActionSkipKey, true)
+	c.LogAction(ctx, "test_action", req, "repo", "ref", "srcRef")
+	require.Empty(t, memCollector.Metrics, "metrics should not be collected")
 }
 
 func TestController_ConfigHandlers(t *testing.T) {
