@@ -8,8 +8,8 @@
 
 :bug: Bugs fixed:
 
-- Fix lakefs superuser (#9127)
-- Fix Add missing BadRequest 400 to object get/head API spec (#9130)
+- Fix lakefs superuser command using external authorization (#9127)
+- Fix missing BadRequest(400) in the API spec for get/head object (#9130)
 
 # v1.58.0
 
