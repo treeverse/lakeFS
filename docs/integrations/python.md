@@ -1,11 +1,10 @@
 ---
 title: Python
 description: Use Python to interact with your objects on lakeFS
-parent: Integrations
 redirect_from:
-  - /using/python.html
-  - /using/boto.html
-  - /integrations/boto.html
+- "/using/python.html"
+- "/using/boto.html"
+- "/integrations/boto.html"
 ---
 
 # Use Python to interact with your objects on lakeFS

@@ -1,8 +1,7 @@
 ---
 layout: default
-title: "S3 Virtual-host addressing (advanced)"
+title: S3 Virtual-host addressing (advanced)
 description: Configure the lakeFS S3 API to use virtual host addressing
-parent: How-To
 ---
 
 # Configuring lakeFS to use S3 Virtual-Host addressing

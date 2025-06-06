@@ -1,10 +1,10 @@
 ---
 title: Apache Kafka
-description: This section explains how you can start using lakeFS with Kafka using Confluent’s S3 Sink Connector.
-parent: Integrations
-redirect_from: 
-    - /using/kakfa.html
-    - /integrations/kakfa.html
+description: This section explains how you can start using lakeFS with Kafka using
+  Confluent’s S3 Sink Connector.
+redirect_from:
+- "/using/kakfa.html"
+- "/integrations/kakfa.html"
 ---
 
 # Using lakeFS with Apache Kafka

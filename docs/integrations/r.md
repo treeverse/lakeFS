@@ -1,7 +1,7 @@
 ---
 title: R
-description: How to use lakeFS from R including creating branches, committing changes, and merging.
-parent: Integrations
+description: How to use lakeFS from R including creating branches, committing changes,
+  and merging.
 ---
 
 # Using R with lakeFS

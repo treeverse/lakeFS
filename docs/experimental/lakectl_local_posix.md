@@ -1,7 +1,7 @@
 ---
 title: lakectl local file permissions tracking
-description: An experimental feature that allows tracking file ownership and permissions when using lakectl local
-parent: none
+description: An experimental feature that allows tracking file ownership and permissions
+  when using lakectl local
 ---
 
 # lakectl local file permission tracking

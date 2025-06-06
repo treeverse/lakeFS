@@ -1,8 +1,7 @@
 ---
 title: Kubeflow
-description: Easily build reproducible data pipelines with Kubeflow and lakeFS using commits, without modifying the code or logic of your job.
-parent: Integrations
-
+description: Easily build reproducible data pipelines with Kubeflow and lakeFS using
+  commits, without modifying the code or logic of your job.
 ---
 # Using lakeFS with Kubeflow pipelines
 [Kubeflow](https://www.kubeflow.org/docs/about/kubeflow/) is a project dedicated to making deployments of ML workflows on Kubernetes simple, portable, and scalable.

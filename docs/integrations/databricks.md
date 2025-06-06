@@ -1,7 +1,6 @@
 ---
 title: Databricks
 description: This section points to the various integrations with Databricks.
-parent: Integrations
 ---
 
 # Using lakeFS with Databricks

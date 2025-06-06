@@ -1,7 +1,6 @@
 ---
 title: MLflow
 description: How to use MLflow with lakeFS
-parent: Integrations
 ---
 
 # Using MLflow with lakeFS

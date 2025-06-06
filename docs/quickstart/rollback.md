@@ -1,10 +1,14 @@
 ---
 title: 5️⃣ Roll back Changes
-description: lakeFS quickstart / Rollback the changes made to show how lakeFS can be used to revert changes made in error. 
-parent: ⭐ Quickstart
+description: lakeFS quickstart / Rollback the changes made to show how lakeFS can
+  be used to revert changes made in error.
 nav_order: 25
-next: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
-previous: ["Merge the branch back into main", "./commit-and-merge.html"]
+next:
+- Using Actions and Hooks in lakeFS
+- "./actions-and-hooks.html"
+previous:
+- Merge the branch back into main
+- "./commit-and-merge.html"
 ---
 
 # Rolling back Changes in lakeFS

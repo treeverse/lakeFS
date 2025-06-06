@@ -1,11 +1,11 @@
 ---
 title: Role-Based Access Control (RBAC)
 description: This section covers authorization (using RBAC) of your lakeFS server.
-parent: Security
-badges: ["Enterprise"]
+badges:
+- Enterprise
 redirect_from:
-  - /reference/authorization.html
-  - /reference/rbac.html
+- "/reference/authorization.html"
+- "/reference/rbac.html"
 ---
 
 

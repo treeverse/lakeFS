@@ -1,12 +1,13 @@
 ---
 title: Azure
-grand_parent: How-To
-parent: Install lakeFS
-description: How to deploy and set up a production-suitable lakeFS environment on Microsoft Azure
+description: How to deploy and set up a production-suitable lakeFS environment on
+  Microsoft Azure
 redirect_from:
-   - /setup/storage/blob.html 
-   - /deploy/azure.html 
-next:  ["Import data into your installation", "/howto/import.html"]
+- "/setup/storage/blob.html"
+- "/deploy/azure.html"
+next:
+- Import data into your installation
+- "/howto/import.html"
 ---
 
 # Deploy lakeFS on Azure

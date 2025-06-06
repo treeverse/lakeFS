@@ -1,10 +1,11 @@
 ---
 title: Access Control Lists (ACLs) -Deprecated-
-description: Access control lists (ACLs) are one of the resource-based options that you can use to manage access to your repositories and objects. There are limits to managing permissions using ACLs.
-parent: Security
+description: Access control lists (ACLs) are one of the resource-based options that
+  you can use to manage access to your repositories and objects. There are limits
+  to managing permissions using ACLs.
 redirect_from:
-  - /reference/access-control-list.html
-  - /reference/access-control-lists.html
+- "/reference/access-control-list.html"
+- "/reference/access-control-lists.html"
 ---
 
 # Access Control Lists (ACLs)

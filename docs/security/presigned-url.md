@@ -1,9 +1,8 @@
 ---
 title: Presigned URLs
 description: Configuring lakeFS to use presigned URLs
-parent: Security
 redirect_from:
-  - /reference/presigned-url.html
+- "/reference/presigned-url.html"
 ---
 
 # Configuring lakeFS to use presigned URLs

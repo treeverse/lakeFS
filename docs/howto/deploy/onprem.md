@@ -1,16 +1,17 @@
 ---
 title: On-Premises
-grand_parent: How-To
-parent: Install lakeFS
-description: How to deploy and set up a production-suitable lakeFS environment on-premises (or on other cloud providers)
+description: How to deploy and set up a production-suitable lakeFS environment on-premises
+  (or on other cloud providers)
 redirect_from:
-   - /deploy/k8s.html
-   - /deploy/docker.html 
-   - /integrations/minio.html
-   - /using/minio.html
-   - /deploy/onprem.html
-   - /deploying/install.html
-next:  ["Import data into your installation", "/howto/import.html"]
+- "/deploy/k8s.html"
+- "/deploy/docker.html"
+- "/integrations/minio.html"
+- "/using/minio.html"
+- "/deploy/onprem.html"
+- "/deploying/install.html"
+next:
+- Import data into your installation
+- "/howto/import.html"
 ---
 
 # On-Premises Deployment

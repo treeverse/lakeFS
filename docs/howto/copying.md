@@ -1,10 +1,9 @@
 ---
 title: Copying data to/from lakeFS
-description: 
-parent: How-To
-redirect_from: 
-  - /integrations/distcp.html
-  - /integrations/rclone.html
+description:
+redirect_from:
+- "/integrations/distcp.html"
+- "/integrations/rclone.html"
 ---
 
 # Copying data to/from lakeFS

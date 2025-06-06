@@ -1,9 +1,9 @@
 ---
 title: Mount
-description: This section covers the Everest feature for mounting a lakeFS path to your local filesystem.
-parent: Reference
-badges: ["Enterprise"]
-has_children: true
+description: This section covers the Everest feature for mounting a lakeFS path to
+  your local filesystem.
+badges:
+- Enterprise
 nav_order: 30
 ---
 

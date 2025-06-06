@@ -2,7 +2,6 @@
 title: Architecture
 description: lakeFS Enterprise architecture explained
 nav_order: 220
-parent: lakeFS Enterprise
 ---
 
 

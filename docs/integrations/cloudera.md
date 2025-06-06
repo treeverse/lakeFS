@@ -1,8 +1,8 @@
 ---
 title: Cloudera
-description: Accessing data in lakeFS from Cloudera Spark works the same as accessing S3 data from Apache Spark.
-parent: Integrations
-redirect_from: 
+description: Accessing data in lakeFS from Cloudera Spark works the same as accessing
+  S3 data from Apache Spark.
+redirect_from:
 ---
 
 # Using lakeFS with Cloudera Spark

@@ -1,8 +1,8 @@
 ---
 title: Apache Hive
-description: This section covers how you can start using lakeFS with Apache Hive, a distributed data warehouse system that enables analytics at a massive scale.
-parent: Integrations
-redirect_from: /using/hive.html
+description: This section covers how you can start using lakeFS with Apache Hive,
+  a distributed data warehouse system that enables analytics at a massive scale.
+redirect_from: "/using/hive.html"
 ---
 
 # Using lakeFS with Apache Hive

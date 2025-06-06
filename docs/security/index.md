@@ -1,7 +1,6 @@
 ---
 title: Security
 description: Security reference documentation for lakeFS
-has_children: true
 has_toc: false
 ---
 

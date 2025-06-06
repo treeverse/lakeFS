@@ -1,9 +1,8 @@
 ---
 title: Pull Requests
 description: Improve collaboration over data with Pull Requests.
-parent: How-To
-redirect_from: 
-  - /reference/pull_requests.html
+redirect_from:
+- "/reference/pull_requests.html"
 ---
 
 # Pull Requests
