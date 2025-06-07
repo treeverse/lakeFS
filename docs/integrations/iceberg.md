@@ -71,7 +71,7 @@ To use it:
 #### Catalog Initialization Example (using [`pyiceberg`](https://py.iceberg.apache.org/))
 
 ```python
-from pyiceberg.catalog import load_catalog
+from pyiceberg.catalog.rest import RestCatalog
 
 catalog = RestCatalog(name = "my_catalog", **{
     'prefix': 'lakefs',
@@ -94,11 +94,10 @@ catalog = RestCatalog(name = "my_catalog", **{
   <div markdown="1" id="PyIceberg">
 
 ```python
-import lakefs
-from pyiceberg.catalog import load_catalog
+from pyiceberg.catalog.rest import RestCatalog
 
 # Initialize the catalog
-catalog = RestCatalog(**{
+catalog = RestCatalog(name = "my_catalog", **{
     'prefix': 'lakefs',
     'uri': 'https://lakefs.example.com/iceberg/api',
     'oauth2-server-uri': 'https://lakefs.example.com/iceberg/api/iceberg/api/v1/oauth/tokens',
