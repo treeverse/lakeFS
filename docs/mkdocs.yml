@@ -272,7 +272,7 @@ markdown_extensions:
 - codehilite
 nav:
 - Welcome to lakeFS: index.md
-- "\u2B50 Quickstart":
+- Quickstart:
   - Overview: quickstart/index.md
   - "1\uFE0F\u20E3 Run lakeFS": quickstart/launch.md
   - "2\uFE0F\u20E3 Query the data": quickstart/query.md
@@ -283,12 +283,6 @@ nav:
   - "7\uFE0F\u20E3 Work with lakeFS data locally": quickstart/work-with-data-locally.md
   - Learn more about lakeFS: quickstart/learning-more-lakefs.md
 - How-To:
-  - Overview: howto/index.md
-  - Garbage Collection:
-    - Overview: howto/garbage-collection/index.md
-    - Garbage Collection: howto/garbage-collection/gc.md
-    - Managed Garbage Collection: howto/garbage-collection/managed-gc.md
-    - Standalone Garbage Collection: howto/garbage-collection/standalone-gc.md
   - Install lakeFS:
     - Overview: howto/deploy/index.md
     - AWS: howto/deploy/aws.md
@@ -306,6 +300,10 @@ nav:
   - Copying data to/from lakeFS: howto/copying.md
   - Data Catalogs Exports: howto/catalog_exports.md
   - Export Data: howto/export.md
+  - Garbage Collection:
+    - Garbage Collection: howto/garbage-collection/gc.md
+    - Managed Garbage Collection: howto/garbage-collection/managed-gc.md
+    - Standalone Garbage Collection: howto/garbage-collection/standalone-gc.md
   - Import Data: howto/import.md
   - Migrating away from lakeFS: howto/migrate-away.md
   - Mirroring: howto/mirroring.md
@@ -318,6 +316,7 @@ nav:
   - Work with lakeFS data locally: howto/local-checkouts.md
 - Integrations:
   - Overview: integrations/index.md
+  - AWS CLI: integrations/aws_cli.md
   - Airbyte: integrations/airbyte.md
   - Amazon Athena: integrations/athena.md
   - Amazon SageMaker: integrations/sagemaker.md
@@ -326,7 +325,6 @@ nav:
   - Apache Iceberg: integrations/iceberg.md
   - Apache Kafka: integrations/kafka.md
   - Apache Spark: integrations/spark.md
-  - AWS CLI: integrations/aws_cli.md
   - Cloudera: integrations/cloudera.md
   - Databricks: integrations/databricks.md
   - Delta Lake: integrations/delta.md
@@ -375,12 +373,12 @@ nav:
     - Mount CSI Driver: reference/mount-csi-driver.md
     - Mount Write Mode Semantics: reference/mount-write-mode-semantics.md
   - Auditing: reference/auditing.md
-  - lakectl (lakeFS command-line tool): reference/cli.md
-  - lakeFS API: reference/api.md
-  - lakeFS Server Configuration: reference/configuration.md
   - Monitoring using Prometheus: reference/monitor.md
   - S3 Gateway API: reference/s3.md
   - Spark Client: reference/spark-client.md
+  - lakeFS API: reference/api.md
+  - lakeFS Server Configuration: reference/configuration.md
+  - lakectl (lakeFS command-line tool): reference/cli.md
 - The lakeFS Project:
   - Overview: project/index.md
   - Contributing to lakeFS: project/contributing.md
@@ -388,9 +386,7 @@ nav:
     - Overview: project/docs/index.md
     - Callouts: project/docs/callouts.md
   - Migrating to 1.0: project/code-migrate-1.0-sdk.md
-- lakeFS Cloud:
-  - Overview: cloud/index.md
-  - Unity Delta Sharing: howto/unity-delta-sharing.md
+- lakeFS Cloud: cloud/index.md
 - lakeFS Enterprise:
   - Overview: enterprise/index.md
   - Get Started:
@@ -404,8 +400,8 @@ nav:
   - Architecture: enterprise/architecture.md
 - Security:
   - Overview: security/index.md
-  - Access Control Lists (ACLs) -Deprecated-: security/access-control-lists.md
   - ACL Server Implementation: security/ACL-server-implementation.md
+  - Access Control Lists (ACLs) -Deprecated-: security/access-control-lists.md
   - Authentication: security/authentication.md
   - Authorization API: security/authorization-yaml.md
   - Login to lakeFS with AWS IAM Roles: security/external-principals-aws.md
