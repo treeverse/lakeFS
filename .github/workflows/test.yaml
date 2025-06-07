@@ -20,9 +20,10 @@ jobs:
           node-version: "18.17.0"
           cache: "npm"
           cache-dependency-path: webui/package-lock.json
-      - uses: bufbuild/buf-setup-action@v1.54.0
+      - uses: bufbuild/buf-setup-action@v1.50.0
         with:
           github_token: ${{ github.token }}
+          version: 1.54.0
       - name: Generate code
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
