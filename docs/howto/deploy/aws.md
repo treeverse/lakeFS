@@ -1,16 +1,17 @@
 ---
 title: AWS
-grand_parent: How-To
-parent: Install lakeFS
-description: How to deploy and set up a production-suitable lakeFS environment on AWS
+description: How to deploy and set up a production-suitable lakeFS environment on
+  AWS
 redirect_from:
-   - /deploying-aws/index.html
-   - /deploying-aws/install.html
-   - /deploying-aws/db.html
-   - /deploying-aws/lb_dns.html
-   - /setup/storage/s3.html 
-   - /deploy/aws.html 
-next:  ["Import data into your installation", "/howto/import.html"]
+- "/deploying-aws/index.html"
+- "/deploying-aws/install.html"
+- "/deploying-aws/db.html"
+- "/deploying-aws/lb_dns.html"
+- "/setup/storage/s3.html"
+- "/deploy/aws.html"
+next:
+- Import data into your installation
+- "/howto/import.html"
 ---
 
 # Deploy lakeFS on AWS

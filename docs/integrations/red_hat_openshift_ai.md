@@ -1,7 +1,6 @@
 ---
 title: Red Hat OpenShift AI
-parent: Integrations
-redirect_from: 
+redirect_from:
 ---
 
 # Using lakeFS with Red Hat OpenShift AI

@@ -1,9 +1,8 @@
 ---
 title: Import Data
 description: Import existing data into a lakeFS repository
-parent: How-To
-redirect_from: 
-  - /setup/import.html
+redirect_from:
+- "/setup/import.html"
 ---
 
 _This section describes how to import existing data into a lakeFS repository, without copying it.

@@ -1,8 +1,8 @@
 ---
 title: Multiple Storage Backend
-description: How to manage data across multiple storage systems with lakeFS 
-parent: How-To
-badges: ["Enterprise"]
+description: How to manage data across multiple storage systems with lakeFS
+badges:
+- Enterprise
 ---
 
 # Multi-Storage Backend

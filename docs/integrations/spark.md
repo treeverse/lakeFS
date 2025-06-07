@@ -1,14 +1,14 @@
 ---
 title: Apache Spark
-description: Accessing data in lakeFS from Apache Spark works the same as accessing S3 data from Apache Spark.
-parent: Integrations
-redirect_from: 
-  - /integrations/emr.html
-  - /integrations/glue_etl.html
-  - /using/databricks.html
-  - /using/emr.html
-  - /using/glue_etl.html
-  - /using/spark.html
+description: Accessing data in lakeFS from Apache Spark works the same as accessing
+  S3 data from Apache Spark.
+redirect_from:
+- "/integrations/emr.html"
+- "/integrations/glue_etl.html"
+- "/using/databricks.html"
+- "/using/emr.html"
+- "/using/glue_etl.html"
+- "/using/spark.html"
 ---
 
 # Using lakeFS with Apache Spark

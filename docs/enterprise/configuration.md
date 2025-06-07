@@ -2,7 +2,6 @@
 title: Configuration Reference
 description: a configuration reference for lakeFS Enterprise
 nav_order: 215
-parent: lakeFS Enterprise
 ---
 
 # lakeFS Enterprise Configuration Reference

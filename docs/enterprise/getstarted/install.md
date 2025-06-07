@@ -1,8 +1,6 @@
 ---
 title: Install
 description: lakeFS Enterprise Installation Guide
-parent: Get Started
-grand_parent: lakeFS Enterprise
 nav_order: 202
 ---
 

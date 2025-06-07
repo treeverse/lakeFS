@@ -1,7 +1,6 @@
 ---
 title: lakeFS Server Configuration
 description: Configuration reference for lakeFS Server
-parent: Reference
 ---
 
 # lakeFS Server Configuration

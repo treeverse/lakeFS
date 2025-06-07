@@ -1,8 +1,8 @@
 ---
 title: Amazon Athena
-description: This section shows how you can start querying data from lakeFS using Amazon Athena.
-parent: Integrations
-redirect_from: /using/athena.html
+description: This section shows how you can start querying data from lakeFS using
+  Amazon Athena.
+redirect_from: "/using/athena.html"
 ---
 
 # Using lakeFS with Amazon Athena

@@ -1,7 +1,6 @@
 ---
 title: Git
 description: This section explains how to integrate lakeFS with Git
-parent: Integrations
 ---
 
 # Integrating lakeFS with Git

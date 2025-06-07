@@ -1,8 +1,7 @@
 ---
 title: Monitoring using Prometheus
 description: A guide to monitoring your lakeFS Installation with Prometheus.
-parent: Reference
-redirect_from: /deploying-aws/monitor.md
+redirect_from: "/deploying-aws/monitor.md"
 ---
 
 # Monitoring using Prometheus

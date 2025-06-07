@@ -1,19 +1,21 @@
 ---
-title: ⭐ Quickstart
-description: A hands-on quickstart for lakeFS that introduces key concepts including branching, merging, and rollback. 
+title: "⭐ Quickstart"
+description: A hands-on quickstart for lakeFS that introduces key concepts including
+  branching, merging, and rollback.
 nav_order: 1
-has_children: true
 has_toc: false
-next: ["Launch the quickstart environment", "./launch.html"]
-redirect_from: 
-  - /quickstart.html
-  - /quickstart/installing.html
-  - /quickstart/try.html
-  - /quickstart/add_data.html
-  - /quickstart/more_quickstart_options.html
-  - /quickstart/repository.html
-  - /quickstart/run.html
-  - /quickstart/first_commit.html
+next:
+- Launch the quickstart environment
+- "./launch.html"
+redirect_from:
+- "/quickstart.html"
+- "/quickstart/installing.html"
+- "/quickstart/try.html"
+- "/quickstart/add_data.html"
+- "/quickstart/more_quickstart_options.html"
+- "/quickstart/repository.html"
+- "/quickstart/run.html"
+- "/quickstart/first_commit.html"
 ---
 
 # lakeFS Quickstart

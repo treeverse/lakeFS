@@ -1,10 +1,11 @@
 ---
 title: System for Cross-domain Identity Management (SCIM)
-description: Use SCIM to automatically provision users/groups in lakeFS via your identity provider (IdP)
-parent: How-To
-badges: ["Enterprise"]
+description: Use SCIM to automatically provision users/groups in lakeFS via your identity
+  provider (IdP)
+badges:
+- Enterprise
 redirect_from:
-  - /cloud/scim.html
+- "/cloud/scim.html"
 ---
 
 # System for Cross-domain Identity Management (SCIM)

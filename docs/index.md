@@ -1,8 +1,9 @@
 ---
 title: Welcome to lakeFS
-description: The lakeFS documentation provides guidance on how to use lakeFS to deliver resilience and manageability to data lakes.
+description: The lakeFS documentation provides guidance on how to use lakeFS to deliver
+  resilience and manageability to data lakes.
 nav_order: 0
-redirect_from: /downloads.html
+redirect_from: "/downloads.html"
 ---
 
 # Welcome to the Lake! 

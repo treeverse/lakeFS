@@ -1,10 +1,10 @@
 ---
 title: Architecture
-parent: Understanding lakeFS
-description: lakeFS architecture overview. Learn more about lakeFS components, including its S3 API gateway.
+description: lakeFS architecture overview. Learn more about lakeFS components, including
+  its S3 API gateway.
 redirect_from:
-    - /architecture/index.html
-    - /architecture/overview.html
+- "/architecture/index.html"
+- "/architecture/overview.html"
 ---
 # lakeFS Architecture
 

@@ -1,10 +1,13 @@
 ---
 title: 1️⃣ Run lakeFS
 description: lakeFS quickstart / Run lakeFS locally pre-populated with a sample repository
-parent: ⭐ Quickstart
 nav_order: 5
-next: ["Query the pre-populated data", "./query.html"]
-previous: ["Quickstart introduction", "./index.html"]
+next:
+- Query the pre-populated data
+- "./query.html"
+previous:
+- Quickstart introduction
+- "./index.html"
 ---
 
 # Spin up the environment

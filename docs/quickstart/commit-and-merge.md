@@ -1,10 +1,14 @@
 ---
 title: 4️⃣ Commit and Merge
-description: lakeFS quickstart / Commit the change and merge it back into the main branch
-parent: ⭐ Quickstart
+description: lakeFS quickstart / Commit the change and merge it back into the main
+  branch
 nav_order: 20
-next: ["Rollback the changes", "./rollback.html"]
-previous: ["Create a branch of the data", "./branch.html"]
+next:
+- Rollback the changes
+- "./rollback.html"
+previous:
+- Create a branch of the data
+- "./branch.html"
 ---
 
 _In the previous step we branched our data from `main` into a new `denmark-lakes` branch, and overwrote the `lakes.parquet` to hold solely information about lakes in Denmark. Now we're going to commit that change (just like Git) and merge it back to main (just like git)._

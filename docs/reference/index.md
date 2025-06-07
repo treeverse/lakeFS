@@ -1,7 +1,7 @@
 ---
 title: Reference
-description: Reference documentation for the lakeFS platform's various APIs, CLIs, and file formats.
-has_children: true
+description: Reference documentation for the lakeFS platform's various APIs, CLIs,
+  and file formats.
 has_toc: false
 nav_order: 20
 ---

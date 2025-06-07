@@ -1,97 +1,283 @@
+{%- comment -%}
+Filesystem-based navigation for just-the-docs theme.
+Computes parent-child relationships from directory structure.
+Directory titles come from index.md files.
+{%- endcomment -%}
+
+{%- assign all_pages = site.html_pages | where_exp:"item", "item.nav_exclude != true" -%}
+{%- assign all_pages = all_pages | where_exp:"item", "item.title" -%}
+
+{%- comment -%} Build directory-to-title mapping from index pages {%- endcomment -%}
+{%- assign dir_titles = "" | split: "" -%}
+{%- for page_item in all_pages -%}
+  {%- assign is_index_page = false -%}
+  {%- if page_item.name contains 'index.md' or page_item.name contains 'index.html' -%}
+    {%- assign is_index_page = true -%}
+  {%- endif -%}
+  
+  {%- if is_index_page and page_item.title -%}
+    {%- assign path_parts = page_item.path | split: '/' -%}
+    {%- assign path_parts = path_parts | pop -%}
+    {%- assign dir_path = path_parts | join: '/' -%}
+    {%- assign nav_order_val = page_item.nav_order | default: "" -%}
+    {%- assign entry = dir_path | append: '::' | append: page_item.title | append: '::' | append: nav_order_val | append: '::' | append: page_item.url -%}
+    {%- assign dir_titles = dir_titles | push: entry -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- comment -%} Organize pages by directory depth {%- endcomment -%}
+{%- assign root_pages = "" | split: "" -%}
+{%- assign level1_pages = "" | split: "" -%}
+{%- assign level2_pages = "" | split: "" -%}
+
+{%- for page_item in all_pages -%}
+  {%- assign is_index_page = false -%}
+  {%- if page_item.name contains 'index.md' or page_item.name contains 'index.html' -%}
+    {%- assign is_index_page = true -%}
+  {%- endif -%}
+  
+  {%- unless is_index_page -%}
+    {%- assign path_parts = page_item.path | split: '/' -%}
+    {%- assign depth = path_parts | size | minus: 1 -%}
+    
+    {%- if depth == 0 -%}
+      {%- assign root_pages = root_pages | push: page_item -%}
+    {%- elsif depth == 1 -%}
+      {%- assign level1_pages = level1_pages | push: page_item -%}
+    {%- elsif depth == 2 -%}
+      {%- assign level2_pages = level2_pages | push: page_item -%}
+    {%- endif -%}
+  {%- else -%}
+    {%- comment -%} Handle the root index.md page specifically {%- endcomment -%}
+    {%- if page_item.path == 'index.md' -%}
+      {%- assign root_pages = root_pages | push: page_item -%}
+    {%- endif -%}
+  {%- endunless -%}
+{%- endfor -%}
+
 <ul class="nav-list">
-    {%- assign ordered_pages_list = site.html_pages | where_exp:"item", "item.nav_order != nil" -%}
-    {%- assign unordered_pages_list = site.html_pages | where_exp:"item", "item.nav_order == nil" -%}
-    {%- if site.nav_sort == 'case_insensitive' -%}
-    {%- assign sorted_ordered_pages_list = ordered_pages_list | sort_natural:"nav_order" -%}
-    {%- assign sorted_unordered_pages_list = unordered_pages_list | sort_natural:"title" -%}
-    {%- else -%}
-    {%- assign sorted_ordered_pages_list = ordered_pages_list | sort:"nav_order" -%}
-    {%- assign sorted_unordered_pages_list = unordered_pages_list | sort:"title" -%}
+  {%- comment -%} Root level pages with numeric nav_order sorting and alphabetical fallback {%- endcomment -%}
+  {%- assign root_page_sort_data = "" | split: "" -%}
+  {%- for root_page in root_pages -%}
+    {%- assign root_nav_order = 999999 -%}
+    {%- if root_page.nav_order -%}
+      {%- assign root_nav_order = root_page.nav_order | plus: 0 -%}
     {%- endif -%}
-    {%- assign pages_list = sorted_ordered_pages_list | concat: sorted_unordered_pages_list -%}
-    {%- for node in pages_list -%}
-    {%- unless node.nav_exclude -%}
-    {%- if node.section  -%}
-    <li class="nav-list-item header">
-        {{ node.section }}
-    </li>{%- endif -%}
-    {%- if node.parent == nil and node.title -%}
-    <li
-            class="nav-list-item{% if page.url == node.url or page.parent == node.title or page.grand_parent == node.title %} active{% endif %}">
-        {%- if page.parent == node.title or page.grand_parent == node.title -%}
-        {%- assign first_level_url = node.url | absolute_url -%}
-        {%- endif -%}
-        {%- if node.has_children -%}
-        <a href="#" class="nav-list-expander"><svg viewBox="0 0 24 24">
-                <use xlink:href="#svg-arrow-right"></use>
-            </svg></a>
-        {%- endif -%}
-        <a href="{{ node.url | absolute_url }}"
-           class="nav-list-link{% if page.url == node.url %} active{% endif %}">{{ node.title }}
-           {%- if node.badges -%}
-             {%- for badge in node.badges -%}
-               {%- if badge.name -%}
-                 <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
-               {%- else -%}
-                 <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
-               {%- endif -%}
-             {%- endfor -%}
-           {%- endif -%}
-        </a>
-        {%- if node.has_children -%}
-        {%- assign children_list = pages_list | where: "parent", node.title -%}
-        <ul class="nav-list ">
-            {%- for child in children_list -%}
-            {%- unless child.nav_exclude -%}
-            <li class="nav-list-item {% if page.url == child.url or page.parent == child.title %} active{% endif %}">
-                {%- if page.url == child.url or page.parent == child.title -%}
-                {%- assign second_level_url = child.url | absolute_url -%}
-                {%- endif -%}
-                {%- if child.has_children -%}
-                <a href="#" class="nav-list-expander"><svg viewBox="0 0 24 24">
-                        <use xlink:href="#svg-arrow-right"></use>
-                    </svg></a>
-                {%- endif -%}
-                <a href="{{ child.url | absolute_url }}"
-                   class="nav-list-link{% if page.url == child.url %} active{% endif %}">{{ child.title }}
-                   {%- if child.badges -%}
-                     {%- for badge in child.badges -%}
-                       {%- if badge.name -%}
-                         <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
-                       {%- else -%}
-                         <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
-                       {%- endif -%}
-                     {%- endfor -%}
-                   {%- endif -%}
-                </a>
-                {%- if child.has_children -%}
-                {%- assign grand_children_list = pages_list | where: "parent", child.title | where: "grand_parent", node.title -%}
-                <ul class="nav-list">
-                    {%- for grand_child in grand_children_list -%}
-                    <li class="nav-list-item {% if page.url == grand_child.url %} active{% endif %}">
-                        <a href="{{ grand_child.url | absolute_url }}"
-                           class="nav-list-link{% if page.url == grand_child.url %} active{% endif %}">{{ grand_child.title }}
-                           {%- if grand_child.badges -%}
-                             {%- for badge in grand_child.badges -%}
-                               {%- if badge.name -%}
-                                 <span class="badge badge-{{ badge.name | downcase }}" title="{{ badge.name }}">{{ badge.display_name | default: badge.name }}</span>
-                               {%- else -%}
-                                 <span class="badge badge-{{ badge | downcase }}" title="{{ badge }}">{{ badge }}</span>
-                               {%- endif -%}
-                             {%- endfor -%}
-                           {%- endif -%}
-                        </a>
-                    </li>
-                    {%- endfor -%}
-                </ul>
-                {%- endif -%}
-            </li>
-            {%- endunless -%}
-            {%- endfor -%}
-        </ul>
-        {%- endif -%}
+    {%- assign padded_root_nav_order = "00000000" | append: root_nav_order -%}
+    {%- assign padded_root_nav_order = padded_root_nav_order | slice: -8, 8 -%}
+    {%- assign root_sort_entry = padded_root_nav_order | append: '::' | append: root_page.title | append: '::' | append: root_page.url -%}
+    {%- assign root_page_sort_data = root_page_sort_data | push: root_sort_entry -%}
+  {%- endfor -%}
+  {%- assign root_page_sort_data = root_page_sort_data | sort -%}
+  
+  {%- for root_sort_entry in root_page_sort_data -%}
+    {%- assign root_parts = root_sort_entry | split: '::' -%}
+    {%- assign root_title = root_parts[1] -%}
+    {%- assign root_url = root_parts[2] -%}
+    <li class="nav-list-item">
+      <a href="{{ root_url | relative_url }}" class="nav-list-link{% if page.url == root_url %} active{% endif %}">{{ root_title }}
+      {%- if root_page.badges -%}
+        {%- for badge in root_page.badges -%}
+          <span class="badge badge-{{ badge | downcase }}">{{ badge }}</span>
+        {%- endfor -%}
+      {%- endif -%}
+      </a>
     </li>
-    {%- endif -%}
+  {%- endfor -%}
+
+  {%- comment -%} Level 1 directories and their pages {%- endcomment -%}
+  {%- assign level1_dirs = "" | split: "" -%}
+  {%- for l1_page in level1_pages -%}
+    {%- assign path_parts = l1_page.path | split: '/' -%}
+    {%- assign dir_name = path_parts[0] -%}
+    {%- unless level1_dirs contains dir_name -%}
+      {%- assign level1_dirs = level1_dirs | push: dir_name -%}
     {%- endunless -%}
+  {%- endfor -%}
+
+  {%- comment -%} Sort directories by their index page nav_order {%- endcomment -%}
+  {%- assign dir_sort_data = "" | split: "" -%}
+  {%- for dir in level1_dirs -%}
+    {%- assign dir_nav_order = 999999 -%}
+    {%- assign dir_title = dir -%}
+    {%- assign dir_url = "/" | append: dir | append: "/" -%}
+    
+    {%- for entry in dir_titles -%}
+      {%- assign parts = entry | split: '::' -%}
+      {%- if parts[0] == dir -%}
+        {%- assign dir_title = parts[1] -%}
+        {%- if parts[2] != "" and parts[2] != nil -%}
+          {%- assign dir_nav_order = parts[2] | plus: 0 -%}
+        {%- endif -%}
+        {%- assign dir_url = parts[3] -%}
+        {% break %}
+      {%- endif -%}
     {%- endfor -%}
+    
+    {%- comment -%} Pad nav_order to ensure proper numeric sorting {%- endcomment -%}
+    {%- assign padded_nav_order = "00000000" | append: dir_nav_order -%}
+    {%- assign padded_nav_order = padded_nav_order | slice: -8, 8 -%}
+    {%- assign sort_entry = padded_nav_order | append: '::' | append: dir | append: '::' | append: dir_title | append: '::' | append: dir_url -%}
+    {%- assign dir_sort_data = dir_sort_data | push: sort_entry -%}
+  {%- endfor -%}
+
+  {%- assign dir_sort_data = dir_sort_data | sort -%}
+
+  {%- for sort_entry in dir_sort_data -%}
+    {%- assign parts = sort_entry | split: '::' -%}
+    {%- assign dir = parts[1] -%}
+    {%- assign dir_title = parts[2] -%}
+    {%- assign dir_url = parts[3] -%}
+    
+    {%- comment -%} Get pages in this directory {%- endcomment -%}
+    {%- assign dir_pages = "" | split: "" -%}
+    {%- for l1_page in level1_pages -%}
+      {%- assign path_parts = l1_page.path | split: '/' -%}
+      {%- if path_parts[0] == dir -%}
+        {%- assign dir_pages = dir_pages | push: l1_page -%}
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- comment -%} Get subdirectories {%- endcomment -%}
+    {%- assign subdirs = "" | split: "" -%}
+    {%- for l2_page in level2_pages -%}
+      {%- assign path_parts = l2_page.path | split: '/' -%}
+      {%- if path_parts[0] == dir -%}
+        {%- assign subdir = path_parts[1] -%}
+        {%- unless subdirs contains subdir -%}
+          {%- assign subdirs = subdirs | push: subdir -%}
+        {%- endunless -%}
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- comment -%} Check if we have any children {%- endcomment -%}
+    {%- assign has_children = false -%}
+    {%- if dir_pages.size > 0 or subdirs.size > 0 -%}
+      {%- assign has_children = true -%}
+    {%- endif -%}
+
+    {%- if has_children -%}
+      <li class="nav-list-item{% if page.url contains dir %} active{% endif %}">
+        <a href="#" class="nav-list-expander"><svg viewBox="0 0 24 24"><use xlink:href="#svg-arrow-right"></use></svg></a>
+        <a href="{{ dir_url | relative_url }}" class="nav-list-link{% if page.url == dir_url %} active{% endif %}">{{ dir_title }}</a>
+        
+        <ul class="nav-list">
+          {%- comment -%} Combine and sort both individual pages and subdirectories by nav_order {%- endcomment -%}
+          {%- assign combined_sort_data = "" | split: "" -%}
+          
+          {%- comment -%} Add individual pages to sort data {%- endcomment -%}
+          {%- for child_page in dir_pages -%}
+            {%- assign child_nav_order = 999999 -%}
+            {%- if child_page.nav_order -%}
+              {%- assign child_nav_order = child_page.nav_order | plus: 0 -%}
+            {%- endif -%}
+            {%- assign padded_child_nav_order = "00000000" | append: child_nav_order -%}
+            {%- assign padded_child_nav_order = padded_child_nav_order | slice: -8, 8 -%}
+            {%- assign child_sort_entry = padded_child_nav_order | append: '::' | append: child_page.title | append: '::page::' | append: child_page.url -%}
+            {%- assign combined_sort_data = combined_sort_data | push: child_sort_entry -%}
+          {%- endfor -%}
+          
+          {%- comment -%} Add subdirectories to sort data {%- endcomment -%}
+          {%- for subdir in subdirs -%}
+            {%- assign subdir_path = dir | append: '/' | append: subdir -%}
+            {%- assign subdir_title = subdir -%}
+            {%- assign subdir_nav_order = 999999 -%}
+            {%- assign subdir_url = "/" | append: subdir_path | append: "/" -%}
+            
+            {%- for entry in dir_titles -%}
+              {%- assign title_parts = entry | split: '::' -%}
+              {%- if title_parts[0] == subdir_path -%}
+                {%- assign subdir_title = title_parts[1] -%}
+                {%- if title_parts[2] != "" and title_parts[2] != nil -%}
+                  {%- assign subdir_nav_order = title_parts[2] | plus: 0 -%}
+                {%- endif -%}
+                {%- assign subdir_url = title_parts[3] -%}
+                {% break %}
+              {%- endif -%}
+            {%- endfor -%}
+            
+            {%- assign padded_subdir_nav_order = "00000000" | append: subdir_nav_order -%}
+            {%- assign padded_subdir_nav_order = padded_subdir_nav_order | slice: -8, 8 -%}
+            {%- assign subdir_sort_entry = padded_subdir_nav_order | append: '::' | append: subdir_title | append: '::subdir::' | append: subdir_url | append: '::' | append: subdir -%}
+            {%- assign combined_sort_data = combined_sort_data | push: subdir_sort_entry -%}
+          {%- endfor -%}
+          
+          {%- assign combined_sort_data = combined_sort_data | sort -%}
+
+          {%- for sort_entry in combined_sort_data -%}
+            {%- assign parts = sort_entry | split: '::' -%}
+            {%- assign entry_title = parts[1] -%}
+            {%- assign entry_type = parts[2] -%}
+            {%- assign entry_url = parts[3] -%}
+            
+            {%- if entry_type == "page" -%}
+              <li class="nav-list-item">
+                <a href="{{ entry_url | relative_url }}" class="nav-list-link{% if page.url == entry_url %} active{% endif %}">{{ entry_title }}
+                {%- for child_page in dir_pages -%}
+                  {%- if child_page.url == entry_url and child_page.badges -%}
+                    {%- for badge in child_page.badges -%}
+                      <span class="badge badge-{{ badge | downcase }}">{{ badge }}</span>
+                    {%- endfor -%}
+                  {%- endif -%}
+                {%- endfor -%}
+                </a>
+              </li>
+            {%- elsif entry_type == "subdir" -%}
+              {%- assign subdir = parts[4] -%}
+              {%- assign subdir_path = dir | append: '/' | append: subdir -%}
+              
+              {%- comment -%} Get pages in this subdirectory {%- endcomment -%}
+              {%- assign subdir_pages = "" | split: "" -%}
+              {%- for l2_page in level2_pages -%}
+                {%- assign path_parts = l2_page.path | split: '/' -%}
+                {%- if path_parts[0] == dir and path_parts[1] == subdir -%}
+                  {%- assign subdir_pages = subdir_pages | push: l2_page -%}
+                {%- endif -%}
+              {%- endfor -%}
+
+              {%- if subdir_pages.size > 0 -%}
+                <li class="nav-list-item{% if page.url contains subdir_path %} active{% endif %}">
+                  <a href="#" class="nav-list-expander"><svg viewBox="0 0 24 24"><use xlink:href="#svg-arrow-right"></use></svg></a>
+                  <a href="{{ entry_url | relative_url }}" class="nav-list-link{% if page.url == entry_url %} active{% endif %}">{{ entry_title }}</a>
+                  
+                  <ul class="nav-list">
+                    {%- comment -%} Sort subpages with numeric nav_order and alphabetical fallback {%- endcomment -%}
+                    {%- assign subdir_page_sort_data = "" | split: "" -%}
+                    {%- for subpage in subdir_pages -%}
+                      {%- assign sub_nav_order = 999999 -%}
+                      {%- if subpage.nav_order -%}
+                        {%- assign sub_nav_order = subpage.nav_order | plus: 0 -%}
+                      {%- endif -%}
+                      {%- assign padded_sub_nav_order = "00000000" | append: sub_nav_order -%}
+                      {%- assign padded_sub_nav_order = padded_sub_nav_order | slice: -8, 8 -%}
+                      {%- assign sub_sort_entry = padded_sub_nav_order | append: '::' | append: subpage.title | append: '::' | append: subpage.url -%}
+                      {%- assign subdir_page_sort_data = subdir_page_sort_data | push: sub_sort_entry -%}
+                    {%- endfor -%}
+                    {%- assign subdir_page_sort_data = subdir_page_sort_data | sort -%}
+                    
+                    {%- for sub_sort_entry in subdir_page_sort_data -%}
+                      {%- assign sub_parts = sub_sort_entry | split: '::' -%}
+                      {%- assign sub_title = sub_parts[1] -%}
+                      {%- assign sub_url = sub_parts[2] -%}
+                      <li class="nav-list-item">
+                        <a href="{{ sub_url | relative_url }}" class="nav-list-link{% if page.url == sub_url %} active{% endif %}">{{ sub_title }}
+                        {%- for subpage in subdir_pages -%}
+                          {%- if subpage.url == sub_url and subpage.badges -%}
+                            {%- for badge in subpage.badges -%}
+                              <span class="badge badge-{{ badge | downcase }}">{{ badge }}</span>
+                            {%- endfor -%}
+                          {%- endif -%}
+                        {%- endfor -%}
+                        </a>
+                      </li>
+                    {%- endfor -%}
+                  </ul>
+                </li>
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      </li>
+    {%- endif -%}
+  {%- endfor -%}
 </ul>

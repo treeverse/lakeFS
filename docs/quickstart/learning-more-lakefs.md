@@ -1,9 +1,11 @@
 ---
 title: Learn more about lakeFS
-description: Learn more about lakeFS here with links to resources including quickstart, samples, installation guides, and more. 
-parent: ⭐ Quickstart
+description: Learn more about lakeFS here with links to resources including quickstart,
+  samples, installation guides, and more.
 nav_order: 99
-previous: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
+previous:
+- Using Actions and Hooks in lakeFS
+- "./actions-and-hooks.html"
 ---
 
 # Learn more about lakeFS
