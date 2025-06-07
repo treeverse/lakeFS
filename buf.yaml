@@ -1,7 +1,9 @@
-version: v1
+version: v2
+modules:
+  - path: pkg
+lint:
+  use:
+    - STANDARD
 breaking:
   use:
     - FILE
-lint:
-  use:
-    - DEFAULT

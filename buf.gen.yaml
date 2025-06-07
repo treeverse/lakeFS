@@ -1,7 +1,8 @@
-version: v1
+version: v2
 plugins:
-  - plugin: go
-    path: ["go", "run", "google.golang.org/protobuf/cmd/protoc-gen-go"]
+  - remote: buf.build/protocolbuffers/go:v1.36.6
     out: pkg
     opt:
       - paths=source_relative
+inputs:
+  - directory: pkg
