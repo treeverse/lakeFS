@@ -113,6 +113,9 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	// Add endpoint so that 'IsAdvancedAuth' will be in effect
 	viper.Set("auth.api.endpoint", config.DefaultListenAddress)
 
+	viper.Set("committed.local_cache.size_bytes", 24*1024*1024)
+	viper.Set("committed.sstable.memory.cache_size_bytes", 2*1024*1024)
+
 	collector := &memCollector{}
 	cfg := &configfactory.ConfigWithAuth{}
 	baseCfg, err := config.NewConfig("", cfg)
