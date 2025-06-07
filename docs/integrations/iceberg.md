@@ -73,7 +73,7 @@ To use it:
 ```python
 from pyiceberg.catalog import load_catalog
 
-catalog = RestCatalog(**{
+catalog = RestCatalog(name = "my_catalog", **{
     'prefix': 'lakefs',
     'uri': f'{lakefs_endpoint}/iceberg/api',
     'oauth2-server-uri': f'{lakefs_endpoint}/iceberg/api/v1/oauth/tokens',
