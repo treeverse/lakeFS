@@ -9,7 +9,6 @@ Vertex AI lets Google Cloud users Build, deploy, and scale machine learning (ML)
 
 lakeFS Works with Vertex AI by allowing users to create repositories on [GCS Buckets](../howto/deploy/gcp.md), then use either the Dataset API to create managed Datasets on top of lakeFS version, or by automatically exporting lakeFS object versions in a way readable by [Cloud Storage Mounts](https://cloud.google.com/blog/products/ai-machine-learning/cloud-storage-file-system-ai-training). 
 
-[TOC]
 
 ## Using lakeFS with Vertex Managed Datasets
 

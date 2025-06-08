@@ -7,12 +7,11 @@ description: Easily build reproducible data pipelines with Kubeflow and lakeFS u
 A Kubeflow pipeline is a portable and scalable definition of an ML workflow composed of steps. Each step in the pipeline is an instance of a component represented as an instance of [ContainerOp](https://kf-pipelines.readthedocs.io/en/latest/source/kfp.dsl.html#kfp.dsl.ContainerOp).
 
 
-
-
 ## Add pipeline steps for lakeFS operations
 
 To integrate lakeFS into your Kubeflow pipeline, you need to create Kubeflow components that perform lakeFS operations.
-Currently, there are two methods to create lakeFS ContainerOps:
+Currently, there are two methods to create lakeFS `ContainerOps`:
+
 1. Implement a function-based ContainerOp that uses the lakeFS Python API to invoke lakeFS operations.
 1. Implement a ContainerOp that uses the `lakectl` CLI docker image to invoke lakeFS operations.
 
@@ -29,19 +28,19 @@ Create a new branch: A function-based ContainerOp that creates a branch called `
 from kfp import components
 
 def create_branch(repo_name, branch_name, source_branch):
-   import lakefs
-   from lakefs.client import Client
-   client = Client(
-      host="https://lakefs.example.com",
-      username="AKIAIOSFODNN7EXAMPLE",
-      password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-   )
-   lakefs.repository(repo_name, client=client).branch(branch_name).create(source_reference=source_branch)
+    import lakefs
+    from lakefs.client import Client
+    client = Client(
+        host="https://lakefs.example.com",
+        username="AKIAIOSFODNN7EXAMPLE",
+        password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    )
+    lakefs.repository(repo_name, client=client).branch(branch_name).create(source_reference=source_branch)
 
 # Convert the function to a lakeFS pipeline step.
 create_branch_op = components.func_to_container_op(
-   func=create_branch,
-   packages_to_install=['lakefs'])
+    func=create_branch,
+    packages_to_install=['lakefs'])
 ```
 
 You can invoke any lakeFS operation supported by lakeFS OpenAPI. For example, you could implement a commit and merge function-based ContainerOps.
@@ -62,32 +61,29 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
 
 1. Commit changes to a branch: A ContainerOp that commits uncommitted changes to `example-branch` on `example-repo`.
 
-   ```python
-   from kubernetes.client.models import V1EnvVar
+    ```python
+    from kubernetes.client.models import V1EnvVar
 
-   def commit_op():
-      return dsl.ContainerOp(
-      name='commit',
-      image='treeverse/lakectl',
-      arguments=['commit', 'lakefs://example-repo/example-branch', '-m', 'commit message']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
-   ```
-
+    def commit_op():
+        return dsl.ContainerOp(
+        name='commit',
+        image='treeverse/lakectl',
+        arguments=['commit', 'lakefs://example-repo/example-branch', '-m', 'commit message']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
+    ```
 1. Merge two lakeFS branches: A ContainerOp that merges `example-branch` into the `main` branch of `example-repo`.
-
-   ```python
-   def merge_op():
-     return dsl.ContainerOp(
-     name='merge',
-     image='treeverse/lakectl',
-     arguments=['merge', 'lakefs://example-repo/example-branch', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
-   ```
+    ```python
+    def merge_op():
+        return dsl.ContainerOp(
+        name='merge',
+        image='treeverse/lakectl',
+        arguments=['merge', 'lakefs://example-repo/example-branch', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
+    ```
 
 You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](/reference/cli/) for the list of supported operations.
 
 
-**Note**
-The lakeFS Kubeflow integration that uses `lakectl` is supported on lakeFS version >= v0.43.0.
-{: .note }
+!!! note
+    The lakeFS Kubeflow integration that uses `lakectl` is supported on lakeFS version >= v0.43.0.
 
 ## Add the lakeFS steps to your pipeline
 
@@ -99,15 +95,14 @@ A pipeline that implements a simple ETL that has steps for branch creation and c
 
 ```python
 def lakectl_pipeline():
-   create_branch_task = create_branch_op('example-repo', 'example-branch', 'main') # A function-based component
-   extract_task = example_extract_op()
-   commit_task = commit_op()
-   transform_task = example_transform_op()
-   commit_task = commit_op()
-   load_task = example_load_op()
+    create_branch_task = create_branch_op('example-repo', 'example-branch', 'main') # A function-based component
+    extract_task = example_extract_op()
+    commit_task = commit_op()
+    transform_task = example_transform_op()
+    commit_task = commit_op()
+    load_task = example_load_op()
 ```
 
+!!! info
+    It's recommended to store credentials as Kubernetes secrets and pass them as [environment variables](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables ) to Kubeflow operations using [V1EnvVarSource](https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVarSource.md).
 
-**Note**
-It's recommended to store credentials as Kubernetes secrets and pass them as [environment variables](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables ) to Kubeflow operations using [V1EnvVarSource](https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVarSource.md).
-{: .note }

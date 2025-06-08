@@ -4,6 +4,7 @@ parent: Integrations
 ---
 
 # Using lakeFS with Red Hat OpenShift AI
+
 Red Hat® OpenShift® is an enterprise-ready Kubernetes container platform with full-stack automated operations to manage hybrid cloud, multi-cloud, and edge deployments. OpenShift includes an enterprise-grade Linux operating system, container runtime, networking, monitoring, registry, and authentication and authorization solutions.
 
 [Red Hat® OpenShift® AI](https://www.redhat.com/en/technologies/cloud-computing/openshift/openshift-ai) is a flexible, scalable artificial intelligence (AI) and machine learning (ML) platform that enables enterprises to create and deliver AI-enabled applications at scale across hybrid cloud environments. Built using open source technologies, OpenShift AI provides trusted, operationally consistent capabilities for teams to experiment, serve models, and deliver innovative apps.
@@ -21,6 +22,7 @@ In this example, OpenShift AI is configured to connect over S3 interace to lakeF
 <img src="/assets/img/red-hat/OpenShiftAIDemoArchitecture.png" alt="OpenShift AI and lakeFS Deployment Architecture for the demo" width="100%" height="100%" />
 
 lakeFS-samples also includes multiple Helm chart examples to deploy lakeFS and MinIO in different scenarios:
+
 1. [lakefs-local.yaml](https://github.com/treeverse/lakeFS-samples/blob/main/01_standalone_examples/red-hat-openshift-ai/cluster-configuration/lakefs-local.yaml): Bring up lakeFS using local object storage. This would be useful for a quick demo where MinIO is not included.
 2. [lakefs-minio.yaml](https://github.com/treeverse/lakeFS-samples/blob/main/01_standalone_examples/red-hat-openshift-ai/cluster-configuration/lakefs-minio.yaml): Bring up lakeFS configured to use MinIO as backend object storage. This will be used in the lakeFS demo.
 3. [minio-direct.yaml](https://github.com/treeverse/lakeFS-samples/blob/main/01_standalone_examples/red-hat-openshift-ai/cluster-configuration/minio-direct.yaml): This file would only be used if lakeFS is not in the picture and OpenShift AI will communicate directly with MinIO. It will bring up MinIO as it is in the default Fraud Detection demo, complete with configuring MinIO storage buckets and the OpenShift AI data connections. It may serve useful in debugging an issue.

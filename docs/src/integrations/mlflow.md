@@ -13,11 +13,10 @@ MLflow comprises multiple core components, and lakeFS seamlessly integrates with
 component. MLflow tracking enables experiment tracking that accounts for both inputs and outputs, allowing for visualization
 and comparison of experiment results.
 
-
-
 ## Benefits of integrating MLflow with lakeFS 
 
 Integrating MLflow with lakeFS offers several advantages that enhance the machine learning workflow:
+
 1. **Experiment Reproducibility**: By leveraging MLflow's [input logging](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.html#mlflow.log_input)
 capabilities alongside lakeFS's data versioning, you can precisely track the specific dataset version used in each experiment
 run. This ensures that experiments remain reproducible over time, even as datasets evolve.
@@ -50,13 +49,11 @@ version corresponding to the branch's head commit and track this reference to fa
 6. **Merge experiment results**: After concluding your experimentation, merge the branch used for the selected experiment 
 run back into the main branch.
 
-{: .note}
-
-**Note: Branch per experiment Vs. Branch per experiment run**<br>
-While it's possible to create a lakeFS branch for each experiment run, given that lakeFS branches are both quick and 
-cost-effective to create, it's often more efficient to create a branch per experiment. By reading directly from the head
-commit of the experiment branch, you can distinguish between dataset versions without creating excessive branches. This
-practice maintains branch hygiene within lakeFS.
+!!! tip "Branch per experiment Vs. Branch per experiment run"
+    While it's possible to create a lakeFS branch for each experiment run, given that lakeFS branches are both quick and 
+    cost-effective to create, it's often more efficient to create a branch per experiment. By reading directly from the head
+    commit of the experiment branch, you can distinguish between dataset versions without creating excessive branches. This
+    practice maintains branch hygiene within lakeFS.
 
 ### Example: Using Pandas
 
@@ -175,7 +172,8 @@ print(f"Logged dataset name: {logged_dataset.name}")
 print(f"Logged dataset source URI: {logged_dataset.source}")
 ```
 
-Output 
+Output:
+
 ```text
 Dataset name: boat-images
 Dataset source URI: s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/
@@ -191,39 +189,42 @@ and its source are best accessed programmatically.
 
 1. Obtain the Run ID: Navigate to the MLflow UI and copy the Run ID of the experiment you're interested in.
 
-![mlflow run](../assets/img/mlflow_experiment_run.png)
+    ![mlflow run](../assets/img/mlflow_experiment_run.png)
 
 2. Extract Dataset Information Using MLflow's Python SDK:
 
-```python
-import mlflow
+    ```python
+    import mlflow
 
-# Inspect run's dataset and tags
-run_id = "c0f8fbb1b63748abaa0a6479115e272c"
-run = mlflow.get_run(run_id) 
+    # Inspect run's dataset and tags
+    run_id = "c0f8fbb1b63748abaa0a6479115e272c"
+    run = mlflow.get_run(run_id) 
 
-# Retrieve the Dataset object
-logged_dataset = run.inputs.dataset_inputs[0].dataset
+    # Retrieve the Dataset object
+    logged_dataset = run.inputs.dataset_inputs[0].dataset
 
-# View some of the recorded Dataset information
-print(f"Run ID: {run_id} Dataset name: {logged_dataset.name}")
-print(f"Run ID: {run_id} Dataset source URI: {logged_dataset.source}")
+    # View some of the recorded Dataset information
+    print(f"Run ID: {run_id} Dataset name: {logged_dataset.name}")
+    print(f"Run ID: {run_id} Dataset source URI: {logged_dataset.source}")
 
-# Retrieve run's tags 
-logged_tags = run.data.tags
-print(f"Run ID: {run_id} tags: {logged_tags}")
-```
+    # Retrieve run's tags 
+    logged_tags = run.data.tags
+    print(f"Run ID: {run_id} tags: {logged_tags}")
+    ```
 
-Output
-```text
-Run ID: c0f8fbb1b63748abaa0a6479115e272c Dataset name: boat-images
-Run ID: c0f8fbb1b63748abaa0a6479115e272c Dataset source URI: {"path": "s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
-Run ID: c0f8fbb1b63748abaa0a6479115e272c tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'my-repo', 'lakefs_commit': '3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3'}
-```
+    Output
 
-Notes:
-* The Dataset Source URI provides the location of the dataset at the exact version used in the run. 
-* Run tags, such as 'lakefs_branch' and 'lakefs_repo', offer additional context about the dataset's origin within lakeFS.
+    ```text
+    Run ID: c0f8fbb1b63748abaa0a6479115e272c Dataset name: boat-images
+    Run ID: c0f8fbb1b63748abaa0a6479115e272c Dataset source URI: {"path": "s3://my-repo/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
+    Run ID: c0f8fbb1b63748abaa0a6479115e272c tags: {'lakefs_branch': 'experiment-1', 'lakefs_repo': 'my-repo', 'lakefs_commit': '3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3'}
+    ```
+
+!!! note "Notes"
+
+    * The Dataset Source URI provides the location of the dataset at the exact version used in the run. 
+    * Run tags, such as 'lakefs_branch' and 'lakefs_repo', offer additional context about the dataset's origin within lakeFS.
+
 
 ### Compare runs input
 
@@ -255,6 +256,7 @@ print(f"Second dataset src: {sec_dataset_src}")
 ```
 
 Output
+
 ```text
 First dataset src: {"uri": "s3://mlflow-tracking/f16682c0186a81adf72edaad23c3f59ed2ff3afddad4fef987b4919f5e82003a/gold/train_v2/"}
 Second dataset src: {"uri": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682c018f59ed2ff003a6a81adf72edaad23c3/gold/train_v2/"}
@@ -263,6 +265,7 @@ Second dataset src: {"uri": "s3://mlflow-tracking/3afddad4fef987b4919f5e82f16682
 In this example, the source attribute of each Dataset object is compared to determine if the input datasets are identical. 
 If they differ, you can further inspect them. With the dataset source URI in hand, you can use lakeFS to gain more insights
 about the changes made to your dataset:
+
 * Inspect the lakeFS Commit ID: By examining the commit ID within the URI, you can retrieve detailed information about 
 the commit, including the author and the purpose of the changes.
 * Use lakeFS Diff: lakeFS offers a diff function that allows you to compare different versions of your data. 

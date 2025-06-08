@@ -5,8 +5,6 @@ description: This section points to the various integrations with Databricks.
 
 # Using lakeFS with Databricks
 
-
-
 ## Overview
 
 Databricks is a unified, open analytics platform for building, deploying, sharing,
@@ -57,9 +55,8 @@ The Databricks job scheduler automatically creates a job compute whenever a job 
 To use lakeFS with Databricks jobs, a compute cluster needs to be configured in the cluster setup,
 just like with [All-Purpose compute](#all-purpose-compute). 
 
-{.note}
-**Note**
-Serverless compute for Databricks jobs is currently not supported.
+!!! note
+    Serverless compute for Databricks jobs is currently not supported.
 
 ### SQL Warehouses
 
@@ -84,25 +81,15 @@ lakeFS support for Unity Catalog differs between lakeFS OSS and lakeFS Enterpris
 Leveraging the external tables feature within Unity Catalog,
 you can register a Delta Lake table exported from lakeFS and access it through the unified catalog.
 
-{.note}
-Note
-lakeFS Catalog exporters offer read-only table exports.
+
+!!! note
+    lakeFS Catalog exporters offer read-only table exports.
+
 
 [Catalog Exports](../howto/catalog_exports.md) relies on [lakeFS Actions](../howto/hooks/index.md) and offers
 a way to export changes from lakeFS to Unity Catalog.
 
 For the full guide on how to use Catalog Exports with Unity Catalog, see the [documentation](./unity-catalog.md).
-
-### lakeFS for Databricks <span class="badge">Enterprise</span>
-
-lakeFS for Databricks provides a seamless integration between lakeFS and Unity Catalog. 
-Its primary benefits over the integration offered by lakeFS open-source are:
-- Table Write support
-- Native Unity Catalog interaction: Instead of reading/writing from lakeFS path, 
-use SQL to directly access data stored in Unity catalog
-- Advanced Serverless warehouse support: lakeFS can work with anything serverless - SQL warehouse or Serverless notebooks.
-  
-For more information, visit the lakeFS for Databricks [page](https://lakefs.io/lakefs-for-databricks/).
 
 ## Delta Lake
 
