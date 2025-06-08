@@ -88,7 +88,7 @@ you can register a Delta Lake table exported from lakeFS and access it through t
 Note
 lakeFS Catalog exporters offer read-only table exports.
 
-[Catalog Exports](../howto/catalog_exports.md) relies on [lakeFS Actions](../howto/hooks) and offers
+[Catalog Exports](../howto/catalog_exports.md) relies on [lakeFS Actions](../howto/hooks/index.md) and offers
 a way to export changes from lakeFS to Unity Catalog.
 
 For the full guide on how to use Catalog Exports with Unity Catalog, see the [documentation](./unity-catalog.md).

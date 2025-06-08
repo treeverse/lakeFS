@@ -24,7 +24,7 @@ lakeFS manages data stored on various object storage platforms, including:
 - Ceph
 - Any other S3-compatible storage
 
-With [lakeFS Enterprise](../enterprise), you can leverage [multiple storage backend support](../howto/multiple-storage-backends.md)
+With [lakeFS Enterprise](../enterprise/index.md), you can leverage [multiple storage backend support](../howto/multiple-storage-backends.md)
 to manage data across multiple storage locations, including on-prem, hybrid, and multi-cloud environments.
 
 ### Metadata Storage

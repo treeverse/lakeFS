@@ -6,7 +6,6 @@ description: This section explains how lakeFS can integrate with external Data C
 # Data Catalogs Export
 
 
-
 ## About Data Catalogs Export
 
 Data Catalog Export is all about integrating query engines (like Spark, AWS Athena, Presto, etc.) with lakeFS.
@@ -66,8 +65,9 @@ schema:
         comment: a comment about this column
 ```
 
-Useful types recognized by Hive include `integer`, `long`, `short`, `string`, `double`, `float`, `date`, and `timestamp`.
-{: .note }
+!!! tip
+    Useful types recognized by Hive include `integer`, `long`, `short`, `string`, `double`, `float`, `date`, and `timestamp`.
+
 
 ### Catalog Exporters 
 

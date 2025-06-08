@@ -1,6 +1,7 @@
 ---
 date: 2024-10-28
-search_exclude: true
+search:
+  exclude: true
 ---
 
 # Deprecating `lakefs-client`, the legacy Python 🐍 Client SDKs

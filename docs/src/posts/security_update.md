@@ -1,6 +1,7 @@
 ---
 date: 2023-01-31
-search_exclude: true
+search:
+  exclude: true
 ---
 
 # Security update for the lakeFS project
@@ -21,8 +22,9 @@ Within the lakeFS UI, you will see a deprecation notice on the administration sc
 In coming versions, we plan on making authorization and authentication pluggable, while bundling a simpler reference implementation into the core of lakeFS.
 This implementation will include basic identity management with built-in users and groups, as well as a simplified authorization mechanism based on ACLs.
 
-**If you currently rely on any of the deprecated features, please [contact us](mailto:support@treeverse.io?subject=RBAC+and+SSO+deprecation){: target="_blank" } - we'll do our best to support you in the transition.**
-{: .note }
+!!! danger
+    If you currently rely on any of the deprecated features, please [contact us](mailto:support@treeverse.io?subject=RBAC+and+SSO+deprecation){: target="_blank" } - we'll do our best to support you in the transition.**
+
 
 ## Why are we making this architectural change?
 

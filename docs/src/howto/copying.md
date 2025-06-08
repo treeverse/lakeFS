@@ -1,20 +1,18 @@
 ---
 title: Copying data to/from lakeFS
-description: 
+description: Copy data from external sources to and from lakeFS
 ---
 
 # Copying data to/from lakeFS
 
-[TOC]
 
 ## Using DistCp
 
 Apache Hadoop [DistCp](https://hadoop.apache.org/docs/current/hadoop-distcp/DistCp.html){:target="_blank"} (distributed copy) is a tool used for large inter/intra-cluster copying. You can easily use it with your lakeFS repositories.
 
-**Note** 
-
-In the following examples, we set AWS credentials on the command line for clarity. In production, you should set these properties using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
-{: .note}
+!!! info
+    In the following examples, we set AWS credentials on the command line for clarity. 
+    In production, you should set these properties using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3). 
 
 ### Between lakeFS repositories
 
@@ -35,7 +33,7 @@ hadoop distcp \
 To copy data from an S3 bucket to a lakeFS repository, use Hadoop's [per-bucket configuration](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Configuring_different_S3_buckets_with_Per-Bucket_Configuration){:target="_blank"}.
 In the following examples, replace the first access key pair with your lakeFS key pair, and the second one with your AWS IAM key pair:
 
-#### From S3 to lakeFs
+#### From S3 to lakeFS
 
 ```bash
 hadoop distcp \
@@ -112,14 +110,16 @@ To add the remote to Rclone, choose one of the following options:
 #### Option 2: Use the Rclone interactive config command
 
 Run this command and follow the instructions:
-```shell
-rclone config
+
 ```
+rclone config
+
+
 Choose AWS S3 as your type of storage, and enter your lakeFS endpoint as your S3 endpoint.
 You will have to choose whether you use your environment for authentication (recommended),
 or enter the lakeFS access key pair into the Rclone configuration. Select "Edit advanced
 config" and accept defaults for all values except `no_check_bucket`:
-```
+
 If set, don't attempt to check the bucket exists or create it.
 
 This can be useful when trying to minimize the number of transactions
@@ -135,12 +135,12 @@ no_check_bucket> yes
 
 ### Syncing S3 and lakeFS
 
-```shell
+```bash
 rclone sync mys3remote://mybucket/path/ lakefs:example-repo/main/path
 ```
 
 ### Syncing a local directory and lakeFS
 
-```shell
+```bash
 rclone sync /home/myuser/path/ lakefs:example-repo/main/path
 ```

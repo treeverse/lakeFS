@@ -19,13 +19,13 @@ At lakeFS, we understand the critical nature of data security. Thousands of orga
 
 Learn more about some of the featured that help keep lakeFS Secure:
 
-- [Authentication](/security/authentication/) - An overview of the authentication and authorization mechanisms available in lakeFS, including built-in and external services, API and S3 Gateway authentication, and user permissions management.
-- [Remote Authenticator](/security/remote-authenticator/) - This feature allows organizations to leverage their existing identity infrastructure while using lakeFS, providing a flexible and secure authentication mechanism.
-- [Role-Based Access Control (RBAC)](/security/rbac/) - RBAC with lakeFS provides a flexible and granular approach to managing access and permissions, similar to other cloud-based systems like AWS IAM.
-- [Presigned URL](/security/presigned-url/) - This feature allows for more flexible and direct data access in lakeFS, particularly useful for scenarios where bypassing the lakeFS server for data retrieval or storage is beneficial.
-- [Single Sign On (SSO)](/security/sso/) - lakeFS provides administrators with the necessary information to set up SSO for both lakeFS Cloud and Enterprise editions, covering various authentication protocols and identity providers.
-- [Short Lived Token (STS like)](/security/sts-login/) - This feature allows lakeFS to leverage temporary credentials for secure and flexible authentication, integrating seamlessly with existing identity providers.
-- [Login to lakeFS with AWS IAM](/security/external-principals-aws/) - This feature enhances the integration between lakeFS and AWS by supporting authenticating users programmatically using AWS IAM roles instead of using static lakeFS access and secret keys.
+- [Authentication](/security/authentication.md) - An overview of the authentication and authorization mechanisms available in lakeFS, including built-in and external services, API and S3 Gateway authentication, and user permissions management.
+- [Remote Authenticator](/security/remote-authenticator.md) - This feature allows organizations to leverage their existing identity infrastructure while using lakeFS, providing a flexible and secure authentication mechanism.
+- [Role-Based Access Control (RBAC)](/security/rbac.md) - RBAC with lakeFS provides a flexible and granular approach to managing access and permissions, similar to other cloud-based systems like AWS IAM.
+- [Presigned URL](/security/presigned-url.md) - This feature allows for more flexible and direct data access in lakeFS, particularly useful for scenarios where bypassing the lakeFS server for data retrieval or storage is beneficial.
+- [Single Sign On (SSO)](/security/sso.md) - lakeFS provides administrators with the necessary information to set up SSO for both lakeFS Cloud and Enterprise editions, covering various authentication protocols and identity providers.
+- [Short Lived Token (STS like)](/security/sts-login.md) - This feature allows lakeFS to leverage temporary credentials for secure and flexible authentication, integrating seamlessly with existing identity providers.
+- [Login to lakeFS with AWS IAM](/security/external-principals-aws.md) - This feature enhances the integration between lakeFS and AWS by supporting authenticating users programmatically using AWS IAM roles instead of using static lakeFS access and secret keys.
 
 ### SOC2 Compliance ###
 lakeFS Cloud is SOC2 compliant, demonstrating our commitment to stringent security standards.

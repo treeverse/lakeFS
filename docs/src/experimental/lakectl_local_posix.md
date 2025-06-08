@@ -1,23 +1,25 @@
 ---
 title: lakectl local file permissions tracking
 description: An experimental feature that allows tracking file ownership and permissions when using lakectl local
+search:
+  exclude: true
 ---
 
 # lakectl local file permission tracking
-{: .d-inline-block }
-Experimental
-{: .label .label-green }
 
-This experimental feature is used to:
+!!! warning "Experimental"
+
+ This experimental feature is used to:
+
 * Support mode preservation for files and folders managed via lakectl local **for POSIX compliant filesystems only**
 * Support user and group preservation for files and folders managed via lakectl local **for POSIX compliant filesystems only**
 
 
-{: .note}
->**Note:** This feature is currently supported for Unix based Operating Systems only
+!!! info
+    This feature is currently supported for Unix based Operating Systems only
 
-{: .warning }
->Please make sure to contact the lakeFS team before enabling any experimental features!
+!!! warning
+    Please make sure to contact the lakeFS team before enabling any experimental features!
 
 ## Configuration 
 
@@ -55,13 +57,13 @@ When first creating the file and directory structure from an existing remote pat
 - `0o0777 & ~umask` mode for directories
 - Numerical GID and UID of the current user
 
-{: .note }
->**Note:** Users with stricter umasks will change permissions on push
+!!! warning
+    Users with stricter umasks will change permissions on push
 
 
-{: .warning }
->Please note that once a local path is synchronized with a remote path with permissions tracking enabled, you must continue to work with this remote path
-with the feature enabled.
+!!! warning
+    Please note that once a local path is synchronized with a remote path with permissions tracking enabled, you must continue to work with this remote path
+    with the feature enabled.
 
 ### Changes from default behavior
 
@@ -84,8 +86,8 @@ These markers are zero sized objects with paths ending in `/` designed to indica
 3. File/Dir GID
 4. File/Dir mode  
 
-{: .note }
->**Note:** The changes to these attributes are not visualized or reported explicitly; the file will be reported as changed.  
+!!! note
+    The changes to these attributes are not visualized or reported explicitly; the file will be reported as changed.  
 
 - Merge will fail on a conflict stemming from a change to permissions or ownership. There is no explicit reporting the root cause of the failure (the file will be reported as changed)
   In case of failure to read/set/update permissions (due to user insufficient privileges, for example), lakectl local will fail with an informative message. However, there's no guarantee for atomicity of operations. 

@@ -5,8 +5,8 @@ description: How to upgrade lakeFS to the latest version.
 
 # Upgrading lakeFS
 
-Note: For a fully managed lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
-{: .note }
+!!! info
+    For a fully managed lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
 Upgrading lakeFS from a previous version usually just requires re-deploying with the latest image (or downloading the latest version if you're using the binary).
 If you're upgrading, check whether the [release](https://github.com/treeverse/lakeFS/releases) requires a migration.
@@ -16,7 +16,7 @@ If you're upgrading, check whether the [release](https://github.com/treeverse/la
 ### lakeFS 0.103.0 or greater
 
 Version 0.103.0 added support for rolling KV upgrade. This means that users who already migrated to the KV ref-store (versions 0.80.0 and above) no longer have to pass through specific versions for migration.
-This includes [ACL migration](https://docs.lakefs.io/reference/access-control-lists.html#migrating-from-the-previous-version-of-acls) which was introduced in lakeFS version 0.98.0.
+This includes [ACL migration](../../security/access-control-lists.md) which was introduced in lakeFS version 0.98.0.
 Running `lakefs migrate up` on the latest lakeFS version will perform all the necessary migrations up to that point.
 
 ### lakeFS 0.80.0 or greater (KV Migration)
@@ -25,17 +25,18 @@ Starting with version 0.80.2, lakeFS has transitioned from using a PostgreSQL ba
 multiple database implementations. More information can be found [here](https://github.com/treeverse/lakeFS/blob/master/design/accepted/metadata_kv/index.md).  
 Users upgrading from a previous version of lakeFS must pass through the KV migration version (0.80.2) before upgrading to newer versions of lakeFS.
 
-> **IMPORTANT: Pre Migrate Requirements**  
-> * **Users using OS environment variables for database configuration must define the `connection_string` explicitly or as environment variable before proceeding with the migration.**  
-> * **Database storage free capacity of at least twice the amount of the currently used capacity**
-> * It is strongly recommended to perform these additional steps:
->   * Commit all uncommitted data on branches
->   * Create a snapshot of your database
-> * By default, old database tables are not being deleted by the migration process, and should be removed manually after a successful migration.
-> To enable table drop as part of the migration, set the `database.drop_tables` configuration param to `true`
-{: .note }
+!!! warning "Important"
+    Pre Migrate Requirements:
+
+    * **Users using OS environment variables for database configuration must define the `connection_string` explicitly or as environment variable before proceeding with the migration.**  
+    * **Database storage free capacity of at least twice the amount of the currently used capacity**
+    * It is strongly recommended to perform these additional steps:
+    * Commit all uncommitted data on branches
+    * Create a snapshot of your database
+    * By default, old database tables are not being deleted by the migration process, and should be removed manually after a successful migration. To enable table drop as part of the migration, set the `database.drop_tables` configuration param to `true`
 
 #### Migration Steps
+
 For each lakeFS instance currently running with the database
 1. Modify the `database` section under lakeFS configuration yaml:
    1. Add `type` field with `"postgres"` as value
@@ -62,7 +63,7 @@ For each lakeFS instance currently running with the database
 
 4. lakeFS will run the migration process, which in the end should display the following message with no errors:
 
-   ```shell
+   ```
    time="2022-08-10T14:46:25Z" level=info msg="KV Migration took 717.629563ms" func="pkg/logging.(*logrusEntryWrapper).Infof" file="build/pkg/logging/logger.go:246" TempDir=/tmp/kv_migrate_2913402680
    ```
 
@@ -96,8 +97,9 @@ Note that an older version of lakeFS cannot run on a migrated database.
 
 ### Prior to lakeFS 0.30.0
 
-**Note:** with lakeFS < 0.30.0, you should first upgrade to 0.30.0 following this guide. Then, proceed to upgrade to the newest version.
-{: .note .pb-3 }
+!!! note
+    with lakeFS < 0.30.0, you should first upgrade to 0.30.0 following this guide. Then, proceed to upgrade to the newest version.
+
 
 Starting version 0.30.0, lakeFS handles your committed metadata in a [new way](https://docs.google.com/document/d/1jzD7-jun-tdU5BGapmnMBe9ovSzBvTNjXCcVztV07A4/edit?usp=sharing){: target="_blank" }, which is more robust and has better performance.
 To move your existing data, you will need to run the following upgrade commands.
@@ -133,4 +135,6 @@ cataloger:
 
 ## Data Migration for Version v0.50.0
 
-If you are using a version before 0.50.0, you must first perform the [previous upgrade to that version](https://docs.lakefs.io/v0.50/reference/upgrade.html#data-migration-for-version-v0500). {: note: .note-warning }
+!!! warning
+    If you are using a version before 0.50.0, 
+    you must first perform the [previous upgrade to that version](https://docs.lakefs.io/v0.50/reference/upgrade.html#data-migration-for-version-v0500). 

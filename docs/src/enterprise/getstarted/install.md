@@ -7,8 +7,6 @@ description: lakeFS Enterprise Installation Guide
 
 For production deployments of lakeFS Enterprise, follow this guide.
 
-
-
 ## lakeFS Enterprise Architecture
 
 We recommend to review the [lakeFS Enterprise architecture][lakefs-enterprise-architecture] to understand the components you will be deploying.
@@ -18,6 +16,7 @@ We recommend to review the [lakeFS Enterprise architecture][lakefs-enterprise-ar
 The guide is using the [lakeFS Helm Chart](https://github.com/treeverse/charts/tree/master/charts/lakefs) to deploy a fully functional lakeFS Enterprise.
 
 The guide includes example configurations, follow the steps below and adjust the example configurations according to:
+
 * The platform you run on: among the platform [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details)
 * Type of KV store you use
 * Your SSO IdP and protocol
@@ -33,8 +32,8 @@ The guide includes example configurations, follow the steps below and adjust the
 #### Optional
 1. Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
 
-{: .note }
-> You can install lakeFS Enterprise without configuring SSO and still benefit from all other lakeFS Enterprise features.
+!!! info
+    You can install lakeFS Enterprise without configuring SSO and still benefit from all other lakeFS Enterprise features.
 
 ### Add the lakeFS Helm Chart
 
@@ -52,258 +51,243 @@ See [SSO for lakeFS Enterprise][lakefs-sso-enterprise-spec] for the supported id
 The examples below include example configuration for each of the supported SSO protocols. Note the IdP-specific details you'll need to
 replace with your IdP details.
 
-<div class="tabs">
-  <ul>
-    <li><a href="#oidc">OpenID Connect</a></li>
-    <li><a href="#saml">SAML (with Azure AD)</a></li>
-    <li><a href="#ldap">LDAP</a></li>
-  </ul>
-  <div markdown="1" id="oidc">
+=== "OpenID Connect"
 
-The following `values` file will run lakeFS Enterprise with OIDC integration.
+    The following `values` file will run lakeFS Enterprise with OIDC integration.
 
-{: .note }
-> The full OIDC configurations explained [here][lakefs-sso-enterprise-spec-oidc].
+    !!! tip
+        The full OIDC configurations explained [here][lakefs-sso-enterprise-spec-oidc].
 
-```yaml
-lakefsConfig: |
-  logging:
-      level: "INFO"
-  blockstore:
-    type: s3
-  auth:
-    oidc:
-      # the claim that's provided by the OIDC provider (e.g Okta) that will be used as the username according to OIDC provider claims provided after successful authentication
-      friendly_name_claim_name: "<some-oidc-provider-claim-name>"
-      default_initial_groups: ["Developers", "Admins"]
-      # if true then the value of friendly_name_claim_name will be refreshed during each login to maintain the latest value
-      # and the the claim value (i.e user name) will be stored in the lakeFS database
-      persist_friendly_name: true
-    ui_config:
-      login_cookie_names:
-        - internal_auth_session
-        - oidc_auth_session
-ingress:
-  enabled: true
-  ingressClassName: <class-name>
-  hosts:
-    # the ingress that will be created for lakeFS
-    - host: <lakefs.acme.com>
-      paths:
-       - /
-
-##################################################
-########### lakeFS enterprise - FLUFFY ###########
-##################################################
-
-fluffy:
-  enabled: true
-  image:
-    repository: treeverse/fluffy
-    pullPolicy: IfNotPresent
-    privateRegistry:
+    ```yaml
+    lakefsConfig: |
+      logging:
+          level: "INFO"
+      blockstore:
+        type: s3
+      auth:
+        oidc:
+          # the claim that's provided by the OIDC provider (e.g Okta) that will be used as the username according to OIDC provider claims provided after successful authentication
+          friendly_name_claim_name: "<some-oidc-provider-claim-name>"
+          default_initial_groups: ["Developers", "Admins"]
+          # if true then the value of friendly_name_claim_name will be refreshed during each login to maintain the latest value
+          # and the the claim value (i.e user name) will be stored in the lakeFS database
+          persist_friendly_name: true
+        ui_config:
+          login_cookie_names:
+            - internal_auth_session
+            - oidc_auth_session
+    ingress:
       enabled: true
-      secretToken: <dockerhub-token-fluffy-image>
-  fluffyConfig: |
-    logging:
-      format: "json"
-      level: "INFO"
-    auth:
-      logout_redirect_url: https://oidc-provider-url.com/logout/example
-      oidc:
+      ingressClassName: <class-name>
+      hosts:
+        # the ingress that will be created for lakeFS
+        - host: <lakefs.acme.com>
+          paths:
+          - /
+
+    ##################################################
+    ########### lakeFS enterprise - FLUFFY ###########
+    ##################################################
+
+    fluffy:
+      enabled: true
+      image:
+        repository: treeverse/fluffy
+        pullPolicy: IfNotPresent
+        privateRegistry:
+          enabled: true
+          secretToken: <dockerhub-token-fluffy-image>
+      fluffyConfig: |
+        logging:
+          format: "json"
+          level: "INFO"
+        auth:
+          logout_redirect_url: https://oidc-provider-url.com/logout/example
+          oidc:
+            enabled: true
+            url: https://oidc-provider-url.com/
+            client_id: <oidc-client-id>
+            callback_base_url: https://<lakefs.acme.com>
+            # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
+            logout_client_id_query_parameter: client_id
+            # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
+            logout_endpoint_query_parameters:
+              - returnTo
+              - https://<lakefs.acme.com>/oidc/login
+      secrets:
+        create: true
+      sso:
         enabled: true
-        url: https://oidc-provider-url.com/
-        client_id: <oidc-client-id>
-        callback_base_url: https://<lakefs.acme.com>
-        # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
-        logout_client_id_query_parameter: client_id
-        # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
-        logout_endpoint_query_parameters:
-          - returnTo
-          - https://<lakefs.acme.com>/oidc/login
-  secrets:
-    create: true
-  sso:
-    enabled: true
-    oidc:
+        oidc:
+          enabled: true
+          # secret given by the OIDC provider (e.g auth0, Okta, etc) store in kind: Secret
+          client_secret: <oidc-client-secret>
+      rbac:
+        enabled: true
+
+    useDevPostgres: true
+    ```
+
+=== "SAML (With Azure AD)"
+
+    The following `values` file will run lakeFS Enterprise with SAML using Azure AD as the IdP.
+
+    You can use this example configuration to configure Active Directory Federation Services (AD FS) with SAML.
+
+    !!! tip
+        The full SAML configurations explained [here][lakefs-sso-enterprise-spec-saml].
+
+    #### Azure App Configuration
+
+    1. Create an Enterprise Application with SAML toolkit - see [Azure quickstart](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal)
+    1. Add users: **App > Users and groups**: Attach users and roles from their existing AD users
+      list - only attached users will be able to login to lakeFS.
+    1. Configure SAML: App >  Single sign-on > SAML:
+      1. Entity ID: Add 2 ID’s, lakefs-url + lakefs-url/saml/metadata (e.g. https://lakefs.acme.com and https://lakefs.acme.com/saml/metadata)
+      1. Reply URL: lakefs-url/saml (e.g. https://lakefs.acme.com/saml)
+      1. Sign on URL: lakefs-url/sso/login-saml (e.g. https://lakefs.acme.com/sso/login-saml)
+      1. Relay State (Optional, controls where to redirect after login): /
+
+    #### SAML Configuration
+
+    1. Configure SAML application in your IdP (i.e Azure AD) and replace the required parameters into the `values.yaml` below.
+    2. To generate certificates keypair use: `openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.acme.com" -
+
+    ```yaml
+    secrets:
+      authEncryptSecretKey: "some random secret string"
+
+    lakefsConfig: |
+      logging:
+          level: "DEBUG"
+      blockstore:
+        type: local
+      auth:
+        cookie_auth_verification:
+          # claim name to use for friendly name in lakeFS UI
+          friendly_name_claim_name: displayName
+          external_user_id_claim_name: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
+          default_initial_groups:
+            - "Developers"
+        encrypt:
+          secret_key: shared-secrey-key
+        ui_config:
+          login_cookie_names:
+            - internal_auth_session
+            - saml_auth_session
+    ingress:
       enabled: true
-      # secret given by the OIDC provider (e.g auth0, Okta, etc) store in kind: Secret
-      client_secret: <oidc-client-secret>
-  rbac:
-    enabled: true
+      ingressClassName: <class-name>
+      annotations: {}
+      hosts:
+        - host: <lakefs.acme.com>
+          paths:
+          - /
 
-useDevPostgres: true
-```
-
-  </div>
-  <div markdown="1" id="saml">
-
-The following `values` file will run lakeFS Enterprise with SAML using Azure AD as the IdP.
-<br>
-You can use this example configuration to configure Active Directory Federation Services (AD FS) with SAML.
-
-{: .note }
-> The full SAML configurations explained [here][lakefs-sso-enterprise-spec-saml].
-
-#### Azure App Configuration
-{: .no_toc}
-
-1. Create an Enterprise Application with SAML toolkit - see [Azure quickstart](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal)
-1. Add users: **App > Users and groups**: Attach users and roles from their existing AD users
-   list - only attached users will be able to login to lakeFS.
-1. Configure SAML: App >  Single sign-on > SAML:
-   1. Entity ID: Add 2 ID’s, lakefs-url + lakefs-url/saml/metadata (e.g. https://lakefs.acme.com and https://lakefs.acme.com/saml/metadata)
-   1. Reply URL: lakefs-url/saml (e.g. https://lakefs.acme.com/saml)
-   1. Sign on URL: lakefs-url/sso/login-saml (e.g. https://lakefs.acme.com/sso/login-saml)
-   1. Relay State (Optional, controls where to redirect after login): /
-
-#### SAML Configuration
-{: .no_toc}
-
-1. Configure SAML application in your IdP (i.e Azure AD) and replace the required parameters into the `values.yaml` below.
-2. To generate certificates keypair use: `openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.acme.com" -
-
-```yaml
-secrets:
-  authEncryptSecretKey: "some random secret string"
-
-lakefsConfig: |
-  logging:
-      level: "DEBUG"
-  blockstore:
-    type: local
-  auth:
-    cookie_auth_verification:
-      # claim name to use for friendly name in lakeFS UI
-      friendly_name_claim_name: displayName
-      external_user_id_claim_name: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
-      default_initial_groups:
-        - "Developers"
-    encrypt:
-      secret_key: shared-secrey-key
-    ui_config:
-      login_cookie_names:
-        - internal_auth_session
-        - saml_auth_session
-ingress:
-  enabled: true
-  ingressClassName: <class-name>
-  annotations: {}
-  hosts:
-    - host: <lakefs.acme.com>
-      paths:
-       - /
-
-fluffy:
-  enabled: true
-  image:
-    repository: treeverse/fluffy
-    pullPolicy: IfNotPresent
-    privateRegistry:
+    fluffy:
       enabled: true
-      secretToken: <dockerhub-token-fluffy-image>
-  fluffyConfig: |
-    logging:
-      format: "json"
-      level: "DEBUG"
-    auth:
-      # redirect after logout
-      logout_redirect_url: https://<lakefs.acme.com>
-      saml:
-        sp_sign_request: false
-        sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
-        idp_metadata_url: https://login.microsoftonline.com/<...>/federationmetadata/2007-06/federationmetadata.xml?appid=<app-id>
-        # the default id format urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
-        # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
-        external_user_id_claim_name: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
-        idp_skip_verify_tls_cert: true
-  secrets:
-    create: true
-  sso:
-    enabled: true
-    saml:
+      image:
+        repository: treeverse/fluffy
+        pullPolicy: IfNotPresent
+        privateRegistry:
+          enabled: true
+          secretToken: <dockerhub-token-fluffy-image>
+      fluffyConfig: |
+        logging:
+          format: "json"
+          level: "DEBUG"
+        auth:
+          # redirect after logout
+          logout_redirect_url: https://<lakefs.acme.com>
+          saml:
+            sp_sign_request: false
+            sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+            idp_metadata_url: https://login.microsoftonline.com/<...>/federationmetadata/2007-06/federationmetadata.xml?appid=<app-id>
+            # the default id format urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
+            # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+            external_user_id_claim_name: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
+            idp_skip_verify_tls_cert: true
+      secrets:
+        create: true
+      sso:
+        enabled: true
+        saml:
+          enabled: true
+          createSecret: true
+          lakeFSServiceProviderIngress: https://<lakefs.acme.com>
+          certificate:
+            # certificate and private key for the SAML service provider to sign outgoing SAML requests
+            saml_rsa_public_cert: |
+              -----BEGIN CERTIFICATE-----
+              ...
+              -----END CERTIFICATE-----
+            saml_rsa_private_key: |
+              -----BEGIN PRIVATE KEY-----
+              ...
+              -----END PRIVATE KEY-----
+      rbac:
+        enabled: true
+    ```
+=== "LDAP"
+    The following `values` file will run lakeFS Enterprise with LDAP.
+
+    !!! tip
+        The full LDAP configurations explained [here][lakefs-sso-enterprise-spec-ldap].
+
+    ```yaml
+    lakefsConfig: |
+      logging:
+          level: "INFO"
+      blockstore:
+        type: local
+      auth:
+        remote_authenticator:
+          enabled: true
+          # RBAC group for first time users
+          default_user_group: "Developers"
+        ui_config:
+          login_cookie_names:
+            - internal_auth_session
+
+    ingress:
       enabled: true
-      createSecret: true
-      lakeFSServiceProviderIngress: https://<lakefs.acme.com>
-      certificate:
-        # certificate and private key for the SAML service provider to sign outgoing SAML requests
-        saml_rsa_public_cert: |
-          -----BEGIN CERTIFICATE-----
-          ...
-          -----END CERTIFICATE-----
-        saml_rsa_private_key: |
-          -----BEGIN PRIVATE KEY-----
-          ...
-          -----END PRIVATE KEY-----
-  rbac:
-    enabled: true
-```
+      ingressClassName: <class-name>
+      hosts:
+        - host: <lakefs.acme.com>
+          paths:
+          - /
 
-  </div>
-  <div markdown="1" id="ldap">
-
-The following `values` file will run lakeFS Enterprise with LDAP.
-
-> The full LDAP configurations explained [here][lakefs-sso-enterprise-spec-ldap].
-{: .note }
-
-```yaml
-lakefsConfig: |
-  logging:
-      level: "INFO"
-  blockstore:
-    type: local
-  auth:
-    remote_authenticator:
+    fluffy:
       enabled: true
-      # RBAC group for first time users
-      default_user_group: "Developers"
-    ui_config:
-      login_cookie_names:
-        - internal_auth_session
+      image:
+        privateRegistry:
+          enabled: true
+          secretToken: <dockerhub-token-fluffy-image>
+      fluffyConfig: |
+        logging:
+          level: "INFO"
+        auth:
+          post_login_redirect_url: /
+          ldap:
+            server_endpoint: 'ldaps://ldap.company.com:636'
+            bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com
+            username_attribute: uid
+            user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com
+            user_filter: (objectClass=inetOrgPerson)
+            connection_timeout_seconds: 15
+            request_timeout_seconds: 17
+      secrets:
+        create: true
+      sso:
+        enabled: true
+        ldap:
+          enabled: true
+          bind_password: <ldap bind password>
+      rbac:
+        enabled: true
 
-ingress:
-  enabled: true
-  ingressClassName: <class-name>
-  hosts:
-    - host: <lakefs.acme.com>
-      paths:
-       - /
-
-fluffy:
-  enabled: true
-  image:
-    privateRegistry:
-      enabled: true
-      secretToken: <dockerhub-token-fluffy-image>
-  fluffyConfig: |
-    logging:
-      level: "INFO"
-    auth:
-      post_login_redirect_url: /
-      ldap:
-        server_endpoint: 'ldaps://ldap.company.com:636'
-        bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com
-        username_attribute: uid
-        user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com
-        user_filter: (objectClass=inetOrgPerson)
-        connection_timeout_seconds: 15
-        request_timeout_seconds: 17
-  secrets:
-    create: true
-  sso:
-    enabled: true
-    ldap:
-      enabled: true
-      bind_password: <ldap bind password>
-  rbac:
-    enabled: true
-
-useDevPostgres: true
-```
-
-  </div>
-</div>
+    useDevPostgres: true
+    ```
 
 See [additional examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc, adfs, ldap, rbac, IAM etc).
 

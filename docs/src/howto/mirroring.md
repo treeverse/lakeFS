@@ -5,18 +5,9 @@ badges: ["Enterprise"]
 ---
 
 # Mirroring
-{: .d-inline-block }
-lakeFS Cloud
-{: .label .label-green }
 
-lakeFS Enterprise
-{: .label .label-purple }
-
-{: .note}
-> Mirroring is only available for [lakeFS Cloud](/cloud/index/).
-
-
-[TOC]
+!!! info
+    Mirroring is only available for [lakeFS Cloud](/cloud/).
 
 
 ## What is lakeFS mirroring? 
@@ -36,9 +27,10 @@ Unlike conventional mirroring, data isn't simply copied between regions - lakeFS
 
 Typically, object stores provide a replication/batch copy API to allow for disaster recovery: as new objects are written, they are asynchronously copied to other geo locations. 
 
-In the case of regional failure, users can rely on the other geolocations which should contain relatively-up-to-date state.
+In the case of regional failure, users can rely on the other geo-locations which should contain relatively-up-to-date state.
 
 The problem is reasoning about what managed to arrive by the time of disaster and what hasn't:
+
 * have all the necessary files for a given dataset arrived?
 * in cases there are dependencies between datasets, are all dependencies also up to date?
 * what is currently in-flight or haven't even started replicating yet?
@@ -66,7 +58,7 @@ We can train our model in region A, and a month later feed the same commit ID in
 ### Configuring bucket replication on S3
 
 The objects within the repository are copied using your cloud provider's object store replication mechanism.
-For AWS S3, please refer to the [AWS S3 replication documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-how-setup.html) to make sure your lakeFS repository's [storage namespace](../understand/glossary.html#storage-namespace) (source) is replicated to the region you'd like your mirror to be located on (target).
+For AWS S3, please refer to the [AWS S3 replication documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-how-setup.html) to make sure your lakeFS repository's [storage namespace](../understand/glossary.md#storage-namespace) (source) is replicated to the region you'd like your mirror to be located on (target).
 
 After setting the replication rule, new objects will be replicated to the destination bucket. 
 
@@ -76,7 +68,7 @@ In order to replicate the existing objects, we'd need to manually copy them - ho
 ### Creating a lakeFS user with a "replicator" policy
 
 On our source lakeFS installation, under **Administration** create a new user that will be used by the replication subsystem.
-The user should have the following [RBAC policy](../security/rbac.html) attached:
+The user should have the following [RBAC policy](../security/rbac.md) attached:
 
 ```json
 {
@@ -182,7 +174,7 @@ Please [contact Treeverse customer success](mailto:support@treeverse.io?subject=
 
 Replication has a stand-alone HTTP API. In this example, we'll use cURL, but feel free to use any HTTP client or library:
 
-```bashhttps://treeverse.us-east-1
+```bash
 curl --location 'https://<ORGANIZATION_ID>.<SOURCE_REGION>.lakefscloud.io/service/replication/v1/repositories/<SOURCE_REPO>/mirrors' \
 --header 'Content-Type: application/json' \
 -u <ACCESS_KEY_ID>:<SECRET_ACCESS_KEY> \
@@ -206,6 +198,7 @@ Using the following parameters:
 
 Garbage collection won't run on mirrored repositories. 
 Deletions from garbage collection should be replicated from the source:
+
 1. Enable [DELETED marker replication](https://docs.aws.amazon.com/AmazonS3/latest/userguide/delete-marker-replication.html) on the source bucket.
 1. Create a [lifecycle policy](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html) on the destination bucket to delete the objects with the DELETED marker.
 
@@ -268,5 +261,5 @@ curl --location --request DELETE 'https://<ORGANIZATION_ID>.<SOURCE_REGION>.lake
 1. Mirroring is currently only supported on [AWS S3](https://aws.amazon.com/s3/) and [lakeFS Cloud for AWS](https://lakefs.cloud)
 1. Read-only mirrors cannot be written to. Mirroring is one-way, from source to destination(s)
 1. Currently, only branches are mirrored. Tags and arbitrary commits that do not belong to any branch are not replicated
-1. [lakeFS Hooks](./hooks) will only run on the source repository, not its replicas
+1. [lakeFS Hooks](/howto/hooks/) will only run on the source repository, not its replicas
 1. Replication is still asynchronous: reading from a branch will always return a valid commit that the source has pointed to, but it is not guaranteed to be the **latest commit** the source branch is pointing to.

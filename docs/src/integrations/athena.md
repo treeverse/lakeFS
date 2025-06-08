@@ -5,33 +5,37 @@ description: This section shows how you can start querying data from lakeFS usin
 
 # Using lakeFS with Amazon Athena
 
-{: .warning }
-**Deprecated Feature:** Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
-You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
+!!! warning "Deprecated Feature"
+    Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
+    You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
 
 [Amazon Athena](https://aws.amazon.com/athena/) is an interactive query service that makes it easy to analyze data in Amazon S3 using standard SQL.
-{:.pb-5 }
+
+---
 
 Amazon Athena works directly above S3 and can't access lakeFS. Tables created using Athena aren't readable by lakeFS.
 However, tables stored in lakeFS (that were created with [glue/hive](glue_hive_metastore.md)) can be queried by Athena.
 
 To support querying data from lakeFS with Amazon Athena, we will use `create-symlink`, one of the [metastore commands](glue_hive_metastore.md) in [lakectl](/reference/cli/).
 `create-symlink` receives a source table, destination table, and the table location. It performs two actions:
+
 1. It creates partitioned directories with symlink files in the underlying S3 bucket.
 1. It creates a table in Glue catalog with symlink format type and location pointing to the created symlinks.
 
-**Note**
-`.lakectl.yaml` file should be configured with the proper hive/glue credentials. [For more information](glue_hive_metastore.md#configurations) 
-{: .note }
+!!! note
+    `.lakectl.yaml` file should be configured with the proper hive/glue credentials. [For more information](glue_hive_metastore.md#configurations) 
+  
 
 create-symlink receives a table in glue or hive pointing to lakeFS and creates a copy of the table in glue.
+
 The table data will use the `SymlinkTextInputFormat`, which will point to the lakeFS repository storage namespace. You will be able to query your data with Athena without copying any data. However, the symlinks table will only show the data that existed during 
 the copy. If the table changed in lakeFS, you need to run `create-symlink` again for your changed to be reflected in Athena.
 
 ### Example:
 
 Let's assume that some time ago, we created a hive table `my_table` that is stored in lakeFS repo `example` under branch `main`, using the command:
-```shell
+
+```sql
 CREATE EXTERNAL TABLE `my_table`(
    `id` bigint, 
    `key` string 
@@ -50,14 +54,14 @@ To query that table with Athena, you need to use the `create-symlink` command as
 
 ```shell
 lakectl metastore create-symlink \
-  --repo example \
-  --branch main \
-  --path my_table \
-  --from-client-type hive \
-  --from-schema default \
-  --from-table my_table \
-  --to-schema default \ 
-  --to-table my_table  
+    --repo example \
+    --branch main \
+    --path my_table \
+    --from-client-type hive \
+    --from-schema default \
+    --from-table my_table \
+    --to-schema default \ 
+    --to-table my_table  
 ```
 
 The command will generate two notable outputs:

@@ -5,16 +5,12 @@ badges: ["Enterprise"]
 ---
 
 # System for Cross-domain Identity Management (SCIM)
-{: .d-inline-block }
-lakeFS Cloud
-{: .label .label-green }
 
-lakeFS Enterprise
-{: .label .label-purple }
+!!! info
+    SCIM support is available on **lakeFS Cloud** and **lakeFS Enterprise**
 
 lakeFS Cloud includes an [SCIM v2.0](https://datatracker.ietf.org/doc/html/rfc7644) compliant server, which can integrate with SCIM clients (IdPs) to automate provisioning/de-provisioning of users and groups.  
 
-[TOC]
 
 ## Officially Supported Clients (IdPs), Capabilities, and Limitations
 
@@ -61,13 +57,13 @@ Clicking the button will enable SCIM for the organization and provide the detail
 
 To set up your IdP, you'll need the lakeFS Cloud SCIM provisioning endpoint and you'll also need to generate an integration token. When creating a new integration token, you can optionally provide a description for future reference.
 
-{: .note}
-> **Note:** The token value is only presented once, right after creation. Make sure to copy the token, as its value isn't stored and cannot be retrieved after the initial creation.
+!!! info
+    The token value is only presented once, right after creation. Make sure to copy the token, as its value isn't stored and cannot be retrieved after the initial creation.
 
 ## Setting Up SCIM Provisioning in Entra ID (a.k.a Azure AD)
 
-{: .note}
-> **Note:** This guide assumes you've already set up an Entra ID enterprise application for federated authentication to lakeFS Cloud.
+!!! note
+    This guide assumes you've already set up an Entra ID enterprise application for federated authentication to lakeFS Cloud.
 
 In the Entra ID admin dashboard, go to **Enterprise Applications** and choose the lakeFS Cloud enterprise application from the list. Then click **Provisioning** in the sidebar and then **Get Started**.
 
@@ -93,8 +89,9 @@ The LakeFS SCIM implementation has a number of attributes that it expects to see
   * members: A list of members of the Group.
 
 
-{: .note}
-> **Note:** lakeFS Cloud is designed to work with the default attribute mapping for users and groups provided by Entra ID.
-> If your organization has customized the user and/or group entities in Entra ID, you might want to set mappings in accordance with those.
-> You can find details of how this is done in the [Entra ID documentation](https://learn.microsoft.com/en-us/entra/identity/app-provisioning/customize-application-attributes).  
-> Incorrectly modifying these mappings can break provisioning functionality, so it's advised to do so cautiously and only when necessary.
+!!! info
+    lakeFS Cloud is designed to work with the default attribute mapping for users and groups provided by Entra ID.
+    If your organization has customized the user and/or group entities in Entra ID, you might want to set mappings in accordance with those.
+    You can find details of how this is done in the [Entra ID documentation](https://learn.microsoft.com/en-us/entra/identity/app-provisioning/customize-application-attributes).  
+    
+    Incorrectly modifying these mappings can break provisioning functionality, so it's advised to do so cautiously and only when necessary.

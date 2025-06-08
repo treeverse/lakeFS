@@ -5,8 +5,6 @@ description: Overview of lakeFS Actions and Hooks
 
 # Actions and Hooks in lakeFS
 
-[TOC]
-
 Like other version control systems, lakeFS allows you to configure _Actions_ to trigger when [predefined events](#supported-events) occur. There are numerous uses for Actions, including:
 
 1. Format Validator:
@@ -66,46 +64,48 @@ By default, when `if` is empty or omitted, the step will run only if no error oc
 
 #### Example Action File
 
-```yaml
-name: Good files check
-description: set of checks to verify that branch is good
-on:
-  pre-commit:
-  pre-merge:
-    branches:
-      - main
-hooks:
-  - id: no_temp
-    type: webhook
-    description: checking no temporary files found
-    properties:
-      url: "https://example.com/webhook?notmp=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
-  - id: no_freeze
-    type: webhook
-    description: check production is not in dev freeze
-    properties:
-      url: "https://example.com/webhook?nofreeze=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
-  - id: alert
-    type: webhook
-    if: failure()
-    description: notify alert system when check failed
-    properties:
-       url: "https://example.com/alert"
-       query_params:
-          title: good files webhook failed
-  - id: notification
-    type: webhook
-    if: true
-    description: notify that will always run - no matter if one of the previous steps failed
-    properties:
-       url: "https://example.com/notification"
-       query_params:
-          title: good files completed
-```
 
-**Note:** lakeFS will validate action files only when an **Event** has occurred. <br/>
-Use `lakectl actions validate <path>` to validate your action files locally.
-{: .note }
+!!! example "_lakefs_actions/file_checker.yaml"
+    ```yaml
+    name: Good files check
+    description: set of checks to verify that branch is good
+    on:
+    pre-commit:
+    pre-merge:
+        branches:
+        - main
+    hooks:
+    - id: no_temp
+        type: webhook
+        description: checking no temporary files found
+        properties:
+        url: "https://example.com/webhook?notmp=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+    - id: no_freeze
+        type: webhook
+        description: check production is not in dev freeze
+        properties:
+        url: "https://example.com/webhook?nofreeze=true?t=1za2PbkZK1bd4prMuTDr6BeEQwWYcX2R"
+    - id: alert
+        type: webhook
+        if: failure()
+        description: notify alert system when check failed
+        properties:
+        url: "https://example.com/alert"
+        query_params:
+            title: good files webhook failed
+    - id: notification
+        type: webhook
+        if: true
+        description: notify that will always run - no matter if one of the previous steps failed
+        properties:
+        url: "https://example.com/notification"
+        query_params:
+            title: good files completed
+    ```
+
+!!! note 
+    lakeFS will validate action files only when an **Event** has occurred. <br/>
+    Use `lakectl actions validate <path>` to validate your action files locally.
 
 ### Uploading Action files
 
@@ -139,8 +139,10 @@ For example, lakeFS will search and execute all the matching Action files with t
 | `pre-delete-tag`     | Runs prior to deleting a tag                                                                     |
 | `post-delete-tag`    | Runs after the tag was deleted                                                                   |
 
-**Note:** The `prepare-commit` hook is experimental. During its execution (between `prepare-commit` and `pre-commit`), other changes may be applied to the branch as there is no branch-level locking mechanism at this point. If you need to verify or validate the content that will be committed, use the `pre-commit` hook instead, as it provides a consistent view of the changes that will be included in the commit.
-{: .note }
+
+!!! warning
+    The `prepare-commit` hook is experimental. During its execution (between `prepare-commit` and `pre-commit`), other changes may be applied to the branch as there is no branch-level locking mechanism at this point. If you need to verify or validate the content that will be committed, use the `pre-commit` hook instead, as it provides a consistent view of the changes that will be included in the commit.
+
 
 lakeFS Actions are handled per repository and cannot be shared between repositories.
 A failure of any Hook under any Action of a `pre-*` event will result in aborting the lakeFS operation that is taking place.
@@ -167,8 +169,9 @@ The metadata section of lakeFS repository with each Run contains two types of fi
 1. `_lakefs/actions/log/<runID>/<hookRunID>.log` - Execution log of the specific Hook run.
 1. `_lakefs/actions/log/<runID>/run.manifest` - Manifest with all Hooks execution for the run with their results and additional metadata.
 
-**Note:** Metadata section of a lakeFS repository is where lakeFS keeps its metadata, like commits and metaranges.
-Metadata files stored in the metadata section aren't accessible like user stored files.
-{: .note }
+!!! note
+    Metadata section of a lakeFS repository is where lakeFS keeps its metadata, like commits and metaranges.
+    Metadata files stored in the metadata section aren't accessible like user stored files.
+
 
 [lakectl-actions]:  /reference/cli/#lakectl-actions

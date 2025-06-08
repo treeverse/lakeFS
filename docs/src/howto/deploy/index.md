@@ -5,10 +5,9 @@ description: This section will guide you through deploying and setting up a prod
 
 # Deploy and Setup lakeFS
 
-{: .tip }
-> The instructions given here are for a self-managed deployment of lakeFS. 
-> 
-> For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
+!!! tip
+    The instructions given here are for a self-managed deployment of lakeFS. <br/>
+    For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
 This section will guide you through deploying lakeFS on top of an object store. You will require a database, and can optionally configure authentication using providers specific to your deployment platform. 
 

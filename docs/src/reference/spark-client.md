@@ -55,88 +55,62 @@ Include this assembled jar (an "Überjar") from S3, from
    | `spark.hadoop.lakefs.api.access_key` | The access key to use for fetching metadata from lakeFS      |
    | `spark.hadoop.lakefs.api.secret_key` | Corresponding lakeFS secret key                              |
 
-1. The client will also directly interact with your storage using Hadoop FileSystem.
-   Therefore, your Spark session must be able to access the underlying storage of your lakeFS repository.
-   There are [various ways to do this](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"},
-   but for a non-production environment you can use the following Hadoop configurations:
-
-   | Configuration                    | Description                                              |
-   |----------------------------------|----------------------------------------------------------|
-   | `spark.hadoop.fs.s3a.access.key` | Access key to use for accessing underlying storage on S3 |
-   | `spark.hadoop.fs.s3a.secret.key` | Corresponding secret key to use with S3 access key       |
-
-   ### Assuming role on S3 (Hadoop 3 only)
-
-   The client includes support for assuming a separate role on S3 when
-   running on Hadoop 3. It uses the same configuration used by
-   `S3AFileSystem` to assume the role on S3A. Apache Hadoop AWS
-   documentation has details under "[Working with IAM Assumed
-   Roles][s3a-assumed-role]". You will need to use the following Hadoop
-   configurations:
-   
-   | Configuration                     | Description                                                          |
-   |-----------------------------------|----------------------------------------------------------------------|
-   | `fs.s3a.aws.credentials.provider` | Set to `org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider` |
-   | `fs.s3a.assumed.role.arn`         | Set to the ARN of the role to assume                                 |
-
 ## Examples
 
 1. Get a DataFrame for listing all objects in a commit:
 
-   ```scala
-   import io.treeverse.clients.LakeFSContext
-    
-   val commitID = "a1b2c3d4"
-   val df = LakeFSContext.newDF(spark, "example-repo", commitID)
-   df.show
-   /* output example:
-      +------------+--------------------+--------------------+-------------------+----+
-      |        key |             address|                etag|      last_modified|size|
-      +------------+--------------------+--------------------+-------------------+----+
-      |     file_1 |791457df80a0465a8...|7b90878a7c9be5a27...|2021-03-05 11:23:30|  36|
-      |     file_2 |e15be8f6e2a74c329...|95bee987e9504e2c3...|2021-03-05 11:45:25|  36|
-      |     file_3 |f6089c25029240578...|32e2f296cb3867d57...|2021-03-07 13:43:19|  36|
-      |     file_4 |bef38ef97883445c8...|e920efe2bc220ffbb...|2021-03-07 13:43:11|  13|
-      +------------+--------------------+--------------------+-------------------+----+
-    */
-   ```
+```scala
+import io.treeverse.clients.LakeFSContext
+   
+val commitID = "a1b2c3d4"
+val df = LakeFSContext.newDF(spark, "example-repo", commitID)
+df.show
+/* output example:
+   +------------+--------------------+--------------------+-------------------+----+
+   |        key |             address|                etag|      last_modified|size|
+   +------------+--------------------+--------------------+-------------------+----+
+   |     file_1 |791457df80a0465a8...|7b90878a7c9be5a27...|2021-03-05 11:23:30|  36|
+   |     file_2 |e15be8f6e2a74c329...|95bee987e9504e2c3...|2021-03-05 11:45:25|  36|
+   |     file_3 |f6089c25029240578...|32e2f296cb3867d57...|2021-03-07 13:43:19|  36|
+   |     file_4 |bef38ef97883445c8...|e920efe2bc220ffbb...|2021-03-07 13:43:11|  13|
+   +------------+--------------------+--------------------+-------------------+----+
+   */
+```
 
 1. Run SQL queries on your metadata:
 
-   ```scala
-   df.createOrReplaceTempView("files")
-   spark.sql("SELECT DATE(last_modified), COUNT(*) FROM files GROUP BY 1 ORDER BY 1")
-   /* output example:
-      +----------+--------+
-      |        dt|count(1)|
-      +----------+--------+
-      |2021-03-05|       2|
-      |2021-03-07|       2|
-      +----------+--------+
-    */
-   ```
+```scala
+df.createOrReplaceTempView("files")
+spark.sql("SELECT DATE(last_modified), COUNT(*) FROM files GROUP BY 1 ORDER BY 1")
+/* output example:
+   +----------+--------+
+   |        dt|count(1)|
+   +----------+--------+
+   |2021-03-05|       2|
+   |2021-03-07|       2|
+   +----------+--------+
+   */
+```
 
 1. Search by user metadata:
 
-   ```scala
-   import io.treeverse.clients.LakeFSContext
+```scala
+import io.treeverse.clients.LakeFSContext
 
-   val namespace = "s3://bucket/repo/path/"
-   val df = LakeFSContext.newDF(spark, namespace)
+val namespace = "s3://bucket/repo/path/"
+val df = LakeFSContext.newDF(spark, namespace)
 
-   val key = "SomeKey"
-   val searchedValue = "val3"
-   df.select("key", "user_metadata")
-   	.filter(_.getMap[String, String](1).toMap.get(s"X-Amz-Meta-${key}").getOrElse("") == searchedValue)
-   	.show()
-   /* output example:
-      +---------+-----------------------------------------------------+
-      |key      |user_metadata                                        |
-      +---------+-----------------------------------------------------+
-      |file1.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> blue} |
-      |file8.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> green}|
-      +---------+-----------------------------------------------------+
-    */
-   ```
-
-[s3a-assumed-role]:  https://hadoop.apache.org/docs/stable/hadoop-aws/tools/hadoop-aws/assumed_roles.html#Configuring_Assumed_Roles
+val key = "SomeKey"
+val searchedValue = "val3"
+df.select("key", "user_metadata")
+   .filter(_.getMap[String, String](1).toMap.get(s"X-Amz-Meta-${key}").getOrElse("") == searchedValue)
+   .show()
+/* output example:
+   +---------+-----------------------------------------------------+
+   |key      |user_metadata                                        |
+   +---------+-----------------------------------------------------+
+   |file1.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> blue} |
+   |file8.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> green}|
+   +---------+-----------------------------------------------------+
+   */
+```

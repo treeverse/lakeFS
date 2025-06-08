@@ -5,8 +5,6 @@ description: Airflow Hooks Reference
 
 # Airflow Hooks
 
-[TOC]
-
 Airflow Hook triggers a DAG run in an Airflow installation using [Airflow's REST API](https://airflow.apache.org/docs/apache-airflow/stable/stable-rest-api-ref.html#operation/post_dag_run).
 The hook run succeeds if the DAG was triggered, and fails otherwise.
 
@@ -25,6 +23,7 @@ _See the [Action configuration](./index.md#action-file) for overall configuratio
 | timeout       | Time to wait for the DAG run to complete (default: 1m)          | String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation) |                         | no       | no               |
 
 Example:
+
 ```yaml
 ...
 hooks:
@@ -45,4 +44,4 @@ hooks:
 
 lakeFS will add an entry to the Airflow request configuration property (`conf`) with the event that triggered the action.
 
-The key of the record will be `lakeFS_event` and the value will match the one described [here](./webhooks.html#request-body-schema)
+The key of the record will be `lakeFS_event` and the value will match the one described [here](./webhooks.md#request-body-schema)

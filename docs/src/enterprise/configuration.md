@@ -7,8 +7,6 @@ description: a configuration reference for lakeFS Enterprise
 
 Working with lakeFS Enterprise involve configuring both lakeFS and Fluffy. You can find the extended configuration references for both components below.
 
-[TOC]
-
 ## lakeFS Configuration
 
 See the full [lakeFS Server Configuration](/reference/configuration/)
@@ -17,6 +15,7 @@ See the full [lakeFS Server Configuration](/reference/configuration/)
 
 Configuring Fluffy using a YAML configuration file and/or environment variables.
 The configuration file's location can be set with the '--config' flag. If not specified, the first file found in the following order will be used:
+
 1. ./config.yaml
 1. `$HOME`/fluffy/config.yaml
 1. /etc/fluffy/config.yaml
@@ -33,8 +32,9 @@ This reference uses `.` to denote the nesting of values.
 * `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "INFO")` - Logging level to output
 * `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
 
-  **Note:** In case you configure this field to be lower than the main logger level, you won't be able to get the audit logs
-  {: .note }
+    !!! note 
+        In case you configure this field to be lower than the main logger level, you won't be able to get the audit logs
+    
 * `logging.output` `(string : "-")` - A path or paths to write logs to. A `-` means the standard output, `=` means the standard error.
 * `logging.file_max_size_mb` `(int : 100)` - Output file maximum size in megabytes.
 * `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
@@ -51,15 +51,18 @@ This reference uses `.` to denote the nesting of values.
     + `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
     + `database.dynamodb.scan_limit` `(int : 1025)` - Maximal number of items per page during scan operation
 
-      **Note:** Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
-      {: .note }
+        !!! note 
+            Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
+      
     + `database.dynamodb.endpoint` `(string : )` - Endpoint URL for database instance
     + `database.dynamodb.aws_region` `(string : )` - AWS Region of database instance
     + `database.dynamodb.aws_profile` `(string : )` - AWS named profile to use
     + `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
     + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
-    + **Note:** `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
-      {: .note }
+
+        !!! note
+            `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
+      
     + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
   + `database.cosmosdb` - Configuration section when using `database.type="cosmosdb"`
     + `database.cosmosdb.key` `(string : "")` - If specified, will
@@ -110,9 +113,11 @@ This reference uses `.` to denote the nesting of values.
     + `auth.oidc.client_secret` `(string : '')` - The application's secret.
     + `auth.oidc.callback_base_url` `(string : '')` - A default callback address of the Fluffy server.
     + `auth.oidc.callback_base_urls` `(string[] : '[]')`
-  + **Note:** You may configure a list of URLs that the OIDC provider may redirect to. This allows lakeFS to be accessed from multiple hostnames while retaining federated auth capabilities.
-    If the provider redirects to a URL not in this list, the login will fail. This property and callback_base_url are mutually exclusive.
-    {: .note }
+
+        !!! note
+            You may configure a list of URLs that the OIDC provider may redirect to. This allows lakeFS to be accessed from multiple hostnames while retaining federated auth capabilities.
+            If the provider redirects to a URL not in this list, the login will fail. This property and callback_base_url are mutually exclusive.
+
     + `auth.oidc.authorize_endpoint_query_parameters` `(bool : map[string]string)` - key/value parameters that are passed to a provider's authorization endpoint.
     + `auth.oidc.logout_endpoint_query_parameters` `(string[] : '[]')` - The query parameters that will be used to redirect the user to the OIDC provider after logout, e.g. '[returnTo, https://<lakefs.ingress.domain>/oidc/login]'
     + `auth.oidc.logout_client_id_query_parameter` `(string : '')` - The claim name that represents the client identifier in the OIDC provider
@@ -132,7 +137,6 @@ This reference uses `.` to denote the nesting of values.
       + `auth.external.aws_auth.optional_headers` `(map[string]string : )` - Optional headers that can be present by the client when doing login request.
       + `auth.external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS.
       + `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS.
-      {: .ref-list }
 
 ### Using Environment Variables
 
