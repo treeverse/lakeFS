@@ -239,4 +239,38 @@ code, pre {
         padding-right: calc(100% - 16rem);
     }
   }
+}
+
+/* ----------------------------- */
+/* Badge styles for nav sidebar  */
+/* ----------------------------- */
+.doc-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.5rem;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: 0.25rem;
+  text-transform: none;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.badge-enterprise {
+  background-color: #885af8; /* purple */
+  color: #ffffff;
+}
+
+/* Rotate chevron when section expanded */
+.md-nav__toggle:checked + label .md-nav__icon {
+  transform: rotate(90deg);
+}
+
+/* Ensure badges are vertically centred next to nav text */
+.md-nav__link .doc-badge,
+label.md-nav__link .doc-badge {
+  align-self: center;
+  position: relative;
+  top: 0.05em; /* fine-tune vertical centering */
 } 

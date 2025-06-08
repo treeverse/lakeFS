@@ -1,0 +1,39 @@
+{% macro render(nav_item, path, level) %}
+  {%- set item = nav_item -%}
+  {%- set li_classes = "md-nav__item" -%}
+  {%- if item.active %}{% set li_classes = li_classes ~ " md-nav__item--active" %}{% endif %}
+  <li class="{{ li_classes }}">
+    {# -- Render link for leaf pages -- #}
+    {% if not item.children %}
+      <a class="md-nav__link" href="{{ item.url | url }}">
+        {{ item.title | e }}
+        {# -- Inject badges from page front-matter -- #}
+        {% if item.meta and item.meta.badges %}
+          {% for badge in item.meta.badges %}
+            <span class="doc-badge badge-{{ badge | lower | replace(' ', '-') }}">{{ badge }}</span>
+          {% endfor %}
+        {% endif %}
+      </a>
+    {% else %}
+      {# -- Section with children: toggle + label like upstream theme -- #}
+      {%- set toggle_id = path -%}
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="{{ toggle_id }}" {% if item.active %}checked{% endif %}>
+      <label class="md-nav__link" for="{{ toggle_id }}">
+        {{ item.title | e }}
+        {% if item.meta and item.meta.badges %}
+          {% for badge in item.meta.badges %}
+            <span class="doc-badge badge-{{ badge | lower | replace(' ', '-') }}">{{ badge }}</span>
+          {% endfor %}
+        {% endif %}
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+      <nav class="md-nav" aria-label="{{ item.title | e }}">
+        <ul class="md-nav__list">
+          {% for child in item.children %}
+            {{ render(child, path ~ "_" ~ loop.index, level + 1) }}
+          {% endfor %}
+        </ul>
+      </nav>
+    {% endif %}
+  </li>
+{% endmacro %}
