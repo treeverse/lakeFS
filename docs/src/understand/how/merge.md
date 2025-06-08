@@ -35,22 +35,22 @@ The [API](/reference/api/) and [`lakectl`][lakectl-merge] allow passing an optio
 
 In case of a conflict, merge will pick the source objects.
 
-#### Example
+!!! example
+    ```bash
+    lakectl merge lakefs://example-repo/validated-data lakefs://example-repo/production --strategy source-wins
+    ```
 
-```bash
-lakectl merge lakefs://example-repo/validated-data lakefs://example-repo/production --strategy source-wins
-```
 When a merge conflict arises, the conflicting objects in the `validated-data` branch will be chosen to end up in `production`.
 
 ### `dest-wins`
 
 In case of a conflict, merge will pick the destination objects.
 
-#### Example
+!!! example
+    ```bash
+    lakectl merge lakefs://example-repo/validated-data lakefs://example-repo/production --strategy dest-wins
+    ```
 
-```bash
-lakectl merge lakefs://example-repo/validated-data lakefs://example-repo/production --strategy dest-wins
-```
 When a merge conflict arises, the conflicting objects in the `production` branch will be chosen to end up in `validated-data`. The `production` branch will not be affected by object changes from `validated-data` conflicting objects.
 
 The strategy will affect all conflicting objects in the merge if it is set. Currently it is not possible to treat conflicts individually.

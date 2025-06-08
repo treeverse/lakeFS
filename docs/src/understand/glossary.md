@@ -6,7 +6,6 @@ description: Glossary of all terms related to lakeFS technical internals and the
 # Glossary
 This page has definition and explanations of all terms related to lakeFS technical internals and the architecture.
 
-[TOC]
 
 ## Auditing
 Data auditing is data assessment to ensure its accuracy, security, and efficacy for specific usage. It also involves assessing data quality through its lifecycle and understanding the impact of poor quality data on the organization's performance and revenue. Ensuring data reproducibility, auditability, and governance is one of the key concerns of data engineers today. lakeFS commit history helps the data teams to keep track of all changes to the data, supporting data auditing.
