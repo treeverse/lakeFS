@@ -25,7 +25,7 @@ const (
 
 	// Counter scaling parameters for small caches
 	bytesPerCounter = 1024 * 10 // 10KB per counter (~100 counters per 1MB)
-	minCounters     = 1000       // Minimum counters to ensure basic functionality
+	minCounters     = 1000      // Minimum counters to ensure basic functionality
 )
 
 //nolint:unused
