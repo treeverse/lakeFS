@@ -11,6 +11,7 @@ The `lakefs-client` is now deprecated; the last release published to PyPI was v1
 ## What is changing?
 
 Ever since we released lakeFS 1.0, we have supported these two SDKs to program for lakeFS with Python:
+
 - [`lakefs`, the lakeFS High-Level Python SDK][pypi-lakefs-hi-lvl].  This is offers a structured easy way to use lakeFS from lakeFS.
 - [`lakefs-sdk`, the lakeFS HTTP API][pypi-lakefs-sdk].  This is
   auto-generated from the lakeFS OpenAPI spec.  It is guaranteed to support
