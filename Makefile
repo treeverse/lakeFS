@@ -79,16 +79,16 @@ check-licenses-npm:
 	# The -i arg is a workaround to ignore NPM scoped packages until https://github.com/senseyeio/diligent/issues/77 is fixed
 	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
 
-docs/assets/js/swagger.yml: api/swagger.yml
+docs/src/assets/js/swagger.yml: api/swagger.yml
 	@cp api/swagger.yml docs/assets/js/swagger.yml
 
-docs/assets/js/authorization.yml: api/authorization.yml
-	@cp api/authorization.yml docs/assets/js/authorization.yml
+docs/src/assets/js/authorization.yml: api/authorization.yml
+	@cp api/authorization.yml docs/src/assets/js/authorization.yml
 
-docs: docs/assets/js/swagger.yml docs/assets/js/authorization.yml
+docs: docs/src/assets/js/swagger.yml docs/src/assets/js/authorization.yml
 
 docs-serve: ### Serve local docs
-	cd docs; bundle exec jekyll serve --livereload
+	cd docs; mkdocs serve
 
 docs-serve-docker: ### Serve local docs from Docker
 	docker run --rm \
@@ -102,7 +102,7 @@ docs-serve-docker: ### Serve local docs from Docker
 			jekyll serve --livereload
 
 gen-docs: ## Generate CLI docs automatically
-	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/cli.md
+	$(GOCMD) run cmd/lakectl/main.go docs > docs/src/reference/cli.md
 
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/ -o pkg/metastore/hive pkg/metastore/hive/hive_metastore.thrift
