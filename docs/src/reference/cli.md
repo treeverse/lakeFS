@@ -3,16 +3,12 @@ title: lakectl (lakeFS command-line tool)
 description: lakeFS comes with its own native CLI client. Here you can see the complete command reference.
 ---
 
-{% comment %}
-This file (cli.md) is automagically generated from the Go code files under cmd/lakectl. 
-Any changes made directly to the Markdown file will be overwritten, and should instead be made to the
-relevant Go files. 
-{% endcomment %}
-
 # lakectl (lakeFS command-line tool)
-{:.no_toc}
 
-[TOC]
+!!! note
+	This file (cli.md) is automatically generated from the Go code files under `cmd/lakectl`. 
+	Any changes made directly to the Markdown file will be overwritten, and should instead be made to the
+	relevant Go files. 
 
 ## Installing lakectl locally
 
@@ -22,7 +18,7 @@ relevant Go files.
 
 Or using [Homebrew](https://brew.sh/) for Linux/macOS:
 
-```sh
+```bash
 brew tap treeverse/lakefs
 brew install lakefs
 ```
@@ -41,7 +37,7 @@ lakectl config
 ```
 
 This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.
-When setting up a new installation and creating initial credentials (see [Quickstart](/quickstart/)), the UI
+When setting up a new installation and creating initial credentials (see [Quickstart]({{ site.baseurl }}/quickstart/)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
 `lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
@@ -70,8 +66,7 @@ the Docker container. That is to say, `localhost` to a Docker container is itsel
 
 A cli tool to explore manage and work with lakeFS
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
 
@@ -94,11 +89,10 @@ lakectl [flags]
   -v, --version              version for lakectl
 ```
 
-**note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.
-{: .note .note-warning }
+!!! note
+    The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.
 
-#### Example usage
-{:.no_toc}
+<h4>Example usage</h4>
 
 ```shell
 $ export LAKECTL_BASE_URI="lakefs://my-repo/my-branch"
@@ -123,8 +117,7 @@ Manage Actions commands
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type actions help [path to command] for full details.
@@ -159,8 +152,7 @@ Explore runs information
 
 Describe run results
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Show information about the run and all the hooks that were executed as part of the run
 
@@ -168,8 +160,7 @@ Show information about the run and all the hooks that were executed as part of t
 lakectl actions runs describe <repository URI> <run_id> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl actions runs describe lakefs://my-repo 20230719152411arS0z6I
@@ -190,8 +181,7 @@ lakectl actions runs describe lakefs://my-repo 20230719152411arS0z6I
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type runs help [path to command] for full details.
@@ -213,8 +203,7 @@ lakectl actions runs help [command] [flags]
 
 List runs
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 List all runs on a repository optional filter by branch or commit
 
@@ -222,8 +211,7 @@ List all runs on a repository optional filter by branch or commit
 lakectl actions runs list <repository URI> [--branch <branch>] [--commit <commit_id>] [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl actions runs list lakefs://my-repo --branch my-branch --commit 600dc0ffee
@@ -246,8 +234,7 @@ lakectl actions runs list lakefs://my-repo --branch my-branch --commit 600dc0ffe
 
 Validate action file
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Tries to parse the input action file as lakeFS action file
 
@@ -255,8 +242,7 @@ Tries to parse the input action file as lakeFS action file
 lakectl actions validate [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl actions validate path/to/my/file
@@ -294,8 +280,7 @@ lakectl annotate <path URI> [flags]
 
 Manage authentication and authorization
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Manage authentication and authorization including users, groups and ACLs
 This functionality is supported with an external auth service only.
@@ -326,8 +311,7 @@ Manage groups
 
 Manage ACLs
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 manage ACLs of groups
 
@@ -362,8 +346,7 @@ lakectl auth groups acl get [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type acl help [path to command] for full details.
@@ -385,8 +368,7 @@ lakectl auth groups acl help [command] [flags]
 
 Set ACL of group
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Set ACL of group. permission will be attached to all repositories.
 
@@ -445,8 +427,7 @@ lakectl auth groups delete [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type groups help [path to command] for full details.
@@ -520,8 +501,7 @@ lakectl auth groups members add [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type members help [path to command] for full details.
@@ -583,8 +563,7 @@ lakectl auth groups members remove [flags]
 
 Manage group policies
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Manage group policies.  Requires an external authorization server with matching support.
 
@@ -639,8 +618,7 @@ lakectl auth groups policies detach [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type policies help [path to command] for full details.
@@ -683,8 +661,7 @@ lakectl auth groups policies list [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type auth help [path to command] for full details.
@@ -756,8 +733,7 @@ lakectl auth policies delete [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type policies help [path to command] for full details.
@@ -898,8 +874,7 @@ lakectl auth users credentials delete [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type credentials help [path to command] for full details.
@@ -973,8 +948,7 @@ Manage user groups
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type groups help [path to command] for full details.
@@ -1017,8 +991,7 @@ lakectl auth users groups list [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type users help [path to command] for full details.
@@ -1060,8 +1033,7 @@ lakectl auth users list [flags]
 
 Manage user policies
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Manage user policies.  Requires an external authorization server with matching support.
 
@@ -1116,8 +1088,7 @@ lakectl auth users policies detach [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type policies help [path to command] for full details.
@@ -1161,8 +1132,7 @@ lakectl auth users policies list [flags]
 
 Create and manage branches within a repository
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Create delete and list branches within a lakeFS repository
 
@@ -1183,8 +1153,7 @@ Create a new branch in a repository
 lakectl branch create <branch URI> -s <source ref URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/main
@@ -1208,8 +1177,7 @@ Delete a branch in a repository, along with its uncommitted changes (CAREFUL)
 lakectl branch delete <branch URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl branch delete lakefs://my-repo/my-branch
@@ -1229,8 +1197,7 @@ lakectl branch delete lakefs://my-repo/my-branch
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type branch help [path to command] for full details.
@@ -1256,8 +1223,7 @@ List branches in a repository
 lakectl branch list <repository URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl branch list lakefs://my-repo
@@ -1279,8 +1245,7 @@ lakectl branch list lakefs://my-repo
 
 Reset uncommitted changes - all of them, or by path
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 reset changes.  There are four different ways to reset changes:
   1. reset all uncommitted changes - reset lakefs://myrepo/main 
@@ -1291,8 +1256,7 @@ reset changes.  There are four different ways to reset changes:
 lakectl branch reset <branch URI> [--prefix|--object] [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl branch reset lakefs://my-repo/my-branch
@@ -1314,8 +1278,7 @@ lakectl branch reset lakefs://my-repo/my-branch
 
 Given a commit, record a new commit to reverse the effect of this commit
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 The commits will be reverted in left-to-right order
 
@@ -1323,8 +1286,7 @@ The commits will be reverted in left-to-right order
 lakectl branch revert <branch URI> <commit ref to revert> [<more commits>...] [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl branch revert lakefs://example-repo/example-branch commitA
@@ -1353,8 +1315,7 @@ Show branch latest commit reference
 lakectl branch show <branch URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl branch show lakefs://my-repo/my-branch
@@ -1373,8 +1334,7 @@ lakectl branch show lakefs://my-repo/my-branch
 
 Create and manage branch protection rules
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Define branch protection rules to prevent direct changes. Changes to protected branches can only be done by merging from other branches.
 
@@ -1391,8 +1351,7 @@ Define branch protection rules to prevent direct changes. Changes to protected b
 
 Add a branch protection rule
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Add a branch protection rule for a given branch name pattern
 
@@ -1400,8 +1359,7 @@ Add a branch protection rule for a given branch name pattern
 lakectl branch-protect add <repository URI> <pattern> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl branch-protect add lakefs://my-repo 'stable_*'
@@ -1420,8 +1378,7 @@ lakectl branch-protect add lakefs://my-repo 'stable_*'
 
 Delete a branch protection rule
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Delete a branch protection rule for a given branch name pattern
 
@@ -1429,8 +1386,7 @@ Delete a branch protection rule for a given branch name pattern
 lakectl branch-protect delete <repository URI> <pattern> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl branch-protect delete lakefs://my-repo stable_*
@@ -1449,8 +1405,7 @@ lakectl branch-protect delete lakefs://my-repo stable_*
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type branch-protect help [path to command] for full details.
@@ -1476,8 +1431,7 @@ List all branch protection rules
 lakectl branch-protect list <repository URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl branch-protect list lakefs://my-repo
@@ -1496,8 +1450,7 @@ lakectl branch-protect list lakefs://my-repo
 
 Apply the changes introduced by an existing commit
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Apply the changes from the given commit to the tip of the branch. The changes will be added as a new commit.
 
@@ -1505,8 +1458,7 @@ Apply the changes from the given commit to the tip of the branch. The changes wi
 lakectl cherry-pick <commit URI> <branch> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl cherry-pick lakefs://my-repo/600dc0ffee lakefs://my-repo/my-branch
@@ -1547,8 +1499,7 @@ lakectl commit <branch URI> [flags]
 
 Generate completion script
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 To load completions:
 
@@ -1639,8 +1590,7 @@ Show changes between two commits, or the currently uncommitted changes
 lakectl diff <ref URI> [ref URI] [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 
@@ -1749,8 +1699,7 @@ lakectl fs download <path URI> [<destination path>] [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type fs help [path to command] for full details.
@@ -1867,14 +1816,12 @@ lakectl fs upload <path URI> [flags]
 ---------
 ### lakectl fs stage
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Link an external object with a path in a repository
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Link an external object with a path in a repository, creating an uncommitted change.
 The object location must be outside the repository's storage namespace
@@ -1900,9 +1847,8 @@ lakectl fs stage <path URI> [flags]
 
 ### lakectl fs update-metadata
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Update user metadata on the specified URI
 
@@ -1941,8 +1887,7 @@ Deletes the garbage collection policy for the repository
 lakectl gc delete-config <repository URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl gc delete-config lakefs://my-repo
@@ -1965,8 +1910,7 @@ Show the garbage collection policy for this repository
 lakectl gc get-config <repository URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl gc get-config lakefs://my-repo
@@ -1986,8 +1930,7 @@ lakectl gc get-config lakefs://my-repo
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type gc help [path to command] for full details.
@@ -2009,8 +1952,7 @@ lakectl gc help [command] [flags]
 
 Set garbage collection policy JSON
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Sets the garbage collection policy JSON.
 Example configuration file:
@@ -2032,8 +1974,7 @@ Example configuration file:
 lakectl gc set-config <repository URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl gc set-config lakefs://my-repo -f config.json
@@ -2053,8 +1994,7 @@ lakectl gc set-config lakefs://my-repo -f config.json
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type lakectl help [path to command] for full details.
@@ -2076,8 +2016,7 @@ lakectl help [command] [flags]
 
 Show identity info
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Show the info of the configured user in lakectl
 
@@ -2085,8 +2024,7 @@ Show the info of the configured user in lakectl
 lakectl identity [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl identity
@@ -2209,8 +2147,7 @@ lakectl local commit [directory] [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type local help [path to command] for full details.
@@ -2307,8 +2244,7 @@ lakectl local status [directory] [flags]
 
 Show log of commits
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Show log of commits for a given branch
 
@@ -2316,8 +2252,7 @@ Show log of commits for a given branch
 lakectl log <branch URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
@@ -2347,8 +2282,7 @@ lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
 
 Merge & commit changes from source branch into destination branch
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Merge & commit changes from source branch into destination branch
 
@@ -2389,8 +2323,7 @@ Manage metastore commands
 
 Copy or merge table
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Copy or merge table. the destination table will point to the selected branch
 
@@ -2423,8 +2356,7 @@ lakectl metastore copy [flags]
 
 Copy from one metastore to another
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 copy or merge requested tables between hive metastores. the destination tables will point to the selected branch
 
@@ -2454,8 +2386,7 @@ lakectl metastore copy-all [flags]
 
 Copy schema
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Copy schema (without tables). the destination schema will point to the selected branch
 
@@ -2484,8 +2415,7 @@ lakectl metastore copy-schema [flags]
 
 Create symlink table and data
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)
 
@@ -2542,8 +2472,7 @@ lakectl metastore diff [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type metastore help [path to command] for full details.
@@ -2565,8 +2494,7 @@ lakectl metastore help [command] [flags]
 
 Import from one metastore to another
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 
 import requested tables between hive metastores. the destination tables will point to the selected repository and branch
@@ -2618,8 +2546,7 @@ Create a new repository
 lakectl repo create <repository URI> <storage namespace> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl repo create lakefs://my-repo s3://my-bucket
@@ -2644,8 +2571,7 @@ Delete existing repository
 lakectl repo delete <repository URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl repo delete lakefs://my-repo
@@ -2665,8 +2591,7 @@ lakectl repo delete lakefs://my-repo
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type repo help [path to command] for full details.
@@ -2708,9 +2633,8 @@ lakectl repo list [flags]
 ---------
 ### lakectl repo create-bare
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Create a new repository with no initial branch or commit
 
@@ -2718,8 +2642,7 @@ Create a new repository with no initial branch or commit
 lakectl repo create-bare <repository URI> <storage namespace> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl create-bare lakefs://my-repo s3://my-bucket
@@ -2770,8 +2693,7 @@ lakectl show commit <commit URI> [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type show help [path to command] for full details.
@@ -2793,8 +2715,7 @@ lakectl show help [command] [flags]
 
 Create and manage tags within a repository
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Create delete and list tags within a lakeFS repository
 
@@ -2815,8 +2736,7 @@ Create a new tag in a repository
 lakectl tag create <tag URI> <commit URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917
@@ -2853,8 +2773,7 @@ lakectl tag delete <tag URI> [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type tag help [path to command] for full details.
@@ -2880,8 +2799,7 @@ List tags in a repository
 lakectl tag list <repository URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl tag list lakefs://my-repo
@@ -2921,17 +2839,15 @@ lakectl tag show <tag URI> [flags]
 
 ## Undocumented commands
 
-**note:**
-⚠️ These commands are plumbing commands and for internal use only.
-Avoid using them unless you're _really_ sure you know what you're doing, or
-have been in contact with lakeFS support!
-{: .note .note-warning }
+!!! warning
+	These commands are plumbing commands and for internal use only.
+	Avoid using them unless you're _really_ sure you know what you're doing, or
+	have been in contact with lakeFS support!
 
 ### lakectl abuse
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Abuse a running lakeFS instance. See sub commands for more info.
 
@@ -2988,8 +2904,7 @@ lakectl abuse create-branches <source ref URI> [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type abuse help [path to command] for full details.
@@ -3128,9 +3043,8 @@ lakectl abuse random-write <branch URI> [flags]
 
 ### lakectl bisect
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Binary search to find the commit that introduced a bug
 
@@ -3181,8 +3095,7 @@ lakectl bisect good [flags]
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type bisect help [path to command] for full details.
@@ -3287,9 +3200,8 @@ lakectl bisect view [flags]
 
 ### lakectl cat-hook-output
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Cat actions hook output
 
@@ -3297,8 +3209,7 @@ Cat actions hook output
 lakectl cat-hook-output <repository URI> <run_id> <hook_id> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 lakectl cat-hook-output lakefs://my-repo 20230719152411arS0z6I my_hook_name
@@ -3315,9 +3226,8 @@ lakectl cat-hook-output lakefs://my-repo 20230719152411arS0z6I my_hook_name
 
 ### lakectl cat-sst
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Explore lakeFS .sst files
 
@@ -3338,9 +3248,8 @@ lakectl cat-sst <sst-file> [flags]
 
 ### lakectl docs
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 
 
@@ -3359,9 +3268,8 @@ lakectl docs [outfile] [flags]
 
 ### lakectl find-merge-base
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Find the commits for the merge operation
 
@@ -3380,9 +3288,8 @@ lakectl find-merge-base <source ref URI> <destination ref URI> [flags]
 
 ### lakectl refs-dump
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Dumps refs (branches, commits, tags) to the underlying object store
 
@@ -3404,14 +3311,12 @@ lakectl refs-dump <repository URI> [flags]
 
 ### lakectl refs-restore
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Restores refs (branches, commits, tags) from the underlying object store to a bare repository
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 restores refs (branches, commits, tags) from the underlying object store to a bare repository.
 
@@ -3422,8 +3327,7 @@ Since a bare repo is expected, in case of transient failure, delete the reposito
 lakectl refs-restore <repository URI> [flags]
 ```
 
-#### Examples
-{:.no_toc}
+<h4>Examples</h4>
 
 ```
 aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs://my-bare-repository --manifest -
@@ -3443,9 +3347,8 @@ aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs
 
 ### lakectl usage
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Usage reports from lakeFS
 
@@ -3462,8 +3365,7 @@ Usage reports from lakeFS
 
 Help about any command
 
-#### Synopsis
-{:.no_toc}
+<h4>Synopsis</h4>
 
 Help provides help for any command in the application.
 Simply type usage help [path to command] for full details.
@@ -3485,9 +3387,8 @@ lakectl usage help [command] [flags]
 ---------
 ### lakectl usage summary
 
-**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 Summary reports from lakeFS
 

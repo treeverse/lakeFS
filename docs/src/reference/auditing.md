@@ -5,23 +5,17 @@ badges: ["Enterprise"]
 ---
 
 # Auditing
-{: .d-inline-block }
-lakeFS Cloud
-{: .label .label-green }
 
-lakeFS Enterprise
-{: .label .label-purple }
-
-{: .note}
-> Auditing is only available for [lakeFS Cloud](/cloud/index/) and [lakeFS Enterprise](/enterprise/index/).
+!!! info
+    This feature is available on **lakeFS Cloud** and **lakeFS Enterprise**
 
 The lakeFS audit log allows you to view all relevant user action information in a clear and organized table, including when the action was performed, by whom, and what it was they did. 
 
 This can be useful for several purposes, including: 
 
-1. Compliance - Audit logs can be used to show what data users accessed, as well as any changes they made to user management.
+1. **Compliance** - Audit logs can be used to show what data users accessed, as well as any changes they made to user management.
 
-2. Troubleshooting - If something changes on your underlying object store that you weren't expecting, such as a big file suddenly breaking into thousands of smaller files, you can use the audit log to find out what action led to this change. 
+2. **Troubleshooting** - If something changes on your underlying object store that you weren't expecting, such as a big file suddenly breaking into thousands of smaller files, you can use the audit log to find out what action led to this change. 
 
 ## Setting up access to Audit Logs on AWS S3
 
@@ -33,10 +27,10 @@ The initial setup:
 
 1. Take note of the IAM Role ARN that will be used to access the data. This should be the user or role used by e.g. Athena.
 1. [Reach out to customer success](mailto:support@treeverse.io?subject=ARN to use for audit logs) and provide this ARN. Once receiving the ARN role, an access point will be created and you should get in response the following details:
-   1. S3 Bucket (e.g. `arn:aws:s3:::lakefs-audit-logs-us-east-1-production`)
-   2. S3 URI to an access point (e.g. `s3://arn:aws:s3:us-east-1:<treeverse-id>:accesspoint/lakefs-logs-<organization>`)
-   3. Access Point alias. You can use this alias instead of the bucket name or Access Point ARN to access data through the Access Point. (e.g. `lakefs-logs-<generated>-s3alias`)
-3. Update your IAM Role policy and trust policy if required
+    1. S3 Bucket (e.g. `arn:aws:s3:::lakefs-audit-logs-us-east-1-production`)
+    2. S3 URI to an access point (e.g. `s3://arn:aws:s3:us-east-1:<treeverse-id>:accesspoint/lakefs-logs-<organization>`)
+    3. Access Point alias. You can use this alias instead of the bucket name or Access Point ARN to access data through the Access Point. (e.g. `lakefs-logs-<generated>-s3alias`)
+    3. Update your IAM Role policy and trust policy if required
 
 A minimal example for IAM policy with 2 lakeFS installations in 2 regions (`us-east-1`, `us-west-2`):
 
@@ -130,8 +124,8 @@ aws s3api get-object --bucket lakefs-logs-<generated>-s3alias --key etl/v1/data/
 
 ## Data layout
 
-{: .note }
-> The bucket name is important when creating the IAM policy but, the Access Point ARN and Alias will be the ones that are used to access the data (i.e AWS CLI, Spark etc).
+!!! tip
+    The bucket name is important when creating the IAM policy but, the Access Point ARN and Alias will be the ones that are used to access the data (i.e AWS CLI, Spark etc).
 
 **Bucket Name:** `lakefs-audit-logs-us-east-1-production`
 
@@ -147,10 +141,10 @@ aws s3api get-object --bucket lakefs-logs-<generated>-s3alias --key etl/v1/data/
 
 ### Partitions
 
-- year
-- month
-- day
-- hour
+- `year`
+- `month`
+- `day`
+- `hour`
 
 ### Example
 
@@ -191,7 +185,6 @@ The `data_user` column in each log represents the user id that performed it.
 * If the user is an API user created internally in lakeFS that id is also the name it was given.
 * `data_user` might contain an ID to an external IdP (i.e. SSO system), usually it is not human friendly, we can correlate the ID to a lakeFS email used, see an example using the [Python lakefs-sdk](../integrations/python.md#using-the-lakefs-sdk).
 
-
 ```python
 import lakefs_sdk
 
@@ -220,32 +213,32 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
         next_offset = resp.pagination.next_offset
 ```
 
-## Example: Glue Notebook with Spark
+!!! example "Example: Glue Notebook with Spark"
 
-```python
-from awsglue.transforms import *
-from pyspark.context import SparkContext
-from awsglue.context import GlueContext
-from awsglue.job import Job
+    ```python
+    from awsglue.transforms import *
+    from pyspark.context import SparkContext
+    from awsglue.context import GlueContext
+    from awsglue.job import Job
 
-sc = SparkContext.getOrCreate()
-glueContext = GlueContext(sc)
-spark = glueContext.spark_session
-job = Job(glueContext)
+    sc = SparkContext.getOrCreate()
+    glueContext = GlueContext(sc)
+    spark = glueContext.spark_session
+    job = Job(glueContext)
 
-# connect to s3 access point 
-alias = 's3://<bucket-alias-name>'
-s3_dyf = glueContext.create_dynamic_frame.from_options(
-    format_options={},
-    connection_type="s3",
-    format="parquet",
-    connection_options={
-        "paths": [alias + "/etl/v1/data/region=<region>/organization=org-<org>/year=<YY>/month=<MM>/day=<DD>/hour=<HH>/"],
-        "recurse": True,
-    },
-    transformation_ctx="sample-ctx",
-)
+    # connect to s3 access point 
+    alias = 's3://<bucket-alias-name>'
+    s3_dyf = glueContext.create_dynamic_frame.from_options(
+        format_options={},
+        connection_type="s3",
+        format="parquet",
+        connection_options={
+            "paths": [alias + "/etl/v1/data/region=<region>/organization=org-<org>/year=<YY>/month=<MM>/day=<DD>/hour=<HH>/"],
+            "recurse": True,
+        },
+        transformation_ctx="sample-ctx",
+    )
 
-s3_dyf.show()
-s3_dyf.printSchema()
-```
+    s3_dyf.show()
+    s3_dyf.printSchema()
+    ```
