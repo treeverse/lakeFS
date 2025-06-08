@@ -11,7 +11,6 @@ lakeFS is an open-source project under the [Apache 2.0 license](https://www.apac
 
 The project was created and is supported by Treeverse, a commercial company founded by engineers passionate about providing solutions to the evolving world of data engineering.
 
-[TOC]
 
 ## Our commitment to open source
 
@@ -30,11 +29,11 @@ We created lakeFS, our open-source project, to provide a Git-like interface on t
 
 For that reason, we commit that the following capabilities are *and will remain* open-source as part of lakeFS:
 
-  - All versioning capabilities,
-  - Git-Like interface for the versioning operations,
-  - Support for public object store APIs,
-  - Integrations with publicly available applications accessing an object store,
-  - CLI, API, and GUI interfaces.
+- All versioning capabilities,
+- Git-Like interface for the versioning operations,
+- Support for public object store APIs,
+- Integrations with publicly available applications accessing an object store,
+- CLI, API, and GUI interfaces.
   
 We also commit to keeping lakeFS scalable in throughput and performance.
 
@@ -49,11 +48,3 @@ The vision behind lakeFS Cloud is to provide a managed data versioning and manag
 As part of our commitment to the open source values of transparency and interoperability, we believe everyone should be able to enjoy these benefits, regardless of whether or not they choose to use the managed offering. 
 
 Because of that, we will not intentionally make it harder to build these features independently on top of the open source solution.
-
-## Roadmap
-
-This is the lakeFS [public roadmap](https://airtable.com/shrOKywSw1zT6sHpM/tblerUHsOniewbfzq). As the project evolves and the community grows, this roadmap might change.
-
-Please share your feedback on the [#dev](https://docs.lakefs.io/slack){: target="_blank" } on Slack or by starting a [GitHub Discussion](https://github.com/treeverse/lakeFS/discussions)!
-
-<iframe class="airtable-embed" src="https://airtable.com/embed/shrOKywSw1zT6sHpM?backgroundColor=green" frameborder="0" onmousewheel="" width="100%" height="800" style="background: transparent; border: 1px solid #ccc;"></iframe>

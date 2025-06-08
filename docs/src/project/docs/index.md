@@ -42,39 +42,10 @@ The title of the page should be H1 (`#` in markdown). Use headings in descending
 
 Pages should generally have a table of contents to help the user navigate it. Use the following snippet to add it to your page: 
 
-```html
-[TOC]
-```
-
 By default the page's Table of Contents will include only H2 headings. If you want to include H2 and H3 then use this snippet instead: 
 
-```html
-
-```
 
 Both of these snippets invoke `{:toc}` which is [used by Kramdown](https://kramdown.gettalong.org/converter/html.html#toc) (the Markdown processor that Jekyll uses) to insert a table of contents from the headings present in the markdown. 
-
-## Callouts 💬
-
-Multiple callout types are available. Please review [this page](./callouts.md) for details.
-
-## Links 🔗
-
-{% raw %}
-
-Links should use absolute paths in conjunction with `{% link %}`, e.g. `/foo/example/`.
-
-Adding a link with an anchor is a bit trickier.  Create a _reference_ `[link
-text][link-reference]` and then define the anchor at the end of the document:
-```markdown
-[link-reference]:  /foo.example/#anchor
-```
-
-{% endraw %}
-
-This is so that references work within the versioned documentation that [is deployed](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/docs-release.yaml#L26-L45).
-
-Relative links, unless within the local folder, are discouraged as it can cause additional work when moving pages at a later date. 
 
 ## Test your changes locally
 
@@ -90,45 +61,49 @@ The alternative is to use Docker which has the benefit of handling all the depen
 
 1. Launch the Docker container:
 
-   ```sh
-   docker run --rm \
-              --name lakefs_docs \
-              -e TZ="Etc/UTC" \
-              --publish 4000:4000 --publish 35729:35729 \
-              --volume="$PWD/docs:/srv/jekyll:Z" \
-              --volume="$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
-              --interactive --tty \
-              jekyll/jekyll:4.2.2 \
-              jekyll serve --livereload
-   ```
+    ```sh
+    docker run --rm \
+                --name lakefs_docs \
+                -e TZ="Etc/UTC" \
+                --publish 4000:4000 --publish 35729:35729 \
+                --volume="$PWD/docs:/srv/jekyll:Z" \
+                --volume="$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
+                --interactive --tty \
+                jekyll/jekyll:4.2.2 \
+                jekyll serve --livereload
+    ```
 
-   _If you have `make` installed, you can also run `make docs-serve-docker` instead._ 
+    !!! info
+        If you have `make` installed, you can also run `make docs-serve-docker` instead.
 
 2. The first time you run the container it will need to download dependencies and will take several minutes to be ready. 
-
-   Once you see the following output, the docs server is ready to [open in your web browser](http://localhost:4000): 
-
-   ```
-   Server running... press ctrl-c to stop.
-   ```
+   
+    Once you see the following output, the docs server is ready to [open in your web browser](http://localhost:4000): 
+    
+    ```
+    Server running... press ctrl-c to stop.
+    ```
 
 3. When you make a change to a page's source the server will automatically rebuild the page which will be shown in the server log by this entry:
 
-   ```
-   Regenerating: 1 file(s) changed at 2023-01-26 08:34:47
-                  contributing.md
-   Remote Theme: Using theme pmarsceill/just-the-docs
-   ```
+    ```
+    Regenerating: 1 file(s) changed at 2023-01-26 08:34:47
+                    contributing.md
+    Remote Theme: Using theme pmarsceill/just-the-docs
+    ```
 
-   This can take a short while—you'll see something like this in the server's output when it's done. 
-   
-   ```
-   ...done in 34.714073460 seconds.
-   ```
+    This can take a short while—you'll see something like this in the server's output when it's done. 
 
-   Your page will automatically reload to show the changes.
+    ```
+    ...done in 34.714073460 seconds.
+    ```
 
-_If you are doing lots of work on the docs you may want to leave the Docker container in place (so that you don't have to wait for the dependencies to load each time you re-create it). To do this replace the `--rm` with `--detach` in the `docker run` command, and use `docker logs -f lakefs_docs` to view the server log._
+    Your page will automatically reload to show the changes.
+
+    !!! tip
+        If you are doing lots of work on the docs you may want to leave the Docker container in place (so that you don't have to wait for the dependencies to load each time you re-create it). 
+        
+        To do this replace the `--rm` with `--detach` in the `docker run` command, and use `docker logs -f lakefs_docs` to view the server log.
 
 ## Link Checking locally
 
@@ -136,8 +111,8 @@ When making a pull request to lakeFS that involves a `docs/*` file, a [GitHub ac
 
 1. Build the site: 
 
-   ```
-   docker run --rm \
+    ```
+    docker run --rm \
             --name lakefs_docs \
             -e TZ="Etc/UTC" \
             --volume="$PWD/docs:/srv/jekyll:Z" \
@@ -145,12 +120,12 @@ When making a pull request to lakeFS that involves a `docs/*` file, a [GitHub ac
             --interactive --tty \
             jekyll/jekyll:3.8 \
             jekyll build --config _config.yml -d _site --watch
-   ```
+    ```
 
 2. Check the links: 
 
-   ```
-   docker run --rm \
+    ```
+    docker run --rm \
             --name lakefs_docs_lychee \
             --volume "$PWD:/data"\
             --volume "/tmp:/output"\
@@ -160,7 +135,7 @@ When making a pull request to lakeFS that involves a `docs/*` file, a [GitHub ac
             --output /output/lychee_report.md \
             --format markdown \
             /data/docs/_site
-   ```
+    ```
 
 3. Review the `lychee_report.md` in your local `/tmp` folder
  

@@ -9,8 +9,9 @@ Thank you for your interest in contributing to our project. Whether it's a bug r
 
 Please read through this document before submitting any issues or pull requests to ensure that we have all the necessary information to effectively respond to your bug report or contribution.
 
-*Don't know where to start?* Reach out on the #dev channel on [our Slack](https://lakefs.io/slack) and we will help you get started. We also recommend this [free series](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github){:target="_blank"} about contributing to OSS projects.
-{: .note }
+!!! tip "Don't know where to start?"
+    Reach out on the #dev channel on [our Slack](https://lakefs.io/slack) and we will help you get started. We also recommend this [free series](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github){:target="_blank"} about contributing to OSS projects.
+
 
 ## Getting Started
 
@@ -31,36 +32,33 @@ Before you get started, we kindly ask that you:
 Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds the Go and Node.js versions we currently use under _go-version_ and _node-version_ compatibly. The Java workflows use [Maven 3.8.x](https://github.com/actions/runner-images/blob/bc22983319daa620b2ad01a74b68f6f462d86241/images/linux/Ubuntu2004-Readme.md) (but any recent version of Maven should work).
 
 1. Install the required dependencies for your OS:
-   1. [Git](https://git-scm.com/downloads)
-   1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as [apt](https://en.wikipedia.org/wiki/APT_(software)) or [brew](https://brew.sh/))
-   1. [Docker](https://docs.docker.com/get-docker/)
-   1. [Go](https://golang.org/doc/install)
-   1. [Node.js & npm](https://www.npmjs.com/get-npm)
-   1. Java 8
-      * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
-   1. [Maven](https://maven.apache.org/) 
-      *  Required for building and testing Spark client code, as well as the hadoopfs client.
-   1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
-   1. *Optional* - [Rust & Cargo](https://www.rust-lang.org/tools/install) (useful for building the Rust SDK)
-   1. *Optional* - [Buf CLI](https://buf.build/docs/installation) (only needed if you like to update Protocol Buffer files)
-
-1. [Clone](https://github.com/git-guides/git-clone) the [repository from GitHub](https://github.com/treeverse/lakeFS). 
+    1. [Git](https://git-scm.com/downloads)
+    1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as [apt](https://en.wikipedia.org/wiki/APT_(software)) or [brew](https://brew.sh/))
+    1. [Docker](https://docs.docker.com/get-docker/)
+    1. [Go](https://golang.org/doc/install)
+    1. [Node.js & npm](https://www.npmjs.com/get-npm)
+    1. Java 8
+        * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
+    1. [Maven](https://maven.apache.org/) 
+        *  Required for building and testing Spark client code, as well as the hadoopfs client.
+    1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
+    1. *Optional* - [Rust & Cargo](https://www.rust-lang.org/tools/install) (useful for building the Rust SDK)
+    1. *Optional* - [Buf CLI](https://buf.build/docs/installation) (only needed if you like to update Protocol Buffer files)
+1. [Clone](https://github.com/git-guides/git-clone) the [repository from GitHub](https://github.com/treeverse/lakeFS).
 
     _This gives you read-only access to the repository. To contribute, see the next section._
 
 1. Build the project:
+    ```shell
+    make build
+    ```
 
-   ```shell
-   make build
-   ```
-
-   _Note: `make build` won't work for Windows users._
-
-1. Make sure tests are passing. The following should not return any errors: 
-
-   ```shell
-   make test
-   ```
+    !!! warning
+        `make build` won't work for Windows users.
+1. Make sure tests are passing. The following should not return any errors:
+    ```shell
+    make test
+    ```
 
 ## Before creating a pull request
 
@@ -86,8 +84,9 @@ Check that linting rules are passing.
 make checks-validator
 ```
 
-You will need GNU diff to run this. On the macOS it can be installed with `brew install diffutils`
-{: .note }
+!!! note
+    You will need GNU diff to run this. On the macOS it can be installed with `brew install diffutils`
+
 
 lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code.
 
@@ -97,8 +96,9 @@ Run system-tests:
 make system-tests
 ```
 
-Want to dive deeper into our system tests infrastructure? Need to debug the tests? Follow [this documentation](https://github.com/treeverse/lakeFS/blob/master/esti/docs/README.md).
-{: .note }
+!!! info
+    Want to dive deeper into our system tests infrastructure? Need to debug the tests? Follow [this documentation](https://github.com/treeverse/lakeFS/blob/master/esti/docs/README.md).
+
 
 ## Submitting a pull request
 
@@ -110,7 +110,6 @@ After submitting your pull request, [GitHub Actions](https://github.com/treevers
 Check back shortly after submitting your pull request to make sure that your code passes these checks. If any of the checks come back with a red X, then do your best to address the errors.
 
 A developer from our team will review your pull request, and may request some changes to it. After the request is approved, it will be merged to our main branch.
-
 
 
 ## Documentation
@@ -125,11 +124,13 @@ To learn how to contribute to the lakeFS documentation see [this page](./docs/in
 ## CHANGELOG.md
 
 Any user-facing change should be labeled with `include-changelog`.
+
 The PR title should contain a concise summary of the feature or fix and the description should have the GitHub issue number.
 When we publish a new version of lakeFS, we will add this to the relevant version section of the changelog.
 If the change should not be included in the changelog, label it with `exclude-changelog`.
 
 ### User-Facing Changes Examples
+
 1. UI/UX modifications: Changes to the layout, color scheme, or navigation structure.
 1. New features: Adding functionality that users can directly interact with, unless defined as internal.
 1. Configuration changes: Updates to settings that users can adjust.
@@ -138,6 +139,7 @@ If the change should not be included in the changelog, label it with `exclude-ch
 1. Security updates: Changes that address vulnerabilities or privacy concerns.
 
 ### Non-User-Facing Changes:
+
 1. Code refactoring: Restructuring the codebase without changing its external behavior.
 1. Backend optimizations: Improvements to server-side processes that don't noticeably affect performance.
 1. Database schema changes: Modifications to the data structure that don't alter the user interface **and** do not require data migration.

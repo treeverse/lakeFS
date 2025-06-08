@@ -5,8 +5,6 @@ description: Guidance on troubleshooting a lakeFS Enterprise deployment
 
 # Troubleshooting lakeFS Enterprise
 
-[TOC]
-
 A lakeFS Enterprise deployment has multiple moving parts that must all be deployed and configured correctly. This is especially true during initial setup. To help troubleshoot issues, both lakeFS and fluffy include the `flare` command.
 
 ## The `flare` command
@@ -15,25 +13,23 @@ A lakeFS Enterprise deployment has multiple moving parts that must all be deploy
 
 Both `lakefs` and `fluffy` include the flare command
 
-```
+```bash
 lakefs flare [flags]
 fluffy flare [flags]
 ```
 
 #### Flags
-{:.no_toc}
 
-```
-        --env-var-filename      the name of the file environment variables will be written to (default: lakefs-env.txt)
-        --include-env-vars      should environment variables be collected by flare (default: true)
-    -o, --output                Output path relative to the current path
-    -p, --package               Package generated artifacts into a .zip file (default: false)
-        --stdout                Output to stdout instead of files (default: false)
-        --zip-filename          The name of the zip file created when the -p option is used (default: lakefs-flare.zip)
+```bash
+--env-var-filename      the name of the file environment variables will be written to (default: lakefs-env.txt)
+--include-env-vars      should environment variables be collected by flare (default: true)
+-o, --output                Output path relative to the current path
+-p, --package               Package generated artifacts into a .zip file (default: false)
+--stdout                Output to stdout instead of files (default: false)
+--zip-filename          The name of the zip file created when the -p option is used (default: lakefs-flare.zip)
 ```
 
 #### Example Usage
-{:.no_toc}
 
 ```shell
 # This will run flare with output set to stdout, which is redirected into a file
