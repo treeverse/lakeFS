@@ -14,7 +14,7 @@ description: lakeFS comes with its own native CLI client. Here you can see the c
 
 `lakectl` is available for Linux, macOS, and Windows. You can also [run it using Docker](#running-lakectl-from-docker).
 
-[Download lakectl](https://github.com/treeverse/lakeFS/releases){: .btn .btn-green target="_blank"}
+[:material-download-outline: Download lakectl](https://github.com/treeverse/lakeFS/releases){: .md-button .md-button--primary target="_blank"}
 
 Or using [Homebrew](https://brew.sh/) for Linux/macOS:
 
@@ -74,8 +74,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 lakectl [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --base-uri string      base URI used for lakeFS address parse
@@ -104,8 +103,7 @@ $ lakectl fs ls /path
 
 Manage Actions commands
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for actions
@@ -126,8 +124,7 @@ Simply type actions help [path to command] for full details.
 lakectl actions help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -139,8 +136,7 @@ lakectl actions help [command] [flags]
 
 Explore runs information
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for runs
@@ -166,8 +162,7 @@ lakectl actions runs describe <repository URI> <run_id> [flags]
 lakectl actions runs describe lakefs://my-repo 20230719152411arS0z6I
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --after string   show results after this value (used for pagination)
@@ -190,8 +185,7 @@ Simply type runs help [path to command] for full details.
 lakectl actions runs help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -217,8 +211,7 @@ lakectl actions runs list <repository URI> [--branch <branch>] [--commit <commit
 lakectl actions runs list lakefs://my-repo --branch my-branch --commit 600dc0ffee
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --branch string   show results for specific branch
@@ -248,8 +241,7 @@ lakectl actions validate [flags]
 lakectl actions validate path/to/my/file
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for validate
@@ -265,8 +257,7 @@ List entries under a given path, annotating each with the latest modifying commi
 lakectl annotate <path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --first-parent   follow only the first parent commit upon seeing a merge commit
@@ -285,8 +276,7 @@ Manage authentication and authorization
 Manage authentication and authorization including users, groups and ACLs
 This functionality is supported with an external auth service only.
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for auth
@@ -298,8 +288,7 @@ This functionality is supported with an external auth service only.
 
 Manage groups
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for groups
@@ -315,8 +304,7 @@ Manage ACLs
 
 manage ACLs of groups
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for acl
@@ -332,8 +320,7 @@ Get ACL of group
 lakectl auth groups acl get [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help        help for get
@@ -355,8 +342,7 @@ Simply type acl help [path to command] for full details.
 lakectl auth groups acl help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -376,8 +362,7 @@ Set ACL of group. permission will be attached to all repositories.
 lakectl auth groups acl set [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help                help for set
@@ -395,8 +380,7 @@ Create a group
 lakectl auth groups create [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help        help for create
@@ -413,8 +397,7 @@ Delete a group
 lakectl auth groups delete [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help        help for delete
@@ -436,8 +419,7 @@ Simply type groups help [path to command] for full details.
 lakectl auth groups help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -453,8 +435,7 @@ List groups
 lakectl auth groups list [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int      how many results to return (default 100)
@@ -469,8 +450,7 @@ lakectl auth groups list [flags]
 
 Manage group user memberships
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for members
@@ -486,8 +466,7 @@ Add a user to a group
 lakectl auth groups members add [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help          help for add
@@ -510,8 +489,7 @@ Simply type members help [path to command] for full details.
 lakectl auth groups members help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -527,8 +505,7 @@ List users in a group
 lakectl auth groups members list [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --id string       Group identifier
@@ -548,8 +525,7 @@ Remove a user from a group
 lakectl auth groups members remove [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help          help for remove
@@ -567,8 +543,7 @@ Manage group policies
 
 Manage group policies.  Requires an external authorization server with matching support.
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for policies
@@ -584,8 +559,7 @@ Attach a policy to a group
 lakectl auth groups policies attach [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help            help for attach
@@ -603,8 +577,7 @@ Detach a policy from a group
 lakectl auth groups policies detach [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help            help for detach
@@ -627,8 +600,7 @@ Simply type policies help [path to command] for full details.
 lakectl auth groups policies help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -644,8 +616,7 @@ List policies for the given group
 lakectl auth groups policies list [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --id string       Group identifier
@@ -670,8 +641,7 @@ Simply type auth help [path to command] for full details.
 lakectl auth help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -683,8 +653,7 @@ lakectl auth help [command] [flags]
 
 Manage policies
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for policies
@@ -700,8 +669,7 @@ Create a policy
 lakectl auth policies create [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help                        help for create
@@ -719,8 +687,7 @@ Delete a policy
 lakectl auth policies delete [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help        help for delete
@@ -742,8 +709,7 @@ Simply type policies help [path to command] for full details.
 lakectl auth policies help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -759,8 +725,7 @@ List policies
 lakectl auth policies list [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int      how many results to return (default 100)
@@ -779,8 +744,7 @@ Show a policy
 lakectl auth policies show [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help        help for show
@@ -793,8 +757,7 @@ lakectl auth policies show [flags]
 
 Manage users
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for users
@@ -810,8 +773,7 @@ Create a user
 lakectl auth users create [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help        help for create
@@ -824,8 +786,7 @@ lakectl auth users create [flags]
 
 Manage user credentials
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for credentials
@@ -841,8 +802,7 @@ Create user credentials
 lakectl auth users credentials create [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help        help for create
@@ -859,8 +819,7 @@ Delete user credentials
 lakectl auth users credentials delete [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --access-key-id string   Access key ID to delete
@@ -883,8 +842,7 @@ Simply type credentials help [path to command] for full details.
 lakectl auth users credentials help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -900,8 +858,7 @@ List user credentials
 lakectl auth users credentials list [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --id string       Username (email for password-based users, default: current user)
@@ -921,8 +878,7 @@ Delete a user
 lakectl auth users delete [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help        help for delete
@@ -935,8 +891,7 @@ lakectl auth users delete [flags]
 
 Manage user groups
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for groups
@@ -957,8 +912,7 @@ Simply type groups help [path to command] for full details.
 lakectl auth users groups help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -974,8 +928,7 @@ List groups for the given user
 lakectl auth users groups list [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --id string       Username (email for password-based users)
@@ -1000,8 +953,7 @@ Simply type users help [path to command] for full details.
 lakectl auth users help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -1017,8 +969,7 @@ List users
 lakectl auth users list [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int      how many results to return (default 100)
@@ -1037,8 +988,7 @@ Manage user policies
 
 Manage user policies.  Requires an external authorization server with matching support.
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for policies
@@ -1054,8 +1004,7 @@ Attach a policy to a user
 lakectl auth users policies attach [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help            help for attach
@@ -1073,8 +1022,7 @@ Detach a policy from a user
 lakectl auth users policies detach [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help            help for detach
@@ -1097,8 +1045,7 @@ Simply type policies help [path to command] for full details.
 lakectl auth users policies help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -1114,8 +1061,7 @@ List policies for the given user
 lakectl auth users policies list [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --effective       List all distinct policies attached to the user, including by group memberships
@@ -1136,8 +1082,7 @@ Create and manage branches within a repository
 
 Create delete and list branches within a lakeFS repository
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for branch
@@ -1159,8 +1104,7 @@ lakectl branch create <branch URI> -s <source ref URI> [flags]
 lakectl branch create lakefs://example-repo/new-branch -s lakefs://example-repo/main
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help            help for create
@@ -1183,8 +1127,7 @@ lakectl branch delete <branch URI> [flags]
 lakectl branch delete lakefs://my-repo/my-branch
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for delete
@@ -1206,8 +1149,7 @@ Simply type branch help [path to command] for full details.
 lakectl branch help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -1229,8 +1171,7 @@ lakectl branch list <repository URI> [flags]
 lakectl branch list lakefs://my-repo
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int      how many results to return (default 100)
@@ -1262,8 +1203,7 @@ lakectl branch reset <branch URI> [--prefix|--object] [flags]
 lakectl branch reset lakefs://my-repo/my-branch
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help            help for reset
@@ -1295,8 +1235,7 @@ lakectl branch revert lakefs://example-repo/example-branch commitA
 		      Revert the changes done by the second last commit to the fourth last commit in example-branch
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --allow-empty-commit   allow empty commit (revert without changes)
@@ -1321,8 +1260,7 @@ lakectl branch show <branch URI> [flags]
 lakectl branch show lakefs://my-repo/my-branch
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for show
@@ -1338,8 +1276,7 @@ Create and manage branch protection rules
 
 Define branch protection rules to prevent direct changes. Changes to protected branches can only be done by merging from other branches.
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for branch-protect
@@ -1365,8 +1302,7 @@ lakectl branch-protect add <repository URI> <pattern> [flags]
 lakectl branch-protect add lakefs://my-repo 'stable_*'
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for add
@@ -1392,8 +1328,7 @@ lakectl branch-protect delete <repository URI> <pattern> [flags]
 lakectl branch-protect delete lakefs://my-repo stable_*
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for delete
@@ -1414,8 +1349,7 @@ Simply type branch-protect help [path to command] for full details.
 lakectl branch-protect help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -1437,8 +1371,7 @@ lakectl branch-protect list <repository URI> [flags]
 lakectl branch-protect list lakefs://my-repo
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for list
@@ -1464,8 +1397,7 @@ lakectl cherry-pick <commit URI> <branch> [flags]
 lakectl cherry-pick lakefs://my-repo/600dc0ffee lakefs://my-repo/my-branch
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help                help for cherry-pick
@@ -1482,8 +1414,7 @@ Commit changes on a given branch
 lakectl commit <branch URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --allow-empty-commit    allow a commit with no changes
@@ -1556,8 +1487,7 @@ $ lakectl completion fish > ~/.config/fish/completions/lakectl.fish
 lakectl completion <bash|zsh|fish>
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for completion
@@ -1573,8 +1503,7 @@ Create/update local lakeFS configuration
 lakectl config [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for config
@@ -1614,8 +1543,7 @@ lakectl diff <ref URI> [ref URI] [flags]
 	Show changes of objects prefixed with 'some/path' between the tips of the main and dev branches.
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help            help for diff
@@ -1633,8 +1561,7 @@ Run a basic diagnosis of the LakeFS configuration
 lakectl doctor [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for doctor
@@ -1646,8 +1573,7 @@ lakectl doctor [flags]
 
 View and manipulate objects
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for fs
@@ -1663,8 +1589,7 @@ Dump content of object to stdout
 lakectl fs cat <path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help       help for cat
@@ -1681,8 +1606,7 @@ Download object(s) from a given repository path
 lakectl fs download <path URI> [<destination path>] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help              help for download
@@ -1708,8 +1632,7 @@ Simply type fs help [path to command] for full details.
 lakectl fs help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -1725,8 +1648,7 @@ List entries under a given tree
 lakectl fs ls <path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help        help for ls
@@ -1743,8 +1665,7 @@ return a pre-signed URL for reading the specified object
 lakectl fs presign <path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for presign
@@ -1760,8 +1681,7 @@ Delete object
 lakectl fs rm <path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -C, --concurrency int   max concurrent single delete operations to send to the lakeFS server (default 50)
@@ -1779,8 +1699,7 @@ View object metadata
 lakectl fs stat <path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help       help for stat
@@ -1797,8 +1716,7 @@ Upload a local file to the specified URI
 lakectl fs upload <path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --content-type string   MIME type of contents
@@ -1830,8 +1748,7 @@ The object location must be outside the repository's storage namespace
 lakectl fs stage <path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --checksum string       Object MD5 checksum as a hexadecimal string
@@ -1856,8 +1773,7 @@ Update user metadata on the specified URI
 lakectl fs update-metadata <path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help               help for update-metadata
@@ -1870,8 +1786,7 @@ lakectl fs update-metadata <path URI> [flags]
 
 Manage the garbage collection policy
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for gc
@@ -1893,8 +1808,7 @@ lakectl gc delete-config <repository URI> [flags]
 lakectl gc delete-config lakefs://my-repo
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for delete-config
@@ -1916,8 +1830,7 @@ lakectl gc get-config <repository URI> [flags]
 lakectl gc get-config lakefs://my-repo
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for get-config
@@ -1939,8 +1852,7 @@ Simply type gc help [path to command] for full details.
 lakectl gc help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -1980,8 +1892,7 @@ lakectl gc set-config <repository URI> [flags]
 lakectl gc set-config lakefs://my-repo -f config.json
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -f, --filename string   file containing the GC policy as JSON
@@ -2003,8 +1914,7 @@ Simply type lakectl help [path to command] for full details.
 lakectl help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -2030,8 +1940,7 @@ lakectl identity [flags]
 lakectl identity
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for identity
@@ -2047,8 +1956,7 @@ Import data from external source to a destination branch
 lakectl import --from <object store URI> --to <lakeFS path URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --allow-empty-message   allow an empty commit message (default true)
@@ -2066,8 +1974,7 @@ lakectl import --from <object store URI> --to <lakeFS path URI> [flags]
 
 Sync local directories with lakeFS paths
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for local
@@ -2083,8 +1990,7 @@ Sync local directory with the remote state.
 lakectl local checkout [directory] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --all               Checkout given source branch or reference for all linked directories
@@ -2106,8 +2012,7 @@ Clone a path from a lakeFS repository into a new directory.
 lakectl local clone <path URI> [directory] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --gitignore         Update .gitignore file when working in a git repository context (default true)
@@ -2127,8 +2032,7 @@ Commit changes from local directory to the lakeFS branch it tracks.
 lakectl local commit [directory] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --allow-empty-message   allow an empty commit message
@@ -2156,8 +2060,7 @@ Simply type local help [path to command] for full details.
 lakectl local help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -2173,8 +2076,7 @@ set a local directory to sync with a lakeFS path.
 lakectl local init <path URI> [directory] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --force       Overwrites if directory already linked to a lakeFS path
@@ -2192,8 +2094,7 @@ find and list directories that are synced with lakeFS.
 lakectl local list [directory] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for list
@@ -2209,8 +2110,7 @@ Fetch latest changes from lakeFS.
 lakectl local pull [directory] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --force             Reset any uncommitted local change
@@ -2230,8 +2130,7 @@ show modifications (both remote and local) to the directory and the remote locat
 lakectl local status [directory] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help    help for status
@@ -2258,8 +2157,7 @@ lakectl log <branch URI> [flags]
 lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --after string         show results after this value (used for pagination)
@@ -2290,8 +2188,7 @@ Merge & commit changes from source branch into destination branch
 lakectl merge <source ref> <destination ref> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --allow-empty           Allow merge when the branches have the same content
@@ -2310,8 +2207,7 @@ lakectl merge <source ref> <destination ref> [flags]
 
 Manage metastore commands
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for metastore
@@ -2331,8 +2227,7 @@ Copy or merge table. the destination table will point to the selected branch
 lakectl metastore copy [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --catalog-id string         Glue catalog ID
@@ -2364,8 +2259,7 @@ copy or merge requested tables between hive metastores. the destination tables w
 lakectl metastore copy-all [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --branch string             lakeFS branch name
@@ -2394,8 +2288,7 @@ Copy schema (without tables). the destination schema will point to the selected 
 lakectl metastore copy-schema [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --catalog-id string         Glue catalog ID
@@ -2423,8 +2316,7 @@ create table with symlinks, and create the symlinks in s3 in order to access fro
 lakectl metastore create-symlink [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --branch string             lakeFS branch name
@@ -2449,8 +2341,7 @@ Show column and partition differences between two tables
 lakectl metastore diff [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --catalog-id string         Glue catalog ID
@@ -2481,8 +2372,7 @@ Simply type metastore help [path to command] for full details.
 lakectl metastore help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -2506,8 +2396,7 @@ will be transformed to location s3://repo-param/bucket-param/path/to/table
 lakectl metastore import-all [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --branch string             lakeFS branch name
@@ -2529,8 +2418,7 @@ lakectl metastore import-all [flags]
 
 Manage and explore repos
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for repo
@@ -2552,8 +2440,7 @@ lakectl repo create <repository URI> <storage namespace> [flags]
 lakectl repo create lakefs://my-repo s3://my-bucket
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -d, --default-branch string   the default branch of this repository (default "main")
@@ -2577,8 +2464,7 @@ lakectl repo delete <repository URI> [flags]
 lakectl repo delete lakefs://my-repo
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for delete
@@ -2600,8 +2486,7 @@ Simply type repo help [path to command] for full details.
 lakectl repo help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -2617,8 +2502,7 @@ List repositories
 lakectl repo list [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int      how many results to return (default 100)
@@ -2648,8 +2532,7 @@ lakectl repo create-bare <repository URI> <storage namespace> [flags]
 lakectl create-bare lakefs://my-repo s3://my-bucket
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -d, --default-branch string   the default branch name of this repository (will not be created) (default "main")
@@ -2662,8 +2545,7 @@ lakectl create-bare lakefs://my-repo s3://my-bucket
 
 See detailed information about an entity
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for show
@@ -2679,8 +2561,7 @@ See detailed information about a commit
 lakectl show commit <commit URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help                 help for commit
@@ -2702,8 +2583,7 @@ Simply type show help [path to command] for full details.
 lakectl show help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -2719,8 +2599,7 @@ Create and manage tags within a repository
 
 Create delete and list tags within a lakeFS repository
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for tag
@@ -2742,8 +2621,7 @@ lakectl tag create <tag URI> <commit URI> [flags]
 lakectl tag create lakefs://example-repo/example-tag lakefs://example-repo/2397cc9a9d04c20a4e5739b42c1dd3d8ba655c0b3a3b974850895a13d8bf9917
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -f, --force   override the tag if it exists
@@ -2760,8 +2638,7 @@ Delete a tag from a repository
 lakectl tag delete <tag URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for delete
@@ -2782,8 +2659,7 @@ Simply type tag help [path to command] for full details.
 lakectl tag help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -2805,8 +2681,7 @@ lakectl tag list <repository URI> [flags]
 lakectl tag list lakefs://my-repo
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int      how many results to return (default 100)
@@ -2825,8 +2700,7 @@ Show tag's commit reference
 lakectl tag show <tag URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for show
@@ -2851,8 +2725,7 @@ lakectl tag show <tag URI> [flags]
 
 Abuse a running lakeFS instance. See sub commands for more info.
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for abuse
@@ -2868,8 +2741,7 @@ Commits to the source branch repeatedly
 lakectl abuse commit <branch URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int     amount of commits to do (default 100)
@@ -2887,8 +2759,7 @@ Create a lot of branches very quickly.
 lakectl abuse create-branches <source ref URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int             amount of things to do (default 1000000)
@@ -2913,8 +2784,7 @@ Simply type abuse help [path to command] for full details.
 lakectl abuse help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -2930,8 +2800,7 @@ Link the same object in parallel.
 lakectl abuse link-same-object <branch URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int        amount of link object to do (default 1000000)
@@ -2950,8 +2819,7 @@ List from the source ref
 lakectl abuse list <source ref URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int        amount of lists to do (default 1000000)
@@ -2970,8 +2838,7 @@ Merge non-conflicting objects to the source branch in parallel
 lakectl abuse merge <branch URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int        amount of merges to perform (default 1000)
@@ -2989,8 +2856,7 @@ Delete keys from a file and generate random delete from the source ref for those
 lakectl abuse random-delete <source ref URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int         amount of reads to do (default 1000000)
@@ -3009,8 +2875,7 @@ Read keys from a file and generate random reads from the source ref for those ke
 lakectl abuse random-read <source ref URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int         amount of reads to do (default 1000000)
@@ -3029,8 +2894,7 @@ Generate random writes to the source branch
 lakectl abuse random-write <branch URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int        amount of writes to do (default 1000000)
@@ -3048,8 +2912,7 @@ lakectl abuse random-write <branch URI> [flags]
 
 Binary search to find the commit that introduced a bug
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for bisect
@@ -3065,8 +2928,7 @@ Set 'bad' commit that is known to contain the bug
 lakectl bisect bad [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for bad
@@ -3082,8 +2944,7 @@ Set current commit as 'good' commit that is known to be before the bug was intro
 lakectl bisect good [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for good
@@ -3104,8 +2965,7 @@ Simply type bisect help [path to command] for full details.
 lakectl bisect help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -3121,8 +2981,7 @@ Print out the current bisect state
 lakectl bisect log [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for log
@@ -3138,8 +2997,7 @@ Clean up the bisection state
 lakectl bisect reset [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for reset
@@ -3155,8 +3013,7 @@ Bisecting based on command status code
 lakectl bisect run <command> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for run
@@ -3172,8 +3029,7 @@ Start a bisect session
 lakectl bisect start <bad ref URI> <good ref URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for start
@@ -3189,8 +3045,7 @@ Current bisect commits
 lakectl bisect view [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for view
@@ -3215,8 +3070,7 @@ lakectl cat-hook-output <repository URI> <run_id> <hook_id> [flags]
 lakectl cat-hook-output lakefs://my-repo 20230719152411arS0z6I my_hook_name
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for cat-hook-output
@@ -3235,8 +3089,7 @@ Explore lakeFS .sst files
 lakectl cat-sst <sst-file> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
       --amount int    how many records to return, or -1 for all records (default -1)
@@ -3257,8 +3110,7 @@ lakectl cat-sst <sst-file> [flags]
 lakectl docs [outfile] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for docs
@@ -3277,8 +3129,7 @@ Find the commits for the merge operation
 lakectl find-merge-base <source ref URI> <destination ref URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for find-merge-base
@@ -3297,8 +3148,7 @@ Dumps refs (branches, commits, tags) to the underlying object store
 lakectl refs-dump <repository URI> [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help                     help for refs-dump
@@ -3333,8 +3183,7 @@ lakectl refs-restore <repository URI> [flags]
 aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs://my-bare-repository --manifest -
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help                     help for refs-restore
@@ -3352,8 +3201,7 @@ aws s3 cp s3://bucket/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs
 
 Usage reports from lakeFS
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for usage
@@ -3374,8 +3222,7 @@ Simply type usage help [path to command] for full details.
 lakectl usage help [command] [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for help
@@ -3396,8 +3243,7 @@ Summary reports from lakeFS
 lakectl usage summary [flags]
 ```
 
-#### Options
-{:.no_toc}
+<h4>Options</h4>
 
 ```
   -h, --help   help for summary

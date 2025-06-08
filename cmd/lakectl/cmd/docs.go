@@ -26,7 +26,7 @@ description: lakeFS comes with its own native CLI client. Here you can see the c
 
 ` + "`lakectl`" + ` is available for Linux, macOS, and Windows. You can also [run it using Docker](#running-lakectl-from-docker).
 
-[Download lakectl](https://github.com/treeverse/lakeFS/releases){: .md-button .md-button--primary target="_blank"}
+[:material-download-outline: Download lakectl](https://github.com/treeverse/lakeFS/releases){: .md-button .md-button--primary target="_blank"}
 
 Or using [Homebrew](https://brew.sh/) for Linux/macOS:
 
@@ -97,7 +97,7 @@ func printOptions(buf *bytes.Buffer, cmd *cobra.Command) error {
 	flags := cmd.NonInheritedFlags()
 	flags.SetOutput(buf)
 	if flags.HasAvailableFlags() {
-		buf.WriteString("#### Options\n{:.no_toc}\n\n```\n")
+		buf.WriteString("<h4>Options</h4>\n\n```\n")
 		flags.PrintDefaults()
 		buf.WriteString("```\n\n")
 	}

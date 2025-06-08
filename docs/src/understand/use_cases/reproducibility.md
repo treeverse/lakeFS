@@ -5,9 +5,10 @@ description: In this tutorial, we will explore how to use lakeFS for reproducibi
 
 ## The Benefits of Reproducible Data
 
-Data changes frequently. This makes the task of keeping track of its exact state over time difficult. Oftentimes, people maintain only one state of their data––its current state.
+Data changes frequently. This makes the task of keeping track of its exact state over time difficult. Oftentimes, people maintain only one state of their data - its current state.
 
 This has a negative impact on the work, as it becomes hard to:
+
 * Debug a data issue.
 * Validate machine learning training accuracy (re-running a model over different data gives different results).
 * Comply with data audits.
@@ -23,8 +24,9 @@ To read data at it’s current state, we can use a static path containing the re
 ```bash
 df = spark.read.parquet(‘s3://example/main/”)
 ```
-**Note:** The code above assumes that all objects in the repository under this path are stored in parquet format. If a different format is used, the applicable Spark read method should be used.
-{: .note }
+
+!!! note
+    The code above assumes that all objects in the repository under this path are stored in parquet format. If a different format is used, the applicable Spark read method should be used.
 
 In a lakeFS repository, we are capable of taking many commits over the data, making many points in time reproducible. 
 

@@ -5,18 +5,15 @@ description: The lakeFS object model blends the object models of Git and of obje
 
 # lakeFS Concepts and Model
 
-
-
-lakeFS blends concepts from object stores such as S3 with concepts from Git. This reference
-defines the common concepts of lakeFS.
+lakeFS blends concepts from object stores such as S3 with concepts from Git. This reference defines the common concepts of lakeFS.
 
 ## Objects
 
 lakeFS is an interface to manage objects in an object store.
 
-{: .tip }
-> The actual data itself is not stored inside lakeFS directly but in an [underlying object store](#concepts-unique-to-lakefs).
-> lakeFS manages pointers and additional metadata about these objects.
+!!! tip
+    The actual data itself is not stored inside lakeFS directly but in an [underlying object store](#concepts-unique-to-lakefs).<br/>
+    lakeFS manages pointers and additional metadata about these objects.
 
 ## Version Control
 
@@ -42,11 +39,10 @@ These commits are immutable "checkpoints" containing all contents of a repositor
 
 Each commit contains metadata - the committer, timestamp, a commit message, as well as arbitrary key/value pairs you can choose to add.
 
-  **Identifying Commits**<br/><br/>
-  A commit is identified by its _commit ID_, a digest of all contents of the commit. <br/>
-  Commit IDs are by nature long, so you may use a unique prefix to abbreviate them. A commit may also be identified by using a textual definition, called a _ref_. <br/><br/>
-  Examples of refs include tags, branch names, and expressions.
-{: .note }
+!!! info "Identifying Commits"
+    A commit is identified by its _commit ID_, a digest of all contents of the commit. <br/>
+    Commit IDs are by nature long, so you may use a unique prefix to abbreviate them. A commit may also be identified by using a textual definition, called a _ref_. <br/><br/>
+    Examples of refs include tags, branch names, and expressions.
 
 ### Branches
 
@@ -81,8 +77,9 @@ parent of each commit. Histories go back in time.
 _Merging_ is the way to integrate changes from a branch into another branch.
 The result of a merge is a new commit, with the destination as the first parent and the source as the second.
 
-To learn more about how merging works in lakeFS, see the [merge reference](/understand/how/merge/)
-{: .note }
+!!! info
+    To learn more about how merging works in lakeFS, see the [merge reference](/understand/how/merge/)
+
 
 ### Ref expressions
 
@@ -102,17 +99,17 @@ examples at the end of that section will work unchanged in lakeFS.
 
 ## Concepts unique to lakeFS
 
-The _underlying storage_ is a location in an object store where lakeFS keeps your objects and some immutable metadata.
+The **underlying storage** is a location in an object store where lakeFS keeps your objects and some immutable metadata.
 
-When creating a lakeFS repository, you assign it with a _storage namespace_. The repository's
+When creating a lakeFS repository, you assign it with a **storage namespace**. The repository's
 storage namespace is a location in the underlying storage where data for this repository
 will be stored.
 
-We sometimes refer to underlying storage as _physical_. The path used to store the contents of an object is then termed a _physical path_.
+We sometimes refer to underlying storage as **physical**. The path used to store the contents of an object is then termed a **physical path**.
 Once lakeFS saves an object in the underlying storage it is never modified, except to remove it
 entirely during some cleanups.
 
-A lot of what lakeFS does is to manage how lakeFS paths translate to _physical paths_ on the
+A lot of what lakeFS does is to manage how lakeFS paths translate to **physical paths** on the
 object store. This mapping is generally **not** straightforward. Importantly (and contrary to
 many object stores), lakeFS may map multiple paths to the same object on backing storage, and
 always does this for objects that are unchanged across versions.
@@ -120,6 +117,7 @@ always does this for objects that are unchanged across versions.
 ### `lakefs` protocol URIs
 
 lakeFS uses a specific format for path URIs. The URI `lakefs://<REPO>/<REF>/<KEY>` is a path
-to objects in the given repo and ref expression under key. This is used both for path
-prefixes and for full paths. In similar fashion, `lakefs://<REPO>/<REF>` identifies the
-repository at a ref expression, and `lakefs://<REPO>` identifes a repo.
+to objects in the given repo and ref expression under key. 
+
+This is used both for path prefixes and for full paths. 
+In similar fashion, `lakefs://<REPO>/<REF>` identifies the repository at a ref expression, and `lakefs://<REPO>` identifies a repo.

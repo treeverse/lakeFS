@@ -7,6 +7,7 @@ theme:
   logo: assets/logo.svg
   features:
     - content.footnote.tooltips
+    - content.code.copy
 site_dir: site
 docs_dir: src
 use_directory_urls: true
@@ -296,6 +297,11 @@ markdown_extensions:
         case: lower
 - pymdownx.tasklist:  # support TODO lists
     custom_checkbox: true
+- pymdownx.critic
+- pymdownx.caret
+- pymdownx.keys
+- pymdownx.mark
+- pymdownx.tilde
 
 nav:
 - Welcome to lakeFS: index.md
