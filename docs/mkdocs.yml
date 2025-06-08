@@ -5,6 +5,7 @@ site_description: Open Source Data Version Control for Data Lakes and Lakehouses
 theme:
   name: material
   logo: assets/logo.svg
+  custom_dir: overrides
   features:
     - content.footnote.tooltips
     - content.code.copy
@@ -441,3 +442,6 @@ nav:
   - Role-Based Access Control (RBAC): security/rbac.md
   - Short-lived token (STS like) Authentication for lakeFS: security/sts-login.md
   - Single Sign On (SSO): security/sso.md
+
+extra_css:
+  - assets/css/overrides.css
