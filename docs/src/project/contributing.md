@@ -10,7 +10,7 @@ Thank you for your interest in contributing to our project. Whether it's a bug r
 Please read through this document before submitting any issues or pull requests to ensure that we have all the necessary information to effectively respond to your bug report or contribution.
 
 !!! tip "Don't know where to start?"
-    Reach out on the #dev channel on [our Slack](https://lakefs.io/slack) and we will help you get started. We also recommend this [free series](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github){:target="_blank"} about contributing to OSS projects.
+    Reach out on the **#dev** channel on [our Slack](https://lakefs.io/slack) and we will help you get started. We also recommend this [free series](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github){:target="_blank"} about contributing to OSS projects.
 
 
 ## Getting Started
@@ -55,6 +55,7 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
 
     !!! warning
         `make build` won't work for Windows users.
+    
 1. Make sure tests are passing. The following should not return any errors:
     ```shell
     make test

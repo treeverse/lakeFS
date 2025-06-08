@@ -10,7 +10,8 @@ The hook run succeeds if the DAG was triggered, and fails otherwise.
 
 ## Action file Airflow hook properties
 
-_See the [Action configuration](./index.md#action-file) for overall configuration schema and details._
+!!! info
+    See the [Action configuration](./index.md#action-file) for overall configuration schema and details
 
 | Property      | Description                                                     | Data Type                                                                                 | Example                 | Required | Environment Variables Supported |
 |---------------|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------|-------------------------|----------|------------------|
@@ -22,23 +23,23 @@ _See the [Action configuration](./index.md#action-file) for overall configuratio
 | wait_for_dag  | Wait for DAG run to complete and reflect state (default: false) | Boolean                                                                                   |                         | no       | no               |
 | timeout       | Time to wait for the DAG run to complete (default: 1m)          | String (golang's [Duration](https://golang.org/pkg/time/#Duration.String) representation) |                         | no       | no               |
 
-Example:
+!!! example
 
-```yaml
-...
-hooks:
-  - id: trigger_my_dag
-    type: airflow
-    description: Trigger an example_dag
-    properties:
-       url: "http://localhost:8000"
-       dag_id: "example_dag"
-       username: "admin"
-       password: "{% raw %}{{{% endraw %} ENV.AIRFLOW_SECRET {% raw %}}}{% endraw %}"
-       dag_conf:
-          some: "additional_conf"
-...
-```
+    ```yaml
+    ...
+    hooks:
+      - id: trigger_my_dag
+        type: airflow
+        description: Trigger an example_dag
+        properties:
+          url: "http://localhost:8000"
+          dag_id: "example_dag"
+          username: "admin"
+          password: "{% raw %}{{{% endraw %} ENV.AIRFLOW_SECRET {% raw %}}}{% endraw %}"
+          dag_conf:
+              some: "additional_conf"
+    ...
+    ```
 
 ## Hook Record in configuration field
 

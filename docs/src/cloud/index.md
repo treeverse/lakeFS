@@ -12,6 +12,7 @@ description: lakeFS Cloud is a fully-managed lakeFS solution
 ## Why did we build lakeFS cloud?
 
 We built lakeFS cloud for three main reasons:
+
 1. We wanted to provide organizations with the benefits of lakeFS without the need to manage it, saving them the investment in infrastructure and work related to installation, upgrades, uptime and scale .
 1. We wanted to provide lakeFS cloud users with security that meets their needs, with SSO, SCIM, and RBAC.
 1. We wanted to provide additional functionality that reduces friction and allows fast implementation of version controlled data/ML/AI pipelines throughout their data lifecycle.
@@ -19,6 +20,7 @@ We built lakeFS cloud for three main reasons:
 ## What is the value of using lakeFS Cloud as a managed service?
 
 The main advantages of using lakeFS Cloud, the lakeFS managed service are:
+
 1. No installation required, no cloud costs and devops efforts on installing and maintaining a lakeFS installation.
 1. All lakeFS services are managed and run by us, including [Managed Garbage Collection](/howto/garbage-collection/managed-gc/).
 1. lakeFS cloud is highly available and includes a commitment to an uptime SLA.
@@ -41,6 +43,7 @@ The main advantages of using lakeFS Cloud, the lakeFS managed service are:
 ## What additional functionality does lakeFS Cloud provide?
 
 Using lakeFS cloud is not just a secure and managed way of using lakeFS OSS; it is much more than that. With lakeFS Cloud you enjoy:
+
 1. [lakeFS Mount](/reference/mount/) allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
 1. [lakeFS Metadata Search](https://info.lakefs.io/metadata-search) - Allows a granular search API to filter and query versioned objects based on attached metadata. This is especially useful for machine learning environments to filter by labels and file attributes
 1. [lakeFS for Databricks](https://lakefs.io/lakefs-for-databricks) - Provides a turnkey solution for Databricks customers for analytics, machine learning and business intelligence use cases including full support for Delta Lake tables, Unity Catalog, MLFlow and the rest of the Databricks product suite.
@@ -115,6 +118,7 @@ Please [contact us](mailto:support@treeverse.io) for onboarding instructions.
 ## lakeFS Cloud Scalability Model
 
 By default, a lakeFS Cloud installation supports:
+
 - 1,500 read operations/second across all branches on all repositories within a region
 - 1,500 write operations per second across all branches on all repositories within a region
 

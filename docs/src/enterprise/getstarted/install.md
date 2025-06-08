@@ -5,7 +5,8 @@ description: lakeFS Enterprise Installation Guide
 
 # Install
 
-For production deployments of lakeFS Enterprise, follow this guide.
+!!! info
+    For production deployments of lakeFS Enterprise, follow this guide.
 
 ## lakeFS Enterprise Architecture
 
@@ -302,77 +303,68 @@ Notes:
 
 The database configuration structure between lakeFS and fluffy can be set directly via `fluffyConfig`, via K8S Secret Kind, and `lakefsConfig` or via environment variables.
 
-<div class="tabs">
-  <ul>
-    <li><a href="#postgres-via-env-vars">Postgres via environment variables</a></li>
-    <li><a href="#via-fluffy-config">Via fluffyConfig</a></li>
-    <li><a href="#postgres-via-secret-kind">Postgres via shared Secret kind</a></li>
-  </ul>
-<div markdown="1" id="postgres-via-env-vars">
+=== "Postgres via environment variables"
 
-This example uses Postgres as KV Database. lakeFS is configured via `lakefsConfig` and Fluffy via environment with the same database configuration.
+    This example uses Postgres as KV Database. lakeFS is configured via `lakefsConfig` and Fluffy via environment with the same database configuration.
 
-```yaml
-useDevPostgres: false
-lakefsConfig: |
-  database:
-    type: postgres
-    postgres:
-      connection_string: <postgres connection string>
+    ```yaml
+    useDevPostgres: false
+    lakefsConfig: |
+      database:
+        type: postgres
+        postgres:
+          connection_string: <postgres connection string>
 
-fluffy:
-  extraEnvVars:
-    - name: FLUFFY_DATABASE_TYPE
-      value: postgres
-    - name: FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING
-      value: '<postgres connection string>'
-```
-</div>
-</div>
+    fluffy:
+      extraEnvVars:
+        - name: FLUFFY_DATABASE_TYPE
+          value: postgres
+        - name: FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING
+          value: '<postgres connection string>'
+    ```
 
-<div markdown="1" id="via-fluffy-config">
 
-This example uses DynamoDB as KV Database.
+=== "Via fluffyConfig"
 
-```yaml
+    This example uses DynamoDB as KV Database.
 
-# disable dev postgres
-useDevPostgres: false
+    ```yaml
 
-lakefsConfig: |
-  database:
-    type: dynamodb
-    dynamodb:
-      table_name: <table>
-      aws_profile: <profile>
-fluffyConfig: |
+    # disable dev postgres
+    useDevPostgres: false
+
+    lakefsConfig: |
     database:
-      type: dynamodb
-      dynamodb:
+        type: dynamodb
+        dynamodb:
         table_name: <table>
         aws_profile: <profile>
-        aws_region: <region>
-```
-</div>
-<div markdown="1" id="postgres-via-secret-kind">
+    fluffyConfig: |
+        database:
+        type: dynamodb
+        dynamodb:
+            table_name: <table>
+            aws_profile: <profile>
+            aws_region: <region>
+    ```
 
+=== "Postgres via shared Secret kind"
 
-This example uses Postgres as KV Database. The chart will create a `kind: Secret` holding the database connection string, and the lakeFS and Fluffy will use it.
+    This example uses Postgres as KV Database. The chart will create a `kind: Secret` holding the database connection string, and the lakeFS and Fluffy will use it.
 
-```yaml
-useDevPostgres: false
-secrets:
-  authEncryptSecretKey: shared-key-hello
-  databaseConnectionString: <postgres connection string>
+    ```yaml
+    useDevPostgres: false
+    secrets:
+    authEncryptSecretKey: shared-key-hello
+    databaseConnectionString: <postgres connection string>
 
-lakefsConfig: |
-  database:
-    type: postgres
-fluffyConfig: |
-  database:
-    type: postgres
-```
-</div>
+    lakefsConfig: |
+    database:
+        type: postgres
+    fluffyConfig: |
+    database:
+        type: postgres
+    ```
 
 ### Install the lakeFS Helm Chart
 

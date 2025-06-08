@@ -415,8 +415,7 @@ nav:
 - The lakeFS Project:
   - Overview: project/index.md
   - Contributing to lakeFS: project/contributing.md
-  - Documentation:
-    - Overview: project/docs/index.md
+  - Documentation: project/docs.md
   - Migrating to 1.0: project/code-migrate-1.0-sdk.md
 - lakeFS Cloud: cloud/index.md
 - lakeFS Enterprise:

@@ -3,10 +3,7 @@ title: Versioning Internals
 parent: How lakeFS Works
 --- 
 
-
 # Versioning Internals
-
-[TOC]
 
 ## Overview
 

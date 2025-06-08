@@ -6,7 +6,7 @@ description: Private Link enables lakeFS Cloud to interact with your infrastruct
 # Private Link
 
 !!! info
-    PrivateLink is only applicable to lakeFS Cloud
+    PrivateLink is only applicable to **lakeFS Cloud**
 
 Private Link enables lakeFS Cloud to interact with your infrastructure using private networking.
 

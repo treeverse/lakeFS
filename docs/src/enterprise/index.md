@@ -22,6 +22,7 @@ are not using public clouds, hence they cannot use [lakeFS Cloud](/cloud/index/)
 ## What security features does lakeFS Enterprise provide?
 
 With lakeFS Enterprise you’ll receive access to the security package containing the following features:
+
 1. A rich [Role-Based Access Control](/security/rbac/) permission system that allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
 2. To easily manage users and groups, lakeFS Enterprise provides SSO integration (including support for SAML, OIDC, ADFS, Okta, and Azure AD), supporting existing credentials from a trusted provider, eliminating separate logins.
 3. lakeFS Enterprise supports [SCIM](/howto/scim/) for automatically provisioning and deprovisioning users and group memberships to allow organizations to maintain a single source of truth for their user database.
@@ -57,5 +58,5 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 
 
 
-<br>
-You can learn more about the [lakeFS Enterprise architecture](/enterprise/architecture/), or follow the examples in the [Quickstart guide](/enterprise/getstarted/quickstart/).
+!!! tip
+    You can learn more about the [lakeFS Enterprise architecture](/enterprise/architecture/), or follow the examples in the [Quickstart guide](/enterprise/getstarted/quickstart/).

@@ -15,11 +15,11 @@ The Lua runtime embedded in lakeFS is limited for security reasons. It provides 
 1. Accessing any of the running lakeFS server's environment
 2. Accessing the local filesystem available the lakeFS process
 
-[TOC]
 
 ## Action File Lua Hook Properties
 
-_See the [Action configuration](./index.md#action-file) for overall configuration schema and details._
+!!! info
+    See the [Action configuration](./index.md#action-file) for overall configuration schema and details.
 
 | Property      | Description                               | Data Type  | Required                                       | Default Value |
 |---------------|-------------------------------------------|------------|------------------------------------------------|---------------|
@@ -32,61 +32,61 @@ _See the [Action configuration](./index.md#action-file) for overall configuratio
 
 For more examples and configuration samples, check out the [examples/hooks/](https://github.com/treeverse/lakeFS/tree/master/examples/hooks) directory in the lakeFS repository. You'll also find step-by-step examples of hooks in action in the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
 
-### Display information about an event
+!!! example "Display information about an event"
 
-This example will print out a JSON representation of the event that occurred:
+    This example will print out a JSON representation of the event that occurred:
 
-```yaml
-name: dump_all
-on:
-  post-commit:
-  post-merge:
-  post-create-tag:
-  post-create-branch:
-hooks:
-  - id: dump_event
-    type: lua
-    properties:
-      script: |
-        json = require("encoding/json")
-        print(json.marshal(action))
-```
+    ```yaml
+    name: dump_all
+    on:
+      post-commit:
+      post-merge:
+      post-create-tag:
+      post-create-branch:
+    hooks:
+      - id: dump_event
+        type: lua
+        properties:
+          script: |
+            json = require("encoding/json")
+            print(json.marshal(action))
+    ```
 
-### Ensure that a commit includes a mandatory metadata field
+!!! example "Ensure that a commit includes a mandatory metadata field"
 
-A more useful example: ensure every commit contains a required metadata field:
+    A more useful example: ensure every commit contains a required metadata field:
 
-```yaml
-name: pre commit metadata field check
-on:
-pre-commit:
-    branches:
-    - main
-    - dev
-hooks:
-  - id: ensure_commit_metadata
-    type: lua
-    properties:
-      args:
-        notebook_url: {"pattern": "my-jupyter.example.com/.*"}
-        spark_version:  {}
-      script_path: lua_hooks/ensure_metadata_field.lua
-```
+    ```yaml
+    name: pre commit metadata field check
+    on:
+    pre-commit:
+        branches:
+        - main
+        - dev
+    hooks:
+      - id: ensure_commit_metadata
+        type: lua
+        properties:
+          args:
+            notebook_url: {"pattern": "my-jupyter.example.com/.*"}
+            spark_version:  {}
+          script_path: lua_hooks/ensure_metadata_field.lua
+    ```
 
-Lua code at `lakefs://repo/main/lua_hooks/ensure_metadata_field.lua`:
+    Lua code at `lakefs://repo/main/lua_hooks/ensure_metadata_field.lua`:
 
-```lua
-regexp = require("regexp")
-for k, props in pairs(args) do
-  current_value = action.commit.metadata[k]
-  if current_value == nil then
-    error("missing mandatory metadata field: " .. k)
-  end
-  if props.pattern and not regexp.match(props.pattern, current_value) then
-    error("current value for commit metadata field " .. k .. " does not match pattern: " .. props.pattern .. " - got: " .. current_value)
-  end
-end
-```
+    ```lua
+    regexp = require("regexp")
+    for k, props in pairs(args) do
+      current_value = action.commit.metadata[k]
+      if current_value == nil then
+        error("missing mandatory metadata field: " .. k)
+      end
+      if props.pattern and not regexp.match(props.pattern, current_value) then
+        error("current value for commit metadata field " .. k .. " does not match pattern: " .. props.pattern .. " - got: " .. current_value)
+      end
+    end
+    ```
 
 For more examples and configuration samples, check out the [examples/hooks/](https://github.com/treeverse/lakeFS/tree/master/examples/hooks) directory in the lakeFS repository.
 
@@ -103,11 +103,12 @@ Helper function to mark a table object as an array for the runtime by setting `_
 ### `aws/s3_client`
 S3 client library.
 
-```lua
-local aws = require("aws")
--- pass valid AWS credentials
-local client = aws.s3_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
-```
+!!! example
+    ```lua
+    local aws = require("aws")
+    -- pass valid AWS credentials
+    local client = aws.s3_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
+    ```
 
 ### `aws/s3_client.get_object(bucket, key)`
 
@@ -158,11 +159,12 @@ Deletes all objects under the given prefix
 
 Glue client library.
 
-```lua
-local aws = require("aws")
--- pass valid AWS credentials
-local glue = aws.glue_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
-```
+!!! example
+    ```lua
+    local aws = require("aws")
+    -- pass valid AWS credentials
+    local glue = aws.glue_client("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "REGION")
+    ```
 
 ### `aws/glue.create_database(database, options)`
 
@@ -175,15 +177,16 @@ Parameters:
     - `error_on_already_exists(boolean)`: Whether the call fail with an error if a DB with this name already exists
     - `create_db_input(Table)`: a Table that is passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
 
-Example:
 
-```lua
-local opts = {
-    error_on_already_exists = false,
-    create_db_input = {DatabaseInput = {Description = "Created via LakeFS Action"}, Tags = {Owner = "Joe"}}
-}
-glue.create_database(db, opts)
-```
+!!! example
+
+    ```lua
+    local opts = {
+        error_on_already_exists = false,
+        create_db_input = {DatabaseInput = {Description = "Created via LakeFS Action"}, Tags = {Owner = "Joe"}}
+    }
+    glue.create_database(db, opts)
+    ```
 
 ### `aws/glue.delete_database(database, catalog_id)`
 
@@ -194,41 +197,38 @@ Parameters:
 - `database(string)`: Glue Database name.
 - `catalog_id(string)` (optional): Glue Catalog ID
 
-Example:
-
-```lua
-glue.delete_database(db, "461129977393")
-```
+!!! example
+    ```lua
+    glue.delete_database(db, "461129977393")
+    ```
 
 ### `aws/glue.get_table(database, table [, catalog_id)`
 
 Describe a table from the Glue Catalog.
 
-Example:
-
-```lua
-local table, exists = glue.get_table(db, table_name)
-if exists then
-  print(json.marshal(table))
-```
+!!! example
+    ```lua
+    local table, exists = glue.get_table(db, table_name)
+    if exists then
+        print(json.marshal(table))
+    ```
 
 ### `aws/glue.create_table(database, table_input, [, catalog_id])`
 
 Create a new table in Glue Catalog.
 The `table_input` argument is a JSON that is passed "as is" to AWS and is parallel to the AWS SDK [TableInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax)
 
-Example: 
-
-```lua
-local json = require("encoding/json")
-local input = {
-    Name = "my-table",
-    PartitionKeys = array(partitions),
-    -- etc...
-}
-local json_input = json.marshal(input)
-glue.create_table("my-db", table_input)
-```
+!!! example
+    ```lua
+    local json = require("encoding/json")
+    local input = {
+        Name = "my-table",
+        PartitionKeys = array(partitions),
+        -- etc...
+    }
+    local json_input = json.marshal(input)
+    glue.create_table("my-db", table_input)
+    ```
 
 ### `aws/glue.update_table(database, table_input, [, catalog_id, version_id, skip_archive])`
 
@@ -244,11 +244,12 @@ Delete an existing Table in Glue Catalog.
 ### `azure/blob_client`
 Azure blob client library.
 
-```lua
-local azure = require("azure")
--- pass valid Azure credentials
-local client = azure.blob_client("AZURE_STORAGE_ACCOUNT", "AZURE_ACCESS_KEY")
-```
+!!! example
+    ```lua
+    local azure = require("azure")
+    -- pass valid Azure credentials
+    local client = azure.blob_client("AZURE_STORAGE_ACCOUNT", "AZURE_ACCESS_KEY")
+    ```
 
 ### `azure/blob_client.get_object(path_uri)`
 
@@ -313,13 +314,12 @@ Parameters:
 - `get_if_exists(boolean)`: In case of failure due to an existing schema with the given `schema_name` in the given
 `catalog_name`, return the schema.
 
-Example:
-
-```lua
-local databricks = require("databricks")
-local client = databricks.client("https://my-host.cloud.databricks.com", "my-service-principal-token")
-local schema_name = client.create_schema("main", "mycatalog", true)
-```
+!!! example
+    ```lua
+    local databricks = require("databricks")
+    local client = databricks.client("https://my-host.cloud.databricks.com", "my-service-principal-token")
+    local schema_name = client.create_schema("main", "mycatalog", true)
+    ```
 
 ### `databricks/client.execute_statement(statement, warehouse_id, catalog_name, schema_name)`
 
@@ -331,13 +331,13 @@ Parameters:
 - `schema_name(string)`: The required schema name
   `status`, return the SQL status i.e. SUCCEEDED or an error code/message
 
-Example:
-```lua
-local databricks = require("databricks")
-local client = databricks.client("https://my-host.cloud.databricks.com", "my-service-principal-token")
-local statement = "ALTER TABLE " .. table_descriptor.name .. " ALTER COLUMN ID SET MASK mask_num"
-databricks_client.execute_statement(statement, args.warehouse_id, table_descriptor.catalog, table_descriptor.schema)
-```
+!!! example
+    ```lua
+    local databricks = require("databricks")
+    local client = databricks.client("https://my-host.cloud.databricks.com", "my-service-principal-token")
+    local statement = "ALTER TABLE " .. table_descriptor.name .. " ALTER COLUMN ID SET MASK mask_num"
+    databricks_client.execute_statement(statement, args.warehouse_id, table_descriptor.catalog, table_descriptor.schema)
+    ```
 
 ### `databricks/client.register_external_table(table_name, physical_path, warehouse_id, catalog_name, schema_name, metadata)`
 
@@ -357,13 +357,12 @@ Parameters:
 - `metadata(table)`: A table of metadata to be added to the table's registration. The metadata table should be of the form:
   `{key1 = "value1", key2 = "value2", ...}`.
 
-Example:
-
-```lua
-local databricks = require("databricks")
-local client = databricks.client("https://my-host.cloud.databricks.com", "my-service-principal-token")
-local status = client.register_external_table("mytable", "s3://mybucket/the/path/to/mytable", "examwarehouseple", "my-catalog-name", "myschema")
-```
+!!! example
+    ```lua
+    local databricks = require("databricks")
+    local client = databricks.client("https://my-host.cloud.databricks.com", "my-service-principal-token")
+    local status = client.register_external_table("mytable", "s3://mybucket/the/path/to/mytable", "examwarehouseple", "my-catalog-name", "myschema")
+    ```
 
 - For the Databricks permissions needed to run this method, check out the [Unity Catalog Exporter](/integrations/unity-catalog/) docs.
 
@@ -433,6 +432,7 @@ Returns a representation of a Delta Lake table under the given repository, refer
 The format of the response is two tables: 
 1. the first is a table of the format `{number, {string}}` where `number` is a version in the Delta Log, and the mapped `{string}` 
 array contains JSON strings of the different Delta Lake log operations listed in the mapped version entry. e.g.:
+
 ```lua
 {
   0 = {
@@ -471,18 +471,17 @@ from the source (typically a lakeFS physical address for an object) to a given d
 `mount_info` is a Lua table with `"from"` and `"to"` keys - since symlinks don't work for `gs://...` URIs, they need to point
 to the mounted location instead. `from` will be removed from the beginning of `source`, and `destination` will be added instead.
 
-Example:
-
-```lua
-source = "gs://bucket/lakefs/data/abc/def"
-destination = "gs://bucket/exported/path/to/object"
-mount_info = {
-    ["from"] = "gs://bucket",
-    ["to"] = "/home/user/gcs-mount"
-}
-gs.write_fuse_symlink(source, destination, mount_info)
--- Symlink: "/home/user/gcs-mount/exported/path/to/object" -> "/home/user/gcs-mount/lakefs/data/abc/def"
-```
+!!! example
+    ```lua
+    source = "gs://bucket/lakefs/data/abc/def"
+    destination = "gs://bucket/exported/path/to/object"
+    mount_info = {
+        ["from"] = "gs://bucket",
+        ["to"] = "/home/user/gcs-mount"
+    }
+    gs.write_fuse_symlink(source, destination, mount_info)
+    -- Symlink: "/home/user/gcs-mount/exported/path/to/object" -> "/home/user/gcs-mount/lakefs/data/abc/def"
+    ```
 
 ### `hook`
 
@@ -495,10 +494,11 @@ generic runtime errors (an API call that returned an unexpected response) and ex
 
 When called, errors will appear without a stack-trace, and the error message will be directly the one given as `message`.
 
-```lua
-> hook = require("hook")
-> hook.fail("this hook shall not pass because of: " .. reason)
-```
+!!! example
+    ```lua
+    > hook = require("hook")
+    > hook.fail("this hook shall not pass because of: " .. reason)
+    ```
 
 ### `lakefs`
 
@@ -590,105 +590,106 @@ Parameters:
 - `table_descriptors_path`: The path under which the table descriptors of the provided `table_def_names` reside
 - `path_transformer`: (Optional) A function(path) used for transforming the path of the saved delta logs path fields as well as the saved table physical path (used to support Azure Unity catalog use cases)
 
-Delta export example for AWS S3:
+!!! example "Delta export example for AWS S3"
 
-```yaml
----
-name: delta_exporter
-on:
-  post-commit: null
-hooks:
-  - id: delta_export
-    type: lua
-    properties:
-      script: |
-        local aws = require("aws")
-        local formats = require("formats")
-        local delta_exporter = require("lakefs/catalogexport/delta_exporter")
-        local json = require("encoding/json")
+    ```yaml
+    ---
+    name: delta_exporter
+    on:
+    post-commit: null
+    hooks:
+    - id: delta_export
+        type: lua
+        properties:
+        script: |
+            local aws = require("aws")
+            local formats = require("formats")
+            local delta_exporter = require("lakefs/catalogexport/delta_exporter")
+            local json = require("encoding/json")
 
-        local table_descriptors_path = "_lakefs_tables"
-        local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
-        local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
-        local delta_table_details = delta_export.export_delta_log(action, args.table_defs, sc.put_object, delta_client, table_descriptors_path)
-        
-        for t, details in pairs(delta_table_details) do
-          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. details["path"] .. "\n")
-          print("Delta Lake exported table \"" .. t .. "\"'s metadata:\n")
-          for k, v in pairs(details["metadata"]) do
-            if type(v) == "table" then
-              print("\t" .. k .. " = " .. json.marshal(v) .. "\n")
-            else
-              print("\t" .. k .. " = " .. v .. "\n")
+            local table_descriptors_path = "_lakefs_tables"
+            local sc = aws.s3_client(args.aws.access_key_id, args.aws.secret_access_key, args.aws.region)
+            local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key, args.aws.region)
+            local delta_table_details = delta_export.export_delta_log(action, args.table_defs, sc.put_object, delta_client, table_descriptors_path)
+            
+            for t, details in pairs(delta_table_details) do
+            print("Delta Lake exported table \"" .. t .. "\"'s location: " .. details["path"] .. "\n")
+            print("Delta Lake exported table \"" .. t .. "\"'s metadata:\n")
+            for k, v in pairs(details["metadata"]) do
+                if type(v) == "table" then
+                print("\t" .. k .. " = " .. json.marshal(v) .. "\n")
+                else
+                print("\t" .. k .. " = " .. v .. "\n")
+                end
             end
-          end
-        end
-      args:
-        aws:
-          access_key_id: <AWS_ACCESS_KEY_ID>
-          secret_access_key: <AWS_SECRET_ACCESS_KEY>
-          region: us-east-1
-        lakefs:
-          access_key_id: <LAKEFS_ACCESS_KEY_ID> 
-          secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
-        table_defs:
-          - mytable
-```
-
-For the table descriptor under the `_lakefs_tables/mytable.yaml`:
-```yaml
----
-name: myTableActualName
-type: delta
-path: a/path/to/my/delta/table
-```
-
-Delta export example for Azure Blob Storage:
-
-```yaml
-name: Delta Exporter
-on:
-  post-commit:
-    branches: ["{% raw %}{{ .Branch }}{% endraw %}*"]
-hooks:
-  - id: delta_exporter
-    type: lua
-    properties:
-      script: |
-        local azure = require("azure")
-        local formats = require("formats")
-        local delta_exporter = require("lakefs/catalogexport/delta_exporter")
-
-        local table_descriptors_path = "_lakefs_tables"
-        local sc = azure.blob_client(args.azure.storage_account, args.azure.access_key)
-        local function write_object(_, key, buf)
-          return sc.put_object(key,buf)
-        end
-        local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key)
-        local delta_table_details = delta_export.export_delta_log(action, args.table_defs, sc.put_object, delta_client, table_descriptors_path)
-        
-        for t, details in pairs(delta_table_details) do
-          print("Delta Lake exported table \"" .. t .. "\"'s location: " .. details["path"] .. "\n")
-          print("Delta Lake exported table \"" .. t .. "\"'s metadata:\n")
-          for k, v in pairs(details["metadata"]) do
-            if type(v) == "table" then
-              print("\t" .. k .. " = " .. json.marshal(v) .. "\n")
-            else
-              print("\t" .. k .. " = " .. v .. "\n")
             end
-          end
-        end
-      args:
-        azure:
-          storage_account: "{% raw %}{{ .AzureStorageAccount }}{% endraw %}"
-          access_key: "{% raw %}{{ .AzureAccessKey }}{% endraw %}"
-        lakefs: # provide credentials of a user that has access to the script and Delta Table
-          access_key_id: "{% raw %}{{ .LakeFSAccessKeyID }}{% endraw %}"
-          secret_access_key: "{% raw %}{{ .LakeFSSecretAccessKey }}{% endraw %}"
-        table_defs:
-          - mytable
+        args:
+            aws:
+            access_key_id: <AWS_ACCESS_KEY_ID>
+            secret_access_key: <AWS_SECRET_ACCESS_KEY>
+            region: us-east-1
+            lakefs:
+            access_key_id: <LAKEFS_ACCESS_KEY_ID> 
+            secret_access_key: <LAKEFS_SECRET_ACCESS_KEY>
+            table_defs:
+            - mytable
+    ```
 
-```
+    For the table descriptor under the `_lakefs_tables/mytable.yaml`:
+
+    ```yaml
+    ---
+    name: myTableActualName
+    type: delta
+    path: a/path/to/my/delta/table
+    ```
+
+    Delta export example for Azure Blob Storage:
+
+    ```yaml
+    name: Delta Exporter
+    on:
+    post-commit:
+        branches: ["{% raw %}{{ .Branch }}{% endraw %}*"]
+    hooks:
+    - id: delta_exporter
+        type: lua
+        properties:
+        script: |
+            local azure = require("azure")
+            local formats = require("formats")
+            local delta_exporter = require("lakefs/catalogexport/delta_exporter")
+
+            local table_descriptors_path = "_lakefs_tables"
+            local sc = azure.blob_client(args.azure.storage_account, args.azure.access_key)
+            local function write_object(_, key, buf)
+            return sc.put_object(key,buf)
+            end
+            local delta_client = formats.delta_client(args.lakefs.access_key_id, args.lakefs.secret_access_key)
+            local delta_table_details = delta_export.export_delta_log(action, args.table_defs, sc.put_object, delta_client, table_descriptors_path)
+            
+            for t, details in pairs(delta_table_details) do
+            print("Delta Lake exported table \"" .. t .. "\"'s location: " .. details["path"] .. "\n")
+            print("Delta Lake exported table \"" .. t .. "\"'s metadata:\n")
+            for k, v in pairs(details["metadata"]) do
+                if type(v) == "table" then
+                print("\t" .. k .. " = " .. json.marshal(v) .. "\n")
+                else
+                print("\t" .. k .. " = " .. v .. "\n")
+                end
+            end
+            end
+        args:
+            azure:
+            storage_account: "{% raw %}{{ .AzureStorageAccount }}{% endraw %}"
+            access_key: "{% raw %}{{ .AzureAccessKey }}{% endraw %}"
+            lakefs: # provide credentials of a user that has access to the script and Delta Table
+            access_key_id: "{% raw %}{{ .LakeFSAccessKeyID }}{% endraw %}"
+            secret_access_key: "{% raw %}{{ .LakeFSSecretAccessKey }}{% endraw %}"
+            table_defs:
+            - mytable
+
+    ```
 
 ### `lakefs/catalogexport/delta_exporter.changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)`
 
@@ -702,17 +703,17 @@ Parameters:
 - `ref(string)`: base reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
 - `compare_ref(string)`: compared-to reference for the diff to determine which tables changed
 
-Example:
 
-```lua
-local delta_export = require("lakefs/catalogexport/delta_exporter")
-local ref = action.commit.parents[1]
-local compare_ref = action.commit_id
-local changed_table_defs = delta_export.changed_table_defs(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
-for i = 1, #changed_table_defs do
-    print(changed_table_defs[i])
-end
-```
+!!! example
+    ```lua
+    local delta_export = require("lakefs/catalogexport/delta_exporter")
+    local ref = action.commit.parents[1]
+    local compare_ref = action.commit_id
+    local changed_table_defs = delta_export.changed_table_defs(args.table_defs, args.table_descriptors_path, action.repository_id, ref, compare_ref)
+    for i = 1, #changed_table_defs do
+        print(changed_table_defs[i])
+    end
+    ```
 
 ### `lakefs/catalogexport/table_extractor`
 
@@ -737,18 +738,17 @@ Parameters:
 
 Hive format partition iterator each result set is a collection of files under the same partition in lakeFS.
 
-Example: 
-
-```lua
-local lakefs = require("lakefs")
-local pager = hive.extract_partition_pager(lakefs, repo_id, commit_id, prefix, partitions, 10)
-for part_key, entries in pager do
-    print("partition: " .. part_key)
-    for _, entry in ipairs(entries) do
-        print("path: " .. entry.path .. " physical: " .. entry.physical_address)
+!!! example
+    ```lua
+    local lakefs = require("lakefs")
+    local pager = hive.extract_partition_pager(lakefs, repo_id, commit_id, prefix, partitions, 10)
+    for part_key, entries in pager do
+        print("partition: " .. part_key)
+        for _, entry in ipairs(entries) do
+            print("path: " .. entry.path .. " physical: " .. entry.physical_address)
+        end
     end
-end
-```
+    ```
 
 ### `lakefs/catalogexport/symlink_exporter`
 
@@ -780,19 +780,19 @@ Parameters:
 - `table_src_path(string)`: Path to the table spec YAML file in `_lakefs_tables` (e.g. _lakefs_tables/my_table.yaml).
 - `action_info(table)`: The global action object.
 - `options(table)`:
-  - `debug(boolean)`: Print extra info.
-  - `export_base_uri(string)`: Override the prefix in S3 e.g. `s3://other-bucket/path/`.
-  - `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
+    - `debug(boolean)`: Print extra info.
+    - `export_base_uri(string)`: Override the prefix in S3 e.g. `s3://other-bucket/path/`.
+    - `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
 
-Example:
 
-```lua
-local exporter = require("lakefs/catalogexport/symlink_exporter")
-local aws = require("aws")
--- args are user inputs from a lakeFS action.
-local s3 = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
-exporter.export_s3(s3, args.table_descriptor_path, action, {debug=true})
-```
+!!! example
+    ```lua
+    local exporter = require("lakefs/catalogexport/symlink_exporter")
+    local aws = require("aws")
+    -- args are user inputs from a lakeFS action.
+    local s3 = aws.s3_client(args.aws.aws_access_key_id, args.aws.aws_secret_access_key, args.aws.aws_region)
+    exporter.export_s3(s3, args.table_descriptor_path, action, {debug=true})
+    ```
 
 ### `lakefs/catalogexport/glue_exporter`
 
@@ -814,10 +814,10 @@ should contain inputs describing the data format (e.g. InputFormat, OutputFormat
 by default this function will configure table location and schema.
 - `action_info(table)`: the global action object.
 - `options(table)`:
-  - `table_name(string)`: Override default glue table name
-  - `debug(boolean`
-  - `export_base_uri(string)`: Override the default prefix in S3 for symlink location e.g. s3://other-bucket/path/
-  - `create_db_input(table)`: if this is specified, then it indicates we want to create a new database for the table export. The parameter expects a table that is converted to JSON and passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
+    - `table_name(string)`: Override default glue table name
+    - `debug(boolean`
+    - `export_base_uri(string)`: Override the default prefix in S3 for symlink location e.g. s3://other-bucket/path/
+    - `create_db_input(table)`: if this is specified, then it indicates we want to create a new database for the table export. The parameter expects a table that is converted to JSON and passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
 
 When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
 
@@ -827,26 +827,25 @@ When creating a glue table, the final table input will consist of the `create_ta
 - `StorageDescriptor`: Columns usually deduced from `_lakefs_tables/${table_src_path}`.
 - `StorageDescriptor.Location` = symlink_location
 
-Example: 
-
-```lua
-local aws = require("aws")
-local exporter = require("lakefs/catalogexport/glue_exporter")
-local glue = aws.glue_client(args.aws_access_key_id, args.aws_secret_access_key, args.aws_region)
--- table_input can be passed as a simple Key-Value object in YAML as an argument from an action, this is inline example:
-local table_input = {
-  StorageDescriptor: 
-    InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
-    OutputFormat: "org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat"
-    SerdeInfo:
-      SerializationLibrary: "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
-  Parameters: 
-    classification: "parquet"
-    EXTERNAL: "TRUE"
-    "parquet.compression": "SNAPPY"
-}
-exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, action, {debug=true, create_db_input = {DatabaseInput = {Description="DB exported from LakeFS"}, Tags = {Owner = "Joe"}}})
-```
+!!! example
+    ```lua
+    local aws = require("aws")
+    local exporter = require("lakefs/catalogexport/glue_exporter")
+    local glue = aws.glue_client(args.aws_access_key_id, args.aws_secret_access_key, args.aws_region)
+    -- table_input can be passed as a simple Key-Value object in YAML as an argument from an action, this is inline example:
+    local table_input = {
+    StorageDescriptor: 
+        InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+        OutputFormat: "org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat"
+        SerdeInfo:
+        SerializationLibrary: "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
+    Parameters: 
+        classification: "parquet"
+        EXTERNAL: "TRUE"
+        "parquet.compression": "SNAPPY"
+    }
+    exporter.export_glue(glue, "my-db", "_lakefs_tables/animals.yaml", table_input, action, {debug=true, create_db_input = {DatabaseInput = {Description="DB exported from LakeFS"}, Tags = {Owner = "Joe"}}})
+    ```
 
 ### `lakefs/catalogexport/glue_exporter.get_full_table_name(descriptor, action_info)`
 
@@ -880,38 +879,38 @@ Parameters:
 - `databricks_client(table)`: A Databricks client that implements `create_or_get_schema: function(id, catalog_name)` and `register_external_table: function(table_name, physical_path, warehouse_id, catalog_name, schema_name)`
 - `warehouse_id(string)`: Databricks warehouse ID.
 
-Example:
-The following registers an exported Delta Lake table to Unity Catalog.
+!!! example
+    The following registers an exported Delta Lake table to Unity Catalog.
 
-```lua
-local databricks = require("databricks")
-local unity_export = require("lakefs/catalogexport/unity_exporter")
+    ```lua
+    local databricks = require("databricks")
+    local unity_export = require("lakefs/catalogexport/unity_exporter")
 
-local delta_table_locations = {
-  ["table1"] = "s3://mybucket/mytable1",
-}
--- Register the exported table in Unity Catalog:
-local action_details = {
-  repository_id = "my-repo",
-  commit_id = "commit_id",
-  branch_id = "main",
-}
-local databricks_client = databricks.client("<DATABRICKS_HOST>", "<DATABRICKS_TOKEN>")
-local registration_statuses = unity_export.register_tables(action_details, "_lakefs_tables", delta_table_locations, databricks_client, "<WAREHOUSE_ID>")
+    local delta_table_locations = {
+    ["table1"] = "s3://mybucket/mytable1",
+    }
+    -- Register the exported table in Unity Catalog:
+    local action_details = {
+    repository_id = "my-repo",
+    commit_id = "commit_id",
+    branch_id = "main",
+    }
+    local databricks_client = databricks.client("<DATABRICKS_HOST>", "<DATABRICKS_TOKEN>")
+    local registration_statuses = unity_export.register_tables(action_details, "_lakefs_tables", delta_table_locations, databricks_client, "<WAREHOUSE_ID>")
 
-for t, status in pairs(registration_statuses) do
-  print("Unity catalog registration for table \"" .. t .. "\" completed with status: " .. status .. "\n")
-end
-```
+    for t, status in pairs(registration_statuses) do
+    print("Unity catalog registration for table \"" .. t .. "\" completed with status: " .. status .. "\n")
+    end
+    ```
 
-For the table descriptor under the `_lakefs_tables/delta-table-descriptor.yaml`:
-```yaml
----
-name: my_table_name
-type: delta
-path: path/to/delta/table/data
-catalog: my-catalog
-```
+    For the table descriptor under the `_lakefs_tables/delta-table-descriptor.yaml`:
+    ```yaml
+    ---
+    name: my_table_name
+    type: delta
+    path: path/to/delta/table/data
+    catalog: my-catalog
+    ```
 
 For detailed step-by-step guide on how to use `unity_exporter.register_tables` as a part of a lakeFS action refer to
 the [Unity Catalog docs](/integrations/unity-catalog/).
@@ -920,36 +919,40 @@ the [Unity Catalog docs](/integrations/unity-catalog/).
 
 Returns a table for the given path string with the following structure:
 
-```lua
-> require("path")
-> path.parse("a/b/c.csv")
-{
-    ["parent"] = "a/b/"
-    ["base_name"] = "c.csv"
-} 
-```
+!!! example
+    ```lua
+    > require("path")
+    > path.parse("a/b/c.csv")
+    {
+        ["parent"] = "a/b/"
+        ["base_name"] = "c.csv"
+    } 
+    ```
 
 ### `path/join(*path_parts)`
 
 Receives a variable number of strings and returns a joined string that represents a path:
 
-```lua
-> path = require("path")
-> path.join("/", "path/", "to", "a", "file.data")
-path/o/a/file.data
-```
+!!! example
+    ```lua
+    > path = require("path")
+    > path.join("/", "path/", "to", "a", "file.data")
+    path/o/a/file.data
+    ```
 
 ### `path/is_hidden(path_string [, seperator, prefix])`
 
 returns a boolean - `true` if the given path string is hidden (meaning it starts with `prefix`) - or if any of its parents start with `prefix`.
 
-```lua
-> require("path")
-> path.is_hidden("a/b/c") -- false
-> path.is_hidden("a/b/_c") -- true
-> path.is_hidden("a/_b/c") -- true
-> path.is_hidden("a/b/_c/") -- true
-```
+!!! example
+    ```lua
+    > require("path")
+    > path.is_hidden("a/b/c") -- false
+    > path.is_hidden("a/b/_c") -- true
+    > path.is_hidden("a/_b/c") -- true
+    > path.is_hidden("a/b/_c/") -- true
+    ```
+
 ### `path/default_separator()`
 
 Returns a constant string (`/`)
@@ -1040,14 +1043,15 @@ Returns the amount of nanoseconds elapsed since `epoch_nano`
 Returns a new timestamp (in nanoseconds passed since 01/01/1970 00:00:00) for the given `duration`.
 The `duration` should be a table with the following structure:
 
-```lua
-> require("time")
-> time.add(time.now(), {
-    ["hour"] = 1,
-    ["minute"] = 20,
-    ["second"] = 50
-})
-```
+!!! example
+    ```lua
+    > require("time")
+    > time.add(time.now(), {
+        ["hour"] = 1,
+        ["minute"] = 20,
+        ["second"] = 50
+    })
+    ```
 You may omit any of the fields from the table, resulting in a default value of `0` for omitted fields
 
 ### `time/parse(layout, value)`
@@ -1070,17 +1074,18 @@ Returns a new 128-bit [RFC 4122 UUID](https://www.rfc-editor.org/rfc/rfc4122){: 
 
 Provides a `parse` function parse a URL string into parts, returns a table with the URL's host, path, scheme, query and fragment.
 
-```lua
-> local url = require("net/url")
-> url.parse("https://example.com/path?p1=a#section")
-{
-    ["host"] = "example.com"
-    ["path"] = "/path"
-    ["scheme"] = "https"
-    ["query"] = "p1=a"
-    ["fragment"] = "section"
-}
-```
+!!! example
+    ```lua
+    > local url = require("net/url")
+    > url.parse("https://example.com/path?p1=a#section")
+    {
+        ["host"] = "example.com"
+        ["path"] = "/path"
+        ["scheme"] = "https"
+        ["query"] = "p1=a"
+        ["fragment"] = "section"
+    }
+    ```
 
 
 ### `net/http` (optional)
@@ -1089,15 +1094,16 @@ Provides a `request` function that performs an HTTP request.
 For security reasons, this package is not available by default as it enables http requests to be sent out from the lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration](/reference/configuration/).
 Request will time out after 30 seconds.
 
-```lua
-http.request(url [, body])
-http.request{
-  url = string,
-  [method = string,]
-  [headers = header-table,]
-  [body = string,]
-}
-```
+!!! example
+    ```lua
+    http.request(url [, body])
+    http.request{
+    url = string,
+    [method = string,]
+    [headers = header-table,]
+    [body = string,]
+    }
+    ```
 
 Returns a code (number), body (string), headers (table) and status (string).
 
@@ -1113,30 +1119,31 @@ The second form accepts a table and allows you to customize the request method a
 
 Example of a GET request
 
-```lua
-local http = require("net/http")
-local code, body = http.request("https://example.com")
-if code == 200 then
-    print(body)
-else
-    print("Failed to get example.com - status code: " .. code)
-end
+!!! example
+    ```lua
+    local http = require("net/http")
+    local code, body = http.request("https://example.com")
+    if code == 200 then
+        print(body)
+    else
+        print("Failed to get example.com - status code: " .. code)
+    end
 
-```
+    ```
 
-Example of a POST request
+!!! example "Example of a POST request"
 
-```lua
-local http = require("net/http")
-local code, body = http.request{
-    url="https://httpbin.org/post",
-    method="POST",
-    body="custname=tester",
-    headers={["Content-Type"]="application/x-www-form-urlencoded"},
-}
-if code == 200 then
-    print(body)
-else
-    print("Failed to post data - status code: " .. code)
-end
-```
+    ```lua
+    local http = require("net/http")
+    local code, body = http.request{
+        url="https://httpbin.org/post",
+        method="POST",
+        body="custname=tester",
+        headers={["Content-Type"]="application/x-www-form-urlencoded"},
+    }
+    if code == 200 then
+        print(body)
+    else
+        print("Failed to post data - status code: " .. code)
+    end
+    ```
