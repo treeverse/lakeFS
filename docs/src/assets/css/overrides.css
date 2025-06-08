@@ -5,19 +5,21 @@
   --lakefs-teal: #279890; /* rgb(39, 152, 144) */
   --lakefs-green: #2EE5B5; /* leading logo color */
   --lakefs-magenta: #F24886; /* secondary accent */
+  --lakefs-magenta-dark: #c53568; /* slightly darker magenta */
 
   /* Use teal for interactive accent (links, active nav, etc.) */
   --md-accent-fg-color: var(--lakefs-teal);
-  --md-accent-fg-color--light: var(--lakefs-teal);
-  --md-accent-fg-color--dark: var(--lakefs-teal);
 
   /* Keep header background white */
   --md-primary-bg-color: #ffffff;
   --md-primary-bg-color--light: #ffffff;
   --md-primary-bg-color--dark: #ffffff;
-  --md-primary-fg-color: #000000;
-  --md-primary-fg-color--light: #000000;
-  --md-primary-fg-color--dark: #000000;
+  --md-primary-fg-color: var(---lakefs-magenta);
+  --md-primary-fg-color--light: var(--lakefs-magenta);
+  --md-primary-fg-color--dark: var(--lakefs-magenta);
+
+  /*  */
+  --md-typeset-a-color: var(--lakefs-teal);
 }
 
 /* Header (top navigation bar) background */
@@ -64,11 +66,6 @@
 .md-button--primary:hover, .md-button--primary:focus {
   background-color: #c53568; /* slightly darker magenta */
   border-color: #c53568;
-}
-
-/* Adjust link color across documentation when hovered */
-.md-typeset a:hover {
-  color: var(--lakefs-teal);
 }
 
 /* Optional: tone down default code block highlight color to match accent */
