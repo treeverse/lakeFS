@@ -2,6 +2,8 @@
 title: Role-Based Access Control (RBAC)
 description: This section covers authorization (using RBAC) of your lakeFS server.
 badges: ["Enterprise"]
+search:
+  boost: 2
 ---
 
 
