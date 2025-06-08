@@ -33,9 +33,10 @@ jobs:
           go-version: "1.23"
         id: go
 
-      - uses: bufbuild/buf-setup-action@v1.28.1
+      - uses: bufbuild/buf-setup-action@v1.50.0
         with:
           github_token: ${{ github.token }}
+          version: 1.54.0
 
       - name: Extract version
         shell: bash
