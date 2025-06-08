@@ -13,11 +13,12 @@ Databricks Unity Catalog serves as a centralized data governance platform for yo
 Through the Unity Catalog, you can search for and locate data assets across workspaces via a unified catalog.
 Leveraging the external tables feature within Unity Catalog, you can register a Delta Lake table exported from lakeFS and
 access it through the unified catalog. 
+
 The subsequent step-by-step guide will lead you through the process of configuring a [Lua hook](/howto/hooks/lua/)
 that exports Delta Lake tables from lakeFS, and subsequently registers them in Unity Catalog.
 
-{: .note}
-> Currently, Unity Catalog export feature exclusively supports AWS S3 and Azure ADLS Gen2 as the underlying storage solution. It's planned to [support other cloud providers soon](https://github.com/treeverse/lakeFS/issues/7199).
+!!! note
+    Currently, Unity Catalog export feature exclusively supports AWS S3 and Azure ADLS Gen2 as the underlying storage solution. It's planned to [support other cloud providers soon](https://github.com/treeverse/lakeFS/issues/7199).
 
 Reference Guide: [lakeFS + Unity Catalog Integration: Step-by-Step Tutorial](https://lakefs.io/blog/lakefs-unity-catalog-integration-tutorial/) 
 
@@ -31,8 +32,8 @@ Before starting, ensure you have the following:
 4. AWS Credentials with S3 access.
 5. lakeFS credentials with access to your Delta Tables.
 
-{: .note}
-> Supported from lakeFS v1.4.0
+!!! info
+    Supported from lakeFS v1.4.0
 
 ### Databricks authentication
 
@@ -55,6 +56,7 @@ Make sure that:
 
 To guide the Unity Catalog exporter in configuring the table in the catalog, define its properties in the Delta Lake table descriptor. 
 The table descriptor should include (at minimum) the following fields:
+
 1. `name`: The table name.
 2. `type`: Should be `delta`.
 3. `catalog`: The name of the catalog in which the table will be created.
@@ -72,8 +74,8 @@ catalog: my-catalog-name
 path: tables/famous-people
 ```
 
-{: .note}
-> It's recommended to create a Unity catalog with the same name as your repository
+!!! tip
+    It's recommended to create a Unity catalog with the same name as your repository
 
 Upload the table descriptor to `_lakefs_tables/famous-people-td.yaml` and commit:
 
@@ -87,6 +89,7 @@ lakectl commit lakefs://repo/main -m "add famous people table descriptor"
 Insert data into the table path, using your preferred method (e.g. [Spark](/integrations/spark/)), and commit upon completion.
 
 We shall use Spark and lakeFS's S3 gateway to write some data as a Delta table:
+
 ```bash
 pyspark --packages "io.delta:delta-spark_2.12:3.0.0,org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262" \
   --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
@@ -114,9 +117,9 @@ df.write.format("delta").mode("overwrite").partitionBy("category", "country").sa
 
 ### The Unity Catalog exporter script
 
-{: .note}
-> For code references check [delta_exporter](/howto/hooks/lua/#lakefscatalogexportdelta_exporter) and 
-[unity_exporter](/howto/hooks/lua/#lakefscatalogexportunity_exporter) docs.
+!!! example
+    For code references check [delta_exporter](/howto/hooks/lua/#lakefscatalogexportdelta_exporter) and 
+    [unity_exporter](/howto/hooks/lua/#lakefscatalogexportunity_exporter) docs.
 
 Create `unity_exporter.lua`:
 
@@ -183,9 +186,9 @@ hooks:
 
 Upload the action configurations to `_lakefs_actions/unity_exports_action.yaml` and commit:
 
-{: .note}
-> Once the commit will finish its run, the action will start running since we've configured it to run on `post-commit` 
-events on the `main` branch.
+!!! note
+    Once the commit will finish its run, the action will start running since we've configured it to run on `post-commit` 
+    events on the `main` branch.
 
 ```bash
 lakectl fs upload lakefs://repo/main/_lakefs_actions/unity_exports_action.yaml -s ./unity_exports_action.yaml && \
@@ -203,6 +206,7 @@ table name `famous_people`: `my-catalog-name.main.famous_people`.
 After registering the table in Unity, you can leverage your preferred method to [query the data](https://docs.databricks.com/en/query/index.html) 
 from the exported table under `my-catalog-name.main.famous_people`, and view it in the Databricks's Catalog Explorer, or
 retrieve it using the Databricks CLI with the following command: 
+
 ```bash
 databricks tables get my-catalog-name.main.famous_people
 ```

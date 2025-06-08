@@ -7,27 +7,26 @@ description: This section explains how you can start using lakeFS with Presto an
 
 [Presto](https://prestodb.io){:target="_blank"} and [Trino](https://trinodb.io){:target="_blank"} are a distributed SQL query engines designed to query large data sets distributed over one or more heterogeneous data sources.
 
-
 Querying data in lakeFS from Presto/Trino is similar to querying data in S3 from Presto/Trino. It is done using the [Presto Hive connector](https://prestodb.io/docs/current/connector/hive.html){:target="_blank"} or [Trino Hive connector](https://trino.io/docs/current/connector/hive.html){:target="_blank"}.
 
 
 
-{: .note-title}
-> Credentials
-> 
-> In the following examples, we set AWS credentials at runtime for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
+!!! warning "Credentials"
+    In the following examples, we set AWS credentials at runtime for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
 
 ## Configuration
 
 ### Configure the Hive connector
 
 Create `/etc/catalog/hive.properties` with the following contents to mount the `hive-hadoop2` connector as the Hive catalog, replacing `example.net:9083` with the correct host and port for your Hive Metastore Thrift service:
+
 ```properties
 connector.name=hive-hadoop2
 hive.metastore.uri=thrift://example.net:9083
 ```
 
 Add the lakeFS configurations to `/etc/catalog/hive.properties` in the corresponding S3 configuration properties:
+
 ```properties
 hive.s3.aws-access-key=AKIAIOSFODNN7EXAMPLE
 hive.s3.aws-secret-key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
@@ -41,6 +40,7 @@ Presto/Trino uses Hive Metastore Service (HMS) or a compatible implementation of
 In case you are using Hive Metastore, you will need to configure Hive as well.
 
 In file `hive-site.xml` add to the configuration:
+
 ```xml
 <configuration>
     ...
@@ -70,6 +70,7 @@ Here are some examples based on examples from the [Presto Hive connector example
 ### Example with schema
 
 Create a new schema named `main` that will store tables in a lakeFS repository named `example` branch: `master`:
+
 ```sql
 CREATE SCHEMA main
 WITH (location = 's3a://example/main')
@@ -77,6 +78,7 @@ WITH (location = 's3a://example/main')
 
 Create a new Hive table named `page_views` in the `web` schema stored using the ORC file format,
  partitioned by date and country, and bucketed by user into `50` buckets (note that Hive requires the partition columns to be the last columns in the table):
+
 ```sql
 CREATE TABLE main.page_views (
   view_time timestamp,
@@ -112,11 +114,12 @@ WITH (
 
 ### Example of copying a table with [metastore tools](glue_hive_metastore.md):
 
-{: .warning }
-**Deprecated Feature:** Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
-You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
+!!! warning "Deprecated Feature"
+    Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
+    You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
 
 Copy the created table `page_views` on schema `main` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
+
 ```shell
 lakectl metastore copy --from-schema main --from-table page_views --to-branch example_branch 
 ```

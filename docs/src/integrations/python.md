@@ -6,18 +6,18 @@ description: Use Python to interact with your objects on lakeFS
 # Use Python to interact with your objects on lakeFS
 
 
+!!! warning
+    If your project is currently using the [legacy Python `lakefs-client`][legacy-pypi], please be aware that this version has been [deprecated][legacy-deprecated].
+    As of release **v1.44.0**, it's no longer supported for new updates or features.
 
-{: .warning }
-> If your project is currently using the [legacy Python `lakefs-client`][legacy-pypi], please be aware that this version has been [deprecated][legacy-deprecated].
-> As of release v1.44.0, it's no longer supported for new updates or features.
+**High Level Python SDK**
 
-**High Level Python SDK**  <span class="badge mr-1">New</span>
 We've just released a new High Level Python SDK library, and we're super excited to tell you about it! Continue reading to get the
 full story!
 Though our previous SDK client is still supported and maintained, we highly recommend using the new High Level SDK.
-**For previous Python SDKs follow these links:**
-[legacy-sdk](https://pydocs.lakefs.io) (Deprecated)
-{: .note }
+
+!!! info "For previous Python SDKs follow these links"
+    [legacy-sdk](https://pydocs.lakefs.io) (Deprecated)
 
 ## References & Resources
 
@@ -51,8 +51,8 @@ In case no authentication parameters exist, it is also possible to explicitly cr
 
 Here's how to instantiate a client:
 
-{: .note }
-See [here](../security/external-principals-aws.md#login-with-python) for instructions on how to log in with Python using your AWS role. This is applicable for enterprise users.
+!!! info
+    See [here](../security/external-principals-aws.md#login-with-python) for instructions on how to log in with Python using your AWS role. This is applicable for enterprise users.
 
 ```python
 from lakefs.client import Client
@@ -110,7 +110,7 @@ clt = Client(
 
 Lets see how we can interact with lakeFS using the High Level SDK.
 
-#### Creating a repository
+<h4>Creating a repository</h4>
 
 ```python
 import lakefs
@@ -135,13 +135,13 @@ repo = lakefs.Repository("example-repo", client=clt).create(storage_namespace="s
 print(repo)
 ```
 
-#### Output
+**Output**
 
 ```
 {id: 'example-repo', creation_date: 1697815536, default_branch: 'main', storage_namespace: 's3://storage-bucket/repos/example-repo'}
 ```
 
-#### List repositories
+<h4>List repositories</h4>
 
 ```python
 import lakefs
@@ -152,14 +152,14 @@ for repo in lakefs.repositories():
 
 ```
 
-#### Output
+**Output**
 
 ```
 Listing repositories:
 {id: 'example-repo', creation_date: 1697815536, default_branch: 'main', storage_namespace: 's3://storage-bucket/repos/example-repo'}
 ```
 
-#### Creating a branch
+<h4>Creating a branch</h4>
 
 ```python
 import lakefs
@@ -171,14 +171,14 @@ branch2 = lakefs.repository("example-repo").branch("experiment2").create(source_
 print("experiment2 ref:", branch2.get_commit().id)
 ```
 
-#### Output
+**Output**
 
 ```
 experiment1 ref: 7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859
 experiment2 ref: 7a300b41a8e1ca666c653171a364c08f640549c24d7e82b401bf077c646f8859
 ```
 
-### List branches
+<h4>List branches</h4>
 
 ```python
 import lakefs
@@ -188,7 +188,7 @@ for branch in lakefs.repository("example-repo").branches():
 
 ```
 
-#### Output
+**Output**
 
 ```
 experiment1
@@ -199,6 +199,7 @@ main
 ## IO
 
 Great, now lets see some IO operations in action!
+
 The new High Level SDK provide IO semantics which allow to work with lakeFS objects as if they were files in your
 filesystem. This is extremely useful when working with data transformation packages that accept file descriptors and streams.
 
@@ -211,7 +212,7 @@ obj = branch1.object(path="text/sample_data.txt").upload(content_type="text/plai
 print(obj.stat())
 ```
 
-#### Output
+**Output**
 
 ```
 {'path': 'text/sample_data.txt', 'physical_address': 's3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfk4fnl531fa6k90pg', 'physical_address_expiry': None, 'checksum': '4a09d10820234a95bb548f14e4435bba', 'size_bytes': 15, 'mtime': 1701865289, 'metadata': {}, 'content_type': 'text/plain'}
@@ -223,7 +224,7 @@ Reading the data is just as simple:
 print(obj.reader(mode='r').read())
 ```
 
-#### Output
+**Output**
 
 ```
 This is my object data
@@ -255,7 +256,7 @@ On context exit the object will be uploaded to lakeFS
 print(obj.stat())
 ```
 
-#### Output
+**Output**
 
 ```
 {'path': 'csv/sample_data.csv', 'physical_address': 's3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfk4fnl531fa6k90pg', 'physical_address_expiry': None, 'checksum': 'f181262c138901a74d47652d5ea72295', 'size_bytes': 88, 'mtime': 1701865939, 'metadata': {}, 'content_type': 'text/csv'}
@@ -268,7 +269,7 @@ obj = branch1.object(path="raw/file1.data").upload(data=b"Hello Object World", p
 print(obj.stat())
 ```
 
-#### Output
+**Output**
 
 ```
 {'path': 'raw/file1.data', 'physical_address': 's3://storage-bucket/repos/example-repo/data/gke0ignnl531fa6k90p0/ckpfltvnl531fa6k90q0', 'physical_address_expiry': None, 'checksum': '0ef432f8eb0305f730b0c57bbd7a6b08', 'size_bytes': 18, 'mtime': 1701866323, 'metadata': {}, 'content_type': 'application/octet-stream'}
@@ -283,7 +284,7 @@ for diff in branch1.uncommitted():
     print(diff)
 ```
 
-#### Output
+**Output**
 
 ```
 {'type': 'added', 'path': 'text/sample_data.txt', 'path_type': 'object', 'size_bytes': 15}
@@ -299,7 +300,7 @@ ref = branch1.commit(message='Add some data!', metadata={'using': 'python_sdk'})
 print(ref.get_commit())
 ```
 
-#### Output
+**Output**
 
 ```
 {'id': 'c4666db80d2a984b4eab8ce02b6a60830767eba53995c26350e0ad994e15fedb', 'parents': ['a7a092a5a32a2cd97f22abcc99414f6283d29f6b9dd2725ce89f90188c5901e5'], 'committer': 'admin', 'message': 'Add some data!', 'creation_date': 1701866838, 'meta_range_id': '999bedeab1b740f83d2cf8c52548d55446f9038c69724d399adc4438412cade2', 'metadata': {'using': 'python_sdk'}}
@@ -312,7 +313,7 @@ Calling `uncommitted` again on the same branch, this time there should be no unc
 print(len(list(branch1.uncommitted())))
 ```
 
-#### Output
+**Output**
 
 ```
 0
@@ -328,7 +329,7 @@ for diff in main.diff(other_ref=branch1):
     print(diff)
 ```
 
-#### Output
+**Output**
 
 ```
 {'type': 'added', 'path': 'text/sample_data.txt', 'path_type': 'object', 'size_bytes': 15}
@@ -351,7 +352,7 @@ Let's diff again - there should be no changes as all changes are on our main bra
 print(len(list(main.diff(other_ref=branch1))))
 ```
 
-#### Output
+**Output**
 
 ```
 0
@@ -368,7 +369,7 @@ for row in csv.reader(obj.reader(mode='r')):
     print(row)
 ```
 
-#### Output
+**Output**
 
 ```
 ['ID', 'Name', 'Email']
@@ -417,7 +418,7 @@ print(f"imported a total of {status.ingested_objects} objects!")
 
 ```
 
-#### Output
+**Output**
 
 ```
 imported a total of 25478 objects!
@@ -445,7 +446,7 @@ print(len(list(branch.objects(prefix="prefix_to_delete/"))))
 print(branch.object("new_object").exists())
 ```
 
-#### Output
+**Output**
 
 ```
 0
@@ -462,9 +463,9 @@ The [lakefs-spec](https://lakefs-spec.org/latest/) project
 provides higher-level file operations on lakeFS objects with a filesystem API,
 built on the [fsspec](https://github.com/fsspec/filesystem_spec) project.
 
-**Note** This library is a third-party package and not maintained by the lakeFS developers; please file issues and bug reports directly
-in the [lakefs-spec](https://github.com/aai-institute/lakefs-spec) repository.
- {: .note}
+!!! note
+    This library is a third-party package and not maintained by the lakeFS developers; please file issues and bug reports directly
+    in the [lakefs-spec](https://github.com/aai-institute/lakefs-spec) repository.
 
 ### Installation
 
@@ -550,9 +551,9 @@ For more user guides, tutorials on integrations with data science tools like pan
 
 ## Using Boto
 
-💡 To use Boto with lakeFS alongside S3, check out [Boto S3 Router](https://github.com/treeverse/boto-s3-router){:target="_blank"}. It will route
-requests to either S3 or lakeFS according to the provided bucket name.
-{: .note }
+!!! info
+    To use Boto with lakeFS alongside S3, check out [Boto S3 Router](https://github.com/treeverse/boto-s3-router){:target="_blank"}. It will route
+    requests to either S3 or lakeFS according to the provided bucket name.
 
 lakeFS exposes an S3-compatible API, so you can use Boto to interact with your objects on lakeFS.
 

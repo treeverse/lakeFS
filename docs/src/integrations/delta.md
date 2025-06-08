@@ -13,7 +13,6 @@ Because lakeFS is format-agnostic, you can save data in Delta format within a la
 2. [CI/CD hooks][data-quality-gates] can validate Delta table contents, schema, or even referential integrity.
 3. lakeFS supports zero-copy branching for quick experimentation with full isolation.
 
-[TOC]
 
 ## Delta Lake Tables from the lakeFS Perspective
 
@@ -34,7 +33,8 @@ indicating the schema change.
 
 ## Using Delta Lake with lakeFS from Apache Spark
 
-_Given the native integration between Delta Lake and Spark, it's most common that you'll interact with Delta tables in a Spark environment._
+!!! note
+    Given the native integration between Delta Lake and Spark, it's most common that you'll interact with Delta tables in a Spark environment
 
 To configure a Spark environment to read from and write to a Delta table within a lakeFS repository, you need to set the proper credentials and endpoint in the S3 Hadoop configuration, like you'd do with any [Spark](./spark.md) environment.
 
@@ -44,7 +44,8 @@ Once set, you can interact with Delta tables using regular Spark path URIs. Make
 df.write.format("delta").save("s3a://<repo-name>/<branch-name>/path/to/delta-table")
 ```
 
-Note: If using the Databricks Analytics Platform, see the [integration guide](./spark.md#installation) for configuring a Databricks cluster to use lakeFS.
+!!! info
+    If using the Databricks Analytics Platform, see the [integration guide](./spark.md#installation) for configuring a Databricks cluster to use lakeFS.
 
 To see the integration in action see [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/delta-lake.ipynb) in the [lakeFS Samples Repository](https://github.com/treeverse/lakeFS-samples/).
 
@@ -55,18 +56,19 @@ The [delta-rs](https://github.com/delta-io/delta-rs) library provides bindings f
 The documentation for the `deltalake` Python module details how to [read](https://delta-io.github.io/delta-rs/python/usage.html#loading-a-delta-table), [write](https://delta-io.github.io/delta-rs/python/usage.html#writing-delta-tables), and [query](https://delta-io.github.io/delta-rs/python/usage.html#querying-delta-tables) Delta Lake tables. To use it with lakeFS use an `s3a` path for the table based on your repository and branch (for example, `s3a://delta-lake-demo/main/my_table/`) and specify the following `storage_options`:
 
 ```python
-storage_options = {"AWS_ENDPOINT": <your lakeFS endpoint>,
-                   "AWS_ACCESS_KEY_ID": <your lakeFS access key>,
-                   "AWS_SECRET_ACCESS_KEY": <your lakeFS secret key>,
-                   "AWS_REGION": "us-east-1",
-                   "AWS_S3_ALLOW_UNSAFE_RENAME": "true"
-                  }
+storage_options = {
+    "AWS_ENDPOINT": <your lakeFS endpoint>,
+    "AWS_ACCESS_KEY_ID": <your lakeFS access key>,
+    "AWS_SECRET_ACCESS_KEY": <your lakeFS secret key>,
+    "AWS_REGION": "us-east-1",
+    "AWS_S3_ALLOW_UNSAFE_RENAME": "true"
+}
 ```
 
 If your lakeFS is not using HTTPS (for example, you're just running it locally) then add the option
 
 ```python
-                   "AWS_STORAGE_ALLOW_HTTP": "true"
+"AWS_STORAGE_ALLOW_HTTP": "true"
 ```
 
 To see the integration in action see [this notebook](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/delta-lake-python.ipynb) in the [lakeFS Samples Repository](https://github.com/treeverse/lakeFS-samples/).
@@ -78,10 +80,12 @@ a [Data Catalog Export](../howto/catalog_exports.md) functionality that provides
 you can work on Delta tables in isolation and easily explore them within the Unity Catalog.
 
 Once exported, you can query the versioned table data with:
+
 ```sql
 SELECT * FROM my_catalog.main.my_delta_table
 ```
-Here, 'main' is the name of the lakeFS branch from which the delta table was exported.
+
+Here, `main` is the name of the lakeFS branch from which the delta table was exported.
 
 To enable Delta table exports to Unity catalog use the Unity [catalog integration guide](unity-catalog.md).
 
@@ -89,17 +93,18 @@ To enable Delta table exports to Unity catalog use the Unity [catalog integratio
 
 ## Limitations
 
-### Multi-Writer Support in lakeFS for Delta Lake Tables
-{: .no_toc}
+<h3>Multi-Writer Support in lakeFS for Delta Lake Tables</h3>
 
 lakeFS currently supports a single writer for Delta Lake tables. Attempting to utilize multiple writers for writing to a Delta table may result in two types of issues:
-1. Merge Conflicts: These conflicts arise when multiple writers modify a Delta table on different branches, and an attempt is made to merge these branches.
-![Merge conflicts](../assets/img/delta-lake/merge-conflict.png)
-2. Concurrent File Overwrite: This issue occurs when multiple writers concurrently modify a Delta table on the same branch.
-![Concurrent file overwrite](../assets/img/delta-lake/concurrent-file-overwrite.png)
 
-Note: lakeFS currently lacks its own implementation for a LogStore, and the default Log store used does not control concurrency.
-{: .note }
+1. Merge Conflicts: These conflicts arise when multiple writers modify a Delta table on different branches, and an attempt is made to merge these branches.
+    ![Merge conflicts](../assets/img/delta-lake/merge-conflict.png)
+2. Concurrent File Overwrite: This issue occurs when multiple writers concurrently modify a Delta table on the same branch.
+    ![Concurrent file overwrite](../assets/img/delta-lake/concurrent-file-overwrite.png)
+
+!!! note
+    lakeFS currently lacks its own implementation for a LogStore, and the default Log store used does not control concurrency.
+
 To address these limitations, consider following [best practices for implementing multi-writer support](#use-lakefs-branches-and-merges-to-support-multi-writers).
 
 ## Best Practices
@@ -107,10 +112,12 @@ To address these limitations, consider following [best practices for implementin
 ### Implementing Multi-Writer Support through lakeFS Branches and Merges
 
 To achieve safe multi-writes to a Delta Lake table on lakeFS, we recommend following these best practices:
+
 1. **Isolate Changes:** Make modifications to your table in isolation. Each set of changes should be associated with a dedicated lakeFS branch, branching off from the main branch.
 2. **Merge Atomically:** After making changes in isolation, try to merge them back into the main branch. This approach guarantees that the integration of changes is cohesive.
 
 The workflow involves:
+
 * Creating a new lakeFS branch from the main branch for any table change.
 * Making modifications in isolation.
 * Attempting to merge the changes back into the main branch.
@@ -125,8 +132,8 @@ To delete unused files from a table directory while working with Delta Lake over
 [Vacuum](https://docs.databricks.com/en/sql/language-manual/delta-vacuum.html) to soft-delete the files, and then use
 [lakeFS Garbage Collection](../howto/garbage-collection/index.md) to hard-delete them from the storage.
 
-**Note:** lakeFS enables you to recover from undesired vacuum runs by reverting the changes done by a vacuum run before running Garbage Collection.     
-{: .note }
+!!! tip
+    lakeFS enables you to recover from undesired vacuum runs by reverting the changes done by a vacuum run before running Garbage Collection.     
 
 ### When running lakeFS inside your VPC (on AWS)
 
@@ -134,13 +141,14 @@ When lakeFS runs inside your private network, your Databricks cluster needs to b
 This can be done by setting up a VPC peering between the two VPCs 
 (the one where lakeFS runs and the one where Databricks runs). For this to work on Delta Lake tables, you would also have to disable multi-cluster writes with:
 
-```
+```properties
 spark.databricks.delta.multiClusterWrites.enabled false
 ```
 
 ### Using multi cluster writes (on AWS)
 
 When using multi-cluster writes, Databricks overrides Delta’s S3-commit action. 
+
 The new action tries to contact lakeFS from servers on Databricks’ own AWS account, which of course won’t be able to access your private network. 
 So, if you must use multi-cluster writes, you’ll have to allow access from Databricks’ AWS account to lakeFS. 
 If you are trying to achieve that, please reach out on Slack and the community will try to assist.

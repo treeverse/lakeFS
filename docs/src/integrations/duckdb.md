@@ -8,13 +8,13 @@ description: How to use lakeFS with DuckDB, an open-source SQL OLAP database man
 [DuckDB](https://duckdb.org/){:target="_blank"} is an in-process SQL OLAP database management system. You can access data in lakeFS from DuckDB, as well as use DuckDB from within the web interface of lakeFS
 
 
-
 ## Accessing lakeFS from DuckDB
+
 ### Configuration
 
 Querying data in lakeFS from DuckDB is similar to querying data in S3 from DuckDB. It is done using the [httpfs extension](https://duckdb.org/docs/stable/core_extensions/httpfs/overview){:target="_blank"} connecting to the [S3 Gateway that lakeFS provides](https://docs.lakefs.io/understand/architecture.html#s3-gateway).
 
-If not loaded already, install and load the HTTPFS extension: 
+If not loaded already, install and load the `HTTPFS` extension: 
 
 ```sql
 INSTALL httpfs;
@@ -73,14 +73,13 @@ COPY sampled_population TO 's3://example-repo/main/data/population/sample.parque
 
 Python users can use DuckDB by leveraging the [lakefs-spec](https://lakefs-spec.org/latest/) package. 
 
-**Note** This library is a third-party package and not maintained by the lakeFS developers; please file issues and bug reports directly
-in the [lakefs-spec](https://github.com/aai-institute/lakefs-spec) repository.
-{: .note}
+!!! note
+    This library is a third-party package and not maintained by the lakeFS developers; please file issues and bug reports directly
+    in the [lakefs-spec](https://github.com/aai-institute/lakefs-spec) repository.
 
 Using lakefs-spec, querying lakeFS could be done using [pre-signed URLs](../security/presigned-url.md), allowing for efficient and secure I/O, where the data files are read directly from the underlying object store.
 
 ```python
-
 import duckdb
 from fsspec import filesystem
 

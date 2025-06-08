@@ -4,10 +4,6 @@ description: Read, write and version your HuggingFace datasets with lakeFS
 ---
 # Versioning HuggingFace Datasets with lakeFS
 
-
-
-
-
 [HuggingFace 🤗 Datasets](https://huggingface.co/docs/datasets) is a library for easily accessing and sharing datasets for Audio, Computer Vision, and Natural Language Processing (NLP) tasks.
 
 🤗 Datasets supports access to [cloud storage](https://huggingface.co/docs/datasets/en/filesystems) providers through [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) FileSystem implementations.
@@ -50,7 +46,6 @@ Once we've loaded a Dataset, we can save it using the `save_to_disk` method as n
 At this point, we might want to commit that change to lakeFS, and tag it, so we could share it with our colleagues.
 
 We can do it through the UI or lakectl, but let's do it with the [lakeFS Python SDK](./python.md#using-the-lakefs-sdk):
-
 
 ```python
 >>> import lakefs

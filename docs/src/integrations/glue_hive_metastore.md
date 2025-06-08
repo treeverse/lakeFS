@@ -5,11 +5,9 @@ description: This section explains how to query data from lakeFS branches in ser
 
 # Using lakeFS with the Glue/Hive Metastore
 
-{: .warning }
-**Deprecated Feature:** Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
-You can read more about it [here](/howto/catalog_exports/).
-
-
+!!! warning "Deprecated Feature"
+    Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
+    You can read more about it [here](/howto/catalog_exports/).
 
 ## About Glue / Hive Metastore
 
@@ -19,6 +17,7 @@ Glue and Hive Metastore store metadata related to Hive and other services (such 
 They contain metadata such as the location of the table, information about columns, partitions and many more.
 
 ### Without lakeFS
+
 To query the table `my_table`, Spark will:
 * Request the metadata from Hive metastore (steps 1,2),
 * Use the location from the metadata to access the data in S3 (steps 3,4).
@@ -26,13 +25,14 @@ To query the table `my_table`, Spark will:
 
 
 ### With lakeFS
+
 When using lakeFS, the flow stays exactly the same. Note that the location of the table `my_table` now contains the branch `s3://example/main/path/to/table`
 ![metastore with S3](/assets/img/metastore-lakefs.svg)
 
-
-
 ## Managing Tables With lakeFS Branches
+
 ### Motivation
+
 When creating a table in Glue/Hive metastore (using a client such as Spark, Hive, Presto), we specify the table location.
 Consider the table `my_table` that was created with the location `s3://example/main/path/to/table`.
 
@@ -42,8 +42,8 @@ The metadata is not managed in lakeFS, meaning you don't have any table pointing
 
 To address this, lakeFS introduces `lakectl metastore` commands. The case above can be handled using the copy command: it creates a copy of `my_table` with data located in `s3://example/DEV/path/to/table`. Note that this is a fast, metadata-only operation.
 
-
 ### Configurations
+
 The `lakectl metastore` commands can run on Glue or Hive metastore.
 Add the following to the lakectl configuration file (by default `~/.lakectl.yaml`):
 
@@ -70,14 +70,15 @@ metastore:
       secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
-**Note:** It's recommended to set type and catalog-id/metastore-uri in the lakectl configuration file.
-{: .note .pb-3 }
+!!! note
+    It's recommended to set type and catalog-id/metastore-uri in the lakectl configuration file.
 
 ### Suggested Model
 
 For simplicity, we recommend creating a schema for each branch. That way, you can use the same table name across different schemas.
 
 For example:
+
 after creating branch `example_branch`, also create a schema named `example_branch`.
 For a table named `my_table` under the schema `main`, create a new table under the same name and under the schema `example_branch`. You now have two `my_table`, one in the main schema and one in the branch schema.
 
@@ -89,11 +90,11 @@ copy and diff can work both on Glue and on Hive.
 create-symlink works only on Glue.
 
 
-**Note:** If `to-schema` or `to-table` are not specified, the destination branch and source table names will be used as per the [suggested model](#suggested-model).
-{: .note .pb-3 }
+!!! note
+    If `to-schema` or `to-table` are not specified, the destination branch and source table names will be used as per the [suggested model](#suggested-model).
 
-**Note:** Metastore commands can only run on tables located in lakeFS. You should not use tables that aren't located in lakeFS.
-{: .note .pb-3 }
+    Metastore commands can only run on tables located in lakeFS. You should not use tables that aren't located in lakeFS.
+
 
 #### Copy
 
@@ -103,6 +104,7 @@ In case the destination table already exists, the command will only merge the ch
 Example:
 
 Suppose we created the table `inventory` on branch `main` on schema `default`.
+
 ```sql
 CREATE EXTERNAL TABLE `inventory`(
         `inv_item_sk` int,
@@ -148,7 +150,6 @@ lakectl metastore copy --from-schema example_branch --from-table branch_inventor
 
 Provides a two-way diff between two tables.
 Shows added`+` , removed`-` and changed`~` partitions and columns.
-
 
 Example:
 

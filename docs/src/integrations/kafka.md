@@ -25,4 +25,6 @@ aws.secret.access.key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 # main being the branch we want to write to
 topics.dir=main/topics 
 ```
-Try the lakeFS [Kafka sample repo] (https://github.com/treeverse/lakeFS-samples/tree/main/01_standalone_examples/kafka). 
+
+!!! example
+    For usage examples, see the lakeFS [Kafka sample repo](https://github.com/treeverse/lakeFS-samples/tree/main/01_standalone_examples/kafka). 
