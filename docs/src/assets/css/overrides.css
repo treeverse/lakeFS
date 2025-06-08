@@ -1,0 +1,241 @@
+/* lakeFS custom theme overrides for MkDocs Material */
+
+:root {
+  /* Brand colors */
+  --lakefs-teal: #279890; /* rgb(39, 152, 144) */
+  --lakefs-green: #2EE5B5; /* leading logo color */
+  --lakefs-magenta: #F24886; /* secondary accent */
+
+  /* Use teal for interactive accent (links, active nav, etc.) */
+  --md-accent-fg-color: var(--lakefs-teal);
+  --md-accent-fg-color--light: var(--lakefs-teal);
+  --md-accent-fg-color--dark: var(--lakefs-teal);
+
+  /* Keep header background white */
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: #ffffff;
+  --md-primary-bg-color--dark: #ffffff;
+  --md-primary-fg-color: #000000;
+  --md-primary-fg-color--light: #000000;
+  --md-primary-fg-color--dark: #000000;
+}
+
+/* Header (top navigation bar) background */
+.md-header {
+  background-color: var(--md-primary-bg-color);
+  color: var(--md-primary-fg-color);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure nav icons/buttons inherit dark text color */
+.md-header__button, .md-header__title, .md-header__topic {
+  color: var(--md-primary-fg-color);
+}
+
+.md-header__button:hover, .md-header__button:focus {
+  color: var(--lakefs-teal);
+}
+
+/* Sidebar navigation and table of contents */
+.md-nav__link:hover, .md-nav__link:focus, .md-nav__link--active {
+  color: var(--lakefs-teal);
+}
+
+/* Buttons use magenta as default, fill on hover */
+.md-button {
+  border-color: var(--lakefs-magenta) !important;
+  color: var(--lakefs-magenta) !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.md-button:hover, .md-button:focus {
+  background-color: var(--lakefs-magenta);
+  color: #ffffff;
+  border-color: var(--lakefs-magenta);
+}
+
+/* Filled buttons (primary) use magenta background */
+.md-button--primary {
+  background-color: var(--lakefs-magenta);
+  border-color: var(--lakefs-magenta);
+  color: #ffffff;
+}
+
+.md-button--primary:hover, .md-button--primary:focus {
+  background-color: #c53568; /* slightly darker magenta */
+  border-color: #c53568;
+}
+
+/* Adjust link color across documentation when hovered */
+.md-typeset a:hover {
+  color: var(--lakefs-teal);
+}
+
+/* Optional: tone down default code block highlight color to match accent */
+code, pre {
+  border-radius: 4px;
+}
+
+/* ----------------------------- */
+/* Additional refinements        */
+/* ----------------------------- */
+
+/* Highlight currently active page/item in nav */
+.md-nav__link--active,
+.md-nav__item--active > .md-nav__link,
+.md-nav__item--active > label {
+  color: var(--lakefs-teal) !important;
+  font-weight: 600;
+}
+
+/* Search field visibility against white header */
+.md-header .md-search__form {
+  background-color: #f5f7f8; /* subtle grey to stand out */
+  border: 1px solid #ccd0d2;
+  border-radius: 4px;
+}
+
+.md-header .md-search__input {
+  background-color: transparent;
+  color: var(--md-primary-fg-color);
+}
+
+/* search icon visibility */
+.md-header .md-search__icon {
+  color: var(--md-primary-fg-color);
+}
+
+.md-header .md-search__form:hover .md-search__icon,
+.md-header .md-search__input:focus + .md-search__icon {
+  color: var(--lakefs-teal);
+}
+
+/* ----------------------------- */
+/* Button refinements            */
+/* ----------------------------- */
+
+/* Outline buttons (default) */
+.md-button:not(.md-button--primary) {
+  border-color: var(--lakefs-magenta) !important;
+  color: var(--lakefs-magenta) !important;
+}
+
+.md-button:not(.md-button--primary):hover,
+.md-button:not(.md-button--primary):focus {
+  background-color: var(--lakefs-magenta) !important;
+  border-color: var(--lakefs-magenta) !important;
+  color: #ffffff !important;
+}
+
+/* Primary buttons (filled) */
+.md-button--primary {
+  background-color: var(--lakefs-magenta) !important;
+  border-color: var(--lakefs-magenta) !important;
+  color: #ffffff !important;
+}
+
+.md-button--primary:hover,
+.md-button--primary:focus {
+  background-color: #c53568 !important; /* darker hue */
+  border-color: #c53568 !important;
+  color: #ffffff !important;
+}
+
+/* ----------------------------- */
+/* Search placeholder visibility */
+/* ----------------------------- */
+
+.md-header .md-search__input::placeholder {
+  color: var(--md-primary-fg-color);
+  opacity: 0.6;
+}
+
+/* ----------------------------- */
+/* Headings color fix            */
+/* ----------------------------- */
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  color: #000000;
+}
+
+/* ----------------------------- */
+/* Footer customization          */
+/* ----------------------------- */
+
+/* Give footer breathing room */
+.md-footer {
+  padding: 1rem 0 !important;
+  font-size: 0.6rem;
+}
+
+/* lists inline config already here */
+.md-footer__nav .md-footer__list,
+.md-footer__legal .md-footer__list,
+.md-footer__social .md-footer__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+}
+
+.md-footer__social .md-footer__list li a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--lakefs-teal) !important;
+  transition: color 0.2s ease-in-out;
+}
+
+/* Change color on hover for better feedback */
+.md-footer__social .md-footer__list li a:hover {
+  color: var(--lakefs-green) !important;
+}
+
+/* Social links icons sizing */
+.md-footer__social .md-footer__list svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor; /* ensure svg uses anchor color */
+}
+
+/* ----------------------------- */
+/* Layout refinements for large displays */
+/* ----------------------------- */
+
+@media (min-width: 1440px) {
+  /* allow overall layout to occupy more horizontal space while preserving margins */
+  .md-grid {
+    max-width: 1440px;
+  }
+  /* widen sidebars (navigation & table of contents) */
+  .md-sidebar--primary,
+  .md-sidebar--secondary {
+    width: 18rem;      /* 288px */
+    flex: 0 0 18rem;   /* fixed flex-basis */
+  }
+}
+
+/* Extra-large screens */
+@media (min-width: 1920px) {
+  .md-grid {
+    max-width: 1700px; /* ample content width while preserving margins */
+  }
+
+  .md-sidebar--primary,
+  .md-sidebar--secondary {
+    width: 18rem; /* 320px */
+    flex: 0 0 18rem;
+  }
+
+  @supports selector(::-webkit-scrollbar) {
+    [dir=ltr] .md-sidebar__inner {
+        padding-right: calc(100% - 16rem);
+    }
+  }
+} 
