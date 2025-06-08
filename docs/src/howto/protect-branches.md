@@ -14,6 +14,7 @@ You can create rules for a specific branch or any branch that matches a name pat
 ## How it works
 
 When at least one protection rule applies to a branch, the branch is protected. The following operations will fail on protected branches:
+
 1. Object write operations: **upload** and **delete** objects.
 1. Branch operations: **commit** and **reset uncommitted changes**.
 
@@ -21,8 +22,9 @@ To operate on a protected branch, merge commits from other branches into
 it. Use pre-merge [hooks][data-quality-gates] to validate the changes before
 they are merged.
 
-Reverting a previous commit using `lakectl branch revert` is **allowed** on a protected branch.
-{: .note }
+!!! note
+    Reverting a previous commit using `lakectl branch revert` is **allowed** on a protected branch.
+
 
 ## Managing branch protection rules
 

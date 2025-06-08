@@ -6,16 +6,14 @@ badges: ["Enterprise"]
 
 # Using lakeFS with Apache Iceberg
 
-
-
 ## lakeFS Iceberg REST Catalog
 
-lakeFS Enterprise
-{: .label .label-purple }
+!!! info
+    Available in **lakeFS Enterprise**
 
-{: .note }
-> 💡 lakeFS Iceberg REST Catalog is currently in private preview for [lakeFS Enterprise](/enterprise/index/) customers.
-> [Contact us](https://lakefs.io/book-a-demo/) to get started!
+!!! tip
+    lakeFS Iceberg REST Catalog is currently in private preview for [lakeFS Enterprise](/enterprise/index/) customers.
+    [Contact us](https://lakefs.io/book-a-demo/) to get started!
 
 ### What is lakeFS Iceberg REST Catalog?
 
@@ -34,27 +32,21 @@ With lakeFS Iceberg REST Catalog, you can:
 ### Use Cases
 
 1. **Version-Controlled Data Development**:
-   - Create feature branches for table schema changes or data migrations
-   - Test modifications in isolation, across multiple tables
-   - Merge changes safely with conflict detection
-
+    - Create feature branches for table schema changes or data migrations
+    - Test modifications in isolation, across multiple tables
+    - Merge changes safely with conflict detection
 2. **Multi-Environment Management**:
-   - Use branches to represent different environments (dev, staging, prod)
-   - Promote changes between environments through merges, with automated testing
-   - Maintain consistent table schemas across environments
-
+    - Use branches to represent different environments (dev, staging, prod)
+    - Promote changes between environments through merges, with automated testing
+    - Maintain consistent table schemas across environments
 3. **Collaborative Data Development**:
-   - Multiple teams can work on different table features simultaneously
-   - Maintain data quality through pre-merge validations
-   - Collaborate using [pull requests](../howto/pull-requests.md) on changes to data and schema
-
+    - Multiple teams can work on different table features simultaneously
+    - Maintain data quality through pre-merge validations
+    - Collaborate using [pull requests](../howto/pull-requests.md) on changes to data and schema
 4. **Manage and Govern Access to data**:
-   - Use the detailed built-in commit log capturing who, what and how data is changed
-   - Manage access using fine grained access control to users and groups using RBAC policies
-   - Rollback changes atomically and safely to reduce time-to-recover and increase system stability
-
-
-
+    - Use the detailed built-in commit log capturing who, what and how data is changed
+    - Manage access using fine grained access control to users and groups using RBAC policies
+    - Rollback changes atomically and safely to reduce time-to-recover and increase system stability
 
 ### Configuration
 
@@ -79,76 +71,57 @@ catalog = RestCatalog(name = "my_catalog", **{
 })
 ```
 
-
 #### Example Client code
 
-<div class="tabs">
-  <ul>
-    <li><a href="#python">Python</a></li>
-    <li><a href="#trino">Trino</a></li>
-    <li><a href="#spark">Spark</a></li>
-  </ul>
+=== "Python (PyIceberg)"
+    ```python
+    import lakefs
+    from pyiceberg.catalog import load_catalog
 
-  <div markdown="1" id="PyIceberg">
+    # Initialize the catalog
+    catalog = RestCatalog(name = "my_catalog", **{
+        'prefix': 'lakefs',
+        'uri': 'https://lakefs.example.com/iceberg/api',
+        'oauth2-server-uri': 'https://lakefs.example.com/iceberg/api/iceberg/api/v1/oauth/tokens',
+        'credential': f'AKIAlakefs12345EXAMPLE:abc/lakefs/1234567bPxRfiCYEXAMPLEKEY',
+    })
 
-```python
-from pyiceberg.catalog.rest import RestCatalog
+    # List namespaces in a branch
+    catalog.list_namespaces(('repo', 'main'))
 
-# Initialize the catalog
-catalog = RestCatalog(name = "my_catalog", **{
-    'prefix': 'lakefs',
-    'uri': 'https://lakefs.example.com/iceberg/api',
-    'oauth2-server-uri': 'https://lakefs.example.com/iceberg/api/iceberg/api/v1/oauth/tokens',
-    'credential': f'AKIAlakefs12345EXAMPLE:abc/lakefs/1234567bPxRfiCYEXAMPLEKEY',
-})
+    # Query a table
+    catalog.list_tables('repo.main.inventory')
+    table = catalog.load_table('repo.main.inventory.books')
+    arrow_df = table.scan().to_arrow()
+    ```
+=== "Trino"
+    ```sql
+    -- List tables in the iceberg catalog
+    USE "repo.main.inventory"; -- <repository>.<branch or reference>.<namespace>
+    SHOW TABLES;
 
-# List namespaces in a branch
-catalog.list_namespaces(('repo', 'main'))
+    -- Query a table
+    SELECT * FROM books LIMIT 100;
 
-# Query a table
-catalog.list_tables('repo.main.inventory')
-table = catalog.load_table('repo.main.inventory.books')
-arrow_df = table.scan().to_arrow()
-```
+    -- Switch to a different branch
+    USE "repo.new_branch.inventory";
+    SELECT * FROM books;
+    ```
+=== "Spark"
+    ```scala
+    // Configure Spark to use the lakeFS REST catalog
+    spark.sql("USE my_repo.main.inventory")
 
-  </div>
+    // List available tables
+    spark.sql("SHOW TABLES").show()
 
-  <div markdown="2" id="trino">
+    // Query data with branch isolation
+    spark.sql("SELECT * FROM books").show()
 
-```sql
--- List tables in the iceberg catalog
-USE "repo.main.inventory"; -- <repository>.<branch or reference>.<namespace>
-SHOW TABLES;
-
--- Query a table
-SELECT * FROM books LIMIT 100;
-
--- Switch to a different branch
-USE "repo.new_branch.inventory";
-SELECT * FROM books;
-```
-
-  </div>
-
-  <div markdown="3" id="spark">
-
-```scala
-// Configure Spark to use the lakeFS REST catalog
-spark.sql("USE my_repo.main.inventory")
-
-// List available tables
-spark.sql("SHOW TABLES").show()
-
-// Query data with branch isolation
-spark.sql("SELECT * FROM books").show()
-
-// Switch to a feature branch
-spark.sql("USE my_repo.new_branch.inventory")
-spark.sql("SELECT * FROM books").show()
-```
-
-  </div>
-</div>
+    // Switch to a feature branch
+    spark.sql("USE my_repo.new_branch.inventory")
+    spark.sql("SELECT * FROM books").show()
+    ```
 
 ### Namespaces and Tables
 
@@ -170,6 +143,7 @@ Namespaces in the Iceberg Catalog follow the pattern `"<repository>.<branch>.<na
 - `<namespace>` components can be nested using unit separator (e.g., `inventory.books`).
 
 Examples:
+
 - `my-repo.main.inventory`
 - `my-repo.feature-branch.inventory.books`
 
@@ -225,11 +199,12 @@ branch.merge_into('main')
 main_table = catalog.load_table('repo.main.inventory.books')
 ```
 
-{: .note}
-Currently, lakeFS handles table changes as file operations during merges. 
-This means that when merging branches with table changes, lakeFS treats the table metadata files as regular files. 
-No special merge logic is applied to handle conflicting table changes, and if there are conflicting changes to the same table in different branches, 
-the merge will fail with a conflict that needs to be resolved manually.
+!!! info
+    Currently, lakeFS handles table changes as file operations during merges.
+
+    This means that when merging branches with table changes, lakeFS treats the table metadata files as regular files. 
+    No special merge logic is applied to handle conflicting table changes, and if there are conflicting changes to the same table in different branches, 
+    the merge will fail with a conflict that needs to be resolved manually.
 
 ### Authentication
 
@@ -245,20 +220,16 @@ The authorization requirements are managed at the lakeFS level, meaning:
 ### Limitations
 
 1. **Table Maintenance**:
-   - See [Table Maintenance](#table-maintenance) section for details
-
+    - See [Table Maintenance](#table-maintenance) section for details
 2. **Advanced Features**:
-   - Views (all view operations are unsupported)
-   - Transactional DML (`stage-create`)
-   - Server-side query planning
-   - Table renaming
-   - Updating table's location (using Commit)
-   - Table statistics (`set-statistics` and `remove-statistics` operations are currently a no-op)
-
+    - Views (all view operations are unsupported)
+    - Transactional DML (`stage-create`)
+    - Server-side query planning
+    - Table renaming
+    - Updating table's location (using Commit)
+    - Table statistics (`set-statistics` and `remove-statistics` operations are currently a no-op)
 3. lakeFS Iceberg REST Catalog is currently tested to work with Amazon S3 and Google Cloud Storage. Other storage backends, such as Azure or Local storage are currently not supported, but will be in future releases.
-
 4. Currently only [Iceberg `v2` table format](https://iceberg.apache.org/spec) is supported
-
 
 ### Table Maintenance
 
@@ -272,12 +243,13 @@ The following table maintenance operations are not supported in the current vers
 - [Delete orphan files](https://iceberg.apache.org/docs/latest/maintenance/#delete-orphan-files)
 
 
-{: .note }
-> **⚠️ To prevent data loss, clients should disable their own cleanup operations by:**
-> - Disabling orphan file deletion.
-> - Setting `remove-dangling-deletes` to false when rewriting.
-> - Disabling snapshot expiration.
-> - Setting a very high value for `min-snapshots-to-keep` parameter.
+!!! danger
+    **To prevent data loss, clients should disable their own cleanup operations by:**
+
+    - Disabling orphan file deletion.
+    - Setting `remove-dangling-deletes` to false when rewriting.
+    - Disabling snapshot expiration.
+    - Setting a very high value for `min-snapshots-to-keep` parameter.
 
 
 ### Roadmap
@@ -285,17 +257,14 @@ The following table maintenance operations are not supported in the current vers
 The following features are planned for future releases:
 
 1. **Catalog Sync**:
-   - Support for pushing/pulling tables to/from other catalogs
-   - Integration with AWS Glue and other Iceberg-compatible catalogs
-
+    - Support for pushing/pulling tables to/from other catalogs
+    - Integration with AWS Glue and other Iceberg-compatible catalogs
 2. **Table Import**:
-   - Support for importing existing Iceberg tables from other catalogs
-   - Bulk import capabilities for large-scale migrations
-
+    - Support for importing existing Iceberg tables from other catalogs
+    - Bulk import capabilities for large-scale migrations
 3. **Advanced Features**:
-   - Views API support
-   - Table transactions
-
+    - Views API support
+    - Table transactions
 4. **Azure Storage Support**
 
 ### Related Resources
@@ -306,92 +275,70 @@ The following features are planned for future releases:
 
 ## Deprecated: Iceberg HadoopCatalog  
 
-{: .note }
-> ✋ **HadoopCatalog and other filesystem-based catalogs are currently not recommended by the Apache Iceberg community and come with several limitations around concurrency and tooling.**
-> **As such, the `HadoopCatalog` described in this section is now deprecated and will not receive further updates**
+!!! warning
+    `HadoopCatalog` and other filesystem-based catalogs are currently not recommended by the Apache Iceberg community and come with several limitations around concurrency and tooling.
 
-### Setup
-{:.no_toc}
+    As such, the `HadoopCatalog` described in this section is now deprecated and will not receive further updates
 
-<div class="tabs">
-  <ul>
-    <li><a href="#maven">Maven</a></li>
-    <li><a href="#pyspark">PySpark</a></li>
-  </ul>
-  <div markdown="1" id="maven">
+<h3>Setup</h3>
 
-Use the following Maven dependency to install the lakeFS custom catalog:
+=== "Maven"
+    Use the following Maven dependency to install the lakeFS custom catalog:
 
-```xml
-<dependency>
-  <groupId>io.lakefs</groupId>
-  <artifactId>lakefs-iceberg</artifactId>
-  <version>0.1.4</version>
-</dependency>
-```
+    ```xml
+    <dependency>
+    <groupId>io.lakefs</groupId>
+    <artifactId>lakefs-iceberg</artifactId>
+    <version>0.1.4</version>
+    </dependency>
+    ```
 
-</div>
-<div markdown="1" id="pyspark">
-  Include the `lakefs-iceberg` jar in your package list along with Iceberg. For example: 
+=== "PySpark"
+    Include the `lakefs-iceberg` jar in your package list along with Iceberg. For example: 
 
-```python
-.config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0,io.lakefs:lakefs-iceberg:0.1.4")
-```  
-</div>
-</div>
+    ```python
+    .config("spark.jars.packages", "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.3.0,io.lakefs:lakefs-iceberg:0.1.4")
+    ```  
 
-### Configuration
-{:.no_toc}
-
-<div class="tabs">
-  <ul>
-    <li><a href="#conf-pyspark">PySpark</a></li>
-    <li><a href="#conf-sparkshell">Spark Shell</a></li>
-  </ul>
-  <div markdown="1" id="conf-pyspark">
-
-Set up the Spark SQL catalog: 
-```python
-.config("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog") \
-.config("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog") \
-.config("spark.sql.catalog.lakefs.warehouse", f"lakefs://{repo_name}") \ 
-.config("spark.sql.catalog.lakefs.cache-enabled", "false")
-```
-
-Configure the S3A Hadoop FileSystem with your lakeFS connection details.
-Note that these are your lakeFS endpoint and credentials, not your S3 ones.
-    
-```python
-.config("spark.hadoop.fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
-.config("spark.hadoop.fs.s3a.endpoint", "https://example-org.us-east-1.lakefscloud.io") \
-.config("spark.hadoop.fs.s3a.access.key", "AKIAIO5FODNN7EXAMPLE") \
-.config("spark.hadoop.fs.s3a.secret.key", "wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY") \
-.config("spark.hadoop.fs.s3a.path.style.access", "true")
-```
-
-  </div>
-
-  <div markdown="1" id="conf-sparkshell">
-```shell
-spark-shell --conf spark.sql.catalog.lakefs="org.apache.iceberg.spark.SparkCatalog" \
-   --conf spark.sql.catalog.lakefs.catalog-impl="io.lakefs.iceberg.LakeFSCatalog" \
-   --conf spark.sql.catalog.lakefs.warehouse="lakefs://example-repo" \
-   --conf spark.sql.catalog.lakefs.cache-enabled="false" \
-   --conf spark.hadoop.fs.s3.impl="org.apache.hadoop.fs.s3a.S3AFileSystem" \
-   --conf spark.hadoop.fs.s3a.endpoint="https://example-org.us-east-1.lakefscloud.io" \
-   --conf spark.hadoop.fs.s3a.access.key="AKIAIO5FODNN7EXAMPLE" \
-   --conf spark.hadoop.fs.s3a.secret.key="wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY" \
-   --conf spark.hadoop.fs.s3a.path.style.access="true"
-```
-  </div>
-</div>
+<h3>Configuration</h3>
 
 
-### Using Iceberg tables with HadoopCatalog
-{:.no_toc}
+=== "PySpark"
+    Set up the Spark SQL catalog: 
+    ```python
+    .config("spark.sql.catalog.lakefs", "org.apache.iceberg.spark.SparkCatalog") \
+    .config("spark.sql.catalog.lakefs.catalog-impl", "io.lakefs.iceberg.LakeFSCatalog") \
+    .config("spark.sql.catalog.lakefs.warehouse", f"lakefs://{repo_name}") \ 
+    .config("spark.sql.catalog.lakefs.cache-enabled", "false")
+    ```
 
-#### Create a table
-{:.no_toc}
+    Configure the S3A Hadoop FileSystem with your lakeFS connection details.
+    Note that these are your lakeFS endpoint and credentials, not your S3 ones.
+        
+    ```python
+    .config("spark.hadoop.fs.s3.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+    .config("spark.hadoop.fs.s3a.endpoint", "https://example-org.us-east-1.lakefscloud.io") \
+    .config("spark.hadoop.fs.s3a.access.key", "AKIAIO5FODNN7EXAMPLE") \
+    .config("spark.hadoop.fs.s3a.secret.key", "wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY") \
+    .config("spark.hadoop.fs.s3a.path.style.access", "true")
+    ```
+=== "Spark Shell"
+
+    ```shell
+    spark-shell --conf spark.sql.catalog.lakefs="org.apache.iceberg.spark.SparkCatalog" \
+        --conf spark.sql.catalog.lakefs.catalog-impl="io.lakefs.iceberg.LakeFSCatalog" \
+        --conf spark.sql.catalog.lakefs.warehouse="lakefs://example-repo" \
+        --conf spark.sql.catalog.lakefs.cache-enabled="false" \
+        --conf spark.hadoop.fs.s3.impl="org.apache.hadoop.fs.s3a.S3AFileSystem" \
+        --conf spark.hadoop.fs.s3a.endpoint="https://example-org.us-east-1.lakefscloud.io" \
+        --conf spark.hadoop.fs.s3a.access.key="AKIAIO5FODNN7EXAMPLE" \
+        --conf spark.hadoop.fs.s3a.secret.key="wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY" \
+        --conf spark.hadoop.fs.s3a.path.style.access="true"
+    ```
+
+<h3>Using Iceberg tables with HadoopCatalog</h3>
+
+<h4>Create a table</h4>
 
 To create a table on your main branch, use the following syntax:
 
@@ -399,16 +346,14 @@ To create a table on your main branch, use the following syntax:
 CREATE TABLE lakefs.main.db1.table1 (id int, data string);
 ```
 
-#### Insert data into the table
-{:.no_toc}
+<h4>Insert data into the table</h4>
     
 ```sql
 INSERT INTO lakefs.main.db1.table1 VALUES (1, 'data1');
 INSERT INTO lakefs.main.db1.table1 VALUES (2, 'data2');
 ```
 
-#### Create a branch
-{:.no_toc}
+<h4>Create a branch</h4>
 
 We can now commit the creation of the table to the main branch:
 
@@ -422,8 +367,7 @@ Then, create a branch:
 lakectl branch create lakefs://example-repo/dev -s lakefs://example-repo/main
 ```
 
-#### Make changes on the branch
-{:.no_toc}
+<h4>Make changes on the branch</h4>
 
 We can now make changes on the branch:
 
@@ -431,8 +375,7 @@ We can now make changes on the branch:
 INSERT INTO lakefs.dev.db1.table1 VALUES (3, 'data3');
 ```
 
-#### Query the table
-{:.no_toc}
+<h4>Query the table</h4>
 
 If we query the table on the branch, we will see the data we inserted:
 
@@ -441,7 +384,9 @@ SELECT * FROM lakefs.dev.db1.table1;
 ```
 
 Results in:
-```
+
+
+```text
 +----+------+
 | id | data |
 +----+------+
@@ -458,7 +403,8 @@ SELECT * FROM lakefs.main.db1.table1;
 ```
 
 Results in:
-```
+
+```text
 +----+------+
 | id | data |
 +----+------+
@@ -467,14 +413,12 @@ Results in:
 +----+------+
 ```
 
-### Migrating an existing Iceberg table to the Hadoop Catalog
-{:.no_toc}
+<h3>Migrating an existing Iceberg table to the Hadoop Catalog</h3>
 
 This is done through an incremental copy from the original table into lakeFS. 
 
 1. Create a new lakeFS repository `lakectl repo create lakefs://example-repo <base storage path>`
 2. Initiate a spark session that can interact with the source iceberg table and the target lakeFS catalog. 
-
     Here's an example of Hadoop and S3 session and lakeFS catalog with [per-bucket config](https://docs.cloudera.com/HDPDocuments/HDP3/HDP-3.1.4/bk_cloud-data-access/content/s3-per-bucket-configs.html): 
 
     ```java
@@ -498,8 +442,7 @@ This is done through an incremental copy from the original table into lakeFS.
     conf.set("spark.hadoop.fs.s3a.bucket.example-repo.secret.key", "<LAKEFS_SECRET_KEY>");
     conf.set("spark.hadoop.fs.s3a.bucket.example-repo.endpoint"  , "<LAKEFS_ENDPOINT>");
     ```
-
-3. Create Schema in lakeFS and copy the data 
+3. Create Schema in lakeFS and copy the data
 
     Example of copy with spark-sql: 
 

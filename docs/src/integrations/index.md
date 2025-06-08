@@ -10,6 +10,11 @@ You can use lakeFS with a wide range of tools and frameworks.
 lakeFS provides several clients directly, as well as an [S3-compatible gateway](../understand/architecture.md#s3-gateway). This gateway means that if you want to use something with lakeFS, so long as that technology can interface with S3, it can interface with lakeFS. 
 
 See below for detailed instructions for using different technologies with lakeFS. 
+
+
+!!! info "Missing Something?"
+    If there is a technology not listed here that you would like to use with lakeFS, please drop by [our Slack](/slack) and we'll help you get started with it.
+
 <table>
     <tr>
         <td width="25%" align=center><a href="./airbyte.html"><img width=120 src="/assets/img/logos/airbyte.png" alt="airbyte logo" /><br />Airbyte</a></td>
@@ -48,6 +53,3 @@ See below for detailed instructions for using different technologies with lakeFS
         <td width="25%" align=center><a href="./mlflow.html"><img width=120 src="/assets/img/logos/MLflow-logo.png" alt="MLflow Logo"/><br/>MLflow</a></td>
     </tr>
 </table>
-
-{: .tip}
-If there is a technology not listed here that you would like to use with lakeFS, please drop by [our Slack](/slack) and we'll help you get started with it.

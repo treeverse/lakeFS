@@ -18,7 +18,7 @@ lakeFS provides 2 ways to expose versioned data locally
 
 ## lakeFS Mount
 
-lakeFS Mount is available for [lakeFS Enterprise](../enterprise/index.html) and [lakeFS Cloud](../cloud/index.html) customers. <br/> 
+lakeFS Mount is available for [lakeFS Enterprise](../enterprise/index.md) and [lakeFS Cloud](../cloud/index.md) customers. <br/> 
 You can try it out by [signing up](https://info.lakefs.io/thanks-lakefs-mounts)
 {: .note }
 

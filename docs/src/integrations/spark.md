@@ -415,7 +415,7 @@ SELECT * FROM delta.`s3a://example-repo/main/datasets/delta-table/` LIMIT 100
 In Hadoop 3.1.4 version and above (as tested using our lakeFS Hadoop FS), it is possible to use pre-signed URLs as return values from the lakeFS S3 Gateway.
 
 This has the immediate benefit of reducing the amount of traffic that has to go through the lakeFS server thus improving IO performance. 
-To read more about pre-signed URLs, see [this guide](../security/presigned-url.html).
+To read more about pre-signed URLs, see [this guide](../security/presigned-url.md).
 
 Here's an example Spark configuration to enable this support:
 

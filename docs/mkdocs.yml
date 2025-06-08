@@ -5,11 +5,14 @@ site_description: Open Source Data Version Control for Data Lakes and Lakehouses
 theme:
   name: material
   logo: assets/logo.svg
+  features:
+    - content.footnote.tooltips
 site_dir: site
 docs_dir: src
 use_directory_urls: true
 plugins:
 - search
+
 - redirects:
     redirect_maps:
       experimental/lakectl_local_posix.html: experimental/lakectl_local_posix.md
@@ -17,7 +20,6 @@ plugins:
       posts/deprecate-py-legacy.html: posts/deprecate-py-legacy.md
       enterprise/architecture.html: enterprise/architecture.md
       enterprise/troubleshooting.html: enterprise/troubleshooting.md
-      enterprise/index.html: enterprise/index.md
       enterprise/configuration.html: enterprise/configuration.md
       enterprise/upgrade.html: enterprise/upgrade.md
       enterprise/getstarted/quickstart.html: enterprise/getstarted/quickstart.md
@@ -263,13 +265,38 @@ plugins:
       reference/spark-client.html: reference/spark-client.md
       reference/configuration.html: reference/configuration.md
       reference/mount-write-mode-semantics.html: reference/mount-write-mode-semantics.md
+
 markdown_extensions:
 - toc
 - tables
+- footnotes
 - fenced_code
 - attr_list
+- def_list
 - admonition
 - codehilite
+- pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.emoji:  # support emojis
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
+- pymdownx.superfences:  # support mermaid diagrams
+    custom_fences:
+      - name: mermaid
+        class: mermaid
+        format: !!python/name:pymdownx.superfences.fence_code_format
+- pymdownx.tabbed:  # support linking to tabs
+    alternate_style: true
+    slugify: !!python/object/apply:pymdownx.slugs.slugify
+      kwds:
+        case: lower
+- pymdownx.tasklist:  # support TODO lists
+    custom_checkbox: true
+
 nav:
 - Welcome to lakeFS: index.md
 - Quickstart:

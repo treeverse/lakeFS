@@ -330,7 +330,7 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 
 ## lakeFS Enterprise
 
-This section provides configuration references exclusive to [lakeFS Enterprise](../enterprise), and serves as a complement
+This section provides configuration references exclusive to [lakeFS Enterprise](../enterprise/index.md), and serves as a complement
 to the general configuration [reference](#reference) above.
 
 ### blockstores

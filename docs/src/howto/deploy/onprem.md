@@ -6,15 +6,12 @@ next:  ["Import data into your installation", "/howto/import.html"]
 
 # On-Premises Deployment
 
-{: .tip }
-> The instructions given here are for a self-managed deployment of lakeFS.
-> 
-> For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
+!!! tip
+    The instructions given here are for a self-managed deployment of lakeFS.<br/>
+    For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
-[TOC]
 
-⏰ Expected deployment time: 25 min
-{: .note }
+!!! info "⏰ Expected deployment time: 25 min"
 
 ## Prerequisites
 
@@ -27,146 +24,131 @@ For more information on how to set up MinIO, see the [official deployment guide]
 lakeFS requires a PostgreSQL database to synchronize actions on your repositories.
 This section assumes that you already have a PostgreSQL >= 11.0 database accessible.
 
-
 ## Setting up a lakeFS Server
 
-<div class="tabs">
-  <ul>
-    <li><a href="#linux">Linux</a></li>
-    <li><a href="#docker">Docker</a></li>
-    <li><a href="#k8s">Kubernetes</a></li>
-  </ul>
-  <div markdown="1" id="linux">
+=== "Linux"
+    Connect to your host using SSH:
 
-Connect to your host using SSH:
+    1. Create a `config.yaml` on your VM, with the following parameters:
+    
+    ```yaml
+    ---
+    database:
+        type: "postgres"
+        postgres:
+        connection_string: "[DATABASE_CONNECTION_STRING]"
+    
+    auth:
+        encrypt:
+        # replace this with a randomly-generated string. Make sure to keep it safe!
+        secret_key: "[ENCRYPTION_SECRET_KEY]"
+    
+    blockstore:
+        type: s3
+        s3:
+            force_path_style: true
+            endpoint: http://<minio_endpoint>
+            discover_bucket_region: false
+            credentials:
+            access_key_id: <minio_access_key>
+            secret_access_key: <minio_secret_key>
+    ```
 
-1. Create a `config.yaml` on your VM, with the following parameters:
- 
-   ```yaml
-   ---
-   database:
-     type: "postgres"
-     postgres:
-       connection_string: "[DATABASE_CONNECTION_STRING]"
-  
-   auth:
-     encrypt:
-       # replace this with a randomly-generated string. Make sure to keep it safe!
-       secret_key: "[ENCRYPTION_SECRET_KEY]"
-   
-   blockstore:
-     type: s3
-     s3:
-        force_path_style: true
-        endpoint: http://<minio_endpoint>
-        discover_bucket_region: false
-        credentials:
-           access_key_id: <minio_access_key>
-           secret_access_key: <minio_secret_key>
-   ```
+    !!! info
+        Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
 
-   ⚠️ Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
-   {: .note }
+    1. [Download the binary][downloads] to the server.
 
-1. [Download the binary][downloads] to the server.
+    1. Run the `lakefs` binary:
 
-1. Run the `lakefs` binary:
+    ```sh
+    lakefs --config config.yaml run
+    ```
 
-   ```sh
-   lakefs --config config.yaml run
-   ```
+    !!! note
+        It's preferable to run the binary as a service using systemd or your operating system's facilities.
 
-**Note:** It's preferable to run the binary as a service using systemd or your operating system's facilities.
-{: .note }
+=== "Docker"
 
-</div>
-<div markdown="2" id="docker">
+    To support container-based environments, you can configure lakeFS using environment variables. Here is a `docker run`
+    command to demonstrate starting lakeFS using Docker:
 
-To support container-based environments, you can configure lakeFS using environment variables. Here is a `docker run`
-command to demonstrate starting lakeFS using Docker:
+    ```sh
+    docker run \
+        --name lakefs \
+        -p 8000:8000 \
+        -e LAKEFS_DATABASE_TYPE="postgres" \
+        -e LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
+        -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
+        -e LAKEFS_BLOCKSTORE_TYPE="s3" \
+        -e LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE="true" \
+        -e LAKEFS_BLOCKSTORE_S3_ENDPOINT="http://<minio_endpoint>" \
+        -e LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION="false" \
+        -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID="<minio_access_key>" \
+        -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY="<minio_secret_key>" \
+        treeverse/lakefs:latest run
+    ```
 
-```sh
-docker run \
-  --name lakefs \
-  -p 8000:8000 \
-  -e LAKEFS_DATABASE_TYPE="postgres" \
-  -e LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING="[DATABASE_CONNECTION_STRING]" \
-  -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="[ENCRYPTION_SECRET_KEY]" \
-  -e LAKEFS_BLOCKSTORE_TYPE="s3" \
-  -e LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE="true" \
-  -e LAKEFS_BLOCKSTORE_S3_ENDPOINT="http://<minio_endpoint>" \
-  -e LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION="false" \
-  -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID="<minio_access_key>" \
-  -e LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY="<minio_secret_key>" \
-  treeverse/lakefs:latest run
-```
-
-⚠️ Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
-{: .note }
-
-See the [reference][config-envariables] for a complete list of environment variables.
+    !!! info
+        Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
 
 
-</div>
-<div markdown="3" id="k8s">
-
-You can install lakeFS on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs).
-
-To install lakeFS with Helm:
-
-1. Copy the Helm values file relevant for S3-Compatible storage (MinIO in this example):
-
-   ```yaml
-   secrets:
-       # replace this with the connection string of the database you created in a previous step:
-       databaseConnectionString: [DATABASE_CONNECTION_STRING]
-       # replace this with a randomly-generated string
-       authEncryptSecretKey: [ENCRYPTION_SECRET_KEY]
-   lakefsConfig: |
-       blockstore:
-         type: s3
-         s3:
-           force_path_style: true
-           endpoint: http://<minio_endpoint>
-           discover_bucket_region: false
-           credentials:
-             access_key_id: <minio_access_key>
-             secret_access_key: <minio_secret_key>
-   ```
-
-   ⚠️ Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
-   {: .note }
-1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank"}.
-
-   The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html) but without sensitive information.
-   Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
-   {: .note }
-
-1. In the directory where you created `conf-values.yaml`, run the following commands:
-
-   ```bash
-   # Add the lakeFS repository
-   helm repo add lakefs https://charts.lakefs.io
-   # Deploy lakeFS
-   helm install my-lakefs lakefs/lakefs -f conf-values.yaml
-   ```
-
-   *my-lakefs* is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) name.
+    See the [reference][config-envariables] for a complete list of environment variables.
 
 
-   ## Load balancing
-   
-   To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
-   By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
+=== "Kubernetes"
+    You can install lakeFS on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 
-   💡 The NGINX Ingress Controller by default limits the client body size to 1 MiB.
-   Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway][s3-gateway] or 
-   a simple PUT request using the [OpenAPI Server][openapi].
-   Checkout Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
-   {: .note }
+    To install lakeFS with Helm:
 
-</div>
-</div>
+    1. Copy the Helm values file relevant for S3-Compatible storage (MinIO in this example):
+
+        ```yaml
+        secrets:
+            # replace this with the connection string of the database you created in a previous step:
+            databaseConnectionString: [DATABASE_CONNECTION_STRING]
+            # replace this with a randomly-generated string
+            authEncryptSecretKey: [ENCRYPTION_SECRET_KEY]
+        lakefsConfig: |
+            blockstore:
+                type: s3
+                s3:
+                force_path_style: true
+                endpoint: http://<minio_endpoint>
+                discover_bucket_region: false
+                credentials:
+                    access_key_id: <minio_access_key>
+                    secret_access_key: <minio_secret_key>
+        ```
+
+        !!! tip
+            Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/)
+    1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration){:target="_blank"}.
+        !!! note
+        The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html) but without sensitive information.
+        Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
+    1. In the directory where you created `conf-values.yaml`, run the following commands:
+        ```bash
+        # Add the lakeFS repository
+        helm repo add lakefs https://charts.lakefs.io
+        # Deploy lakeFS
+        helm install my-lakefs lakefs/lakefs -f conf-values.yaml
+        ```
+    
+    *my-lakefs* is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) name.
+
+## Load balancing
+
+To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
+By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
+
+!!! info
+    The NGINX Ingress Controller by default limits the client body size to 1 MiB.
+
+    Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway][s3-gateway] or 
+    a simple PUT request using the [OpenAPI Server][openapi].
+
+    Checkout the Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
 
 ## Secure connection
 
@@ -216,10 +198,11 @@ blockstore:
 
 ### Limitations
 
-- Using a local adapter on a shared location is relativly new and not battle-tested yet
-- lakeFS doesn't control the way a shared location is managed across machines
-- When using lakectl or the lakeFS UI, you can currently import only directories. If you need to import a single file, use the [HTTP API](https://docs.lakefs.io/reference/api.html#/import/importStart) or API Clients with `type=object` in the request body and `destination=<full-path-to-file>`.
-- Garbage collector (for committed and uncommitted) and lakeFS Hadoop FileSystem currently unsupported
+!!! warning ""
+    - Using a local adapter on a shared location is relativly new and not battle-tested yet
+    - lakeFS doesn't control the way a shared location is managed across machines
+    - When using lakectl or the lakeFS UI, you can currently import only directories. If you need to import a single file, use the [HTTP API](https://docs.lakefs.io/reference/api.html#/import/importStart) or API Clients with `type=object` in the request body and `destination=<full-path-to-file>`.
+    - Garbage collector (for committed and uncommitted) and lakeFS Hadoop FileSystem currently unsupported
 
 ## Create the admin user
 
@@ -251,10 +234,10 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 
 
-**Congratulations!** Your environment is now ready 🤩
-{: .note }
+!!! success "Congratulations"
+    Your environment is now ready 🤩
 
-[config-envariables]:  /reference/configuration/#using-environment-variables %}
+[config-envariables]:  /reference/configuration/#using-environment-variables
 [downloads]:  /index/#downloads
 [openapi]:  /understand/architecture/#openapi-server
 [s3-gateway]:  /understand/architecture/#s3-gateway

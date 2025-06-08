@@ -120,7 +120,7 @@ Any contribution to the docs, whether it is in conjunction with a code contribut
 Documentation of features and changes in behaviour should be included in the pull request.
 You can create separate pull requests for documentation changes only.
 
-To learn how to contribute to the lakeFS documentation see [this page](./docs/index.html), which also includes details on how to build the documentation locally. 
+To learn how to contribute to the lakeFS documentation see [this page](./docs/index.md), which also includes details on how to build the documentation locally. 
 
 ## CHANGELOG.md
 

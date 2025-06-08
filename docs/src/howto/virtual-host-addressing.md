@@ -18,6 +18,7 @@ GET http://foo.example.com/some/location
 ```
 
 There are two ways to interpret the URL above:
+
 - as a virtual-host URL where the endpoint URL is `example.com`, the bucket name is `foo`, and the path is `/some/location`
 - as a path-based URL where the endpoint is `foo.example.com`, the bucket name is `some` and the path is `location`
  
@@ -51,8 +52,9 @@ gateways:
     domain_name: s3.lakefs.example.com
 ```
 
-For more information on how to configure lakeFS, check out the [configuration reference](../reference/configuration.md)
-{: .note }
+!!! note
+    For more information on how to configure lakeFS, check out the [configuration reference](../reference/configuration.md)
+
 
 ## Setting up the appropriate DNS records
 
@@ -63,7 +65,6 @@ This requires 2 CNAME records:
 1. `*.s3.lakefs.example.com` - Also a CNAME to `lakefs.example.com`. This will resolve virtual-host requests such as `example-repo.s3.lakefs.example.com` that lakeFS would now know how to parse.
 
 
-<div class="note">
-   <p>For more information on how to configure these, see the official documentation of your DNS provider.</p>
-   <p>On AWS, This could also be done [using ALIAS records](https://aws.amazon.com/premiumsupport/knowledge-center/route-53-create-alias-records/) for a load balancer.</p> 
-</div>
+!!! info "Learn More"
+    For more information on how to configure these, see the official documentation of your DNS provider.
+    On AWS, This could also be done [using ALIAS records](https://aws.amazon.com/premiumsupport/knowledge-center/route-53-create-alias-records/) for a load balancer.

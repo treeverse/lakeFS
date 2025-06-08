@@ -5,19 +5,12 @@ badges: ["Enterprise"]
 ---
 
 # Standalone Garbage Collection
-{: .d-inline-block }
-lakeFS Enterprise
-{: .label .label-green }
 
-{: .d-inline-block }
-experimental
-{: .label .label-red }
+!!! info
+    Standalone GC is only available for [lakeFS Enterprise](/enterprise/index/).
 
-{: .note }
-> Standalone GC is only available for [lakeFS Enterprise](/enterprise/index/).
-
-{: .note .warning }
-> Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC](/howto/garbage-collection/gc/). For large scale environments, we recommend using the Spark-backed solution.
+!!! warning
+    Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC](/howto/garbage-collection/gc/). For large scale environments, we recommend using the Spark-backed solution.
 
 
 
@@ -39,7 +32,7 @@ the sweep stage to delete them. It functions similarly to the GC's [mark-only mo
 
 #### lakeFS Enterprise customers 
 
-Contact your account manager to verify that Standalone GC is included in your license. Then use your dockerhub token for 
+Contact your account manager to verify that Standalone GC is included in your license. Then use your DockerHub token for 
 the `externallakefs` user.
 
 #### New to lakeFS Enterprise
@@ -110,6 +103,7 @@ In this example, the repository storage namespace is `s3://some-bucket/some/pref
 #### lakeFS permissions
 
 The minimum required permissions for lakeFS are:
+
 ```json
 {
   "statement": [
@@ -148,14 +142,13 @@ Follow the steps below to set up and use `lakefs-sgc` with an S3-compatible clie
    s3 =
        signature_version = s3v4
     ```
-
-2. Add an access and secret keys to your `~/.aws/credentials` file:
+1. Add an access and secret keys to your `~/.aws/credentials` file:
     ```
    [minio]
    aws_access_key_id     = <MinIO access key>
    aws_secret_access_key = <MinIO secret key>
     ```
-3. Run the `lakefs-sgc` docker image and pass it the `minio` profile - see [example](./standalone-gc.md#mounting-the-aws-directory) below.
+1. Run the `lakefs-sgc` docker image and pass it the `minio` profile - see [example](./standalone-gc.md#mounting-the-aws-directory) below.
 
 ### Configuration
 
@@ -205,12 +198,15 @@ lakefs:
 - `-c, --config`: config file to use (default is $HOME/.lakefs-sgc.yaml)
 
 #### Commands
+
 **run**
 
-Usage: \
+Usage:
+
 `lakefs-sgc run <repository>`
 
 Flags:
+
 - `--cache-dir`: directory to cache read files (default is `$HOME/.lakefs-sgc/data/`)
 - `--parallelism`: number of parallel downloads for metadata files (default 10)
 - `--presign`: use pre-signed URLs when downloading/uploading data (recommended) (default true)
@@ -222,15 +218,15 @@ To run standalone GC, choose the method you prefer to pass AWS credentials and i
 
 ```bash
 docker run \
--e AWS_REGION=<region> \
--e AWS_SESSION_TOKEN="$(grep 'aws_session_token' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
--e AWS_ACCESS_KEY_ID="$(grep 'aws_access_key_id' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
--e AWS_SECRET_ACCESS_KEY="$(grep 'aws_secret_access_key' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
--e LAKEFS_SGC_LAKEFS_ENDPOINT_URL=<lakefs endpoint URL> \
--e LAKEFS_SGC_LAKEFS_ACCESS_KEY_ID=<lakefs accesss key> \
--e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<lakefs secret key> \
--e LAKEFS_SGC_LOGGING_LEVEL=debug \
-treeverse/lakefs-sgc:<tag> run <repository>
+    -e AWS_REGION=<region> \
+    -e AWS_SESSION_TOKEN="$(grep 'aws_session_token' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
+    -e AWS_ACCESS_KEY_ID="$(grep 'aws_access_key_id' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
+    -e AWS_SECRET_ACCESS_KEY="$(grep 'aws_secret_access_key' ~/.aws/credentials | awk -F' = ' '{print $2}')" \
+    -e LAKEFS_SGC_LAKEFS_ENDPOINT_URL=<lakefs endpoint URL> \
+    -e LAKEFS_SGC_LAKEFS_ACCESS_KEY_ID=<lakefs accesss key> \
+    -e LAKEFS_SGC_LAKEFS_SECRET_ACCESS_KEY=<lakefs secret key> \
+    -e LAKEFS_SGC_LOGGING_LEVEL=debug \
+    treeverse/lakefs-sgc:<tag> run <repository>
 ```
 
 #### Mounting the `~/.aws` directory
@@ -238,11 +234,13 @@ treeverse/lakefs-sgc:<tag> run <repository>
 When working with S3-compatible clients, it's often more convenient to mount the `~/.aws` directory and pass in the desired profile.
 
 First, change the permissions for `~/.aws/*` to allow the docker container to read this directory:
+
 ```bash
 chmod 644 ~/.aws/*
 ```
 
 Then, run the docker image and mount `~/.aws` to the `lakefs-sgc` home directory on the docker container:
+
 ```bash
 docker run \
 --network=host \
@@ -260,29 +258,35 @@ treeverse/lakefs-sgc:<tag> run <repository>
 
 `lakefs-sgc` will write its reports to `<REPOSITORY_STORAGE_NAMESPACE>/_lakefs/retention/gc/reports/<RUN_ID>/`. \
 _RUN_ID_ is generated during runtime by the Standalone GC. You can find it in the logs:
+
 ```
 "Marking objects for deletion" ... run_id=gcoca17haabs73f2gtq0
 ```
 
 In this prefix, you'll find 2 objects:
-- `deleted.csv` - Containing all marked objects in a CSV containing one `address` column. Example:
-   ```
-   address
-   "data/gcnobu7n2efc74lfa5ug/csfnri7n2efc74lfa69g,_e7P9j-1ahTXtofw7tWwJUIhTfL0rEs_dvBrClzc_QE"
-   "data/gcnobu7n2efc74lfa5ug/csfnri7n2efc74lfa78g,mKZnS-5YbLzmK0pKsGGimdxxBlt8QZzCyw1QeQrFvFE"
-   ...
-   ```
-- `summary.json` - A small json summarizing the GC run. Example:
-   ```json
-   {
-       "run_id": "gcoca17haabs73f2gtq0",
-       "success": true,
-       "first_slice": "gcss5tpsrurs73cqi6e0",
-       "start_time": "2024-10-27T13:19:26.890099059Z",
-       "cutoff_time": "2024-10-27T07:19:26.890099059Z",
-       "num_deleted_objects": 33000
-   }
-   ```
+
+- `deleted.csv` - Containing all marked objects in a CSV containing one `address` column.
+    
+    !!! example
+        ```
+        address
+        "data/gcnobu7n2efc74lfa5ug/csfnri7n2efc74lfa69g,_e7P9j-1ahTXtofw7tWwJUIhTfL0rEs_dvBrClzc_QE"
+        "data/gcnobu7n2efc74lfa5ug/csfnri7n2efc74lfa78g,mKZnS-5YbLzmK0pKsGGimdxxBlt8QZzCyw1QeQrFvFE"
+        ...
+        ```
+- `summary.json` - A small json summarizing the GC run. 
+    
+    !!! example
+        ```json
+        {
+            "run_id": "gcoca17haabs73f2gtq0",
+            "success": true,
+            "first_slice": "gcss5tpsrurs73cqi6e0",
+            "start_time": "2024-10-27T13:19:26.890099059Z",
+            "cutoff_time": "2024-10-27T07:19:26.890099059Z",
+            "num_deleted_objects": 33000
+        }
+        ```
 
 ### Delete marked objects
 
@@ -290,6 +294,7 @@ We recommend starting by backing up the marked objects to a different bucket bef
 backup is complete, you can proceed to delete the objects directly from the backup location.
 
 Use the following script to backup marked objects to another bucket:
+
 ```bash
 # Update these variables with your actual values
 storage_ns=<storage namespace (s3://...)>
@@ -304,6 +309,7 @@ cat run_id-$run_id.csv | tail -n +2 | xargs -I {} aws s3 mv "$storage_ns/{}" "$o
 ```
 
 To delete the marked objects, use the following script:
+
 ```bash
 # Update these variables with your actual values
 output_bucket=<output bucket (s3://...)>
@@ -312,8 +318,8 @@ run_id=<GC run id>
 aws s3 rm $output_bucket/run_id=$run_id --recursive
 ```
 
-{: .note }
-> Tip: Remember to periodically delete the backups to actually reduce storage costs.
+!!! tip
+    Remember to periodically delete the backups to actually reduce storage costs.
 
 ## Lab tests
 

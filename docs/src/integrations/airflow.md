@@ -38,61 +38,56 @@ pip install airflow-provider-lakefs
 The package exposes several operations to interact with a lakeFS server:
 
 1. `CreateBranchOperator` creates a new lakeFS branch from the source branch (`main` by default).
-
-   ```python
-   task_create_branch = CreateBranchOperator(
-      task_id='create_branch',
-      repo='example-repo',
-      branch='example-branch',
-      source_branch='main'
-   )
-   ```
+    ```python
+    task_create_branch = CreateBranchOperator(
+        task_id='create_branch',
+        repo='example-repo',
+        branch='example-branch',
+        source_branch='main'
+    )
+    ```
 1. `CommitOperator` commits uncommitted changes to a branch.
-
-   ```python
-   task_commit = CommitOperator(
-       task_id='commit',
-       repo='example-repo',
-       branch='example-branch',
-       msg='committing to lakeFS using airflow!',
-       metadata={'committed_from": "airflow-operator'}
-   )
-   ```
+    ```python
+    task_commit = CommitOperator(
+        task_id='commit',
+        repo='example-repo',
+        branch='example-branch',
+        msg='committing to lakeFS using airflow!',
+        metadata={'committed_from": "airflow-operator'}
+    )
+    ```
 1. `MergeOperator` merges 2 lakeFS branches.
-
-   ```python
-   task_merge = MergeOperator(
-     task_id='merge_branches',
-     source_ref='example-branch',
-     destination_branch='main',
-     msg='merging job outputs',
-     metadata={'committer': 'airflow-operator'}
-   )
-   ```
+    ```python
+    task_merge = MergeOperator(
+        task_id='merge_branches',
+        source_ref='example-branch',
+        destination_branch='main',
+        msg='merging job outputs',
+        metadata={'committer': 'airflow-operator'}
+    )
+    ```
 
 ### Sensors
 
 Sensors are also available that allow synchronizing a running DAG with external operations:
 
 1. `CommitSensor` waits until a commit has been applied to the branch
-   
-   ```python
-   task_sense_commit = CommitSensor(
-       repo='example-repo',
-       branch='example-branch',
-       task_id='sense_commit'
-   )
-   ```
+    ```python
+    task_sense_commit = CommitSensor(
+        repo='example-repo',
+        branch='example-branch',
+        task_id='sense_commit'
+    )
+    ```
 1. `FileSensor` waits until a given file is present on a branch.
-
-   ```python
-   task_sense_file = FileSensor(
-       task_id='sense_file',
-       repo='example-repo',
-       branch='example-branch',
-       path="file/to/sense"
-   )
-   ```
+    ```python
+    task_sense_file = FileSensor(
+        task_id='sense_file',
+        repo='example-repo',
+        branch='example-branch',
+        path="file/to/sense"
+    )
+    ```
 
 ### Example
 
@@ -103,15 +98,15 @@ in the airflow-provider-lakeFS repository shows how to use all of these.
 
 Sometimes an operator might not be supported by airflow-provider-lakeFS yet. You can access lakeFS directly by using:
 
-- SimpleHttpOperator to send [API requests](/reference/api/) to lakeFS. 
-- BashOperator with [lakectl](/reference/cli/) commands.
-For example, deleting a branch using BashOperator:
-```bash
+- `SimpleHttpOperator` to send [API requests](/reference/api/) to lakeFS. 
+- `BashOperator` with [lakectl](/reference/cli/) commands.
+
+For example, deleting a branch using `BashOperator`:
+
+```python
 commit_extract = BashOperator(
-   task_id='delete_branch',
-   bash_command='lakectl branch delete lakefs://example-repo/example-branch',
-   dag=dag,
+    task_id='delete_branch',
+    bash_command='lakectl branch delete lakefs://example-repo/example-branch',
+    dag=dag,
 )
 ```
-
-**Note** lakeFS version <= v0.33.1 uses '@' (instead of '/') as separator between repository and branch.

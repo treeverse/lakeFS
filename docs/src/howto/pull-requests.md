@@ -9,8 +9,6 @@ A pull request is a proposal to merge a set of changes from one branch into anot
 In a pull request, collaborators can review the proposed set of changes before they integrate the changes.
 Pull requests display the differences, or diffs, between the content in the source branch and the content in the target branch.
 
-[TOC]
-
 ## Open a Pull Request
 
 Create a branch, and make all the necessary changes in that branch.

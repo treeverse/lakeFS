@@ -15,7 +15,7 @@ lakeFS Enterprise
 
 
 {: .note}
-> RBAC is available on [lakeFS Cloud](/cloud/index/) and [lakeFS Enterprise](/enterprise/index/).
+> RBAC is available on [lakeFS Cloud](/cloud/index.md) and [lakeFS Enterprise](/enterprise/index.md).
 
 [TOC]
 
@@ -309,7 +309,7 @@ The following Policies are created during initial setup:
 
 ## Additional Policies
 
-You can create additional policies to further limit user access. Use the web UI or the [lakectl auth](/reference/cli/#lakectl-auth-policies-create) command to create policies. Here is an example to define read/write access for a specific repository:
+You can create additional policies to further limit user access. Use the web UI or the [lakectl auth](/reference/cli.md#lakectl-auth-policies-create) command to create policies. Here is an example to define read/write access for a specific repository:
 
 ```json
 {
@@ -436,4 +436,4 @@ They have the following policies granted to them:
 
 ## Pluggable Authentication and Authorization
 
-Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to a [remote authentication server](remote-authenticator.html) (or you are using lakeFS Cloud) then the [role-based access control](rbac.html) user interface can be used. If you are using RBAC with your self-managed lakeFS then the lakeFS configuration element `auth.ui_config.rbac` should be set to `external`. An enterprise (paid) solution of lakeFS should set `auth.ui_config.rbac` as `internal`.
+Authorization and authentication is pluggable in lakeFS. If lakeFS is attached to a [remote authentication server](remote-authenticator.md) (or you are using lakeFS Cloud) then the role-based access control user interface can be used. If you are using RBAC with your self-managed lakeFS then the lakeFS configuration element `auth.ui_config.rbac` should be set to `external`. An enterprise (paid) solution of lakeFS should set `auth.ui_config.rbac` as `internal`.

@@ -6,14 +6,10 @@ badges: ["Enterprise"]
 
 # Multi-Storage Backend
 
-lakeFS Enterprise
-{: .label .label-purple }
+!!! info
+    Multi-storage backend support is only available to licensed [lakeFS Enterprise](/enterprise/index/) customers.
+    [Contact us](https://info.lakefs.io/thanks-msb) to get started!
 
-{: .note}
-> Multi-storage backend support is only available to licensed [lakeFS Enterprise](/enterprise/index/) customers.
-> [Contact us](https://info.lakefs.io/thanks-msb) to get started!
-
-[TOC]
 
 ## What is Multi-storage Backend Support?
 
@@ -30,22 +26,20 @@ With a multi-store setup, lakeFS can connect to and manage any combination of su
 * other S3-compatible storage
 * local storage
 
-{: .note}
-> Multi-storage backends support is available from version v1.51.0 of lakeFS Enterprise.
+!!! note
+    Multi-storage backends support is available from version **1.51.0** of lakeFS Enterprise.
 
 ## Use Cases
 
 1. **Distributed Data Management**:
-   * Eliminate data silos and enable seamless cross-cloud collaboration.
-   * Maintain version control across different storage providers for consistency and reproducibility.
-   * Ideal for AI/ML environments where datasets are distributed across multiple storage locations.
-
+    * Eliminate data silos and enable seamless cross-cloud collaboration.
+    * Maintain version control across different storage providers for consistency and reproducibility.
+    * Ideal for AI/ML environments where datasets are distributed across multiple storage locations.
 2. **Unified Data Access**:
-   * Access data across multiple storage backends using a single, consistent [URI format](../understand/model.md#lakefs-protocol-uris).
-
+    * Access data across multiple storage backends using a single, consistent [URI format](../understand/model.md#lakefs-protocol-uris).
 3. **Centralized Access Control & Governance**:
-   * Access permissions and policies can be centrally managed across all connected storage systems using lakeFS [RBAC](../security/rbac.md).
-   * Compliance and security controls remain consistent, regardless of where the data is stored.
+    * Access permissions and policies can be centrally managed across all connected storage systems using lakeFS [RBAC](../security/rbac.md).
+    * Compliance and security controls remain consistent, regardless of where the data is stored.
 
 ## Configuration
 
@@ -54,104 +48,89 @@ The `blockstores.stores` field is an array of storage backends, each with its ow
 
 For a complete list of available options, refer to the [server configuration reference](../reference/configuration.md#blockstores).
 
-{: .note}
-> **Note:** If you're upgrading from a single-store lakeFS setup, refer to the [upgrade guidelines](#upgrading-from-single-to-multi-store)
-> to ensure a smooth transition.
+!!! note
+    If you're upgrading from a single-store lakeFS setup, refer to the [upgrade guidelines](#upgrading-from-single-to-multi-store)
+    to ensure a smooth transition.
 
 ### Example Configurations
 
-<div class="tabs">
-  <ul>
-    <li><a href="#on-prem">On-prem</a></li>
-    <li><a href="#multi-cloud">Multi-cloud</a></li>
-    <li><a href="#hybrid">Hybrid</a></li>
-  </ul>
-  
-  <div markdown="1" id="on-prem">
 
-This example setup configures lakeFS to manage data across two separate MinIO instances:
+=== "On-Prem"
+    This example setup configures lakeFS to manage data across two separate MinIO instances:
 
-```yaml
-blockstores:
-  signing:
-    secret_key: "some-secret"
-  stores:
-    - id: "minio-prod"
-      description: "Primary on-prem MinIO storage for production data"
-      type: "s3"
-      s3:
-        force_path_style: true
-        endpoint: 'http://minio-prod.local'
-        discover_bucket_region: false
-        credentials:
-          access_key_id: "prod_access_key"
-          secret_access_key: "prod_secret_key"
-    - id: "minio-backup"
-      description: "Backup MinIO storage for disaster recovery"
-      type: "s3"
-      s3:
-        force_path_style: true
-        endpoint: 'http://minio-backup.local'
-        discover_bucket_region: false
-        credentials:
-          access_key_id: "backup_access_key"
-          secret_access_key: "backup_secret_key"
-```
+    ```yaml
+    blockstores:
+    signing:
+        secret_key: "some-secret"
+    stores:
+        - id: "minio-prod"
+        description: "Primary on-prem MinIO storage for production data"
+        type: "s3"
+        s3:
+            force_path_style: true
+            endpoint: 'http://minio-prod.local'
+            discover_bucket_region: false
+            credentials:
+            access_key_id: "prod_access_key"
+            secret_access_key: "prod_secret_key"
+        - id: "minio-backup"
+        description: "Backup MinIO storage for disaster recovery"
+        type: "s3"
+        s3:
+            force_path_style: true
+            endpoint: 'http://minio-backup.local'
+            discover_bucket_region: false
+            credentials:
+            access_key_id: "backup_access_key"
+            secret_access_key: "backup_secret_key"
+    ```
 
-  </div>
+=== "Multi-Cloud"
+    This example setup configures lakeFS to manage data across two public cloud providers: AWS and Azure:
 
-  <div markdown="2" id="multi-cloud">
+    ```yaml
+    blockstores:
+    signing:
+        secret_key: "some-secret"
+    stores:
+        - id: "s3-prod"
+        description: "AWS S3 storage for production data"
+        type: "s3"
+        s3:
+            region: "us-east-1"
+        - id: "azure-analytics"
+        description: "Azure Blob storage for analytics data"
+        type: "azure"
+        azure:
+            storage_account: "analytics-account"
+            storage_access_key: "EXAMPLE45551FSAsVVCXCF"
+    ```
 
-This example setup configures lakeFS to manage data across two public cloud providers: AWS and Azure:
 
-```yaml
-blockstores:
-  signing:
-    secret_key: "some-secret"
-  stores:
-    - id: "s3-prod"
-      description: "AWS S3 storage for production data"
-      type: "s3"
-      s3:
-        region: "us-east-1"
-    - id: "azure-analytics"
-      description: "Azure Blob storage for analytics data"
-      type: "azure"
-      azure:
-        storage_account: "analytics-account"
-        storage_access_key: "EXAMPLE45551FSAsVVCXCF"
-```
+=== "Hybrid"
+    This hybrid setup allows lakeFS to manage data across both cloud and on-prem storages.
 
-  </div>
-
-  <div markdown="3" id="hybrid">
-
-This hybrid setup allows lakeFS to manage data across both cloud and on-prem storages.
-
-```yaml
-blockstores:
-  signing:
-    secret_key: "some-secret"
-  stores:
-    - id: "s3-archive"
-      description: "AWS S3 storage for long-term archival"
-      type: "s3"
-      s3:
-        region: "us-west-2"
-    - id: "minio-fast-access"
-      description: "On-prem MinIO for high-performance workloads"
-      type: "s3"
-      s3:
-        force_path_style: true
-        endpoint: 'http://minio.local'
-        discover_bucket_region: false
-        credentials:
-          access_key_id: "minio_access_key"
-          secret_access_key: "minio_secret_key"
-```
-
-  </div>
-</div>
+    ```yaml
+    blockstores:
+    signing:
+        secret_key: "some-secret"
+    stores:
+        - id: "s3-archive"
+        description: "AWS S3 storage for long-term archival"
+        type: "s3"
+        s3:
+            region: "us-west-2"
+        - id: "minio-fast-access"
+        description: "On-prem MinIO for high-performance workloads"
+        type: "s3"
+        s3:
+            force_path_style: true
+            endpoint: 'http://minio.local'
+            discover_bucket_region: false
+            credentials:
+            access_key_id: "minio_access_key"
+            secret_access_key: "minio_secret_key"
+    ```
 
 ### Key Considerations
 
@@ -162,8 +141,8 @@ blockstores:
   * Every blockstore needs to be authenticated.  So make sure to configure a profile or static credentials for all storages of type `s3`.
       S3 storage will use the credentials chain by default, so you might be able to use that for one storage.
 
-{: .warning}
-> Changing a storage ID is not supported and may result in unexpected behavior. Ensure IDs remain consistent once configured.
+!!! warning
+    Changing a storage ID is not supported and may result in unexpected behavior. Ensure IDs remain consistent once configured.
 
 ### Upgrading from a single storage backend to Multiple Storage backends
 
@@ -174,10 +153,10 @@ When upgrading from a single storage backend to a multi-storage setup, follow th
 * Define all previously available [single-blockstore settings](../reference/configuration.md#blockstore) under their respective storage backends.
 * The `signing.secret_key` is a required setting global to all connected stores.
 * Set `backward_compatible: true` for the existing storage backend to ensure:
-  * Existing repositories continue to use the original storage backend.
-  * Newly created repositories default to this backend unless explicitly assigned a different one, to ensure a non-breaking upgrade process.
-  * **This setting is mandatory** — lakeFS will not function if it is unset.  
-  * **Do not remove this setting** as long as you need to support repositories created before the upgrade.
+    * Existing repositories continue to use the original storage backend.
+    * Newly created repositories default to this backend unless explicitly assigned a different one, to ensure a non-breaking upgrade process.
+    * **This setting is mandatory** — lakeFS will not function if it is unset.  
+    * **Do not remove this setting** as long as you need to support repositories created before the upgrade.
     If removed, lakeFS will fail to start because it will treat existing repositories as disconnected from any configured storage.
 
 ### Adding or Removing a Storage Backend
@@ -190,12 +169,12 @@ To remove a storage backend:
 * Remove the storage entry from the configuration.
 * Restart the server.
 
-{: .warning}
-> lakeFS will fail to start if there are repositories defined on a removed storage. Ensure all necessary cleanup is completed before removing a storage backend.
+!!! warning
+    lakeFS will fail to start if there are repositories defined on a removed storage. Ensure all necessary cleanup is completed before removing a storage backend.
 
 ### Listing Connected Storage Backends
 
-The [Get Config](https://docs.lakefs.io/reference/api.html#/config/getConfig) API endpoint returns a list of storage
+The [Get Config](/reference/api/#/config/getConfig) API endpoint returns a list of storage
 configurations. In multi-storage setups, this is the recommended method to list connected storage backends and view their details.
 
 ### Troubleshooting
@@ -225,98 +204,95 @@ The migration process involves:
 Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup and Restore](backup-and-restore.md#python-helper-script-for-backup-and-restore).
 
 1. **Dump Repository References**
+    To dump the repository metadata:
 
-   To dump the repository metadata:
+    ```bash
+    # Dump a single repository
+    python lakefs-refs.py dump my-repository
+    
+    # Or dump all repositories
+    python lakefs-refs.py dump --all
+    ```
 
-   ```bash
-   # Dump a single repository
-   python lakefs-refs.py dump my-repository
-   
-   # Or dump all repositories
-   python lakefs-refs.py dump --all
-   ```
+    This will create manifest files for each repository.
 
-   This will create manifest files for each repository.
+    Optionally, you can use the `--rm` flag to automatically delete repositories after successful dump:
 
-   Optionally, you can use the `--rm` flag to automatically delete repositories after successful dump:
-
-   ```bash
-   # Dump and delete a single repository
-   python lakefs-refs.py dump my-repository --rm
-   
-   # Or dump and delete all repositories
-   python lakefs-refs.py dump --all --rm
-   ```
-
+    ```bash
+    # Dump and delete a single repository
+    python lakefs-refs.py dump my-repository --rm
+    
+    # Or dump and delete all repositories
+    python lakefs-refs.py dump --all --rm
+    ```
 2. **Delete Source Repositories** (if not using --rm flag)
 
-   If you didn't use the `--rm` flag in step 1, you'll need to delete the repositories manually. Note that deleting a repository only removes the repository record from lakeFS - it does not delete the actual data files or metadata from your storage.
+    If you didn't use the `--rm` flag in step 1, you'll need to delete the repositories manually. Note that deleting a repository only removes the repository record from lakeFS - it does not delete the actual data files or metadata from your storage.
 
-   You can delete repositories through:
+    You can delete repositories through:
 
-   a. The lakeFS UI
-   b. Using lakectl (ex: `lakectl repo delete lakefs://my-repository`)
+    a. The lakeFS UI
+    b. Using lakectl (ex: `lakectl repo delete lakefs://my-repository`)
 
 3. **Configure lakeFS Single Storage**
 
-   * Update your lakeFS configuration to use a single storage backend (using the `blockstore` section instead of `blockstores`).
-   * Start or restart lakeFS after applying the new configuration
-   * Example of single storage backend configuration: (multi storage backend example can be found in the [Configuration](#configuration) section)
+    * Update your lakeFS configuration to use a single storage backend (using the `blockstore` section instead of `blockstores`).
+    * Start or restart lakeFS after applying the new configuration
+    * Example of single storage backend configuration: (multi storage backend example can be found in the [Configuration](#configuration) section)
 
-   ```yaml
-   ...
-   blockstore:
-     type: s3
-     s3:
-       region: us-east-1
-   ...
-   ```
+    ```yaml
+    ...
+    blockstore:
+        type: s3
+        s3:
+        region: us-east-1
+    ...
+    ```
 
 4. **Copy Repository Data** (if needed)
 
-  If the repositories you want to restore were created on a storage system that lakeFS is no longer connected to:
+    If the repositories you want to restore were created on a storage system that lakeFS is no longer connected to:
 
-   a. Copy data from the old storage locations to the new one:
+    a. Copy data from the old storage locations to the new one:
 
-   ```bash
-   # Example for S3
-   aws s3 sync s3://old-bucket/path/to/storge-namespace s3://new-bucket/path/to/storage-namespace
-   
-   # Alternative: Using rclone for cross-provider transfers
-   # rclone supports various storage providers (S3, Azure, GCS, etc.)
-   rclone sync azure:old-container/path/to/storage-namespace aws:new-bucket/path/to/storage-namespace
-   ```
+    ```bash
+    # Example for S3
+    aws s3 sync s3://old-bucket/path/to/storge-namespace s3://new-bucket/path/to/storage-namespace
 
-   b. Update the manifest file, created on step 1 (dump repository references) with the new storage namespace:
+    # Alternative: Using rclone for cross-provider transfers
+    # rclone supports various storage providers (S3, Azure, GCS, etc.)
+    rclone sync azure:old-container/path/to/storage-namespace aws:new-bucket/path/to/storage-namespace
+    ```
 
-   ```json
-   {
-     "repository": {
-       "name": "my-repository",
-       "storage_namespace": "s3://new-bucket/path/to/repo", // ... update here ...
-       "default_branch": "main",
-       "storage_id": "storage-1"
-     },
-     "refs": {
-       // ... existing refs data ...
-     }
-   }
-   ```
+    b. Update the manifest file, created on step 1 (dump repository references) with the new storage namespace:
+
+    ```json
+    {
+        "repository": {
+        "name": "my-repository",
+        "storage_namespace": "s3://new-bucket/path/to/repo", // ... update here ...
+        "default_branch": "main",
+        "storage_id": "storage-1"
+        },
+        "refs": {
+        // ... existing refs data ...
+        }
+    }
+    ```
 
 5. **Restore Repositories**
+    !!! note
+        If you copied the data to a new location in step 4, make sure to update the storage namespace in the manifest files before restoring.
 
-   {: .note}
-   > Note: If you copied the data to a new location in step 4, make sure to update the storage namespace in the manifest files before restoring.
+    Use the `--ignore-storage-id` flag to ensure repositories are created without storage IDs in the single-storage environment:
 
-   Use the `--ignore-storage-id` flag to ensure repositories are created without storage IDs in the single-storage environment:
+    ```bash
+    # Restore a single repository
+    python lakefs-refs.py restore my-repository_manifest.json --ignore-storage-id
 
-   ```bash
-   # Restore a single repository
-   python lakefs-refs.py restore my-repository_manifest.json --ignore-storage-id
-   
-   # Or restore multiple repositories
-   python lakefs-refs.py restore repo1_manifest.json repo2_manifest.json --ignore-storage-id
-   ```
+    # Or restore multiple repositories
+    python lakefs-refs.py restore repo1_manifest.json repo2_manifest.json --ignore-storage-id
+    ```
 
 #### Important Notes
 
@@ -341,84 +317,50 @@ The choice of storage backend impacts the following lakeFS operations:
 
 In a multi-storage setup, users must specify a storage ID when creating a repository. This can be done using the following methods:
 
-<div class="tabs">
-  <ul>
-    <li><a href="#ui">UI</a></li>
-    <li><a href="#cli">CLI</a></li>
-    <li><a href="#api">API</a></li>
-    <li><a href="#hl-sdk">High-level Python SDK</a></li>
-  </ul>
+=== "UI"
+    Select a storage backend from the dropdown menu.
+    ![create repo with storage id](../assets/img/msb/msb_create_repo_ui.png)
 
-  <div markdown="1" id="ui">
+=== "CLI"
+    Use the `--storage-id` flag with the [repo create](../reference/cli.md#lakectl-repo-create) command:
 
-Select a storage backend from the dropdown menu.
-![create repo with storage id](../assets/img/msb/msb_create_repo_ui.png)
+    ```bash
+    lakectl repo create lakefs://my-repo s3://my-bucket --storage-id my-storage
+    ```
 
-  </div>
+    !!! note
+        The `--storage-id` flag is currently hidden in the CLI.
 
-  <div markdown="2" id="cli">
+=== "API"
+    Use the `storage_id` parameter in the [Create Repository endpoint](../reference/api.md#/repositories/createRepository).
 
-Use the `--storage-id` flag with the [repo create](../reference/cli.md#lakectl-repo-create) command:
+=== "High-Level Python SDK"
+    Starting from version 0.9.0 of the [High-level Python SDK](/integrations/python/#using-the-lakefs-sdk),
+    you can use `kwargs` to pass `storage_id` dynamically when calling the [create repository method](https://pydocs-lakefs.lakefs.io/lakefs.repository.html#lakefs.repository.Repository.create):
 
-```bash
-lakectl repo create lakefs://my-repo s3://my-bucket --storage-id my-storage
-```
+    ```python
+    import lakefs
 
-**Note**: The `--storage-id` flag is currently hidden in the CLI.
+    repo = lakefs.Repository("example-repo").create(storage_namespace="s3://storage-bucket/repos/example-repo", storage_id="my-storage-id")
+    ```
 
-  </div>
-
- <div markdown="3" id="api">
-
-Use the `storage_id` parameter in the [Create Repository endpoint](../reference/api.md#/repositories/createRepository).
-
-  </div>
-
-  <div markdown="4" id="hl-sdk">
-
-Starting from version 0.9.0 of the [High-level Python SDK](https://docs.lakefs.io/integrations/python.html#using-the-lakefs-sdk),
-you can use `kwargs` to pass `storage_id` dynamically when calling the [create repository method](https://pydocs-lakefs.lakefs.io/lakefs.repository.html#lakefs.repository.Repository.create):
-
-```python
-import lakefs
-
-repo = lakefs.Repository("example-repo").create(storage_namespace="s3://storage-bucket/repos/example-repo", storage_id="my-storage-id")
-```
-
-  </div>
-
-</div>
-
-**Important notes:**
-
-* In multi-storage setups where a storage backend is marked as `backward_compatible: true`, repository creation requests
-without a storage ID will default to this storage.
-* If no storage backend is marked as `backward_compatible`, repository creation requests without a storage ID will fail.
-* Each repository is linked to a single backend and stores data within a single storage namespace on that backend.
+!!! warning "Important Notes"
+    * In multi-storage setups where a storage backend is marked as `backward_compatible: true`, repository creation requests
+    without a storage ID will default to this storage.
+    * If no storage backend is marked as `backward_compatible`, repository creation requests without a storage ID will fail.
+    * Each repository is linked to a single backend and stores data within a single storage namespace on that backend.
 
 ### Viewing Repository Details
 
 To check which storage backend is associated with a repository:
 
-<div class="tabs">
-  <ul>
-    <li><a href="#ui">UI</a></li>
-    <li><a href="#api">API</a></li>
-  </ul>
+=== "UI"
+    The storage ID is displayed under "Storage" in the repository settings page.
+    ![repo settings](../assets/img/msb/msb_repo_settings_ui.png)
 
-  <div markdown="1" id="ui">
+=== "API"
+    Use the [List Repositories](../reference/api.md#/repositories/listRepositories) endpoint. Its response includes the storage ID.
 
-The storage ID is displayed under "Storage" in the repository settings page.
-![repo settings](../assets/img/msb/msb_repo_settings_ui.png)
-
-  </div>
-
-  <div markdown="2" id="api">
-
-Use the [List Repositories](../reference/api.md#/repositories/listRepositories) endpoint. Its response includes the storage ID.
-
-  </div>
-</div>
 
 ### Importing Data into a Repository
 
@@ -435,9 +377,9 @@ Multi-storage backend support has been validated on:
 * Amazon S3
 * Local storage
 
-{: .note}
-> **Note:** Other storage backends may work but have not been officially tested. If you're interested in exploring
-> additional configurations, please reach [contact us](https://info.lakefs.io/thanks-msb).
+!!! warning
+    Other storage backends may work but have not been officially tested. If you're interested in exploring
+    additional configurations, please reach [contact us](https://info.lakefs.io/thanks-msb).
 
 ### Unsupported clients
 

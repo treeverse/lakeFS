@@ -33,9 +33,9 @@ You can learn about these default metrics in this [post](https://povilasv.me/pro
 In addition, lakeFS exposes the following metrics to help monitor your deployment: 
 
 | Name in Prometheus               | Description                                                 | Labels
-| api_requests_total               | [lakeFS API](api.html) requests (counter)                     | **code**: http status<br/>**method**: http method
+| api_requests_total               | [lakeFS API](./api.md) requests (counter)                     | **code**: http status<br/>**method**: http method
 | api_request_duration_seconds     | Durations of lakeFS API requests (histogram)                | <br/>**operation**: name of API operation<br/>**code**: http status
-| gateway_request_duration_seconds | lakeFS [S3-compatible endpoint](s3.md) request (histogram)  | <br/>**operation**: name of gateway operation<br/>**code**: http status
+| gateway_request_duration_seconds | lakeFS [S3-compatible endpoint](./s3.md) request (histogram)  | <br/>**operation**: name of gateway operation<br/>**code**: http status
 | s3_operation_duration_seconds    | Outgoing S3 operations (histogram)                          | <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
 | gs_operation_duration_seconds    | Outgoing Google Storage operations (histogram)              | <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
 | azure_operation_duration_seconds | Outgoing Azure storage operations (histogram)               | <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
