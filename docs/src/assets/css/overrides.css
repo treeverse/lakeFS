@@ -114,6 +114,10 @@ code, pre {
 /* Button refinements            */
 /* ----------------------------- */
 
+.md-button {
+  font-size: 0.7rem !important;
+}
+
 /* Outline buttons (default) */
 .md-button:not(.md-button--primary) {
   border-color: var(--lakefs-magenta) !important;

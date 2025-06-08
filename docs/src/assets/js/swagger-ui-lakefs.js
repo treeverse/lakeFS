@@ -2,7 +2,7 @@
 window.onload = function() {
     // Begin Swagger UI call region
     const ui = SwaggerUIBundle({
-        url: "../assets/js/swagger.yml",
+        url: "/assets/js/swagger.yml",
         dom_id: '#swagger-ui',
         deepLinking: true,
         validatorUrl: null,
