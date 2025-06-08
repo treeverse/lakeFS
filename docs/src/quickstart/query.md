@@ -1,8 +1,6 @@
 ---
 title: 2️⃣ Query the data
 description: lakeFS quickstart / Query the pre-populated data using DuckDB browser that's built into lakeFS
-next: ["Create a branch of the data", "./branch.html"]
-previous: ["Launch the quickstart environment", "./launch.html"]
 ---
 
 # Let's Query Something 
@@ -34,3 +32,9 @@ DESC LIMIT 5;
 <img src="/assets/img/quickstart/duckdb-main-02.png" alt="An embedded DuckDB query showing a count of rows per country in the dataset." class="quickstart"/>
 
 Next we're going to make some changes to the data—but on a development branch so that the data in the main branch remains untouched. 
+
+---
+
+[← Launch the quickstart environment](launch.md){ .md-button } [Create a branch of the data →](branch.md){ .md-button .md-button--primary }
+
+---

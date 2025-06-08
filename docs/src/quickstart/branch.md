@@ -1,8 +1,6 @@
 ---
 title: 3️⃣ Create a branch
 description: lakeFS quickstart / Create a branch in lakeFS without copying data on disk, make a change to the branch, see that the original version of the data is unchanged. 
-next: ["Merge the branch back into main", "./commit-and-merge.html"]
-previous: ["Query the pre-populated data", "./query.html"]
 ---
 
 # Create a Branch
@@ -16,8 +14,8 @@ The first thing we'll do is create a branch for us to do this development agains
 ```bash
 lakectl config
 ```
-{: .note }
-If for some reason you get a command not found error, you can call lakectl by using `python -m lakectl` instead.
+!!! tip
+    If for some reason you get a command not found error, you can call lakectl by using `python -m lakectl` instead.
 
 
 Follow the prompts to enter the credentials that you got in the first step. Leave the **Server endpoint URL** as `http://127.0.0.1:8000`. 
@@ -30,7 +28,7 @@ lakectl branch create lakefs://quickstart/denmark-lakes --source lakefs://quicks
 
 You should get a confirmation message like this:
 
-```
+```text
 Source ref: lakefs://quickstart/main
 created branch 'denmark-lakes' 3384cd7cdc4a2cd5eb6249b52f0a709b49081668bb1574ce8f1ef2d956646816
 ```
@@ -86,7 +84,6 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-
 <img src="/assets/img/quickstart/duckdb-editor-04.png" alt="The DuckDB editor pane querying the lakes table showing only rows for Denmark remain" class="quickstart"/>
 
 ## Write the Data back to lakeFS
@@ -130,3 +127,10 @@ DESC LIMIT 5;
 <img src="/assets/img/quickstart/duckdb-main-02.png" alt="The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected." class="quickstart"/>
 
 In the next step we'll see how to commit our changes and merge our branch back into main. 
+
+
+---
+
+[← Query the pre-populated data](query.md){ .md-button } [Merge the branch back into main →](commit-and-merge.md){ .md-button .md-button--primary }
+
+---

@@ -1,8 +1,6 @@
 ---
 title: 6️⃣ Using Actions and Hooks in lakeFS
 description: lakeFS quickstart / Use Actions and Hooks to enforce conditions when committing and merging changes
-next: ["Work with lakeFS data on your local environment", "./work-with-data-locally.html"]
-previous: ["Rollback the changes", "./rollback.html"]
 ---
 
 # Actions and Hooks in lakeFS
@@ -22,51 +20,47 @@ _Hooks_ can be either a [Lua](/howto/hooks/lua/) script that lakeFS will execute
 ## Configuring the Action
 
 1. In lakeFS create a new branch called `add_action`. You can do this through the UI or with `lakectl`: 
-
     ```bash
     lakectl branch create lakefs://quickstart/add_action --source lakefs://quickstart/main
     ```
-
 2. Open up your favorite text editor (or emacs), and paste the following YAML: 
+    ```yaml
+    name: Check Commit Message and Metadata
+    on:
+        pre-commit:
+        branches:
+        - etl**
+    hooks:
+    - id: check_metadata
+        type: lua
+        properties:
+        script: |
+            commit_message=action.commit.message
+            if commit_message and #commit_message>0 then
+                print("✅ The commit message exists and is not empty: " .. commit_message)
+            else
+                error("\n\n❌ A commit message must be provided")
+            end
 
-   ```yaml
-   name: Check Commit Message and Metadata
-   on:
-     pre-commit:
-       branches:
-       - etl**
-   hooks:
-   - id: check_metadata
-     type: lua
-     properties:
-       script: |
-           commit_message=action.commit.message
-           if commit_message and #commit_message>0 then
-               print("✅ The commit message exists and is not empty: " .. commit_message)
-           else
-               error("\n\n❌ A commit message must be provided")
-           end
-   
-           job_name=action.commit.metadata["job_name"]
-           if job_name == nil then
-               error("\n❌ Commit metadata must include job_name")
-           else
-               print("✅ Commit metadata includes job_name: " .. job_name)
-           end
-   
-           version=action.commit.metadata["version"]
-           if version == nil then
-               error("\n❌ Commit metadata must include version")
-           else
-               print("✅ Commit metadata includes version: " .. version)
-               if tonumber(version) then
-                   print("✅ Commit metadata version is numeric")
-               else
-                   error("\n❌ Version metadata must be numeric: " .. version)
-               end
-           end
-   ```
+            job_name=action.commit.metadata["job_name"]
+            if job_name == nil then
+                error("\n❌ Commit metadata must include job_name")
+            else
+                print("✅ Commit metadata includes job_name: " .. job_name)
+            end
 
+            version=action.commit.metadata["version"]
+            if version == nil then
+                error("\n❌ Commit metadata must include version")
+            else
+                print("✅ Commit metadata includes version: " .. version)
+                if tonumber(version) then
+                    print("✅ Commit metadata version is numeric")
+                else
+                    error("\n❌ Version metadata must be numeric: " .. version)
+                end
+            end
+    ```
 3. Save this file as `/tmp/check_commit_metadata.yml`
 
     * You can save it elsewhere, but make sure you change the path below when uploading
@@ -87,15 +81,15 @@ _Hooks_ can be either a [Lua](/howto/hooks/lua/) script that lakeFS will execute
 
     <img width="75%" src="/assets/img/quickstart/hooks-01.png" alt="lakeFS Compare view showing the difference between `main` and `add_action` branches" class="quickstart"/>
 
+
 ## Testing the Action
 
-Let's remind ourselves what the rules are that the action is going to enforce. 
+!!! info "Let's remind ourselves what the rules are that the action is going to enforce."
+    When a commit is made to any branch that begins with `etl`: 
 
-> When a commit is made to any branch that begins with `etl`: 
-
-> * the commit message must not be blank
-> * there must be `job_name` and `version` metadata
-> * the `version` must be numeric
+    * the commit message must not be blank
+    * there must be `job_name` and `version` metadata
+    * the `version` must be numeric
 
 We'll start by creating a branch that's going to match the `etl` pattern, and then go ahead and commit a change and see how the action works. 
 
@@ -163,3 +157,10 @@ You can view the history of all action runs from the **Action** tab:
 
 <img width="75%" src="/assets/img/quickstart/hooks-08.png" alt="Action run history in lakeFS" class="quickstart"/>
 
+
+
+---
+
+[← Rollback the changes](rollback.md){ .md-button } [Work with lakeFS data on your local environment →](work-with-data-locally.md){ .md-button .md-button--primary }
+
+---

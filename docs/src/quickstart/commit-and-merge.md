@@ -1,8 +1,6 @@
 ---
 title: 4️⃣ Commit and Merge
 description: lakeFS quickstart / Commit the change and merge it back into the main branch
-next: ["Rollback the changes", "./rollback.html"]
-previous: ["Create a branch of the data", "./branch.html"]
 ---
 
 _In the previous step we branched our data from `main` into a new `denmark-lakes` branch, and overwrote the `lakes.parquet` to hold solely information about lakes in Denmark. Now we're going to commit that change (just like Git) and merge it back to main (just like git)._
@@ -45,3 +43,9 @@ We can confirm that this has worked by returning to the same object view of `lak
 Is all lost? Will our hero overcome the obstacles? No, and yes respectively!
 
 Have no fear; lakeFS can revert changes. Tune in for the final part of the quickstart to see how. 
+
+---
+
+[← Create a branch of the data](branch.md){ .md-button } [Rollback the changes →](rollback.md){ .md-button .md-button--primary }
+
+---

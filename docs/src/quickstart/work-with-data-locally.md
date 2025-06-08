@@ -1,8 +1,6 @@
 ---
 title: 7️⃣ Work with lakeFS data locally
 description: lakeFS quickstart / Bring lakeFS data to a local environment to show how lakeFS can be used for ML experiments development. 
-next: ["Resources for learning more about lakeFS", "./learning-more-lakefs.html"]
-previous: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
 ---
 
 # Work with lakeFS Data Locally
@@ -14,13 +12,11 @@ accelerates the process by enabling interactive and offline development and redu
 
 lakeFS provides 2 ways to expose versioned data locally
 
-[TOC]
-
 ## lakeFS Mount
 
-lakeFS Mount is available for [lakeFS Enterprise](../enterprise/index.md) and [lakeFS Cloud](../cloud/index.md) customers. <br/> 
-You can try it out by [signing up](https://info.lakefs.io/thanks-lakefs-mounts)
-{: .note }
+!!! info
+    lakeFS Mount is available for [lakeFS Enterprise](../enterprise/index.md) and [lakeFS Cloud](../cloud/index.md) customers. You can try it out by [signing up](https://info.lakefs.io/thanks-lakefs-mounts)
+
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU"></iframe>
 
@@ -43,26 +39,24 @@ Prerequisites:
     ```
 
 2. Mount images from your quickstart repository into a local directory named `my_local_dir`
-```bash
-everest mount lakefs://quickstart/my-experiment/images my_local_dir
-```
 
-Once complete, `my_local_dir` should be mounted with the specified path.
+    ```bash
+    everest mount lakefs://quickstart/my-experiment/images my_local_dir
+    ```
+    
+    Once complete, `my_local_dir` should be mounted with the specified path.
 
 3. Verify that `my_local_dir` is linked to the correct path in your lakeFS remote:
-
-```bash
-ls -l my_local_dir
-```
-
-
+    ```bash
+    ls -l my_local_dir
+    ```
 4. To unmount the directory, simply run:
 
-```bash
-everest umount ./my_local_dir
-```
+    ```bash
+    everest umount ./my_local_dir
+    ```
 
-Which will unmount the path and terminate the local mount-server.
+    Which will unmount the path and terminate the local mount-server.
 
 
 ## lakectl local
@@ -74,61 +68,50 @@ container and edit an image dataset used for ML model development. Unlike lakeFS
 
 Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/blog/guide-lakectl-local-machine-learning/) 
 
-### Cloning a Subset of lakeFS Data into a Local Directory
-{: .no_toc }
+<h3>>Cloning a Subset of lakeFS Data into a Local Directory</h3>
 
 1. In lakeFS create a new branch called `my-experiment`. You can do this through the UI or with `lakectl`:
-
     ```bash
     lakectl branch create lakefs://quickstart/my-experiment --source lakefs://quickstart/main
     ```
-
 2. Clone images from your quickstart repository into a local directory named `my_local_dir` within your container:   
-
     ```bash
     lakectl local clone lakefs://quickstart/my-experiment/images my_local_dir
     ```
-
 3. Verify that `my_local_dir` is linked to the correct path in your lakeFS remote: 
-  
     ```bash
     lakectl local list
     ```
-
    You should see confirmation that my_local_dir is tracking the desired lakeFS path.:    
-   
    ```bash
        my_local_dir	lakefs://quickstart/my-experiment/images/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53
    ```
-
 4. Verify that your local environment is up-to-date with its remote path:
     
-   ```bash
+    ```bash
     lakectl local status my_local_dir
     ```
+
     You should get a confirmation message like this showing that there is no difference between your local environment and the lakeFS remote:
 
-   ```bash
-   diff 'local:///home/lakefs/my_local_dir' <--> 'lakefs://quickstart/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53/images/'...
-   diff 'lakefs://quickstart/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53/images/' <--> 'lakefs://quickstart/my-experiment/images/'...
+    ```text
+    diff 'local:///home/lakefs/my_local_dir' <--> 'lakefs://quickstart/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53/images/'...
+    diff 'lakefs://quickstart/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53/images/' <--> 'lakefs://quickstart/my-experiment/images/'...
 
-   No diff found.
-   ```    
+    No diff found.
+    ```    
 
-### Making Changes to Data Locally
-{: .no_toc }
-
+<h3>Making Changes to Data Locally</h3>
 
 1. Clean the dataset by removing images larger than 225 KB:
     ```bash  
     find my_local_dir -type f -size +225k -delete
-    ```
-   
+    ```   
 2. Check the status of your local changes compared to the lakeFS remote path:
     ```bash
     lakectl local status my_local_dir
     ```
-   
+
     You should get a confirmation message like this, showing the modifications you made locally: 
     ```bash
     diff 'local:///home/lakefs/my_local_dir' <--> 'lakefs://quickstart/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53/images/'...
@@ -144,8 +127,8 @@ Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/b
     ╚════════╩══════════╩═════════════════════╝
     ```
 
-### Pushing Local Changes to lakeFS
-{: .no_toc }
+<h3>Pushing Local Changes to lakeFS</h3>
+
 
 Once we are done with editing the image dataset in our local environment, we will push our changes to the lakeFS remote so that 
 the improved dataset is shared and versioned.
@@ -164,16 +147,20 @@ the improved dataset is shared and versioned.
         
     <img width="75%" src="/assets/img/quickstart/lakectl-local-02.png" alt="A comparison between a branch that includes local changes to the main branch" class="quickstart"/>
 
-## Bonus Challenge
-{: .no_toc }
-
-And so with that, this quickstart for lakeFS draws to a close. If you're simply having _too much fun_ to stop then here's an exercise for you.
-
-Implement the requirement from the beginning of this quickstart *correctly*, such that you write `denmark-lakes.parquet` in the respective branch and successfully merge it back into main. Look up how to list the contents of the `main` branch and verify that it looks like this:
-
-```
-object          2023-03-21 17:33:51 +0000 UTC    20.9 kB         denmark-lakes.parquet
-object          2023-03-21 14:45:38 +0000 UTC    916.4 kB        lakes.parquet
-```
 
 
+!!! example "Bonus Challenge"
+    And so with that, this quickstart for lakeFS draws to a close. If you're simply having _too much fun_ to stop then here's an exercise for you.
+
+    Implement the requirement from the beginning of this quickstart *correctly*, such that you write `denmark-lakes.parquet` in the respective branch and successfully merge it back into main. Look up how to list the contents of the `main` branch and verify that it looks like this:
+
+    ```text
+    object          2023-03-21 17:33:51 +0000 UTC    20.9 kB         denmark-lakes.parquet
+    object          2023-03-21 14:45:38 +0000 UTC    916.4 kB        lakes.parquet
+    ```
+
+---
+
+[← Using Actions and Hooks in lakeFS](actions-and-hooks.md){ .md-button } [Learn more about lakeFS →](learning-more-lakefs.md){ .md-button .md-button--primary }
+
+---

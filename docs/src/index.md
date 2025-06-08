@@ -43,8 +43,8 @@ These include [branching](./quickstart/branch.html), [merging](quickstart/commit
 lakeFS is an open source project that supports managing data in AWS S3, Azure Blob Storage, Google Cloud Storage (GCS), S3-Compatible storage solutions and even locally mounted directories. 
 It integrates seamlessly with popular data frameworks such as [Spark](./integrations/spark.md), [AWS SageMaker](./integrations/sagemaker.md), [Pandas](./integrations/python.md#integrations-with-popular-data-science-packages), [Tensorflow](./integrations/python.md#integrations-with-popular-data-science-packages), [Polars](./integrations/python.md#integrations-with-popular-data-science-packages), [HuggingFace Datasets](./integrations/huggingface_datasets.md) and many more.
 
-{: .note}
-For more details and a full list see [the integrations pages](./integrations/).
+!!! info
+    For more details and a full list see [the integrations pages](./integrations/).
 
 With lakeFS, you can use any of the tools and libraries you are used to work with to read and write data directly from a repository, e.g.
 
@@ -60,7 +60,6 @@ Using this method, lakeFS acts as a metadata layer: it figures out which objects
     <img src="/assets/img/lakeFSArchitecture.png"/>
 </p>
 
-{: .pb-5 }
 
 Additionally, lakeFS maintains compatibility with the S3 API to minimize adoption
 friction. You can use it as a drop-in replacement for S3 from the perspective of
@@ -68,7 +67,7 @@ any tool interacting with a data lake.
 
 For example, take the common operation of reading unstructured data from the object store using [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html){: target="_blank" } (Python):
 
-```py
+```python
 >>> import boto3
 >>> 
 >>> s3 = boto3.resource('s3')
@@ -98,9 +97,10 @@ Through its versioning engine, lakeFS enables the following built-in operations 
 * **revert:** returns a repo to the exact state of a previous commit.
 * **tag:** a pointer to a single immutable commit with a readable, meaningful name.
 
-*See the [object model](./understand/model.md) for an in-depth
-definition of these, and the [CLI reference](reference/cli.md) for the
-full list of commands.*
+!!! info ""
+    See the [object model](./understand/model.md) for an in-depth
+    definition of these, and the [CLI reference](reference/cli.md) for the
+    full list of commands.
 
 Incorporating these operations into your data and model development provides the same collaboration and organizational benefits you get when managing application code with source control.
 
@@ -132,7 +132,8 @@ Being able to look at data as it was at a given point is particularly useful in 
 
     With lakeFS you can create a branch from a commit to debug an issue in isolation.
 
-👉🏻 [Read More](./understand/use_cases/reproducibility.html)
+
+[👉🏻 Read More](./understand/use_cases/reproducibility){ .md-button }
 
 ### Collaboration during development and training
 
@@ -147,7 +148,7 @@ With lakeFS you can even open [pull requests](./howto/pull-requests.md), allowin
 lakeFS makes creating isolated dev/test environments for transformations, model development, parallel experiments, and ETL processes- achieved through the use of zero-copy branches.
 This enables you to test and validate code changes on production data without impacting it, as well as run analysis and experiments on production data in an isolated clone. 
 
-👉🏻 [Read more](./understand/use_cases/etl_testing.html)
+[👉🏻 Read More](./understand/use_cases/etl_testing.md){ .md-button }
 
 
 ### Rollback of Data Changes and Recovery from Data Errors
@@ -157,7 +158,7 @@ Human error or misconfigurations can lead to erroneous data making its way into 
 With lakeFS, you can avoid these inefficiencies by committing snapshots of data at well-defined times. 
 This allows for instant recovery: simply identify a good historical commit and restore or copy from it with a single operation.
 
-👉🏻 [Read more](./understand/use_cases/rollback.html)
+[👉🏻 Read More](./understand/use_cases/rollback){ .md-button }
 
 ### Establishing data quality guarantees - Write-Audit-Publish
 
@@ -165,8 +166,8 @@ The best way to deal with mistakes is to avoid them. A data source that is inges
 
 With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
 
-👉🏻 [Read more](./understand/use_cases/cicd_for_data.html)
+[👉🏻 Read more](./understand/use_cases/cicd_for_data){ .md-button }
 
 ## Next Step
 
-Try lakeFS on the [cloud](https://lakefs.cloud/) or [run it locally](https://docs.lakefs.io/quickstart/)
+Try lakeFS on the [cloud](/cloud/) or [run it locally](/quickstart/)

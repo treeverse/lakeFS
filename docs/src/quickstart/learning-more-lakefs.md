@@ -1,12 +1,11 @@
 ---
 title: Learn more about lakeFS
 description: Learn more about lakeFS here with links to resources including quickstart, samples, installation guides, and more. 
-previous: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
 ---
 
 # Learn more about lakeFS
 
-The [lakeFS quickstart](/quickstart/index/) is just the beginning of your lakeFS journey 🛣️
+The [lakeFS quickstart](/quickstart/) is just the beginning of your lakeFS journey 🛣️
 
 Here are some more resources to help you find out more about lakeFS. 
 
@@ -14,81 +13,59 @@ Here are some more resources to help you find out more about lakeFS.
 
 Enjoyed the quickstart and want to try out lakeFS against your own data? Here's how to run lakeFS locally, connecting to an object store. 
 
-<div class="tabs">
-  <ul>
-    <li><a href="#on-aws-s3">AWS S3</a></li>
-    <li><a href="#on-azure-blob">Azure Blob Storage</a></li>
-    <li><a href="#on-google-gcs">Google Cloud Storage</a></li>
-    <li><a href="#on-minio">MinIO</a></li>
-  </ul> 
-  <div markdown="1" id="on-aws-s3">
+!!! note
+    Make sure the Quickstart server from the previous steps isn't also running as you'll get a port conflict.
 
-Note: Make sure the Quickstart server from the previous steps isn't also running as you'll get a port conflict.
-{: .note }
+=== "AWS S3"
 
-```bash
-export LAKEFS_BLOCKSTORE_TYPE="s3"
-export AWS_ACCESS_KEY_ID="YourAccessKeyValue"
-export AWS_SECRET_ACCESS_KEY="YourSecretKeyValue"
-lakefs run --local-settings
-```
+    ```bash
+    export LAKEFS_BLOCKSTORE_TYPE="s3"
+    export AWS_ACCESS_KEY_ID="YourAccessKeyValue"
+    export AWS_SECRET_ACCESS_KEY="YourSecretKeyValue"
+    lakefs run --local-settings
+    ```
 
-  </div>
-  <div markdown="1" id="on-azure-blob">
+=== "Azure Blob Storage"
 
-Note: Make sure the Quickstart server from the previous steps isn't also running as you'll get a port conflict.
-{: .note }
+    ```bash
+    export LAKEFS_BLOCKSTORE_TYPE="azure"
+    export LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT="YourAzureStorageAccountName"
+    export LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY="YourAzureStorageAccessKey"
+    lakefs run --local-settings
+    ```
 
-```bash
-export LAKEFS_BLOCKSTORE_TYPE="azure"
-export LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCOUNT="YourAzureStorageAccountName"
-export LAKEFS_BLOCKSTORE_AZURE_STORAGE_ACCESS_KEY="YourAzureStorageAccessKey"
-lakefs run --local-settings
-```
+=== "Google Cloud Storage"
 
-  </div>
-  <div markdown="1" id="on-google-gcs">
+    ```bash
+    export LAKEFS_BLOCKSTORE_TYPE="gs"
+    export LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON="YourGoogleServiceAccountKeyJSON"
+    lakefs run --local-settings
+    ```
+    where you will replace ```YourGoogleServiceAccountKeyJSON``` with JSON string that contains your Google service account key.
 
-Note: Make sure the Quickstart server from the previous steps isn't also running as you'll get a port conflict.
-{: .note }
+    If you want to use the JSON file that contains your Google service account key instead of JSON string (as in the previous command) then go to the directory where JSON file is stored and run the command with local parameters:
 
-```bash
-export LAKEFS_BLOCKSTORE_TYPE="gs"
-export LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON="YourGoogleServiceAccountKeyJSON"
-lakefs run --local-settings
-```
-where you will replace ```YourGoogleServiceAccountKeyJSON``` with JSON string that contains your Google service account key.
+    ```bash
+    export LAKEFS_BLOCKSTORE_TYPE="gs"
+    export LAKEFS_BLOCKSTORE_GS_CREDENTIALS_FILE="/myfiles/YourGoogleServiceAccountKey.json"
+    lakefs run --local-settings
+    ```
 
-If you want to use the JSON file that contains your Google service account key instead of JSON string (as in the previous command) then go to the directory where JSON file is stored and run the command with local parameters:
+    This command will mount your present working directory (PWD) within the container and will read the JSON file from your PWD.
 
-```bash
-export LAKEFS_BLOCKSTORE_TYPE="gs"
-export LAKEFS_BLOCKSTORE_GS_CREDENTIALS_FILE="/myfiles/YourGoogleServiceAccountKey.json"
-lakefs run --local-settings
-```
+=== "MinIO"
+    To use lakeFS with MinIO (or other S3-compatible object storage), use the following example:
 
-This command will mount your present working directory (PWD) within the container and will read the JSON file from your PWD.
 
-  </div>
-  <div markdown="1" id="on-minio">
-
-To use lakeFS with MinIO (or other S3-compatible object storage), use the following example:
-
-Note: Make sure the Quickstart server from the previous steps isn't also running as you'll get a port conflict.
-{: .note }
-
-```bash
-export LAKEFS_BLOCKSTORE_TYPE="s3"
-export LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE="true"
-export LAKEFS_BLOCKSTORE_S3_ENDPOINT="http://<minio_endpoint>"
-export LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION="false"
-export LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID="<minio_access_key>"
-export LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY="<minio_secret_key>"
-lakefs run --local-settings
-```
-
-  </div>
-</div>
+    ```bash
+    export LAKEFS_BLOCKSTORE_TYPE="s3"
+    export LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE="true"
+    export LAKEFS_BLOCKSTORE_S3_ENDPOINT="http://<minio_endpoint>"
+    export LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION="false"
+    export LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID="<minio_access_key>"
+    export LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY="<minio_secret_key>"
+    lakefs run --local-settings
+    ```
 
 ## Deploying lakeFS
 
@@ -128,3 +105,9 @@ We describe lakeFS as "_Git for data_" but what does that actually mean? Have a 
 
 
 [onprem-k8s]:  /howto/deploy/onprem/#k8s
+
+---
+
+[← Work with lakeFS data on your local environment](work-with-data-locally.md){ .md-button  }
+
+---
