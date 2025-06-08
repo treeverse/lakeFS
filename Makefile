@@ -165,7 +165,7 @@ package-python-wrapper:
 package: package-python
 
 .PHONY: gen-api
-gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
+gen-api: docs/src/assets/js/swagger.yml ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth ./pkg/authentication
 
 .PHONY: gen-code
