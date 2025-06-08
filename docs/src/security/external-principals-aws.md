@@ -5,15 +5,10 @@ badges: ["Enterprise"]
 ---
 
 # Authenticate to lakeFS with AWS IAM Roles
-{: .d-inline-block }
 
-lakeFS Enterprise
-{: .label .label-purple }
-
-{: .note}
-> External principals API is available for lakeFS Enterprise. If you're using the open-source version you can check the [pluggable APIs](https://docs.lakefs.io/security/rbac.html#pluggable-authentication-and-authorization).
-
-[TOC]
+!!! info
+    Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
+    If you're using the open-source version you can check the [pluggable APIs](https://docs.lakefs.io/security/rbac.html#pluggable-authentication-and-authorization).
 
 ## Overview 
 
@@ -49,16 +44,16 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 
 ## Server Configuration
 
-{: .note}
-> Note: lakeFS Helm chart supports the configuration since version `1.2.11` - see usage [values.yaml example](https://github.com/treeverse/charts/blob/master/examples/lakefs/enterprise/values-external-aws.yaml).
+!!! info
+    lakeFS Helm chart supports the configuration since version `1.2.11` - see usage [values.yaml example](https://github.com/treeverse/charts/blob/master/examples/lakefs/enterprise/values-external-aws.yaml).
 
 * in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at [configuration reference](/reference/configuration/)
 
 For the full list of the Fluffy server configuration, see [Fluffy Configuration][fluffy-configuration] under `auth.external.aws_auth`
 
 
-{: .note}
-> By default, lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
+!!! note
+    By default, lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
 
 
 **Example configuration with required headers:**
@@ -108,9 +103,13 @@ configuration = lakefs.Configuration(host = "...",username="...",password="...")
 username = "<lakefs-user>"
 api = lakefs.ApiClient(configuration)
 auth_api = lakefs.AuthApi(api)
+
 # attach the role(s)to a lakeFS user
-auth_api.create_user_external_principal(user_id=username, principal_id='arn:aws:sts::<id>:assumed-role/<role A>/<optional session name>')
-auth_api.create_user_external_principal(user_id=username, principal_id='arn:aws:sts::<id>:assumed-role/<role B>')
+auth_api.create_user_external_principal(
+    user_id=username, principal_id='arn:aws:sts::<id>:assumed-role/<role A>/<optional session name>')
+auth_api.create_user_external_principal(
+    user_id=username, principal_id='arn:aws:sts::<id>:assumed-role/<role B>')
+
 # list the roles attached to the user
 resp = auth_api.list_user_external_principals(user_id=username)
 for p in resp.results:
@@ -122,9 +121,10 @@ for p in resp.results:
 
 The login to lakeFS is done by calling the [login API][login-api] with the `GetCallerIdentity` request signed by the client.
 Currently, the login operation is supported out of the box in:
+
 - [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark]
 - [python](#login-with-python)
-- [Everest mount](https://docs.lakefs.io/reference/mount.html#authenticating-with-aws-iam-role)
+- [Everest mount](/reference/mount/#authenticating-with-aws-iam-role)
 
 For other use cases authenticate to lakeFS via login endpoint, this will require building the request input.
 
@@ -136,7 +136,7 @@ For other use cases authenticate to lakeFS via login endpoint, this will require
 2. The Python SDK requires additional packages to be installed in order to generate a lakeFS client with the assumed role.
 To install the required packages, run the following command:
 
-```sh
+```shell
   pip install "lakefs[aws-iam]"
 ```
 
@@ -144,14 +144,14 @@ There are two ways in which external principals can be used to authenticate to l
 
 1. If no other authentication flow is provided, and the `credentials.provider.type` configuration is set to `aws_iam` in `.lakectl.yaml`, the client will use the machine's AWS role to authenticate with lakeFS:
     
-   ```yaml
+    ```yaml
     credentials:
-      provider:
+        provider:
         type: aws_iam
         aws_iam:
-          token_ttl_seconds: 3600            # TTL for the temporary token (default: 3600)
-          url_presign_ttl_seconds: 60        # TTL for presigned URLs (default: 60)
-          token_request_headers:             # Optional headers for token requests
+            token_ttl_seconds: 3600      # TTL for the temporary token (default: 3600)
+            url_presign_ttl_seconds: 60  # TTL for presigned URLs (default: 60)
+            token_request_headers:       # Optional headers for token requests
             HeaderName: HeaderValue
     ```
     Or using environment variables:
@@ -161,25 +161,27 @@ There are two ways in which external principals can be used to authenticate to l
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_PRESIGNED_URL_TTL_SECONDS="60"
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS='{"HeaderName":"HeaderValue"}'
     ```
-   To use the client, merely `import lakefs` and use it as you would normally do:
-   ```python
-   import lakefs
+    To use the client, merely `import lakefs` and use it as you would normally do:
+    ```python
+    import lakefs
 
-   for branch in lakefs.repository("example-repo").branches():
+    for branch in lakefs.repository("example-repo").branches():
     print(branch)
-   ```
-   {: .warning }
-   > Please note, using the IAM provider configurations will not work with the lakectl command line tool, and will stop you from running it.
+    ```
+
+    !!! warning
+        Please note, using the IAM provider configurations will not work with the lakectl command line tool, and will stop you from running it.
 
 
 2. Generate a lakeFS client with the assumed role by initiating a boto3 session with the desired role and call `lakefs.client.frow_aws_role`:
-    
-   ```python
+
+    ```python
     import lakefs
     import boto3    
+
     session = boto3.Session()
     my_client = lakefs.client.from_aws_role(session=session, ttl_seconds=7200, host="<lakefs-host>")
-    
+
     # list repositories
     repos = lakefs.repositories(client=my_client)
     for r in repos:

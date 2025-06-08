@@ -5,20 +5,12 @@ badges: ["Enterprise"]
 ---
 
 # Short-lived token (STS like)
-{: .d-inline-block }
-lakeFS Cloud
-{: .label .label-green }
 
-lakeFS Enterprise
-{: .label .label-purple }
-
-{: .note}
-> STS Login is available in lakeFS Cloud and lakeFS Enterprise. currently only tested on lakeFS Enterprise.
+!!! info
+    Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
 
 Secure Token Service (STS) authentication in lakeFS enables users to authenticate to lakeFS using temporary credentials obtained from an Identity Provider (IdP) via the OpenID Connect (OIDC) Authentication workflow.
 This document outlines the process of setting up the STS authentication flow and using the temporary credentials to interact with lakeFS through the [high-level Python SDK](../integrations/python.md).
-
-
 
 ## Login
 
@@ -46,7 +38,6 @@ auth:
     authentication_api:
         endpoint: <url-to-remote-authenticator-endpoint>
 
-
 ```
 
 The endpoint value should point to the external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml).    
@@ -56,11 +47,12 @@ Make sure to replace <url-to-remote-authenticator-endpoint> with the actual URL 
 ### Sample implementation to generate the code, redirect_uri, and state
 The following code snippet demonstrates how to generate the values that are required to initiate a new client session using the STS login feature.
 
-{: .note}
-> Replace `<your-authorize-endpoint>` with the path to your IdP authorize endpoint.  
-> *Examples:*  
-> Auth0: The authorize endpoint will be `https://<your-auth0-domain>/authorize`  
-> Entra ID: The authorize endpoint will be `https://<your-entra-domain>/oauth2/v2.0/authorize`
+!!! info
+    Replace `<your-authorize-endpoint>` with the path to your IdP authorize endpoint.  
+    
+    !!! example "Examples"
+        - Auth0: The authorize endpoint will be `https://<your-auth0-domain>/authorize`  
+        - Entra ID: The authorize endpoint will be `https://<your-entra-domain>/oauth2/v2.0/authorize`
 
 ```javascript
 import crypto from 'crypto';
@@ -141,6 +133,7 @@ sequenceDiagram
     C->>B: Auth response
     B->>A: auth JWT
 ```
+
 - lakeFS Client: Initiates the authentication process by providing IdP credentials.
 - lakeFS Server: Facilitates the authentication request between the client and the remote authenticator.
 - Remote Authenticator: Acts as a bridge between lakeFS and the IdP, handling credential validation.

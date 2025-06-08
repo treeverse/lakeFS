@@ -39,13 +39,14 @@ In a single user setup, replacing credentials can be done as follows:
     ```
 4. Re-run lakeFS server
 
-{: .note .warning}
-> Calling the `superuser` command with pre-defined `--access-key-id` and `--secret-access-key` is possible,
-> but should be done with caution. Make sure that `--secret-access-key` is **not empty**,
-> as providing an access key without a secret key will trigger an ACL import flow
-> (see [Migration of existing user](#migration-of-existing-user)).
-> In case you already deleted the user by following step (1), this import operation will **fail** and result in an 
-> **unrecoverable** state, from which a clean installation is the only way out.
+!!! warning
+    Calling the `superuser` command with pre-defined `--access-key-id` and `--secret-access-key` is possible,
+    but should be done with caution. Make sure that `--secret-access-key` is **not empty**,
+    as providing an access key without a secret key will trigger an ACL import flow
+    (see [Migration of existing user](#migration-of-existing-user)).
+
+    In case you already deleted the user by following step (1), this import operation will **fail** and result in an 
+    **unrecoverable** state, from which a clean installation is the only way out.
 
 ## ACLs
 
@@ -58,40 +59,46 @@ In order to do that, users will need to run the separate ACL server as part of t
 
 Under the `contrib/auth/acl` you will be able to find an ACL server reference.
 
-{: .note .warning}
-> This implementation is a reference and is not fit for production use. 
-> 
-> For a more robust authorization solution, please see [Role-Based Access Control](rbac.md), available in [lakeFS Cloud](/cloud/index.md) and [lakeFS Enterprise](/enterprise/index.md). 
+!!! warning
+    This implementation is a reference and is not fit for production use. 
+
+    For a more robust authorization solution, please see [Role-Based Access Control](rbac.md), available in [lakeFS Cloud](/cloud/index.md) and [lakeFS Enterprise](/enterprise/index.md). 
 
 
 The configuration of the ACL server is similar to lakeFS configuration, here's an example of an `.aclserver.yaml` config file:
-   ```yaml
-   ---
-   listen_address: "[ACL_SERVER_LISTEN_ADDRESS]"
-   database:
-     type: "postgres"
-     postgres:
-       connection_string: "[DATABASE_CONNECTION_STRING]"
-  
-   encrypt:
-     # This should be the same encryption key as in lakeFS
-     secret_key: "[ENCRYPTION_SECRET_KEY]"
-   ```
+
+```yaml
+---
+listen_address: "[ACL_SERVER_LISTEN_ADDRESS]"
+database:
+    type: "postgres"
+    postgres:
+    connection_string: "[DATABASE_CONNECTION_STRING]"
+
+encrypt:
+    # This should be the same encryption key as in lakeFS
+    secret_key: "[ENCRYPTION_SECRET_KEY]"
+```
+
 It is possible to use environment variables to configure the server as in lakeFS. Use the `ACLSERVER_` prefix to do so.  
-For full configuration reference see: [this](https://github.com/treeverse/lakeFS/blob/7b2a0ac2f1afedd2059284c32e7dacb945b2ae90/contrib/auth/acl/config.go#L26)
+
+!!! info
+    For full configuration reference see: [this](https://github.com/treeverse/lakeFS/blob/7b2a0ac2f1afedd2059284c32e7dacb945b2ae90/contrib/auth/acl/config.go#L26)
 
 
 ### lakeFS Configuration
 
 For the ACL server to work, configure the following values in lakeFS:  
-`auth.ui_config.rbac`: `simplified`  
-`auth.api.endpoint`: `[ACL_SERVER_LISTEN_ADDRESS]`
+
+- `auth.ui_config.rbac`: `simplified`  
+- `auth.api.endpoint`: `[ACL_SERVER_LISTEN_ADDRESS]`
 
 ### Migration of existing user
 
 For installation with multiple users / credentials, upgrading to the new lakeFS version requires choosing which user + credentials will be used for the single user mode.
 This is done via the `lakefs superuser` command.
 For example, if you have a user with username `<my-username>` and credential key `<my-access-key-id>` use the following command to migrate that user: 
+
 ```bash
 lakefs superuser --user-name <my-username> --access-key-id <my-access-key-id>
 ```

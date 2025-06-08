@@ -5,7 +5,6 @@ description: In this tutorial, we will explore how to safely run ETL testing usi
 
 # ETL Testing with Isolated Dev/Test Environments
 
-[TOC]
 
 ## Why are multiple environments so important?
 
@@ -23,8 +22,11 @@ lakeFS makes creating isolated dev/test environments for ETL testing quick and c
 
 In a lakeFS repository, data is always located on a `branch`. You can think of each `branch` in lakeFS as its own environment. This is because branches are isolated, meaning changes on one branch have no effect other branches.
 
-Objects that remain unchanged between two branches are not copied, but rather shared to both branches via metadata pointers that lakeFS manages. If you make a change on one branch and want it reflected on another, you can perform a `merge` operation to update one branch with the changes from another.
-{: .note }
+!!! info
+    Objects that remain unchanged between two branches are not copied, but rather shared to both branches via metadata pointers that lakeFS manages.
+    
+    If you make a change on one branch and want it reflected on another, you can perform a `merge` operation to update one branch with the changes from another.
+
 
 ## Using branches as development and testing environments
 
@@ -74,6 +76,7 @@ Now you can add, modify or delete objects under the `test-env` branch without af
 This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial provides a lakeFS environment, a Jupyter notebook, and Python SDK API to demonstrate integration of lakeFS with [Spark](/integrations/spark/). You can run this tutorial on your local machine.
 
 Follow the tutorial video below to get started with the playground and Jupyter notebook, or follow the instructions on this page.
+
 <iframe width="420" height="315" src="https://www.youtube.com/embed/fprpDZ96JQo"></iframe>
 
 #### Prerequisites
@@ -85,32 +88,30 @@ Before getting started, you will need [Docker](https://docs.docker.com/engine/in
 Follow along the steps below to create dev/test environment with lakeFS.
 
 * Start by cloning the lakeFS samples Git repository:
+    ```bash
+    git clone https://github.com/treeverse/lakeFS-samples.git
+    ```
 
-```bash
-git clone https://github.com/treeverse/lakeFS-samples.git
-```
-
-```bash
-cd lakeFS-samples
-```
+    ```bash
+    cd lakeFS-samples
+    ```
 
 * Run following commands to download and run Docker container which includes Python, Spark, Jupyter Notebook, JDK, Hadoop binaries, lakeFS Python SDK and Airflow (Docker image size is around 4.5GB):
+    ```bash
+    git submodule init && git submodule update
+    ```
 
-```bash
-git submodule init && git submodule update
-```
+    ```bash
+    docker compose up
+    ```
 
-```bash
-docker compose up
-```
-
-Open the [local Jupyter Notebook](http://localhost:8888) and go to the `spark-demo.ipynb` notebook.
+* Open the [local Jupyter Notebook](http://localhost:8888) and go to the `spark-demo.ipynb` notebook.
 
 #### Configuring lakeFS Python Client
 
 Setup lakeFS access credentials for the lakeFS instance running. The defaults for these that the samples repository Docker Compose uses are shown here:
 
-```
+```python
 lakefs_access_key = 'AKIAIOSFODNN7EXAMPLE'
 lakefs_secret_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 lakefs_endpoint = 'http://lakefs:8000'
@@ -118,7 +119,7 @@ lakefs_endpoint = 'http://lakefs:8000'
 
 Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored. 
 
-```
+```python
 storageNamespace = 's3://example/' 
 ```
 
@@ -160,6 +161,7 @@ lakefs.repository("my-repo", client=client).branch("main").commit(message="Added
 ```
 
 In this example, we use lakeFS S3A gateway to read data from the storage bucket.
+
 ```python
 dataPath = f"s3a://my-repo/main/lakefs_test.csv"
 df = spark.read.csv(dataPath)
@@ -180,6 +182,7 @@ Now we can use Spark to write the csv file from `main` branch as a Parquet file 
 df.write.mode('overwrite').parquet('s3a://my-repo/test-env/')
 df.write.mode('append').parquet('s3a://my-repo/test-env/')
 ```
+
 What happens if we re-read in the data on both branches and perform a count on the resulting DataFrames?
 There will be twice as many rows in `test-env` branch. That is, we accidentally duplicated our data! Oh no!
 
@@ -195,7 +198,6 @@ You can safely continue working with the data from main which is unharmed due to
 * Tutorial: [ETL Testing Tutorial with lakeFS: Step-by-Step Guide](https://lakefs.io/blog/etl-testing-tutorial/)
 * [ETL Testing: A Practical Guide](https://lakefs.io/blog/etl-testing/)
 * [Top 5 ETL Testing Challenges - Solved!](https://lakefs.io/wp-content/uploads/2023/03/Top-5-ETL-Testing-Challenges-Solved.pdf)
-
 
 [hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
 [spark-s3a]:  /integrations/spark/#use-the-s3-compatible-api

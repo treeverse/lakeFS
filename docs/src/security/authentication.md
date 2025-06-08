@@ -5,10 +5,6 @@ description: This section covers Authentication of your lakeFS server.
 
 # Authentication 
 
-
-
-## Authentication
-
 ### User Authentication
 
 lakeFS authenticates users from a built-in authentication database.
@@ -16,15 +12,18 @@ lakeFS authenticates users from a built-in authentication database.
 #### Built-in database
 
 The built-in authentication database is always present and active. You can use the
-Web UI at Administration / Users to create users. Users have an access key
-`AKIA...` and an associated secret access key. These credentials are valid
-for logging into the Web UI or authenticating programmatic requests to the API
-Server or the S3 Gateway.
+Web UI at Administration / Users to create users. 
+
+Users have an access key `AKIA...` and an associated secret access key. These credentials are valid
+for logging into the Web UI or authenticating programmatic requests to the API Server or the S3 Gateway.
 
 #### Remote Authenticator Service 
 
-lakeFS server supports external authentication, the feature can be configured by providing an HTTP endpoint to an external authentication service. This integration can be especially useful if you already have an existing authentication system in place, as it allows you to reuse that system instead of maintaining a new one.
-To configure a Remote Authenticator see the [configuration fields](/reference/configuration/#authentication-and-authorization).
+lakeFS server supports external authentication, the feature can be configured by providing an HTTP endpoint to an external authentication service. 
+This integration can be especially useful if you already have an existing authentication system in place, as it allows you to reuse that system instead of maintaining a new one.
+
+!!! info
+    To configure a Remote Authenticator see the [configuration fields](/reference/configuration/#auth).
 
 ### API Server Authentication
 
@@ -53,9 +52,8 @@ See [this example for authenticating with the AWS CLI](/integrations/aws_cli/).
 
 ## OIDC support
 
-**Note**
-This feature is deprecated. For single sign-on with lakeFS, try [lakeFS Cloud](https://lakefs.cloud)
-{: .note }
+!!! warning "Deprecated"
+    This feature is deprecated. For single sign-on with lakeFS, try [lakeFS Cloud](https://lakefs.cloud)
 
 OpenID Connect (OIDC) is a simple identity layer on top of the OAuth 2.0 protocol.
 You can configure lakeFS to enable OIDC to manage your lakeFS users externally. 
@@ -86,10 +84,9 @@ OIDC provider. When a user first logs in through the provider, a corresponding u
 When the `persist_friendly_name` configuration property is set to `true` **and** `friendly_name_claim_name` is set to a valid claim name, which exists in the incoming `id_token`, the friendly name will be persisted to the KV store. This will allow users with access to the lakeFS administration section to see friendly names in the users list, when listing group members, and when adding/removing group members.  
 The friendly name stored in KV is updated with each successful login, if the incoming value is different than the stored value. This means it will be kept up-to-date with changes to the user's profile or if `friendly_name_claim_name` is re-configured.
 
-#### Notes
-{: .no_toc}
-1. As always, you may choose to provide these configurations using [environment variables](/reference/configuration/).
-2. You may already have other configuration values under the _auth_ key, so make sure you combine them correctly.
+!!! note "Notes"
+    1. As always, you may choose to provide these configurations using [environment variables](/reference/configuration/).
+    2. You may already have other configuration values under the _auth_ key, so make sure you combine them correctly.
 
 ## User permissions
 
