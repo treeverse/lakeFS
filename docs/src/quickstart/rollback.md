@@ -1,8 +1,6 @@
 ---
 title: 5️⃣ Roll back Changes
 description: lakeFS quickstart / Rollback the changes made to show how lakeFS can be used to revert changes made in error. 
-next: ["Using Actions and Hooks in lakeFS", "./actions-and-hooks.html"]
-previous: ["Merge the branch back into main", "./commit-and-merge.html"]
 ---
 
 # Rolling back Changes in lakeFS
@@ -24,3 +22,9 @@ commit main successfully reverted
 
 Back in the object page and the DuckDB query we can see that the original file is now back to how it was: 
 <img src="/assets/img/quickstart/duckdb-main-02.png" alt="The lakeFS object viewer with DuckDB query showing that the lakes dataset on main branch has been successfully returned to state prior to the merge." class="quickstart"/>
+
+---
+
+[← Merge the branch back into main](commit-and-merge.md){ .md-button } [Using Actions and Hooks in lakeFS →](actions-and-hooks.md){ .md-button .md-button--primary }
+
+---
