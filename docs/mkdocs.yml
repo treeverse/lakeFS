@@ -1,3 +1,4 @@
+dev_addr: 127.0.0.1:4000
 site_name: lakeFS Documentation
 site_url: https://docs.lakefs.io
 repo_url: https://github.com/treeverse/lakeFS
@@ -6,6 +7,7 @@ theme:
   name: material
   logo: assets/logo.svg
   custom_dir: overrides
+  favicon: favicon.ico
   features:
     - content.footnote.tooltips
     - content.code.copy
