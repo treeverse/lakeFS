@@ -54,7 +54,7 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 			cfg.GetBaseConfig().Logging.TraceRequestHeaders,
 			authService.IsAdvancedAuth()),
 		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
-		MetricsMiddleware(swagger),
+		MetricsMiddleware(swagger, requestHistograms, requestCounter),
 	)
 	controller := NewController(cfg, catalog, authenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter, licenseManager)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
