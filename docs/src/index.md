@@ -18,9 +18,9 @@ With lakeFS, you can apply concepts to your data lake such as **branching** to c
 
 ## How Do I Get Started? 
 
-**[The hands-on quickstart](./quickstart) guides you through some core features of lakeFS**. 
+**[The hands-on quickstart](quickstart/index.md) guides you through some core features of lakeFS**. 
 
-These include [branching](./quickstart/branch.html), [merging](quickstart/commit-and-merge.html), and [rolling back changes](quickstart/rollback.html) to data. 
+These include [branching](quickstart/branch.md), [merging](quickstart/commit-and-merge.md), and [rolling back changes](quickstart/rollback.md) to data. 
       
 !!! tip
 
@@ -44,7 +44,7 @@ lakeFS is an open source project that supports managing data in AWS S3, Azure Bl
 It integrates seamlessly with popular data frameworks such as [Spark](./integrations/spark.md), [AWS SageMaker](./integrations/sagemaker.md), [Pandas](./integrations/python.md#integrations-with-popular-data-science-packages), [Tensorflow](./integrations/python.md#integrations-with-popular-data-science-packages), [Polars](./integrations/python.md#integrations-with-popular-data-science-packages), [HuggingFace Datasets](./integrations/huggingface_datasets.md) and many more.
 
 !!! info
-    For more details and a full list see [the integrations pages](./integrations/).
+    For more details and a full list see [the integrations pages](integrations/index.md).
 
 With lakeFS, you can use any of the tools and libraries you are used to work with to read and write data directly from a repository, e.g.
 
@@ -133,7 +133,7 @@ Being able to look at data as it was at a given point is particularly useful in 
     With lakeFS you can create a branch from a commit to debug an issue in isolation.
 
 
-[👉🏻 Read More](./understand/use_cases/reproducibility){ .md-button }
+[👉🏻 Read More](understand/use_cases/reproducibility.md){ .md-button }
 
 ### Collaboration during development and training
 
@@ -141,7 +141,7 @@ With lakeFS, each member of the team can create their own branch, isolated from 
 
 This allows to iterate on changes to an algorithm or transformation, without stepping on eachother's toes. These branches are centralized - they could be share among users for collaboration, and can even be merged.
 
-With lakeFS you can even open [pull requests](./howto/pull-requests.md), allowing you to easily share changes with other members and collaborate on them.
+With lakeFS you can even open [pull requests](howto/pull-requests.md), allowing you to easily share changes with other members and collaborate on them.
 
 ### Isolated Dev/Test Environments with zero-copy branching
 
@@ -158,16 +158,16 @@ Human error or misconfigurations can lead to erroneous data making its way into 
 With lakeFS, you can avoid these inefficiencies by committing snapshots of data at well-defined times. 
 This allows for instant recovery: simply identify a good historical commit and restore or copy from it with a single operation.
 
-[👉🏻 Read More](./understand/use_cases/rollback){ .md-button }
+[👉🏻 Read More](understand/use_cases/rollback.md){ .md-button }
 
 ### Establishing data quality guarantees - Write-Audit-Publish
 
 The best way to deal with mistakes is to avoid them. A data source that is ingested into the lake introducing low-quality data should be blocked before exposure if possible.
 
-With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](./understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
+With lakeFS, you can achieve this by tying data quality tests to commit and merge operations via lakeFS [hooks](understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates).
 
-[👉🏻 Read more](./understand/use_cases/cicd_for_data){ .md-button }
+[👉🏻 Read more](understand/use_cases/cicd_for_data.md){ .md-button }
 
 ## Next Step
 
-Try lakeFS on the [cloud](/cloud/) or [run it locally](/quickstart/)
+Try lakeFS on the [cloud](cloud/index.md) or [run it locally](quickstart/index.md)

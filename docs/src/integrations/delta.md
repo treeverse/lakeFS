@@ -130,7 +130,7 @@ The diagram below provides a visual representation of how branches and merges ca
 
 To delete unused files from a table directory while working with Delta Lake over lakeFS you need to first use Delta lake
 [Vacuum](https://docs.databricks.com/en/sql/language-manual/delta-vacuum.html) to soft-delete the files, and then use
-[lakeFS Garbage Collection](../howto/garbage-collection/index.md) to hard-delete them from the storage.
+[lakeFS Garbage Collection](../howto/garbage-collection/gc.md) to hard-delete them from the storage.
 
 !!! tip
     lakeFS enables you to recover from undesired vacuum runs by reverting the changes done by a vacuum run before running Garbage Collection.     

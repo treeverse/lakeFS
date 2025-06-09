@@ -386,7 +386,7 @@ Multi-storage backend support has been validated on:
 The following clients do not currently support working with multiple storage backends. However, we are actively working
 to bridge this gap:
 
-* [Spark-based GC](../howto/garbage-collection/index.md)
+* [Spark-based GC](../howto/garbage-collection/gc.md)
 * [Spark client](../reference/spark-client.md)
 * [lakeFS Hadoop FileSystem](../integrations/spark.md#lakefs-hadoop-filesystem)
 * [Everest](../reference/mount.md)

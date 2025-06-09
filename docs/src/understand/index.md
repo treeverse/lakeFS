@@ -9,7 +9,7 @@ description: Details about lakeFS Concepts and Design
 
 ## Architecture and Internals
 
-The [Architecture](./architecture.html) page includes a logical overview of lakeFS and its components. 
+The [Architecture](./architecture.md) page includes a logical overview of lakeFS and its components. 
 
 For deep-dive content about lakeFS see: 
 
@@ -34,12 +34,12 @@ One of the important things that lakeFS provides is full support for [Data Lifec
 
 ## lakeFS Concepts and Model 
 
-lakeFS adopts many of the terms and concepts from git. [This page](./model.html) goes into details on the similarities and differences, and provides a good background to the concepts used in lakeFS. 
+lakeFS adopts many of the terms and concepts from git. [This page](./model.md) goes into details on the similarities and differences, and provides a good background to the concepts used in lakeFS. 
 
 ## Performance
 
-Check out the [Performance best practices](./performance-best-practices.html) guide for useful hints and tips on ensuring high performance from lakeFS. 
+Check out the [Performance best practices](./performance-best-practices.md) guide for useful hints and tips on ensuring high performance from lakeFS. 
 
 ## FAQ and Glossary
 
-The [FAQ](./faq.html) covers many common questions around lakeFS, and the [glossary](./glossary.html) provides a useful reference for the terms used in lakeFS.
+The [FAQ](./faq.md) covers many common questions around lakeFS, and the [glossary](./glossary.md) provides a useful reference for the terms used in lakeFS.

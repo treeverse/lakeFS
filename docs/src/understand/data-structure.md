@@ -24,7 +24,7 @@ address under the `data/` prefix and upload it to there.
 Mapping from a path to an object changes as you upload, commit, and merge on lakeFS. When updating an object, lakeFS will create a new physical address for that version preserving other versions of that object.
 lakeFS will link between the object's logical address and its physical address - and store that relation under the given commit metadata (range and meta-range)
 
-lakeFS uses its object store immutably i.e. anything uploaded is never changed or overridden (Refer to [GC](../howto/garbage-collection/index.md) for explanation on how and when lakeFS actually deletes data from the storage).  
+lakeFS uses its object store immutably i.e. anything uploaded is never changed or overridden (Refer to [GC](../howto/garbage-collection/gc.md) for explanation on how and when lakeFS actually deletes data from the storage).  
 To find data, lakeFS uses the logical address e.g. `lakefs://my-repo/main/allstar_games_stats.csv`, indicating a repository and branch.
 Using the [KV metadata store](../understand/how/versioning-internals.md#representing-references-and-uncommitted-metadata), lakeFS will first try to find any uncommitted version of the object in the given branch. If no uncommitted version exist, it will take the latest committed version from the branch head (which is the top commit of the branch)
 
