@@ -47,16 +47,16 @@ jobs:
           done
        
       - name: Publish preview site
-        uses: cloudflare/wrangler-action@v3
-        id: preview_step
+        uses: South-Paw/action-netlify-cli@v2
+        id: deploy_step
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_PAGES_PR_PREVIEW }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy docs/site --project-name=lakefsprs --branch=pr-${{ github.event.pull_request.number }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          args: deploy --json --dir=docs/site --alias=pr-${{ github.event.pull_request.number }}
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
 
       - name: Get the preview_url
-        run: echo "url => ${{ steps.preview_step.outputs.pages-deployment-alias-url }}"
+        run: echo "url => ${{ fromJson(steps.deploy_step.outputs.NETLIFY_OUTPUT).deploy_url }}"
 
       - name: Check links
         id: lychee
