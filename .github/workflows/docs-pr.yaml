@@ -52,7 +52,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_PR_PREVIEW }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy docs/site --project-name=lakefs-docs --branch=pr-${{ github.event.pull_request.number }}
+          command: pages deploy docs/site --project-name=lakefsprs --branch=pr-${{ github.event.pull_request.number }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get the preview_url
