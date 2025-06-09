@@ -22,7 +22,7 @@ We built lakeFS cloud for three main reasons:
 The main advantages of using lakeFS Cloud, the lakeFS managed service are:
 
 1. No installation required, no cloud costs and devops efforts on installing and maintaining a lakeFS installation.
-1. All lakeFS services are managed and run by us, including [Managed Garbage Collection](/howto/garbage-collection/managed-gc/).
+1. All lakeFS services are managed and run by us, including [Managed Garbage Collection](/howto/garbage-collection/managed-gc.md).
 1. lakeFS cloud is highly available and includes a commitment to an uptime SLA.
 1. lakeFS cloud auto scales according to your needs. See [lakeFS cloud scalability model](#lakefs-cloud-scalability-model) for more details.
 1. Upgrades are done transparently on your lakeFS cloud environment
