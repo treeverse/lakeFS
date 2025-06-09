@@ -13,13 +13,13 @@ import (
 )
 
 func MetricsMiddleware(swagger *openapi3.Swagger, requestHistogram *prometheus.HistogramVec, requestCounter *prometheus.CounterVec) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		// router for operation ID lookup
-		router, err := legacy.NewRouter(swagger)
-		if err != nil {
-			panic(err)
-		}
+	// router for operation ID lookup
+	router, err := legacy.NewRouter(swagger)
+	if err != nil {
+		panic(err)
+	}
 
+	return func(next http.Handler) http.Handler {
 		// request histogram by operation ID
 		requestHistogramHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			route, _, err := router.FindRoute(r)
