@@ -146,10 +146,11 @@ func (h *LuaHook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 		code = rr.Body.String()
 	}
 	err = LuaRun(l, code, "lua")
-	if err == nil {
-		h.collectMetrics(l)
+	if err != nil {
+		return NewHookClientError(err)
 	}
-	return err
+	h.collectMetrics(l)
+	return nil
 }
 
 func LuaRun(l *lua.State, code, name string) error {

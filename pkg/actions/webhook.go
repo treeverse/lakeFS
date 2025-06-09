@@ -122,12 +122,12 @@ func (w *Webhook) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 
 	statusCode, err := doHTTPRequestWithLog(ctx, req, buf, w.Timeout)
 	if err != nil {
-		return err
+		return NewHookClientError(err)
 	}
 
 	// check status code
 	if statusCode < 200 || statusCode >= 300 {
-		return fmt.Errorf("%w (status code: %d)", errWebhookRequestFailed, statusCode)
+		return NewHookClientError(fmt.Errorf("%w (status code: %d)", errWebhookRequestFailed, statusCode))
 	}
 	return nil
 }

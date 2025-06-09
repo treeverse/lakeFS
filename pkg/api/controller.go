@@ -2937,15 +2937,14 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	// Handle Hook Errors
 	var hookAbortErr *graveler.HookAbortError
 	if errors.As(err, &hookAbortErr) {
-		if errors.Is(hookAbortErr.Unwrap(), kv.ErrSlowDown) {
-			log.Debug("KV Throttling")
-			cb(w, r, http.StatusServiceUnavailable, "Key value throughput exceeded. Slow down and retry")
+		var clientErr *actions.HookClientError
+		if errors.As(hookAbortErr, &clientErr) {
+			log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks due to a client error")
+			cb(w, r, http.StatusPreconditionFailed, hookAbortErr.Unwrap())
 			return true
 		}
 
-		log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
-		cb(w, r, http.StatusPreconditionFailed, hookAbortErr.Unwrap())
-		return true
+		err = hookAbortErr.Unwrap()
 	}
 
 	// order of case is important, more specific errors should be first
@@ -3022,7 +3021,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
 	case errors.Is(err, kv.ErrSlowDown):
 		log.Debug("KV Throttling")
-		cb(w, r, http.StatusServiceUnavailable, "Key value throughput exceeded. Slow down and retry")
+		cb(w, r, http.StatusServiceUnavailable, "Throughput exceeded. Slow down and retry")
 	case errors.Is(err, graveler.ErrPreconditionFailed):
 		log.Debug("Precondition failed")
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
