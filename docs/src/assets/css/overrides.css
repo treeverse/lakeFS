@@ -1,12 +1,22 @@
 /* lakeFS custom theme overrides for MkDocs Material */
 
+.md-button {
+  font-size: 0.7rem;
+}
+/* 
+:root > * {
+  --md-primary-fg-color:        #258C82;
+  --md-primary-fg-color--light: #2CE5B5;
+  --md-primary-fg-color--dark:  #258C82;
+} */
+
 /* ----------------------------- */
 /* Footer customization          */
 /* ----------------------------- */
 
 /* Give footer breathing room */
 .md-footer {
-  padding: 1rem 0 !important;
+  padding: 0.5rem 0 !important;
   font-size: 0.6rem;
 }
 
@@ -19,7 +29,7 @@
   margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 1.2rem;
+  gap: 1rem;
 }
 
 .md-footer__social .md-footer__list li a {
@@ -85,3 +95,4 @@
   mask-image: var(--md-status--enterprise);
   -webkit-mask-image: var(--md-status--enterprise);
 }
+
