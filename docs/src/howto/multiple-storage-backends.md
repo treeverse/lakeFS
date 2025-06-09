@@ -1,7 +1,7 @@
 ---
 title: Multiple Storage Backend
 description: How to manage data across multiple storage systems with lakeFS 
-badges: ["Enterprise"]
+status: enterprise
 ---
 
 # Multi-Storage Backend

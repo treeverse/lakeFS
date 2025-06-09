@@ -1,7 +1,7 @@
 ---
 title: Single Sign On (SSO)
 description: How to configure Single Sign On (SSO) for lakeFS Cloud and lakeFS Enterprise.
-badges: ["Enterprise"]
+status: enterprise
 search:
   boost: 2
 ---

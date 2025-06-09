@@ -1,7 +1,7 @@
 ---
 title: Standalone Garbage Collection
 description: Run a limited version of garbage collection without any external dependencies
-badges: ["Enterprise"]
+status: enterprise
 ---
 
 # Standalone Garbage Collection

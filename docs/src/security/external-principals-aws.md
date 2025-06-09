@@ -1,7 +1,7 @@
 ---
 title: Login to lakeFS with AWS IAM Roles
 description: This section covers how to authenticate to lakeFS using AWS IAM.
-badges: ["Enterprise"]
+status: enterprise
 search:
   boost: 2
 ---

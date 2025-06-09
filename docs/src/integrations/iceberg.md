@@ -1,7 +1,7 @@
 ---
 title: Apache Iceberg
 description: How to integrate lakeFS with Apache Iceberg
-badges: ["Enterprise"]
+status: enterprise
 ---
 
 # Using lakeFS with Apache Iceberg
