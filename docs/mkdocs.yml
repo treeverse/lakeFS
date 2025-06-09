@@ -1,8 +1,19 @@
+# MkDocs settings
 dev_addr: 127.0.0.1:4000
 site_name: lakeFS Documentation
 site_url: https://docs.lakefs.io
 repo_url: https://github.com/treeverse/lakeFS
+repo_name: treeverse/lakeFS
 site_description: Open Source Data Version Control for Data Lakes and Lakehouses
+site_dir: site
+docs_dir: src
+use_directory_urls: true
+watch:
+  - overrides
+extra_css:
+  - assets/css/overrides.css
+
+# Material theme settings
 theme:
   name: material
   logo: assets/logo.svg
@@ -11,22 +22,14 @@ theme:
   features:
     - content.footnote.tooltips
     - content.code.copy
-  theme:
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
   palette:
-    - scheme: default
-      primary: teal
-      accent: purple
-      toggle:
-        icon: material/brightness-7 
-        name: Switch to dark mode
-    - scheme: slate
-      primary: teal
-      accent: purple
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-site_dir: site
-docs_dir: src
+    primary: white
+    accent: teal
+
+# Other settings
 extra:
   consent:
     title: Cookie consent
@@ -41,8 +44,8 @@ extra:
     enterprise: Enterprise Feature
     deprecated: Deprecated Feature
     experimental: Experimental Feature
-use_directory_urls: true
 
+# Markdown settings
 markdown_extensions:
 - toc:
     permalink: true
@@ -79,9 +82,6 @@ markdown_extensions:
 - pymdownx.keys
 - pymdownx.mark
 - pymdownx.tilde
-
-extra_css:
-  - assets/css/overrides.css
 
 plugins:
 - search
@@ -339,6 +339,7 @@ plugins:
       reference/mount-write-mode-semantics.html: reference/mount-write-mode-semantics.md
 
 
+# This section is used to generate the navigation sidebar
 nav:
   - Welcome to lakeFS: index.md
   - Quickstart:
