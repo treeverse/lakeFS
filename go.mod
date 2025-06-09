@@ -12,9 +12,9 @@ require (
 	github.com/deepmap/oapi-codegen v1.5.6
 	github.com/dgraph-io/ristretto v0.2.0
 	github.com/fsnotify/fsnotify v1.7.0
-	github.com/getkin/kin-openapi v0.53.0
+	github.com/getkin/kin-openapi v0.132.0
 	github.com/go-chi/chi/v5 v5.0.10
-	github.com/go-openapi/swag v0.19.14
+	github.com/go-openapi/swag v0.23.0
 	github.com/go-test/deep v1.1.0
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/mock v1.6.0
@@ -202,7 +202,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/go-openapi/jsonpointer v0.19.5 // indirect
+	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect

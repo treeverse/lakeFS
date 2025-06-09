@@ -286,12 +286,12 @@ components:
           example: "main"
         sample_data:
           type: boolean
-          example: "true"
           default: false
+          example: true
         read_only:
           type: boolean
-          example: "true"
           default: false
+          example: true
 
     PathList:
       type: object
@@ -1554,6 +1554,8 @@ components:
           type: boolean
           default: false
       example:
+        commit:
+            message: Importing collections from S3
         paths:
           - path: s3://my-bucket/production/collections/
             destination: collections/

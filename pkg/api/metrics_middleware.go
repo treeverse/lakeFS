@@ -12,7 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/httputil"
 )
 
-func MetricsMiddleware(swagger *openapi3.Swagger, requestHistogram *prometheus.HistogramVec, requestCounter *prometheus.CounterVec) func(http.Handler) http.Handler {
+func MetricsMiddleware(swagger *openapi3.T, requestHistogram *prometheus.HistogramVec, requestCounter *prometheus.CounterVec) func(http.Handler) http.Handler {
 	// router for operation ID lookup
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {

@@ -1665,10 +1665,14 @@ func TestController_ListTagsHandler(t *testing.T) {
 		var calls int
 		for {
 			calls++
-			resp, err := clt.ListTagsWithResponse(ctx, repo, &apigen.ListTagsParams{
-				After:  apiutil.Ptr(apigen.PaginationAfter(after)),
+			params := &apigen.ListTagsParams{
 				Amount: apiutil.Ptr(apigen.PaginationAmount(pageSize)),
-			})
+			}
+			// Only include After parameter if it's not empty
+			if after != "" {
+				params.After = apiutil.Ptr(apigen.PaginationAfter(after))
+			}
+			resp, err := clt.ListTagsWithResponse(ctx, repo, params)
 			testutil.Must(t, err)
 			payload := resp.JSON200
 			if payload == nil {
