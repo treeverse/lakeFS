@@ -47,19 +47,15 @@ jobs:
           done
        
       - name: Publish preview site
-        uses: afc163/surge-preview@v1
+        uses: cloudflare/wrangler-action@v3
         id: preview_step
         with:
-          surge_token: ${{ secrets.SURGE_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          dist: docs/site
-          failOnError: true
-          teardown: true
-          build: |
-            echo Deploying preview to surge.sh
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_PR_PREVIEW }}
+          command: pages deploy docs/site --project-name=lakefs-docs --branch=pr-${{ github.event.pull_request.number }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get the preview_url
-        run: echo "url => https://${{ steps.preview_step.outputs.preview_url }}"
+        run: echo "url => ${{ steps.preview_step.outputs.pages-deployment-alias-url }}"
 
       - name: Check links
         id: lychee
