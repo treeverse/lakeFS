@@ -1,7 +1,7 @@
 ---
 title: Mirroring
 description: Mirroring allows replicating commits between lakeFS installations in different geo-locations/regions
-badges: ["Enterprise"]
+status: enterprise
 ---
 
 # Mirroring

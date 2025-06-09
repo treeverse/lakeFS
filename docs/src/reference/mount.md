@@ -1,7 +1,7 @@
 ---
 title: Mount
 description: This section covers the Everest feature for mounting a lakeFS path to your local filesystem.
-badges: ["Enterprise"]
+status: enterprise
 ---
 
 # Mount (Everest)

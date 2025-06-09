@@ -1,6 +1,7 @@
 ---
 title: Glue / Hive metastore
 description: This section explains how to query data from lakeFS branches in services backed by Glue/Hive Metastore.
+status: deprecated
 ---
 
 # Using lakeFS with the Glue/Hive Metastore

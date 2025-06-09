@@ -13,7 +13,12 @@ theme:
     - content.code.copy
 site_dir: site
 docs_dir: src
-
+extra:
+  status:
+    new: New
+    enterprise: Enterprise Feature
+    deprecated: Deprecated Feature
+    experimental: Experimental Feature
 use_directory_urls: true
 
 markdown_extensions:
@@ -441,7 +446,7 @@ nav:
   - Security:
     - Overview: security/index.md
     - ACL Server Implementation: security/ACL-server-implementation.md
-    - Access Control Lists (ACLs) -Deprecated-: security/access-control-lists.md
+    - Access Control Lists (ACLs): security/access-control-lists.md
     - Authentication: security/authentication.md
     - Authorization API: security/authorization-yaml.md
     - Login to lakeFS with AWS IAM Roles: security/external-principals-aws.md

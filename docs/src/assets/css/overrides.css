@@ -77,13 +77,6 @@ code, pre {
 /* Additional refinements        */
 /* ----------------------------- */
 
-/* Highlight currently active page/item in nav */
-.md-nav__link--active,
-.md-nav__item--active > .md-nav__link,
-.md-nav__item--active > label {
-  color: var(--lakefs-teal) !important;
-  font-weight: 600;
-}
 
 /* Search field visibility against white header */
 .md-header .md-search__form {
@@ -241,36 +234,11 @@ code, pre {
   }
 }
 
-/* ----------------------------- */
-/* Badge styles for nav sidebar  */
-/* ----------------------------- */
-.doc-badge {
-  display: inline-block;
-  margin-left: 0.4rem;
-  padding: 0.1rem 0.35rem;
-  font-size: 0.5rem;
-  font-weight: 500;
-  line-height: 1;
-  border-radius: 0.25rem;
-  text-transform: none;
-  white-space: nowrap;
-  vertical-align: middle;
+:root {
+  --md-status--enterprise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M12 2l2.47 6.87H22l-5.73 4.16L17.94 22 12 17.77 6.06 22l1.67-8.97L2 8.87h7.53L12 2z'/></svg>");
 }
 
-.badge-enterprise {
-  background-color: #885af8; /* purple */
-  color: #ffffff;
+.md-status--enterprise::after {
+  mask-image: var(--md-status--enterprise);
+  -webkit-mask-image: var(--md-status--enterprise);
 }
-
-/* Rotate chevron when section expanded */
-.md-nav__toggle:checked + label .md-nav__icon {
-  transform: rotate(90deg);
-}
-
-/* Ensure badges are vertically centred next to nav text */
-.md-nav__link .doc-badge,
-label.md-nav__link .doc-badge {
-  align-self: center;
-  position: relative;
-  top: 0.05em; /* fine-tune vertical centering */
-} 

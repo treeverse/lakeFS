@@ -1,7 +1,7 @@
 ---
 title: Managed Garbage Collection
 description: Reduce the operational overhead of running garbage collection manually.
-badges: ["Enterprise"]
+status: enterprise
 ---
 
 # Managed Garbage Collection
