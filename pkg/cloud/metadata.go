@@ -13,9 +13,9 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/aws/aws-sdk-go/aws"
 )
 
 // Cloud provider constants
@@ -73,7 +73,7 @@ func GetAWSAccountID() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return aws.StringValue(resp.Account), nil
+	return aws.ToString(resp.Account), nil
 }
 
 // GetAzureSubscriptionID retrieves the Azure Subscription ID using the armsubscriptions package.
