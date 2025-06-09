@@ -20,20 +20,22 @@ jobs:
       - name: Check-out
         uses: actions/checkout@v4
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          working-directory: docs
-          ruby-version: '3.2'
-          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+          python-version: '3.12'
+
+      - name: Install dependencies
+        working-directory: docs
+        run: pip install -r requirements-docs.txt
 
       - name: Build latest
         id: build-latest
         working-directory: docs
-        run: bundle exec jekyll build --config _config.yml -d _site/ --verbose
+        run: mkdocs build
 
       - name: Overlay PR message on each page
-        working-directory: docs/_site
+        working-directory: docs/site
         run: |
           PR_URL=${{ github.event.pull_request.html_url }}
           PR_NUMBER=${{ github.event.pull_request.number }}
@@ -50,7 +52,7 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          dist: docs/_site
+          dist: docs/site
           failOnError: true
           teardown: true
           build: |
