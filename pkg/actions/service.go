@@ -366,6 +366,9 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 				var buf bytes.Buffer
 				if task.Err == nil {
 					task.Err = task.Hook.Run(ctx, record, &buf)
+					if task.Err != nil {
+						task.Err = fmt.Errorf("%w: %s", ErrActionFailed, task.Err)
+					}
 				}
 				task.EndTime = time.Now().UTC()
 

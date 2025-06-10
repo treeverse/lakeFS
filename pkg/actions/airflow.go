@@ -163,19 +163,14 @@ func (a *Airflow) Run(ctx context.Context, record graveler.HookRecord, buf *byte
 
 	statusCode, err := doHTTPRequestWithLog(ctx, req, buf, airflowClientDefaultTimeout)
 	if err != nil {
-		return NewHookClientError(fmt.Errorf("failed executing airflow request: %w", err))
+		return fmt.Errorf("failed executing airflow request: %w", err)
 	}
 	if statusCode != http.StatusOK {
-		return NewHookClientError(fmt.Errorf("status code (%d): %w", statusCode, errAirflowHookRequestFailed))
+		return fmt.Errorf("status code (%d): %w", statusCode, errAirflowHookRequestFailed)
 	}
 
 	if a.WaitForDAG {
-		if err := a.waitForDAGComplete(ctx, dagRunID, buf); err != nil {
-			if errors.Is(err, errAirflowHookDAGFailed) {
-				return NewHookClientError(err)
-			}
-			return err
-		}
+		return a.waitForDAGComplete(ctx, dagRunID, buf)
 	}
 	return nil
 }

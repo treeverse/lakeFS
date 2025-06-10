@@ -2936,15 +2936,10 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	// Handle Hook Errors
 	var hookAbortErr *graveler.HookAbortError
-	if errors.As(err, &hookAbortErr) {
-		var clientErr *actions.HookClientError
-		if errors.As(hookAbortErr, &clientErr) {
-			log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks due to a client error")
-			cb(w, r, http.StatusPreconditionFailed, hookAbortErr.Unwrap())
-			return true
-		}
-
-		err = hookAbortErr.Unwrap()
+	if errors.As(err, &hookAbortErr) && errors.Is(hookAbortErr, actions.ErrActionFailed) {
+		log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks due to a client error")
+		cb(w, r, http.StatusPreconditionFailed, hookAbortErr)
+		return true
 	}
 
 	// order of case is important, more specific errors should be first
