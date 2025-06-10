@@ -38,7 +38,7 @@ jobs:
           find webui/src -type f ! -name "*.js" -exec grep -Eo 'href="([^"]*)"' {} \; | \
             cut -d'"' -f2 | \
             grep -v -e "^/" -e "^#" | \
-            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/_site/" > /tmp/links_to_check.txt
+            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/site/" > /tmp/links_to_check.txt
 
       - name: Check links
         id: lychee
