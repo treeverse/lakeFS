@@ -2146,10 +2146,10 @@ Show log of commits
 
 <h4>Synopsis</h4>
 
-Show log of commits for a given branch
+Show log of commits for a given Ref
 
 ```
-lakectl log <branch URI> [flags]
+lakectl log <Ref URI> [flags]
 ```
 
 <h4>Examples</h4>
