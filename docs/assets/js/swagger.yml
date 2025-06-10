@@ -5437,10 +5437,12 @@ paths:
         - $ref: "#/components/parameters/PaginationAmount"
         - in: query
           name: branch
+          allowEmptyValue: true
           schema:
             type: string
         - in: query
           name: commit
+          allowEmptyValue: true
           schema:
             type: string
       responses:

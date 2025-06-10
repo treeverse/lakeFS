@@ -6180,14 +6180,16 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - explode: true
+      - allowEmptyValue: true
+        explode: true
         in: query
         name: branch
         required: false
         schema:
           type: string
         style: form
-      - explode: true
+      - allowEmptyValue: true
+        explode: true
         in: query
         name: commit
         required: false
