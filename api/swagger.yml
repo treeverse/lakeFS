@@ -3770,6 +3770,7 @@ paths:
             format: date-time
         - in: query
           name: stop_at
+          allowEmptyValue: true
           description: A reference to stop at. In case used with since parameter, will stop at the first commit that meets any of the conditions.
           schema:
             type: string

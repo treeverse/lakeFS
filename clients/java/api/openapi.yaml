@@ -3341,7 +3341,8 @@ paths:
           format: date-time
           type: string
         style: form
-      - description: "A reference to stop at. In case used with since parameter, will\
+      - allowEmptyValue: true
+        description: "A reference to stop at. In case used with since parameter, will\
           \ stop at the first commit that meets any of the conditions."
         explode: true
         in: query
