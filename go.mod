@@ -28,7 +28,7 @@ require (
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/minio/minio-go/v7 v7.0.63
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/mitchellh/mapstructure v1.5.0
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/ory/dockertest/v3 v3.10.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
