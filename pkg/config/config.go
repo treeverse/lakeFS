@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/mitchellh/go-homedir"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
