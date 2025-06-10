@@ -81,9 +81,9 @@ func filterMergeCommits(commits []apigen.Commit) []apigen.Commit {
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:               "log <Ref URI>",
+	Use:               "log <ref URI>",
 	Short:             "Show log of commits",
-	Long:              "Show log of commits for a given Ref",
+	Long:              "Show log of commits for a given reference",
 	Example:           "lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
@@ -109,7 +109,7 @@ var logCmd = &cobra.Command{
 		pagination := apigen.Pagination{HasMore: true}
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 		client := getClient()
-		RefURI := MustParseRefURI("Ref URI", args[0])
+		refURI := MustParseRefURI("ref URI", args[0])
 		amountForPagination := amount
 		if amountForPagination <= 0 {
 			amountForPagination = internalPageSize
@@ -141,14 +141,14 @@ var logCmd = &cobra.Command{
 
 		graph := &dotWriter{
 			w:            os.Stdout,
-			repositoryID: RefURI.Repository,
+			repositoryID: refURI.Repository,
 		}
 		if dot {
 			graph.Start()
 		}
 
 		for pagination.HasMore {
-			resp, err := client.LogCommitsWithResponse(cmd.Context(), RefURI.Repository, RefURI.Ref, logCommitsParams)
+			resp, err := client.LogCommitsWithResponse(cmd.Context(), refURI.Repository, refURI.Ref, logCommitsParams)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
 				Die("Bad response from server", 1)
