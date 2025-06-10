@@ -49,7 +49,7 @@ lakectl config
 ` + "```" + `
 
 This will setup a ` + "`$HOME/.lakectl.yaml`" + ` file with the credentials and API endpoint you've supplied.
-When setting up a new installation and creating initial credentials (see [Quickstart]({{ site.baseurl }}/quickstart/)), the UI
+When setting up a new installation and creating initial credentials (see [Quickstart](/quickstart/)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
 ` + "`lakectl`" + ` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
@@ -74,6 +74,7 @@ _Bear in mind that if you are running lakeFS itself locally you will need to acc
 the Docker container. That is to say, ` + "`localhost`" + ` to a Docker container is itself, not the host machine on which it is running._
 
 ## Command Reference
+
 `
 
 var cliReferenceHiddenCommandsSeparator = `
