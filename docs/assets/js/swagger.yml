@@ -81,7 +81,7 @@ components:
       description: string for searching relevant entries
       schema:
         type: string
-    
+
     IfNoneMatch:
       in: header
       name: If-None-Match
@@ -938,9 +938,9 @@ components:
             Placeholder text to display in the username field of the login form.
           type: string
         password_ui_placeholder:
-            description: |
-                Placeholder text to display in the password field of the login form.
-            type: string
+          description: |
+            Placeholder text to display in the password field of the login form.
+          type: string
         login_url:
           description: primary URL to use for login.
           type: string
@@ -1024,7 +1024,6 @@ components:
       required:
         - featureUpdates
         - securityUpdates
-
 
     Credentials:
       type: object
@@ -1275,11 +1274,11 @@ components:
           type: string
         blockstore_description:
           type: string
-    
+
     StorageConfigList:
-        type: array
-        items:
-          $ref: "#/components/schemas/StorageConfig"
+      type: array
+      items:
+        $ref: "#/components/schemas/StorageConfig"
 
     Config:
       type: object
@@ -1559,7 +1558,7 @@ components:
           default: false
       example:
         commit:
-            message: Importing collections from S3
+          message: Importing collections from S3
         paths:
           - path: s3://my-bucket/production/collections/
             destination: collections/
@@ -1863,10 +1862,10 @@ components:
           type: string
         description:
           type: string
-    
+
     PullRequest:
       allOf:
-        - $ref: '#/components/schemas/PullRequestBasic'
+        - $ref: "#/components/schemas/PullRequestBasic"
         - required:
             - status
             - title
@@ -2762,7 +2761,6 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-
 
   /auth/users/{userId}/external/principals:
     parameters:
@@ -3765,6 +3763,7 @@ paths:
         - in: query
           name: since
           description: Show commits more recent than a specific date-time. In case used with stop_at parameter, will stop at the first commit that meets any of the conditions.
+          allowEmptyValue: true
           schema:
             type: string
             format: date-time
@@ -3983,8 +3982,7 @@ paths:
         - experimental
       operationId: hardResetBranch
       summary: hard reset branch
-      description:
-        Relocate branch to refer to ref.  Branch must not contain
+      description: Relocate branch to refer to ref.  Branch must not contain
         uncommitted data.
       parameters:
         - in: query
@@ -5627,7 +5625,6 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
-
   /repositories/{repository}/metadata/meta_range/{meta_range}:
     parameters:
       - in: path
@@ -5969,7 +5966,7 @@ paths:
           description: too many requests
         default:
           $ref: "#/components/responses/ServerError"
-  
+
   /repositories/{repository}/pulls:
     parameters:
       - in: path
@@ -6305,13 +6302,13 @@ paths:
           $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
-          
+
   /oidc/callback:
     get:
       tags:
         - auth
       operationId: oauthCallback
-      security: [ ]
+      security: []
       responses:
         302:
           description: successfully got token

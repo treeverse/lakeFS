@@ -3330,7 +3330,8 @@ paths:
         schema:
           type: boolean
         style: form
-      - description: "Show commits more recent than a specific date-time. In case\
+      - allowEmptyValue: true
+        description: "Show commits more recent than a specific date-time. In case\
           \ used with stop_at parameter, will stop at the first commit that meets\
           \ any of the conditions."
         explode: true
