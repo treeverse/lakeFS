@@ -1390,10 +1390,9 @@ func (c *Catalog) GetCommit(ctx context.Context, repositoryID string, reference 
 }
 
 func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch string, params LogParams) ([]*CommitLog, bool, error) {
-	branchRef := graveler.BranchID(branch)
 	if err := validator.Validate([]validator.ValidateArg{
 		{Name: "repository", Value: repositoryID, Fn: graveler.ValidateRepositoryID},
-		{Name: "branch", Value: branchRef, Fn: graveler.ValidateBranchID},
+		{Name: "branch", Value: graveler.Ref(branch), Fn: graveler.ValidateRef},
 	}); err != nil {
 		return nil, false, err
 	}
@@ -1405,7 +1404,7 @@ func (c *Catalog) ListCommits(ctx context.Context, repositoryID string, branch s
 		return nil, false, err
 	}
 
-	commitID, err := c.dereferenceCommitID(ctx, repository, graveler.Ref(branchRef))
+	commitID, err := c.dereferenceCommitID(ctx, repository, graveler.Ref(branch))
 	if err != nil {
 		return nil, false, fmt.Errorf("branch ref: %w", err)
 	}

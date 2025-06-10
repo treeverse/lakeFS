@@ -81,9 +81,9 @@ func filterMergeCommits(commits []apigen.Commit) []apigen.Commit {
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:               "log <branch URI>",
+	Use:               "log <Ref URI>",
 	Short:             "Show log of commits",
-	Long:              "Show log of commits for a given branch",
+	Long:              "Show log of commits for a given Ref",
 	Example:           "lakectl log --dot lakefs://example-repository/main | dot -Tsvg > graph.svg",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
@@ -109,7 +109,7 @@ var logCmd = &cobra.Command{
 		pagination := apigen.Pagination{HasMore: true}
 		showMetaRangeID := Must(cmd.Flags().GetBool("show-meta-range-id"))
 		client := getClient()
-		branchURI := MustParseBranchURI("branch URI", args[0])
+		RefURI := MustParseRefURI("Ref URI", args[0])
 		amountForPagination := amount
 		if amountForPagination <= 0 {
 			amountForPagination = internalPageSize
@@ -141,14 +141,14 @@ var logCmd = &cobra.Command{
 
 		graph := &dotWriter{
 			w:            os.Stdout,
-			repositoryID: branchURI.Repository,
+			repositoryID: RefURI.Repository,
 		}
 		if dot {
 			graph.Start()
 		}
 
 		for pagination.HasMore {
-			resp, err := client.LogCommitsWithResponse(cmd.Context(), branchURI.Repository, branchURI.Ref, logCommitsParams)
+			resp, err := client.LogCommitsWithResponse(cmd.Context(), RefURI.Repository, RefURI.Ref, logCommitsParams)
 			DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 			if resp.JSON200 == nil {
 				Die("Bad response from server", 1)
@@ -168,7 +168,6 @@ var logCmd = &cobra.Command{
 					After:   pagination.NextOffset,
 				},
 			}
-
 			// case --no-merges, filter commits and subtract that amount from amount desired
 			if noMerges {
 				data.Commits = filterMergeCommits(data.Commits)
@@ -184,7 +183,6 @@ var logCmd = &cobra.Command{
 			} else {
 				Write(commitsTemplate, data)
 			}
-
 			if amount <= 0 {
 				// user request only one page
 				break
