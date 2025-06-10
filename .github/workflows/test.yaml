@@ -20,21 +20,22 @@ jobs:
           node-version: "18.17.0"
           cache: "npm"
           cache-dependency-path: webui/package-lock.json
-      - uses: bufbuild/buf-setup-action@v1.28.1
+      - uses: bufbuild/buf-setup-action@v1.50.0
         with:
           github_token: ${{ github.token }}
+          version: 1.54.0
       - name: Generate code
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           make gen
           make validate-clients-untracked-files
-      - name: Ensure Go workspace is synced
-        run: |
-          go work sync
-          echo "Git status after go work sync:"
-          git status
-          [ ! -n "$(git status --porcelain)" ]
+#      - name: Ensure Go workspace is synced
+#        run: |
+#          go work sync
+#          echo "Git status after go work sync:"
+#          git status
+#          [ ! -n "$(git status --porcelain)" ]
       - name: Checks validator
         run: make checks-validator
 

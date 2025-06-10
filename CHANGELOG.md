@@ -1,5 +1,20 @@
 # Changelog
 
+# v1.59.0
+
+:new: What's new:
+
+- UI: Overhaul lakeFS look & feel (#9022)
+
+:bug: Bugs fixed:
+
+- Fix lakefs superuser command using external authorization (#9127)
+- Fix missing BadRequest(400) in the API spec for get/head object (#9130)
+
+# v1.58.0
+
+🏢 Includes only changes for Enterprise.
+
 # v1.57.0
 
 :new: What's new:
