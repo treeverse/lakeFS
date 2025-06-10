@@ -19,7 +19,8 @@ A Rollback is used as a stopgap measure to “put out the fire” as quickly as 
 
 It can be a pressured, stressful situation to deal with a critical data error. Having the ability to employ a rollback relieves some of the pressure and makes it more likely you can figure out what happened without creating additional issues.
 
-As a real world example, the [14-day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May 2022 could have been an uninteresting minor incident had rolling back the deleted customer data been an option.
+!!! example
+    As a real world example, the [14-day outage](https://devops.com/what-sres-can-learn-from-the-atlassian-outage-of-2022/) some Atlassian users experienced in May 2022 could have been an uninteresting minor incident had rolling back the deleted customer data been an option.
 
 ## Performing Rollbacks with lakeFS
 
@@ -44,7 +45,7 @@ Step 1: Copy the `commit_id` associated with the commit we want to revert. As th
 Step 2: Run the revert command using [lakectl](/reference/cli/), the lakeFS CLI. In this example, the command will be as follows:
 
 ```bash
-lakectl branch revert lakefs://example/main 9666d7c9daf37b3ba6964e733d08596ace2ec2c7bc3a4023ad8e80737a6c3e9d
+lakectl branch revert "lakefs://example/main" 9666d7c9daf37b3ba6964e733d08596ace2ec2c7bc3a4023ad8e80737a6c3e9d
 ```
 
 This will undo the changes introduced by this commit, completing the rollback! 

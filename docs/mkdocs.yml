@@ -49,6 +49,7 @@ extra:
 markdown_extensions:
 - toc:
     permalink: true
+    toc_depth: 5
 - tables
 - footnotes
 - fenced_code
@@ -85,6 +86,7 @@ markdown_extensions:
 
 plugins:
 - search
+- meta
 - redirects:
     redirect_maps:
       experimental/lakectl_local_posix.html: experimental/lakectl_local_posix.md
