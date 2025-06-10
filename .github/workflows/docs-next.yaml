@@ -1,0 +1,37 @@
+name: docs-next
+
+on:
+  push:
+    paths:
+      - "docs/**"
+      - ".github/workflows/docs-*.yaml"
+  commit:
+
+permissions:
+  contents: read
+
+jobs:
+  docs-latest:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        working-directory: docs
+        run: pip install -r requirements-docs.txt
+
+      - name: Deploy documentation
+        uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          mike deploy dev --remote github.com/treeverse/docs-next-lakeFS

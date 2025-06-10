@@ -2,3 +2,4 @@ mkdocs==1.5.3
 mkdocs-material==9.5.12
 mkdocs-redirects==1.2.1
 PyYAML>=6.0 
+mike==2.1.3

@@ -44,6 +44,8 @@ extra:
     enterprise: Enterprise Feature
     deprecated: Deprecated Feature
     experimental: Experimental Feature
+  version:
+    provider: mike
 
 # Markdown settings
 markdown_extensions:
