@@ -110,7 +110,7 @@ func GetGCPProjectID() (string, error) {
 	if !metadata.OnGCE() {
 		return "", ErrNotInCloud
 	}
-	return metadata.NumericProjectID()
+	return metadata.NumericProjectIDWithContext(context.Background())
 }
 
 // checkAzureMetadata detects Azure by querying IMDS.
