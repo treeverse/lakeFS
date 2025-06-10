@@ -33,8 +33,22 @@ export const GeoJSONPreview = ({ data }) => {
             &copy; <a href="https://openstreetmap.org/">OpenStreetMap</a>
             &copy; <a href="https://openstreetmap.de/">OSM Germany</a>
           `}
-                    crossOrigin="anonymous"
-                    referrerPolicy="no-referrer"
+                    onTileError={(e) => {
+                        const img = e.tile;
+                        const src = img.src;
+
+                        if (src.includes("tile.openstreetmap.de")) {
+                            img.src = src.replace(
+                                "tile.openstreetmap.de",
+                                "tile.openstreetmap.fr/osmfr"
+                            );
+                        } else if (src.includes("tile.openstreetmap.fr/osmfr")) {
+                            img.src = src.replace(
+                                "tile.openstreetmap.fr/osmfr",
+                                "tile.openstreetmap.org"
+                            );
+                        }
+                    }}
                 />
                 <GeoJSON data={geoJsonData} />
             </MapContainer>
