@@ -88,20 +88,16 @@ Before getting started, you will need [Docker](https://docs.docker.com/engine/in
 Follow along the steps below to create dev/test environment with lakeFS.
 
 * Start by cloning the lakeFS samples Git repository:
-    ```bash
-    git clone https://github.com/treeverse/lakeFS-samples.git
-    ```
 
     ```bash
+    git clone https://github.com/treeverse/lakeFS-samples.git
     cd lakeFS-samples
     ```
 
 * Run following commands to download and run Docker container which includes Python, Spark, Jupyter Notebook, JDK, Hadoop binaries, lakeFS Python SDK and Airflow (Docker image size is around 4.5GB):
-    ```bash
-    git submodule init && git submodule update
-    ```
 
     ```bash
+    git submodule init && git submodule update
     docker compose up
     ```
 
@@ -193,11 +189,12 @@ On the `main` branch however, there is still just the original data - untouched 
 You can safely continue working with the data from main which is unharmed due to lakeFS isolation capabilities.
 
 ## Further Reading
+!!! quote "&nbsp;"
 
-* Case Study: [How Enigma use lakeFS for isolated development and staging environments](https://lakefs.io/blog/improving-our-research-velocity-with-lakefs/)
-* Tutorial: [ETL Testing Tutorial with lakeFS: Step-by-Step Guide](https://lakefs.io/blog/etl-testing-tutorial/)
-* [ETL Testing: A Practical Guide](https://lakefs.io/blog/etl-testing/)
-* [Top 5 ETL Testing Challenges - Solved!](https://lakefs.io/wp-content/uploads/2023/03/Top-5-ETL-Testing-Challenges-Solved.pdf)
+    * Case Study: [How Enigma use lakeFS for isolated development and staging environments](https://lakefs.io/blog/improving-our-research-velocity-with-lakefs/)
+    * Tutorial: [ETL Testing Tutorial with lakeFS: Step-by-Step Guide](https://lakefs.io/blog/etl-testing-tutorial/)
+    * [ETL Testing: A Practical Guide](https://lakefs.io/blog/etl-testing/)
+    * [Top 5 ETL Testing Challenges - Solved!](https://lakefs.io/wp-content/uploads/2023/03/Top-5-ETL-Testing-Challenges-Solved.pdf)
 
-[hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
-[spark-s3a]:  /integrations/spark/#use-the-s3-compatible-api
+    [hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
+    [spark-s3a]:  /integrations/spark/#use-the-s3-compatible-api
