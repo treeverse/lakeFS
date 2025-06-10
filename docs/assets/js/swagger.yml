@@ -43,6 +43,7 @@ components:
     PaginationPrefix:
       in: query
       name: prefix
+      allowEmptyValue: true
       description: return items prefixed with this value
       schema:
         type: string
@@ -51,6 +52,7 @@ components:
       in: query
       name: after
       description: return items after this value
+      allowEmptyValue: true
       schema:
         type: string
 
@@ -67,6 +69,7 @@ components:
     PaginationDelimiter:
       in: query
       name: delimiter
+      allowEmptyValue: true
       description: delimiter used to group common prefixes by
       schema:
         type: string
@@ -74,6 +77,7 @@ components:
     SearchString:
       in: query
       name: search
+      allowEmptyValue: true
       description: string for searching relevant entries
       schema:
         type: string
