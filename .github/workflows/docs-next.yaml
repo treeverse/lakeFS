@@ -7,8 +7,8 @@ on:
       - ".github/workflows/docs-*.yaml"
 
 jobs:
-  docs-latest:
-    name: Deploy Documentation Latest
+  deploy:
+    name: Deploy Dev Documentation
     runs-on: ubuntu-latest
     steps:
       - name: Check-out
@@ -25,11 +25,6 @@ jobs:
         working-directory: docs
         run: pip install -r requirements-docs.txt
 
-      - name: Configure Git for bot
-        run: |
-          git config --global user.name "treeverser"
-          git config --global user.email "treeverser@treeverse.io"
-
       - name: Checkout the documentation repository
         uses: actions/checkout@v4
         with:
@@ -37,11 +32,15 @@ jobs:
           token: ${{ secrets.PERSONAL_TOKEN }}
           path: docs/docs-repo
 
+      - name: Configure Git
+        working-directory: docs/docs-repo
+        run: |
+          git config --global user.name "treeverser"
+          git config --global user.email "treeverser@treeverse.io"
+
       - name: Deploy documentation
         working-directory: docs/docs-repo
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
         run: |
-          git config --global user.name "treeverser"
-          git config --global user.email "treeverser@treeverse.io"
-          mike deploy --config-file ../mkdocs.yaml --branch main --push dev
+          mike deploy --config-file ../mkdocs.yml --branch main --push dev
