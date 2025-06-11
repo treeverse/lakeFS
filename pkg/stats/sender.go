@@ -121,11 +121,11 @@ func (s *HTTPSender) UpdateCommPrefs(ctx context.Context, commPrefs *CommPrefsDa
 	return nil
 }
 
-type dummySender struct {
+type DummySender struct {
 	logging.Logger
 }
 
-func (s *dummySender) SendEvent(_ context.Context, event *InputEvent) error {
+func (s *DummySender) SendEvent(_ context.Context, event *InputEvent) error {
 	if s.Logger == nil || !s.IsTracing() {
 		return nil
 	}
@@ -138,7 +138,7 @@ func (s *dummySender) SendEvent(_ context.Context, event *InputEvent) error {
 	return nil
 }
 
-func (s *dummySender) UpdateMetadata(_ context.Context, m Metadata) error {
+func (s *DummySender) UpdateMetadata(_ context.Context, m Metadata) error {
 	if s.Logger == nil || !s.IsTracing() {
 		return nil
 	}
@@ -148,7 +148,7 @@ func (s *dummySender) UpdateMetadata(_ context.Context, m Metadata) error {
 	return nil
 }
 
-func (s *dummySender) UpdateCommPrefs(_ context.Context, commPrefs *CommPrefsData) error {
+func (s *DummySender) UpdateCommPrefs(_ context.Context, commPrefs *CommPrefsData) error {
 	if s.Logger == nil || !s.IsTracing() {
 		return nil
 	}

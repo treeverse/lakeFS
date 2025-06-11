@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/mitchellh/go-homedir"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
@@ -42,6 +42,17 @@ const (
 	AuthRBACExternal   = "external"
 	AuthRBACInternal   = "internal"
 )
+
+type Logging struct {
+	Format        string   `mapstructure:"format"`
+	Level         string   `mapstructure:"level"`
+	Output        []string `mapstructure:"output"`
+	FileMaxSizeMB int      `mapstructure:"file_max_size_mb"`
+	FilesKeep     int      `mapstructure:"files_keep"`
+	AuditLogLevel string   `mapstructure:"audit_log_level"`
+	// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
+	TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
+}
 
 // S3AuthInfo holds S3-style authentication.
 type S3AuthInfo struct {
@@ -400,18 +411,8 @@ type BaseConfig struct {
 			Prefix  string `mapstructure:"prefix"`
 		} `mapstructure:"env"`
 	} `mapstructure:"actions"`
-
-	Logging struct {
-		Format        string   `mapstructure:"format"`
-		Level         string   `mapstructure:"level"`
-		Output        []string `mapstructure:"output"`
-		FileMaxSizeMB int      `mapstructure:"file_max_size_mb"`
-		FilesKeep     int      `mapstructure:"files_keep"`
-		AuditLogLevel string   `mapstructure:"audit_log_level"`
-		// TraceRequestHeaders work only on 'trace' level, default is false as it may log sensitive data to the log
-		TraceRequestHeaders bool `mapstructure:"trace_request_headers"`
-	}
-	Database   Database
+	Logging    Logging    `mapstructure:"logging"`
+	Database   Database   `mapstructure:"database"`
 	Blockstore Blockstore `mapstructure:"blockstore"`
 	Committed  struct {
 		LocalCache struct {

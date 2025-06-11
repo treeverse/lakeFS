@@ -54,7 +54,7 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 			cfg.GetBaseConfig().Logging.TraceRequestHeaders,
 			authService.IsAdvancedAuth()),
 		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
-		MetricsMiddleware(swagger),
+		MetricsMiddleware(swagger, requestHistograms, requestCounter),
 	)
 	controller := NewController(cfg, catalog, authenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter, licenseManager)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
@@ -104,7 +104,7 @@ func swaggerSpecHandler(w http.ResponseWriter, _ *http.Request) {
 //  2. For file upload wanted to skip body validation for two reasons:
 //     a. didn't find a way for the validator to accept any file content type
 //     b. didn't want the validator to read the complete request body for the specific request
-func OapiRequestValidatorWithOptions(swagger *openapi3.Swagger, options *openapi3filter.Options) func(http.Handler) http.Handler {
+func OapiRequestValidatorWithOptions(swagger *openapi3.T, options *openapi3filter.Options) func(http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)

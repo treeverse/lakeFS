@@ -25,7 +25,6 @@ const (
 
 // ClaimTokenId defines model for ClaimTokenId.
 type ClaimTokenId struct {
-
 	// Unix Epoch in seconds
 	ExpiresAt int64  `json:"expires_at"`
 	TokenId   string `json:"token_id"`
@@ -60,7 +59,6 @@ type CredentialsWithSecret struct {
 
 // Error defines model for Error.
 type Error struct {
-
 	// short message explaining the error
 	Message string `json:"message"`
 }
@@ -79,7 +77,6 @@ type ExternalPrincipalList struct {
 
 // Group defines model for Group.
 type Group struct {
-
 	// Unix Epoch in seconds
 	CreationDate int64   `json:"creation_date"`
 	Description  *string `json:"description,omitempty"`
@@ -101,7 +98,6 @@ type GroupList struct {
 
 // Pagination defines model for Pagination.
 type Pagination struct {
-
 	// Next page is available
 	HasMore bool `json:"has_more"`
 
@@ -117,7 +113,6 @@ type Pagination struct {
 
 // Policy defines model for Policy.
 type Policy struct {
-
 	// Access control list assigned to this policy (if exists)
 	Acl *string `json:"acl,omitempty"`
 
@@ -142,7 +137,6 @@ type Statement struct {
 
 // User defines model for User.
 type User struct {
-
 	// Unix Epoch in seconds
 	CreationDate      int64   `json:"creation_date"`
 	Email             *string `json:"email,omitempty"`
@@ -217,7 +211,6 @@ type GetExternalPrincipalParams struct {
 
 // ListGroupsParams defines parameters for ListGroups.
 type ListGroupsParams struct {
-
 	// return items prefixed with this value
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
@@ -233,7 +226,6 @@ type CreateGroupJSONBody GroupCreation
 
 // ListGroupMembersParams defines parameters for ListGroupMembers.
 type ListGroupMembersParams struct {
-
 	// return items prefixed with this value
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
@@ -246,7 +238,6 @@ type ListGroupMembersParams struct {
 
 // ListGroupPoliciesParams defines parameters for ListGroupPolicies.
 type ListGroupPoliciesParams struct {
-
 	// return items prefixed with this value
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
@@ -259,7 +250,6 @@ type ListGroupPoliciesParams struct {
 
 // ListPoliciesParams defines parameters for ListPolicies.
 type ListPoliciesParams struct {
-
 	// return items prefixed with this value
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
@@ -281,7 +271,6 @@ type ClaimTokenIdJSONBody ClaimTokenId
 
 // ListUsersParams defines parameters for ListUsers.
 type ListUsersParams struct {
-
 	// return items prefixed with this value
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
@@ -300,7 +289,6 @@ type CreateUserJSONBody UserCreation
 
 // ListUserCredentialsParams defines parameters for ListUserCredentials.
 type ListUserCredentialsParams struct {
-
 	// return items prefixed with this value
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
@@ -329,7 +317,6 @@ type CreateUserExternalPrincipalParams struct {
 
 // ListUserExternalPrincipalsParams defines parameters for ListUserExternalPrincipals.
 type ListUserExternalPrincipalsParams struct {
-
 	// return items prefixed with this value
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
@@ -347,7 +334,6 @@ type UpdateUserFriendlyNameJSONBody struct {
 
 // ListUserGroupsParams defines parameters for ListUserGroups.
 type ListUserGroupsParams struct {
-
 	// return items prefixed with this value
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
@@ -363,7 +349,6 @@ type UpdatePasswordJSONBody UserPassword
 
 // ListUserPoliciesParams defines parameters for ListUserPolicies.
 type ListUserPoliciesParams struct {
-
 	// return items prefixed with this value
 	Prefix *PaginationPrefix `json:"prefix,omitempty"`
 
@@ -542,7 +527,7 @@ func (siw *ServerInterfaceWrapper) GetCredentials(w http.ResponseWriter, r *http
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCredentials(w, r, accessKeyId)
 	}
 
@@ -566,7 +551,6 @@ func (siw *ServerInterfaceWrapper) GetExternalPrincipal(w http.ResponseWriter, r
 
 	// ------------- Required query parameter "principalId" -------------
 	if paramValue := r.URL.Query().Get("principalId"); paramValue != "" {
-
 	} else {
 		http.Error(w, "Query argument principalId is required, but not found", http.StatusBadRequest)
 		return
@@ -578,7 +562,7 @@ func (siw *ServerInterfaceWrapper) GetExternalPrincipal(w http.ResponseWriter, r
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetExternalPrincipal(w, r, params)
 	}
 
@@ -602,7 +586,6 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -613,7 +596,6 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -624,7 +606,6 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -633,7 +614,7 @@ func (siw *ServerInterfaceWrapper) ListGroups(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListGroups(w, r, params)
 	}
 
@@ -660,7 +641,7 @@ func (siw *ServerInterfaceWrapper) CreateGroup(w http.ResponseWriter, r *http.Re
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateGroup(w, r, body)
 	}
 
@@ -688,7 +669,7 @@ func (siw *ServerInterfaceWrapper) DeleteGroup(w http.ResponseWriter, r *http.Re
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteGroup(w, r, groupId)
 	}
 
@@ -716,7 +697,7 @@ func (siw *ServerInterfaceWrapper) GetGroup(w http.ResponseWriter, r *http.Reque
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetGroup(w, r, groupId)
 	}
 
@@ -749,7 +730,6 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -760,7 +740,6 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -771,7 +750,6 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -780,7 +758,7 @@ func (siw *ServerInterfaceWrapper) ListGroupMembers(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListGroupMembers(w, r, groupId, params)
 	}
 
@@ -817,7 +795,7 @@ func (siw *ServerInterfaceWrapper) DeleteGroupMembership(w http.ResponseWriter, 
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteGroupMembership(w, r, groupId, userId)
 	}
 
@@ -854,7 +832,7 @@ func (siw *ServerInterfaceWrapper) AddGroupMembership(w http.ResponseWriter, r *
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AddGroupMembership(w, r, groupId, userId)
 	}
 
@@ -887,7 +865,6 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -898,7 +875,6 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -909,7 +885,6 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -918,7 +893,7 @@ func (siw *ServerInterfaceWrapper) ListGroupPolicies(w http.ResponseWriter, r *h
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListGroupPolicies(w, r, groupId, params)
 	}
 
@@ -955,7 +930,7 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromGroup(w http.ResponseWriter, 
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DetachPolicyFromGroup(w, r, groupId, policyId)
 	}
 
@@ -992,7 +967,7 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToGroup(w http.ResponseWriter, r 
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AttachPolicyToGroup(w, r, groupId, policyId)
 	}
 
@@ -1016,7 +991,6 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1027,7 +1001,6 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1038,7 +1011,6 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1047,7 +1019,7 @@ func (siw *ServerInterfaceWrapper) ListPolicies(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListPolicies(w, r, params)
 	}
 
@@ -1074,7 +1046,7 @@ func (siw *ServerInterfaceWrapper) CreatePolicy(w http.ResponseWriter, r *http.R
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreatePolicy(w, r, body)
 	}
 
@@ -1102,7 +1074,7 @@ func (siw *ServerInterfaceWrapper) DeletePolicy(w http.ResponseWriter, r *http.R
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeletePolicy(w, r, policyId)
 	}
 
@@ -1130,7 +1102,7 @@ func (siw *ServerInterfaceWrapper) GetPolicy(w http.ResponseWriter, r *http.Requ
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPolicy(w, r, policyId)
 	}
 
@@ -1168,7 +1140,7 @@ func (siw *ServerInterfaceWrapper) UpdatePolicy(w http.ResponseWriter, r *http.R
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdatePolicy(w, r, body, policyId)
 	}
 
@@ -1195,7 +1167,7 @@ func (siw *ServerInterfaceWrapper) ClaimTokenId(w http.ResponseWriter, r *http.R
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ClaimTokenId(w, r, body)
 	}
 
@@ -1219,7 +1191,6 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1230,7 +1201,6 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1241,7 +1211,6 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1252,7 +1221,6 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "id" -------------
 	if paramValue := r.URL.Query().Get("id"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "id", r.URL.Query(), &params.Id)
@@ -1263,7 +1231,6 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "email" -------------
 	if paramValue := r.URL.Query().Get("email"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "email", r.URL.Query(), &params.Email)
@@ -1274,7 +1241,6 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Optional query parameter "external_id" -------------
 	if paramValue := r.URL.Query().Get("external_id"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "external_id", r.URL.Query(), &params.ExternalId)
@@ -1283,7 +1249,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUsers(w, r, params)
 	}
 
@@ -1310,7 +1276,7 @@ func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Req
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateUser(w, r, body)
 	}
 
@@ -1338,7 +1304,7 @@ func (siw *ServerInterfaceWrapper) DeleteUser(w http.ResponseWriter, r *http.Req
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteUser(w, r, userId)
 	}
 
@@ -1366,7 +1332,7 @@ func (siw *ServerInterfaceWrapper) GetUser(w http.ResponseWriter, r *http.Reques
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetUser(w, r, userId)
 	}
 
@@ -1399,7 +1365,6 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1410,7 +1375,6 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1421,7 +1385,6 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1430,7 +1393,7 @@ func (siw *ServerInterfaceWrapper) ListUserCredentials(w http.ResponseWriter, r 
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUserCredentials(w, r, userId, params)
 	}
 
@@ -1463,7 +1426,6 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "access_key" -------------
 	if paramValue := r.URL.Query().Get("access_key"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "access_key", r.URL.Query(), &params.AccessKey)
@@ -1474,7 +1436,6 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 
 	// ------------- Optional query parameter "secret_key" -------------
 	if paramValue := r.URL.Query().Get("secret_key"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "secret_key", r.URL.Query(), &params.SecretKey)
@@ -1483,7 +1444,7 @@ func (siw *ServerInterfaceWrapper) CreateCredentials(w http.ResponseWriter, r *h
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateCredentials(w, r, userId, params)
 	}
 
@@ -1520,7 +1481,7 @@ func (siw *ServerInterfaceWrapper) DeleteCredentials(w http.ResponseWriter, r *h
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteCredentials(w, r, userId, accessKeyId)
 	}
 
@@ -1557,7 +1518,7 @@ func (siw *ServerInterfaceWrapper) GetCredentialsForUser(w http.ResponseWriter, 
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCredentialsForUser(w, r, userId, accessKeyId)
 	}
 
@@ -1590,7 +1551,6 @@ func (siw *ServerInterfaceWrapper) DeleteUserExternalPrincipal(w http.ResponseWr
 
 	// ------------- Required query parameter "principalId" -------------
 	if paramValue := r.URL.Query().Get("principalId"); paramValue != "" {
-
 	} else {
 		http.Error(w, "Query argument principalId is required, but not found", http.StatusBadRequest)
 		return
@@ -1602,7 +1562,7 @@ func (siw *ServerInterfaceWrapper) DeleteUserExternalPrincipal(w http.ResponseWr
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteUserExternalPrincipal(w, r, userId, params)
 	}
 
@@ -1635,7 +1595,6 @@ func (siw *ServerInterfaceWrapper) CreateUserExternalPrincipal(w http.ResponseWr
 
 	// ------------- Required query parameter "principalId" -------------
 	if paramValue := r.URL.Query().Get("principalId"); paramValue != "" {
-
 	} else {
 		http.Error(w, "Query argument principalId is required, but not found", http.StatusBadRequest)
 		return
@@ -1647,7 +1606,7 @@ func (siw *ServerInterfaceWrapper) CreateUserExternalPrincipal(w http.ResponseWr
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateUserExternalPrincipal(w, r, userId, params)
 	}
 
@@ -1680,7 +1639,6 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1691,7 +1649,6 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1702,7 +1659,6 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1711,7 +1667,7 @@ func (siw *ServerInterfaceWrapper) ListUserExternalPrincipals(w http.ResponseWri
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUserExternalPrincipals(w, r, userId, params)
 	}
 
@@ -1749,7 +1705,7 @@ func (siw *ServerInterfaceWrapper) UpdateUserFriendlyName(w http.ResponseWriter,
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateUserFriendlyName(w, r, body, userId)
 	}
 
@@ -1782,7 +1738,6 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1793,7 +1748,6 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1804,7 +1758,6 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1813,7 +1766,7 @@ func (siw *ServerInterfaceWrapper) ListUserGroups(w http.ResponseWriter, r *http
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUserGroups(w, r, userId, params)
 	}
 
@@ -1851,7 +1804,7 @@ func (siw *ServerInterfaceWrapper) UpdatePassword(w http.ResponseWriter, r *http
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdatePassword(w, r, body, userId)
 	}
 
@@ -1884,7 +1837,6 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "prefix" -------------
 	if paramValue := r.URL.Query().Get("prefix"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "prefix", r.URL.Query(), &params.Prefix)
@@ -1895,7 +1847,6 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "after" -------------
 	if paramValue := r.URL.Query().Get("after"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "after", r.URL.Query(), &params.After)
@@ -1906,7 +1857,6 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "amount" -------------
 	if paramValue := r.URL.Query().Get("amount"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "amount", r.URL.Query(), &params.Amount)
@@ -1917,7 +1867,6 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 
 	// ------------- Optional query parameter "effective" -------------
 	if paramValue := r.URL.Query().Get("effective"); paramValue != "" {
-
 	}
 
 	err = runtime.BindQueryParameter("form", true, false, "effective", r.URL.Query(), &params.Effective)
@@ -1926,7 +1875,7 @@ func (siw *ServerInterfaceWrapper) ListUserPolicies(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListUserPolicies(w, r, userId, params)
 	}
 
@@ -1963,7 +1912,7 @@ func (siw *ServerInterfaceWrapper) DetachPolicyFromUser(w http.ResponseWriter, r
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DetachPolicyFromUser(w, r, userId, policyId)
 	}
 
@@ -2000,7 +1949,7 @@ func (siw *ServerInterfaceWrapper) AttachPolicyToUser(w http.ResponseWriter, r *
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AttachPolicyToUser(w, r, userId, policyId)
 	}
 
@@ -2017,7 +1966,7 @@ func (siw *ServerInterfaceWrapper) GetVersion(w http.ResponseWriter, r *http.Req
 
 	ctx = context.WithValue(ctx, Jwt_tokenScopes, []string{""})
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetVersion(w, r)
 	}
 
@@ -2032,7 +1981,7 @@ func (siw *ServerInterfaceWrapper) GetVersion(w http.ResponseWriter, r *http.Req
 func (siw *ServerInterfaceWrapper) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var handler = func(w http.ResponseWriter, r *http.Request) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.HealthCheck(w, r)
 	}
 
@@ -2199,7 +2148,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-
 	"H4sIAAAAAAAC/+xdWW/kuPH/KgT/fyAJoJ1ub4wA8dvEu9442Z0Y8Xr2YWAYtFTq5o5EakjKdsfo7x6Q",
 	"1EFJ1GG7D7fjp0FbvOr6sarI4jzikKcZZ8CUxCePOCOCpKBAmF8XZEEZUZSzj7ECof9EkoTf/5hmavWZ",
 	"JDngEyVyCHAEMhQ0003xCRagcsEQVZBKRHRXpJZUojvTJcBUN/qWg1jhADOSAj7BphkOsAyXkBI9lVpl",
@@ -2266,7 +2214,7 @@ func GetSwaggerSpecReader() (io.Reader, error) {
 
 // GetSwagger returns the Swagger specification corresponding to the generated code
 // in this file.
-func GetSwagger() (*openapi3.Swagger, error) {
+func GetSwagger() (*openapi3.T, error) {
 	zr, err := GetSwaggerSpecReader()
 	if err != nil {
 		return nil, err
@@ -2276,7 +2224,7 @@ func GetSwagger() (*openapi3.Swagger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error decompressing spec: %s", err)
 	}
-	swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromData(buf.Bytes())
+	swagger, err := openapi3.NewLoader().LoadFromData(buf.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("error loading Swagger: %s", err)
 	}
