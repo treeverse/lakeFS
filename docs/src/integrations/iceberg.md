@@ -20,6 +20,10 @@ status: enterprise
 lakeFS Iceberg REST Catalog allow you to use lakeFS as a [spec-compliant](https://github.com/apache/iceberg/blob/main/open-api/rest-catalog-open-api.yaml) Apache [Iceberg REST catalog](https://editor-next.swagger.io/?url=https://raw.githubusercontent.com/apache/iceberg/main/open-api/rest-catalog-open-api.yaml), 
 allowing Iceberg clients to manage and access tables using a standard REST API. 
 
+
+![lakeFS Iceberg REST Catalog](../assets/img/lakefs_iceberg_rest_catalog.png)
+
+
 Using lakeFS Iceberg REST Catalog, you can use lakeFS a drop-in replacement for other Iceberg catalogs like AWS Glue, Nessie, Hive Metastore - or the lakeFS HadoopCatalog (see [below](#deprecated-iceberg-hadoopcatalog))
 
 With lakeFS Iceberg REST Catalog, you can:
@@ -202,7 +206,8 @@ main_table = catalog.load_table('repo.main.inventory.books')
 !!! info
     Currently, lakeFS handles table changes as file operations during merges.
 
-    This means that when merging branches with table changes, lakeFS treats the table metadata files as regular files. 
+    This means that when merging branches with table changes, lakeFS treats the table metadata files as regular files.
+
     No special merge logic is applied to handle conflicting table changes, and if there are conflicting changes to the same table in different branches, 
     the merge will fail with a conflict that needs to be resolved manually.
 
@@ -259,19 +264,76 @@ The following features are planned for future releases:
 1. **Catalog Sync**:
     - Support for pushing/pulling tables to/from other catalogs
     - Integration with AWS Glue and other Iceberg-compatible catalogs
-2. **Table Import**:
+1. **Table Import**:
     - Support for importing existing Iceberg tables from other catalogs
     - Bulk import capabilities for large-scale migrations
-3. **Advanced Features**:
+1. **Azure Storage Support**
+1. **Advanced Features**:
     - Views API support
     - Table transactions
-4. **Azure Storage Support**
+1. **Advanced versioning capabilities**
+    - merge non-conflicting table updates
+
+### How it works
+
+Under the hood, the lakeFS Iceberg REST Catalog keeps track of each table's metadata file. This is typically referred to as the [table pointer](https://iceberg.apache.org/spec/#overview){ target="_blank" }.
+
+This pointer is stored inside the repository's [storage namespace](../understand/glossary.md#storage-namespace "A storage namespace is a path on the underlying storage that defines where a lakeFS repository stores both metadata and data"). 
+
+When a request is made, the catalog would examine the table's fully qualified namespace: `<repository>.<reference>.<namespace>.<table_name>` to read that special pointer file from the given reference specified,
+and returns the underlying object store location of the metadata file to the client. When a table is created or updated, lakeFS would make sure to generate a new metadata file inside the storage namespace, and register
+that metadata file as the current pointer for the requested branch.
+
+This approach leverages Iceberg's existing metadata and the immutability of its snapshots: a commit in lakeFS captures a metadata file, which in turn captures manifest lists, manifest files and all related data files.
+
+Besides simply avoiding "double booking" where both Iceberg and lakeFS would need to keep track of which files belong to which version, it also greatly improves the scalability and compatibility of the catalog with the existing Iceberg tool ecosystem.
+
+#### Example: Reading an Iceberg Table
+
+Here's a simplified example of what reading from an Iceberg table would look like:
+
+```mermaid
+sequenceDiagram
+    Actor Iceberg Client
+    participant lakeFS Catalog API
+    participant lakeFS
+    participant Object Store
+
+    Iceberg Client->>lakeFS Catalog API: get table metadata("repo.branch.table")
+    lakeFS Catalog API->>lakeFS: get('repo', 'branch', 'table')
+    lakeFS->>lakeFS Catalog API: physical_address
+    lakeFS Catalog API->>Iceberg Client: object location ("s3://.../metadata.json")
+    Iceberg Client->>Object Store: GetObject
+    Object Store->>Iceberg Client: table data
+```
+
+#### Example: Writing an Iceberg Table
+
+Here's a simplified example of what writing to an Iceberg table would look like:
+
+```mermaid
+sequenceDiagram
+    Actor Iceberg Client
+    participant lakeFS Catalog API
+    participant lakeFS
+    participant Object Store
+    Iceberg Client->>Object Store: table data
+    Iceberg Client->>lakeFS Catalog API: commit
+    lakeFS Catalog API->>lakeFS: create branch("branch-tx-uuid")
+    lakeFS Catalog API->>lakeFS: put('new table pointer')
+    lakeFS->>Object Store: PutObject("metdata.json")
+    lakeFS Catalog API->>lakeFS: merge('branch-tx-uuid', 'branch)
+    lakeFS Catalog API->>Iceberg Client: done
+```
 
 ### Related Resources
 
-- [Iceberg REST Catalog API Specification](https://editor-next.swagger.io/?url=https://raw.githubusercontent.com/apache/iceberg/main/open-api/rest-catalog-open-api.yaml)
-- [Iceberg Official Documentation](https://iceberg.apache.org/docs/latest/)
-- [lakeFS Enterprise Features](/enterprise/index/)
+!!! question "Further Reading"
+    - [Iceberg REST Catalog API Specification](https://editor-next.swagger.io/?url=https://raw.githubusercontent.com/apache/iceberg/main/open-api/rest-catalog-open-api.yaml)
+    - [Iceberg Official Documentation](https://iceberg.apache.org/docs/latest/)
+    - [lakeFS Enterprise Features](/enterprise/index/)
+
+---
 
 ## Deprecated: Iceberg HadoopCatalog  
 
