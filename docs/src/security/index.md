@@ -5,7 +5,7 @@ description: Security reference documentation for lakeFS
 
 # lakeFS Security Reference
 
-<img src="/assets/img/docs_logo.png" alt="lakeFS Docs" width=200 style="float: right; margin: 0 0 10px 10px;"/>
+<img src="assets/img/docs_logo.png" alt="lakeFS Docs" width=200 style="float: right; margin: 0 0 10px 10px;"/>
 
 ### Understanding Your Data Security ###
 

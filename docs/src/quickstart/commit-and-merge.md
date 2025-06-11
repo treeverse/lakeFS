@@ -36,7 +36,7 @@ lakectl merge lakefs://quickstart/denmark-lakes lakefs://quickstart/main
 
 We can confirm that this has worked by returning to the same object view of `lakes.parquet` as before and clicking on **Execute** to rerun the same query. You'll see that the country row counts have changed, and only Denmark is left in the data: 
 
-<img src="/assets/img/quickstart/duckdb-main-03.png" alt="The lakeFS object browser with a DuckDB query on lakes.parquet showing that there is only data for Denmark." class="quickstart"/>
+<img src="assets/img/quickstart/duckdb-main-03.png" alt="The lakeFS object browser with a DuckDB query on lakes.parquet showing that there is only data for Denmark." class="quickstart"/>
 
 **But…oh no!** A slow chill creeps down your spine, and the bottom drops out of your stomach. What have you done! 😱 *You were supposed to create **a separate file** of Denmark's lakes - not replace the original one*
 

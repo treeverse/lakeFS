@@ -545,7 +545,7 @@ Since the PostgreSQL instance is expected to hold a very small dataset
 To ensure we have enough RAM to hold this, we'll need 3 GiB of RAM, so, a very moderate Aurora instance `db.t3.large` (2 vCPUs, 8 GB RAM) will be more than enough.
 An equivalent database instance on GCP or Azure should give similar results.
 
-<img src="/assets/img/reference_arch1.png" alt="ML and Research lakeFS reference architecture"/>
+<img src="assets/img/reference_arch1.png" alt="ML and Research lakeFS reference architecture"/>
 
 
 ### Reference Architecture: Automated Production Pipelines

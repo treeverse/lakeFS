@@ -5,7 +5,7 @@ description: Details about lakeFS Concepts and Design
 
 # Understanding lakeFS
 
-<img src="/assets/img/docs_logo.png" alt="lakeFS Docs" width=200 style="float: right; margin: 0 0 10px 10px;"/>
+<img src="assets/img/docs_logo.png" alt="lakeFS Docs" width=200 style="float: right; margin: 0 0 10px 10px;"/>
 
 ## Architecture and Internals
 

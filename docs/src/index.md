@@ -5,7 +5,7 @@ description: The lakeFS documentation provides guidance on how to use lakeFS to 
 
 # Welcome to the Lake! 
 
-<img src="/assets/img/waving-axolotl-transparent.gif" width="90"/>
+<img src="assets/img/waving-axolotl-transparent.gif" width="90"/>
 
 
 **lakeFS brings software engineering best practices and applies them to data.** 
@@ -36,7 +36,7 @@ These include [branching](quickstart/branch.md), [merging](quickstart/commit-and
 * It includes configurable garbage collection capabilities
 * It is proven in production and has an active community
 
-<img src="/assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
+<img src="assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
 
 ## How Does lakeFS Work With Other Tools? 
 
@@ -57,7 +57,7 @@ With lakeFS, you can use any of the tools and libraries you are used to work wit
 Using this method, lakeFS acts as a metadata layer: it figures out which objects need to be fetched from the underlying storage for that version of the data and then lets the client read or write these files directly from the storage using [pre-signed URLs](./security/presigned-url.md). This allows lakeFS to be both very efficient but also highly secure:
 
 <p class="center">
-    <img src="/assets/img/lakeFSArchitecture.png"/>
+    <img src="assets/img/lakeFSArchitecture.png"/>
 </p>
 
 
