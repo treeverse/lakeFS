@@ -1,0 +1,46 @@
+name: docs-next
+
+on:
+  push:
+    paths:
+      - "docs/**"
+      - ".github/workflows/docs-*.yaml"
+
+jobs:
+  deploy:
+    name: Deploy Dev Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        working-directory: docs
+        run: pip install -r requirements-docs.txt
+
+      - name: Checkout the documentation repository
+        uses: actions/checkout@v4
+        with:
+          repository: treeverse/docs-next-lakeFS
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          path: docs/docs-repo
+
+      - name: Configure Git
+        working-directory: docs/docs-repo
+        run: |
+          git config --global user.name "treeverser"
+          git config --global user.email "treeverser@treeverse.io"
+
+      - name: Deploy documentation
+        working-directory: docs/docs-repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          mike deploy --config-file ../mkdocs.yml --branch main --push dev

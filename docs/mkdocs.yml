@@ -45,6 +45,29 @@ extra:
     enterprise: Enterprise Feature
     deprecated: Deprecated Feature
     experimental: Experimental Feature
+  version:
+    provider: mike
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    primary: white
+    accent: teal
+
+# Other settings
+extra:
+  consent:
+    title: Cookie consent
+    description: >-
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they're searching for. With your consent, you're helping us to
+          make our documentation better.      
+  homepage: https://lakefs.io
+  status:
+    new: New
+    enterprise: Enterprise Feature
+    deprecated: Deprecated Feature
+    experimental: Experimental Feature
 
 # Markdown settings
 markdown_extensions:
