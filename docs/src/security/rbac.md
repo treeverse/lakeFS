@@ -427,7 +427,7 @@ They have the following policies granted to them:
 
 Authorization and authentication is pluggable in lakeFS. 
 
-If lakeFS is attached to a [remote authentication server](remote-authenticator.md) (or you are using lakeFS Cloud) then the role-based access control user interface can be used. 
+If lakeFS is attached to a [remote authentication server](./remote-authenticator.md) (or you are using lakeFS Cloud) then the role-based access control user interface can be used. 
 
 If you are using RBAC with your self-managed lakeFS then the lakeFS configuration element `auth.ui_config.rbac` should be set to `external`. 
 

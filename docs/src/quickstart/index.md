@@ -15,7 +15,7 @@ lakeFS provides a "Git for data" platform enabling you to implement best practic
 
 This quickstart will introduce you to some of the core ideas in lakeFS and show what you can do by illustrating the concept of branching, merging, and rolling back changes to data. It's laid out in five short sections: 
 
-[Start Here →](launch.md){ .md-button }
+[Start Here 👉](./launch.md){ .md-button }
 
 ---
 

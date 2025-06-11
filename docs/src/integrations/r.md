@@ -7,8 +7,8 @@ description: How to use lakeFS from R including creating branches, committing ch
 
 R is a powerful language used widely in data science. lakeFS interfaces with R in two ways: 
 
-* To **read and write data in lakeFS** use standard S3 tools such as the `aws.s3` library. lakeFS has a [S3 gateway](https://docs.lakefs.io/understand/architecture.html#s3-gateway) which presents a lakeFS repository as an S3 bucket. 
-* For working with **lakeFS operations such as branches and commits** use the [API](https://docs.lakefs.io/reference/api.html) for which can be accessed from R using the `httr` library. 
+* To **read and write data in lakeFS** use standard S3 tools such as the `aws.s3` library. lakeFS has a [S3 gateway](../understand/architecture.md#s3-gateway) which presents a lakeFS repository as an S3 bucket. 
+* For working with **lakeFS operations such as branches and commits** use the [API](../reference/api.md) for which can be accessed from R using the `httr` library. 
 
 !!! examples
     To see examples of R in action with lakeFS please visit the [lakeFS-samples](https://github.com/treeverse/lakeFS-samples/) repository and the [sample](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/R.ipynb) [notebooks](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/R-weather.ipynb)
@@ -16,7 +16,7 @@ R is a powerful language used widely in data science. lakeFS interfaces with R i
 
 ## Reading and Writing from lakeFS with R
 
-Working with data stored in lakeFS from R is the same as you would with an S3 bucket, via the [S3 Gateway that lakeFS provides](https://docs.lakefs.io/understand/architecture.html#s3-gateway).
+Working with data stored in lakeFS from R is the same as you would with an S3 bucket, via the [S3 Gateway that lakeFS provides](../understand/architecture.md#s3-gateway).
 
 You can use any library that interfaces with S3. In this example we'll use the [aws.s3](https://github.com/cloudyr/aws.s3) library.
 
@@ -162,7 +162,7 @@ write_feather(x = lakes,
 
 As well as reading and writing data, you will also want to carry out lakeFS operations from R including creating branches, committing data, and more. 
 
-To do this call the lakeFS [API](https://docs.lakefs.io/reference/api.html) from the `httr` library. You should refer to the API documentation for full details of the endpoints and their behaviour. Below are a few examples to illustrate the usage. 
+To do this call the lakeFS [API](../reference/api.md) from the `httr` library. You should refer to the API documentation for full details of the endpoints and their behaviour. Below are a few examples to illustrate the usage. 
 
 ### Check the lakeFS Server Version
 
@@ -182,7 +182,7 @@ The returned object `r` can be inspected to determine the outcome of the operati
 
 ```r
 if (r$status_code == 200) {
-    print(paste0("✅lakeFS credentials and connectivity verified. ℹ️lakeFS version ",content(r)$version))   
+    print(paste0("✅ lakeFS credentials and connectivity verified. ℹ️ lakeFS version ",content(r)$version))   
 } else {
     print("🛑 failed to get lakeFS version")
     print(content(r)$message)

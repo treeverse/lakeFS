@@ -13,7 +13,7 @@ This section will guide you through deploying lakeFS on top of an object store. 
 
 Which options are available depends on your deployment platform. For example, the object store available on Azure differs from that on AWS. 
 
-![](../..//assets/img/deploy/deploy-lakefs.excalidraw.png)
+![](../../assets/img/deploy/deploy-lakefs.excalidraw.png)
 
 ## Deployment and Setup Details
 

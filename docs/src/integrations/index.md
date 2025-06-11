@@ -11,7 +11,7 @@ lakeFS provides several clients directly, as well as an [S3-compatible gateway](
 
 See below for detailed instructions for using different technologies with lakeFS.
 
-!!! info "Missing Something?"
+!!! question "Missing Something?"
     If there is a technology not listed here that you would like to use with lakeFS, please drop by [our Slack](https://lakefs.io/slack) and we'll help you get started with it.
 
 <table>

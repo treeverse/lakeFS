@@ -10,7 +10,7 @@ search:
 
 !!! info
     Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
-    If you're using the open-source version of lakeFS you can read more about the [authentication options available](authentication.md).
+    If you're using the open-source version of lakeFS you can read more about the [authentication options available](./authentication.md).
 
 ## SSO for lakeFS Cloud
 

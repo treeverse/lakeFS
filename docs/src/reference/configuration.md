@@ -32,7 +32,7 @@ This reference uses `.` to denote the nesting of values.
 * `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
     
     !!! note
-        In case you configure this field to be lower than the main logger level, you won't be able to get the [audit logs](auditing.md)
+        In case you configure this field to be lower than the main logger level, you won't be able to get the [audit logs](./auditing.md)
 
 * `logging.output` `(string : "-")` - A path or paths to write logs to. A `-` means the standard output, `=` means the standard error.
 * `logging.file_max_size_mb` `(int : 100)` - Output file maximum size in megabytes.

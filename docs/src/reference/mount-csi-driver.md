@@ -25,7 +25,7 @@ The lakeFS CSI (Container Storage Interface) Driver is an extension for Kubernet
 - Minimal Kubernetes versions `>=1.23.0`. 
 - Tested Cluster providers EKS, Openshift (Partially).
 - Static provisioning only explain below.
-- Setting Pods `securityContext` UID and GID (i.e `runAsUser: 1000`, `runAsGroup: 2000`) is very neuanced in nature and does not have wide coverage currently, not supported but might work.
+- Setting Pods `securityContext` UID and GID (i.e `runAsUser: 1000`, `runAsGroup: 2000`) is very nuanced in nature and does not have wide coverage currently, not supported but might work.
 - Pod only supports access mode `ReadOnlyMany`
 
 **Static Provisioning only (Relevant for pods)**
@@ -82,7 +82,7 @@ helm show values lakefs/everest-lakefs-csi-driver --version <version>
 
 **CSI driver config:**
 
-All the driver CLI flags can be configured via environment variables (prefiedx `CSI_DRIVER_`) and can be passed to the driver.
+All the driver CLI flags can be configured via environment variables (prefixed `CSI_DRIVER_`) and can be passed to the driver.
 
 !!! example "Example: Minimal required arguments not commented"
 
@@ -143,11 +143,11 @@ The only required argument to set is `lakeFSMountUri` in the `PV` (See examples 
 
 ### Mount Options
 
-Most of the options are optional and can be omitted, but each mount request can be configured with [everest mount cli options](https://docs.lakefs.io/reference/mount.html#mount-command), they are passed as `mountOptions` in the `PVC` spec.
+Most of the options are optional and can be omitted, but each mount request can be configured with [everest mount cli options](./mount.md#mount-command), they are passed as `mountOptions` in the `PVC` spec.
 
 ### Examples
 
-The examples demonstrates different mount sncenarios with the CSI Driver.
+The examples demonstrates different mount scenarios with the CSI Driver.
 All of them are essentially running `ls <mount-dir>` and `tail -f /dev/null` in a centos container.
 If the mount succeeded you will see the contents of your mount directory.
 
@@ -399,7 +399,7 @@ If the mount succeeded you will see the contents of your mount directory.
 
     **Replicas > 1:**
 
-    not supported in this example, since the driver only supports static provisoning. 
+    not supported in this example, since the driver only supports static provisioning. 
     to use Statefulset with replica > 1 we need to add PersistentVolume(s) manually.
 
     ```yaml
@@ -488,7 +488,7 @@ If the mount succeeded you will see the contents of your mount directory.
         - lakectl-access-key-id <LAKEFS_ACCESS_KEY_ID>
         - lakectl-secret-access-key <LAKEFS_SECRET_ACCESS_KEY>
         - lakectl-server-url <LAKEFS_ENDPOINT>
-        # WARN: an advanced flag and rarelly needed if at all, performs mount directly using fuser relying on it to exist on the host server without using FUSE syscalls
+        # WARN: an advanced flag and rarely needed if at all, performs mount directly using fuser relying on it to exist on the host server without using FUSE syscalls
         # be default fuse-direct-mount is true
         # - fuse-direct-mount false
         # - mount-gid 2000

@@ -40,7 +40,7 @@ This section explains how to use the lakeFS UI to manage rules. You can also use
 
 To add a new rule, click the _Add_ button. In the dialog, enter the branch name pattern and then click _Create_.
 
-<img alt="Adding a branch protection rule" src="../assets/img/add_branch_protection_rule.png" style="max-width:500px; display:block; margin-left:auto; margin-right:auto;">
+![Adding a branch protection rule](../assets/img/add_branch_protection_rule.png)
 
 ### Deleting a rule
 

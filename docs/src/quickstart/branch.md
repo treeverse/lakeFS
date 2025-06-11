@@ -41,7 +41,7 @@ We're going to use DuckDB which is embedded within the web interface of lakeFS.
 
 From the lakeFS **Objects** page select the `lakes.parquet` file to open the DuckDB editor: 
 
-<img src="assets/img/quickstart/duckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
+<img src="../../assets/img/quickstart/duckdb-main-01.png" alt="The lakeFS object viewer with embedded DuckDB to query parquet files. A query has run automagically to preview the contents of the selected parquet file." class="quickstart"/>
 
 To start with, we'll load the lakes data into a DuckDB table so that we can manipulate it. Replace the previous text in the DuckDB editor with this: 
 
@@ -62,7 +62,7 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-<img src="assets/img/quickstart/duckdb-editor-02.png" alt="The DuckDB editor pane querying the lakes table" class="quickstart"/>
+<img src="../../assets/img/quickstart/duckdb-editor-02.png" alt="The DuckDB editor pane querying the lakes table" class="quickstart"/>
 
 ### Making a Change to the Data
 
@@ -72,7 +72,7 @@ Now we can change our table, which was loaded from the original `lakes.parquet`,
 DELETE FROM lakes WHERE Country != 'Denmark';
 ```
 
-<img src="assets/img/quickstart/duckdb-editor-03.png" alt="The DuckDB editor pane deleting rows from the lakes table" class="quickstart"/>
+<img src="../../assets/img/quickstart/duckdb-editor-03.png" alt="The DuckDB editor pane deleting rows from the lakes table" class="quickstart"/>
 
 We can verify that it's worked by reissuing the same query as before:
 
@@ -84,7 +84,7 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-<img src="assets/img/quickstart/duckdb-editor-04.png" alt="The DuckDB editor pane querying the lakes table showing only rows for Denmark remain" class="quickstart"/>
+<img src="../../assets/img/quickstart/duckdb-editor-04.png" alt="The DuckDB editor pane querying the lakes table showing only rows for Denmark remain" class="quickstart"/>
 
 ## Write the Data back to lakeFS
 
@@ -94,7 +94,7 @@ The changes so far have only been to DuckDB's copy of the data. Let's now push i
 COPY lakes TO 'lakefs://quickstart/denmark-lakes/lakes.parquet';
 ```
 
-<img src="assets/img/quickstart/duckdb-editor-05.png" alt="The DuckDB editor pane writing data back to the denmark-lakes branch" class="quickstart"/>
+<img src="../../assets/img/quickstart/duckdb-editor-05.png" alt="The DuckDB editor pane writing data back to the denmark-lakes branch" class="quickstart"/>
 
 ## Verify that the Data's Changed on the Branch
 
@@ -110,7 +110,7 @@ ORDER BY COUNT(*)
 DESC LIMIT 5;
 ```
 
-<img src="assets/img/quickstart/duckdb-editor-06.png" alt="The DuckDB editor pane show the parquet file on denmark-lakes branch has been changed" class="quickstart"/>
+<img src="../../assets/img/quickstart/duckdb-editor-06.png" alt="The DuckDB editor pane show the parquet file on denmark-lakes branch has been changed" class="quickstart"/>
 
 
 ## What about the data in `main`?
@@ -124,7 +124,7 @@ GROUP BY country
 ORDER BY COUNT(*) 
 DESC LIMIT 5;
 ```
-<img src="assets/img/quickstart/duckdb-main-02.png" alt="The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected." class="quickstart"/>
+<img src="../../assets/img/quickstart/duckdb-main-02.png" alt="The lakeFS object browser showing DuckDB querying lakes.parquet on the main branch. The results are the same as they were before we made the changes to the denmark-lakes branch, which is as expected." class="quickstart"/>
 
 In the next step we'll see how to commit our changes and merge our branch back into main. 
 

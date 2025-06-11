@@ -102,7 +102,7 @@ Finally, make sure to drop by to say hi on [Twitter](https://twitter.com/lakeFS)
 
 We describe lakeFS as "_Git for data_" but what does that actually mean? Have a look at the [concepts](../understand/model.md) and [architecture](../understand/architecture.md) guides, as well as the explanation of [how merges are handled](../understand/how/merge.md). To go deeper you might be interested in [the internals of versioning](../understand/how/versioning-internals.md) and our [internal database structure](../understand/how/kv.md).
 
-[onprem-k8s]:  ../howto/deploy/onprem.md#k8s
+[onprem-k8s]:  ../howto/deploy/onprem.md#kubernetes
 
 ---
 

@@ -21,7 +21,7 @@ commit main successfully reverted
 ```
 
 Back in the object page and the DuckDB query we can see that the original file is now back to how it was: 
-<img src="assets/img/quickstart/duckdb-main-02.png" alt="The lakeFS object viewer with DuckDB query showing that the lakes dataset on main branch has been successfully returned to state prior to the merge." class="quickstart"/>
+<img src="../../assets/img/quickstart/duckdb-main-02.png" alt="The lakeFS object viewer with DuckDB query showing that the lakes dataset on main branch has been successfully returned to state prior to the merge." class="quickstart"/>
 
 ---
 

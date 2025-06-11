@@ -572,7 +572,7 @@ On to the PostgreSQL instance - at 500k, the expected dataset size is `150MiB (f
 To ensure we have enough RAM to hold this, we'll need at least 15 GiB of RAM, so we'll go with a `db.r5.xlarge` (4 vCPUs, 32GB RAM) Aurora instance.
 An equivalent database instance on GCP or Azure should give similar results.
 
-<img src="../assets/img/reference_arch2.png" alt="Automated pipelines lakeFS reference architecture"/>
+![Automated pipelines lakeFS reference architecture](../assets/img/reference_arch2.png)
 
 [s3-gateway]:  ../understand/architecture.md#s3-gateway
 [lakectl-abuse]:  ../reference/cli.md#lakectl-abuse

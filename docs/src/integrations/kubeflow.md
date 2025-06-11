@@ -18,7 +18,7 @@ Currently, there are two methods to create lakeFS `ContainerOps`:
 ### Function-based ContainerOps
 
 To implement a [function-based component](https://www.kubeflow.org/docs/components/pipelines/legacy-v1/sdk/python-function-components/) that invokes lakeFS operations,
-you should use the [Python OpenAPI client](python.md) lakeFS provides. See the example below that demonstrates how to make the client's package available to your ContainerOp.
+you should use the [Python OpenAPI client](./python.md) lakeFS provides. See the example below that demonstrates how to make the client's package available to your ContainerOp.
 
 #### Example operations
 
@@ -44,7 +44,7 @@ create_branch_op = components.func_to_container_op(
 ```
 
 You can invoke any lakeFS operation supported by lakeFS OpenAPI. For example, you could implement a commit and merge function-based ContainerOps.
-Check out the [Python documentation](python.md) and the full [API reference](../reference/api.md).
+Check out the [Python documentation](./python.md) and the full [API reference](../reference/api.md).
 
 ### Non-function-based ContainerOps
 

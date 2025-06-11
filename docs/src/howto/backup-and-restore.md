@@ -43,7 +43,7 @@ Dump metadata/refs of the repository by using lakeFS API or CLI.
 lakefs_sdk_client.internal_api.dump_refs("example-repo")
 ```
 
-* Example commands to dump metadata by using [lakeFS CLI](https://docs.lakefs.io/reference/cli.html#lakectl-refs-dump) and upload to S3 storage for the repository:
+* Example commands to dump metadata by using [lakeFS CLI](../reference/cli.md#lakectl-refs-dump) and upload to S3 storage for the repository:
 
 ```bash
 lakectl refs-dump lakefs://example-repo > refs_manifest.json
@@ -51,7 +51,7 @@ lakectl refs-dump lakefs://example-repo > refs_manifest.json
 aws s3 cp refs_manifest.json s3://source-bucket-name/example-repo/_lakefs/refs_manifest.json
 ```
 
-* Example commands to dump metadata by using [lakeFS CLI](https://docs.lakefs.io/reference/cli.html#lakectl-refs-dump) and upload to Azure Blob storage for the repository:
+* Example commands to dump metadata by using [lakeFS CLI](../reference/cli.md#lakectl-refs-dump) and upload to Azure Blob storage for the repository:
 
 ```bash
 lakectl refs-dump lakefs://example-repo > refs_manifest.json
@@ -100,13 +100,13 @@ lakefs.Repository("target-example-repo").create(bare=True, storage_namespace="s3
 lakefs.Repository("target-example-repo").create(bare=True, storage_namespace="https://target-storage-account-name.blob.core.windows.net/targetContainer/example-repo", default_branch="same-default-branch-as-in-source-repo")
 ```
 
-* [lakeFS CLI](https://docs.lakefs.io/reference/cli.html#lakectl-repo-create-bare) command to create a bare lakeFS repository using S3 storage:
+* [lakeFS CLI](../reference/cli.md#lakectl-repo-create-bare) command to create a bare lakeFS repository using S3 storage:
 
 ```bash
 lakectl repo create-bare lakefs://target-example-repo s3://target-bucket-name/example-repo --default-branch "same-default-branch-as-in-source-repo"
 ```
 
-* [lakeFS CLI](https://docs.lakefs.io/reference/cli.html#lakectl-repo-create-bare) command to create a bare lakeFS repository using Azure storage:
+* [lakeFS CLI](../reference/cli.md#lakectl-repo-create-bare) command to create a bare lakeFS repository using Azure storage:
 
 ```
 lakectl repo create-bare lakefs://target-example-repo https://target-storage-account-name.blob.core.windows.net/targetContainer/example-repo --default-branch "same-default-branch-as-in-source-repo"
@@ -136,13 +136,13 @@ with open('./refs_manifest.json') as file:
 target_lakefs_sdk_client.internal_api.restore_refs(target_repo_name, refs_manifest_json)
 ```
 
-* [lakeFS CLI](https://docs.lakefs.io/reference/cli.html#lakectl-refs-restore) command to restore metadata to new repository using S3 storage:
+* [lakeFS CLI](../reference/cli.md#lakectl-refs-restore) command to restore metadata to new repository using S3 storage:
 
 ```bash
 aws s3 cp s3://target-bucket-name/example-repo/_lakefs/refs_manifest.json - | lakectl refs-restore lakefs://target-example-repo --manifest -
 ```
 
-* [lakeFS CLI](https://docs.lakefs.io/reference/cli.html#lakectl-refs-restore) command to restore metadata to new repository using Azure storage:
+* [lakeFS CLI](../reference/cli.md#lakectl-refs-restore) command to restore metadata to new repository using Azure storage:
 
 ```bash
 az storage blob download --container-name targetContainer --name example-repo/_lakefs/refs_manifest.json --account-name target-storage-account-name --account-key <target-storage-account-key> | lakectl refs-restore lakefs://target-example-repo --manifest -

@@ -141,11 +141,11 @@ the improved dataset is shared and versioned.
     
     In your branch, you should see the commit including your local changes:
    
-    <img width="75%" src="assets/img/quickstart/lakectl-local-01.png" alt="A lakectl local commit to lakeFS" class="quickstart"/>
+    <img width="75%" src="../../assets/img/quickstart/lakectl-local-01.png" alt="A lakectl local commit to lakeFS" class="quickstart"/>
 
 2. Compare `my-experiment` branch to the `main` branch to visualize your changes:
         
-    <img width="75%" src="assets/img/quickstart/lakectl-local-02.png" alt="A comparison between a branch that includes local changes to the main branch" class="quickstart"/>
+    <img width="75%" src="../../assets/img/quickstart/lakectl-local-02.png" alt="A comparison between a branch that includes local changes to the main branch" class="quickstart"/>
 
 
 

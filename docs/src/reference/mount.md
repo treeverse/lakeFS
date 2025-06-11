@@ -64,8 +64,8 @@ When IAM authentication is configured, Everest will use AWS SDK default behavior
 
 ### Prerequisites
 
-1. Make sure your lakeFS server supports [AWS IAM Role Login](https://docs.lakefs.io/security/external-principals-aws.html).
-2. Make sure your IAM role is attached to lakeFS. See [Administration of IAM Roles in lakeFS](https://docs.lakefs.io/security/external-principals-aws.html#administration-of-iam-roles-in-lakefs)
+1. Make sure your lakeFS server supports [AWS IAM Role Login](../security/external-principals-aws.md).
+2. Make sure your IAM role is attached to lakeFS. See [Administration of IAM Roles in lakeFS](../security/external-principals-aws.md#administration-of-iam-roles-in-lakefs)
 
 ### Configure everest to use IAM
 
@@ -278,10 +278,10 @@ everest mount --partial-reads "lakefs://image-repo/main/datasets/pets/" "./pets"
     everest umount ./pets
     ```
 
-To learn more, read about [Mount Write Mode Semantics](mount-write-mode-semantics.md).
+To learn more, read about [Mount Write Mode Semantics](./mount-write-mode-semantics.md).
 
 
-[lakectl]: cli.md
+[lakectl]: ./cli.md
 
 ## FAQs
 
@@ -410,8 +410,8 @@ While both lakectl local and lakeFS Mount enable working with lakeFS data locall
 
 <h5>Use lakectl local</h5>
 
-* For enabling lakeFS writes with [lakectl local commit](https://docs.lakefs.io/reference/cli.html#lakectl-local-commit).
-* To integrate seamlessly with [Git](https://docs.lakefs.io/integrations/git.html).
+* For enabling lakeFS writes with [lakectl local commit](../reference/cli.md#lakectl-local-commit).
+* To integrate seamlessly with [Git](../integrations/git.md).
 
 <h5>Use lakeFS Mount</h5>
 

@@ -71,7 +71,7 @@ schema:
 
 ### Catalog Exporters 
 
-Exporters are code packages accessible through [Lua integration](hooks/lua.md#lua-library-reference). Each exporter is exposed as a Lua function under the package namespace `lakefs/catalogexport`.  Call them from hooks to connect lakeFS tables to various catalogs.
+Exporters are code packages accessible through [Lua integration](./hooks/lua.md#lua-library-reference). Each exporter is exposed as a Lua function under the package namespace `lakefs/catalogexport`.  Call them from hooks to connect lakeFS tables to various catalogs.
 
 #### Currently supported exporters
 
@@ -84,9 +84,9 @@ Exporters are code packages accessible through [Lua integration](hooks/lua.md#lu
 
 #### Running an Exporter  
 
-Exporters are meant to run as [Lua hooks](hooks/lua.md).
+Exporters are meant to run as [Lua hooks](./hooks/lua.md).
                                                                                          
-Configure the actions trigger by using [events and branches](hooks/index.md#action-file-schema).  Of course, you can add additional custom filtering logic to the Lua script if needed.
+Configure the actions trigger by using [events and branches](./hooks/index.md#action-file-schema).  Of course, you can add additional custom filtering logic to the Lua script if needed.
 The default table name when exported is `${repository_id}_${_lakefs_tables/TABLE.md(name field)}_${ref_name}_${short_commit}`.
 
 Example of an action that will be triggered when a `post-commit` event happens in the `export_table` branch.

@@ -198,7 +198,7 @@ The migration process involves:
 
 #### Step-by-Step Guide
 
-Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup and Restore](backup-and-restore.md#python-helper-script-for-backup-and-restore).
+Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup and Restore](./backup-and-restore.md#python-helper-script-for-backup-and-restore).
 
 1. **Dump Repository References**
     To dump the repository metadata:

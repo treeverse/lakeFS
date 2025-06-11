@@ -10,7 +10,7 @@ status: enterprise
     Standalone GC is only available for [lakeFS Enterprise](../../enterprise/index.md).
 
 !!! warning
-    Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC](gc.md). For large scale environments, we recommend using the Spark-backed solution.
+    Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC](./gc.md). For large scale environments, we recommend using the Spark-backed solution.
 
 
 

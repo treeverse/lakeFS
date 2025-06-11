@@ -15,7 +15,7 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
 ## Getting Started
 
 !!! note
-    Please note that Spark 2 is no longer supported with the lakeFS metadata client.
+    Please note that Spark **2.x** is no longer supported with the lakeFS metadata client.
 
 
 The Spark metadata client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but

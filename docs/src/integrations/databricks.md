@@ -13,9 +13,7 @@ and maintaining enterprise-grade data, analytics, and AI solutions at scale.
 In this document, we will cover the various Databricks products and how they integrate
 with lakeFS.
 
-<p class="center">
-    <img src="assets/img/databricks-arch.png"/>
-</p>
+![Databricks Architecture](../assets/img/databricks-arch.png)
 
 ## Databricks Compute Options
 

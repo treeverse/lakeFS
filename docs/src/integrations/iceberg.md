@@ -514,5 +514,3 @@ This is done through an incremental copy from the original table into lakeFS.
     -- Create new iceberg table in lakeFS from the source table (pre-lakeFS)
     CREATE TABLE IF NOT EXISTS <lakefs-catalog>.<branch>.<db> USING iceberg AS SELECT * FROM <iceberg-original-table>
     ```
-
-[ref-expr]:  /understand/model/#ref-expressions

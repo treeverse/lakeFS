@@ -672,7 +672,7 @@ Implement the following endpoints under the `policies` tag:
     - **Description:** Updates an existing policy.
     - **Input:** `policyId` (path parameter), request body containing the updated `Policy` object.
     - **Output:** A `Policy` object representing the updated policy.
-    - **Implementation Notes:** Ensure the policy exists and the provided `policyId` matches the `name` in the request body. The requestis to update the `acl` property. The `statement` property is not used in the ACL implementation.
+    - **Implementation Notes:** Ensure the policy exists and the provided `policyId` matches the `name` in the request body. The request is to update the `acl` property. The `statement` property is not used in the ACL implementation.
     - **Input Schema (`Policy`):**
 
         ```yaml

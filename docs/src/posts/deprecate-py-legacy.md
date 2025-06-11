@@ -62,4 +62,4 @@ with the lakeFS community!  Try asking on our `#dev` channel
 [pypi-lakefs-hi-lvl]:  https://pypi.org/project/lakefs/
 [pypi-lakefs-sdk]:  https://pypi.org/project/lakefs-sdk/
 [pypi-lakefs-legacy]:  https://pypi.org/project/lakefs-client/
-[lakefs-py-migration]:  https://docs.lakefs.io/project/code-migrate-1.0-sdk.html#migrating-sdk-code-for-python
+[lakefs-py-migration]:  ../project/code-migrate-1.0-sdk.md#migrating-sdk-code-for-python

@@ -117,7 +117,7 @@ Logged dataset source URI: {"uri": "s3://my-repo/3afddad4fef987b4919f5e82f16682c
 
 ### Example: Using Spark
 
-The example below configures Spark to access lakeFS' [S3-compatible API](spark.md#s3-compatible-api) and load a Delta
+The example below configures Spark to access lakeFS' [S3-compatible API](./spark.md#s3-compatible-api) and load a Delta
 Lake tables to the experiment. 
 
 ```python

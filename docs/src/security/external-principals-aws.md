@@ -10,7 +10,7 @@ search:
 
 !!! info
     Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
-    If you're using the open-source version you can check the [pluggable APIs](https://docs.lakefs.io/security/rbac.html#pluggable-authentication-and-authorization).
+    If you're using the open-source version you can check the [pluggable APIs](./rbac.md#pluggable-authentication-and-authorization).
 
 ## Overview 
 
@@ -25,8 +25,8 @@ For example, consider the following mapping:
 
 | Principal ARN                                       | lakeFS User |
 |-----------------------------------------------------|-------------|
-| arn:aws:sts::123456:assumed-role/Dev                | foo         |
-| arn:aws:sts::123456:assumed-role/Dev/john@acme.com  | john        |
+| `arn:aws:sts::123456:assumed-role/Dev`                | `foo`        |
+| `arn:aws:sts::123456:assumed-role/Dev/john@acme.com`  | `john`        |
 
 if the bound ARN were `arn:aws:sts::123456:assumed-role/Dev/<SessionName>` it would allow any principal assuming `Dev` role in AWS account `123456` to login to it.
 If the `SessionName` is `john@acme.com` then lakeFS would return token for `john` user

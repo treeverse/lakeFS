@@ -112,7 +112,7 @@ WITH (
 )
 ```
 
-### Example of copying a table with [metastore tools](glue_hive_metastore.md):
+### Example of copying a table with [metastore tools](./glue_hive_metastore.md):
 
 !!! warning "Deprecated Feature"
     Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.

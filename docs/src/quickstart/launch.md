@@ -38,11 +38,11 @@ You're now ready to dive into lakeFS!
 
 3. You'll notice that there aren't any repositories created yet. Click the **Create Sample Repository** button. 
 
-<img width="75%" src="assets/img/quickstart/empty-repo-list.png" alt="Empty lakeFS Repository list" class="quickstart"/>
+<img width="75%" src="../../assets/img/quickstart/empty-repo-list.png" alt="Empty lakeFS Repository list" class="quickstart"/>
 
 You will see the sample repository created and the quickstart guide within it. You can follow along there, or here - it's the same :) 
     
-<img width="75%" src="assets/img/quickstart/quickstart-repo.png" alt="The quickstart sample repo in lakeFS" class="quickstart"/>
+<img width="75%" src="../../assets/img/quickstart/quickstart-repo.png" alt="The quickstart sample repo in lakeFS" class="quickstart"/>
 
 ---
 

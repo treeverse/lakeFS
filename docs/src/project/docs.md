@@ -7,7 +7,7 @@ description: How to contribute to the lakeFS Documentation, including style guid
 
 Any contribution to the docs, whether it is in conjunction with a code contribution or as a standalone, is appreciated.
 
-Please see [the contributing guide](contributing.md) for details on contributing to lakeFS in general. 
+Please see [the contributing guide](./contributing.md) for details on contributing to lakeFS in general. 
 
 
 !!! warning "Notice"
@@ -44,7 +44,7 @@ The title of the page should be H1 (`#` in markdown). Use headings in descending
 
 ## Test your changes locally
 
-If you have the necessary dependencies installed, you can run Jekyll to build and serve the documentation from your machine using the provided Makefile target: 
+If you have the necessary dependencies installed, you can run [mkdocs](https://www.mkdocs.org/) to build and serve the documentation from your machine using the provided Makefile target: 
 
 ```sh
 make docs-serve

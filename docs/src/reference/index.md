@@ -9,17 +9,17 @@ description: Reference documentation for the lakeFS platform's various APIs, CLI
 
 ## API
 
-- [lakeFS API](api.md)
-- [S3 Gateway API](s3.md)
+- [lakeFS API](./api.md)
+- [S3 Gateway API](./s3.md)
 
 ## Components
 
-- [Server Configuration](configuration.md)
-- lakeFS command-line tool [lakectl](cli.md)
+- [Server Configuration](./configuration.md)
+- lakeFS command-line tool [lakectl](./cli.md)
 
 ## Clients
 
-- [Spark Metadata Client](spark-client.md)
+- [Spark Metadata Client](./spark-client.md)
 - [lakeFS Hadoop FileSystem](../integrations/spark.md#lakefs-hadoop-filesystem)
 - [Python Client](../integrations/python.md)
 
@@ -35,5 +35,5 @@ description: Reference documentation for the lakeFS platform's various APIs, CLI
   
 ## Other Reference Documentation
 
-- [Monitoring using Prometheus](monitor.md)
-- [Auditing](auditing.md)
+- [Monitoring using Prometheus](./monitor.md)
+- [Auditing](./auditing.md)
