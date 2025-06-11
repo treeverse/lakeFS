@@ -5,6 +5,19 @@ on:
     paths:
       - "docs/**"
       - ".github/workflows/docs-*.yaml"
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g., v1.2)"
+        required: true
+        type: string
+      set_latest:
+        description: "Set this version as latest"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   deploy:
@@ -19,7 +32,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: "3.x"
 
       - name: Install dependencies
         working-directory: docs
@@ -38,9 +51,37 @@ jobs:
           git config --global user.name "treeverser"
           git config --global user.email "treeverser@treeverse.io"
 
+      - name: Set deployment variables
+        id: setvars
+        shell: bash
+        run: |
+          VERSION="dev"
+          ALIASES=""
+          case "${{ github.event_name }}" in
+            release)
+              TAG="${{ github.event.release.tag_name }}"
+              if [[ "$TAG" =~ ^v?([0-9]+)\.([0-9]+) ]]; then
+                VERSION="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+                ALIASES="--update-aliases latest"
+              fi
+              ;;
+            workflow_dispatch)
+              VERSION="${{ github.event.inputs.version }}"
+              if [[ "${{ github.event.inputs.set_latest }}" == "true" ]]; then
+                ALIASES="--update-aliases latest"
+              fi
+              ;;
+            push)
+              VERSION="dev"
+              ALIASES=""
+              ;;
+          esac
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "ALIASES=$ALIASES" >> $GITHUB_OUTPUT
+
       - name: Deploy documentation
         working-directory: docs/docs-repo
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
         run: |
-          mike deploy --config-file ../mkdocs.yml --branch main --push dev
+          mike deploy --config-file ../mkdocs.yml --branch main --push "${{ steps.setvars.outputs.VERSION }}" ${{ steps.setvars.outputs.ALIASES }}
