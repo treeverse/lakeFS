@@ -23,7 +23,6 @@ theme:
     - content.footnote.tooltips
     - content.code.copy
     - content.tabs.link
-<<<<<<< HEAD
   icon:
     repo: fontawesome/brands/github
   palette:
