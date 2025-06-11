@@ -30,19 +30,18 @@ jobs:
           git config --global user.name "treeverser"
           git config --global user.email "treeverser@treeverse.io"
 
-      - name: Clone documentation repo
-        working-directory: docs
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
-        run: |
-          git clone git@github.com:treeverse/docs-next-lakeFS.git docs-repo
-          cd docs-repo
-          git config --global user.name "treeverser"
-          git config --global user.email "treeverser@treeverse.io"
+      - name: Checkout the documentation repository
+        uses: actions/checkout@v4
+        with:
+          repository: treeverse/docs-next-lakeFS
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          path: docs/docs-repo
 
       - name: Deploy documentation
         working-directory: docs/docs-repo
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
         run: |
+          git config --global user.name "treeverser"
+          git config --global user.email "treeverser@treeverse.io"
           mike deploy --config-file ../mkdocs.yaml --branch main --push dev
