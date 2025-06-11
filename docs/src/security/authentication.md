@@ -3,7 +3,7 @@ title: Authentication
 description: This section covers Authentication of your lakeFS server.
 ---
 
-# Authentication 
+# Authentication
 
 ### User Authentication
 
@@ -12,14 +12,14 @@ lakeFS authenticates users from a built-in authentication database.
 #### Built-in database
 
 The built-in authentication database is always present and active. You can use the
-Web UI at Administration / Users to create users. 
+Web UI at Administration / Users to create users.
 
 Users have an access key `AKIA...` and an associated secret access key. These credentials are valid
 for logging into the Web UI or authenticating programmatic requests to the API Server or the S3 Gateway.
 
-#### Remote Authenticator Service 
+#### Remote Authenticator Service
 
-lakeFS server supports external authentication, the feature can be configured by providing an HTTP endpoint to an external authentication service. 
+lakeFS server supports external authentication, the feature can be configured by providing an HTTP endpoint to an external authentication service.
 This integration can be especially useful if you already have an existing authentication system in place, as it allows you to reuse that system instead of maintaining a new one.
 
 !!! info
@@ -41,7 +41,6 @@ For example, assuming my access_key_id is `my_access_key_id` and my secret_acces
 Authorization: Basic bXlfYWNjZXNzX2tleV9pZDpteV9zZWNyZXRfYWNjZXNzX2tleQ==
 ```
 
-
 ### S3 Gateway Authentication
 
 To provide API compatibility with Amazon S3, authentication with the S3 Gateway supports both [SIGv2](https://docs.aws.amazon.com/general/latest/gr/signature-version-2.html){:target="_blank"} and [SIGv4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html){:target="_blank"}.
@@ -49,15 +48,14 @@ Clients such as the AWS SDK that implement these authentication methods should w
 
 See [this example for authenticating with the AWS CLI](../integrations/aws_cli.md).
 
-
 ## OIDC support
 
 !!! warning "Deprecated"
     This feature is deprecated. For single sign-on with lakeFS, try [lakeFS Cloud](https://lakefs.cloud)
 
 OpenID Connect (OIDC) is a simple identity layer on top of the OAuth 2.0 protocol.
-You can configure lakeFS to enable OIDC to manage your lakeFS users externally. 
-Essentially, once configured, this enables you the benefit of OpenID connect, such as a single sign-on (SSO), etc. 
+You can configure lakeFS to enable OIDC to manage your lakeFS users externally.
+Essentially, once configured, this enables you the benefit of OpenID connect, such as a single sign-on (SSO), etc.
 
 ### Configuring lakeFS server for OIDC
 
@@ -76,7 +74,7 @@ auth:
     persist_friendly_name: true                         #  Optional: persist friendly name to KV store so it can be displayed in the user list
 ```
 
-Your login page will now include a link to sign in using the 
+Your login page will now include a link to sign in using the
 OIDC provider. When a user first logs in through the provider, a corresponding user is created in lakeFS.
 
 #### Friendly Name Persistence
@@ -90,7 +88,7 @@ The friendly name stored in KV is updated with each successful login, if the inc
 
 ## User permissions
 
-Authorization is managed via [lakeFS groups and policies](/security/rbac/}).
+Authorization is managed via [lakeFS groups and policies](rbac.md).
 
 By default, an externally managed user is assigned to the lakeFS groups configured in the _default_initial_groups_ property above.
 For a user to be assigned to other groups, add the _initial_groups_ claim to their **ID token** claims. The claim should contain a
@@ -100,7 +98,7 @@ Once the user has been created, you can manage their permissions from the Admini
 
 ### Using a different claim name
 
-To supply the initial groups using another claim from your ID token, you can use the `auth.oidc.initial_groups_claim_name` 
+To supply the initial groups using another claim from your ID token, you can use the `auth.oidc.initial_groups_claim_name`
 lakeFS configuration. For example, to take the initial groups from the _roles_ claim, add:
 
 ```yaml

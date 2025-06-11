@@ -125,13 +125,13 @@ The database used doesn't _have_ to be a dedicated K/V database.
     described in the [configuration guide][config-reference-azure-block].
     You can either pass the CosmosDB's account read-write key to lakeFS, or 
     use a managed identity to authenticate to CosmosDB, as described 
-    [earlier](#identity-based-credentials).
+    [earlier](#authentication-method).
 
 === "PostgreSQL"
 
     Below we show you how to create a database on Azure Database, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
-    If you already have a database, take note of the connection string and skip to the [next step](#run-the-lakefs-server)
+    If you already have a database, take note of the connection string and skip to the [next step](#4-run-the-lakefs-server)
 
     1. Follow the official [Azure documentation](https://docs.microsoft.com/en-us/azure/postgresql/quickstart-create-server-database-portal){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
     Make sure that you're using PostgreSQL version >= 11.

@@ -256,7 +256,7 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
     * Upload objects using the lakeFS GUI (**Works with presign mode**)
     * Upload objects through Spark using the S3 gateway
     * Run `lakectl fs` commands (unless using **presign mode** with `--pre-sign` flag)
-    * Use [Actions and Hooks](../hooks.md)
+    * Use [Actions and Hooks](../hooks/index.md)
 
     ```json
     {

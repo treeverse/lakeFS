@@ -31,6 +31,7 @@ The guide includes example configurations, follow the steps below and adjust the
 1. A proxy server configured to route traffic between the lakeFS and Fluffy servers, see Reverse Proxy in [lakeFS Enterprise architecture][lakefs-enterprise-architecture].
 
 #### Optional
+
 1. Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
 
 !!! info
@@ -297,6 +298,7 @@ See [additional examples on GitHub](https://github.com/treeverse/charts/tree/mas
 In this section, you will learn how to configure lakeFS Enterprise to work with the KV Database you created (see [prerequisites](#prerequisites).
 
 Notes:
+
 * By default, the lakeFS Helm chart comes with `useDevPostgres: true`, you should change it to `useDevPostgres: false` for Fluffy to work with your KV Database and be suitable for production needs.
 * The KV database is shared between lakeFS and Fluffy, and therefore both services must use the same configuration.
 * See [fluffy][fluffy-configuration] and [lakeFS](../../reference/configuration.md#database) `database` configuration.
@@ -322,7 +324,6 @@ The database configuration structure between lakeFS and fluffy can be set direct
         - name: FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING
           value: '<postgres connection string>'
     ```
-
 
 === "Via fluffyConfig"
 
@@ -385,7 +386,6 @@ and audit_logs that are describing a user action (i.e create branch).
 The distinction between regular logs and audit_logs is in the boolean field log_audit.
 lakeFS and fluffy share the same configuration structure under logging.* section in the config.
 
-
 ## Advanced Deployment Configurations
 
 The following example demonstrates a scenario where you need to configure an HTTP proxy for lakeFS and Fluffy, TLS certificates for the Ingress and extending the K8S manifests without forking the Helm chart.
@@ -430,9 +430,5 @@ extraManifests:
 ```
 
 [lakefs-sso-enterprise-spec]: ../../security/sso.md#sso-for-lakefs-enterprise
-[lakefs-sso-enterprise-spec-oidc]: ../../security/sso.md#oidc
-[lakefs-sso-enterprise-spec-saml]: ../../security/sso.md#adfs
-[lakefs-sso-enterprise-spec-ldap]: ../../security/sso.md#ldap
-[fluffy-configuration]: ../configuration.md#fluffy-server-configuration
-[lakefs-enterprise-architecture]: ../architecture.md
-
+[fluffy-configuration]: ../../enterprise/configuration.md#fluffy-server-configuration
+[lakefs-enterprise-architecture]: ../../understand/architecture.md

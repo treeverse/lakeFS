@@ -7,7 +7,6 @@ description: Import existing data into a lakeFS repository
     This section describes how to import existing data into a lakeFS repository, without copying it.
     If you are interested in copying data into lakeFS, see [Copying data to/from lakeFS](./copying.md)._
 
-
 # Importing data into lakeFS
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/R6K8tvtFCxQ"></iframe>
@@ -35,8 +34,6 @@ Once the import is complete, a new commit containing the imported objects will b
 
 The _lakectl import_ command acts the same as the UI import wizard. It commits the changes to the selected branch.
 
-
-
 === "AWS S3 or S3 API Compatible storage"
     ```shell
     lakectl import \
@@ -56,14 +53,13 @@ The _lakectl import_ command acts the same as the UI import wizard. It commits t
     --to lakefs://my-repo/my-branch/optional/path/
     ```
 
-
 !!! note
     1. Any previously existing objects under the destination prefix will be deleted.
     1. The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.
-    1. For security reasons, if you are using lakeFS on top of your local disk (`blockstore.type=local`), you need to enable the import feature explicitly. 
+    1. For security reasons, if you are using lakeFS on top of your local disk (`blockstore.type=local`), you need to enable the import feature explicitly.
     To do so, set the `blockstore.local.import_enabled` to `true` and specify the allowed import paths in `blockstore.local.allowed_external_prefixes` (see [configuration reference](../reference/configuration.md)).
-    When using lakectl or the lakeFS UI, you can currently import only directories locally. If you need to import a single file, use the [HTTP API](../reference/api.md#/import/importStart) or API Clients with `type=object` in the request body and `destination=<full-path-to-file>`. 
-    1. Making changes to data in the original bucket will not be reflected in lakeFS, and may cause inconsistencies. 
+    When using lakectl or the lakeFS UI, you can currently import only directories locally. If you need to import a single file, use the [HTTP API](../reference/api.md#/import/importStart) or API Clients with `type=object` in the request body and `destination=<full-path-to-file>`.
+    1. Making changes to data in the original bucket will not be reflected in lakeFS, and may cause inconsistencies.
 
 ## Examples
 
@@ -83,7 +79,6 @@ As mentioned above, all of these permissions are available by default to the Sup
 ## Provider-specific permissions
 
 In addition, the following for provider-specific permissions may be required:
-
 
 === "AWS S3 or S3 API Compatible storage"
 
@@ -124,7 +119,6 @@ In addition, the following for provider-specific permissions may be required:
     }
     ```
 
-
 === "Azure"
 
     !!! note
@@ -134,7 +128,4 @@ In addition, the following for provider-specific permissions may be required:
 
 === "Google Cloud Storage"
     No specific prerequisites
-
-
-[deploy-azure-storage-account-creds]:  deploy/azure.md#storage-account-credentials
 

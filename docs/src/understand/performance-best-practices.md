@@ -5,11 +5,12 @@ description: This section suggests performance best practices to work with lakeF
 # Performance Best Practices
 
 ## Overview
+
 Use this guide to achieve the best performance with lakeFS.
 
 ## Avoid concurrent commits/merges
 
-Just like in Git, branch history is composed by commits and is linear by nature. 
+Just like in Git, branch history is composed by commits and is linear by nature.
 Concurrent commits/merges on the same branch result in a race. The first operation will finish successfully while the rest will retry.
 
 ## Perform meaningful commits
@@ -46,10 +47,9 @@ Accessing the object store directly is a faster way to interact with your data.
 
 ## Zero-copy
 
-lakeFS provides a zero-copy mechanism to data. Instead of copying the data, we can check out to a new branch. 
+lakeFS provides a zero-copy mechanism to data. Instead of copying the data, we can check out to a new branch.
 Creating a new branch will take constant time as the new branch points to the same data as its parent.
 It will also lower the storage cost.
-
 
 [hadoopfs]:  ../integrations/spark.md#lakefs-hadoop-filesystem
 [zero-copy-import]:  ../howto/import.md#zero-copy-import

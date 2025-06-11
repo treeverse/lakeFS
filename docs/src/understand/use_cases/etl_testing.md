@@ -5,12 +5,11 @@ description: In this tutorial, we will explore how to safely run ETL testing usi
 
 # ETL Testing with Isolated Dev/Test Environments
 
-
 ## Why are multiple environments so important?
 
 When working with a data lake, it's useful to have replicas of your production environment. These replicas allow you to test these ETLs and understand changes to your data without impacting the consumers of the production data.
 
-Running ETL and transformation jobs directly in production without proper ETL testing presents a huge risk of having data issues flow into dashboards, ML models, and other consumers sooner or later. 
+Running ETL and transformation jobs directly in production without proper ETL testing presents a huge risk of having data issues flow into dashboards, ML models, and other consumers sooner or later.
 
 The most common approach to avoid making changes directly in production is to create and maintain multiple data environments and perform ETL testing on them. Dev environments give you a space in which to develop the data pipelines and test environment where pipeline changes are tested before pushing it to production.
 
@@ -24,9 +23,8 @@ In a lakeFS repository, data is always located on a `branch`. You can think of e
 
 !!! info
     Objects that remain unchanged between two branches are not copied, but rather shared to both branches via metadata pointers that lakeFS manages.
-    
-    If you make a change on one branch and want it reflected on another, you can perform a `merge` operation to update one branch with the changes from another.
 
+    If you make a change on one branch and want it reflected on another, you can perform a `merge` operation to update one branch with the changes from another.
 
 ## Using branches as development and testing environments
 
@@ -53,21 +51,15 @@ In this tutorial, we will use [a lakeFS playground environment](https://lakefs.c
 
 First, let us spin up a [playground](https://lakefs.cloud/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
 
-
 ![sample repository](../../assets/img/iso_env_myrepo.png)
-
 
 Click on `my-repo` and notice that by default, the repository has a `main` branch created and `sample_data` preloaded to work with.
 
-
 ![main branch](../../assets/img/iso_env_sampledata.png)
-
 
 You can create a new branch (say, `test-env`) by going to the _Branches_ tab and clicking _Create Branch_. Once it is successful, you will see two branches under the repository: `main` and `test-env`.
 
-
 ![test-env branch](../../assets/img/iso_env_testenv_branch.png)
-
 
 Now you can add, modify or delete objects under the `test-env` branch without affecting the data in the main branch.
 
@@ -113,7 +105,7 @@ lakefs_secret_key = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY'
 lakefs_endpoint = 'http://lakefs:8000'
 ```
 
-Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored. 
+Next, setup the storage namespace to a location in the bucket you have configured. The storage namespace is a location in the underlying storage where data for this repository will be stored.
 
 ```python
 storageNamespace = 's3://example/' 
@@ -189,6 +181,7 @@ On the `main` branch however, there is still just the original data - untouched 
 You can safely continue working with the data from main which is unharmed due to lakeFS isolation capabilities.
 
 ## Further Reading
+
 !!! quote "&nbsp;"
 
     * Case Study: [How Enigma use lakeFS for isolated development and staging environments](https://lakefs.io/blog/improving-our-research-velocity-with-lakefs/)
@@ -197,4 +190,4 @@ You can safely continue working with the data from main which is unharmed due to
     * [Top 5 ETL Testing Challenges - Solved!](https://lakefs.io/wp-content/uploads/2023/03/Top-5-ETL-Testing-Challenges-Solved.pdf)
 
     [hadoopfs]:  ../../integrations/spark.md#lakefs-hadoop-filesystem
-    [spark-s3a]:  ../../integrations/spark.md#use-the-s3-compatible-api
+    [spark-s3a]:  ../../integrations/spark.md#s3-compatible-api

@@ -10,7 +10,7 @@ search:
 
 !!! info
     Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
-    If you're using the open-source version of lakeFS you can read more about the [authentication options available](authentication.md). 
+    If you're using the open-source version of lakeFS you can read more about the [authentication options available](authentication.md).
 
 ## SSO for lakeFS Cloud
 
@@ -60,7 +60,6 @@ lakeFS Cloud uses Auth0 for authentication and thus support the same identity pr
             If your organization data is located in Europe, use `lakefs-cloud.eu.auth0.com` instead of `lakefs-cloud.us.auth0.com`.
 
     Once you finish registering lakeFS Cloud with AD FS, save the **AD FS URL** and send this to Treeverse's team to finish the integration.
-
 
 === "Azure Active Directory (AD)"
 
@@ -130,7 +129,6 @@ lakeFS Cloud uses Auth0 for authentication and thus support the same identity pr
     3. **Azure AD Domain**
     4. **Identity API Version** (v1 for Azure AD or v2 for Microsoft Identity Platform/Entra) 
 
-
 ## SSO for lakeFS Enterprise
 
 Authentication in lakeFS Enterprise is handled by a secondary service which runs side-by-side with lakeFS. With a nod to Hogwarts and their security system, we've named this service _Fluffy_. Details for configuring the supported identity providers with Fluffy are shown below. In addition, please review the necessary [Helm configuration](#helm) to configure Fluffy.
@@ -140,7 +138,6 @@ Authentication in lakeFS Enterprise is handled by a secondary service which runs
 * LDAP
 
 If you're using an authentication provider that is not listed please [contact us](https://lakefs.io/contact-us/) for further assistance.
-
 
 === "Active Directory Federation Services (AD FS) (using SAML)"
 
@@ -209,7 +206,6 @@ If you're using an authentication provider that is not listed please [contact us
         # idp_skip_verify_tls_cert: true
     ```
   
-
 === "OpenID Connect"
 
     In order for Fluffy to work, the following values must be configured. Update (or override) the following attributes in the chart's `values.yaml` file.
@@ -400,6 +396,3 @@ Notes:
 * Change the `ingress.hosts[0]` from `lakefs.company.com` to a real host (usually same as lakeFS), also update additional references in the file (note: URL path after host if provided should stay unchanged).
 * Update the `ingress` configuration with other optional fields if used
 * Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
-
-[rbac-preconfigured]:  rbac.md#preconfigured-groups
-[fluffy-configuration]: ../enterprise/configuration.md#fluffy-server-configuration
