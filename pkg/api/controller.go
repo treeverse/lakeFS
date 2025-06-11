@@ -2934,14 +2934,6 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	log := c.Logger.WithContext(ctx).WithError(err)
 
-	// Handle Hook Errors
-	var hookAbortErr *graveler.HookAbortError
-	if errors.As(err, &hookAbortErr) {
-		log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
-		cb(w, r, http.StatusPreconditionFailed, hookAbortErr.Unwrap())
-		return true
-	}
-
 	// order of case is important, more specific errors should be first
 	switch {
 	case errors.Is(err, graveler.ErrLinkAddressInvalid),
@@ -3027,6 +3019,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+	case errors.Is(err, actions.ErrActionFailed):
+		log.WithError(err).Debug("Precondition failed, aborted by action failure")
+		cb(w, r, http.StatusPreconditionFailed, err)
 	default:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
