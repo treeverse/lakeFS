@@ -49,7 +49,7 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 !!! info
     lakeFS Helm chart supports the configuration since version `1.2.11` - see usage [values.yaml example](https://github.com/treeverse/charts/blob/master/examples/lakefs/enterprise/values-external-aws.yaml).
 
-* in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at [configuration reference](/reference/configuration/)
+* in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at [configuration reference](../reference/configuration.md)
 
 For the full list of the Fluffy server configuration, see [Fluffy Configuration][fluffy-configuration] under `auth.external.aws_auth`
 
@@ -126,7 +126,7 @@ Currently, the login operation is supported out of the box in:
 
 - [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark]
 - [python](#login-with-python)
-- [Everest mount](/reference/mount/#authenticating-with-aws-iam-role)
+- [Everest mount](../reference/mount/#authenticating-with-aws-iam-role.md)
 
 For other use cases authenticate to lakeFS via login endpoint, this will require building the request input.
 

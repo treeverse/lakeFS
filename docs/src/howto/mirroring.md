@@ -7,7 +7,7 @@ status: enterprise
 # Mirroring
 
 !!! info
-    Mirroring is only available for [lakeFS Cloud](/cloud/).
+    Mirroring is only available for [lakeFS Cloud](../cloud/index.md).
 
 
 ## What is lakeFS mirroring? 
@@ -261,5 +261,5 @@ curl --location --request DELETE 'https://<ORGANIZATION_ID>.<SOURCE_REGION>.lake
 1. Mirroring is currently only supported on [AWS S3](https://aws.amazon.com/s3/) and [lakeFS Cloud for AWS](https://lakefs.cloud)
 1. Read-only mirrors cannot be written to. Mirroring is one-way, from source to destination(s)
 1. Currently, only branches are mirrored. Tags and arbitrary commits that do not belong to any branch are not replicated
-1. [lakeFS Hooks](/howto/hooks/) will only run on the source repository, not its replicas
+1. [lakeFS Hooks](hooks/index.md) will only run on the source repository, not its replicas
 1. Replication is still asynchronous: reading from a branch will always return a valid commit that the source has pointed to, but it is not guaranteed to be the **latest commit** the source branch is pointing to.

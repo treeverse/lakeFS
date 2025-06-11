@@ -12,7 +12,7 @@ next:  ["Import data into your installation", "/howto/import.html"]
 
 When you deploy lakeFS on AWS these are the options available to use: 
 
-![](/assets/img/deploy/deploy-on-aws.excalidraw.png)
+![](../../assets/img/deploy/deploy-on-aws.excalidraw.png)
 
 This guide walks you through the options available and how to configure them, finishing with configuring and running lakeFS itself and creating your first repository. 
 
@@ -355,11 +355,11 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 1. Open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
 1. On first use, you'll be redirected to the setup page:
    
-   <img src="/assets/img/setup.png" alt="Create user">
+   <img src="../../assets/img/setup.png" alt="Create user">
    
 1. Follow the steps to create an initial administrator user. Save the credentials you’ve received somewhere safe, you won’t be able to see them again!
    
-   <img src="/assets/img/setup_done.png" alt="Setup Done">
+   <img src="../../assets/img/setup_done.png" alt="Setup Done">
 
 1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
@@ -368,13 +368,13 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 1. Use the credentials from the previous step to log in
 1. Click *Create Repository* and choose *Blank Repository*.
    
-   <img src="/assets/img/create-repo-no-sn.png" alt="Create Repo"/>
+   <img src="../../assets/img/create-repo-no-sn.png" alt="Create Repo"/>
    
 1. Under Storage Namespace, enter a path to your desired location on the object store. This is where data written to this repository will be stored.
 1. Click *Create Repository*
 1. You should now have a configured repository, ready to use!
 
-   <img src="/assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
+   <img src="../../assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
 
 
 
@@ -382,10 +382,10 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
     Your environment is now ready 🤩
 
 
-[downloads]:  /index/#downloads
-[openapi]:  /understand/architecture/#openapi-server
-[s3-gateway]:  /understand/architecture/#s3-gateway
-[understand-repository]:  /understand/model/#repository
-[integration-hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
-[understand-commits]:  /understand/how/versioning-internals/#constructing-a-consistent-view-of-the-keyspace-ie-a-commit
-[presigned-url]:  /security/presigned-url/#
+[downloads]:  ../../index.md#downloads
+[openapi]:  ../../understand/architecture.md#openapi-server
+[s3-gateway]:  ../..//understand/architecture.md/#s3-gateway
+[understand-repository]:  ../..//understand/model.md/#repository
+[integration-hadoopfs]:  ../..//integrations/spark.md#lakefs-hadoop-filesystem
+[understand-commits]:  ../..//understand/how/versioning-internals/#constructing-a-consistent-view-of-the-keyspace-ie-a-commit
+[presigned-url]:  ../../security/presigned-url.md

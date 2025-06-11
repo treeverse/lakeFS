@@ -29,7 +29,7 @@ description: Import existing data into a lakeFS repository
 
 Once the import is complete, a new commit containing the imported objects will be created in the destination branch.
 
-![lakeFS UI import dialog](/assets/img/UI-Import-Dialog.png)
+![lakeFS UI import dialog](../assets/img/UI-Import-Dialog.png)
 
 ## Using the CLI: _lakectl import_
 
@@ -61,8 +61,8 @@ The _lakectl import_ command acts the same as the UI import wizard. It commits t
     1. Any previously existing objects under the destination prefix will be deleted.
     1. The import duration depends on the amount of imported objects, but will roughly be a few thousand objects per second.
     1. For security reasons, if you are using lakeFS on top of your local disk (`blockstore.type=local`), you need to enable the import feature explicitly. 
-    To do so, set the `blockstore.local.import_enabled` to `true` and specify the allowed import paths in `blockstore.local.allowed_external_prefixes` (see [configuration reference](/reference/configuration/)).
-    When using lakectl or the lakeFS UI, you can currently import only directories locally. If you need to import a single file, use the [HTTP API](/reference/api#/import/importStart) or API Clients with `type=object` in the request body and `destination=<full-path-to-file>`. 
+    To do so, set the `blockstore.local.import_enabled` to `true` and specify the allowed import paths in `blockstore.local.allowed_external_prefixes` (see [configuration reference](../reference/configuration.md)).
+    When using lakectl or the lakeFS UI, you can currently import only directories locally. If you need to import a single file, use the [HTTP API](../reference/api.md#/import/importStart) or API Clients with `type=object` in the request body and `destination=<full-path-to-file>`. 
     1. Making changes to data in the original bucket will not be reflected in lakeFS, and may cause inconsistencies. 
 
 ## Examples
@@ -136,5 +136,5 @@ In addition, the following for provider-specific permissions may be required:
     No specific prerequisites
 
 
-[deploy-azure-storage-account-creds]:  /howto/deploy/azure/#storage-account-credentials
+[deploy-azure-storage-account-creds]:  deploy/azure.md#storage-account-credentials
 

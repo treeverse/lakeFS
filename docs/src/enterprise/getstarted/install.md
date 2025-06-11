@@ -299,7 +299,7 @@ In this section, you will learn how to configure lakeFS Enterprise to work with 
 Notes:
 * By default, the lakeFS Helm chart comes with `useDevPostgres: true`, you should change it to `useDevPostgres: false` for Fluffy to work with your KV Database and be suitable for production needs.
 * The KV database is shared between lakeFS and Fluffy, and therefore both services must use the same configuration.
-* See [fluffy][fluffy-configuration] and [lakeFS](/reference/configuration/#database) `database` configuration.
+* See [fluffy][fluffy-configuration] and [lakeFS](../../reference/configuration.md#database) `database` configuration.
 
 The database configuration structure between lakeFS and fluffy can be set directly via `fluffyConfig`, via K8S Secret Kind, and `lakefsConfig` or via environment variables.
 
@@ -429,10 +429,10 @@ extraManifests:
       config.yaml: my-data
 ```
 
-[lakefs-sso-enterprise-spec]: /security/sso/#sso-for-lakefs-enterprise
-[lakefs-sso-enterprise-spec-oidc]: /security/sso/#oidc
-[lakefs-sso-enterprise-spec-saml]: /security/sso/#adfs
-[lakefs-sso-enterprise-spec-ldap]: /security/sso/#ldap
-[fluffy-configuration]: /enterprise/configuration/#fluffy-server-configuration
-[lakefs-enterprise-architecture]: /enterprise/architecture/
+[lakefs-sso-enterprise-spec]: ../../security/sso.md#sso-for-lakefs-enterprise
+[lakefs-sso-enterprise-spec-oidc]: ../../security/sso.md#oidc
+[lakefs-sso-enterprise-spec-saml]: ../../security/sso.md#adfs
+[lakefs-sso-enterprise-spec-ldap]: ../../security/sso.md#ldap
+[fluffy-configuration]: ../configuration.md#fluffy-server-configuration
+[lakefs-enterprise-architecture]: ../architecture.md
 

@@ -9,7 +9,7 @@ Follow these quickstarts to try out lakeFS Enterprise.
 
 !!! warning
     lakeFS Enterprise Quickstarts are not suitable for production use-cases. <br/>
-    See the [installation guide](./install.md) to set up a production-grade lakeFS Enterprise installation
+    See the [installation guide](install.md) to set up a production-grade lakeFS Enterprise installation
 
 ## lakeFS Enterprise Sample
 
@@ -26,7 +26,7 @@ the following containers:
 * Jupyter notebooks setup: Pre-populated with [notebooks](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/00_index.ipynb) that demonstrate lakeFS Enterprise' capabilities
 * Apache Spark: this is useful for interacting with data you'll manage with lakeFS
 
-Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/rbac-demo.ipynb) notebook to see lakeFS Enterprise [Role-Based Access Control](/security/access-control-lists/) capabilities in action.
+Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/rbac-demo.ipynb) notebook to see lakeFS Enterprise [Role-Based Access Control](../../security/access-control-lists.md) capabilities in action.
 
 ## Docker Quickstart
 
@@ -43,7 +43,7 @@ The quickstart docker-compose files below create a lakeFS server that's connecte
 * Fluffy (includes lakeFS Enterprise features)
 * Postgres: used by lakeFS and Fluffy as a shared KV store
 
-You can choose from the the following options:
+You can choose from the following options:
 
 1. Recommended: A fully functional lakeFS Enterprise setup without SSO support
 2. Advanced: A fully functional lakeFS Enterprise setup including SSO support with OIDC integration configured

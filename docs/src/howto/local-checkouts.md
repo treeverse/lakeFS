@@ -12,7 +12,7 @@ of large-scale data stored remotely.
 In addition to its capability to manage large datasets, lakeFS offers the flexibility
 to work with versioned data by exposing it as a local filesystem directory.  
 
-This page explains [lakeFS Mount](/reference/mount) and `lakectl local`: two common ways of exposing lakeFS data locally, with different performance characteristics.  
+This page explains [lakeFS Mount](../reference/mount.md) and `lakectl local`: two common ways of exposing lakeFS data locally, with different performance characteristics.  
 
 
 ## Use cases 
@@ -54,7 +54,7 @@ storage, resulting in cost savings.
 
 lakeFS Mount works by exposing a virtual mountpoint on the host computer. 
 
-This "acts" as a local directory, allowing applications to read write and interact with data as it is all local to the machine, while lakeFS Mount optimizes this behind the scenes by lazily fetching data as requested, caching accessed objects and efficiently managing metadata to ensure best in class performance. [Read more about how lakeFS Mount optimizes performance](/reference/mount.md)
+This "acts" as a local directory, allowing applications to read write and interact with data as it is all local to the machine, while lakeFS Mount optimizes this behind the scenes by lazily fetching data as requested, caching accessed objects and efficiently managing metadata to ensure best in class performance. [Read more about how lakeFS Mount optimizes performance](../reference/mount.md)
 
 Mounting a reference is a single command:
 
@@ -71,7 +71,7 @@ ls -l ./my_local_dir/
 Which should return the listing of the mounted path.
 
 !!! tip
-    lakeFS Mount allows quite a bit of tuning to ensure optimal performance. [Read more](/reference/mount/) about how lakeFS Mount works and how to configure it.
+    lakeFS Mount allows quite a bit of tuning to ensure optimal performance. [Read more](../reference/mount.md) about how lakeFS Mount works and how to configure it.
 
 ### Reading from a mount
 
@@ -131,11 +131,11 @@ be using lakectl local to tie code versions to data versions to achieve model re
 ### Setup
 
 To get start with, we have initialized a Git repo called `is_alpaca` that includes the model code:
-![Git repo](/assets/img/lakectl-local/code_repo.png)
+![Git repo](../assets/img/lakectl-local/code_repo.png)
 
 We also created a lakeFS repository and uploaded the _is_alpaca_ train [dataset](https://www.kaggle.com/datasets/sayedmahmoud/alpaca-dataset) 
 by Kaggel into it:
-![lakeFS repo](/assets/img/lakectl-local/lakefs-repo-with-train-dataset.png)
+![lakeFS repo](../assets/img/lakectl-local/lakefs-repo-with-train-dataset.png)
 
 ### Create an Isolated Environment for Experiments
 
@@ -144,7 +144,7 @@ We will run our experiments in isolation to not change anything until after we a
 
 Let's create a new lakeFS branch called `experiment-1`. Our _is_alpaca_ dataset is accessible on that branch, 
 and we will interact with the data from that branch only.
-![experiment-1-branch](/assets/img/lakectl-local/experiment-branch.png)
+![experiment-1-branch](../assets/img/lakectl-local/experiment-branch.png)
 
 
 On the code side, we will create a Git branch also called `experiment-1` to not pollute our main branch with a dataset
@@ -329,7 +329,7 @@ Parents: 589f87704418c6bac80c5a6fc1b52c245af347b9ad1ea8d06597e4437fae4ca3
 
 Looking at the lakeFS UI we can see that the lakeFS commit includes metadata that tells us what was the code version of 
 the linked Git repository at the time of the commit.
-![git metadata in lakeFS](/assets/img/lakectl-local/lakefs-commit-git-commit-id.png)
+![git metadata in lakeFS](../assets/img/lakectl-local/lakefs-commit-git-commit-id.png)
 
 Inspecting the Git repository, we can see that the input/.lakefs_ref.yaml is pointing to the latest lakeFS commit `0b376f01b925a075851bbaffacf104a80de04a43ed7e56054bf54c42d2c8cce6`.  
 
@@ -423,7 +423,7 @@ Parents: 0b376f01b925a075851bbaffacf104a80de04a43ed7e56054bf54c42d2c8cce6
 ```
 
 Looking at the lakFS UI we see that our test data is now available at lakeFS:
-![test_dataset](/assets/img/lakectl-local/tes-and-train-dataset.png)
+![test_dataset](../assets/img/lakectl-local/tes-and-train-dataset.png)
 
 Finally, we will Git commit the local changes to link between the Git and lakeFS repositories state.
 

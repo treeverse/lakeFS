@@ -7,7 +7,7 @@ status: enterprise
 # Multi-Storage Backend
 
 !!! info
-    Multi-storage backend support is only available to licensed [lakeFS Enterprise](/enterprise/index/) customers.
+    Multi-storage backend support is only available to licensed [lakeFS Enterprise](../enterprise/index.md) customers.
     [Contact us](https://info.lakefs.io/thanks-msb) to get started!
 
 
@@ -174,7 +174,7 @@ To remove a storage backend:
 
 ### Listing Connected Storage Backends
 
-The [Get Config](/reference/api/#/config/getConfig) API endpoint returns a list of storage
+The [Get Config](../reference/api.md#/config/getConfig) API endpoint returns a list of storage
 configurations. In multi-storage setups, this is the recommended method to list connected storage backends and view their details.
 
 ### Troubleshooting
@@ -335,7 +335,7 @@ In a multi-storage setup, users must specify a storage ID when creating a reposi
     Use the `storage_id` parameter in the [Create Repository endpoint](../reference/api.md#/repositories/createRepository).
 
 === "High-Level Python SDK"
-    Starting from version 0.9.0 of the [High-level Python SDK](/integrations/python/#using-the-lakefs-sdk),
+    Starting from version 0.9.0 of the [High-level Python SDK](../integrations/python.md#using-the-lakefs-sdk),
     you can use `kwargs` to pass `storage_id` dynamically when calling the [create repository method](https://pydocs-lakefs.lakefs.io/lakefs.repository.html#lakefs.repository.Repository.create):
 
     ```python
