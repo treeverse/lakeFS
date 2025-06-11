@@ -3020,7 +3020,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 	case errors.Is(err, actions.ErrActionFailed):
-		log.Debug("Precondition failed, aborted by hooks due to a client error")
+		log.WithError(err).Debug("Precondition failed, aborted by action failure")
 		cb(w, r, http.StatusPreconditionFailed, err)
 	default:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
