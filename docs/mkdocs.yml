@@ -23,6 +23,7 @@ theme:
     - content.footnote.tooltips
     - content.code.copy
     - content.tabs.link
+    - content.tooltips
   icon:
     repo: fontawesome/brands/github
   palette:
@@ -46,7 +47,6 @@ extra:
     experimental: Experimental Feature
   version:
     provider: mike
-    - content.tooltips
   icon:
     repo: fontawesome/brands/github
   palette:
