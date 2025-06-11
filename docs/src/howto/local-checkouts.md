@@ -266,7 +266,7 @@ We ran the train script on the cloned input, and it generated a model. Now, let'
 
 A reminder - this is how an axolotl looks like - not like an alpaca!
 
-<img src="assets/img/lakectl-local/axolotl.png" alt="axolotl" width="300"/>
+<img src="../../assets/img/lakectl-local/axolotl.png" alt="axolotl" width="300"/>
 
 Here are the (surprising) results:
 

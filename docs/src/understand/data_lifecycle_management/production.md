@@ -20,7 +20,7 @@ You can run quality tests for each merge (as discussed in the [During Deployment
 In such a case, we can revert the bad commits from main to the last known high quality commit. This will record new commits reversing the effect of the bad commits.
  
 
-<img src="assets/img/branching_7.png" alt="branching_7" width="500px"/>
+<img src="../../../assets/img/branching_7.png" alt="branching_7" width="500px"/>
 
 _Reverting commits using the CLI_
 
@@ -36,7 +36,7 @@ You upgraded spark and deployed changes in production. A few days or weeks later
 
 lakeFS allows you to open a branch of your lake from the specific merge/commit that introduced the changes to production. Using the metadata saved on the merge/commit  you can reproduce all aspects of the environment, then reproduce the issue on the branch and debug it. Meanwhile,  you can revert the main to a previous point in time, or keep it as is, depending on the use case
 
-<img src="assets/img/branching_3.png" alt="branching_3" width="500px"/>
+<img src="../../../assets/img/branching_3.png" alt="branching_3" width="500px"/>
 
 
 _Reading from a historic version (a previous commit) using Spark_
@@ -58,7 +58,7 @@ lakeFS will help ensure you introduce only consistent data to your consumers by 
 In this example you can see two data sets (Sales data and Marketing data) consumed each to its own independent branch, and after the write of both data sets is completed, they are merged to a different branch (leads branch) where the join ETL runs and creates a joined collection by account. The joined table is then merged to main.
 The same logic can apply if the data is ingested in streaming, using standard formats, or formats that allow upsert/delete such as Apache Hudi, Delta Lake or Iceberg.
 
-<img src="assets/img/branching_8.png" alt="branching_8" width="500px"/>
+<img src="../../../assets/img/branching_8.png" alt="branching_8" width="500px"/>
 
 ## Case Study: Windward
 See how Windward is using lakeFS’ isolation and atomic commits to [achieve consistency](https://medium.com/data-rocks/how-windward-leverages-lakefs-for-resilient-data-ingestion-52b838da2cb8) on top of S3.

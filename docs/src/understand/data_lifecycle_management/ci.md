@@ -19,7 +19,7 @@ lakeFS enable CI/CD-inspired workflows to help validate expectations and assumpt
 
 Continuous deployment of existing data we expect to consume, flowing from ingest-pipelines into the lake. We merge data from an ingest branch (“events-data”), which allows us to create tests using data analysis tools or data quality services (e.g. [Great Expectations](https://greatexpectations.io/){: target="_blank" }, [Monte Carlo](https://www.montecarlodata.com/){: target="_blank" }) to ensure reliability of the data we merge to the main branch. Since merge is atomic, no performance issue will be introduced by using lakeFS, but your main branch will only include quality data. 
 
-<img src="assets/img/branching_6.png" alt="branching_6" width="500px"/>
+<img src="../../../assets/img/branching_6.png" alt="branching_6" width="500px"/>
 
 Each merge to the main branch creates a new commit on the main branch, which serves as a new version of the data. This allows us to easily revert to previous states of the data if a newer change introduces data issues.
 
@@ -36,5 +36,5 @@ lakeFS will assist in enforcing best practices by giving you a designated branch
 
 By using this branching model and implementing best practices as pre merge hooks, you ensure the main lake is never compromised.
 
-<img src="assets/img/branching_4.png" alt="branching_4" width="500px"/>
+<img src="../../../assets/img/branching_4.png" alt="branching_4" width="500px"/>
 

@@ -14,12 +14,13 @@ OpenShift AI and lakeFS can be deployed in OpenShift cluster in 3 different arch
 2. OpenShift AI and lakeFS are deployed in OpenShift cluster while object storage is external
 3. OpenShift AI is deployed in OpenShift cluster while lakeFS and object storage are external
 
-<img src="assets/img/red-hat/OpenShiftDeploymentArchitecture.png" alt="OpenShift AI and lakeFS Deployment Architecture" width="100%" height="100%" />
+<img src="../../assets/img/red-hat/OpenShiftDeploymentArchitecture.png" alt="OpenShift AI and lakeFS Deployment Architecture" width="100%" height="100%" />
 
 Refer to an example in [lakeFS-samples](https://github.com/treeverse/lakeFS-samples/tree/main/01_standalone_examples/red-hat-openshift-ai) to deploy lakeFS, MinIO and OpenShift AI tutorial ([Fraud Detection demo](https://docs.redhat.com/en/documentation/red_hat_openshift_ai_self-managed/2-latest/html/openshift_ai_tutorial_-_fraud_detection_example/index)) in OpenShift cluster. Fraud detection demo is a step-by-step guide for using OpenShift AI to train an example model in JupyterLab, deploy the model, and refine the model by using automated pipelines.
 
 In this example, OpenShift AI is configured to connect over S3 interace to lakeFS, which will version the data in a backend MinIO instance. This is the architecture to run Fraud Detection demo with or without lakeFS:
-<img src="assets/img/red-hat/OpenShiftAIDemoArchitecture.png" alt="OpenShift AI and lakeFS Deployment Architecture for the demo" width="100%" height="100%" />
+
+<img src="../../assets/img/red-hat/OpenShiftAIDemoArchitecture.png" alt="OpenShift AI and lakeFS Deployment Architecture for the demo" width="100%" height="100%" />
 
 lakeFS-samples also includes multiple Helm chart examples to deploy lakeFS and MinIO in different scenarios:
 

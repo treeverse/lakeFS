@@ -115,7 +115,7 @@ and all data operations directly through the same underlying object store that l
 When using the Python client, lakeCTL, or the lakeFS Spark client, these clients communicate with the lakeFS server to retrieve metadata information. For example, they may query lakeFS to understand which version of a file is needed or to track changes in branches and commits. This communication does not include the actual data transfer, but instead involves passing only metadata about data locations and versions.
 Once the client knows the exact data location from the lakeFS metadata, it directly accesses the data in the underlying object storage (potentially using presigned URLs) without routing through lakeFS. For instance, if data is stored in S3, the Spark client will retrieve the S3 paths from lakeFS, then directly read and write to those paths in S3 without involving lakeFS in the data transfer.
 
-<img src="../assets/img/s3gatewayvsclientdataflow.png" alt="lakeFS Clients vs Gateway Data Flow" width="500px"/>
+![lakeFS Clients vs Gateway Data Flow](../assets/img/s3gatewayvsclientdataflow.png)
 
 [data-quality-gates]:  use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates
 [dynamodb-permissions]:  ../howto/deploy/aws.md#grant-dynamodb-permissions-to-lakefs
