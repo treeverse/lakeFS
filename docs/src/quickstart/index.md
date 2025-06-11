@@ -1,7 +1,7 @@
 ---
 title: ⭐ Quickstart
 description: A hands-on quickstart for lakeFS that introduces key concepts including branching, merging, and rollback. 
-next: ["Launch the quickstart environment", "./launch.html"]
+next: ["Launch the quickstart environment", "./launch.md.html"]
 ---
 
 # lakeFS Quickstart
@@ -15,7 +15,7 @@ lakeFS provides a "Git for data" platform enabling you to implement best practic
 
 This quickstart will introduce you to some of the core ideas in lakeFS and show what you can do by illustrating the concept of branching, merging, and rolling back changes to data. It's laid out in five short sections: 
 
-[Start Here →](launch){ .md-button }
+[Start Here →](launch.md){ .md-button }
 
 ---
 

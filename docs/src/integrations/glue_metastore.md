@@ -7,7 +7,7 @@ description: Query data from lakeFS branches in AWS Athena or other services bac
 
 ## Overview
 
-The integration between Glue and lakeFS is based on [Data Catalog Exports](/howto/catalog_exports/).
+The integration between Glue and lakeFS is based on [Data Catalog Exports](../howto/catalog_exports.md).
 
 This guide describes how to use lakeFS with the Glue Data Catalog.
 You'll be able to query your lakeFS data by specifying the repository, branch and commit in your SQL query.
@@ -18,7 +18,7 @@ You will set up the automation required to work with lakeFS on top of the Glue D
 2. Write an exporter script that will:
    * Mirror your branch's state into [Hive Symlink](https://svn.apache.org/repos/infra/websites/production/hive/content/javadocs/r2.1.1/api/org/apache/hadoop/hive/ql/io/SymlinkTextInputFormat.html) files readable by Athena.
    * Export the table descriptors from your branch to the Glue Catalog.
-3. Set up lakeFS [hooks](/howto/catalog_exports/#running-an-exporter) to trigger the above script when specific events occur.
+3. Set up lakeFS [hooks](../howto/catalog_exports.md#running-an-exporter) to trigger the above script when specific events occur.
   
 ## Example: Using Athena to query lakeFS data
 
@@ -67,17 +67,17 @@ schema:
 
 ### Write some table data
 
-Insert data into the table path, using your preferred method (e.g. [Spark](/integrations/spark/)), and commit upon completion.
+Insert data into the table path, using your preferred method (e.g. [Spark](spark.md)), and commit upon completion.
 This example uses CSV files, and the files added to lakeFS should look like this:
 
-![lakeFS Uploaded CSV Files](/assets/img/csv_export_hooks_data.png)
+![lakeFS Uploaded CSV Files](../assets/img/csv_export_hooks_data.png)
 
 ### The exporter script
 
 Upload the following script to your main branch under `scripts/animals_exporter.lua` (or a path of your choice).
 
 !!! note
-    For code references check [symlink_exporter](/howto/hooks/lua/#lakefscatalogexportsymlink_exporter) and [glue_exporter](/howto/hooks/lua/#lakefscatalogexportglue_exporter) docs.
+    For code references check [symlink_exporter](../howto/hooks/lua.md#lakefscatalogexportsymlink_exporter) and [glue_exporter](../howto/hooks/lua.md#lakefscatalogexportglue_exporter) docs.
 
 
 ```lua 
@@ -102,12 +102,12 @@ local res = glue_exporter.export_glue(glue, db, table_path, table_input, action,
 ### Configure Action Hooks
 
 Hooks serve as the mechanism that triggers the execution of the exporter.
-For more detailed information on how to configure exporter hooks, you can refer to [Running an Exporter](/howto/catalog_exports/#running-an-exporter).
+For more detailed information on how to configure exporter hooks, you can refer to [Running an Exporter](../howto/catalog_exports.md#running-an-exporter).
 
 !!! info
     The `args.catalog.table_input` argument in the Lua script is assumed to be passed from the action arguments, that way the same script can be reused for different tables. 
     
-    heck the [example](/howto/hooks/lua/#lakefscatalogexportglue_exporterexport_glueglue-db-table_src_path-create_table_input-action_info-options) to construct the table input in the lua code.
+    heck the [example](../howto/hooks/lua.md#lakefscatalogexportglue_exporterexport_glueglue-db-table_src_path-create_table_input-action_info-options) to construct the table input in the lua code.
 
 
 === "Hook CSV Glue Table"
@@ -232,7 +232,7 @@ lakectl commit lakefs://catalogs/main -m "trigger first export hook"
 
 Once the action has completed its execution, you can review the results in the action logs.
 
-![Hooks log result in lakeFS UI](/assets/img/glue_export_hook_result_log.png)
+![Hooks log result in lakeFS UI](../assets/img/glue_export_hook_result_log.png)
 
 ### Use Athena 
 
@@ -246,7 +246,7 @@ MSCK REPAIR TABLE `animals_catalogs_main_9255e5`; -- load partitions for the fir
 SELECT * FROM `animals_catalogs_main_9255e5` limit 50;
 ```
 
-![Athena SQL Result](/assets/img/catalog_export_athena_aws_ui_sql.png)
+![Athena SQL Result](../assets/img/catalog_export_athena_aws_ui_sql.png)
 
 ### Cleanup
 

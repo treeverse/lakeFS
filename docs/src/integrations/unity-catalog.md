@@ -14,7 +14,7 @@ Through the Unity Catalog, you can search for and locate data assets across work
 Leveraging the external tables feature within Unity Catalog, you can register a Delta Lake table exported from lakeFS and
 access it through the unified catalog. 
 
-The subsequent step-by-step guide will lead you through the process of configuring a [Lua hook](/howto/hooks/lua/)
+The subsequent step-by-step guide will lead you through the process of configuring a [Lua hook](../howto/hooks/lua.md)
 that exports Delta Lake tables from lakeFS, and subsequently registers them in Unity Catalog.
 
 !!! note
@@ -86,7 +86,7 @@ lakectl commit lakefs://repo/main -m "add famous people table descriptor"
 
 ### Write some data
 
-Insert data into the table path, using your preferred method (e.g. [Spark](/integrations/spark/)), and commit upon completion.
+Insert data into the table path, using your preferred method (e.g. [Spark](spark.md)), and commit upon completion.
 
 We shall use Spark and lakeFS's S3 gateway to write some data as a Delta table:
 
@@ -118,8 +118,8 @@ df.write.format("delta").mode("overwrite").partitionBy("category", "country").sa
 ### The Unity Catalog exporter script
 
 !!! example
-    For code references check [delta_exporter](/howto/hooks/lua/#lakefscatalogexportdelta_exporter) and 
-    [unity_exporter](/howto/hooks/lua/#lakefscatalogexportunity_exporter) docs.
+    For code references check [delta_exporter](../howto/hooks/lua.md#lakefscatalogexportdelta_exporter) and 
+    [unity_exporter](../howto/hooks/lua.md#lakefscatalogexportunity_exporter) docs.
 
 Create `unity_exporter.lua`:
 
@@ -199,7 +199,7 @@ The action has run and exported the `famous_people` Delta Lake table to the repo
 the table as an external table in Unity Catalog under the catalog `my-catalog-name`, schema `main` (as the branch's name) and 
 table name `famous_people`: `my-catalog-name.main.famous_people`.
 
-![Hooks log result in lakeFS UI](/assets/img/unity_export_hook_result_log.png)
+![Hooks log result in lakeFS UI](../assets/img/unity_export_hook_result_log.png)
 
 ### Databricks Integration
 
@@ -211,4 +211,4 @@ retrieve it using the Databricks CLI with the following command:
 databricks tables get my-catalog-name.main.famous_people
 ```
 
-![Unity Catalog Explorer view](/assets/img/unity_exported_table_columns.png)
+![Unity Catalog Explorer view](../assets/img/unity_exported_table_columns.png)

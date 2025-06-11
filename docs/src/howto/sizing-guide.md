@@ -112,7 +112,7 @@ the amount of changes introduced per commit usually stays relatively stable whil
 This means lakeFS will provide predictable performance:
 committing 100 changes will take roughly the same amount of time whether the resulting commit contains 500 or 500 million objects.
 
-See [Data Model](/understand/how/versioning-internals/) for more information.
+See [Data Model](../understand/how/versioning-internals.md) for more information.
 
 Scaling throughput depends very much on the amount of CPU cores available to lakeFS.
 In many cases, it's easier to scale lakeFS across a fleet of smaller cloud instances (or containers)
@@ -545,7 +545,7 @@ Since the PostgreSQL instance is expected to hold a very small dataset
 To ensure we have enough RAM to hold this, we'll need 3 GiB of RAM, so, a very moderate Aurora instance `db.t3.large` (2 vCPUs, 8 GB RAM) will be more than enough.
 An equivalent database instance on GCP or Azure should give similar results.
 
-<img src="/assets/img/reference_arch1.png" alt="ML and Research lakeFS reference architecture"/>
+<img src="assets/img/reference_arch1.png" alt="ML and Research lakeFS reference architecture"/>
 
 
 ### Reference Architecture: Automated Production Pipelines
@@ -572,7 +572,7 @@ On to the PostgreSQL instance - at 500k, the expected dataset size is `150MiB (f
 To ensure we have enough RAM to hold this, we'll need at least 15 GiB of RAM, so we'll go with a `db.r5.xlarge` (4 vCPUs, 32GB RAM) Aurora instance.
 An equivalent database instance on GCP or Azure should give similar results.
 
-<img src="/assets/img/reference_arch2.png" alt="Automated pipelines lakeFS reference architecture"/>
+<img src="../assets/img/reference_arch2.png" alt="Automated pipelines lakeFS reference architecture"/>
 
-[s3-gateway]:  /understand/architecture/#s3-gateway
-[lakectl-abuse]:  /reference/cli/#lakectl-abuse
+[s3-gateway]:  ../understand/architecture.md#s3-gateway
+[lakectl-abuse]:  ../reference/cli.md#lakectl-abuse

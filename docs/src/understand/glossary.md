@@ -31,13 +31,13 @@ It is sometimes referred as multi-table transactions. That is, lakeFS offers tra
 <!---Learn more about cross-collection consistency here (link to CCC blog) -->
 
 ## Data Lake Governance ###
-The goal of data lake governance is to apply policies, standards and processes on the data. This allows creating high-quality data and ensuring that it’s used appropriately across the organization. Data lake governance improves the data quality and increases data usage for business decision-making, leading to operational improvements, better-informed business strategies, and stronger financial performance. lakeFS Cloud offers advanced data lake management features such as: [Role-Based Access Control](/security/rbac/), [Branch Aware Managed Garbage Collection](/howto/garbage-collection/gc/), [Data Lineage and Audit log](/reference/auditing/).
+The goal of data lake governance is to apply policies, standards and processes on the data. This allows creating high-quality data and ensuring that it’s used appropriately across the organization. Data lake governance improves the data quality and increases data usage for business decision-making, leading to operational improvements, better-informed business strategies, and stronger financial performance. lakeFS Cloud offers advanced data lake management features such as: [Role-Based Access Control](../security/rbac.md), [Branch Aware Managed Garbage Collection](../howto/garbage-collection/gc.md), [Data Lineage and Audit log](../reference/auditing.md).
 
 ## Data Lifecycle Management
-In data-intensive applications, data should be managed through its entire lifecycle similar to how teams manage code. By doing so, we could leverage the best practices and tools from application lifecycle management (like CI/CD operations) and apply them to data. lakeFS offers data lifecycle management via [isolated data development environments](/understand/use_cases/etl_testing/) instead of shared buckets.
+In data-intensive applications, data should be managed through its entire lifecycle similar to how teams manage code. By doing so, we could leverage the best practices and tools from application lifecycle management (like CI/CD operations) and apply them to data. lakeFS offers data lifecycle management via [isolated data development environments](use_cases/etl_testing.md) instead of shared buckets.
 
 ## Data Pipeline Reproducibility
-Reproducibility in data pipelines is the ability to repeat a process. An example of this is recreating an issue that occurred in the production pipeline. Reproducibility allows for the controlled manufacture of an error to debug and troubleshoot it at a later point in time. Reproducing a data pipeline issue is a challenge that most data engineers face on a daily basis. Learn more about how lakeFS supports data pipeline [reproducibility](/understand/use_cases/reproducibility/). Other use cases include running ad-hoc queries (useful for data science), review, and backfill.
+Reproducibility in data pipelines is the ability to repeat a process. An example of this is recreating an issue that occurred in the production pipeline. Reproducibility allows for the controlled manufacture of an error to debug and troubleshoot it at a later point in time. Reproducing a data pipeline issue is a challenge that most data engineers face on a daily basis. Learn more about how lakeFS supports data pipeline [reproducibility](use_cases/reproducibility.md). Other use cases include running ad-hoc queries (useful for data science), review, and backfill.
 
 ## Data Quality Testing
 This term describes ways to test data for its accuracy, completeness, consistency, timeliness, validity, and integrity. lakeFS hooks can be used to implement and run data quality tests before promoting staging data into production. 
@@ -49,7 +49,7 @@ To version data means creating a unique point-in-time reference for data that ca
 lakeFS allows teams to treat their data lake as a Git repository.   Git is used for code versioning, whereas lakeFS is used for data versioning.  lakeFS provides Git-like operations such as branch, commit, merge and revert.
 
 ## Graveler
-Graveler is the core versioning engine of lakeFS. It handles versioning by translating lakeFS addresses to the actual stored objects. See the [versioning internals section](/understand/how/versioning-internals/) to learn how lakeFS stores metadata.
+Graveler is the core versioning engine of lakeFS. It handles versioning by translating lakeFS addresses to the actual stored objects. See the [versioning internals section](how/versioning-internals.md) to learn how lakeFS stores metadata.
 
 ## Hooks
 lakeFS hooks allow you to automate and ensure that a given set of checks and validations happens before important lifecycle events. They are similar conceptually to [Git Hooks](https://git-scm.com/docs/githooks), but in contrast, they run remotely on a server. Currently, lakeFS allows executing hooks when two types of events occur: pre-commit events that run before a commit is acknowledged and pre-merge events that trigger right before a merge operation. 
@@ -71,7 +71,7 @@ lakeFS merge command, similar to the Git merge functionality, allows you to merg
 In lakeFS, a _repository_ is a set of related objects (or collections of objects). [Read More][repository].
 
 ## Rollback
-A rollback is an atomic operation reversing the effects of a previous commit. If a developer introduces a new code version to production and discovers that it has a critical bug, they can simply roll back to the previous version. In lakeFS, a rollback is an atomic action that prevents the data consumers from receiving low-quality data until the issue is resolved. Learn more about how lakeFS supports the [rollback](/understand/use_cases/rollback/) operation.
+A rollback is an atomic operation reversing the effects of a previous commit. If a developer introduces a new code version to production and discovers that it has a critical bug, they can simply roll back to the previous version. In lakeFS, a rollback is an atomic action that prevents the data consumers from receiving low-quality data until the issue is resolved. Learn more about how lakeFS supports the [rollback](use_cases/rollback.md) operation.
 
 ## Storage Namespace
 The storage namespace is a location in the underlying storage dedicated to a specific repository.
@@ -89,8 +89,8 @@ Tags are a way to give a meaningful name to a specific commit. [Read More][tags]
 lakeFS Enterprise Single-Sign-On service, it's delegated with lakeFS authentication requests and replies back to lakeFS with the authentication response.
 
 
-[branches]:  /understand/model/#branches
-[commit]: /understand/model/#commits
-[repository]:  /understand/model/#repository
-[merge]:  /understand/model/#merge
-[tags]:  /understand/model/#tags
+[branches]:  model.md#branches
+[commit]: model.md#commits
+[repository]:  model.md#repository
+[merge]:  model.md#merge
+[tags]:  model.md#tags

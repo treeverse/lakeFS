@@ -5,7 +5,7 @@ description: lakeFS quickstart / Use Actions and Hooks to enforce conditions whe
 
 # Actions and Hooks in lakeFS
 
-When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS](/howto/hooks/index/) can be of benefit here. 
+When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS](../howto/hooks/index.md) can be of benefit here. 
 
 We're going to enforce a rule that when a commit is made to any branch that begins with `etl`: 
 
@@ -15,7 +15,7 @@ We're going to enforce a rule that when a commit is made to any branch that begi
 
 To do this we'll create an _action_. In lakeFS, an action specifies one or more events that will trigger it, and references one or more _hooks_ to run when triggered. Actions are YAML files written to lakeFS under the `_lakefs_actions/` folder of the lakeFS repository.
 
-_Hooks_ can be either a [Lua](/howto/hooks/lua/) script that lakeFS will execute itself, an external [web hook](/howto/hooks/webhooks/), or an [Airflow DAG](/howto/hooks/airflow/). In this example, we're using a Lua hook.
+_Hooks_ can be either a [Lua](../howto/hooks/lua.md) script that lakeFS will execute itself, an external [web hook](../howto/hooks/webhooks.md), or an [Airflow DAG](../howto/hooks/airflow.md). In this example, we're using a Lua hook.
 
 ## Configuring the Action
 
@@ -73,13 +73,13 @@ _Hooks_ can be either a [Lua](/howto/hooks/lua/) script that lakeFS will execute
 
 5. Go to the **Uncommitted Changes** tab in the UI, and make sure that you see the new file in the path shown: 
 
-    <img width="75%" src="/assets/img/quickstart/hooks-00.png" alt="lakeFS Uncommitted Changes view showing a file called `check_commit_metadata.yml` under the path `_lakefs_actions/`" class="quickstart"/>
+    <img width="75%" src="assets/img/quickstart/hooks-00.png" alt="lakeFS Uncommitted Changes view showing a file called `check_commit_metadata.yml` under the path `_lakefs_actions/`" class="quickstart"/>
 
     Click **Commit Changes** and enter a suitable message to commit this new file to the branch. 
 
 6. Now we'll merge this new branch into `main`. From the **Compare** tab in the UI compare the `main` branch with `add_action` and click **Merge**
 
-    <img width="75%" src="/assets/img/quickstart/hooks-01.png" alt="lakeFS Compare view showing the difference between `main` and `add_action` branches" class="quickstart"/>
+    <img width="75%" src="assets/img/quickstart/hooks-01.png" alt="lakeFS Compare view showing the difference between `main` and `add_action` branches" class="quickstart"/>
 
 
 ## Testing the Action
@@ -97,7 +97,7 @@ We'll start by creating a branch that's going to match the `etl` pattern, and th
 
     In your new branch you should see the action that you created and merged above: 
 
-    <img width="75%" src="/assets/img/quickstart/hooks-02.png" alt="lakeFS branch etl_20230504 with object /_lakefs_actions/check_commit_metadata.yml" class="quickstart"/>
+    <img width="75%" src="assets/img/quickstart/hooks-02.png" alt="lakeFS branch etl_20230504 with object /_lakefs_actions/check_commit_metadata.yml" class="quickstart"/>
 
 1. To simulate an ETL job we'll use the built-in DuckDB editor to run some SQL and write the result back to the lakeFS branch. 
 
@@ -115,7 +115,7 @@ We'll start by creating a branch that's going to match the `etl` pattern, and th
 
 1. Head to the **Uncommitted Changes** tab in the UI and notice that there is now a file called `top10_lakes.parquet` waiting to be committed. 
 
-    <img width="75%" src="/assets/img/quickstart/hooks-03.png" alt="lakeFS branch etl_20230504 with uncommitted file top10_lakes.parquet" class="quickstart"/>
+    <img width="75%" src="assets/img/quickstart/hooks-03.png" alt="lakeFS branch etl_20230504 with uncommitted file top10_lakes.parquet" class="quickstart"/>
 
     Now we're ready to start trying out the commit rules, and seeing what happens if we violate them.
     
@@ -129,11 +129,11 @@ We'll start by creating a branch that's going to match the `etl` pattern, and th
 
     `❌ A commit message must be provided`
 
-    <img width="75%" src="/assets/img/quickstart/hooks-04.png" alt="lakeFS blocking an attempt to commit with no commit message" class="quickstart"/>
+    <img width="75%" src="assets/img/quickstart/hooks-04.png" alt="lakeFS blocking an attempt to commit with no commit message" class="quickstart"/>
 
 1. Do the same as the previous step, but provide a message this time: 
 
-    <img width="75%" src="/assets/img/quickstart/hooks-05.png" alt="A commit to lakeFS with commit message in place" class="quickstart"/>
+    <img width="75%" src="assets/img/quickstart/hooks-05.png" alt="A commit to lakeFS with commit message in place" class="quickstart"/>
 
     The commit still fails as we need to include metadata too, which is what the error tells us
 
@@ -141,7 +141,7 @@ We'll start by creating a branch that's going to match the `etl` pattern, and th
 
 1. Repeat the **Commit Changes** dialog and use the **Add Metadata field** to add the required metadata: 
 
-    <img width="75%" src="/assets/img/quickstart/hooks-06.png" alt="A commit to lakeFS with commit message and metadata in place" class="quickstart"/>
+    <img width="75%" src="assets/img/quickstart/hooks-06.png" alt="A commit to lakeFS with commit message and metadata in place" class="quickstart"/>
 
     We're almost there, but this still fails (as it should), since the version is not entirely numeric but includes `v` and `ß`: 
 
@@ -149,13 +149,13 @@ We'll start by creating a branch that's going to match the `etl` pattern, and th
 
     Repeat the commit attempt specify the version as `1.00` this time, and rejoice as the commit succeeds
 
-    <img width="75%" src="/assets/img/quickstart/hooks-07.png" alt="Commit history in lakeFS showing that the commit met the rules set by the action and completed successfully." class="quickstart"/>
+    <img width="75%" src="assets/img/quickstart/hooks-07.png" alt="Commit history in lakeFS showing that the commit met the rules set by the action and completed successfully." class="quickstart"/>
 
 ---
 
 You can view the history of all action runs from the **Action** tab: 
 
-<img width="75%" src="/assets/img/quickstart/hooks-08.png" alt="Action run history in lakeFS" class="quickstart"/>
+<img width="75%" src="assets/img/quickstart/hooks-08.png" alt="Action run history in lakeFS" class="quickstart"/>
 
 
 

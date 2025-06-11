@@ -15,7 +15,7 @@ under the same Action. For `pre-*` hooks, the triggering operation will also be 
 
 ## Action File Webhook properties
 
-_See the [Action configuration](./index.md#action-file) for overall configuration schema and details._
+_See the [Action configuration](./index.md#action-files) for overall configuration schema and details._
 
 | Property     | Description                                            | Data Type                                                                                 | Required | Default Value | Env Vars Support |
 |--------------|--------------------------------------------------------|-------------------------------------------------------------------------------------------|----------|---------------|------------------|
@@ -33,7 +33,6 @@ during the execution of the action. If that environment variable doesn't exist i
 !!! info
     All environment variables need to begin with "LAKEFSACTIONS_". Otherwise, they will be blocked.
     Additionally, the `actions.env.enabled` configuration parameter can be set to `false` to block access to all environment variables.
-
 
 !!! example
     ```yaml
@@ -73,7 +72,7 @@ Upon execution, a webhook will send a request containing a JSON object with the 
 | tag_id              | The ID of the created/deleted tag (available for Tag events)               | string |
 | merge_source        | The source branch/tag/ref on merge (available for Merge events)            | string |
 
-[^1]: N/A for Tag events 
+[^1]: N/A for Tag events
 [^2]: N/A for Tag and Create/Delete Branch events  
 [^3]: Available for Commit/Merge events only. In Merge, this represents the merge commit ID to be created if the merge operation succeeds.
 

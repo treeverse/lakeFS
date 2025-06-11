@@ -7,10 +7,10 @@ status: enterprise
 # Standalone Garbage Collection
 
 !!! info
-    Standalone GC is only available for [lakeFS Enterprise](/enterprise/index/).
+    Standalone GC is only available for [lakeFS Enterprise](../../enterprise/index.md).
 
 !!! warning
-    Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC](/howto/garbage-collection/gc/). For large scale environments, we recommend using the Spark-backed solution.
+    Standalone GC is experimental and offers limited capabilities compared to the [Spark-backed GC](gc.md). For large scale environments, we recommend using the Spark-backed solution.
 
 
 
@@ -23,7 +23,7 @@ docker image. It supports S3 and [self-managed S3 compatible storages](#using-s3
 
 1. **No horizontal scalability**: Only a single instance of `lakefs-sgc` can operate on a given repository at a time.
 2. **Mark phase only**: Standalone GC supports only the mark phase, identifying objects for deletion but not executing 
-the sweep stage to delete them. It functions similarly to the GC's [mark-only mode](/howto/garbage-collection/gc/#mark-only-mode).
+the sweep stage to delete them. It functions similarly to the GC's [mark-only mode](gc.md#mark-only-mode).
 3. Only supports AWS S3 and S3-compatible object storages. However, supporting Azure blob and GCS are in our roadmap.
 
 ## Installation 

@@ -8,7 +8,6 @@ description: The lakeFS Delta Sharing service lets you export DeltaLake and HMS-
 !!! info
     Available on **lakeFS Cloud**
 
-
 !!! warning
     Please note, as of June 15th 2024, the Unity Delta Sharing feature will be removed. To integrate lakeFS with Unity Catalog, refer to the [Unity integration](../integrations/unity-catalog.md) docs.
 
@@ -78,7 +77,7 @@ Upload it to your config URL.  For instance if the config URL is `lakefs://repo/
 lakectl fs upload -s ./lakefs_delta_sharing.yaml lakefs://repo/main/lakefs_delta_sharing.yaml
 ```
 
-### 3. Connect Unity to lakeFS Delta Sharing!
+### 3. Connect Unity to lakeFS Delta Sharing
 
 You now need to configure Unity to use the lakeFS Delta Sharing server. Create a share provider file `config.share.json`; see the [Delta Sharing manual][databricks-delta-sharing]:
 
@@ -97,6 +96,7 @@ Install the [databricks cli][databricks-cli].  We will use it to create Delta Sh
 [instructions](https://docs.databricks.com/dev-tools/cli/index.html#set-up-authentication-using-a-databricks-personal-access-token) to configure it.
 
 Run the provider creation command:
+
    ```shell
    databricks unity-catalog providers create \
        --name lakefs-cloud \
@@ -106,20 +106,20 @@ Run the provider creation command:
 Go to "Data >> Delta Sharing" on the DataBricks environment.  Once Treeverse have configured lakeFS Delta Sharing on your account with your config URL,
 the "lakefs-cloud" provider should appear under "Shared with me".
 
-<img src="/assets/img/unity-delta-sharing-provider.png" alt="lakeFS-Cloud provider appearing on DataBricks Delta Sharing / Shared with me" class="quickstart"/>
+<img src="../assets/img/unity-delta-sharing-provider.png" alt="lakeFS-Cloud provider appearing on DataBricks Delta Sharing / Shared with me" class="quickstart"/>
 
 Click the provider to see its shares.
 
-<img src="/assets/img/unity-delta-sharing-shares.png" alt="lakeFS-Cloud provider, showing share and create catalog" class="quickstart"/>
+<img src="../assets/img/unity-delta-sharing-shares.png" alt="lakeFS-Cloud provider, showing share and create catalog" class="quickstart"/>
 
 You can now create a catalog from these shares.
 
-<img src="/assets/img/unity-delta-sharing-create-catalog.png" alt="lakeFS-Cloud provider, create catalog from share" class="quickstart"/>
+<img src="../assets/img/unity-delta-sharing-create-catalog.png" alt="lakeFS-Cloud provider, create catalog from share" class="quickstart"/>
 
 And you can see schemas for each of the branches that you configured in the share.  Here branch name `dev_experiment1` matches the pattern `dev_*` that
 we defined in the configuration object `lakefs-delta-sharing.yaml`, so it appears as a schema.
 
-<img src="/assets/img/unity-delta-sharing-schema-per-branch.png" alt="lakeFS-Cloud provider, every configured branch is a schema" class="quickstart"/>
+<img src="../assets/img/unity-delta-sharing-schema-per-branch.png" alt="lakeFS-Cloud provider, every configured branch is a schema" class="quickstart"/>
 
 At this point you have configured Delta Sharing on lakeFS, and DataBricks to communicate with lakeFS delta sharing.  No further Treeverse involvement is required.  
 Updates to `lakefs_delta_sharing.yaml` will update within a minute of uploading a new version.
@@ -141,7 +141,6 @@ path: path/to/users/
 
 !!! note
     The filename of the 'yaml' file containing the table definition must match the 'name' of the table itself. In the example above, '_lakefs_tables/users.yaml'.
-
 
 When placed inside `_lakefs_tables/users.yaml` this defines a table `users` on the prefix `path/to/users/` (so `path/to/users/` holds the prefix `_delta_log`).
 
@@ -174,7 +173,6 @@ schema:
 
 Useful types recognized by DataBricks Photon include `integer`, `long`, `short`, `string`, `double`, `float`, `date`, and `timestamp`.  
 For exact type mappings, and whether to specify a field as `nullable: false`, refer to [DataBricks Photon documentation][databricks-photon-types].
-
 
 [databricks-delta-sharing]:  https://docs.databricks.com/data-sharing/manage-provider.html#instructions
 [databricks-cli]:  https://docs.databricks.com/dev-tools/cli/index.html

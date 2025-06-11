@@ -21,7 +21,7 @@ For this purpose, you may create a branch (testing-spark-3.0) which will only be
 
 Once testing is completed, and you have achieved the desired result, you can delete this experimental branch, and all data not used on any other branch will be deleted with it.
 
-<img src="/assets/img/branching_1.png" alt="branching_1" width="500px"/>
+<img src="assets/img/branching_1.png" alt="branching_1" width="500px"/>
 
 _Creating a testing branch:_
 
@@ -55,7 +55,7 @@ Run each experiment on its own independent branch, while the main remains untouc
 
 With lakeFS you don't need to worry about creating data paths for the experiments, copying data, and remembering to delete it. It’s substantially easier to avoid errors and maintain a clean lake after.
 
-<img src="/assets/img/branching_2.png" alt="branching_2" width="500px"/>
+<img src="assets/img/branching_2.png" alt="branching_2" width="500px"/>
 
 _Reading from and comparing branches using Spark:_
 

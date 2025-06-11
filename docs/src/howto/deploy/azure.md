@@ -1,7 +1,7 @@
 ---
 title: Azure
 description: How to deploy and set up a production-suitable lakeFS environment on Microsoft Azure
-next:  ["Import data into your installation", "/howto/import.html"]
+next:  ["Import data into your installation", "../import/index.md"]
 ---
 
 # Deploy lakeFS on Azure
@@ -10,12 +10,11 @@ next:  ["Import data into your installation", "/howto/import.html"]
     The instructions given here are for a self-managed deployment of lakeFS on Azure. <br/>
     For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
-When you deploy lakeFS on Azure these are the options available to use: 
+When you deploy lakeFS on Azure these are the options available to use:
 
-![](/assets/img/deploy/deploy-on-azure.excalidraw.png)
+![](../../assets/img/deploy/deploy-on-azure.excalidraw.png)
 
-This guide walks you through the options available and how to configure them, finishing with configuring and running lakeFS itself and creating your first repository. 
-
+This guide walks you through the options available and how to configure them, finishing with configuring and running lakeFS itself and creating your first repository.
 
 !!! info "⏰ Expected deployment time: 25 min"
 
@@ -104,15 +103,14 @@ lakeFS supports two ways to authenticate with Azure.
 
 ## K/V Store
 
-lakeFS stores metadata in a database for its versioning engine. 
-This is done via a Key-Value interface that can be implemented on any DB engine and lakeFS comes with several built-in driver implementations (You can read more about it [here](https://docs.lakefs.io/understand/how/kv.html)). 
+lakeFS stores metadata in a database for its versioning engine.
+This is done via a Key-Value interface that can be implemented on any DB engine and lakeFS comes with several built-in driver implementations (You can read more about it [here](https://docs.lakefs.io/understand/how/kv.html)).
 
 The database used doesn't _have_ to be a dedicated K/V database.
 
-
 === "CosmosDB"
-    [CosmosDB](https://azure.microsoft.com/en-us/products/cosmos-db/) is a managed database service provided by Azure. 
-    
+    [CosmosDB](https://azure.microsoft.com/en-us/products/cosmos-db/) is a managed database service provided by Azure.
+
     lakeFS supports [CosmosDB For NoSQL](https://learn.microsoft.com/en-GB/azure/cosmos-db/nosql/) as a database backend. 
 
     1. Follow the official [Azure documentation](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/how-to-create-account?tabs=azure-cli) 
@@ -127,26 +125,23 @@ The database used doesn't _have_ to be a dedicated K/V database.
     described in the [configuration guide][config-reference-azure-block].
     You can either pass the CosmosDB's account read-write key to lakeFS, or 
     use a managed identity to authenticate to CosmosDB, as described 
-    [earlier](#identity-based-credentials).
-
+    [earlier](#authentication-method).
 
 === "PostgreSQL"
 
     Below we show you how to create a database on Azure Database, but you can use any PostgreSQL database as long as it's accessible by your lakeFS installation.
 
-    If you already have a database, take note of the connection string and skip to the [next step](#run-the-lakefs-server)
+    If you already have a database, take note of the connection string and skip to the [next step](#4-run-the-lakefs-server)
 
     1. Follow the official [Azure documentation](https://docs.microsoft.com/en-us/azure/postgresql/quickstart-create-server-database-portal){: target="_blank" } on how to create a PostgreSQL instance and connect to it.
     Make sure that you're using PostgreSQL version >= 11.
     1. Once your Azure Database for PostgreSQL server is set up and the server is in the _Available_ state, take note of the endpoint and username.
-    ![Azure postgres Connection String](/assets/img/azure_postgres_conn.png)
+    ![Azure postgres Connection String](../../assets/img/azure_postgres_conn.png)
     1. Make sure your Access control roles allow you to connect to the database instance.
-
 
 ## 4. Run the lakeFS server
 
 Now that you've chosen and configured object storage, a K/V store, and authentication—you're ready to configure and run lakeFS. There are three different ways you can run lakeFS:
-
 
 === "Azure VM"
     Connect to your VM instance using SSH:
@@ -198,7 +193,6 @@ Now that you've chosen and configured object storage, a K/V store, and authentic
 
     See the [reference][config-envariables] for a complete list of environment variables.
 
-
 === "Azure Kubernetes Service (AKS)"
     You can install lakeFS on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 
@@ -237,7 +231,6 @@ Now that you've chosen and configured object storage, a K/V store, and authentic
 
     *my-lakefs* is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) name.
 
-
 ### Load balancing
 
 To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
@@ -245,13 +238,11 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
 
 !!! info
     The NGINX Ingress Controller by default limits the client body size to 1 MiB.
-    
+
     Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway][s3-gateway] or 
     a simple PUT request using the [OpenAPI Server][openapi].
     
     Check out the Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
-
-
 
 ## Create the admin user
 
@@ -259,39 +250,27 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
 1. On first use, you'll be redirected to the setup page:
-   
-   <img src="/assets/img/setup.png" alt="Create user">
-   
+
+   <img src="../../assets/img/setup.png" alt="Create user">
+
 1. Follow the steps to create an initial administrator user. Save the credentials you’ve received somewhere safe, you won’t be able to see them again!
-   
-   <img src="/assets/img/setup_done.png" alt="Setup Done">
+
+   <img src="../../assets/img/setup_done.png" alt="Setup Done">
 
 1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
 ## Create your first repository
 
 1. Use the credentials from the previous step to log in
-1. Click *Create Repository* and choose *Blank Repository*.
-   
-   <img src="/assets/img/create-repo-no-sn.png" alt="Create Repo"/>
-   
+1. Click _Create Repository_ and choose _Blank Repository_.
+
+   <img src="../../assets/img/create-repo-no-sn.png" alt="Create Repo"/>
+
 1. Under Storage Namespace, enter a path to your desired location on the object store. This is where data written to this repository will be stored.
-1. Click *Create Repository*
+1. Click _Create Repository_
 1. You should now have a configured repository, ready to use!
 
-   <img src="/assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
-
-
+   <img src="../../assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
 
 !!! success "Congratulations"
     Your environment is now ready 🤩
-
-
-[config-envariables]:  /reference/configuration/#using-environment-variables
-[config-reference-azure-block]:  /reference/configuration/#example-azure-blob-storage
-[downloads]:  /index/#downloads
-[openapi]:  /understand/architecture/#openapi-server
-[s3-gateway]:  /understand/architecture/#s3-gateway
-[understand-repository]:  /understand/model/#repository
-[integration-hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
-[understand-commits]:  /understand/how/versioning-internals/#constructing-a-consistent-view-of-the-keyspace-ie-a-commit

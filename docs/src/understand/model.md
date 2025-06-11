@@ -78,7 +78,7 @@ _Merging_ is the way to integrate changes from a branch into another branch.
 The result of a merge is a new commit, with the destination as the first parent and the source as the second.
 
 !!! info
-    To learn more about how merging works in lakeFS, see the [merge reference](/understand/how/merge/)
+    To learn more about how merging works in lakeFS, see the [merge reference](how/merge.md)
 
 
 ### Ref expressions

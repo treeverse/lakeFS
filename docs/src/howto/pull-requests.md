@@ -15,7 +15,7 @@ Create a branch, and make all the necessary changes in that branch.
 When your changes are ready for review, head over to the _Pull Requests_ tab in your repository.
 Choose your source branch and target branch, add a title and description (optional, and markdown is supported).
 
-![Open Pull Request](/assets/img/pull-request-open.png)
+![Open Pull Request](../assets/img/pull-request-open.png)
 
 When ready, click _Create Pull Request_. You will be redirected to the newly created pull request page.
 
@@ -23,7 +23,7 @@ When ready, click _Create Pull Request_. You will be redirected to the newly cre
 
 Run validation checks or automated data quality tests to ensure that the changes meet your standards.
 
-![Review Pull Request](/assets/img/pull-request-review.png)
+![Review Pull Request](../assets/img/pull-request-review.png)
 
 Every Pull Request is assigned a unique ID. You can share the Pull Request's URL with others to review the change.
 
@@ -33,7 +33,7 @@ As with any lakeFS reference, reviewers can take the source branch, query, test 
 
 Once the review is complete and all checks have passed, click the _Merge pull request_ button to merge the changes into the target branch.
 
-![Merged Pull Request](/assets/img/pull-request-merged.png)
+![Merged Pull Request](../assets/img/pull-request-merged.png)
 
 The data is now updated in a controlled and transparent manner.
 

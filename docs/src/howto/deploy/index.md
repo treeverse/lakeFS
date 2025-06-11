@@ -13,7 +13,7 @@ This section will guide you through deploying lakeFS on top of an object store. 
 
 Which options are available depends on your deployment platform. For example, the object store available on Azure differs from that on AWS. 
 
-![](/assets/img/deploy/deploy-lakefs.excalidraw.png)
+![](../..//assets/img/deploy/deploy-lakefs.excalidraw.png)
 
 ## Deployment and Setup Details
 
@@ -21,7 +21,7 @@ lakeFS releases include [binaries](https://github.com/treeverse/lakeFS/releases)
 
 Check out our guides below for full deployment details: 
 
-* [AWS]( /howto/deploy/aws/)
-* [Azure]( /howto/deploy/azure/)
-* [GCP]( /howto/deploy/gcp/)
-* [On-premises and other cloud providers]( /howto/deploy/onprem/)
+* [AWS](aws.md)
+* [Azure](azure.md)
+* [GCP](gcp.md)
+* [On-premises and other cloud providers](onprem.md)

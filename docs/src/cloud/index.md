@@ -22,7 +22,7 @@ We built lakeFS cloud for three main reasons:
 The main advantages of using lakeFS Cloud, the lakeFS managed service are:
 
 1. No installation required, no cloud costs and devops efforts on installing and maintaining a lakeFS installation.
-1. All lakeFS services are managed and run by us, including [Managed Garbage Collection](/howto/garbage-collection/managed-gc.md).
+1. All lakeFS services are managed and run by us, including [Managed Garbage Collection](../howto/garbage-collection/managed-gc.md).
 1. lakeFS cloud is highly available and includes a commitment to an uptime SLA.
 1. lakeFS cloud auto scales according to your needs. See [lakeFS cloud scalability model](#lakefs-cloud-scalability-model) for more details.
 1. Upgrades are done transparently on your lakeFS cloud environment
@@ -31,25 +31,25 @@ The main advantages of using lakeFS Cloud, the lakeFS managed service are:
 ## Which security features does lakeFS Cloud provide?
 
 1. lakeFS Cloud is [SOC2 Type II](https://www.itgovernance.co.uk/soc-reporting) compliant. [Contact us](https://lakefs.io/contact-sales/) to get the certification.
-1. lakeFS Cloud version controls your data, **without accessing it**, using pre-signed URLs! Read more [here](/security/presigned-url/).
-1. When using lakeFS Cloud, you are provided with a rich [Role-Based Access Control](/security/rbac/) functionality that allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
-1. To easily manage users and groups, lakeFS Cloud provides [SSO](/security/sso/) integration (including support for SAML, OIDC, AD FS, Okta, and Azure AD), supporting existing credentials from a trusted provider, eliminating separate logins.
-1. lakeFS Cloud supports [SCIM](/howto/scim/) for automatically provisioning and deprovisioning users and group memberships to allow organizations to maintain a single source of truth for their user database.
-1. [STS Auth](/security/sts-login/) offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
-1. [Authentication with AWS IAM Roles](/security/external-principals-aws/) allows authentication using AWS IAM roles instead of lakeFS credentials, removing the need to maintain static credentials for lakeFS Enterprise users running on AWS.
-1. [Auditing](/reference/auditing/) provides a detailed action log of events happening within lakeFS, including who performed which action, on which resource - and when.
-1. [Private-Link](/howto/private-link/) support to ensure network security by only allowing access to your lakeFS Cloud installation from your cloud accounts
+1. lakeFS Cloud version controls your data, **without accessing it**, using pre-signed URLs! Read more [here](../security/presigned-url.md).
+1. When using lakeFS Cloud, you are provided with a rich [Role-Based Access Control](../security/rbac.md) functionality that allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
+1. To easily manage users and groups, lakeFS Cloud provides [SSO](../security/sso.md) integration (including support for SAML, OIDC, AD FS, Okta, and Azure AD), supporting existing credentials from a trusted provider, eliminating separate logins.
+1. lakeFS Cloud supports [SCIM](../howto/scim.md) for automatically provisioning and deprovisioning users and group memberships to allow organizations to maintain a single source of truth for their user database.
+1. [STS Auth](../security/sts-login.md) offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
+1. [Authentication with AWS IAM Roles](../security/external-principals-aws.md) allows authentication using AWS IAM roles instead of lakeFS credentials, removing the need to maintain static credentials for lakeFS Enterprise users running on AWS.
+1. [Auditing](../reference/auditing.md) provides a detailed action log of events happening within lakeFS, including who performed which action, on which resource - and when.
+1. [Private-Link](../howto/private-link.md) support to ensure network security by only allowing access to your lakeFS Cloud installation from your cloud accounts
 
 ## What additional functionality does lakeFS Cloud provide?
 
 Using lakeFS cloud is not just a secure and managed way of using lakeFS OSS; it is much more than that. With lakeFS Cloud you enjoy:
 
-1. [lakeFS Mount](/reference/mount/) allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
+1. [lakeFS Mount](../reference/mount.md) allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
 1. [lakeFS Metadata Search](https://info.lakefs.io/metadata-search) - Allows a granular search API to filter and query versioned objects based on attached metadata. This is especially useful for machine learning environments to filter by labels and file attributes
 1. [lakeFS for Databricks](https://lakefs.io/lakefs-for-databricks) - Provides a turnkey solution for Databricks customers for analytics, machine learning and business intelligence use cases including full support for Delta Lake tables, Unity Catalog, MLFlow and the rest of the Databricks product suite.
 1. [lakeFS for Snowflake](https://info.lakefs.io/lakefs-for-snowflake) - Provides full integration into the Snowflake ecosystem, including full support for Iceberg managed tables.
 1. [lakeFS Cross Cloud](https://info.lakefs.io/cross-cloud) - Allows central management of repositories that span across multiple cloud providers including Azure, AWS, GCP and on-prem environments.
-1. [Transactional Mirroring](/howto/mirroring/) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
+1. [Transactional Mirroring](../howto/mirroring.md) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
 
 
 | Feature                                   | OSS       | Cloud     |

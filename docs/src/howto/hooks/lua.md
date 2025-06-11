@@ -15,18 +15,16 @@ The Lua runtime embedded in lakeFS is limited for security reasons. It provides 
 1. Accessing any of the running lakeFS server's environment
 2. Accessing the local filesystem available the lakeFS process
 
-
 ## Action File Lua Hook Properties
 
 !!! info
-    See the [Action configuration](./index.md#action-file) for overall configuration schema and details.
+    See the [Action configuration](index.md#action-files) for overall configuration schema and details.
 
 | Property      | Description                               | Data Type  | Required                                       | Default Value |
 |---------------|-------------------------------------------|------------|------------------------------------------------|---------------|
 | `args`        | One or more arguments to pass to the hook | Dictionary | false                                          |               |
 | `script`      | An inline Lua script                      | String     | either this or `script_path` must be specified |               |
 | `script_path` | The path in lakeFS to a Lua script        | String     | either this or `script` must be specified      |               |
-
 
 ## Example Lua Hooks
 
@@ -101,6 +99,7 @@ Helper function to mark a table object as an array for the runtime by setting `_
 ### `aws`
 
 ### `aws/s3_client`
+
 S3 client library.
 
 !!! example
@@ -172,11 +171,10 @@ Create a new Database in Glue Catalog.
 
 Parameters:
 
-- `database(string)`: Glue Database name.
-- `options(table)` (optional):
-    - `error_on_already_exists(boolean)`: Whether the call fail with an error if a DB with this name already exists
-    - `create_db_input(Table)`: a Table that is passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
-
+* `database(string)`: Glue Database name.
+* `options(table)` (optional):
+  * `error_on_already_exists(boolean)`: Whether the call fail with an error if a DB with this name already exists
+  * `create_db_input(Table)`: a Table that is passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
 
 !!! example
 
@@ -194,8 +192,8 @@ Delete an existing Database in Glue Catalog.
 
 Parameters:
 
-- `database(string)`: Glue Database name.
-- `catalog_id(string)` (optional): Glue Catalog ID
+* `database(string)`: Glue Database name.
+* `catalog_id(string)` (optional): Glue Catalog ID
 
 !!! example
     ```lua
@@ -242,6 +240,7 @@ Delete an existing Table in Glue Catalog.
 ### `azure`
 
 ### `azure/blob_client`
+
 Azure blob client library.
 
 !!! example
@@ -268,7 +267,7 @@ Deletes the object at the given key
 
 ### `azure/abfss_transform_path(path)`
 
-Transform an HTTPS Azure URL to a ABFSS scheme. Used by the delta_exporter function to support Azure Unity catalog use cases    
+Transform an HTTPS Azure URL to a ABFSS scheme. Used by the delta_exporter function to support Azure Unity catalog use cases
 `path` - A valid Azure blob storage URL in the form of `https://myaccount.blob.core.windows.net/mycontainer/myblob`
 
 ### `crypto`
@@ -309,9 +308,9 @@ Returns the created/fetched schema name.
 
 Parameters:
 
-- `schema_name(string)`: The required schema name
-- `catalog_name(string)`: The catalog name under which the schema will be created (or from which it will be fetched)
-- `get_if_exists(boolean)`: In case of failure due to an existing schema with the given `schema_name` in the given
+* `schema_name(string)`: The required schema name
+* `catalog_name(string)`: The catalog name under which the schema will be created (or from which it will be fetched)
+* `get_if_exists(boolean)`: In case of failure due to an existing schema with the given `schema_name` in the given
 `catalog_name`, return the schema.
 
 !!! example
@@ -325,10 +324,10 @@ Parameters:
 
 Parameters:
 
-- `statement(boolean)`: The SQL statement to execute on the databricks table
-- `warehouse_id(string)`: The SQL warehouse ID used in Databricks to run the `CREATE TABLE` query (fetched from the SQL warehouse
-- `catalog_name(string)`: The catalog name under which the schema will be created (or from which it will be fetched)
-- `schema_name(string)`: The required schema name
+* `statement(boolean)`: The SQL statement to execute on the databricks table
+* `warehouse_id(string)`: The SQL warehouse ID used in Databricks to run the `CREATE TABLE` query (fetched from the SQL warehouse
+* `catalog_name(string)`: The catalog name under which the schema will be created (or from which it will be fetched)
+* `schema_name(string)`: The required schema name
   `status`, return the SQL status i.e. SUCCEEDED or an error code/message
 
 !!! example
@@ -342,19 +341,19 @@ Parameters:
 ### `databricks/client.register_external_table(table_name, physical_path, warehouse_id, catalog_name, schema_name, metadata)`
 
 Registers an external table under the provided warehouse ID, catalog name, and schema name.
-In order for this method call to succeed, an external location should be configured in the catalog, with the 
+In order for this method call to succeed, an external location should be configured in the catalog, with the
 `physical_path`'s root storage URI (for example: `s3://mybucket`).
 Returns the table's creation status.
 
 Parameters:
 
-- `table_name(string)`: Table name.
-- `physical_path(string)`: A location to which the external table will refer, e.g. `s3://mybucket/the/path/to/mytable`.
-- `warehouse_id(string)`: The SQL warehouse ID used in Databricks to run the `CREATE TABLE` query (fetched from the SQL warehouse
+* `table_name(string)`: Table name.
+* `physical_path(string)`: A location to which the external table will refer, e.g. `s3://mybucket/the/path/to/mytable`.
+* `warehouse_id(string)`: The SQL warehouse ID used in Databricks to run the `CREATE TABLE` query (fetched from the SQL warehouse
 `Connection Details`, or by running `databricks warehouses get`, choosing your SQL warehouse and fetching its ID).
-- `catalog_name(string)`: The name of the catalog under which a schema will be created (or fetched from).
-- `schema_name(string)`: The name of the schema under which the table will be created.
-- `metadata(table)`: A table of metadata to be added to the table's registration. The metadata table should be of the form:
+* `catalog_name(string)`: The name of the catalog under which a schema will be created (or fetched from).
+* `schema_name(string)`: The name of the schema under which the table will be created.
+* `metadata(table)`: A table of metadata to be added to the table's registration. The metadata table should be of the form:
   `{key1 = "value1", key2 = "value2", ...}`.
 
 !!! example
@@ -364,7 +363,7 @@ Parameters:
     local status = client.register_external_table("mytable", "s3://mybucket/the/path/to/mytable", "examwarehouseple", "my-catalog-name", "myschema")
     ```
 
-- For the Databricks permissions needed to run this method, check out the [Unity Catalog Exporter](/integrations/unity-catalog/) docs.
+* For the Databricks permissions needed to run this method, check out the [Unity Catalog Exporter](../../integrations/unity-catalog.md) docs.
 
 ### `encoding/base64/encode(data)`
 
@@ -422,15 +421,16 @@ Read the payload (string) as the contents of a Parquet file and return its schem
 ### `formats/delta_client(key, secret, region)`
 
 Creates a new Delta Lake client used to interact with the lakeFS server.
-- `key`: lakeFS access key id
-- `secret`: lakeFS secret access key
-- `region`: The region in which your lakeFS server is configured at.
+* `key`: lakeFS access key id
+* `secret`: lakeFS secret access key
+* `region`: The region in which your lakeFS server is configured at.
 
 ### `formats/delta_client.get_table(repository_id, reference_id, prefix)`
 
 Returns a representation of a Delta Lake table under the given repository, reference, and prefix.
-The format of the response is two tables: 
-1. the first is a table of the format `{number, {string}}` where `number` is a version in the Delta Log, and the mapped `{string}` 
+The format of the response is two tables:
+
+1. the first is a table of the format `{number, {string}}` where `number` is a version in the Delta Log, and the mapped `{string}`
 array contains JSON strings of the different Delta Lake log operations listed in the mapped version entry. e.g.:
 
 ```lua
@@ -447,15 +447,16 @@ array contains JSON strings of the different Delta Lake log operations listed in
   }
 }
 ```
+
 2. the second is a table of the metadata of the current table snapshot. The metadata table can be used to initialize the Delta Lake table in an external Catalog.  
 It consists of the following fields:
-    - `id`: The table's ID
-    - `name`: The table's name
-    - `description`: The table's description
-    - `schema_string`: The table's schema string
-    - `partition_columns`: The table's partition columns
-    - `configuration`: The table's configuration
-    - `created_time`: The table's creation time
+    * `id`: The table's ID
+    * `name`: The table's name
+    * `description`: The table's description
+    * `schema_string`: The table's schema string
+    * `partition_columns`: The table's partition columns
+    * `configuration`: The table's configuration
+    * `created_time`: The table's creation time
 
 ### `gcloud`
 
@@ -540,10 +541,10 @@ Returns 2 values:
 
 Parameters:
 
-- `repository_id`: The repository ID
-- `ref_id`: The reference to stat from (branch, tag, commit ID)
-- `path`: Path to the object to stat
-- `user_metadata`: (Optional) Boolean flag to include user metadata in response
+* `repository_id`: The repository ID
+* `ref_id`: The reference to stat from (branch, tag, commit ID)
+* `path`: Path to the object to stat
+* `user_metadata`: (Optional) Boolean flag to include user metadata in response
 
 ### `lakefs/update_object_user_metadata(repository_id, branch_id, path, metadata)`
 
@@ -551,10 +552,10 @@ Update user metadata for an object.
 
 Parameters:
 
-- `repository_id`: The repository ID
-- `branch_id`: The branch containing the object
-- `path`: Path to the object to update
-- `metadata`: A table containing key-value pairs to set as user metadata
+* `repository_id`: The repository ID
+* `branch_id`: The branch containing the object
+* `path`: Path to the object to update
+* `metadata`: A table containing key-value pairs to set as user metadata
 
 Returns 2 values:
 
@@ -567,8 +568,8 @@ Generate glue table name.
 
 Parameters:
 
-- `descriptor(Table)`: Object from (e.g. _lakefs_tables/my_table.yaml).
-- `action_info(Table)`: The global action object.
+* `descriptor(Table)`: Object from (e.g. _lakefs_tables/my_table.yaml).
+* `action_info(Table)`: The global action object.
 
 ### `lakefs/catalogexport/delta_exporter`
 
@@ -578,17 +579,17 @@ A package used to export Delta Lake tables from lakeFS to an external cloud stor
 
 The function used to export Delta Lake tables.
 The return value is a table with mapping of table names to external table location (from which it is possible to query the data) and latest Delta table version's metadata.  
-The response is of the form: 
+The response is of the form:
 `{<table_name> = {path = "s3://mybucket/mypath/mytable", metadata = {id = "table_id", name = "table_name", ...}}}`.
 
 Parameters:
 
-- `action`: The global action object
-- `table_def_names`: Delta tables name list (e.g. `{"table1", "table2"}`)
-- `write_object`: A writer function with `function(bucket, key, data)` signature, used to write the exported Delta Log (e.g. `aws/s3_client.put_object` or `azure/blob_client.put_object`)
-- `delta_client`: A Delta Lake client that implements `get_table: function(repo, ref, prefix)`
-- `table_descriptors_path`: The path under which the table descriptors of the provided `table_def_names` reside
-- `path_transformer`: (Optional) A function(path) used for transforming the path of the saved delta logs path fields as well as the saved table physical path (used to support Azure Unity catalog use cases)
+* `action`: The global action object
+* `table_def_names`: Delta tables name list (e.g. `{"table1", "table2"}`)
+* `write_object`: A writer function with `function(bucket, key, data)` signature, used to write the exported Delta Log (e.g. `aws/s3_client.put_object` or `azure/blob_client.put_object`)
+* `delta_client`: A Delta Lake client that implements `get_table: function(repo, ref, prefix)`
+* `table_descriptors_path`: The path under which the table descriptors of the provided `table_def_names` reside
+* `path_transformer`: (Optional) A function(path) used for transforming the path of the saved delta logs path fields as well as the saved table physical path (used to support Azure Unity catalog use cases)
 
 !!! example "Delta export example for AWS S3"
 
@@ -693,16 +694,15 @@ Parameters:
 
 ### `lakefs/catalogexport/delta_exporter.changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)`
 
-Utility function to filter list of table defs based on those that have changed. Returns the subset of the tables in the table_def_names parameter that have changed. 
+Utility function to filter list of table defs based on those that have changed. Returns the subset of the tables in the table_def_names parameter that have changed.
 
 Parameters:
 
-- `table_def_names(table of strings)`: List of table names to filter based on the diff
-- `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_def_names` reside
-- `repository_id(string)`: The repository ID
-- `ref(string)`: base reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
-- `compare_ref(string)`: compared-to reference for the diff to determine which tables changed
-
+* `table_def_names(table of strings)`: List of table names to filter based on the diff
+* `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_def_names` reside
+* `repository_id(string)`: The repository ID
+* `ref(string)`: base reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
+* `compare_ref(string)`: compared-to reference for the diff to determine which tables changed
 
 !!! example
     ```lua
@@ -721,7 +721,7 @@ Utility package to parse `_lakefs_tables/` descriptors.
 
 ### `lakefs/catalogexport/table_extractor.list_table_descriptor_entries(client, repo_id, commit_id)`
 
-List all YAML files under `_lakefs_tables/*` and return a list of type `[{physical_address, path}]`, ignores hidden files. 
+List all YAML files under `_lakefs_tables/*` and return a list of type `[{physical_address, path}]`, ignores hidden files.
 The `client` is `lakefs` client.
 
 ### `lakefs/catalogexport/table_extractor.get_table_descriptor(client, repo_id, ref, logical_path)`
@@ -729,10 +729,10 @@ The `client` is `lakefs` client.
 Read a table descriptor and parse YAML object. Will set `partition_columns` to `{}` if no partitions are defined.
 
 Parameters:
-- `client`: `lakefs` client
-- `repo_id(string)`: The repository ID
-- `ref(string)`: reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
-- `logical_path(string)`: logical path of the table descriptor file within the repo
+* `client`: `lakefs` client
+* `repo_id(string)`: The repository ID
+* `ref(string)`: reference pointing at a specific version of the data i.e. a branch, commit ID, or tag
+* `logical_path(string)`: logical path of the table descriptor file within the repo
 
 ### `lakefs/catalogexport/hive.extract_partition_pager(client, repo_id, commit_id, base_path, partition_cols, page_size)`
 
@@ -776,14 +776,13 @@ Export Symlink files that represent a table to S3 location.
 
 Parameters:
 
-- `s3_client`: Configured client.
-- `table_src_path(string)`: Path to the table spec YAML file in `_lakefs_tables` (e.g. _lakefs_tables/my_table.yaml).
-- `action_info(table)`: The global action object.
-- `options(table)`:
-    - `debug(boolean)`: Print extra info.
-    - `export_base_uri(string)`: Override the prefix in S3 e.g. `s3://other-bucket/path/`.
-    - `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
-
+* `s3_client`: Configured client.
+* `table_src_path(string)`: Path to the table spec YAML file in `_lakefs_tables` (e.g. _lakefs_tables/my_table.yaml).
+* `action_info(table)`: The global action object.
+* `options(table)`:
+  * `debug(boolean)`: Print extra info.
+  * `export_base_uri(string)`: Override the prefix in S3 e.g. `s3://other-bucket/path/`.
+  * `writer(function(bucket, key, data))`: If passed then will not use s3 client, helpful for debug.
 
 !!! example
     ```lua
@@ -800,32 +799,32 @@ A Package for automating the export process from lakeFS stored tables into Glue 
 
 ### `lakefs/catalogexport/glue_exporter.export_glue(glue, db, table_src_path, create_table_input, action_info, options)`
 
-Represent lakeFS table in Glue Catalog. 
-This function will create a table in Glue based on configuration. 
+Represent lakeFS table in Glue Catalog.
+This function will create a table in Glue based on configuration.
 It assumes that there is a symlink location that is already created and only configures it by default for the same commit.
 
 Parameters:
 
-- `glue`: AWS glue client
-- `db(string)`: glue database name
-- `table_src_path(string)`: path to table spec (e.g. _lakefs_tables/my_table.yaml)
-- `create_table_input(table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
-should contain inputs describing the data format (e.g. InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this. 
+* `glue`: AWS glue client
+* `db(string)`: glue database name
+* `table_src_path(string)`: path to table spec (e.g. _lakefs_tables/my_table.yaml)
+* `create_table_input(table)`: Input equal mapping to [table_input](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html#API_CreateTable_RequestSyntax) in AWS, the same as we use for `glue.create_table`.
+should contain inputs describing the data format (e.g. InputFormat, OutputFormat, SerdeInfo) since the exporter is agnostic to this.
 by default this function will configure table location and schema.
-- `action_info(table)`: the global action object.
-- `options(table)`:
-    - `table_name(string)`: Override default glue table name
-    - `debug(boolean`
-    - `export_base_uri(string)`: Override the default prefix in S3 for symlink location e.g. s3://other-bucket/path/
-    - `create_db_input(table)`: if this is specified, then it indicates we want to create a new database for the table export. The parameter expects a table that is converted to JSON and passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
+* `action_info(table)`: the global action object.
+* `options(table)`:
+  * `table_name(string)`: Override default glue table name
+  * `debug(boolean`
+  * `export_base_uri(string)`: Override the default prefix in S3 for symlink location e.g. s3://other-bucket/path/
+  * `create_db_input(table)`: if this is specified, then it indicates we want to create a new database for the table export. The parameter expects a table that is converted to JSON and passed "as is" to AWS and is parallel to the AWS SDK [CreateDatabaseInput](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateDatabase.html#API_CreateDatabase_RequestSyntax)
 
 When creating a glue table, the final table input will consist of the `create_table_input` input parameter and lakeFS computed defaults that will override it:
 
-- `Name` Gable table name `get_full_table_name(descriptor, action_info)`.
-- `PartitionKeys` Partition columns usually deduced from `_lakefs_tables/${table_src_path}`.
-- `TableType` = "EXTERNAL_TABLE"
-- `StorageDescriptor`: Columns usually deduced from `_lakefs_tables/${table_src_path}`.
-- `StorageDescriptor.Location` = symlink_location
+* `Name` Gable table name `get_full_table_name(descriptor, action_info)`.
+* `PartitionKeys` Partition columns usually deduced from `_lakefs_tables/${table_src_path}`.
+* `TableType` = "EXTERNAL_TABLE"
+* `StorageDescriptor`: Columns usually deduced from `_lakefs_tables/${table_src_path}`.
+* `StorageDescriptor.Location` = symlink_location
 
 !!! example
     ```lua
@@ -834,12 +833,12 @@ When creating a glue table, the final table input will consist of the `create_ta
     local glue = aws.glue_client(args.aws_access_key_id, args.aws_secret_access_key, args.aws_region)
     -- table_input can be passed as a simple Key-Value object in YAML as an argument from an action, this is inline example:
     local table_input = {
-    StorageDescriptor: 
+    StorageDescriptor:
         InputFormat: "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
         OutputFormat: "org.apache.hadoop.hive.ql.io.IgnoreKeyTextOutputFormat"
         SerdeInfo:
         SerializationLibrary: "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"
-    Parameters: 
+    Parameters:
         classification: "parquet"
         EXTERNAL: "TRUE"
         "parquet.compression": "SNAPPY"
@@ -853,8 +852,8 @@ Generate glue table name.
 
 Parameters:
 
-- `descriptor(Table)`: Object from (e.g. _lakefs_tables/my_table.yaml).
-- `action_info(Table)`: The global action object.
+* `descriptor(Table)`: Object from (e.g. _lakefs_tables/my_table.yaml).
+* `action_info(Table)`: The global action object.
 
 ### `lakefs/catalogexport/unity_exporter`
 
@@ -873,11 +872,11 @@ used to convert the paths scheme to `abfss`. The built-in `azure` Lua library pr
 
 Parameters:
 
-- `action(table)`: The global action table
-- `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_paths` reside.
-- `delta_table_details(table)`: Table names to physical paths mapping and table metadata (e.g. `{table1 = {path = "s3://mybucket/mytable1", metadata = {id = "table_1_id", name = "table1", ...}}, table2 = {path = "s3://mybucket/mytable2", metadata = {id = "table_2_id", name = "table2", ...}}}`.)
-- `databricks_client(table)`: A Databricks client that implements `create_or_get_schema: function(id, catalog_name)` and `register_external_table: function(table_name, physical_path, warehouse_id, catalog_name, schema_name)`
-- `warehouse_id(string)`: Databricks warehouse ID.
+* `action(table)`: The global action table
+* `table_descriptors_path(string)`: The path under which the table descriptors of the provided `table_paths` reside.
+* `delta_table_details(table)`: Table names to physical paths mapping and table metadata (e.g. `{table1 = {path = "s3://mybucket/mytable1", metadata = {id = "table_1_id", name = "table1", ...}}, table2 = {path = "s3://mybucket/mytable2", metadata = {id = "table_2_id", name = "table2", ...}}}`.)
+* `databricks_client(table)`: A Databricks client that implements `create_or_get_schema: function(id, catalog_name)` and `register_external_table: function(table_name, physical_path, warehouse_id, catalog_name, schema_name)`
+* `warehouse_id(string)`: Databricks warehouse ID.
 
 !!! example
     The following registers an exported Delta Lake table to Unity Catalog.
@@ -913,7 +912,7 @@ Parameters:
     ```
 
 For detailed step-by-step guide on how to use `unity_exporter.register_tables` as a part of a lakeFS action refer to
-the [Unity Catalog docs](/integrations/unity-catalog/).
+the [Unity Catalog docs](../../integrations/unity-catalog.md).
 
 ### `path/parse(path_string)`
 
@@ -926,7 +925,7 @@ Returns a table for the given path string with the following structure:
     {
         ["parent"] = "a/b/"
         ["base_name"] = "c.csv"
-    } 
+    }
     ```
 
 ### `path/join(*path_parts)`
@@ -1087,11 +1086,10 @@ Provides a `parse` function parse a URL string into parts, returns a table with 
     }
     ```
 
-
 ### `net/http` (optional)
 
 Provides a `request` function that performs an HTTP request.
-For security reasons, this package is not available by default as it enables http requests to be sent out from the lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration](/reference/configuration/).
+For security reasons, this package is not available by default as it enables http requests to be sent out from the lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration](../../reference/configuration.md).
 Request will time out after 30 seconds.
 
 !!! example
@@ -1107,22 +1105,21 @@ Request will time out after 30 seconds.
 
 Returns a code (number), body (string), headers (table) and status (string).
 
- - code - status code number
- - body - string with the response body
- - headers - table with the response request headers (key/value or table of values)
- - status - status code text
+* code - status code number
+* body - string with the response body
+* headers - table with the response request headers (key/value or table of values)
+* status - status code text
 
 The first form of the call will perform GET requests or POST requests if the body parameter is passed.
 
 The second form accepts a table and allows you to customize the request method and headers.
-
 
 Example of a GET request
 
 !!! example
     ```lua
     local http = require("net/http")
-    local code, body = http.request("https://example.com")
+    local code, body = http.request("<https://example.com>")
     if code == 200 then
         print(body)
     else

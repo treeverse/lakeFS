@@ -49,7 +49,7 @@ Check out the [Python documentation](python.md) and the full [API reference](../
 ### Non-function-based ContainerOps
 
 To implement a non-function based ContainerOp, you should use the [`treeverse/lakectl`](https://hub.docker.com/r/treeverse/lakectl) docker image.
-With this image, you can run [lakectl](/reference/cli/) commands to execute the desired lakeFS operation.
+With this image, you can run [lakectl](../reference/cli.md) commands to execute the desired lakeFS operation.
 
 For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configurations as environment variables named:
 
@@ -79,7 +79,7 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
         arguments=['merge', 'lakefs://example-repo/example-branch', 'lakefs://example-repo/main']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
     ```
 
-You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](/reference/cli/) for the list of supported operations.
+You can invoke any lakeFS operation supported by `lakectl` by implementing it as a ContainerOp. Check out the complete [CLI reference](../reference/cli.md) for the list of supported operations.
 
 
 !!! note

@@ -30,7 +30,7 @@ Using the lakeFS UI or CLI, you can set the current state, or HEAD, of a branch 
 
 To demonstrate how this works, let's take the example of a lakeFS repo with the following commit history:
 
-![Commit History](/assets/img/rollback-commit-history.png)
+![Commit History](../../assets/img/rollback-commit-history.png)
 
 As can be inferred from the history, this repo is updated every minute with a data sync from some data source. An example data sync is a typical ETL job that replicates data from an internal database or any other data source. After each sync, a commit is taken in lakeFS to save a snapshot of data at that point in time.
 
@@ -38,11 +38,11 @@ As can be inferred from the history, this repo is updated every minute with a da
 
 Say a situation occurs where one of the syncs had bad data and is causing downstream dashboards to fail to load. Since we took a commit of the repo right after the sync ran, we can use a `revert` operation to undo the changes introduced in that sync.
 
-![Copy Commit ID](/assets/img/rollback-copy-id.png)
+![Copy Commit ID](../../assets/img/rollback-copy-id.png)
 
 Step 1: Copy the `commit_id` associated with the commit we want to revert. As the screenshot above shows, you can use the _Copy ID to Clipboard_ button to do this.
 
-Step 2: Run the revert command using [lakectl](/reference/cli/), the lakeFS CLI. In this example, the command will be as follows:
+Step 2: Run the revert command using [lakectl](../../reference/cli.md), the lakeFS CLI. In this example, the command will be as follows:
 
 ```bash
 lakectl branch revert "lakefs://example/main" 9666d7c9daf37b3ba6964e733d08596ace2ec2c7bc3a4023ad8e80737a6c3e9d
@@ -50,7 +50,7 @@ lakectl branch revert "lakefs://example/main" 9666d7c9daf37b3ba6964e733d08596ace
 
 This will undo the changes introduced by this commit, completing the rollback! 
 
-![Rollback Commit](/assets/img/rollback-revert-commit.png)
+![Rollback Commit](../../assets/img/rollback-revert-commit.png)
 
 The rollback operation is that simple, even if many changes were introduced in a commit, spanning acrossmultiple data collections.
 

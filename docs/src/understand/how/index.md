@@ -5,7 +5,7 @@ description: This section includes all the details about the lakeFS open source 
 
 # How lakeFS Works
 
-The [Architecture](/understand/architecture/) page includes a logical overview of lakeFS and its components. 
+The [Architecture](../architecture.md) page includes a logical overview of lakeFS and its components. 
 
 For deep-dive content about lakeFS see: 
 

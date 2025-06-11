@@ -7,9 +7,8 @@ status: enterprise
 # Multi-Storage Backend
 
 !!! info
-    Multi-storage backend support is only available to licensed [lakeFS Enterprise](/enterprise/index/) customers.
+    Multi-storage backend support is only available to licensed [lakeFS Enterprise](../enterprise/index.md) customers.
     [Contact us](https://info.lakefs.io/thanks-msb) to get started!
-
 
 ## What is Multi-storage Backend Support?
 
@@ -49,11 +48,10 @@ The `blockstores.stores` field is an array of storage backends, each with its ow
 For a complete list of available options, refer to the [server configuration reference](../reference/configuration.md#blockstores).
 
 !!! note
-    If you're upgrading from a single-store lakeFS setup, refer to the [upgrade guidelines](#upgrading-from-single-to-multi-store)
+    If you're upgrading from a single-store lakeFS setup, refer to the [upgrade guidelines](#upgrading-from-a-single-storage-backend-to-multiple-storage-backends)
     to ensure a smooth transition.
 
 ### Example Configurations
-
 
 === "On-Prem"
     This example setup configures lakeFS to manage data across two separate MinIO instances:
@@ -106,7 +104,6 @@ For a complete list of available options, refer to the [server configuration ref
             storage_access_key: "EXAMPLE45551FSAsVVCXCF"
     ```
 
-
 === "Hybrid"
     This hybrid setup allows lakeFS to manage data across both cloud and on-prem storages.
 
@@ -153,10 +150,10 @@ When upgrading from a single storage backend to a multi-storage setup, follow th
 * Define all previously available [single-blockstore settings](../reference/configuration.md#blockstore) under their respective storage backends.
 * The `signing.secret_key` is a required setting global to all connected stores.
 * Set `backward_compatible: true` for the existing storage backend to ensure:
-    * Existing repositories continue to use the original storage backend.
-    * Newly created repositories default to this backend unless explicitly assigned a different one, to ensure a non-breaking upgrade process.
-    * **This setting is mandatory** — lakeFS will not function if it is unset.  
-    * **Do not remove this setting** as long as you need to support repositories created before the upgrade.
+  * Existing repositories continue to use the original storage backend.
+  * Newly created repositories default to this backend unless explicitly assigned a different one, to ensure a non-breaking upgrade process.
+  * **This setting is mandatory** — lakeFS will not function if it is unset.  
+  * **Do not remove this setting** as long as you need to support repositories created before the upgrade.
     If removed, lakeFS will fail to start because it will treat existing repositories as disconnected from any configured storage.
 
 ### Adding or Removing a Storage Backend
@@ -174,7 +171,7 @@ To remove a storage backend:
 
 ### Listing Connected Storage Backends
 
-The [Get Config](/reference/api/#/config/getConfig) API endpoint returns a list of storage
+The [Get Config](../reference/api.md#/config/getConfig) API endpoint returns a list of storage
 configurations. In multi-storage setups, this is the recommended method to list connected storage backends and view their details.
 
 ### Troubleshooting
@@ -225,6 +222,7 @@ Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup a
     # Or dump and delete all repositories
     python lakefs-refs.py dump --all --rm
     ```
+
 2. **Delete Source Repositories** (if not using --rm flag)
 
     If you didn't use the `--rm` flag in step 1, you'll need to delete the repositories manually. Note that deleting a repository only removes the repository record from lakeFS - it does not delete the actual data files or metadata from your storage.
@@ -335,7 +333,7 @@ In a multi-storage setup, users must specify a storage ID when creating a reposi
     Use the `storage_id` parameter in the [Create Repository endpoint](../reference/api.md#/repositories/createRepository).
 
 === "High-Level Python SDK"
-    Starting from version 0.9.0 of the [High-level Python SDK](/integrations/python/#using-the-lakefs-sdk),
+    Starting from version 0.9.0 of the [High-level Python SDK](../integrations/python.md#using-the-lakefs-sdk),
     you can use `kwargs` to pass `storage_id` dynamically when calling the [create repository method](https://pydocs-lakefs.lakefs.io/lakefs.repository.html#lakefs.repository.Repository.create):
 
     ```python
@@ -345,7 +343,7 @@ In a multi-storage setup, users must specify a storage ID when creating a reposi
     ```
 
 !!! warning "Important Notes"
-    * In multi-storage setups where a storage backend is marked as `backward_compatible: true`, repository creation requests
+    *In multi-storage setups where a storage backend is marked as `backward_compatible: true`, repository creation requests
     without a storage ID will default to this storage.
     * If no storage backend is marked as `backward_compatible`, repository creation requests without a storage ID will fail.
     * Each repository is linked to a single backend and stores data within a single storage namespace on that backend.
@@ -360,7 +358,6 @@ To check which storage backend is associated with a repository:
 
 === "API"
     Use the [List Repositories](../reference/api.md#/repositories/listRepositories) endpoint. Its response includes the storage ID.
-
 
 ### Importing Data into a Repository
 

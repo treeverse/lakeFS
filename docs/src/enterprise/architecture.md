@@ -27,7 +27,7 @@ it is separated by ports for security reasons.
 1. SSO auth (i.e Browser login via Azure AD, Okta, Auth0), default port 8000.
 1. RBAC authorization, default port 9000.
 
-[5] The [KV Store](/understand/architecture/) - Where metadata is stored used both by lakeFS and fluffy.
+[5] The [KV Store](../understand/architecture.md) - Where metadata is stored used both by lakeFS and fluffy.
 
 [6] SSO IdP - Identity provider (e.g. Azure AD, Okta, JumpCloud). fluffy
 implements SAML and Oauth2 protocols.

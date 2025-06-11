@@ -12,7 +12,7 @@ lakeFS Enterprise is a commercially-supported version of lakeFS, offering additi
 ## Why did we build lakeFS Enterprise?
 
 lakeFS Enterprise was built for organizations that require the support, security standards and features required of a production-grade system and
-are not using public clouds, hence they cannot use [lakeFS Cloud](/cloud/index/).
+are not using public clouds, hence they cannot use [lakeFS Cloud](../cloud/index.md).
 
 ## What is the value of using lakeFS Enterprise?
 
@@ -23,18 +23,18 @@ are not using public clouds, hence they cannot use [lakeFS Cloud](/cloud/index/)
 
 With lakeFS Enterprise you’ll receive access to the security package containing the following features:
 
-1. A rich [Role-Based Access Control](/security/rbac/) permission system that allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
+1. A rich [Role-Based Access Control](../security/rbac.md) permission system that allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
 2. To easily manage users and groups, lakeFS Enterprise provides SSO integration (including support for SAML, OIDC, ADFS, Okta, and Azure AD), supporting existing credentials from a trusted provider, eliminating separate logins.
-3. lakeFS Enterprise supports [SCIM](/howto/scim/) for automatically provisioning and deprovisioning users and group memberships to allow organizations to maintain a single source of truth for their user database.
-4. [STS Auth](/security/sts-login/) offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
-5. [Authentication with AWS IAM Roles](/security/external-principals-aws/) allows authentication using AWS IAM roles instead of lakeFS credentials, removing the need to maintain static credentials for lakeFS Enterprise users running on AWS.
-6. [Auditing](/reference/auditing/) provides a detailed action log of events happening within lakeFS, including who performed which action, on which resource - and when.
+3. lakeFS Enterprise supports [SCIM](../howto/scim.md) for automatically provisioning and deprovisioning users and group memberships to allow organizations to maintain a single source of truth for their user database.
+4. [STS Auth](../security/sts-login.md) offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
+5. [Authentication with AWS IAM Roles](../security/external-principals-aws.md) allows authentication using AWS IAM roles instead of lakeFS credentials, removing the need to maintain static credentials for lakeFS Enterprise users running on AWS.
+6. [Auditing](../reference/auditing.md) provides a detailed action log of events happening within lakeFS, including who performed which action, on which resource - and when.
 
 ## What additional functionality does lakeFS Enterprise provide?
 
-1. [lakeFS Mount](/reference/mount/) - allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
-2. [Transactional Mirroring](/howto/mirroring/) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
-3. [Multiple Storage Backends](/howto/multiple-storage-backends/) - allows managing data stored across multiple storage locations: on-prem, hybrid, or multi-cloud.        
+1. [lakeFS Mount](../reference/mount.md) - allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
+2. [Transactional Mirroring](../howto/mirroring.md) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
+3. [Multiple Storage Backends](../howto/multiple-storage-backends.md) - allows managing data stored across multiple storage locations: on-prem, hybrid, or multi-cloud.        
 
 
 | Feature                                   | OSS       | Enterprise     |
@@ -59,4 +59,4 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 
 
 !!! tip
-    You can learn more about the [lakeFS Enterprise architecture](/enterprise/architecture/), or follow the examples in the [Quickstart guide](/enterprise/getstarted/quickstart/).
+    You can learn more about the [lakeFS Enterprise architecture](../enterprise/architecture.md), or follow the examples in the [Quickstart guide](../enterprise/getstarted/quickstart.md).

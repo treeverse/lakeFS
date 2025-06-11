@@ -29,5 +29,5 @@ To migrate from lakeFS Open Source to lakeFS Enterprise, follow the steps below:
     Please note that the newly set up lakeFS instance remains inaccessible to users until full setup completion, due to the absence of established credentials within the system.
 
 
-[lakefs-enterprise-install]: /enterprise/getstarted/install/
-[lakefs-enterprise-install-prerequisites]: /enterprise/getstarted/install/#prerequisites
+[lakefs-enterprise-install]: install.md
+[lakefs-enterprise-install-prerequisites]: install.md#prerequisites

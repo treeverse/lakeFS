@@ -1,7 +1,7 @@
 ---
 title: On-Premises
 description: How to deploy and set up a production-suitable lakeFS environment on-premises (or on other cloud providers)
-next:  ["Import data into your installation", "/howto/import.html"]
+next:  ["Import data into your installation", "../import.md"]
 ---
 
 # On-Premises Deployment
@@ -9,7 +9,6 @@ next:  ["Import data into your installation", "/howto/import.html"]
 !!! tip
     The instructions given here are for a self-managed deployment of lakeFS.<br/>
     For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
-
 
 !!! info "⏰ Expected deployment time: 25 min"
 
@@ -95,7 +94,6 @@ This section assumes that you already have a PostgreSQL >= 11.0 database accessi
 
     See the [reference][config-envariables] for a complete list of environment variables.
 
-
 === "Kubernetes"
     You can install lakeFS on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 
@@ -163,15 +161,14 @@ tls:
   key_file: server.key    # provide path to your server private key
 ```
 
-
 ## Local Blockstore
 
-You can configure a block adapter to a POSIX compatible storage location shared by all lakeFS instances. 
+You can configure a block adapter to a POSIX compatible storage location shared by all lakeFS instances.
 Using the shared storage location, both data and metadata will be stored there.
 
 Using the local blockstore import and allowing lakeFS access to a specific prefix, it is possible to import files from a shared location.
 Import is not enabled by default, as it doesn't assume the local path is shared and there is a security concern about accessing a path outside the specified in the blockstore configuration.
-Enabling is done by `blockstore.local.import_enabled` and `blockstore.local.allowed_external_prefixes` as described in the [configuration reference](/reference/configuration/).
+Enabling is done by `blockstore.local.import_enabled` and `blockstore.local.allowed_external_prefixes` as described in the [configuration reference](../../reference/configuration.md).
 
 ### Sample configuration using local blockstore
 
@@ -210,12 +207,12 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
 1. On first use, you'll be redirected to the setup page:
-   
-   <img src="/assets/img/setup.png" alt="Create user">
-   
+
+   <img src="../../assets/img/setup.png" alt="Create user">
+
 1. Follow the steps to create an initial administrator user. Save the credentials you’ve received somewhere safe, you won’t be able to see them again!
-   
-   <img src="/assets/img/setup_done.png" alt="Setup Done">
+
+   <img src="../../assets/img/setup_done.png" alt="Setup Done">
 
 1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
@@ -223,24 +220,14 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Use the credentials from the previous step to log in
 1. Click *Create Repository* and choose *Blank Repository*.
-   
-   <img src="/assets/img/create-repo-no-sn.png" alt="Create Repo"/>
-   
+
+   <img src="../../assets/img/create-repo-no-sn.png" alt="Create Repo"/>
+
 1. Under Storage Namespace, enter a path to your desired location on the object store. This is where data written to this repository will be stored.
 1. Click *Create Repository*
 1. You should now have a configured repository, ready to use!
 
-   <img src="/assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
-
-
+   <img src="../../assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
 
 !!! success "Congratulations"
     Your environment is now ready 🤩
-
-[config-envariables]:  /reference/configuration/#using-environment-variables
-[downloads]:  /index/#downloads
-[openapi]:  /understand/architecture/#openapi-server
-[s3-gateway]:  /understand/architecture/#s3-gateway
-[understand-repository]:  /understand/model/#repository
-[integration-hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
-[understand-commits]:  /understand/how/versioning-internals/#constructing-a-consistent-view-of-the-keyspace-ie-a-commit

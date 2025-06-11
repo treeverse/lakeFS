@@ -49,11 +49,11 @@ The lakeFS Cloud SCIM server requires the minimum set of user attributes require
 
 To enable SCIM support in lakeFS Cloud, you need to log into the cloud admin. In the cloud admin, SCIM settings are under **Access > Settings**. SCIM is not enabled by default, so to enable SCIM for the organization, click the **Setup Provisioning** Button.
 
-![lakeFS Cloud SCIM Settings](/assets/img/scim/lakefs_cloud_scim_settings.png)
+![lakeFS Cloud SCIM Settings](../assets/img/scim/lakefs_cloud_scim_settings.png)
 
 Clicking the button will enable SCIM for the organization and provide the details you'll need to set up your IdP to work with lakeFS Cloud SCIM.
 
-![lakeFS Cloud SCIM Configuration](/assets/img/scim/lakefs_cloud_scim_configuration.png)
+![lakeFS Cloud SCIM Configuration](../assets/img/scim/lakefs_cloud_scim_configuration.png)
 
 To set up your IdP, you'll need the lakeFS Cloud SCIM provisioning endpoint and you'll also need to generate an integration token. When creating a new integration token, you can optionally provide a description for future reference.
 

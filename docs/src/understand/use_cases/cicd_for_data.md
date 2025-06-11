@@ -65,7 +65,7 @@ The tutorial provides a lakeFS environment, python flask server, a Jupyter noteb
 
 To understand how hooks work and how to configure hooks in your production system, refer to the documentation: [Hooks][data-quality-gates]. 
 
-![lakeFS hooks - Promotion workflow](/assets/img/promotion_workflow.png)
+![lakeFS hooks - Promotion workflow](../../assets/img/promotion_workflow.png)
 
 Follow the steps below to try out CI/CD for data lakes.
 
@@ -100,4 +100,4 @@ To explore different checks and validations on your data, refer to [pre-built ho
 To understand the comprehensive list of hooks supported by lakeFS, refer to the [documentation](https://github.com/treeverse/lakeFS-hooks).
 
 
-[data-quality-gates]:  /howto/hooks/
+[data-quality-gates]:  ../../howto/hooks/index.md

@@ -1,7 +1,7 @@
 ---
 title: AWS
 description: How to deploy and set up a production-suitable lakeFS environment on AWS
-next:  ["Import data into your installation", "/howto/import.html"]
+next:  ["Import data into your installation", "../import/index.md"]
 ---
 
 # Deploy lakeFS on AWS
@@ -10,11 +10,11 @@ next:  ["Import data into your installation", "/howto/import.html"]
     The instructions given here are for a self-managed deployment of lakeFS on AWS. <br/>
     For a hosted lakeFS service with guaranteed SLAs, try [lakeFS Cloud](https://lakefs.cloud)
 
-When you deploy lakeFS on AWS these are the options available to use: 
+When you deploy lakeFS on AWS these are the options available to use:
 
-![](/assets/img/deploy/deploy-on-aws.excalidraw.png)
+![](../../assets/img/deploy/deploy-on-aws.excalidraw.png)
 
-This guide walks you through the options available and how to configure them, finishing with configuring and running lakeFS itself and creating your first repository. 
+This guide walks you through the options available and how to configure them, finishing with configuring and running lakeFS itself and creating your first repository.
 
 !!! info "⏰ Expected deployment time: 25 min"
 
@@ -60,8 +60,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
 
 !!! tip
     You can also use lakeFS with PostgreSQL instead of DynamoDB!<br/>
-    See the [configuration reference](/reference/configuration/) for more information.
-
+    See the [configuration reference](../../reference/configuration.md) for more information.
 
 ## Run the lakeFS server
 
@@ -115,7 +114,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
         ```
     1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration).
         !!! note
-            The `lakefsConfig` parameter is the lakeFS configuration documented [here](/reference/configuration/) but without sensitive information.
+            The `lakefsConfig` parameter is the lakeFS configuration documented [here](../../reference/configuration.md) but without sensitive information.
             Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
     1. In the directory where you created `conf-values.yaml`, run the following commands:
         ```bash
@@ -131,7 +130,6 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
             Make sure the Kubernetes nodes have access to all buckets/containers with which you intend to use with lakeFS.
             If you can't provide such access, configure lakeFS with an AWS key-pair.
 
-
 ### Load balancing
 
 To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
@@ -145,14 +143,13 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
     
     Checkout the Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
 
-
 ## Prepare your S3 bucket
 
 1. Take note of the bucket name you want to use with lakeFS
 2. Use the following as your bucket policy, filling in the placeholders:
 
 === "Standard Permissions"
-    ```json 
+    ```json
     {
         "Id": "lakeFSPolicy",
         "Version": "2012-10-17",
@@ -187,7 +184,7 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
         ]
     }
     ```
-    
+
     * Replace `[BUCKET_NAME]`, `[ACCOUNT_ID]` and `[IAM_ROLE]` with values relevant to your environment.
     * `[BUCKET_NAME_AND_PREFIX]` can be the bucket name. If you want to minimize the bucket policy permissions, use the bucket name together with a prefix (e.g. `example-bucket/a/b/c`).
     This way, lakeFS will be able to create repositories only under this specific path (see: [Storage Namespace][understand-repository]).
@@ -259,7 +256,7 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
     * Upload objects using the lakeFS GUI (**Works with presign mode**)
     * Upload objects through Spark using the S3 gateway
     * Run `lakectl fs` commands (unless using **presign mode** with `--pre-sign` flag)
-    * Use [Actions and Hooks](/howto/hooks/)
+    * Use [Actions and Hooks](../hooks/index.md)
 
     ```json
     {
@@ -354,12 +351,12 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
 1. On first use, you'll be redirected to the setup page:
-   
-   <img src="/assets/img/setup.png" alt="Create user">
-   
+
+   <img src="../../assets/img/setup.png" alt="Create user">
+
 1. Follow the steps to create an initial administrator user. Save the credentials you’ve received somewhere safe, you won’t be able to see them again!
-   
-   <img src="/assets/img/setup_done.png" alt="Setup Done">
+
+   <img src="../../assets/img/setup_done.png" alt="Setup Done">
 
 1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
@@ -367,25 +364,17 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Use the credentials from the previous step to log in
 1. Click *Create Repository* and choose *Blank Repository*.
-   
-   <img src="/assets/img/create-repo-no-sn.png" alt="Create Repo"/>
-   
+
+   <img src="../../assets/img/create-repo-no-sn.png" alt="Create Repo"/>
+
 1. Under Storage Namespace, enter a path to your desired location on the object store. This is where data written to this repository will be stored.
 1. Click *Create Repository*
 1. You should now have a configured repository, ready to use!
 
-   <img src="/assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
-
-
+   <img src="../../assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
 
 !!! success "Congratulations"
     Your environment is now ready 🤩
 
-
-[downloads]:  /index/#downloads
-[openapi]:  /understand/architecture/#openapi-server
-[s3-gateway]:  /understand/architecture/#s3-gateway
-[understand-repository]:  /understand/model/#repository
-[integration-hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
-[understand-commits]:  /understand/how/versioning-internals/#constructing-a-consistent-view-of-the-keyspace-ie-a-commit
-[presigned-url]:  /security/presigned-url/#
+[integration-hadoopfs]:  ../../integrations/spark.md#lakefs-hadoop-filesystem
+[presigned-url]:  ../../security/presigned-url.md
