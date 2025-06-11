@@ -7,12 +7,9 @@ on:
       - ".github/workflows/docs-*.yaml"
   commit:
 
-permissions:
-  contents: read
-
 jobs:
   docs-latest:
-    name: Deploy Documentation
+    name: Deploy Documentation Latest
     runs-on: ubuntu-latest
     steps:
       - name: Check-out
@@ -29,9 +26,24 @@ jobs:
         working-directory: docs
         run: pip install -r requirements-docs.txt
 
-      - name: Deploy documentation
-        uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.PERSONAL_TOKEN }}
+      - name: Configure Git for bot
         run: |
-          mike deploy dev --remote github.com/treeverse/docs-next-lakeFS
+          git config --global user.name "treeverser"
+          git config --global user.email "treeverser@treeverse.io"
+
+      - name: Clone documentation repo
+        working-directory: docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          git clone git@github.com:treeverse/docs-next-lakeFS.git docs-repo
+          cd docs-repo
+          git config --global user.name "treeverser"
+          git config --global user.email "treeverser@treeverse.io"
+
+      - name: Deploy documentation
+        working-directory: docs/docs-repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          mike deploy --config-file ../mkdocs.yaml --branch main --push dev
