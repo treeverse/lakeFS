@@ -46,18 +46,28 @@ jobs:
             sed -i -e "s|\(.*\)\(</body>\)|<div style=\"position: fixed; top: 5px; left: 5px; padding: 3px; background-color: #e8ac07; font-weight: bold; z-index: 9999; box-shadow: 0 0 10px rgba(0,0,0,0.5);\">ℹ️ This is a preview of PR <a href=\"$PR_URL\" style=\"color: black;\">#$PR_NUMBER</a></div>\n\1\2|" $file
           done
        
-      - name: Publish preview site
-        uses: cloudflare/wrangler-action@v3
-        id: preview_step
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_PAGES_PR_PREVIEW }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy docs/site --project-name=lakefsprs --branch=pr-${{ github.event.pull_request.number }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          aws-access-key-id: ${{ secrets.DOCS_PREVIEW_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DOCS_PREVIEW_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-      - name: Get the preview_url
-        run: echo "url => ${{ steps.preview_step.outputs.pages-deployment-alias-url }}"
+      - name: Publish preview site
+        run: aws s3 sync docs/site/ s3://lakefs-docs-pr-previews/prs/pr-${{ github.event.pull_request.number }}/
 
+      - name: Comment with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const previewUrl = `https://pr-${context.payload.pull_request.number}.docs-lakefs-preview.io/`;
+            github.rest.issues.createComment({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📚 Documentation preview is now available at: ${previewUrl}`,
+              event: 'COMMENT'
+            });
       - name: Check links
         id: lychee
         uses: lycheeverse/lychee-action@v1.8.0
