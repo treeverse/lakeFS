@@ -41,7 +41,7 @@ interact with your data on lakeFS.
 
     Once installed, it should look something like this:
 
-    ![Databricks - Adding the lakeFS client Jar](/assets/img/databricks-install-package.png)
+    ![Databricks - Adding the lakeFS client Jar](../assets/img/databricks-install-package.png)
 
 === "Cloudera Spark"
     Add the package to your `pyspark` or `spark-submit` command:
@@ -62,18 +62,18 @@ interact with your data on lakeFS.
     1. From the CDP home screen, click the `Management Console` icon.
     1. In the Management Console, select `Data Hub Clusters` from the navigation pane.
     1. Select the cluster you want to configure. Click on `CM-UI` link under Services:
-        ![Cloudera - Management Console](/assets/img/cloudera/ManagementConsole.png)
+        ![Cloudera - Management Console](../assets/img/cloudera/ManagementConsole.png)
     1. In Cloudera Manager web interface, click on `Clusters` from the navigation pane and click on `spark_on_yarn` option:
 
-        ![Cloudera - Cloudera Manager](/assets/img/cloudera/ClouderaManager.png)
+        ![Cloudera - Cloudera Manager](../assets/img/cloudera/ClouderaManager.png)
 
     1. Click on `Configuration` tab and search for `spark.yarn.access.hadoopFileSystems` in the search box:
 
-        ![Cloudera - spark_on_yarn](/assets/img/cloudera/spark_on_yarn.png)
+        ![Cloudera - spark_on_yarn](../assets/img/cloudera/spark_on_yarn.png)
 
     1. Add S3 bucket used by lakeFS `s3a://bucket-name` in the `spark.yarn.access.hadoopFileSystems` list:
 
-        ![Cloudera - hadoopFileSystems](/assets/img/cloudera/hadoopFileSystems.png)
+        ![Cloudera - hadoopFileSystems](../assets/img/cloudera/hadoopFileSystems.png)
 
 
 ### Configuration
@@ -89,7 +89,7 @@ Configure the lakeFS client to use a temporary token instead of static credentia
 
 * `fs.lakefs.auth.provider`: The default is `basic_auth` with `fs.lakefs.access.key` and `fs.lakefs.secret.key` for basic authentication.
 
-Can be set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials, you can read more about it [here](/security/external-principals-aws/).
+Can be set to `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` for using temporary AWS credentials, you can read more about it [here](../security/external-principals-aws.md).
 
 When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the auth provider the following configuration are relevant:
 
@@ -98,7 +98,7 @@ When using `io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider` as the au
 * `fs.lakefs.token.aws.session.token`: AWS assumed role temporary session token
 * `fs.lakefs.token.aws.sts.endpoint`: AWS STS regional endpoint for generated the presigned-url (i.e `https://sts.us-west-2.amazonaws.com`)
 * `fs.lakefs.token.aws.sts.duration_seconds`: Optional, the duration in seconds for the initial identity token (default is 60)
-* `fs.lakefs.token.duration_seconds`: Optional, the duration in seconds for the lakeFS token (default is set in the lakeFS configuration [auth.login_duration](/reference/configuration/))
+* `fs.lakefs.token.duration_seconds`: Optional, the duration in seconds for the lakeFS token (default is set in the lakeFS configuration [auth.login_duration](../reference/configuration.md))
 * `fs.lakefs.token.sts.additional_headers`: Optional, comma separated list of `header:value` to attach when generating presigned sts request. Default is `X-Lakefs-Server-ID:fs.lakefs.endpoint`.
 
 Configure the S3A FileSystem to access your S3 storage, for example using the `fs.s3a.*` configurations (these are **not** your lakeFS credentials):
@@ -206,7 +206,7 @@ Here are some configuration examples:
 
 ### Usage with TemporaryAWSCredentialsLakeFSTokenProvider
 
-An initial setup is required - you must have [AWS Auth configured](/security/external-principals-aws/) with lakeFS.
+An initial setup is required - you must have [AWS Auth configured](../security/external-principals-aws.md) with lakeFS.
 The `TemporaryAWSCredentialsLakeFSTokenProvider` depends on the caller to provide AWS credentials (e.g Assumed Role Key,Secret and Token) as input to the lakeFS client.
 
 !!! warning

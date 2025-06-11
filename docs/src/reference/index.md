@@ -9,31 +9,31 @@ description: Reference documentation for the lakeFS platform's various APIs, CLI
 
 ## API
 
-- [lakeFS API](/reference/api/)
-- [S3 Gateway API](/reference/s3/)
+- [lakeFS API](api.md)
+- [S3 Gateway API](s3.md)
 
 ## Components
 
-- [Server Configuration](/reference/configuration/)
-- lakeFS command-line tool [lakectl](/reference/cli/)
+- [Server Configuration](configuration.md)
+- lakeFS command-line tool [lakectl](cli.md)
 
 ## Clients
 
-- [Spark Metadata Client](/reference/spark-client/)
-- [lakeFS Hadoop FileSystem](/integrations/spark/#lakefs-hadoop-filesystem)
-- [Python Client](/integrations/python/)
+- [Spark Metadata Client](spark-client.md)
+- [lakeFS Hadoop FileSystem](../integrations/spark.md#lakefs-hadoop-filesystem)
+- [Python Client](../integrations/python.md)
 
 ## Security
 
-- [Authentication](/security/authentication/)
-- [Remote Authenticator](/security/remote-authenticator/)
-- [Role-Based Access Control (RBAC)](/security/rbac/)
-- [Presigned URL](/security/presigned-url/)
-- [Access Control Lists (ACLs)](/security/access-control-lists/)
-- [Single Sign On (SSO)](/security/sso/)
-- [Login to lakeFS with AWS IAM](/security/external-principals-aws/)
+- [Authentication](../security/authentication.md)
+- [Remote Authenticator](../security/remote-authenticator.md)
+- [Role-Based Access Control (RBAC)](../security/rbac.md)
+- [Presigned URL](../security/presigned-url.md)
+- [Access Control Lists (ACLs)](../security/access-control-lists.md)
+- [Single Sign On (SSO)](../security/sso.md)
+- [Login to lakeFS with AWS IAM](../security/external-principals-aws.md)
   
 ## Other Reference Documentation
 
-- [Monitoring using Prometheus](/reference/monitor/)
-- [Auditing](/reference/auditing/)
+- [Monitoring using Prometheus](monitor.md)
+- [Auditing](auditing.md)

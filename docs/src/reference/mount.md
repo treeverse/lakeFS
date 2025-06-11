@@ -281,7 +281,7 @@ everest mount --partial-reads "lakefs://image-repo/main/datasets/pets/" "./pets"
 To learn more, read about [Mount Write Mode Semantics](mount-write-mode-semantics.md).
 
 
-[lakectl]: /reference/cli/
+[lakectl]: cli.md
 
 ## FAQs
 

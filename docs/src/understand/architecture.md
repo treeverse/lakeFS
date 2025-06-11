@@ -8,7 +8,7 @@ lakeFS is distributed as a single binary encapsulating several logical services.
 
 The server itself is stateless, meaning you can easily add more instances to handle a bigger load.
 
-![Architecture](/assets/img/architecture.png)
+![Architecture](../assets/img/architecture.png)
 
 
 
@@ -48,11 +48,11 @@ to lakeFS server(s) would do.
 
 The S3 Gateway is the layer in lakeFS responsible for the compatibility with S3. It implements a compatible subset of the S3 API to ensure most data systems can use lakeFS as a drop-in replacement for S3.
 
-See the [S3 API Reference](/reference/s3/) section for information on supported API operations.
+See the [S3 API Reference](../reference/s3.md) section for information on supported API operations.
 
 ### OpenAPI Server
 
-The Swagger ([OpenAPI](https://swagger.io/docs/specification/basic-structure/){:target="_blank"}) server exposes the full set of lakeFS operations (see [Reference](/reference/api/)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing, and reverting changes to data.
+The Swagger ([OpenAPI](https://swagger.io/docs/specification/basic-structure/){:target="_blank"}) server exposes the full set of lakeFS operations (see [Reference](../reference/api.md)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing, and reverting changes to data.
 
 ### Storage Adapter
 
@@ -64,7 +64,7 @@ See the [roadmap][roadmap] for information on the future plans for storage compa
 ### Graveler
 
 The Graveler handles lakeFS versioning by translating lakeFS addresses to the actual stored objects.
-To learn about the data model used to store lakeFS metadata, see the [versioning internals page](/understand/how/versioning-internals/).
+To learn about the data model used to store lakeFS metadata, see the [versioning internals page](how/versioning-internals.md).
 
 ### Authentication & Authorization Service
 
@@ -85,7 +85,7 @@ The UI layer is a simple browser-based client that uses the OpenAPI server. It a
 ## Applications
 
 As a rule of thumb, lakeFS supports any S3-compatible application. This means that many common data applications work with lakeFS out-of-the-box.
-Check out our [integrations](/integrations/index/) to learn more.
+Check out our [integrations](../integrations/index.md) to learn more.
 
 ## lakeFS Clients
 
@@ -98,12 +98,12 @@ For example, the [Python lakefs-sdk](https://pypi.org/project/lakefs-sdk/) or th
 
 ### lakectl
 
-[lakectl](/reference/cli/) is a CLI tool that enables lakeFS operations using the lakeFS API from your preferred terminal.
+[lakectl](../reference/cli.md) is a CLI tool that enables lakeFS operations using the lakeFS API from your preferred terminal.
 
 ### Spark Metadata Client
 
-The lakeFS [Spark Metadata Client](/reference/spark-client/) makes it easy to perform
-operations related to lakeFS metadata, at scale. Examples include [garbage collection](/howto/garbage-collection/index/) or [exporting data from lakeFS](/howto/export/).
+The lakeFS [Spark Metadata Client](../reference/spark-client.md) makes it easy to perform
+operations related to lakeFS metadata, at scale. Examples include [garbage collection](/howto/garbage-collection/index/) or [exporting data from lakeFS](../howto/export.md).
 
 ### lakeFS Hadoop FileSystem
 
@@ -122,7 +122,7 @@ Once the client knows the exact data location from the lakeFS metadata, it direc
 <img src="/assets/img/s3gatewayvsclientdataflow.png" alt="lakeFS Clients vs Gateway Data Flow" width="500px"/>
 
 
-[data-quality-gates]:  /understand/use_cases/cicd_for_data/#using-hooks-as-data-quality-gates
-[dynamodb-permissions]:  /howto/deploy/aws/#grant-dynamodb-permissions-to-lakefs
-[roadmap]:  /project/index/#roadmap
-[hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
+[data-quality-gates]:  use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates
+[dynamodb-permissions]:  ../howto/deploy/aws.md#grant-dynamodb-permissions-to-lakefs
+[roadmap]:  ../project/index.md#roadmap
+[hadoopfs]:  ../integrations/spark.md#lakefs-hadoop-filesystem

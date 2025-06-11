@@ -20,7 +20,7 @@ pip install lakefs-spec
 
 If you've already configured the lakeFS python SDK and/or lakectl, you should have a `$HOME/.lakectl.yaml` file that contains your access credentials and endpoint for your lakeFS environment.
 
-Otherwise, install [`lakectl`](/reference/cli.md#installing-lakectl-locally) and run `lakectl config` to set up your access credentials.
+Otherwise, install [`lakectl`](../reference/cli.md#installing-lakectl-locally) and run `lakectl config` to set up your access credentials.
 
 
 ## Reading a Dataset

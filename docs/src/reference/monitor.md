@@ -86,4 +86,4 @@ In addition, lakeFS exposes the following metrics to help monitor your deploymen
 
 ## Example Grafana dashboard
 
-[![Grafana dashboard example](/assets/img/grafana.png)](/assets/img/grafana.png){: target="_blank" }
+[![Grafana dashboard example](..../assets/img/grafana.png)](..../assets/img/grafana.png){: target="_blank" }

@@ -7,7 +7,7 @@ description: How to contribute to the lakeFS Documentation, including style guid
 
 Any contribution to the docs, whether it is in conjunction with a code contribution or as a standalone, is appreciated.
 
-Please see [the contributing guide](/project/contributing.md) for details on contributing to lakeFS in general. 
+Please see [the contributing guide](contributing.md) for details on contributing to lakeFS in general. 
 
 
 !!! warning "Notice"

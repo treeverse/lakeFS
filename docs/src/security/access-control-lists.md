@@ -9,7 +9,7 @@ status: deprecated
 !!! warning
     ACLs were [removed from core lakeFS](https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/).
      
-    For a more robust authorization solution, please see [Role-Based Access Control](rbac.md), available in [lakeFS Cloud](/cloud/index.md) and [lakeFS Enterprise](/enterprise/index.md).  
+    For a more robust authorization solution, please see [Role-Based Access Control](rbac.md), available in [lakeFS Cloud](..../cloud/index.md) and [lakeFS Enterprise](..../enterprise/index.md).  
     The following documentation is aimed for users with existing installations who wish to continue working with ACLs. 
 
 
@@ -63,7 +63,7 @@ Under the `contrib/auth/acl` you will be able to find an ACL server reference.
 !!! warning
     This implementation is a reference and is not fit for production use. 
 
-    For a more robust authorization solution, please see [Role-Based Access Control](rbac.md), available in [lakeFS Cloud](/cloud/index.md) and [lakeFS Enterprise](/enterprise/index.md). 
+    For a more robust authorization solution, please see [Role-Based Access Control](rbac.md), available in [lakeFS Cloud](..../cloud/index.md) and [lakeFS Enterprise](..../enterprise/index.md). 
 
 
 The configuration of the ACL server is similar to lakeFS configuration, here's an example of an `.aclserver.yaml` config file:

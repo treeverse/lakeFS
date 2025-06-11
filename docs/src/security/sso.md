@@ -10,7 +10,7 @@ search:
 
 !!! info
     Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
-    If you're using the open-source version of lakeFS you can read more about the [authentication options available](/security/authentication/). 
+    If you're using the open-source version of lakeFS you can read more about the [authentication options available](authentication.md). 
 
 ## SSO for lakeFS Cloud
 
@@ -401,5 +401,5 @@ Notes:
 * Update the `ingress` configuration with other optional fields if used
 * Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
 
-[rbac-preconfigured]:  /security/rbac/#preconfigured-groups
-[fluffy-configuration]: /enterprise/configuration/#fluffy-server-configuration
+[rbac-preconfigured]:  rbac.md#preconfigured-groups
+[fluffy-configuration]: ../enterprise/configuration.md#fluffy-server-configuration

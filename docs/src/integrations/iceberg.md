@@ -12,7 +12,7 @@ status: enterprise
     Available in **lakeFS Enterprise**
 
 !!! tip
-    lakeFS Iceberg REST Catalog is currently in private preview for [lakeFS Enterprise](/enterprise/index/) customers.
+    lakeFS Iceberg REST Catalog is currently in private preview for [lakeFS Enterprise](../enterprise/index.md) customers.
     [Contact us](https://lakefs.io/book-a-demo/) to get started!
 
 ### What is lakeFS Iceberg REST Catalog?
@@ -271,7 +271,7 @@ The following features are planned for future releases:
 
 - [Iceberg REST Catalog API Specification](https://editor-next.swagger.io/?url=https://raw.githubusercontent.com/apache/iceberg/main/open-api/rest-catalog-open-api.yaml)
 - [Iceberg Official Documentation](https://iceberg.apache.org/docs/latest/)
-- [lakeFS Enterprise Features](/enterprise/index/)
+- [lakeFS Enterprise Features](../enterprise/index.md)
 
 ## Deprecated: Iceberg HadoopCatalog  
 

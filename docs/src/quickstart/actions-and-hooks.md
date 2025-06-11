@@ -5,7 +5,7 @@ description: lakeFS quickstart / Use Actions and Hooks to enforce conditions whe
 
 # Actions and Hooks in lakeFS
 
-When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS](/howto/hooks/index/) can be of benefit here. 
+When we interact with lakeFS it can be useful to have certain checks performed at stages along the way. Let's see how [actions in lakeFS](../howto/hooks/index.md) can be of benefit here. 
 
 We're going to enforce a rule that when a commit is made to any branch that begins with `etl`: 
 
@@ -15,7 +15,7 @@ We're going to enforce a rule that when a commit is made to any branch that begi
 
 To do this we'll create an _action_. In lakeFS, an action specifies one or more events that will trigger it, and references one or more _hooks_ to run when triggered. Actions are YAML files written to lakeFS under the `_lakefs_actions/` folder of the lakeFS repository.
 
-_Hooks_ can be either a [Lua](/howto/hooks/lua/) script that lakeFS will execute itself, an external [web hook](/howto/hooks/webhooks/), or an [Airflow DAG](/howto/hooks/airflow/). In this example, we're using a Lua hook.
+_Hooks_ can be either a [Lua](../howto/hooks/lua.md) script that lakeFS will execute itself, an external [web hook](../howto/hooks/webhooks.md), or an [Airflow DAG](../howto/hooks/airflow.md). In this example, we're using a Lua hook.
 
 ## Configuring the Action
 

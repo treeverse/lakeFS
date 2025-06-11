@@ -51,7 +51,7 @@ To see the integration in action see [this notebook](https://github.com/treevers
 
 ## Using Delta Lake with lakeFS from Python
 
-The [delta-rs](https://github.com/delta-io/delta-rs) library provides bindings for Python. This means that you can use Delta Lake and lakeFS directly from Python without needing Spark. Integration is done through the [lakeFS S3 Gateway](/understand/architecture/#s3-gateway)
+The [delta-rs](https://github.com/delta-io/delta-rs) library provides bindings for Python. This means that you can use Delta Lake and lakeFS directly from Python without needing Spark. Integration is done through the [lakeFS S3 Gateway](../understand/architecture.md#s3-gateway)
 
 The documentation for the `deltalake` Python module details how to [read](https://delta-io.github.io/delta-rs/python/usage.html#loading-a-delta-table), [write](https://delta-io.github.io/delta-rs/python/usage.html#writing-delta-tables), and [query](https://delta-io.github.io/delta-rs/python/usage.html#querying-delta-tables) Delta Lake tables. To use it with lakeFS use an `s3a` path for the table based on your repository and branch (for example, `s3a://delta-lake-demo/main/my_table/`) and specify the following `storage_options`:
 
@@ -159,6 +159,6 @@ See [Guaranteeing Consistency in Your Delta Lake Tables With lakeFS](https://lak
 guarantee data quality in a Delta table by utilizing lakeFS branches.
 
 
-[data-quality-gates]:  /understand/use_cases/cicd_for_data/#using-hooks-as-data-quality-gates
+[data-quality-gates]:  ../understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates
 [deploy-docker]:  /howto/deploy/onprem/#docker
 

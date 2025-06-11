@@ -34,18 +34,18 @@ The key difference when using lakeFS for isolated data environments is that you 
 
 This is different from creating a long-living test environment used as a staging area to test all the updates. With lakeFS, **we create a new branch for each change to production** that we want to make. One benefit of this is the ability to test multiple changes at one time.
 
-![dev/test branches as environments](/assets/img/iso_env_dev_test_branching.png)
+![dev/test branches as environments](../../assets/img/iso_env_dev_test_branching.png)
 
 ## Try it out! Creating Dev/Test Environments with lakeFS for ETL Testing
 
-lakeFS supports UI, CLI (`lakectl` command-line utility) and several clients for the [API](/reference/api/) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
+lakeFS supports UI, CLI (`lakectl` command-line utility) and several clients for the [API](../../reference/api.md) to run the Git-like operations. Let us explore how to create dev/test environments using each of these options below.
 
 There are two ways that you can try out lakeFS:
 
 * The lakeFS Playground on lakeFS Cloud - fully managed lakeFS with a 30-day free trial
-* Local Docker-based [quickstart](/quickstart/index/) and [samples](https://github.com/treeverse/lakeFS-samples/)
+* Local Docker-based [quickstart](../../quickstart/index.md) and [samples](https://github.com/treeverse/lakeFS-samples/)
 
-You can also [deploy lakeFS](/howto/deploy/index/) locally or self-managed on your cloud of choice.
+You can also [deploy lakeFS](../../howto/deploy/index.md) locally or self-managed on your cloud of choice.
 
 ### Using lakeFS Playground on lakeFS Cloud
 
@@ -54,26 +54,26 @@ In this tutorial, we will use [a lakeFS playground environment](https://lakefs.c
 First, let us spin up a [playground](https://lakefs.cloud/) instance. Once you have a live environment, login to your instance with access and secret keys. Then, you can work with the sample data repository `my-repo` that is created for you.
 
 
-![sample repository](/assets/img/iso_env_myrepo.png)
+![sample repository](../../assets/img/iso_env_myrepo.png)
 
 
 Click on `my-repo` and notice that by default, the repository has a `main` branch created and `sample_data` preloaded to work with.
 
 
-![main branch](/assets/img/iso_env_sampledata.png)
+![main branch](../../assets/img/iso_env_sampledata.png)
 
 
 You can create a new branch (say, `test-env`) by going to the _Branches_ tab and clicking _Create Branch_. Once it is successful, you will see two branches under the repository: `main` and `test-env`.
 
 
-![test-env branch](/assets/img/iso_env_testenv_branch.png)
+![test-env branch](../../assets/img/iso_env_testenv_branch.png)
 
 
 Now you can add, modify or delete objects under the `test-env` branch without affecting the data in the main branch.
 
 ### Trying out lakeFS with Docker and Jupyter Notebooks
 
-This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial provides a lakeFS environment, a Jupyter notebook, and Python SDK API to demonstrate integration of lakeFS with [Spark](/integrations/spark/). You can run this tutorial on your local machine.
+This use case shows how to create dev/test data environments for ETL testing using lakeFS branches. The following tutorial provides a lakeFS environment, a Jupyter notebook, and Python SDK API to demonstrate integration of lakeFS with [Spark](../../integrations/spark.md). You can run this tutorial on your local machine.
 
 Follow the tutorial video below to get started with the playground and Jupyter notebook, or follow the instructions on this page.
 
@@ -196,5 +196,5 @@ You can safely continue working with the data from main which is unharmed due to
     * [ETL Testing: A Practical Guide](https://lakefs.io/blog/etl-testing/)
     * [Top 5 ETL Testing Challenges - Solved!](https://lakefs.io/wp-content/uploads/2023/03/Top-5-ETL-Testing-Challenges-Solved.pdf)
 
-    [hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
-    [spark-s3a]:  /integrations/spark/#use-the-s3-compatible-api
+    [hadoopfs]:  ../../integrations/spark.md#lakefs-hadoop-filesystem
+    [spark-s3a]:  ../../integrations/spark.md#use-the-s3-compatible-api

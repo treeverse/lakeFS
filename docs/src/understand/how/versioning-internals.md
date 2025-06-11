@@ -27,7 +27,7 @@ Each lakeFS commit is represented as a set of contiguous, non-overlapping SSTabl
 
 lakeFS metadata is encoded into a format called **"Graveler"** - a standardized way to encode content-addressable key value pairs. This is what a Graveler file looks like:
 
-![Graveler File](/assets/img/graveler1.png)
+![Graveler File](../../assets/img/graveler1.png)
 
 Each Key/Value pair (**"ValueRecord"**) is constructed of a `key`, `identity`, and `value`.
 
@@ -49,7 +49,7 @@ We have two additional requirements for the storage format:
 
 To support these requirements, we decided to essentially build a 2-layer [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree){: target="_blank" } composed of a set of leaf nodes (**"Range"**) addressed by their content address, and a **"Meta Range"**, which is a special range containing all ranges, thus representing an entire consistent view of the keyspace:
 
-![Metarange to ranges relationship](/assets/img/graveler2.png)
+![Metarange to ranges relationship](../../assets/img/graveler2.png)
 
 Assuming commit B is derived from commit A, and only changed files in range `e-f`, it can reuse all ranges except for SSTable #N (the one containing the modified range of keys), which will be recreated with a new hash representing the state as exists after applying commit B’s changes. This will, in turn, also create a new Metarange since its hash is now changed as well (as it is derived from the hash of all contained ranges).
 
@@ -90,4 +90,4 @@ Both these types of metadata are not only mutable, but also require strong consi
 
 Luckily, this is also much smaller set of metadata compared to the committed metadata.
 
-References and uncommitted metadata are currently stored on a key-value store (See [supported databases](/reference/configuration/)) for consistency guarantees.
+References and uncommitted metadata are currently stored on a key-value store (See [supported databases](../../reference/configuration.md)) for consistency guarantees.

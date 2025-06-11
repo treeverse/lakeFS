@@ -51,9 +51,9 @@ Creating a new branch will take constant time as the new branch points to the sa
 It will also lower the storage cost.
 
 
-[hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
-[zero-copy-import]:  /howto/import/#zero-copy-import
-[lakectl-upload]:  /reference/cli/#lakectl-fs-upload
-[lakectl-download]:  /reference/cli/#lakectl-fs-download
-[api-staging]:  /reference/api/#operations-objects-stageObject
-[representing-refs-and-uncommitted-metadata]:  /understand/how/versioning-internals/#representing-references-and-uncommitted-metadata
+[hadoopfs]:  ../integrations/spark.md#lakefs-hadoop-filesystem
+[zero-copy-import]:  ../howto/import.md#zero-copy-import
+[lakectl-upload]:  ../reference/cli.md#lakectl-fs-upload
+[lakectl-download]:  ../reference/cli.md#lakectl-fs-download
+[api-staging]:  ../reference/api.md#operations-objects-stageObject
+[representing-refs-and-uncommitted-metadata]:  how/versioning-internals.md#representing-references-and-uncommitted-metadata

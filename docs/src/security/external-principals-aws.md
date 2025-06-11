@@ -126,7 +126,7 @@ Currently, the login operation is supported out of the box in:
 
 - [lakeFS Hadoop FileSystem][lakefs-hadoopfs] version 0.2.4, see [Spark usage][lakefs-spark]
 - [python](#login-with-python)
-- [Everest mount](../reference/mount/#authenticating-with-aws-iam-role.md)
+- [Everest mount](../reference/mount.md#authenticating-with-aws-iam-role.md)
 
 For other use cases authenticate to lakeFS via login endpoint, this will require building the request input.
 
@@ -190,8 +190,8 @@ There are two ways in which external principals can be used to authenticate to l
         print(r)
     ```
 
-[external-principal-admin]:  /reference/api/#external
-[login-api]: /reference/api/#auth/externalPrincipalLogin
-[lakefs-hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
-[lakefs-spark]:  /integrations/spark/#usage-with-temporaryawscredentialslakefstokenprovider
-[fluffy-configuration]: /enterprise/configuration/#fluffy-server-configuration
+[external-principal-admin]:  ../reference/api.md#external
+[login-api]: ../reference/api.md#auth/externalPrincipalLogin
+[lakefs-hadoopfs]:  ../integrations/spark.md#lakefs-hadoop-filesystem
+[lakefs-spark]:  ../integrations/spark.md#usage-with-temporaryawscredentialslakefstokenprovider
+[fluffy-configuration]: ../enterprise/configuration.md#fluffy-server-configuration

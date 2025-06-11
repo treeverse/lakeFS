@@ -23,7 +23,7 @@ lakeFS server supports external authentication, the feature can be configured by
 This integration can be especially useful if you already have an existing authentication system in place, as it allows you to reuse that system instead of maintaining a new one.
 
 !!! info
-    To configure a Remote Authenticator see the [configuration fields](/reference/configuration/#auth).
+    To configure a Remote Authenticator see the [configuration fields](../reference/configuration.md#auth).
 
 ### API Server Authentication
 
@@ -47,7 +47,7 @@ Authorization: Basic bXlfYWNjZXNzX2tleV9pZDpteV9zZWNyZXRfYWNjZXNzX2tleQ==
 To provide API compatibility with Amazon S3, authentication with the S3 Gateway supports both [SIGv2](https://docs.aws.amazon.com/general/latest/gr/signature-version-2.html){:target="_blank"} and [SIGv4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html){:target="_blank"}.
 Clients such as the AWS SDK that implement these authentication methods should work without modification.
 
-See [this example for authenticating with the AWS CLI](/integrations/aws_cli/).
+See [this example for authenticating with the AWS CLI](../integrations/aws_cli.md).
 
 
 ## OIDC support
@@ -61,7 +61,7 @@ Essentially, once configured, this enables you the benefit of OpenID connect, su
 
 ### Configuring lakeFS server for OIDC
 
-To support OIDC, add the following to your [lakeFS configuration](/reference/configuration/):
+To support OIDC, add the following to your [lakeFS configuration](../reference/configuration.md):
 
 ```yaml
 auth:
@@ -85,7 +85,7 @@ When the `persist_friendly_name` configuration property is set to `true` **and**
 The friendly name stored in KV is updated with each successful login, if the incoming value is different than the stored value. This means it will be kept up-to-date with changes to the user's profile or if `friendly_name_claim_name` is re-configured.
 
 !!! note "Notes"
-    1. As always, you may choose to provide these configurations using [environment variables](/reference/configuration/).
+    1. As always, you may choose to provide these configurations using [environment variables](../reference/configuration.md).
     2. You may already have other configuration values under the _auth_ key, so make sure you combine them correctly.
 
 ## User permissions

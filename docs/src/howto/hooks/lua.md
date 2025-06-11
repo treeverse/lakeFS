@@ -18,7 +18,7 @@ The Lua runtime embedded in lakeFS is limited for security reasons. It provides 
 ## Action File Lua Hook Properties
 
 !!! info
-    See the [Action configuration](./index.md#action-files) for overall configuration schema and details.
+    See the [Action configuration](index.md#action-files) for overall configuration schema and details.
 
 | Property      | Description                               | Data Type  | Required                                       | Default Value |
 |---------------|-------------------------------------------|------------|------------------------------------------------|---------------|
@@ -363,7 +363,7 @@ Parameters:
     local status = client.register_external_table("mytable", "s3://mybucket/the/path/to/mytable", "examwarehouseple", "my-catalog-name", "myschema")
     ```
 
-* For the Databricks permissions needed to run this method, check out the [Unity Catalog Exporter](/integrations/unity-catalog/) docs.
+* For the Databricks permissions needed to run this method, check out the [Unity Catalog Exporter](../../integrations/unity-catalog.md) docs.
 
 ### `encoding/base64/encode(data)`
 
@@ -912,7 +912,7 @@ Parameters:
     ```
 
 For detailed step-by-step guide on how to use `unity_exporter.register_tables` as a part of a lakeFS action refer to
-the [Unity Catalog docs](/integrations/unity-catalog/).
+the [Unity Catalog docs](../../integrations/unity-catalog.md).
 
 ### `path/parse(path_string)`
 
@@ -1089,7 +1089,7 @@ Provides a `parse` function parse a URL string into parts, returns a table with 
 ### `net/http` (optional)
 
 Provides a `request` function that performs an HTTP request.
-For security reasons, this package is not available by default as it enables http requests to be sent out from the lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration](/reference/configuration/).
+For security reasons, this package is not available by default as it enables http requests to be sent out from the lakeFS instance network. The feature should be enabled under `actions.lua.net_http_enabled` [configuration](../../reference/configuration.md).
 Request will time out after 30 seconds.
 
 !!! example

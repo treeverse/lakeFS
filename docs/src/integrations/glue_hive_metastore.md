@@ -8,7 +8,7 @@ status: deprecated
 
 !!! warning "Deprecated Feature"
     Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
-    You can read more about it [here](/howto/catalog_exports/).
+    You can read more about it [here](../howto/catalog_exports.md).
 
 ## About Glue / Hive Metastore
 
@@ -22,13 +22,13 @@ They contain metadata such as the location of the table, information about colum
 To query the table `my_table`, Spark will:
 * Request the metadata from Hive metastore (steps 1,2),
 * Use the location from the metadata to access the data in S3 (steps 3,4).
-![metastore with S3](/assets/img/metastore-S3.svg)
+![metastore with S3](../assets/img/metastore-S3.svg)
 
 
 ### With lakeFS
 
 When using lakeFS, the flow stays exactly the same. Note that the location of the table `my_table` now contains the branch `s3://example/main/path/to/table`
-![metastore with S3](/assets/img/metastore-lakefs.svg)
+![metastore with S3](../assets/img/metastore-lakefs.svg)
 
 ## Managing Tables With lakeFS Branches
 

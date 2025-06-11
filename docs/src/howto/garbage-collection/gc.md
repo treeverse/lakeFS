@@ -80,7 +80,7 @@ To define retention rules, either use the `lakectl` command, the lakeFS web UI, 
     3. Click _Edit policy_ and paste your GC rule into the text box as a JSON.
     4. Save your changes.
 
-    ![GC Rules From UI](/assets/img/gc_rules_from_ui.png)
+    ![GC Rules From UI](../../assets/img/gc_rules_from_ui.png)
 
 ## How to run the garbage collection job
 

@@ -14,7 +14,7 @@ lakeFS is free, open-source, and licensed under the [Apache 2.0](https://www.apa
 lakeFS uses zero-copy branching to avoid data duplication. That is, creating a new branch is a metadata-only operation: no objects are actually copied. Only when an object changes does lakeFS create another [version of the data](https://lakefs.io/blog/data-versioning/) in the storage. 
 
 !!! info
-    For more information, see [Versioning internals](/understand/how/versioning-internals/).
+    For more information, see [Versioning internals](how/versioning-internals.md).
 
 ### 3. How do I get support for my lakeFS installation?
 
@@ -47,5 +47,5 @@ The [Axolotl](https://en.wikipedia.org/wiki/Axolotl){:target="_blank"} – a spe
     [copyright](https://en.wikipedia.org/wiki/Axolotl#/media/File:AxolotlBE.jpg)
 </small>
 
-[config-ref]:  /reference/configuration/#reference
+[config-ref]:  ../reference/configuration.md#reference
 [roadmap]:  /project/index/#roadmap

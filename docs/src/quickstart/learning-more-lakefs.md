@@ -5,7 +5,7 @@ description: Learn more about lakeFS here with links to resources including quic
 
 # Learn more about lakeFS
 
-The [lakeFS quickstart](/quickstart/) is just the beginning of your lakeFS journey 🛣️
+The [lakeFS quickstart](index.md) is just the beginning of your lakeFS journey 🛣️
 
 Here are some more resources to help you find out more about lakeFS. 
 
@@ -69,7 +69,7 @@ Enjoyed the quickstart and want to try out lakeFS against your own data? Here's 
 
 ## Deploying lakeFS
 
-Ready to do this thing for real? The deployment guides show you how to deploy lakeFS [locally](/howto/deploy/onprem/) (including on [Kubernetes][onprem-k8s]) or on [AWS](/howto/deploy/aws/), [Azure](/howto/deploy/azure/), or [GCP](/howto/deploy/gcp/). 
+Ready to do this thing for real? The deployment guides show you how to deploy lakeFS [locally](../howto/deploy/onprem.md) (including on [Kubernetes][onprem-k8s]) or on [AWS](../howto/deploy/aws.md), [Azure](../howto/deploy/azure.md), or [GCP](../howto/deploy/gcp.md). 
 
 Alternatively you might want to have a look at [lakeFS Cloud](https://lakefs.cloud/) which provides a fully-managed, SOC-2 compliant, lakeFS service. 
 
@@ -93,7 +93,7 @@ The lakeFS community is important to us. Our **guiding principles** are:
 
 We'd love for you to join [our **Slack group**](https://lakefs.io/slack) and come and introduce yourself on `#announcements-and-more`. Or just lurk and soak up the vibes 😎
 
-If you're interested in getting involved in the development of lakeFS, head over our [the **GitHub repo**](https://github.com/treeverse/lakeFS) to look at the code and peruse the issues. The comprehensive [contributing](/project/contributing/) document should have you covered on next steps but if you've any questions the `#dev` channel on [Slack](https://lakefs.io/slack) will be delighted to help. 
+If you're interested in getting involved in the development of lakeFS, head over our [the **GitHub repo**](https://github.com/treeverse/lakeFS) to look at the code and peruse the issues. The comprehensive [contributing](../project/contributing.md) document should have you covered on next steps but if you've any questions the `#dev` channel on [Slack](https://lakefs.io/slack) will be delighted to help. 
 
 We love speaking at meetups and chatting to community members at them - you can find a list of these [here](https://lakefs.io/community/). 
 
@@ -101,10 +101,10 @@ Finally, make sure to drop by to say hi on [Twitter](https://twitter.com/lakeFS)
 
 ## lakeFS Concepts and Internals
 
-We describe lakeFS as "_Git for data_" but what does that actually mean? Have a look at the [concepts](/understand/model/) and [architecture](/understand/architecture/) guides, as well as the explanation of [how merges are handled](/understand/how/merge/). To go deeper you might be interested in [the internals of versioning](/understand/how/versioning-internals/) and our [internal database structure](/understand/how/kv/).
+We describe lakeFS as "_Git for data_" but what does that actually mean? Have a look at the [concepts](../understand/model.md) and [architecture](../understand/architecture.md) guides, as well as the explanation of [how merges are handled](../understand/how/merge.md). To go deeper you might be interested in [the internals of versioning](../understand/how/versioning-internals.md) and our [internal database structure](../understand/how/kv.md).
 
 
-[onprem-k8s]:  /howto/deploy/onprem/#k8s
+[onprem-k8s]:  ../howto/deploy/onprem.md#k8s
 
 ---
 

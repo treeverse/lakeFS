@@ -13,11 +13,11 @@ Like other version control systems, lakeFS allows you to configure _Actions_ to 
    A webhook that reads new Parquet and ORC files to ensure they don't contain a block list of column names (or name prefixes).
    This is useful for avoiding accidental PII exposure.
 1. Integration with external systems:
-   Post-merge and post-commit hooks could be used to export metadata about the change to another system. A common example is exporting `symlink.txt` files that allow e.g. [AWS Athena](/integrations/athena/) to read data from lakeFS.
+   Post-merge and post-commit hooks could be used to export metadata about the change to another system. A common example is exporting `symlink.txt` files that allow e.g. [AWS Athena](../../integrations/athena.md) to read data from lakeFS.
 1. Notifying downstream consumers:
    Running a post-merge hook to trigger an Airflow DAG or to send a Webhook to an API, notifying it of the change that happened
 
-For step-by-step examples of hooks in action check out the [lakeFS Quickstart](/quickstart/actions-and-hooks/) and the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
+For step-by-step examples of hooks in action check out the [lakeFS Quickstart](../../quickstart/actions-and-hooks.md) and the [lakeFS samples repository](https://github.com/treeverse/lakeFS-samples/).
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/Joare70FlIA"></iframe>
 
@@ -25,9 +25,9 @@ For step-by-step examples of hooks in action check out the [lakeFS Quickstart](/
 
 An _action_ defines one or more _hooks_ to execute. lakeFS supports three types of hook:
 
-1. [Lua](./lua.md) - uses an embedded Lua VM
-1. [Webhook](./webhooks.md) - makes a REST call to an external URL
-1. [Airflow](./airflow.md) - triggers a DAG in Airflow
+1. [Lua](lua.md) - uses an embedded Lua VM
+1. [Webhook](webhooks.md) - makes a REST call to an external URL
+1. [Airflow](airflow.md) - triggers a DAG in Airflow
 
 "Before" hooks must run successfully before their action. If the hook fails, it aborts the action. Lua hooks and Webhooks are synchronous, and lakeFS waits for them to run to completion. Airflow hooks are asynchronous: lakeFS stops waiting as soon as Airflow accepts triggering the DAG.
 
@@ -60,7 +60,7 @@ By default, when `if` is empty or omitted, the step will run only if no error oc
 | `hook.type`          | Type of the hook ([types](#supported-events))                                                                                                                                                                            | String     | yes      |                                                                         |
 | `hook.description`   | Description for the hook                                                                                                                                                                                                 | String     | no       |                                                                         |
 | `hook.if`            | Expression that will be evaluated before execute the hook                                                                                                                                                                | String     | no       | No value is the same as evaluate `success()`                            |
-| `hook.properties`    | Hook's specific configuration, see [Lua](./lua.md#action-file-lua-hook-properties), [WebHook](./webhooks.md#action-file-webhook-properties), and [Airflow](./airflow.md#action-file-airflow-hook-properties) for details | Dictionary | true     |                                                                         |
+| `hook.properties`    | Hook's specific configuration, see [Lua](lua.md#action-file-lua-hook-properties), [WebHook](webhooks.md#action-file-webhook-properties), and [Airflow](airflow.md#action-file-airflow-hook-properties) for details | Dictionary | true     |                                                                         |
 
 #### Example Action File
 
@@ -159,7 +159,7 @@ For example, if your repository contains a pre-commit hook, every commit would g
 lakeFS will fetch, parse and filter the repository Action files and start to execute the Hooks under each Action.
 All executed Hooks (each with `hook_run_id`) exist in the context of that Run (`run_id`).
 
-The [lakeFS API](/reference/api/) and [lakectl][lakectl-actions] expose the results of executions per repository, branch, commit, and specific Action.
+The [lakeFS API](../..//reference/api.md) and [lakectl][lakectl-actions] expose the results of executions per repository, branch, commit, and specific Action.
 The endpoint also allows to download the execution log of any executed Hook under each Run for observability.
 
 ## Result Files
@@ -174,4 +174,4 @@ The metadata section of lakeFS repository with each Run contains two types of fi
     Metadata files stored in the metadata section aren't accessible like user stored files.
 
 
-[lakectl-actions]:  /reference/cli/#lakectl-actions
+[lakectl-actions]:  ../../reference/cli.md#lakectl-actions

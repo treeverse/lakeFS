@@ -30,7 +30,7 @@ To read data at it’s current state, we can use a static path containing the re
 
 In a lakeFS repository, we are capable of taking many commits over the data, making many points in time reproducible. 
 
-![Commit History](/assets/img/reproduce-commit-history.png)
+![Commit History](../../assets/img/reproduce-commit-history.png)
 
 In the repository above, a new commit is taken each time a model training script is run, and the commit message includes the specific run number. 
 

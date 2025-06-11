@@ -658,5 +658,5 @@ s3.head_object(Bucket='example-repo', Key='main/example-file.parquet')
 # 'Metadata': {}}
 ```
 
-[legacy-deprecated]:  /posts/deprecate-py-legacy.html
+[legacy-deprecated]:  ../posts/deprecate-py-legacy.md
 [legacy-pypi]:  https://pypi.org/project/lakefs-client/

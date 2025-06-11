@@ -14,7 +14,7 @@ connectors to sync data to your S3 buckets by leveraging lakeFS branches and ato
 
 ## Use cases
 
-You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Management](/understand/data_lifecycle_management/index/) when ingesting data to S3 using lakeFS:
+You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Management](../understand/data_lifecycle_management/index.md) when ingesting data to S3 using lakeFS:
 
 1. Consolidate many data sources to a single branch and expose them to consumers simultaneously when merging to the `main` branch.
 1. Test incoming data for breaking schema changes using [lakeFS hooks][data-quality-gates].
@@ -47,7 +47,7 @@ Set the following parameters when creating a new Destination of type S3:
 
 The UI configuration will look as follows:
 
-![S3 Destination Connector Configuration](/assets/img/airbyte.png)
+![S3 Destination Connector Configuration](../assets/img/airbyte.png)
 
-[data-quality-gates]:  /understand/use_cases/cicd_for_data/#using-hooks-as-data-quality-gates
-[s3-gateway]:  /understand/architecture/#s3-gateway
+[data-quality-gates]:  ../understand/use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates
+[s3-gateway]:  ../understand/architecture.md#s3-gateway
