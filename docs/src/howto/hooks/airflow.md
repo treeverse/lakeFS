@@ -11,7 +11,7 @@ The hook run succeeds if the DAG was triggered, and fails otherwise.
 ## Action file Airflow hook properties
 
 !!! info
-    See the [Action configuration](./index.md#action-file) for overall configuration schema and details
+    See the [Action configuration](./index.md#action-files) for overall configuration schema and details
 
 | Property      | Description                                                     | Data Type                                                                                 | Example                 | Required | Environment Variables Supported |
 |---------------|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------|-------------------------|----------|------------------|

@@ -5,12 +5,11 @@ description: How to perform various tasks in lakeFS
 
 # lakeFS - How To
 
-<img src="/assets/img/docs_logo.png" alt="lakeFS Docs" width=200 style="float: right; margin: 0 0 10px 10px;"/>
-
+<img src="../assets/img/docs_logo.png" alt="lakeFS Docs" width=200 style="float: right; margin: 0 0 10px 10px;"/>
 
 ## Installation and upgrades
 
-* Step-by-step instructions for deploying and configuring lakeFS on [AWS](deploy/aws.md), [GCP](deploy/gcp.md), [Azure](deploy/azure.md), and [on-premises](deploy/onprem.md). 
+* Step-by-step instructions for deploying and configuring lakeFS on [AWS](deploy/aws.md), [GCP](deploy/gcp.md), [Azure](deploy/azure.md), and [on-premises](deploy/onprem.md).
 
 * Details on [how to upgrade lakeFS](deploy/upgrade.md)
 
@@ -36,13 +35,13 @@ description: How to perform various tasks in lakeFS
 
 ## lakeFS Sizing Guide
 
-* This [comprehensive guide](sizing-guide.md) details all you need to know to correctly size and test your lakeFS deployment for production use at scale, including: 
+* This [comprehensive guide](sizing-guide.md) details all you need to know to correctly size and test your lakeFS deployment for production use at scale, including:
 
-    * [System Requirements](sizing-guide.md#system-requirements)
-    * [Scaling factors](sizing-guide.md#scaling-factors)
-    * [Benchmarks](sizing-guide.md#benchmarks)
-    * [Important metrics](sizing-guide.md#important-metrics)
-    * [Reference architectures](sizing-guide.md#reference-architectures)
+  * [System Requirements](sizing-guide.md#system-requirements)
+  * [Scaling factors](sizing-guide.md#scaling-factors)
+  * [Benchmarks](sizing-guide.md#benchmarks)
+  * [Important metrics](sizing-guide.md#important-metrics)
+  * [Reference architectures](sizing-guide.md#reference-architectures)
 
 ## Garbage Collection
 

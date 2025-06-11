@@ -1,20 +1,18 @@
 ---
 title: GCP
 description: How to deploy and set up a production-suitable lakeFS environment on Google Cloud Platform (GCP).
-next:  ["Import data into your installation", "/howto/import.html"]
+next:  ["Import data into your installation", "../import/index.md"]
 ---
 
 # Deploy lakeFS on GCP
-
 
 !!! tip
     The instructions given here are for a self-managed deployment of lakeFS on GCP. <br/>
     For a hosted lakeFS service with guaranteed SLAs, please [contact us](https://lakefs.io/contact-us/) for details of lakeFS Cloud on GCP.
 
-When you deploy lakeFS on GCP these are the options available to use: 
+When you deploy lakeFS on GCP these are the options available to use:
 
-![](/assets/img/deploy/deploy-on-gcp.excalidraw.png)
-
+![](../../assets/img/deploy/deploy-on-gcp.excalidraw.png)
 
 !!! info "⏰ Expected deployment time: 25 min"
 
@@ -30,7 +28,6 @@ If you already have a database, take note of the connection string and skip to t
 1. On the *Users* tab in the console, create a user. The lakeFS installation will use it to connect to your database.
 1. Choose the method by which lakeFS [will connect to your database](https://cloud.google.com/sql/docs/postgres/connect-overview). Google recommends using
    the [SQL Auth Proxy](https://cloud.google.com/sql/docs/postgres/sql-proxy).
-
 
 ## Run the lakeFS Server
 
@@ -121,7 +118,6 @@ If you already have a database, take note of the connection string and skip to t
 To configure a load balancer to direct requests to the lakeFS servers you can use the `LoadBalancer` Service type or a Kubernetes Ingress.
 By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that you can use for health checks.
 
-
 !!! tip
     The NGINX Ingress Controller by default limits the client body size to 1 MiB.
 
@@ -130,19 +126,18 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
     
     Checkout the Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
 
-
 ## Create the admin user
 
 When you first open the lakeFS UI, you will be asked to create an initial admin user.
 
 1. Open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
 1. On first use, you'll be redirected to the setup page:
-   
-   <img src="/assets/img/setup.png" alt="Create user">
-   
+
+   <img src="../../assets/img/setup.png" alt="Create user">
+
 1. Follow the steps to create an initial administrator user. Save the credentials you’ve received somewhere safe, you won’t be able to see them again!
-   
-   <img src="/assets/img/setup_done.png" alt="Setup Done">
+
+   <img src="../../assets/img/setup_done.png" alt="Setup Done">
 
 1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
@@ -150,25 +145,14 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Use the credentials from the previous step to log in
 1. Click *Create Repository* and choose *Blank Repository*.
-   
-   <img src="/assets/img/create-repo-no-sn.png" alt="Create Repo"/>
-   
+
+   <img src="../../assets/img/create-repo-no-sn.png" alt="Create Repo"/>
+
 1. Under Storage Namespace, enter a path to your desired location on the object store. This is where data written to this repository will be stored.
 1. Click *Create Repository*
 1. You should now have a configured repository, ready to use!
 
-   <img src="/assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
-
-
+   <img src="../../assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
 
 !!! success "Congratulations"
     Your environment is now ready 🤩
-
-
-[config-envariables]:  /reference/configuration/#using-environment-variables
-[downloads]:  /index/#downloads
-[openapi]:  /understand/architecture/#openapi-server
-[s3-gateway]:  /understand/architecture/#s3-gateway
-[understand-repository]:  /understand/model/#repository
-[integration-hadoopfs]:  /integrations/spark/#lakefs-hadoop-filesystem
-[understand-commits]:  /understand/how/versioning-internals/#constructing-a-consistent-view-of-the-keyspace-ie-a-commit
