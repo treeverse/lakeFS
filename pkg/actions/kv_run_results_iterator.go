@@ -2,13 +2,10 @@ package actions
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/treeverse/lakefs/pkg/kv"
 )
-
-var ErrParamConflict = errors.New("parameters conflict")
 
 type KVRunResultIterator struct {
 	it    kv.MessageIterator

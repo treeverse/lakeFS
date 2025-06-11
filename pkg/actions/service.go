@@ -32,12 +32,6 @@ const (
 	commitPrefix = "commits"
 )
 
-var (
-	ErrNotFound      = errors.New("not found")
-	ErrNilValue      = errors.New("nil value")
-	ErrIfExprNotBool = errors.New("hook 'if' expression should evaluate to a boolean")
-)
-
 type Config struct {
 	Enabled bool
 	Lua     struct {
@@ -367,6 +361,7 @@ func (s *StoreService) runTasks(ctx context.Context, record graveler.HookRecord,
 				if task.Err == nil {
 					task.Err = task.Hook.Run(ctx, record, &buf)
 					if task.Err != nil {
+						// Wrap the error to later indicate that the precondition failed due to a client-side hook error.
 						task.Err = fmt.Errorf("%w: %s", ErrActionFailed, task.Err)
 					}
 				}
