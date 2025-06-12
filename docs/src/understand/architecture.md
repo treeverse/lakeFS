@@ -118,6 +118,6 @@ Once the client knows the exact data location from the lakeFS metadata, it direc
 ![lakeFS Clients vs Gateway Data Flow](../assets/img/s3gatewayvsclientdataflow.png)
 
 [data-quality-gates]:  use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates
-[dynamodb-permissions]:  ../howto/deploy/aws.md#grant-dynamodb-permissions-to-lakefs
-[roadmap]:  ../project/index.md#roadmap
+[dynamodb-permissions]:  ../howto/deploy/aws.md#grant-lakefs-permissions-to-dynamodb
+[roadmap]:  ../project/index.md
 [hadoopfs]:  ../integrations/spark.md#lakefs-hadoop-filesystem

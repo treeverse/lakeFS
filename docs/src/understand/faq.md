@@ -48,4 +48,4 @@ The [Axolotl](https://en.wikipedia.org/wiki/Axolotl){:target="_blank"} – a spe
 </small>
 
 [config-ref]:  ../reference/configuration.md#reference
-[roadmap]:  /project/index/#roadmap
+[roadmap]:  ../project/index.md

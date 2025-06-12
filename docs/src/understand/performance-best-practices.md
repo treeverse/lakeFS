@@ -19,7 +19,7 @@ It's a good idea to perform commits that are meaningful in the senese that they 
 
 ## Use zero-copy import
 
-To import object into lakeFS, either a single time or regularly, lakeFS offers a [zero-copy import][zero-copy-import] feature.
+To import object into lakeFS, either a single time or regularly, lakeFS offers a [zero-copy import][use-zero-copy-import] feature.
 Use this feature to import a large number of objects to lakeFS, instead of simply copying them into your repository.
 This feature will create a reference to the existing objects on your bucket and avoids the copy.
 
