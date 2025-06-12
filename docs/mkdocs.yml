@@ -24,6 +24,8 @@ theme:
     - content.code.copy
     - content.tabs.link
     - content.tooltips
+    - search.suggest
+    - search.share
   icon:
     repo: fontawesome/brands/github
   palette:
