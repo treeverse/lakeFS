@@ -8,13 +8,16 @@ description: The lakeFS documentation provides guidance on how to use lakeFS to 
 <img src="./assets/img/waving-axolotl-transparent.gif" width="90"/>
 
 
-**lakeFS brings software engineering best practices and applies them to data.** 
+<h2>lakeFS brings software engineering best practices and applies them to data</h2>
 
 lakeFS provides version control over the data lake, and uses Git-like semantics to create and access those versions. If you know git, you'll be right at home with lakeFS.
 
 With lakeFS, you can apply concepts to your data lake such as **branching** to create an isolated version of the data, **committing** to create a reproducible point in time, and **merging** in order to incorporate your changes in one atomic action.
 
-<iframe width="420" height="315" src="https://www.youtube.com/embed/GTxsyeoLccw"></iframe>
+???+ note "📽️ lakeFS in under 2 minutes"
+    <div class="video-wrapper">
+        <iframe width="1280" height="720" src="https://www.youtube.com/embed/GTxsyeoLccw" frameborder="0" allowfullscreen></iframe>
+    </div>
 
 ## How Do I Get Started? 
 
@@ -23,7 +26,6 @@ With lakeFS, you can apply concepts to your data lake such as **branching** to c
 These include [branching](./quickstart/branch.md), [merging](./quickstart/commit-and-merge.md), and [rolling back changes](./quickstart/rollback.md) to data. 
       
 !!! tip
-
     You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything. 
 
 ## Key lakeFS Features
@@ -46,13 +48,15 @@ It integrates seamlessly with popular data frameworks such as [Spark](./integrat
 !!! info
     For more details and a full list see [the integrations pages](./integrations/index.md).
 
-With lakeFS, you can use any of the tools and libraries you are used to work with to read and write data directly from a repository, e.g.
+With lakeFS, you can use any of the tools and libraries you are used to work with to read and write data directly from a repository.
 
-```python
->>> import pandas as pd
->>>
->>> df = pd.read_csv('lakefs://example-repository/main-branch/path/to.csv')
-```
+!!! example "Example: lakeFS with Pandas"
+
+    ```python
+    >>> import pandas as pd
+    >>>
+    >>> df = pd.read_csv('lakefs://example-repository/main-branch/path/to.csv')
+    ```
 
 Using this method, lakeFS acts as a metadata layer: it figures out which objects need to be fetched from the underlying storage for that version of the data and then lets the client read or write these files directly from the storage using [pre-signed URLs](./security/presigned-url.md). This allows lakeFS to be both very efficient but also highly secure:
 
@@ -65,15 +69,16 @@ Additionally, lakeFS maintains compatibility with the S3 API to minimize adoptio
 friction. You can use it as a drop-in replacement for S3 from the perspective of
 any tool interacting with a data lake.
 
-For example, take the common operation of reading unstructured data from the object store using [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html){: target="_blank" } (Python):
+!!! example
+    For example, take the common operation of reading unstructured data from the object store using [Boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html){: target="_blank" } (Python):
 
-```python
->>> import boto3
->>> 
->>> s3 = boto3.resource('s3')
->>> obj = s3.Object('example-repository', 'main-branch/path/image.png')
->>> image_data = obj.get()['Body'].read()
-```
+    ```python
+    >>> import boto3
+    >>> 
+    >>> s3 = boto3.resource('s3')
+    >>> obj = s3.Object('example-repository', 'main-branch/path/image.png')
+    >>> image_data = obj.get()['Body'].read()
+    ```
 
 You can use the same methods and syntax you are already using to read and write data when using a lakeFS repository. 
 This simplifies the adoption of lakeFS - minimal changes are needed to get started, making further changes an incremental process.
@@ -91,13 +96,19 @@ Git became ubiquitous when it comes to code because it had best supported engine
 lakeFS provides these exact benefits, that data practitioners are missing today, and enables them a clear intuitive Git-like interface to easily manage data like they manage code. 
 Through its versioning engine, lakeFS enables the following built-in operations familiar from Git:
 
-* **branch:** a consistent copy of a repository, isolated from other branches and their changes. Initial creation of a branch is a metadata operation that does not duplicate objects.
-* **commit:** an immutable checkpoint containing a complete snapshot of a repository.
-* **merge:** performed between two branches &mdash; merges atomically update one branch with the changes from another.
-* **revert:** returns a repo to the exact state of a previous commit.
-* **tag:** a pointer to a single immutable commit with a readable, meaningful name.
 
-!!! info ""
+<div class="grid cards" markdown>
+
+- :octicons-git-branch-24: __Branch__ <br/>a consistent copy of a repository, isolated from other branches and their changes. Initial creation of a branch is a metadata operation that does not duplicate objects.
+- :octicons-git-commit-24: __Commit__ <br/>an immutable checkpoint containing a complete snapshot of a repository.
+- :octicons-git-merge-24: __Merge__ <br/>performed between two branches &mdash; merges atomically update one branch with the changes from another.
+- :octicons-undo-24: __Revert__ <br/>returns a repo to the exact state of a previous commit.
+- :octicons-tag-24: __Tag__ <br/>a pointer to a single immutable commit with a readable, meaningful name.
+- :material-hook: __Hooks__ <br/>run validations and actions when actions occur (`pre-merge`, `post-create-branch`, etc).
+
+</div>
+
+!!! info
     See the [object model](./understand/model.md) for an in-depth
     definition of these, and the [CLI reference](./reference/cli.md) for the
     full list of commands.
@@ -112,7 +123,7 @@ lakeFS helps you maintain a tidy data lake in several ways, including:
 
 Being able to look at data as it was at a given point is particularly useful in at least two scenarios: 
 
-1. Reproducibility of ML experiments
+1. **Reproducibility of ML experiments**
 
     ML experimentation is iterative, requiring the ability to reproduce specific results. With lakeFS, you can version all aspects of an ML experiment, including the data. This enables:
     
@@ -124,7 +135,7 @@ Being able to look at data as it was at a given point is particularly useful in 
     
     lakeFS enhances your ML workflow by ensuring that all versions of data are easily accessible, traceable, and reproducible.
 
-2. Troubleshooting production problems
+2. **Troubleshooting production problems**
 
     In some cases, a user might report inconsistencies, question the accuracy, or simply report data or inference results as incorrect. 
     

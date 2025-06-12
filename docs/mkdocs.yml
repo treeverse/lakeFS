@@ -55,22 +55,6 @@ extra:
     primary: white
     accent: teal
 
-# Other settings
-extra:
-  consent:
-    title: Cookie consent
-    description: >-
-      We use cookies to recognize your repeated visits and preferences, as well
-      as to measure the effectiveness of our documentation and whether users
-      find what they're searching for. With your consent, you're helping us to
-          make our documentation better.      
-  homepage: https://lakefs.io
-  status:
-    new: New
-    enterprise: Enterprise Feature
-    deprecated: Deprecated Feature
-    experimental: Experimental Feature
-
 # Markdown settings
 markdown_extensions:
 - toc:
@@ -80,9 +64,11 @@ markdown_extensions:
 - footnotes
 - fenced_code
 - attr_list
+- md_in_html
 - def_list
 - admonition
 - codehilite
+- pymdownx.details
 - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
