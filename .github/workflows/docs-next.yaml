@@ -64,10 +64,19 @@ jobs:
               if [[ "$TAG" =~ ^v?([0-9]+)\.([0-9]+) ]]; then
                 VERSION="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
                 ALIASES="--update-aliases latest"
+              else
+                echo "::error::Could not extract v<major>.<minor> from tag '$TAG'. Aborting deployment."
+                exit 1
               fi
               ;;
             workflow_dispatch)
-              VERSION="${{ github.event.inputs.version }}"
+              INPUT_VERSION="${{ github.event.inputs.version }}"
+              if [[ "$INPUT_VERSION" =~ ^v?([0-9]+)\.([0-9]+) ]]; then
+                VERSION="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+              else
+                echo "::error::Could not extract v<major>.<minor> from input version '$INPUT_VERSION'. Aborting deployment."
+                exit 1
+              fi
               if [[ "${{ github.event.inputs.set_latest }}" == "true" ]]; then
                 ALIASES="--update-aliases latest"
               fi
