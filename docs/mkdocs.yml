@@ -49,6 +49,7 @@ extra:
     experimental: Experimental Feature
   version:
     provider: mike
+    default: latest
     alias: true
   icon:
     repo: fontawesome/brands/github
