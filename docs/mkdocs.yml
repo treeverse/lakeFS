@@ -95,6 +95,7 @@ markdown_extensions:
   - pymdownx.keys
   - pymdownx.mark
   - pymdownx.tilde
+  - pymdownx.details
 
 plugins:
   - mike:
@@ -102,260 +103,153 @@ plugins:
       css_dir: css
       javascript_dir: js
   - search
+  - render_swagger:
+      allow_arbitrary_locations : true
   - meta
-  # - redirects:
-      # redirect_maps:
-        # experimental/lakectl_local_posix.html: experimental/lakectl_local_posix.md
-        # posts/security_update.html: posts/security_update.md
-        # posts/deprecate-py-legacy.html: posts/deprecate-py-legacy.md
-        # enterprise/architecture.html: enterprise/architecture.md
-        # enterprise/troubleshooting.html: enterprise/troubleshooting.md
-        # enterprise/configuration.html: enterprise/configuration.md
-        # enterprise/upgrade.html: enterprise/upgrade.md
-        # enterprise/getstarted/quickstart.html: enterprise/getstarted/quickstart.md
-        # enterprise/getstarted/install.html: enterprise/getstarted/install.md
-        # enterprise/getstarted/migrate-from-oss.html: enterprise/getstarted/migrate-from-oss.md
-        # security/authentication.html: security/authentication.md
-        # security/external-principals-aws.html: security/external-principals-aws.md
-        # security/presigned-url.html: security/presigned-url.md
-        # security/ACL-server-implementation.html: security/ACL-server-implementation.md
-        # security/access-control-lists.html: security/access-control-lists.md
-        # security/sts-login.html: security/sts-login.md
-        # security/authorization-yaml.html: security/authorization-yaml.md
-        # security/sso.html: security/sso.md
-        # security/remote-authenticator.html: security/remote-authenticator.md
-        # security/rbac.html: security/rbac.md
-        # understand/architecture.html: understand/architecture.md
-        # understand/performance-best-practices.html: understand/performance-best-practices.md
-        # understand/model.html: understand/model.md
-        # understand/glossary.html: understand/glossary.md
-        # understand/faq.html: understand/faq.md
-        # understand/data-structure.html: understand/data-structure.md
-        # understand/how/versioning-internals.html: understand/how/versioning-internals.md
-        # understand/how/merge.html: understand/how/merge.md
-        # understand/how/kv.html: understand/how/kv.md
-        # understand/data_lifecycle_management/production.html: understand/data_lifecycle_management/production.md
-        # understand/data_lifecycle_management/data-devenv.html: understand/data_lifecycle_management/data-devenv.md
-        # data_lifecycle_management/data-devenv.html: understand/data_lifecycle_management/data-devenv.md
-        # understand/data_lifecycle_management/ci.html: understand/data_lifecycle_management/ci.md
-        # understand/use_cases/etl_testing.html: understand/use_cases/etl_testing.md
-        # understand/use_cases/cicd_for_data.html: understand/use_cases/cicd_for_data.md
-        # understand/use_cases/rollback.html: understand/use_cases/rollback.md
-        # understand/use_cases/reproducibility.html: understand/use_cases/reproducibility.md
-        # quickstart/commit-and-merge.html: quickstart/commit-and-merge.md
-        # quickstart/launch.html: quickstart/launch.md
-        # quickstart/query.html: quickstart/query.md
-        # quickstart/learning-more-lakefs.html: quickstart/learning-more-lakefs.md
-        # quickstart/actions-and-hooks.html: quickstart/actions-and-hooks.md
-        # quickstart/branch.html: quickstart/branch.md
-        # quickstart/rollback.html: quickstart/rollback.md
-        # quickstart/work-with-data-locally.html: quickstart/work-with-data-locally.md
-        # project/code-migrate-1.0-sdk.html: project/code-migrate-1.0-sdk.md
-        # project/contributing.html: project/contributing.md
-        # project/docs/callouts.html: project/docs.md
-        # integrations/kafka.html: integrations/kafka.md
-        # integrations/airbyte.html: integrations/airbyte.md
-        # integrations/vertex_ai.html: integrations/vertex_ai.md
-        # integrations/iceberg.html: integrations/iceberg.md
-        # integrations/sagemaker.html: integrations/sagemaker.md
-        # integrations/red_hat_openshift_ai.html: integrations/red_hat_openshift_ai.md
-        # integrations/spark.html: integrations/spark.md
-        # integrations/delta.html: integrations/delta.md
-        # integrations/python.html: integrations/python.md
-        # integrations/unity-catalog.html: integrations/unity-catalog.md
-        # integrations/hive.html: integrations/hive.md
-        # integrations/huggingface_datasets.html: integrations/huggingface_datasets.md
-        # integrations/aws_cli.html: integrations/aws_cli.md
-        # integrations/databricks.html: integrations/databricks.md
-        # integrations/duckdb.html: integrations/duckdb.md
-        # integrations/athena.html: integrations/athena.md
-        # integrations/glue_hive_metastore.html: integrations/glue_hive_metastore.md
-        # integrations/dremio.html: integrations/dremio.md
-        # integrations/presto_trino.html: integrations/presto_trino.md
-        # integrations/airflow.html: integrations/airflow.md
-        # integrations/mlflow.html: integrations/mlflow.md
-        # integrations/r.html: integrations/r.md
-        # integrations/git.html: integrations/git.md
-        # integrations/cloudera.html: integrations/cloudera.md
-        # integrations/glue_metastore.html: integrations/glue_metastore.md
-        # integrations/kubeflow.html: integrations/kubeflow.md
-        # howto/multiple-storage-backends.html: howto/multiple-storage-backends.md
-        # howto/unity-delta-sharing.html: howto/unity-delta-sharing.md
-        # howto/backup-and-restore.html: howto/backup-and-restore.md
-        # howto/scim.html: howto/scim.md
-        # howto/sizing-guide.html: howto/sizing-guide.md
-        # howto/local-checkouts.html: howto/local-checkouts.md
-        # howto/pull-requests.html: howto/pull-requests.md
-        # howto/import.html: howto/import.md
-        # howto/copying.html: howto/copying.md
-        # howto/virtual-host-addressing.html: howto/virtual-host-addressing.md
-        # howto/catalog_exports.html: howto/catalog_exports.md
-        # howto/export.html: howto/export.md
-        # howto/mirroring.html: howto/mirroring.md
-        # howto/migrate-away.html: howto/migrate-away.md
-        # howto/protect-branches.html: howto/protect-branches.md
-        # howto/deploy/onprem.html: howto/deploy/onprem.md
-        # deploy/k8s.html: howto/deploy/onprem.md
-        # deploy/docker.html: howto/deploy/onprem.md
-        # integrations/minio.html: howto/deploy/onprem.md
-        # using/minio.html: howto/deploy/onprem.md
-        # deploy/onprem.html: howto/deploy/onprem.md
-        # deploying/install.html: howto/deploy/onprem.md
-        # howto/deploy/gcp.html: howto/deploy/gcp.md
-        # setup/storage/gcs.html : howto/deploy/gcp.md
-        # deploy/gcp.html : howto/deploy/gcp.md
-        # setup/storage/index.html: howto/deploy/index.md
-        # setup/create-repo.html: howto/deploy/index.md
-        # howto/deploy/upgrade.html: howto/deploy/upgrade.md
-        # howto/deploy/aws.html: howto/deploy/aws.md
-        # deploying-aws/index.html: howto/deploy/aws.md
-        # deploying-aws/install.html: howto/deploy/aws.md
-        # deploying-aws/db.html: howto/deploy/aws.md
-        # deploying-aws/lb_dns.html: howto/deploy/aws.md
-        # setup/storage/s3.html : howto/deploy/aws.md
-        # deploy/aws.html : howto/deploy/aws.md
-        # deploying-aws/upgrade.html: howto/deploy/upgrade.md
-        # reference/upgrade.html: howto/deploy/upgrade.md
-        # howto/upgrade.html: howto/deploy/upgrade.md
-        # howto/deploy/azure.html: howto/deploy/azure.md
-        # setup/storage/blob.html: howto/deploy/azure.md
-        # deploy/azure.html: howto/deploy/azure.md
-        # howto/deploy/includes/setup.html: howto/deploy/index.md
-        # howto/hooks/webhooks.html: howto/hooks/webhooks.md
-        # howto/hooks/airflow.html: howto/hooks/airflow.md
-        # howto/hooks/lua.html: howto/hooks/lua.md
-        # howto/garbage-collection/index.html: howto/garbage-collection/gc.md
-        # howto/garbage-collection/committed.html: howto/garbage-collection/gc.md
-        # howto/garbage-collection/uncommitted.html: howto/garbage-collection/gc.md
-        # howto/garbage-collection/internals.html: howto/garbage-collection/gc.md
-        # reference/garbage-collection.html: howto/garbage-collection/gc.md
-        # howto/garbage-collection-index.html: howto/garbage-collection/gc.md
-        # howto/garbage-collection.html: howto/garbage-collection/gc.md
-        # cloud/standalone-gc.html: howto/garbage-collection/standalone-gc.md
-        # cloud/managed-gc.html: howto/garbage-collection/managed-gc.md
-        # reference/retention.html: howto/garbage-collection/gc.md
-        # reference/hooks.html: howto/hooks/index.md
-        # hooks.html: howto/hooks/index.md
-        # hooks/overview.html: howto/hooks/index.md
-        # hooks/index.html: howto/hooks/index.md
-        # setup/hooks.html: howto/hooks/index.md
-        # hooks/airflow.html: howto/hooks/airflow.md
-        # hooks/lua.html: howto/hooks/lua.md
-        # hooks/webhooks.html: howto/hooks/webhooks.md
-        # integrations/rclone.html: howto/copying.md
-        # integrations/distcp.html: howto/copying.md
-        # reference/export.html: howto/export.md
-        # setup/import.html: howto/import.md
-        # deploying-aws/offboarding.html: howto/migrate-away.md
-        # reference/offboarding.html: howto/migrate-away.md
-        # cloud/private-link.html: howto/private-link.md
-        # reference/protected_branches.html: howto/protect-branches.md
-        # reference/pull_requests.html: howto/pull-requests.md
-        # cloud/scim.html: howto/scim.md
-        # understand/sizing-guide.html: howto/sizing-guide.md
-        # architecture/sizing-guide.html: howto/sizing-guide.md
-        # cloud/unity-delta-sharing-m0-users: howto/unity-delta-sharing.md
-        # cloud/unity-delta-sharing.html: howto/unity-delta-sharing.md
-        # using/airflow.html: integrations/airflow.md
-        # using/athena.html: integrations/athena.md
-        # using/aws_cli.html: integrations/aws_cli.md
-        # using/dremio.html: integrations/dremio.md
-        # using/glue_hive_metastore.html: integrations/glue_hive_metastore.md
-        # using/glue_metastore.html: integrations/glue_metastore.md
-        # using/hive.html: integrations/hive.md
-        # howto/lakefs-tables.md: integrations/iceberg.md
-        # using/index.html: integrations/index.md
-        # using/kakfa.html: integrations/kafka.md
-        # integrations/presto.html: integrations/presto_trino.md
-        # using/presto.html: integrations/presto_trino.md
-        # integrations/boto.html: integrations/python.md
-        # using/boto.html: integrations/python.md
-        # using/python.html: integrations/python.md
-        # using/sagemaker.html: integrations/sagemaker.md
-        # integrations/emr.html: integrations/spark.md
-        # integrations/glue_etl.html: integrations/spark.md
-        # using/databricks.html: integrations/spark.md
-        # using/emr.html: integrations/spark.md
-        # using/glue_etl.html: integrations/spark.md
-        # using/spark.html: integrations/spark.md
-        # integrations/unity_catalog.html: integrations/unity-catalog.md
-        # using/unity_catalog.html: integrations/unity-catalog.md
-        # callouts.html: project/docs.md
-        # understand/licensing.html: project/index.md
-        # licensing.html: project/index.md
-        # commitment.html: project/index.md
-        # roadmap.html: project/index.md
-        # understand/roadmap.html: project/index.md
-        # quickstart.html: quickstart/index.md
-        # quickstart/installing.html: quickstart/index.md
-        # quickstart/try.html: quickstart/index.md
-        # quickstart/add_data.html: quickstart/index.md
-        # quickstart/more_quickstart_options.html: quickstart/index.md
-        # quickstart/repository.html: quickstart/index.md
-        # quickstart/run.html: quickstart/index.md
-        # quickstart/first_commit.html: quickstart/index.md
-        # audit.html: reference/auditing.md
-        # reference/commands.html: reference/cli.md
-        # quickstart/lakefs_cli.html: reference/cli.md
-        # deploying-aws/monitor.html: reference/monitor.md
-        # reference/access-control-list.html: security/access-control-lists.md
-        # reference/access-control-lists.html: security/access-control-lists.md
-        # reference/audit.html: reference/auditing.md
-        # cloud/auditing.html: reference/auditing.md
-        # reference/authentication.html: security/authentication.md
-        # reference/external-principals-aws.html: security/external-principals-aws.md
-        # reference/presigned-url.html: security/presigned-url.md
-        # reference/authorization.html: security/rbac.md
-        # reference/rbac.html: security/rbac.md
-        # cloud/sso.html: security/sso.md
-        # enterprise/sso.html: security/sso.md
-        # slack.html: https://lakefs.io/slack
-        # slack/index.html: https://lakefs.io/slack
-        # reference/remote-authenticator.html: security/sts-login.md
-        # usecases/data-devenv.html: understand/data_lifecycle_management/data-devenv.md
-        # branching/recommendations.html: understand/data_lifecycle_management/index.md
-        # using_lakefs.html: understand/data_lifecycle_management/index.md
-        # data_lifecycle_management/production.html: understand/data_lifecycle_management/production.md
-        # usecases/production.html: understand/data_lifecycle_management/production.md
-        # understand/kv-in-a-nutshell.html: understand/how/kv.md
-        # reference/merge.html: understand/how/merge.md
-        # understand/merge.html: understand/how/merge.md
-        # understand/architecture/data-model.html: understand/how/versioning-internals.md
-        # understand/understand/data-model.html: understand/how/versioning-internals.md
-        # understand/data-model.html: understand/how/versioning-internals.md
-        # understand/versioning-internals.html: understand/how/versioning-internals.md
-        # use_cases/cicd_for_data.html: understand/use_cases/cicd_for_data.md
-        # usecases/ci.html: understand/use_cases/cicd_for_data.md
-        # usecases/cd.html: understand/use_cases/cicd_for_data.md
-        # use_cases/etl_testing.html: understand/use_cases/etl_testing.md
-        # use_cases/iso_env.html: understand/use_cases/etl_testing.md
-        # quickstart/iso_env.html: understand/use_cases/etl_testing.md
-        # use_cases/index.html: understand/use_cases/index.md
-        # use_cases/reproducibility.html: understand/use_cases/reproducibility.md
-        # understand/rollback.html: understand/use_cases/rollback.md
-        # architecture/index.html: understand/architecture.md
-        # architecture/overview.html: understand/architecture.md
-        # faq.html: understand/faq.md
-        # reference/object-model.html: understand/model.md
-        # understand/branching-model.html: understand/model.md
-        # understand/object-model.html: understand/model.md
-        # reference/glossary.html: understand/glossary.md
-        # glossary.html: understand/glossary.md
-        # downloads.html: index.md
-        # howto/garbage-collection/standalone-gc.html: howto/garbage-collection/standalone-gc.md
-        # howto/garbage-collection/managed-gc.html: howto/garbage-collection/managed-gc.md
-        # howto/garbage-collection/gc.html: howto/garbage-collection/gc.md
-        # reference/mount-csi-driver.html: reference/mount-csi-driver.md
-        # reference/api.html: reference/api.md
-        # reference/cli.html: reference/cli.md
-        # reference/mount.html: reference/mount.md
-        # reference/s3.html: reference/s3.md
-        # reference/auditing.html: reference/auditing.md
-        # reference/monitor.html: reference/monitor.md
-        # reference/spark-client.html: reference/spark-client.md
-        # reference/configuration.html: reference/configuration.md
-        # reference/mount-write-mode-semantics.html: reference/mount-write-mode-semantics.md
-
+  - redirects:
+      redirect_maps:
+        data_lifecycle_management/data-devenv.md: understand/data_lifecycle_management/data-devenv.md
+        project/docs/callouts.md: project/docs.md
+        deploy/k8s.md: howto/deploy/onprem.md
+        deploy/docker.md: howto/deploy/onprem.md
+        integrations/minio.md: howto/deploy/onprem.md
+        using/minio.md: howto/deploy/onprem.md
+        deploy/onprem.md: howto/deploy/onprem.md
+        deploying/install.md: howto/deploy/onprem.md
+        setup/storage/gcs.md : howto/deploy/gcp.md
+        deploy/gcp.md : howto/deploy/gcp.md
+        setup/storage/index.md: howto/deploy/index.md
+        setup/create-repo.md: howto/deploy/index.md
+        deploying-aws/index.md: howto/deploy/aws.md
+        deploying-aws/install.md: howto/deploy/aws.md
+        deploying-aws/db.md: howto/deploy/aws.md
+        deploying-aws/lb_dns.md: howto/deploy/aws.md
+        setup/storage/s3.md : howto/deploy/aws.md
+        deploy/aws.md : howto/deploy/aws.md
+        deploying-aws/upgrade.md: howto/deploy/upgrade.md
+        reference/upgrade.md: howto/deploy/upgrade.md
+        howto/upgrade.md: howto/deploy/upgrade.md
+        setup/storage/blob.md: howto/deploy/azure.md
+        deploy/azure.md: howto/deploy/azure.md
+        howto/deploy/includes/setup.md: howto/deploy/index.md
+        howto/garbage-collection/index.md: howto/garbage-collection/gc.md
+        howto/garbage-collection/committed.md: howto/garbage-collection/gc.md
+        howto/garbage-collection/uncommitted.md: howto/garbage-collection/gc.md
+        howto/garbage-collection/internals.md: howto/garbage-collection/gc.md
+        reference/garbage-collection.md: howto/garbage-collection/gc.md
+        howto/garbage-collection-index.md: howto/garbage-collection/gc.md
+        howto/garbage-collection.md: howto/garbage-collection/gc.md
+        cloud/standalone-gc.md: howto/garbage-collection/standalone-gc.md
+        cloud/managed-gc.md: howto/garbage-collection/managed-gc.md
+        reference/retention.md: howto/garbage-collection/gc.md
+        reference/hooks.md: howto/hooks/index.md
+        hooks.md: howto/hooks/index.md
+        hooks/overview.md: howto/hooks/index.md
+        hooks/index.md: howto/hooks/index.md
+        setup/hooks.md: howto/hooks/index.md
+        hooks/airflow.md: howto/hooks/airflow.md
+        hooks/lua.md: howto/hooks/lua.md
+        hooks/webhooks.md: howto/hooks/webhooks.md
+        integrations/rclone.md: howto/copying.md
+        integrations/distcp.md: howto/copying.md
+        reference/export.md: howto/export.md
+        setup/import.md: howto/import.md
+        deploying-aws/offboarding.md: howto/migrate-away.md
+        reference/offboarding.md: howto/migrate-away.md
+        cloud/private-link.md: howto/private-link.md
+        reference/protected_branches.md: howto/protect-branches.md
+        reference/pull_requests.md: howto/pull-requests.md
+        cloud/scim.md: howto/scim.md
+        understand/sizing-guide.md: howto/sizing-guide.md
+        architecture/sizing-guide.md: howto/sizing-guide.md
+        cloud/unity-delta-sharing-m0-users.md: howto/unity-delta-sharing.md
+        cloud/unity-delta-sharing.md: howto/unity-delta-sharing.md
+        using/airflow.md: integrations/airflow.md
+        using/athena.md: integrations/athena.md
+        using/aws_cli.md: integrations/aws_cli.md
+        using/dremio.md: integrations/dremio.md
+        using/glue_hive_metastore.md: integrations/glue_hive_metastore.md
+        using/glue_metastore.md: integrations/glue_metastore.md
+        using/hive.md: integrations/hive.md
+        howto/lakefs-tables.md: integrations/iceberg.md
+        using/index.md: integrations/index.md
+        using/kakfa.md: integrations/kafka.md
+        integrations/presto.md: integrations/presto_trino.md
+        using/presto.md: integrations/presto_trino.md
+        integrations/boto.md: integrations/python.md
+        using/boto.md: integrations/python.md
+        using/python.md: integrations/python.md
+        using/sagemaker.md: integrations/sagemaker.md
+        integrations/emr.md: integrations/spark.md
+        integrations/glue_etl.md: integrations/spark.md
+        using/databricks.md: integrations/spark.md
+        using/emr.md: integrations/spark.md
+        using/glue_etl.md: integrations/spark.md
+        using/spark.md: integrations/spark.md
+        integrations/unity_catalog.md: integrations/unity-catalog.md
+        using/unity_catalog.md: integrations/unity-catalog.md
+        callouts.md: project/docs.md
+        understand/licensing.md: project/index.md
+        licensing.md: project/index.md
+        commitment.md: project/index.md
+        roadmap.md: project/index.md
+        understand/roadmap.md: project/index.md
+        quickstart.md: quickstart/index.md
+        quickstart/installing.md: quickstart/index.md
+        quickstart/try.md: quickstart/index.md
+        quickstart/add_data.md: quickstart/index.md
+        quickstart/more_quickstart_options.md: quickstart/index.md
+        quickstart/repository.md: quickstart/index.md
+        quickstart/run.md: quickstart/index.md
+        quickstart/first_commit.md: quickstart/index.md
+        audit.md: reference/auditing.md
+        reference/commands.md: reference/cli.md
+        quickstart/lakefs_cli.md: reference/cli.md
+        deploying-aws/monitor.md: reference/monitor.md
+        reference/access-control-list.md: security/access-control-lists.md
+        reference/access-control-lists.md: security/access-control-lists.md
+        reference/audit.md: reference/auditing.md
+        cloud/auditing.md: reference/auditing.md
+        reference/authentication.md: security/authentication.md
+        reference/external-principals-aws.md: security/external-principals-aws.md
+        reference/presigned-url.md: security/presigned-url.md
+        reference/authorization.md: security/rbac.md
+        reference/rbac.md: security/rbac.md
+        cloud/sso.md: security/sso.md
+        enterprise/sso.md: security/sso.md
+        slack.md: https://lakefs.io/slack
+        slack/index.md: https://lakefs.io/slack
+        reference/remote-authenticator.md: security/sts-login.md
+        usecases/data-devenv.md: understand/data_lifecycle_management/data-devenv.md
+        branching/recommendations.md: understand/data_lifecycle_management/index.md
+        using_lakefs.md: understand/data_lifecycle_management/index.md
+        data_lifecycle_management/production.md: understand/data_lifecycle_management/production.md
+        usecases/production.md: understand/data_lifecycle_management/production.md
+        understand/kv-in-a-nutshell.md: understand/how/kv.md
+        reference/merge.md: understand/how/merge.md
+        understand/merge.md: understand/how/merge.md
+        understand/architecture/data-model.md: understand/how/versioning-internals.md
+        understand/understand/data-model.md: understand/how/versioning-internals.md
+        understand/data-model.md: understand/how/versioning-internals.md
+        understand/versioning-internals.md: understand/how/versioning-internals.md
+        use_cases/cicd_for_data.md: understand/use_cases/cicd_for_data.md
+        usecases/ci.md: understand/use_cases/cicd_for_data.md
+        usecases/cd.md: understand/use_cases/cicd_for_data.md
+        use_cases/etl_testing.md: understand/use_cases/etl_testing.md
+        use_cases/iso_env.md: understand/use_cases/etl_testing.md
+        quickstart/iso_env.md: understand/use_cases/etl_testing.md
+        use_cases/index.md: understand/use_cases/index.md
+        use_cases/reproducibility.md: understand/use_cases/reproducibility.md
+        understand/rollback.md: understand/use_cases/rollback.md
+        architecture/index.md: understand/architecture.md
+        architecture/overview.md: understand/architecture.md
+        faq.md: understand/faq.md
+        reference/object-model.md: understand/model.md
+        understand/branching-model.md: understand/model.md
+        understand/object-model.md: understand/model.md
+        reference/glossary.md: understand/glossary.md
+        glossary.md: understand/glossary.md
+        downloads.md: index.md
 
 # This section is used to generate the navigation sidebar
 nav:
