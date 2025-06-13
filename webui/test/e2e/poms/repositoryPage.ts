@@ -55,8 +55,7 @@ export class RepositoryPage {
   // uncommitted changes operations
 
   async showOnlyChanges(): Promise<void> {
-    await this.page.getByRole("button", { name: "Pending Changes" }).click();
-    await this.page.getByLabel("Only show changes").click();
+    await this.page.getByRole("button", { name: "Uncommitted Changes" }).click();
   }
 
   async getUncommittedCount(): Promise<number> {
@@ -69,8 +68,9 @@ export class RepositoryPage {
   }
 
   async commitChanges(commitMsg: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Pending Changes" }).click();
-    await this.page.getByRole("menuitem", { name: "Commit Changes" }).click();
+    // Click the Actions dropdown (empty button next to Uncommitted Changes)
+    await this.page.locator('button[id="changes-dropdown"]').click();
+    await this.page.getByRole("button", { name: "Commit Changes" }).click();
     if (commitMsg?.length) {
       await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
     }

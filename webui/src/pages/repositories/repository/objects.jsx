@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { useOutletContext } from "react-router-dom";
-import {CheckboxIcon, UploadIcon, XIcon, AlertIcon, PencilIcon, GitCommitIcon, HistoryIcon, FilterIcon, DiffIcon} from "@primer/octicons-react";
+import {CheckboxIcon, UploadIcon, XIcon, AlertIcon, PencilIcon, GitCommitIcon, HistoryIcon, NorthStarIcon} from "@primer/octicons-react";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
     ActionGroup,
@@ -13,6 +13,7 @@ import {
     Warnings
 } from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
@@ -1273,44 +1274,59 @@ const ObjectsBrowser = ({ config }) => {
             }
           />
           
-          {/* Changes Management Dropdown */}
+          {/* Changes Management Button Group */}
           {reference && reference.type === RefTypeBranch && hasChanges && (
-            <Dropdown>
-              <Dropdown.Toggle variant="outline-primary" id="changes-dropdown">
-                {showChangesOnly ? <FilterIcon className="me-1" /> : <DiffIcon className="me-1" />}
-                Pending Changes
+            <Dropdown as={ButtonGroup} className="me-2">
+              {/* Toggle Switch */}
+              <Button
+                variant={showChangesOnly ? "secondary" : "outline-secondary"}
+                size="sm"
+                onClick={handleToggleChanges}
+                className="d-flex align-items-center"
+              >
+                <NorthStarIcon className="me-1"/> 
+                Uncommitted Changes
+              </Button>
+              
+              {/* Actions Dropdown */}
+              <Dropdown.Toggle 
+                variant="outline-secondary" 
+                size="sm"
+                id="changes-dropdown"
+              >
+
               </Dropdown.Toggle>
-              <Dropdown.Menu>
-                <Dropdown.Item as="div" className="px-3 py-2">
-                  <Form.Check
-                    type="switch"
-                    id="show-changes-switch"
-                    label="Only show changes"
-                    checked={showChangesOnly}
-                    onChange={handleToggleChanges}
-                  />
-                </Dropdown.Item>
-                <Dropdown.Divider />
-                <Dropdown.Item
-                  onClick={() => {
-                    // Trigger the commit modal by finding the actual button and clicking it
-                    const commitBtn = document.querySelector('[data-commit-btn] button');
-                    if (commitBtn) {
-                      commitBtn.click();
-                    }
-                  }}
-                  disabled={repo?.read_only}
-                >
-                  <GitCommitIcon className="me-2" />
-                  Commit Changes
-                </Dropdown.Item>
-                <Dropdown.Item
-                  onClick={() => setShowRevertModal(true)}
-                  disabled={repo?.read_only}
-                >
-                  <HistoryIcon className="me-2" />
-                  Revert All Changes
-                </Dropdown.Item>
+              
+              <Dropdown.Menu className="changes-dropdown-menu">
+                <div className="d-flex flex-column gap-2 p-2">
+                  <Button
+                    variant="success"
+                    size="sm"
+                    onClick={() => {
+                      // Trigger the commit modal by finding the actual button and clicking it
+                      const commitBtn = document.querySelector('[data-commit-btn] button');
+                      if (commitBtn) {
+                        commitBtn.click();
+                      }
+                    }}
+                    disabled={repo?.read_only}
+                    className="d-flex align-items-center justify-content-center changes-action-btn"
+                  >
+                    <GitCommitIcon className="me-1" />
+                    Commit Changes
+                  </Button>
+                  
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    onClick={() => setShowRevertModal(true)}
+                    disabled={repo?.read_only}
+                    className="d-flex align-items-center justify-content-center changes-action-btn"
+                  >
+                    <HistoryIcon className="me-1" />
+                    Revert All Changes
+                  </Button>
+                </div>
               </Dropdown.Menu>
             </Dropdown>
           )}
