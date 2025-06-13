@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { useOutletContext } from "react-router-dom";
-import {CheckboxIcon, UploadIcon, XIcon, AlertIcon, PencilIcon} from "@primer/octicons-react";
+import {CheckboxIcon, UploadIcon, XIcon, AlertIcon, PencilIcon, GitCommitIcon, HistoryIcon, FilterIcon, DiffIcon} from "@primer/octicons-react";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
     ActionGroup,
@@ -16,10 +16,11 @@ import Button from "react-bootstrap/Button";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
+import Dropdown from "react-bootstrap/Dropdown";
 import { BsCloudArrowUp } from "react-icons/bs";
 
-import {humanSize, Tree} from "../../../lib/components/repository/tree";
-import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders} from "../../../lib/api";
+import {humanSize, Tree, URINavigator} from "../../../lib/components/repository/tree";
+import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders, branches, commits, refs} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -35,43 +36,138 @@ import {
 import { Box } from "@mui/material";
 import { RepoError } from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
-import {OverlayTrigger, ProgressBar} from "react-bootstrap";
-import Tooltip from "react-bootstrap/Tooltip";
+import {ProgressBar} from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
 import { useStorageConfigs } from "../../../lib/hooks/storageConfig";
 import { getRepoStorageConfig } from "./utils";
 import {useDropzone} from "react-dropzone";
 import pMap from "p-map";
+import {formatAlertText} from "../../../lib/components/repository/errors";
+import {ChangesTreeContainer, MetadataFields} from "../../../lib/components/repository/changes";
+import {ConfirmationModal} from "../../../lib/components/modals";
+import { Link } from "../../../lib/components/nav";
+import Card from "react-bootstrap/Card";
 
 const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
 
+/**
+ * A component to display when there are no changes in the repository.
+ * This is used specifically for the uncommitted changes page.
+ * 
+ * @param repo Repository
+ * @param reference commitID / branch
+ */
+export const EmptyChangesState = ({ repo, reference }) => {
+    return (
+        <div className="tree-container">
+            <Card className="border-0 shadow-sm">
+                <Card.Body className="text-center p-5">
+                    <h3 className="mb-3">No Changes Yet</h3>
+                    <p className="text-muted mb-4">
+                        No uncommitted changes on <code>{reference.id}</code>!
+                        <br />Upload or modify files to see them appear here.
+                    </p>
+                    <Link 
+                        href={{
+                            pathname: "/repositories/:repoId/objects",
+                            params: { repoId: repo.id },
+                            query: { ref: reference.id, upload: true }
+                        }}
+                        className="btn btn-primary"
+                    >
+                        <UploadIcon className="me-1" /> Upload Files
+                    </Link>
+                </Card.Body>
+            </Card>
+        </div>
+    );
+};
+
+export async function appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState, getMore) {
+    let resultsFiltered = resultsState.results
+    if (resultsState.prefix !== prefix) {
+        // prefix changed, need to delete previous results
+        setAfterUpdated("")
+        resultsFiltered = []
+    }
+
+    if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > afterUpdated) {
+        // results already cached
+        return {prefix: prefix, results: resultsFiltered, pagination: resultsState.pagination}
+    }
+
+    const {results, pagination} = await getMore()
+    // Ensure concatenated results maintain lexicographic order
+    const concatenatedResults = resultsFiltered.concat(results).sort((a, b) => a.path.localeCompare(b.path))
+    setResultsState({prefix: prefix, results: concatenatedResults, pagination: pagination})
+    return {results: resultsState.results, pagination: pagination}
+}
+
 const isAbortedError = (error, controller) => {
   return (error instanceof DOMException && error.name === 'AbortError') || controller?.signal?.aborted;
 };
 
-const ImportButton = ({ variant = "success", onClick, config }) => {
-  const tip = config.import_support
-    ? "Import data from a remote source"
-    : config.blockstore_type === "local"
-    ? "Import is not enabled for local blockstore"
-    : "Unsupported for " + config.blockstore_type + " blockstore";
+const CommitButton = ({repo, onCommit, enabled = false}) => {
+    const textRef = useRef(null);
 
-  return (
-    <OverlayTrigger placement="bottom" overlay={<Tooltip>{tip}</Tooltip>}>
-      <span>
-        <Button
-          variant={variant}
-          disabled={!config.import_support}
-          onClick={onClick}
-        >
-          <BsCloudArrowUp /> Import
-        </Button>
-      </span>
-    </OverlayTrigger>
-  );
-};
+    const [committing, setCommitting] = useState(false)
+    const [show, setShow] = useState(false)
+    const [metadataFields, setMetadataFields] = useState([])
+    const hide = () => {
+        if (committing) return;
+        setShow(false)
+    }
+
+    const onSubmit = () => {
+        const message = textRef.current.value;
+        const metadata = {};
+        metadataFields.forEach(pair => metadata[pair.key] = pair.value)
+        setCommitting(true)
+        onCommit({message, metadata}, () => {
+            setCommitting(false)
+            setShow(false);
+        })
+    };
+
+    const alertText = formatAlertText(repo.id, null);
+    return (
+        <>
+            <Modal show={show} onHide={hide} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Commit Changes</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form className="mb-2" onSubmit={(e) => {
+                        onSubmit();
+                        e.preventDefault();
+                    }}>
+                        <Form.Group controlId="message" className="mb-3">
+                            <Form.Control type="text" placeholder="Commit Message" ref={textRef}/>
+                        </Form.Group>
+
+                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
+                    </Form>
+                    {(alertText) ? (<Alert variant="danger">{alertText}</Alert>) : (<span/>)}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" disabled={committing} onClick={hide}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" disabled={committing} onClick={onSubmit}>
+                        Commit Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            <Button variant="success" disabled={!enabled} onClick={() => setShow(true)}>
+                <GitCommitIcon/> Commit Changes{' '}
+            </Button>
+        </>
+    );
+}
+
+
 
 export const useInterval = (callback, delay) => {
     const savedCallback = useRef();
@@ -740,16 +836,120 @@ const TreeContainer = ({
   onUpload,
   onImport,
   refreshToken,
+  showChangesOnly,
 }) => {
+  const [actionError, setActionError] = useState(null);
+  const [internalRefresh, setInternalRefresh] = useState(true);
+  const [afterUpdated, setAfterUpdated] = useState("");
+  const [resultsState, setResultsState] = useState({prefix: path, results:[], pagination:{}});
+
+  const delimiter = '/';
+
+  // Reset results when switching between modes or changing path
+  React.useEffect(() => {
+    setResultsState({prefix: path, results:[], pagination:{}});
+    setAfterUpdated("");
+  }, [showChangesOnly, path]);
+
+  // Fetch changes to highlight them in regular view
+  const { response: changesData } = useAPI(async () => {
+    if (!showChangesOnly && reference && reference.type === RefTypeBranch) {
+      try {
+        return await refs.changes(repo.id, reference.id, "", path, delimiter);
+      } catch (error) {
+        return { results: [] };
+      }
+    }
+    return { results: [] };
+  }, [repo.id, reference.id, path, refreshToken, showChangesOnly]);
+
+  // Use different API calls based on whether we're showing changes only or all objects
   const { results, error, loading, nextPage } = useAPIWithPagination(() => {
-    return objects.list(
-      repo.id,
-      reference.id,
-      path,
-      after,
-      config.pre_sign_support_ui
-    );
-  }, [repo.id, reference.id, path, after, refreshToken]);
+    if (showChangesOnly) {
+      // Show only changes - use current path to filter changes
+      return appendMoreResults(resultsState, path, afterUpdated, setAfterUpdated, setResultsState,
+        () => refs.changes(repo.id, reference.id, afterUpdated, path, delimiter));
+    } else {
+      // Show all objects
+      return objects.list(
+        repo.id,
+        reference.id,
+        path,
+        after,
+        config.pre_sign_support_ui
+      );
+    }
+  }, [repo.id, reference.id, path, after, refreshToken, showChangesOnly, internalRefresh, afterUpdated, delimiter]);
+
+  // Merge changes with objects for highlighting
+  const mergedResults = React.useMemo(() => {
+    if (showChangesOnly || !results || !changesData?.results) {
+      // Ensure regular results are also sorted lexicographically
+      return results ? results.sort((a, b) => a.path.localeCompare(b.path)) : results;
+    }
+
+    const changesMap = new Map();
+    const directoryChanges = new Map(); // Store change type for directories
+    
+    // Map direct changes and identify affected directories
+    changesData.results.forEach(change => {
+      // Map change type to what EntryRow expects
+      const mappedType = change.type === 'removed' ? 'removed' : 
+                        change.type === 'added' ? 'added' : 'changed';
+      
+      changesMap.set(change.path, mappedType);
+      
+      // If this is a prefix entry from changes, mark it directly with its type
+      if (change.path_type === "common_prefix") {
+        directoryChanges.set(change.path, mappedType);
+      } else {
+        // For file changes, mark parent directories as changed
+        const pathParts = change.path.split('/');
+        for (let i = 1; i < pathParts.length; i++) {
+          const dirPath = pathParts.slice(0, i).join('/') + '/';
+          // Only mark as changed if not already marked with a more specific type
+          if (!directoryChanges.has(dirPath)) {
+            directoryChanges.set(dirPath, "changed");
+          }
+        }
+      }
+    });
+
+    // Add missing items from changes that aren't in the regular results
+    // This includes deleted files and deleted/changed prefixes
+    const missingItems = changesData.results
+      .filter(change => !results.find(result => result.path === change.path));
+
+    // Merge regular results with change info
+    const enhancedResults = results.map(entry => {
+      const directChangeType = changesMap.get(entry.path);
+      if (directChangeType) {
+        return { ...entry, diff_type: directChangeType };
+      }
+      
+      // Check if this directory contains changes (either directly or has changed children)
+      const directoryChangeType = directoryChanges.get(entry.path);
+      if (entry.path_type === "common_prefix" && directoryChangeType) {
+        return { ...entry, diff_type: directoryChangeType };
+      }
+      
+      return entry;
+    });
+
+    // Add missing items (deleted files, deleted/changed prefixes) to the results
+    const allResults = [...enhancedResults, ...missingItems.map(item => {
+      const mappedType = item.type === 'removed' ? 'removed' : 
+                        item.type === 'added' ? 'added' : 'changed';
+      return {
+        ...item,
+        diff_type: mappedType
+      };
+    })];
+
+    // Sort to maintain proper order
+    return allResults.sort((a, b) => a.path.localeCompare(b.path));
+  }, [results, changesData, showChangesOnly]);
+
   const initialState = {
     inProgress: false,
     error: null,
@@ -757,35 +957,124 @@ const TreeContainer = ({
   };
   const [deleteState, setDeleteState] = useState(initialState);
 
-    if (loading) return <Loading/>;
-    if (error) return <AlertError error={error}/>;
+  const refresh = () => {
+    setResultsState({prefix: path, results:[], pagination:{}})
+    setInternalRefresh(!internalRefresh)
+    onRefresh();
+  }
+
+  const getMoreUncommittedChanges = (afterUpdated, changesPath, useDelimiter= true, amount = -1) => {
+    return refs.changes(repo.id, reference.id, afterUpdated, changesPath, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
+  }
+
+  let onReset = async (entry) => {
+    branches
+        .reset(repo.id, reference.id, {type: entry.path_type, path: entry.path})
+        .then(refresh)
+        .catch(error => {
+            setActionError(error)
+        })
+  }
+
+  if (loading) return <Loading/>;
+  if (error) return <AlertError error={error}/>;
+
+  // If showing changes only, use ChangesTreeContainer
+  if (showChangesOnly) {
+    const rawChangesResults = resultsState.results.length > 0 ? resultsState.results : results || [];
+    // Always sort changes lexicographically to maintain consistent ordering
+    const changesResults = rawChangesResults.sort((a, b) => a.path.localeCompare(b.path));
+    
+    if (changesResults.length === 0) {
+      return <EmptyChangesState repo={repo} reference={reference} />;
+    }
+
+    const committedRef = reference.id + "@"
+    const uncommittedRef = reference.id
+
+    // Create URI navigator that preserves "show changes" mode
+    const changesUriNavigator = (
+      <URINavigator 
+        path={path || ""} 
+        repo={repo} 
+        reference={reference} 
+        hasCopyButton={true}
+        pathURLBuilder={(params, query) => {
+          return {
+            pathname: '/repositories/:repoId/objects',
+            params: params,
+            query: { ...query, ref: reference.id, showChanges: 'true' }
+          }
+        }}
+      />
+    );
 
     return (
-        <>
-            {deleteState.error && <AlertError error={deleteState.error} onDismiss={() => setDeleteState(initialState)}/>}
-            <Tree
-                config={{config}}
-                repo={repo}
-                reference={reference}
-                path={(path) ? path : ""}
-                showActions={true}
-                results={results}
-                after={after}
-                nextPage={nextPage}
-                onPaginate={onPaginate}
-                onUpload={onUpload}
-                onImport={onImport}
-                onDelete={entry => {
-                    objects
-                        .delete(repo.id, reference.id, entry.path)
-                        .catch(error => {
-                            setDeleteState({...initialState, error: error})
-                            throw error
-                        })
-                        .then(onRefresh)
-                }}
-            /></>
+      <>
+        {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)}/>}
+        <ChangesTreeContainer 
+          results={changesResults} 
+          delimiter={delimiter}
+          uriNavigator={changesUriNavigator}
+          leftDiffRefID={committedRef} 
+          rightDiffRefID={uncommittedRef}
+          repo={repo} 
+          reference={reference} 
+          internalRefresh={internalRefresh} 
+          prefix={path}
+          getMore={getMoreUncommittedChanges}
+          loading={loading} 
+          nextPage={nextPage} 
+          setAfterUpdated={setAfterUpdated}
+          onNavigate={(entry) => {
+            return {
+              pathname: `/repositories/:repoId/objects`,
+              params: {repoId: repo.id},
+              query: {
+                ref: reference.id,
+                path: entry.path,
+                showChanges: 'true'
+              }
+            }
+          }} 
+          onRevert={onReset}
+          changesTreeMessage={<p>Showing {changesResults.length} change{changesResults.length !== 1 ? 's' : ''} for branch <strong>{reference.id}</strong></p>}
+          noChangesText="No changes - you can modify this branch by uploading data using the UI or any of the supported SDKs"
+          emptyStateComponent={<EmptyChangesState repo={repo} reference={reference} />}
+        />
+      </>
     );
+  }
+
+  // Regular objects view
+  return (
+    <>
+      {deleteState.error && <AlertError error={deleteState.error} onDismiss={() => setDeleteState(initialState)}/>}
+      {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)}/>}
+      <Tree
+        config={{config}}
+        repo={repo}
+        reference={reference}
+        path={(path) ? path : ""}
+        showActions={true}
+        results={mergedResults}
+        after={after}
+        nextPage={nextPage}
+        onPaginate={onPaginate}
+        onUpload={onUpload}
+        onImport={onImport}
+        onDelete={entry => {
+          objects
+            .delete(repo.id, reference.id, entry.path)
+            .catch(error => {
+              setDeleteState({...initialState, error: error})
+              throw error
+            })
+            .then(onRefresh)
+        }}
+      />
+    </>
+  );
 }
 
 const ReadmeContainer = ({
@@ -883,14 +1172,30 @@ const NoGCRulesWarning = ({ repoId }) => {
 
 const ObjectsBrowser = ({ config }) => {
   const router = useRouter();
-  const { path, after, importDialog, upload } = router.query;
+  const { path, after, importDialog, upload, showChanges } = router.query;
   const [searchParams, setSearchParams] = useSearchParams();
   const { repo, reference, loading, error } = useRefs();
   const [showUpload, setShowUpload] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [refreshToken, setRefreshToken] = useState(false);
+  const [showChangesOnly, setShowChangesOnly] = useState(showChanges === 'true');
+  const [actionError, setActionError] = useState(null);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showRevertModal, setShowRevertModal] = useState(false);
 
-  const refresh = () => setRefreshToken(!refreshToken);
+  const refresh = () => {
+    setRefreshToken(!refreshToken);
+    // Also refresh changes status
+    if (reference && reference.type === RefTypeBranch) {
+      refs.changes(repo.id, reference.id, "", "", "/")
+        .then(result => {
+          setHasChanges(result.results && result.results.length > 0);
+        })
+        .catch(() => {
+          setHasChanges(false);
+        });
+    }
+  };
   const parts = (path && path.split("/")) || [];
   const searchSuffix = parts.pop();
   let searchPrefix = parts.join("/");
@@ -911,6 +1216,37 @@ const ObjectsBrowser = ({ config }) => {
       setSearchParams(searchParams);
     }
   }, [router.route, upload, searchParams, setSearchParams]);
+
+  // Check for changes when component loads or reference changes
+  useEffect(() => {
+    if (reference && reference.type === RefTypeBranch) {
+      refs.changes(repo.id, reference.id, "", "", "/")
+        .then(result => {
+          setHasChanges(result.results && result.results.length > 0);
+        })
+        .catch(() => {
+          setHasChanges(false);
+        });
+    } else {
+      setHasChanges(false);
+    }
+  }, [repo?.id, reference?.id, refreshToken]);
+
+  // Handle toggle changes view
+  const handleToggleChanges = () => {
+    const newShowChanges = !showChangesOnly;
+    setShowChangesOnly(newShowChanges);
+    
+    const query = { path: path || "" };
+    if (reference) query.ref = reference.id;
+    if (newShowChanges) query.showChanges = 'true';
+    
+    router.push({
+      pathname: `/repositories/:repoId/objects`,
+      query,
+      params: { repoId: repo.id },
+    });
+  };
 
   if (loading) return <Loading />;
   if (error) return <RepoError error={error} />;
@@ -936,43 +1272,137 @@ const ObjectsBrowser = ({ config }) => {
               })
             }
           />
+          
+          {/* Changes Management Dropdown */}
+          {reference && reference.type === RefTypeBranch && hasChanges && (
+            <Dropdown>
+              <Dropdown.Toggle variant="outline-primary" id="changes-dropdown">
+                {showChangesOnly ? <FilterIcon className="me-1" /> : <DiffIcon className="me-1" />}
+                Pending Changes
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item as="div" className="px-3 py-2">
+                  <Form.Check
+                    type="switch"
+                    id="show-changes-switch"
+                    label="Only show changes"
+                    checked={showChangesOnly}
+                    onChange={handleToggleChanges}
+                  />
+                </Dropdown.Item>
+                <Dropdown.Divider />
+                <Dropdown.Item
+                  onClick={() => {
+                    // Trigger the commit modal by finding the actual button and clicking it
+                    const commitBtn = document.querySelector('[data-commit-btn] button');
+                    if (commitBtn) {
+                      commitBtn.click();
+                    }
+                  }}
+                  disabled={repo?.read_only}
+                >
+                  <GitCommitIcon className="me-2" />
+                  Commit Changes
+                </Dropdown.Item>
+                <Dropdown.Item
+                  onClick={() => setShowRevertModal(true)}
+                  disabled={repo?.read_only}
+                >
+                  <HistoryIcon className="me-2" />
+                  Revert All Changes
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
         </ActionGroup>
 
         <ActionGroup orientation="right">
-          <PrefixSearchWidget
-            text="Search by Prefix"
-            key={path}
-            defaultValue={searchSuffix}
-            onFilter={(prefix) => {
-              const query = { path: "" };
-              if (searchPrefix !== undefined) query.path = searchPrefix;
-              if (prefix) query.path += prefix;
-              if (reference) query.ref = reference.id;
-              const url = {
-                pathname: `/repositories/:repoId/objects`,
-                query,
-                params: { repoId: repo.id },
-              };
-              router.push(url);
-            }}
-          />
+          {!showChangesOnly && (
+            <PrefixSearchWidget
+              text="Search by Prefix"
+              key={path}
+              defaultValue={searchSuffix}
+              onFilter={(prefix) => {
+                const query = { path: "" };
+                if (searchPrefix !== undefined) query.path = searchPrefix;
+                if (prefix) query.path += prefix;
+                if (reference) query.ref = reference.id;
+                const url = {
+                  pathname: `/repositories/:repoId/objects`,
+                  query,
+                  params: { repoId: repo.id },
+                };
+                router.push(url);
+              }}
+            />
+          )}
+          
           <RefreshButton onClick={refresh} />
-          <UploadButton
-            config={config}
-            path={path}
-            repo={repo}
-            reference={reference}
-            onDone={refresh}
-            onClick={() => {
-              setShowUpload(true);
-            }}
-            onHide={() => {
-              setShowUpload(false);
-            }}
-            show={showUpload}
+          
+          <Button
+            variant="success"
             disabled={repo?.read_only}
-          />
-          <ImportButton onClick={() => setShowImport(true)} config={config} />
+            onClick={() => setShowUpload(true)}
+          >
+            <UploadIcon /> Upload
+          </Button>
+          
+          <Button
+            variant={!config.import_support ? "success" : "light"}
+            disabled={!config.import_support}
+            onClick={() => setShowImport(true)}
+          >
+            <BsCloudArrowUp /> Import
+          </Button>
+          
+          {/* Hidden components for modals */}
+          <div style={{ display: 'none' }}>
+            <div data-commit-btn>
+              <CommitButton 
+                repo={repo} 
+                enabled={hasChanges && !repo?.read_only} 
+                onCommit={async (commitDetails, done) => {
+                  try {
+                    await commits.commit(repo.id, reference.id, commitDetails.message, commitDetails.metadata);
+                    setActionError(null);
+                    
+                    // Reset to normal view after commit
+                    setShowChangesOnly(false);
+                    const query = { path: path || "" };
+                    if (reference) query.ref = reference.id;
+                    // Don't include showChanges parameter to go back to normal mode
+                    router.push({
+                      pathname: `/repositories/:repoId/objects`,
+                      query,
+                      params: { repoId: repo.id },
+                    });
+                    
+                    refresh();
+                  } catch (err) {
+                    setActionError(err);
+                  }
+                  done();
+                }}
+              />
+            </div>
+            
+            <UploadButton
+              config={config}
+              path={path}
+              repo={repo}
+              reference={reference}
+              onDone={refresh}
+              onClick={() => {}}
+              onHide={() => {
+                setShowUpload(false);
+              }}
+              show={showUpload}
+              disabled={repo?.read_only}
+            />
+          </div>
+          
+
+          
           <ImportModal
             config={config}
             path={path}
@@ -985,8 +1415,35 @@ const ObjectsBrowser = ({ config }) => {
             }}
             show={showImport}
           />
+          
+          <ConfirmationModal
+            show={showRevertModal}
+            onHide={() => setShowRevertModal(false)}
+            msg="Are you sure you want to revert all uncommitted changes?"
+            onConfirm={() => {
+              branches.reset(repo.id, reference.id, {type: 'reset'})
+                .then(() => {
+                  // Reset to normal view after revert
+                  setShowChangesOnly(false);
+                  const query = { path: path || "" };
+                  if (reference) query.ref = reference.id;
+                  // Don't include showChanges parameter to go back to normal mode
+                  router.push({
+                    pathname: `/repositories/:repoId/objects`,
+                    query,
+                    params: { repoId: repo.id },
+                  });
+                  
+                  refresh();
+                })
+                .catch(error => setActionError(error));
+              setShowRevertModal(false);
+            }}
+          />
         </ActionGroup>
       </ActionsBar>
+      
+      {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)}/>}
 
       <NoGCRulesWarning repoId={repo.id} />
 
@@ -1008,6 +1465,7 @@ const ObjectsBrowser = ({ config }) => {
             const query = { after };
             if (path) query.path = path;
             if (reference) query.ref = reference.id;
+            if (showChangesOnly) query.showChanges = 'true';
             const url = {
               pathname: `/repositories/:repoId/objects`,
               query,
@@ -1023,6 +1481,7 @@ const ObjectsBrowser = ({ config }) => {
             setShowImport(true);
           }}
           onRefresh={refresh}
+          showChangesOnly={showChangesOnly}
         />
 
         <ReadmeContainer
