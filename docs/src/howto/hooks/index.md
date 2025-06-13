@@ -159,7 +159,7 @@ For example, if your repository contains a pre-commit hook, every commit would g
 lakeFS will fetch, parse and filter the repository Action files and start to execute the Hooks under each Action.
 All executed Hooks (each with `hook_run_id`) exist in the context of that Run (`run_id`).
 
-The [lakeFS API](../..//reference/api.md) and [lakectl][lakectl-actions] expose the results of executions per repository, branch, commit, and specific Action.
+The [lakeFS API](../../reference/api.md) and [lakectl][lakectl-actions] expose the results of executions per repository, branch, commit, and specific Action.
 The endpoint also allows to download the execution log of any executed Hook under each Run for observability.
 
 ## Result Files
