@@ -54,6 +54,11 @@ export class RepositoryPage {
 
   // uncommitted changes operations
 
+  async showOnlyChanges(): Promise<void> {
+    await this.page.getByRole("button", { name: "Pending Changes" }).click();
+    await this.page.getByLabel("Only show changes").click();
+  }
+
   async getUncommittedCount(): Promise<number> {
     await this.page.locator("div.card").isVisible();
     return this.page
@@ -64,7 +69,8 @@ export class RepositoryPage {
   }
 
   async commitChanges(commitMsg: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Commit Changes" }).click();
+    await this.page.getByRole("button", { name: "Pending Changes" }).click();
+    await this.page.getByRole("menuitem", { name: "Commit Changes" }).click();
     if (commitMsg?.length) {
       await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
     }
@@ -100,9 +106,6 @@ export class RepositoryPage {
     await this.page.getByRole("link", { name: "Objects" }).click();
   }
 
-  async gotoUncommittedChangeTab(): Promise<void> {
-    await this.page.getByRole("link", { name: "Uncommitted Changes" }).click();
-  }
 
   async gotoCompareTab(): Promise<void> {
     await this.page.getByRole("link", { name: "Compare" }).click();
