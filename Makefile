@@ -79,30 +79,19 @@ check-licenses-npm:
 	# The -i arg is a workaround to ignore NPM scoped packages until https://github.com/senseyeio/diligent/issues/77 is fixed
 	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
 
-docs/assets/js/swagger.yml: api/swagger.yml
+docs/src/assets/js/swagger.yml: api/swagger.yml
 	@cp api/swagger.yml docs/assets/js/swagger.yml
 
-docs/assets/js/authorization.yml: api/authorization.yml
-	@cp api/authorization.yml docs/assets/js/authorization.yml
+docs/src/assets/js/authorization.yml: api/authorization.yml
+	@cp api/authorization.yml docs/src/assets/js/authorization.yml
 
-docs: docs/assets/js/swagger.yml docs/assets/js/authorization.yml
+docs: docs/src/assets/js/swagger.yml docs/src/assets/js/authorization.yml
 
 docs-serve: ### Serve local docs
-	cd docs; bundle exec jekyll serve --livereload
-
-docs-serve-docker: ### Serve local docs from Docker
-	docker run --rm \
-			--name lakefs_docs \
-			-e TZ="Etc/UTC" \
-			--publish 4000:4000 --publish 35729:35729 \
-			--volume="$$PWD/docs:/srv/jekyll:Z" \
-			--volume="$$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
-			--interactive --tty \
-			jekyll/jekyll:4.2.2 \
-			jekyll serve --livereload
+	cd docs; mkdocs serve --dev-addr 127.0.0.1:4000
 
 gen-docs: ## Generate CLI docs automatically
-	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/cli.md
+	$(GOCMD) run cmd/lakectl/main.go docs > docs/src/reference/cli.md
 
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/ -o pkg/metastore/hive pkg/metastore/hive/hive_metastore.thrift
@@ -165,7 +154,7 @@ package-python-wrapper:
 package: package-python
 
 .PHONY: gen-api
-gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
+gen-api: docs/src/assets/js/swagger.yml ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth ./pkg/authentication
 
 .PHONY: gen-code
