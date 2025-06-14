@@ -13,7 +13,7 @@ import RepositoriesPage from "./repositories";
 import {RepositoryPageLayout} from "../lib/components/repository/layout.jsx";
 import RepositoryObjectsPage from "./repositories/repository/objects";
 import RepositoryObjectsViewPage from "./repositories/repository/objectViewer";
-import RepositoryChangesPage from "./repositories/repository/changes";
+
 import RepositoryCommitsPage from "./repositories/repository/commits";
 import RepositoryCommitPage from "./repositories/repository/commits/commit";
 import RepositoryBranchesPage from "./repositories/repository/branches";
@@ -58,7 +58,6 @@ export const IndexPage = () => {
                             <Route path=":repoId" element={<RepositoryPageLayout/>}>
                                 <Route path="objects" element={<RepositoryObjectsPage/>}/>
                                 <Route path="object" element={<RepositoryObjectsViewPage/>}/>
-                                <Route path="changes" element={<RepositoryChangesPage/>}/>
                                 <Route path="commits">
                                     <Route index element={<RepositoryCommitsPage/>}/>
                                     <Route path=":commitId" element={<RepositoryCommitPage/>}/>

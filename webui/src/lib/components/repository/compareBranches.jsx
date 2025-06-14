@@ -3,7 +3,7 @@ import {refs as refsAPI} from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
 import {RefTypeBranch, RefTypeCommit} from "../../../constants";
 import {useAPIWithPagination} from "../../hooks/api";
-import {appendMoreResults} from "../../../pages/repositories/repository/changes";
+import {appendMoreResults} from "../../../pages/repositories/repository/objects";
 import {AlertError, Loading} from "../controls";
 import {ChangesTreeContainer, defaultGetMoreChanges} from "./changes";
 import {URINavigator} from "./tree";
