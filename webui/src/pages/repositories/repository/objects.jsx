@@ -53,38 +53,6 @@ const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
 
-/**
- * A component to display when there are no changes in the repository.
- * This is used specifically for the uncommitted changes page.
- * 
- * @param repo Repository
- * @param reference commitID / branch
- */
-export const EmptyChangesState = ({ repo, reference }) => {
-    return (
-        <div className="tree-container">
-            <Card className="border-0 shadow-sm">
-                <Card.Body className="text-center p-5">
-                    <h3 className="mb-3">No Changes Yet</h3>
-                    <p className="text-muted mb-4">
-                        No uncommitted changes on <code>{reference.id}</code>!
-                        <br />Upload or modify files to see them appear here.
-                    </p>
-                    <Link 
-                        href={{
-                            pathname: "/repositories/:repoId/objects",
-                            params: { repoId: repo.id },
-                            query: { ref: reference.id, upload: true }
-                        }}
-                        className="btn btn-primary"
-                    >
-                        <UploadIcon className="me-1" /> Upload Files
-                    </Link>
-                </Card.Body>
-            </Card>
-        </div>
-    );
-};
 
 export async function appendMoreResults(resultsState, prefix, lastSeenPath, setLastSeenPath, setResultsState, getMore) {
     let resultsFiltered = resultsState.results
@@ -827,6 +795,38 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
   );
 };
 
+export const EmptyChangesState = ({ repo, reference, toggleShowChanges }) => {
+  return (
+      <div className="tree-container">
+          <Card className="border-0 shadow-sm">
+              <Card.Body className="text-center p-5">
+                  <h3 className="mb-3">No Changes Here</h3>
+                  <p className="text-muted mb-1">
+                      No uncommitted changes on <code>{reference.id}</code>!
+                  </p>
+                  <p className="text-muted mb-4">
+                    Upload or modify files to see them appear here.
+                  </p>
+                  <Link 
+                      href={{
+                          pathname: "/repositories/:repoId/objects",
+                          params: { repoId: repo.id },
+                          query: { ref: reference.id, upload: true }
+                      }}
+                      className="btn btn-primary me-2"
+                  >
+                      <UploadIcon className="me-1" /> Upload Files
+                  </Link>
+                  <Button variant="outline-secondary" onClick={() => toggleShowChanges(false)}>
+                      <NorthStarIcon  className="me-1" /> See All Objects
+                  </Button>
+              </Card.Body>
+          </Card>
+      </div>
+  );
+};
+
+
 const TreeContainer = ({
   config,
   repo,
@@ -839,6 +839,7 @@ const TreeContainer = ({
   onImport,
   refreshToken,
   showChangesOnly,
+  toggleShowChangesOnly,
 }) => {
   const [actionError, setActionError] = useState(null);
   const [internalRefresh, setInternalRefresh] = useState(true);
@@ -988,7 +989,7 @@ const TreeContainer = ({
     const changesResults = rawChangesResults.sort((a, b) => a.path.localeCompare(b.path));
     
     if (changesResults.length === 0) {
-      return <EmptyChangesState repo={repo} reference={reference} />;
+      return <EmptyChangesState repo={repo} reference={reference} toggleShowChanges={toggleShowChangesOnly} />;
     }
 
     const committedRef = reference.id + "@"
@@ -1042,7 +1043,7 @@ const TreeContainer = ({
           onRevert={onReset}
           changesTreeMessage={<p>Showing {changesResults.length} change{changesResults.length !== 1 ? 's' : ''} for branch <strong>{reference.id}</strong></p>}
           noChangesText="No changes - you can modify this branch by uploading data using the UI or any of the supported SDKs"
-          emptyStateComponent={<EmptyChangesState repo={repo} reference={reference} />}
+          emptyStateComponent={<EmptyChangesState repo={repo} reference={reference} toggleShowChanges={toggleShowChangesOnly} />}
         />
       </>
     );
@@ -1499,6 +1500,7 @@ const ObjectsBrowser = ({ config }) => {
           }}
           onRefresh={refresh}
           showChangesOnly={showChangesOnly}
+          toggleShowChangesOnly={() => setShowChangesOnly(false)}
         />
 
         <ReadmeContainer
