@@ -86,15 +86,15 @@ export const EmptyChangesState = ({ repo, reference }) => {
     );
 };
 
-export async function appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState, getMore) {
+export async function appendMoreResults(resultsState, prefix, lastSeenPath, setLastSeenPath, setResultsState, getMore) {
     let resultsFiltered = resultsState.results
     if (resultsState.prefix !== prefix) {
         // prefix changed, need to delete previous results
-        setAfterUpdated("")
+        setLastSeenPath("")
         resultsFiltered = []
     }
 
-    if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > afterUpdated) {
+    if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > lastSeenPath) {
         // results already cached
         return {prefix: prefix, results: resultsFiltered, pagination: resultsState.pagination}
     }
@@ -116,6 +116,7 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
     const [committing, setCommitting] = useState(false)
     const [show, setShow] = useState(false)
     const [metadataFields, setMetadataFields] = useState([])
+    
     const hide = () => {
         if (committing) return;
         setShow(false)
@@ -150,7 +151,7 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
 
                         <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
                     </Form>
-                    {(alertText) ? (<Alert variant="danger">{alertText}</Alert>) : (<span/>)}
+                    {alertText ? (<Alert variant="danger">{alertText}</Alert>) : (<span/>)}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={committing} onClick={hide}>
@@ -162,7 +163,7 @@ const CommitButton = ({repo, onCommit, enabled = false}) => {
                 </Modal.Footer>
             </Modal>
             <Button variant="success" disabled={!enabled} onClick={() => setShow(true)}>
-                <GitCommitIcon/> Commit Changes{' '}
+                <GitCommitIcon/> Commit Changes
             </Button>
         </>
     );
@@ -841,7 +842,7 @@ const TreeContainer = ({
 }) => {
   const [actionError, setActionError] = useState(null);
   const [internalRefresh, setInternalRefresh] = useState(true);
-  const [afterUpdated, setAfterUpdated] = useState("");
+  const [lastSeenPath, setLastSeenPath] = useState("");
   const [resultsState, setResultsState] = useState({prefix: path, results:[], pagination:{}});
 
   const delimiter = '/';
@@ -849,7 +850,7 @@ const TreeContainer = ({
   // Reset results when switching between modes or changing path
   React.useEffect(() => {
     setResultsState({prefix: path, results:[], pagination:{}});
-    setAfterUpdated("");
+    setLastSeenPath("");
   }, [showChangesOnly, path]);
 
   // Fetch changes to highlight them in regular view
@@ -868,8 +869,8 @@ const TreeContainer = ({
   const { results, error, loading, nextPage } = useAPIWithPagination(() => {
     if (showChangesOnly) {
       // Show only changes - use current path to filter changes
-      return appendMoreResults(resultsState, path, afterUpdated, setAfterUpdated, setResultsState,
-        () => refs.changes(repo.id, reference.id, afterUpdated, path, delimiter));
+      return appendMoreResults(resultsState, path, lastSeenPath, setLastSeenPath, setResultsState,
+        () => refs.changes(repo.id, reference.id, lastSeenPath, path, delimiter));
     } else {
       // Show all objects
       return objects.list(
@@ -880,7 +881,7 @@ const TreeContainer = ({
         config.pre_sign_support_ui
       );
     }
-  }, [repo.id, reference.id, path, after, refreshToken, showChangesOnly, internalRefresh, afterUpdated, delimiter]);
+  }, [repo.id, reference.id, path, after, refreshToken, showChangesOnly, internalRefresh, lastSeenPath, delimiter]);
 
   // Merge changes with objects for highlighting
   const mergedResults = React.useMemo(() => {
@@ -964,8 +965,8 @@ const TreeContainer = ({
     onRefresh();
   }
 
-  const getMoreUncommittedChanges = (afterUpdated, changesPath, useDelimiter= true, amount = -1) => {
-    return refs.changes(repo.id, reference.id, afterUpdated, changesPath, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
+  const getMoreUncommittedChanges = (lastSeenPath, changesPath, useDelimiter= true, amount = -1) => {
+    return refs.changes(repo.id, reference.id, lastSeenPath, changesPath, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
   }
 
   let onReset = async (entry) => {
@@ -1026,7 +1027,7 @@ const TreeContainer = ({
           getMore={getMoreUncommittedChanges}
           loading={loading} 
           nextPage={nextPage} 
-          setAfterUpdated={setAfterUpdated}
+          setLastSeenPath={setLastSeenPath}
           onNavigate={(entry) => {
             return {
               pathname: `/repositories/:repoId/objects`,
