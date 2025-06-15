@@ -2314,10 +2314,10 @@ Show log of commits
 #### Synopsis
 {:.no_toc}
 
-Show log of commits for a given branch
+Show log of commits for a given reference
 
 ```
-lakectl log <branch URI> [flags]
+lakectl log <ref URI> [flags]
 ```
 
 #### Examples
