@@ -1,1 +1,0 @@
-Please see [project/docs/](project/docs/index.md)
