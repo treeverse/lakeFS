@@ -1,5 +1,18 @@
 # Changelog
 
+# v1.60.0
+
+:new: What's new:
+
+- Actions: Distinguish client and internal errors in actions responses (#9162)
+- Update kin-openapi package with changes related to request validation (#9167)
+- Sample repository: remove unused images (#9156)
+
+:bug: Bugs fixed:
+
+- Fix: laktectl progress bar panic (#9148)
+- Fix issue with not showing marker icons in GeoJSON preview map (#9140)
+
 # v1.59.0
 
 :new: What's new:
