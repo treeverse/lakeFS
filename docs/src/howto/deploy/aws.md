@@ -72,12 +72,12 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
         ---
         database:
             type: "dynamodb"
-        
+
         auth:
             encrypt:
             # replace this with a randomly-generated string. Make sure to keep it safe!
             secret_key: "[ENCRYPTION_SECRET_KEY]"
-        
+
         blockstore:
             type: s3
         ```
@@ -86,7 +86,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
         ```sh
         lakefs --config config.yaml run
         ```
-        
+
         !!! note
             It's preferable to run the binary as a service using systemd or your operating system's facilities.
 
@@ -123,7 +123,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
         # Deploy lakeFS
         helm install my-lakefs lakefs/lakefs -f conf-values.yaml
         ```
-        
+
         *my-lakefs* is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) name.
 
         !!! warning
@@ -140,7 +140,7 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
 
     Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3 Gateway][s3-gateway] or
     a simple PUT request using the [OpenAPI Server][openapi].
-    
+
     Checkout the Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
 
 ## Prepare your S3 bucket
@@ -194,7 +194,7 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
 
     To use an S3 Express One Zone _directory bucket_, use the following policy. Note the `lakeFSDirectoryBucket` statement which is specifically required for using a directory bucket.
 
-    ```json 
+    ```json
     {
         "Id": "lakeFSPolicy",
         "Version": "2012-10-17",
@@ -293,7 +293,7 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
     }
     ```
 
-    We can use [presigned URLs mode][presigned-url] without allowing access to the data from the lakeFS server directly. 
+    We can use [presigned URLs mode][presigned-url] without allowing access to the data from the lakeFS server directly.
     We can achieve this by using [condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html) such as [aws:referer](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-referer), [aws:SourceVpc](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourcevpc) and [aws:SourceIp](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-sourceip).
 
     !!! example "For example, assume the following scenario"
@@ -329,7 +329,7 @@ lakeFS currently supports the following S3 Storage Classes:
 
 1. [S3 Standard](https://aws.amazon.com/s3/storage-classes/#General_purpose) - The default AWS S3 storage tier. Fully supported.
 2. [S3 Express One-Zone](https://aws.amazon.com/s3/storage-classes/express-one-zone/) - Fully supported.
-3. [S3 Glacier Instant Retrival](https://aws.amazon.com/s3/storage-classes/glacier/instant-retrieval/) - Supported with limitations: currently, pre-signed URLs are not supported when using Instant Retrival. The outstanding feature request [could be tracked here](https://github.com/treeverse/lakeFS/issues/7784).  
+3. [S3 Glacier Instant Retrival](https://aws.amazon.com/s3/storage-classes/glacier/instant-retrieval/) - Supported with limitations: currently, pre-signed URLs are not supported when using Instant Retrival. The outstanding feature request [could be tracked here](https://github.com/treeverse/lakeFS/issues/7784).
 
 Other storage classes are currently unsupported - either because they have not been tested with lakeFS or because they cannot be supported.
 
@@ -351,26 +351,19 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
 1. On first use, you'll be redirected to the setup page:
-
    <img src="../../../assets/img/setup.png" alt="Create user">
-
 1. Follow the steps to create an initial administrator user. Save the credentials you’ve received somewhere safe, you won’t be able to see them again!
-
    <img src="../../../assets/img/setup_done.png" alt="Setup Done">
-
 1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
 ## Create your first repository
 
 1. Use the credentials from the previous step to log in
 1. Click *Create Repository* and choose *Blank Repository*.
-
    <img src="../../../assets/img/create-repo-no-sn.png" alt="Create Repo"/>
-
 1. Under Storage Namespace, enter a path to your desired location on the object store. This is where data written to this repository will be stored.
 1. Click *Create Repository*
 1. You should now have a configured repository, ready to use!
-
    <img src="../../../assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
 
 !!! success "Congratulations"

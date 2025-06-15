@@ -50,8 +50,8 @@ If you already have a database, take note of the connection string and skip to t
         # gs:
         #   credentials_json: [YOUR SERVICE ACCOUNT JSON STRING]
     ```
-    
-    1. [Download the binary][downloads] to run on the GCE instance.
+
+    1. [Download the binary](https://github.com/treeverse/lakeFS/releases) to run on the GCE instance.
     1. Run the `lakefs` binary on the GCE machine:
     ```bash
     lakefs --config config.yaml run
@@ -81,7 +81,7 @@ If you already have a database, take note of the connection string and skip to t
     To install lakeFS with Helm:
 
     1. Copy the Helm values file relevant for Google Storage:
-    
+
     ```yaml
     secrets:
         # replace DATABASE_CONNECTION_STRING with the connection string of the database you created in a previous step.
@@ -101,7 +101,7 @@ If you already have a database, take note of the connection string and skip to t
     !!! note
         The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html) but without sensitive information.
         Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
-    
+
     1. In the directory where you created `conf-values.yaml`, run the following commands:
 
     ```bash
@@ -121,9 +121,9 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
 !!! tip
     The NGINX Ingress Controller by default limits the client body size to 1 MiB.
 
-    Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway][s3-gateway] or 
+    Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway][s3-gateway] or
     a simple PUT request using the [OpenAPI Server][openapi].
-    
+
     Checkout the Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
 
 ## Create the admin user
@@ -132,26 +132,19 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
 1. On first use, you'll be redirected to the setup page:
-
    <img src="../../../assets/img/setup.png" alt="Create user">
-
 1. Follow the steps to create an initial administrator user. Save the credentials you’ve received somewhere safe, you won’t be able to see them again!
-
    <img src="../../../assets/img/setup_done.png" alt="Setup Done">
-
 1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
 ## Create your first repository
 
 1. Use the credentials from the previous step to log in
 1. Click *Create Repository* and choose *Blank Repository*.
-
    <img src="../../../assets/img/create-repo-no-sn.png" alt="Create Repo"/>
-
 1. Under Storage Namespace, enter a path to your desired location on the object store. This is where data written to this repository will be stored.
 1. Click *Create Repository*
 1. You should now have a configured repository, ready to use!
-
    <img src="../../../assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
 
 !!! success "Congratulations"

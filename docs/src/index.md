@@ -3,7 +3,7 @@ title: Welcome to lakeFS
 description: The lakeFS documentation provides guidance on how to use lakeFS to deliver resilience and manageability to data lakes.
 ---
 
-# Welcome to the Lake! 
+# Welcome to the Lake!
 
 <img src="./assets/img/waving-axolotl-transparent.gif" width="90"/>
 
@@ -19,14 +19,14 @@ With lakeFS, you can apply concepts to your data lake such as **branching** to c
         <iframe width="1280" height="720" src="https://www.youtube.com/embed/GTxsyeoLccw" frameborder="0" allowfullscreen></iframe>
     </div>
 
-## How Do I Get Started? 
+## How Do I Get Started?
 
-**[The hands-on quickstart](./quickstart/index.md) guides you through some core features of lakeFS**. 
+**[The hands-on quickstart](./quickstart/index.md) guides you through some core features of lakeFS**.
 
-These include [branching](./quickstart/branch.md), [merging](./quickstart/commit-and-merge.md), and [rolling back changes](./quickstart/rollback.md) to data. 
-      
+These include [branching](./quickstart/branch.md), [merging](./quickstart/commit-and-merge.md), and [rolling back changes](./quickstart/rollback.md) to data.
+
 !!! tip
-    You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything. 
+    You can use the [30-day free trial of lakeFS Cloud](https://lakefs.cloud/register) if you want to try out lakeFS without installing anything.
 
 ## Key lakeFS Features
 
@@ -40,9 +40,9 @@ These include [branching](./quickstart/branch.md), [merging](./quickstart/commit
 
 <img src="./assets/img/lakeFS_integration.png" alt="lakeFS integration into data lake" width="60%" height="60%" />
 
-## How Does lakeFS Work With Other Tools? 
+## How Does lakeFS Work With Other Tools?
 
-lakeFS is an open source project that supports managing data in AWS S3, Azure Blob Storage, Google Cloud Storage (GCS), S3-Compatible storage solutions and even locally mounted directories. 
+lakeFS is an open source project that supports managing data in AWS S3, Azure Blob Storage, Google Cloud Storage (GCS), S3-Compatible storage solutions and even locally mounted directories.
 It integrates seamlessly with popular data frameworks such as [Spark](./integrations/spark.md), [AWS SageMaker](./integrations/sagemaker.md), [Pandas](./integrations/python.md#integrations-with-popular-data-science-packages), [Tensorflow](./integrations/python.md#integrations-with-popular-data-science-packages), [Polars](./integrations/python.md#integrations-with-popular-data-science-packages), [HuggingFace Datasets](./integrations/huggingface_datasets.md) and many more.
 
 !!! info
@@ -74,13 +74,13 @@ any tool interacting with a data lake.
 
     ```python
     >>> import boto3
-    >>> 
+    >>>
     >>> s3 = boto3.resource('s3')
     >>> obj = s3.Object('example-repository', 'main-branch/path/image.png')
     >>> image_data = obj.get()['Body'].read()
     ```
 
-You can use the same methods and syntax you are already using to read and write data when using a lakeFS repository. 
+You can use the same methods and syntax you are already using to read and write data when using a lakeFS repository.
 This simplifies the adoption of lakeFS - minimal changes are needed to get started, making further changes an incremental process.
 
 ## lakeFS is Git for Data
@@ -93,11 +93,9 @@ Git became ubiquitous when it comes to code because it had best supported engine
 * Revert code to a stable version in case of an error
 * Continuously integrate and deploy new code (CI/CD)
 
-lakeFS provides these exact benefits, that data practitioners are missing today, and enables them a clear intuitive Git-like interface to easily manage data like they manage code. 
+lakeFS provides these exact benefits, that data practitioners are missing today, and enables them a clear intuitive Git-like interface to easily manage data like they manage code.
 Through its versioning engine, lakeFS enables the following built-in operations familiar from Git:
 
-
-<div class="grid cards" markdown>
 
 - :octicons-git-branch-24: __Branch__ <br/>a consistent copy of a repository, isolated from other branches and their changes. Initial creation of a branch is a metadata operation that does not duplicate objects.
 - :octicons-git-commit-24: __Commit__ <br/>an immutable checkpoint containing a complete snapshot of a repository.
@@ -105,8 +103,6 @@ Through its versioning engine, lakeFS enables the following built-in operations 
 - :octicons-undo-24: __Revert__ <br/>returns a repo to the exact state of a previous commit.
 - :octicons-tag-24: __Tag__ <br/>a pointer to a single immutable commit with a readable, meaningful name.
 - :material-hook: __Hooks__ <br/>run validations and actions when actions occur (`pre-merge`, `post-create-branch`, etc).
-
-</div>
 
 !!! info
     See the [object model](./understand/model.md) for an in-depth
@@ -121,24 +117,24 @@ lakeFS helps you maintain a tidy data lake in several ways, including:
 
 ### Reproducibility: What Did My Data Look Like at a Point In Time?
 
-Being able to look at data as it was at a given point is particularly useful in at least two scenarios: 
+Being able to look at data as it was at a given point is particularly useful in at least two scenarios:
 
 1. **Reproducibility of ML experiments**
 
     ML experimentation is iterative, requiring the ability to reproduce specific results. With lakeFS, you can version all aspects of an ML experiment, including the data. This enables:
-    
+
     **Data Lineage**: Track the transformation of data from raw datasets to the final version used in experiments, ensuring transparency and traceability.
-    
+
     **Zero-Copy Branching**: Minimize storage use by creating lightweight branches of your data, allowing for easy experimentation across different versions.
-        
+
     **Easy Integration**: Seamlessly integrate with ML tools like MLFlow, linking experiments directly to the exact data versions used, making reproducibility straightforward.
-    
+
     lakeFS enhances your ML workflow by ensuring that all versions of data are easily accessible, traceable, and reproducible.
 
 2. **Troubleshooting production problems**
 
-    In some cases, a user might report inconsistencies, question the accuracy, or simply report data or inference results as incorrect. 
-    
+    In some cases, a user might report inconsistencies, question the accuracy, or simply report data or inference results as incorrect.
+
     Since data continuously changes, it is challenging to understand its state at the time of the error.
 
     With lakeFS you can create a branch from a commit to debug an issue in isolation.
@@ -148,7 +144,7 @@ Being able to look at data as it was at a given point is particularly useful in 
 
 ### Collaboration during development and training
 
-With lakeFS, each member of the team can create their own branch, isolated from other people's changes. 
+With lakeFS, each member of the team can create their own branch, isolated from other people's changes.
 
 This allows to iterate on changes to an algorithm or transformation, without stepping on eachother's toes. These branches are centralized - they could be share among users for collaboration, and can even be merged.
 
@@ -157,7 +153,7 @@ With lakeFS you can even open [pull requests](./howto/pull-requests.md), allowin
 ### Isolated Dev/Test Environments with zero-copy branching
 
 lakeFS makes creating isolated dev/test environments for transformations, model development, parallel experiments, and ETL processes- achieved through the use of zero-copy branches.
-This enables you to test and validate code changes on production data without impacting it, as well as run analysis and experiments on production data in an isolated clone. 
+This enables you to test and validate code changes on production data without impacting it, as well as run analysis and experiments on production data in an isolated clone.
 
 [👉🏻 Read More](./understand/use_cases/etl_testing.md){ .md-button }
 
@@ -166,7 +162,7 @@ This enables you to test and validate code changes on production data without im
 
 Human error or misconfigurations can lead to erroneous data making its way into production or critical data being accidentally deleted. Traditional backups are often inadequate for recovery in these situations, as they may be outdated and require time-consuming object-level sifting.
 
-With lakeFS, you can avoid these inefficiencies by committing snapshots of data at well-defined times. 
+With lakeFS, you can avoid these inefficiencies by committing snapshots of data at well-defined times.
 This allows for instant recovery: simply identify a good historical commit and restore or copy from it with a single operation.
 
 [👉🏻 Read More](./understand/use_cases/rollback.md){ .md-button }

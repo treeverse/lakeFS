@@ -1,13 +1,13 @@
 ---
 title: 7️⃣ Work with lakeFS data locally
-description: lakeFS quickstart / Bring lakeFS data to a local environment to show how lakeFS can be used for ML experiments development. 
+description: lakeFS quickstart / Bring lakeFS data to a local environment to show how lakeFS can be used for ML experiments development.
 ---
 
 # Work with lakeFS Data Locally
 
-When working with lakeFS, there are scenarios where we need to access and manipulate data locally. An example use case for working 
-locally is machine learning model development. Machine learning model development is dynamic and iterative. To optimize this 
-process, experiments need to be conducted with speed, tracking ease, and reproducibility. Localizing model data during development 
+When working with lakeFS, there are scenarios where we need to access and manipulate data locally. An example use case for working
+locally is machine learning model development. Machine learning model development is dynamic and iterative. To optimize this
+process, experiments need to be conducted with speed, tracking ease, and reproducibility. Localizing model data during development
 accelerates the process by enabling interactive and offline development and reducing data access latency.
 
 lakeFS provides 2 ways to expose versioned data locally
@@ -43,7 +43,7 @@ Prerequisites:
     ```bash
     everest mount lakefs://quickstart/my-experiment/images my_local_dir
     ```
-    
+
     Once complete, `my_local_dir` should be mounted with the specified path.
 
 3. Verify that `my_local_dir` is linked to the correct path in your lakeFS remote:
@@ -66,28 +66,28 @@ container and edit an image dataset used for ML model development. Unlike lakeFS
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
 
-Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/blog/guide-lakectl-local-machine-learning/) 
+Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/blog/guide-lakectl-local-machine-learning/)
 
-<h3>>Cloning a Subset of lakeFS Data into a Local Directory</h3>
+### Cloning a Subset of lakeFS Data into a Local Directory
 
 1. In lakeFS create a new branch called `my-experiment`. You can do this through the UI or with `lakectl`:
     ```bash
     lakectl branch create lakefs://quickstart/my-experiment --source lakefs://quickstart/main
     ```
-2. Clone images from your quickstart repository into a local directory named `my_local_dir` within your container:   
+2. Clone images from your quickstart repository into a local directory named `my_local_dir` within your container:
     ```bash
     lakectl local clone lakefs://quickstart/my-experiment/images my_local_dir
     ```
-3. Verify that `my_local_dir` is linked to the correct path in your lakeFS remote: 
+3. Verify that `my_local_dir` is linked to the correct path in your lakeFS remote:
     ```bash
     lakectl local list
     ```
-   You should see confirmation that my_local_dir is tracking the desired lakeFS path.:    
+   You should see confirmation that my_local_dir is tracking the desired lakeFS path.:
    ```bash
        my_local_dir	lakefs://quickstart/my-experiment/images/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53
    ```
 4. Verify that your local environment is up-to-date with its remote path:
-    
+
     ```bash
     lakectl local status my_local_dir
     ```
@@ -99,20 +99,20 @@ Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/b
     diff 'lakefs://quickstart/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53/images/' <--> 'lakefs://quickstart/my-experiment/images/'...
 
     No diff found.
-    ```    
+    ```
 
-<h3>Making Changes to Data Locally</h3>
+### Making Changes to Data Locally
 
 1. Clean the dataset by removing images larger than 225 KB:
-    ```bash  
+    ```bash
     find my_local_dir -type f -size +225k -delete
-    ```   
+    ```
 2. Check the status of your local changes compared to the lakeFS remote path:
     ```bash
     lakectl local status my_local_dir
     ```
 
-    You should get a confirmation message like this, showing the modifications you made locally: 
+    You should get a confirmation message like this, showing the modifications you made locally:
     ```bash
     diff 'local:///home/lakefs/my_local_dir' <--> 'lakefs://quickstart/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53/images/'...
     diff 'lakefs://quickstart/8614575b5488b47a094163bd17a12ed0b82e0bcbfd22ed1856151c671f1faa53/images/' <--> 'lakefs://quickstart/my-experiment/images/'...
@@ -127,24 +127,24 @@ Reference Guide: [lakeFS lakectl local for machine learning](https://lakefs.io/b
     ╚════════╩══════════╩═════════════════════╝
     ```
 
-<h3>Pushing Local Changes to lakeFS</h3>
+### Pushing Local Changes to lakeFS
 
 
-Once we are done with editing the image dataset in our local environment, we will push our changes to the lakeFS remote so that 
+Once we are done with editing the image dataset in our local environment, we will push our changes to the lakeFS remote so that
 the improved dataset is shared and versioned.
 
-1. Commit your local changes to lakeFS: 
+1. Commit your local changes to lakeFS:
 
     ```bash
     lakectl local commit -m 'Deleted images larger than 225KB in size and changed the Axolotl image' my_local_dir
     ```
-    
+
     In your branch, you should see the commit including your local changes:
-   
+
     <img width="75%" src="../../assets/img/quickstart/lakectl-local-01.png" alt="A lakectl local commit to lakeFS" class="quickstart"/>
 
 2. Compare `my-experiment` branch to the `main` branch to visualize your changes:
-        
+
     <img width="75%" src="../../assets/img/quickstart/lakectl-local-02.png" alt="A comparison between a branch that includes local changes to the main branch" class="quickstart"/>
 
 

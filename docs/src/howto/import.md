@@ -94,27 +94,27 @@ In addition, the following for provider-specific permissions may be required:
     {
         "Version": "2012-10-17",
         "Statement": [
-        {
-            "Sid": "PubliclyAccessibleBuckets",
-            "Effect": "Allow",
-            "Action": [
-                "s3:GetBucketVersioning",
-                "s3:ListBucket",
-                "s3:GetBucketLocation",
-                "s3:ListBucketMultipartUploads",
-                "s3:ListBucketVersions",
-                "s3:GetObject",
-                "s3:GetObjectVersion",
-                "s3:AbortMultipartUpload",
-                "s3:ListMultipartUploadParts"
-            ],
-            "Resource": ["*"],
-            "Condition": {
-            "StringNotEquals": {
-                "s3:ResourceAccount": "<YourAccountID>"
+            {
+                "Sid": "PubliclyAccessibleBuckets",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetBucketVersioning",
+                    "s3:ListBucket",
+                    "s3:GetBucketLocation",
+                    "s3:ListBucketMultipartUploads",
+                    "s3:ListBucketVersions",
+                    "s3:GetObject",
+                    "s3:GetObjectVersion",
+                    "s3:AbortMultipartUpload",
+                    "s3:ListMultipartUploadParts"
+                ],
+                "Resource": ["*"],
+                "Condition": {
+                    "StringNotEquals": {
+                        "s3:ResourceAccount": "<YourAccountID>"
+                    }
+                }
             }
-            }
-        }
         ]
     }
     ```
@@ -128,4 +128,3 @@ In addition, the following for provider-specific permissions may be required:
 
 === "Google Cloud Storage"
     No specific prerequisites
-

@@ -27,21 +27,19 @@ This section assumes that you already have a PostgreSQL >= 11.0 database accessi
 
 === "Linux"
     Connect to your host using SSH:
-
     1. Create a `config.yaml` on your VM, with the following parameters:
-    
     ```yaml
     ---
     database:
         type: "postgres"
         postgres:
         connection_string: "[DATABASE_CONNECTION_STRING]"
-    
+
     auth:
         encrypt:
         # replace this with a randomly-generated string. Make sure to keep it safe!
         secret_key: "[ENCRYPTION_SECRET_KEY]"
-    
+
     blockstore:
         type: s3
         s3:
@@ -52,18 +50,13 @@ This section assumes that you already have a PostgreSQL >= 11.0 database accessi
             access_key_id: <minio_access_key>
             secret_access_key: <minio_secret_key>
     ```
-
     !!! info
         Notice that the lakeFS Blockstore type is set to `s3` - This configuration works with S3-compatible storage engines such as [MinIO](https://min.io/){: target="blank" }.
-
-    1. [Download the binary][downloads] to the server.
-
+    1. [Download the binary](https://github.com/treeverse/lakeFS/releases) to the server.
     1. Run the `lakefs` binary:
-
     ```sh
     lakefs --config config.yaml run
     ```
-
     !!! note
         It's preferable to run the binary as a service using systemd or your operating system's facilities.
 
@@ -132,7 +125,7 @@ This section assumes that you already have a PostgreSQL >= 11.0 database accessi
         # Deploy lakeFS
         helm install my-lakefs lakefs/lakefs -f conf-values.yaml
         ```
-    
+
     *my-lakefs* is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) name.
 
 ## Load balancing
@@ -143,7 +136,7 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
 !!! info
     The NGINX Ingress Controller by default limits the client body size to 1 MiB.
 
-    Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway][s3-gateway] or 
+    Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway][s3-gateway] or
     a simple PUT request using the [OpenAPI Server][openapi].
 
     Checkout the Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
@@ -177,7 +170,7 @@ database:
   type: "postgres"
   postgres:
     connection_string: "[DATABASE_CONNECTION_STRING]"
-  
+
 auth:
   encrypt:
     # replace this with a randomly-generated string. Make sure to keep it safe!
@@ -207,26 +200,19 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 
 1. Open `http://<lakefs-host>/` in your browser. If you haven't set up a load balancer, this will likely be `http://<instance ip address>:8000/`
 1. On first use, you'll be redirected to the setup page:
-
    <img src="../../../assets/img/setup.png" alt="Create user">
-
 1. Follow the steps to create an initial administrator user. Save the credentials you’ve received somewhere safe, you won’t be able to see them again!
-
    <img src="../../../assets/img/setup_done.png" alt="Setup Done">
-
 1. Follow the link and go to the login screen. Use the credentials from the previous step to log in.
 
 ## Create your first repository
 
 1. Use the credentials from the previous step to log in
 1. Click *Create Repository* and choose *Blank Repository*.
-
    <img src="../../../assets/img/create-repo-no-sn.png" alt="Create Repo"/>
-
 1. Under Storage Namespace, enter a path to your desired location on the object store. This is where data written to this repository will be stored.
 1. Click *Create Repository*
 1. You should now have a configured repository, ready to use!
-
    <img src="../../../assets/img/repo-created.png" alt="Repo Created" style="border: 1px solid #DDDDDD;"/>
 
 !!! success "Congratulations"

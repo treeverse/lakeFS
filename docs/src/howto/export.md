@@ -20,7 +20,7 @@ Possible use-cases:
 1. You want to experiment with lakeFS as a side-by-side installation first.
 1. Create copies of your data lake in other regions (taking into account read pricing).
 
-## Exporting Data With Spark 
+## Exporting Data With Spark
 
 ### Using spark-submit
 
@@ -95,7 +95,7 @@ Export ALL objects from a commit:
     ```scala
     exportAllFromCommit(commitID: String)
     ```
-  
+
 Export just the diff between a commit and the HEAD of a branch.
 
 This is an ideal option for continuous exports of a branch since it will change only the files
@@ -124,7 +124,7 @@ A failing round will stop the export of all the files of the next rounds.
 
 By default, lakeFS will use the `SparkFilter` and have 2 rounds for each export.
 The first round will export any non-Spark `_SUCCESS` files. Second round will export all Spark's `_SUCCESS` files.
-You may override the default behavior by passing a custom `filter` to the Exporter.  
+You may override the default behavior by passing a custom `filter` to the Exporter.
 
 ## Example
 
@@ -175,7 +175,7 @@ you can alternatively export just the difference between `main` branch and the c
 ## Exporting Data with Docker
 
 This option is recommended if you don't have Spark at your tool-set.
-It doesn't support distribution across machines, therefore may have a lower performance. 
+It doesn't support distribution across machines, therefore may have a lower performance.
 Using this method, you can export data from lakeFS to S3 using the export options (in a similar way to the Spark export):
 
 1. Export all objects from a branch `example-branch` on `example-repo` repository to S3 location `s3://destination-bucket/prefix/`:
@@ -183,13 +183,11 @@ Using this method, you can export data from lakeFS to S3 using the export option
     .... example-repo s3://destination-bucket/prefix/ --branch="example-branch"
     ```
 1. Export all objects from a commit `c805e49bafb841a0875f49cd555b397340bbd9b8` on `example-repo` repository to S3 location `s3://destination-bucket/prefix/`:
-
     ```shell
     .... example-repo s3://destination-bucket/prefix/ --commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
     ```
 1. Export only the diff between branch `example-branch` and commit `c805e49bafb841a0875f49cd555b397340bbd9b8`
    on `example-repo` repository to S3 location `s3://destination-bucket/prefix/`:
-
     ```shell
     .... example-repo s3://destination-bucket/prefix/ --branch="example-branch" --prev_commit_id=c805e49bafb841a0875f49cd555b397340bbd9b8
     ```

@@ -1,6 +1,6 @@
 ---
 title: Multiple Storage Backend
-description: How to manage data across multiple storage systems with lakeFS 
+description: How to manage data across multiple storage systems with lakeFS
 status: enterprise
 ---
 
@@ -43,7 +43,7 @@ With a multi-store setup, lakeFS can connect to and manage any combination of su
 ## Configuration
 
 To configure your lakeFS server to connect to multiple storage backends, define them under the `blockstores` section in your server configurations.
-The `blockstores.stores` field is an array of storage backends, each with its own configuration.  
+The `blockstores.stores` field is an array of storage backends, each with its own configuration.
 
 For a complete list of available options, refer to the [server configuration reference](../reference/configuration.md#blockstores).
 
@@ -152,7 +152,7 @@ When upgrading from a single storage backend to a multi-storage setup, follow th
 * Set `backward_compatible: true` for the existing storage backend to ensure:
   * Existing repositories continue to use the original storage backend.
   * Newly created repositories default to this backend unless explicitly assigned a different one, to ensure a non-breaking upgrade process.
-  * **This setting is mandatory** — lakeFS will not function if it is unset.  
+  * **This setting is mandatory** — lakeFS will not function if it is unset.
   * **Do not remove this setting** as long as you need to support repositories created before the upgrade.
     If removed, lakeFS will fail to start because it will treat existing repositories as disconnected from any configured storage.
 
@@ -206,7 +206,7 @@ Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup a
     ```bash
     # Dump a single repository
     python lakefs-refs.py dump my-repository
-    
+
     # Or dump all repositories
     python lakefs-refs.py dump --all
     ```
@@ -218,7 +218,7 @@ Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup a
     ```bash
     # Dump and delete a single repository
     python lakefs-refs.py dump my-repository --rm
-    
+
     # Or dump and delete all repositories
     python lakefs-refs.py dump --all --rm
     ```
@@ -300,7 +300,7 @@ Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup a
 * Make sure the new storage backend has sufficient space for all repository data
 * A lakeFS instance configured with a single storage type will not start if repositories created on multiple storage setup still exist
 
-## Working with Repositories  
+## Working with Repositories
 
 After setting up lakeFS Enterprise to connect with multiple storage backends, this section explains how to use these
 connected storages when working with lakeFS.
