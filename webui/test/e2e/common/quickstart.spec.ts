@@ -78,9 +78,10 @@ test.describe("Quickstart", () => {
         await repositoriesPage.goToRepository(QUICKSTART_REPO_NAME);
 
         const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.gotoUncommittedChangeTab();
+        await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(NEW_BRANCH_NAME);
-        await expect(page.getByText("Showing changes for branch")).toBeVisible();
+        await repositoryPage.showOnlyChanges();
+        await expect(page.getByText("Showing 1 change for branch")).toBeVisible();
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
 
         await repositoryPage.commitChanges("denmark");
@@ -119,7 +120,8 @@ test.describe("Quickstart", () => {
         await repositoryPage.deleteFirstObjectInDirectory("images/");
 
         // commit the change
-        await repositoryPage.gotoUncommittedChangeTab();
+        await repositoryPage.gotoObjectsTab();
+        await repositoryPage.showOnlyChanges();
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
         await repositoryPage.commitChanges("Commit for pull-1");
         await expect(page.getByText("No changes")).toBeVisible();

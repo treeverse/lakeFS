@@ -373,6 +373,11 @@ tr:hover .row-hover .btn-outline-danger {
   background-color: rgba(59, 130, 246, 0.1);
 }
 
+/* Changes dropdown styling */
+.changes-dropdown-menu {
+  min-width: 200px;
+}
+
 /* Fix for object browser gear icon dropdown */
 .tree-container .dropdown-menu,
 .change-entry-row .dropdown-menu {
