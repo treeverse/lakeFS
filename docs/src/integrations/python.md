@@ -89,10 +89,10 @@ clt = Client(
 )
 ```
 
-{: .warning }
-This setting allows well-known "man-in-the-middle",
-impersonation, and credential stealing attacks.  Never use this in any
-production setting.
+!!! warning
+    This setting allows well-known "man-in-the-middle",
+    impersonation, and credential stealing attacks.  Never use this in any
+    production setting.
 
 Optionally, to enable communication via proxies, add a proxy configuration:
 
