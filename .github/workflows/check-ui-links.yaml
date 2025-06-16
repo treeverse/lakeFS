@@ -23,10 +23,21 @@ jobs:
         working-directory: docs
         run: pip install -r requirements-docs.txt
 
+      - name: Checkout the documentation repository
+        uses: actions/checkout@v4
+        with:
+          repository: treeverse/docs-lakeFS
+          fetch-depth: 1
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          path: docs/docs-repo
+
       - name: Build latest
-        id: build-latest
-        working-directory: docs
-        run: mkdocs build
+        working-directory: docs/docs-repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          mike deploy --config-file ../mkdocs.yml --branch main dev latest
+
       - name: Get links to check
         id: get-links
         run: |
@@ -38,7 +49,7 @@ jobs:
           find webui/src -type f ! -name "*.js" -exec grep -Eo 'href="([^"]*)"' {} \; | \
             cut -d'"' -f2 | \
             grep -v -e "^/" -e "^#" | \
-            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/site/" > /tmp/links_to_check.txt
+            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/docs-repo/" > /tmp/links_to_check.txt
 
       - name: Check links
         id: lychee
