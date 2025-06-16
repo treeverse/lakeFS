@@ -54,8 +54,12 @@ export class RepositoryPage {
 
   // uncommitted changes operations
 
+  async showOnlyChanges(): Promise<void> {
+    await this.page.getByRole("button", { name: "Uncommitted Changes" }).click();
+  }
+
   async getUncommittedCount(): Promise<number> {
-    await this.page.locator("div.card").isVisible();
+    await this.page.locator(".tree-container div.card").isVisible();
     return this.page
       .locator("table.table")
       .locator("tbody")
@@ -64,6 +68,8 @@ export class RepositoryPage {
   }
 
   async commitChanges(commitMsg: string): Promise<void> {
+    // Click the Actions dropdown (empty button next to Uncommitted Changes)
+    await this.page.locator('button[id="changes-dropdown"]').click();
     await this.page.getByRole("button", { name: "Commit Changes" }).click();
     if (commitMsg?.length) {
       await this.page.getByPlaceholder("Commit Message").fill(commitMsg);
@@ -100,9 +106,6 @@ export class RepositoryPage {
     await this.page.getByRole("link", { name: "Objects" }).click();
   }
 
-  async gotoUncommittedChangeTab(): Promise<void> {
-    await this.page.getByRole("link", { name: "Uncommitted Changes" }).click();
-  }
 
   async gotoCompareTab(): Promise<void> {
     await this.page.getByRole("link", { name: "Compare" }).click();
@@ -117,7 +120,7 @@ export class RepositoryPage {
   }
 
   async uploadObject(filePath: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Upload Object" }).click();
+    await this.page.getByRole("button", { name: "Upload" }).click();
     await this.page.getByText("Drag & drop files or folders here").click();
     const fileInput = await this.page.locator('input[type="file"]');
     await fileInput.setInputFiles(filePath);
