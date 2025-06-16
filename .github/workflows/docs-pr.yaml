@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize, reopened, closed]
     paths:
       - "docs/**"
+      - ".github/workflows/docs.yaml"
       - ".github/workflows/docs-*.yaml"
     branches:
       - master
