@@ -120,7 +120,7 @@ export class RepositoryPage {
   }
 
   async uploadObject(filePath: string): Promise<void> {
-    await this.page.getByRole("button", { name: "Upload Object" }).click();
+    await this.page.getByRole("button", { name: "Upload" }).click();
     await this.page.getByText("Drag & drop files or folders here").click();
     const fileInput = await this.page.locator('input[type="file"]');
     await fileInput.setInputFiles(filePath);
