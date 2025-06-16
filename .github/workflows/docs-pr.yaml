@@ -61,13 +61,36 @@ jobs:
         with:
           script: |
             const previewUrl = `https://pr-${context.payload.pull_request.number}.docs-lakefs-preview.io/`;
-            github.rest.issues.createComment({
+            const commentBody = `📚 Documentation preview at ${previewUrl}`;
+
+            // Check if a preview comment already exists
+            const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `📚 Documentation preview at ${previewUrl}`,
-              event: 'COMMENT'
             });
+
+            const existingComment = comments.find(comment => 
+              comment.body.includes(' Documentation preview at ') && comment.user.type === 'Bot'
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                comment_id: existingComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: commentBody
+              });
+              core.info('Updated existing preview comment');
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.payload.pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: commentBody
+              });
+              core.info('Created new preview comment');
+            }
 
       - name: Check links
         id: lychee
