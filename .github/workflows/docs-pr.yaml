@@ -45,7 +45,7 @@ jobs:
           for file in $html_files; do
             sed -i -e "s|\(.*\)\(</body>\)|<div style=\"position: fixed; top: 5px; left: 5px; padding: 3px; background-color: #e8ac07; font-weight: bold; z-index: 9999; box-shadow: 0 0 10px rgba(0,0,0,0.5);\">ℹ️ This is a preview of PR <a href=\"$PR_URL\" style=\"color: black;\">#$PR_NUMBER</a></div>\n\1\2|" $file
           done
-       
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -65,9 +65,10 @@ jobs:
               issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `📚 Documentation preview is now available at: ${previewUrl}`,
+              body: `📚 Documentation preview at ${previewUrl}`,
               event: 'COMMENT'
             });
+
       - name: Check links
         id: lychee
         uses: lycheeverse/lychee-action@v1.8.0
@@ -78,3 +79,10 @@ jobs:
           format: markdown
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - uses: actions/upload-artifact@v4
+        name: Upload links report
+        if: failure()
+        with:
+          name: links-report
+          path: lychee/out.md
