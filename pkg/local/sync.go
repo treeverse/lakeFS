@@ -154,7 +154,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 	}
 
 	retriesCount := 3
-	return retryIfError(func() error {
+	return retryIfError(func(attempt int) error {
 		var body io.Reader
 		if s.cfg.Presign {
 			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
@@ -184,8 +184,11 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 			body = resp.Body
 		}
 
-		if _, err := f.Seek(0, io.SeekStart); err != nil {
-			return fmt.Errorf("could not seek to start of file '%s': %w", destination, err)
+		if attempt > 1 {
+			// If we are retrying, we need to reset the file pointer to the beginning
+			if _, err := f.Seek(0, io.SeekStart); err != nil {
+				return fmt.Errorf("could not seek to start of file '%s': %w", destination, err)
+			}
 		}
 
 		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
@@ -208,10 +211,10 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 }
 
 // retryIfError attempts to execute the given operation up to maxAttempts times
-func retryIfError(operation func() error, maxAttempts int) error {
+func retryIfError(operation func(attempt int) error, maxAttempts int) error {
 	var err error
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		err = operation()
+		err = operation(attempt)
 		if err == nil {
 			return nil
 		}
