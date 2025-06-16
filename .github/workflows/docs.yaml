@@ -2,11 +2,11 @@ name: docs
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "docs/**"
       - ".github/workflows/docs-*.yaml"
-  branches:
-    - main
   release:
     types: [published]
   workflow_dispatch:
