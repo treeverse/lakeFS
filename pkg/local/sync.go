@@ -150,38 +150,40 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		spinner := s.progressBar.AddSpinner("download " + path)
 		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()
-	} else {
-		var body io.Reader
-		if s.cfg.Presign {
-			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
-			if err != nil {
-				return err
-			}
-			defer func() {
-				_ = resp.Body.Close()
-			}()
-			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
-			}
-			body = resp.Body
-		} else {
-			resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &apigen.GetObjectParams{
-				Path: filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
-			})
-			if err != nil {
-				return err
-			}
-			defer func() {
-				_ = resp.Body.Close()
-			}()
-			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("%s (GetObject: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
-			}
-			body = resp.Body
-		}
+		return nil
+	}
 
+	var body io.Reader
+	if s.cfg.Presign {
+		resp, err := s.httpClient.Get(objStat.PhysicalAddress)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
+		}
+		body = resp.Body
+	} else {
+		resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &apigen.GetObjectParams{
+			Path: filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
+		})
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("%s (GetObject: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
+		}
+		body = resp.Body
+	}
+
+	return retryIfError(func() error {
 		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
-		barReader := b.Reader(body)
 		defer func() {
 			if err != nil {
 				b.Error()
@@ -191,12 +193,29 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 			}
 		}()
 
+		barReader := b.Reader(body)
 		_, err = io.Copy(f, barReader)
 		if err != nil {
 			return fmt.Errorf("could not write file '%s': %w", destination, err)
 		}
+		return nil
+	}, 3)
+}
+
+// retryIfError attempts to execute the given operation up to maxAttempts times
+func retryIfError(operation func() error, maxAttempts int) error {
+	var err error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		err = operation()
+		if err == nil {
+			return nil
+		}
+
+		if attempt == maxAttempts {
+			return err
+		}
 	}
-	return nil
+	return err
 }
 
 func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, p string) error {
