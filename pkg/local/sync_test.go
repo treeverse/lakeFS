@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -201,6 +202,119 @@ func TestSyncManager_download(t *testing.T) {
 				require.Equal(t, expectedMode, int(sys.Mode))
 			} else {
 				t.Fatal("failed to get stat")
+			}
+		})
+	}
+}
+
+func TestSyncManager_download_retry(t *testing.T) {
+	testCases := []struct {
+		Name             string
+		FailAttempts     int
+		ExpectError      bool
+		ExpectedAttempts int32
+	}{
+		{
+			Name:             "succeeds on second attempt",
+			FailAttempts:     1,
+			ExpectError:      false,
+			ExpectedAttempts: 2,
+		},
+		{
+			Name:             "fails after three attempts",
+			FailAttempts:     3,
+			ExpectError:      true,
+			ExpectedAttempts: 3,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			ctx := context.Background()
+			var (
+				downloadAttempts int32
+				content          = []byte("foobar\n")
+				path             = "my_object"
+			)
+
+			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("X-Content-Type-Options", "nosniff")
+				var res interface{}
+				switch {
+				case strings.Contains(r.RequestURI, "/stat"):
+					w.Header().Set("Content-Type", "application/json")
+					sizeBytes := int64(len(content))
+					res = &apigen.ObjectStats{
+						Mtime:     time.Now().Unix(),
+						Path:      path,
+						SizeBytes: &sizeBytes,
+					}
+					require.NoError(t, json.NewEncoder(w).Encode(res))
+				case strings.HasSuffix(r.URL.Path, "/objects"):
+					currentAttempt := atomic.AddInt32(&downloadAttempts, 1)
+					if int(currentAttempt) <= tt.FailAttempts {
+						// first attempt fails during io.Copy
+						hj, ok := w.(http.Hijacker)
+						require.True(t, ok, "http server must support hijacking")
+						conn, _, err := hj.Hijack()
+						require.NoError(t, err)
+						// write partial response and close connection
+						_, _ = conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Length: " + strconv.Itoa(len(content)) + "\r\n\r\n" + string(content[:2])))
+						conn.Close()
+						return
+					}
+					// second attempt succeeds
+					w.Header().Set("Content-Type", "text/plain")
+					w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+					_, err := w.Write(content)
+					require.NoError(t, err)
+				default:
+					t.Fatalf("Unexpected request: %s", r.RequestURI)
+				}
+				w.WriteHeader(http.StatusOK)
+			})
+
+			server := httptest.NewServer(h)
+			defer server.Close()
+
+			testClient := getTestClient(t, server.URL)
+
+			s := local.NewSyncManager(ctx, testClient, server.Client(), local.Config{
+				SyncFlags: local.SyncFlags{
+					Parallelism: 1,
+					Presign:     false,
+					NoProgress:  true,
+				},
+			})
+
+			u := &uri.URI{
+				Repository: "repo",
+				Ref:        "main",
+				Path:       nil,
+			}
+
+			changes := make(chan *local.Change, 1)
+			changes <- &local.Change{
+				Source: local.ChangeSourceRemote,
+				Path:   path,
+				Type:   local.ChangeTypeAdded,
+			}
+			close(changes)
+			tmpDir := t.TempDir()
+
+			err := s.Sync(tmpDir, u, changes)
+			if tt.ExpectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err, "Sync should succeed after retry")
+			}
+			require.EqualValues(t, tt.ExpectedAttempts, atomic.LoadInt32(&downloadAttempts), "download should be attempted twice")
+
+			if !tt.ExpectError {
+				localPath := filepath.Join(tmpDir, path)
+				data, err := os.ReadFile(localPath)
+				require.NoError(t, err)
+				require.Equal(t, content, data)
 			}
 		})
 	}
