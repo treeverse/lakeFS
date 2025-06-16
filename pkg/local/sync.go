@@ -153,36 +153,41 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		return nil
 	}
 
-	var body io.Reader
-	if s.cfg.Presign {
-		resp, err := s.httpClient.Get(objStat.PhysicalAddress)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
-		}
-		body = resp.Body
-	} else {
-		resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &apigen.GetObjectParams{
-			Path: filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
-		})
-		if err != nil {
-			return err
-		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("%s (GetObject: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
-		}
-		body = resp.Body
-	}
-
+	retriesCount := 3
 	return retryIfError(func() error {
+		var body io.Reader
+		if s.cfg.Presign {
+			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
+			if err != nil {
+				return err
+			}
+			defer func() {
+				_ = resp.Body.Close()
+			}()
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("%s (pre-signed GET: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
+			}
+			body = resp.Body
+		} else {
+			resp, err := s.client.GetObject(ctx, remote.Repository, remote.Ref, &apigen.GetObjectParams{
+				Path: filepath.ToSlash(filepath.Join(remote.GetPath(), path)),
+			})
+			if err != nil {
+				return err
+			}
+			defer func() {
+				_ = resp.Body.Close()
+			}()
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("%s (GetObject: HTTP %d): %w", path, resp.StatusCode, ErrDownloadingFile)
+			}
+			body = resp.Body
+		}
+
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			return fmt.Errorf("could not seek to start of file '%s': %w", destination, err)
+		}
+
 		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
 		defer func() {
 			if err != nil {
@@ -199,7 +204,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 			return fmt.Errorf("could not write file '%s': %w", destination, err)
 		}
 		return nil
-	}, 3)
+	}, retriesCount)
 }
 
 // retryIfError attempts to execute the given operation up to maxAttempts times
