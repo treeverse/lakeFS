@@ -78,13 +78,14 @@ test.describe("Quickstart", () => {
         await repositoriesPage.goToRepository(QUICKSTART_REPO_NAME);
 
         const repositoryPage = new RepositoryPage(page);
-        await repositoryPage.gotoUncommittedChangeTab();
+        await repositoryPage.gotoObjectsTab();
         await repositoryPage.switchBranch(NEW_BRANCH_NAME);
-        await expect(page.getByText("Showing changes for branch")).toBeVisible();
+        await repositoryPage.showOnlyChanges();
+        await expect(page.getByText("Showing 1 change for branch")).toBeVisible();
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
 
         await repositoryPage.commitChanges("denmark");
-        await expect(page.getByText("No changes")).toBeVisible();
+        await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
 
         await repositoryPage.gotoCompareTab();
         await repositoryPage.switchBaseBranch("main");
@@ -119,10 +120,11 @@ test.describe("Quickstart", () => {
         await repositoryPage.deleteFirstObjectInDirectory("images/");
 
         // commit the change
-        await repositoryPage.gotoUncommittedChangeTab();
+        await repositoryPage.gotoObjectsTab();
+        await repositoryPage.showOnlyChanges();
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
         await repositoryPage.commitChanges("Commit for pull-1");
-        await expect(page.getByText("No changes")).toBeVisible();
+        await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
 
         // pulls list sanity
         await repositoryPage.gotoPullRequestsTab();
