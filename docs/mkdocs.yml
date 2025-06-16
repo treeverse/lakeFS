@@ -42,6 +42,8 @@ extra:
       as to measure the effectiveness of our documentation and whether users
       find what they're searching for. With your consent, you're helping us to
           make our documentation better.
+    cookies:
+      gtm: Google Tag Manager
   homepage: https://lakefs.io
   status:
     new: New
@@ -57,6 +59,8 @@ extra:
   palette:
     primary: white
     accent: teal
+  analytics:
+    provider: gtm
 
 # Markdown settings
 markdown_extensions:
