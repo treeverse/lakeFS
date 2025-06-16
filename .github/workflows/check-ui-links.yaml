@@ -31,6 +31,12 @@ jobs:
           token: ${{ secrets.PERSONAL_TOKEN }}
           path: docs/docs-repo
 
+      - name: Configure Git
+        working-directory: docs/docs-repo
+        run: |
+          git config --global user.name "treeverser"
+          git config --global user.email "treeverser@treeverse.io"
+
       - name: Build latest
         working-directory: docs/docs-repo
         env:
