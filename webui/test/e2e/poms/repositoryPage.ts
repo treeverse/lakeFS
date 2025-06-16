@@ -59,7 +59,7 @@ export class RepositoryPage {
   }
 
   async getUncommittedCount(): Promise<number> {
-    await this.page.locator("div.card").isVisible();
+    await this.page.locator(".tree-container div.card").isVisible();
     return this.page
       .locator("table.table")
       .locator("tbody")

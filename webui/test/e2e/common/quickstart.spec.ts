@@ -85,7 +85,7 @@ test.describe("Quickstart", () => {
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
 
         await repositoryPage.commitChanges("denmark");
-        await expect(page.getByText("No changes")).toBeVisible();
+        await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
 
         await repositoryPage.gotoCompareTab();
         await repositoryPage.switchBaseBranch("main");
