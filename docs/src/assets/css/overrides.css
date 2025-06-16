@@ -1,0 +1,120 @@
+/* lakeFS custom theme overrides for MkDocs Material */
+
+.md-button {
+  font-size: 0.7rem;
+}
+/* 
+:root > * {
+  --md-primary-fg-color:        #258C82;
+  --md-primary-fg-color--light: #2CE5B5;
+  --md-primary-fg-color--dark:  #258C82;
+} */
+
+/* ----------------------------- */
+/* Footer customization          */
+/* ----------------------------- */
+
+/* Give footer breathing room */
+.md-footer {
+  padding: 0.5rem 0 !important;
+  font-size: 0.6rem;
+}
+
+/* lists inline config already here */
+.md-footer__nav .md-footer__list,
+.md-footer__legal .md-footer__list,
+.md-footer__social .md-footer__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.md-footer__social .md-footer__list li a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--lakefs-teal) !important;
+  transition: color 0.2s ease-in-out;
+}
+
+/* Change color on hover for better feedback */
+.md-footer__social .md-footer__list li a:hover {
+  color: var(--lakefs-green) !important;
+}
+
+/* Social links icons sizing */
+.md-footer__social .md-footer__list svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor; /* ensure svg uses anchor color */
+}
+
+/* ----------------------------- */
+/* Layout refinements for large displays */
+/* ----------------------------- */
+
+@media (min-width: 1440px) {
+  /* allow overall layout to occupy more horizontal space while preserving margins */
+  .md-grid {
+    max-width: 1440px;
+  }
+  /* widen sidebars (navigation & table of contents) */
+  .md-sidebar--primary,
+  .md-sidebar--secondary {
+    width: 18rem;      /* 288px */
+    flex: 0 0 18rem;   /* fixed flex-basis */
+  }
+}
+
+/* Extra-large screens */
+@media (min-width: 1920px) {
+  .md-grid {
+    max-width: 1700px; /* ample content width while preserving margins */
+  }
+
+  .md-sidebar--primary,
+  .md-sidebar--secondary {
+    width: 18rem; /* 320px */
+    flex: 0 0 18rem;
+  }
+
+  @supports selector(::-webkit-scrollbar) {
+    [dir=ltr] .md-sidebar__inner {
+        padding-right: calc(100% - 16rem);
+    }
+  }
+}
+
+:root {
+  --md-status--enterprise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M12 2l2.47 6.87H22l-5.73 4.16L17.94 22 12 17.77 6.06 22l1.67-8.97L2 8.87h7.53L12 2z'/></svg>");
+}
+
+.md-status--enterprise::after {
+  mask-image: var(--md-status--enterprise);
+  -webkit-mask-image: var(--md-status--enterprise);
+}
+
+
+/* ----------------------------------------------------------------------------------------*/
+/* Custom CSS for video embeds                                                             */
+/* based on https://github.com/squidfunk/mkdocs-material/issues/492#issuecomment-336640342 */
+/* ----------------------------------------------------------------------------------------*/
+.video-wrapper {
+  position: relative;
+  display: block;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+  padding-bottom: 56.25%;
+}
+.video-wrapper > iframe {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

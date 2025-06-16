@@ -1,10 +1,6 @@
----
-layout: null
-sitemap: false
----
 User-agent: *
-# blocking older versions of the API.
-# note: this prevents direct indexing and access, but these pages are still available via refs from other sites.
-Disallow: /v0.*
-Disallow: /v1.*
-Sitemap: {{ site.url }}{{ site.baseurl }}/sitemap.xml
+
+Allow: /dev
+Allow: /latest
+
+Sitemap: http://docs.lakefs.io/latest/sitemap.xml

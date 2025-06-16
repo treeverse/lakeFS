@@ -14,18 +14,19 @@ jobs:
     steps:
       - name: Check-out
         uses: actions/checkout@v4
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          working-directory: docs
-          ruby-version: '3.2'
-          bundler-cache: true 
+          python-version: '3.12'
+
+      - name: Install dependencies
+        working-directory: docs
+        run: pip install -r requirements-docs.txt
 
       - name: Build latest
+        id: build-latest
         working-directory: docs
-        run: bundle exec jekyll build --config _config.yml -d _site/ --verbose
-
+        run: mkdocs build
       - name: Get links to check
         id: get-links
         run: |
@@ -37,7 +38,7 @@ jobs:
           find webui/src -type f ! -name "*.js" -exec grep -Eo 'href="([^"]*)"' {} \; | \
             cut -d'"' -f2 | \
             grep -v -e "^/" -e "^#" | \
-            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/_site/" > /tmp/links_to_check.txt
+            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/site/" > /tmp/links_to_check.txt
 
       - name: Check links
         id: lychee
