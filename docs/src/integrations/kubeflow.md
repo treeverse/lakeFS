@@ -59,8 +59,7 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
 
 #### Example operations
 
-1. Commit changes to a branch: A ContainerOp that commits uncommitted changes to `example-branch` on `example-repo`.
-
+1.  Commit changes to a branch: A ContainerOp that commits uncommitted changes to `example-branch` on `example-repo`.
     ```python
     from kubernetes.client.models import V1EnvVar
 
@@ -70,7 +69,7 @@ For `lakectl` to work with Kubeflow, you will need to pass your lakeFS configura
         image='treeverse/lakectl',
         arguments=['commit', 'lakefs://example-repo/example-branch', '-m', 'commit message']).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_ACCESS_KEY_ID',value='AKIAIOSFODNN7EXAMPLE')).add_env_variable(V1EnvVar(name='LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY',value='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')).add_env_variable(V1EnvVar(name='LAKECTL_SERVER_ENDPOINT_URL',value='https://lakefs.example.com'))
     ```
-1. Merge two lakeFS branches: A ContainerOp that merges `example-branch` into the `main` branch of `example-repo`.
+1.  Merge two lakeFS branches: A ContainerOp that merges `example-branch` into the `main` branch of `example-repo`.
     ```python
     def merge_op():
         return dsl.ContainerOp(
@@ -105,4 +104,3 @@ def lakectl_pipeline():
 
 !!! info
     It's recommended to store credentials as Kubernetes secrets and pass them as [environment variables](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables ) to Kubeflow operations using [V1EnvVarSource](https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/V1EnvVarSource.md).
-

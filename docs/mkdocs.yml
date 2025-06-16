@@ -189,9 +189,9 @@ nav:
     - Concepts and  Model: understand/model.md
     - Data Lifecycle Management:
       - Overview: understand/data_lifecycle_management/index.md
+      - In Test: understand/data_lifecycle_management/data-devenv.md
       - During Deployment: understand/data_lifecycle_management/ci.md
       - In Production: understand/data_lifecycle_management/production.md
-      - In Test: understand/data_lifecycle_management/data-devenv.md
     - Data Structure: understand/data-structure.md
     - FAQ: understand/faq.md
     - Glossary: understand/glossary.md
