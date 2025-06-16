@@ -1,10 +1,12 @@
-name: docs-next
+name: docs
 
 on:
   push:
     paths:
       - "docs/**"
       - ".github/workflows/docs-*.yaml"
+  branches:
+    - main
   release:
     types: [published]
   workflow_dispatch:
@@ -21,7 +23,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy Dev Documentation
+    name: Deploy Documentation
     runs-on: ubuntu-latest
     steps:
       - name: Check-out
@@ -41,7 +43,7 @@ jobs:
       - name: Checkout the documentation repository
         uses: actions/checkout@v4
         with:
-          repository: treeverse/docs-next-lakeFS
+          repository: treeverse/docs-lakeFS
           fetch-depth: 1
           token: ${{ secrets.PERSONAL_TOKEN }}
           path: docs/docs-repo
