@@ -36,7 +36,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
         run: |
-          mike deploy --config-file ../mkdocs.yml --branch main dev latest
+          mike deploy --config-file ../mkdocs.yml --branch main dev --update-aliases latest
 
       - name: Get links to check
         id: get-links
