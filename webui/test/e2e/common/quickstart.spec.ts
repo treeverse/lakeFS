@@ -124,7 +124,7 @@ test.describe("Quickstart", () => {
         await repositoryPage.showOnlyChanges();
         expect(await repositoryPage.getUncommittedCount()).toEqual(1);
         await repositoryPage.commitChanges("Commit for pull-1");
-        await expect(page.getByText("No changes")).toBeVisible();
+        await expect(page.getByRole("button", { name: "Uncommitted Changes" })).toHaveCount(0);
 
         // pulls list sanity
         await repositoryPage.gotoPullRequestsTab();
