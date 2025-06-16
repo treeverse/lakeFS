@@ -186,7 +186,7 @@ nav:
   - Understanding lakeFS:
     - Overview: understand/index.md
     - Architecture: understand/architecture.md
-    - Concepts and  Model: understand/model.md
+    - Concepts and Model: understand/model.md
     - Data Lifecycle Management:
       - Overview: understand/data_lifecycle_management/index.md
       - In Test: understand/data_lifecycle_management/data-devenv.md
