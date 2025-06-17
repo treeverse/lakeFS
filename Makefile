@@ -181,7 +181,7 @@ build-binaries:
 
 lint: ## Lint code
 	$(GOCMD) run $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS)
-	npx eslint@8.57.0 $(UI_DIR)/src --ext .js,.jsx,.ts,.tsx
+	cd $(UI_DIR) && $(NPM) run lint --deny-warnings
 
 esti: ## run esti (system testing)
 	$(GOTEST) -v ./esti --args --system-tests
