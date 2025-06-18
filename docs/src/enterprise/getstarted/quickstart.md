@@ -7,6 +7,9 @@ description: Quickstart guides for lakeFS Enterprise
 
 Follow these quickstarts to try out lakeFS Enterprise.
 
+{: .warning }
+> ⚠️ fluffy will be deprecated in the upcoming versions and all functionality will be migrated into lakeFS-Enterprise
+
 !!! warning
     lakeFS Enterprise Quickstarts are not suitable for production use-cases. <br/>
     See the [installation guide](install.md) to set up a production-grade lakeFS Enterprise installation

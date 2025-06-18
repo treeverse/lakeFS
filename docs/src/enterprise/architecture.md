@@ -6,6 +6,9 @@ description: lakeFS Enterprise architecture explained!!!!!1
 
 # Architecture
 
+{: .warning }
+> ⚠️ fluffy will be deprecated in the upcoming versions and all functionality will be migrated into lakeFS-Enterprise
+
 The lakeFS Enterprise software consists of two components:
 1. lakeFS Enterprise: a proprietary version of lakeFS which is based on the OSS version and includes advanced functionality.
 2. A proprietary component called **Fluffy** which includes lakeFS' Enterprise features.
