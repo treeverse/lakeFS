@@ -118,7 +118,7 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 	h = loggingMiddleware(h)
 
 	h = EnrichWithOperation(sc,
-		DurationHandler(
+		MetricsMiddleware(
 			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
 				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
 					OperationLookupHandler(
