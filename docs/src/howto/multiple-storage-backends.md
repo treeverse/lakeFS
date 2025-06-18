@@ -4,20 +4,20 @@ description: How to manage data across multiple storage systems with lakeFS
 status: enterprise
 ---
 
-# Multi-Storage Backend
+# Multiple Storage Backends
 
 !!! info
     Multi-storage backend support is only available to licensed [lakeFS Enterprise](../enterprise/index.md) customers.
     [Contact us](https://info.lakefs.io/thanks-msb) to get started!
 
-## What is Multi-storage Backend Support?
+## What is Multiple-storage Backend Support?
 
-lakeFS multi-storage backend support enables seamless data management across multiple storage systems —
+lakeFS multiple-storage backend support enables seamless data management across multiple storage systems —
 on-premises, across public clouds, or hybrid environments. This capability makes lakeFS a unified data management platform
 for all organizational data assets, which is especially critical in AI/ML environments that rely on diverse datasets stored
 in multiple locations.
 
-With a multi-store setup, lakeFS can connect to and manage any combination of supported storage systems, including:
+With a multiple-store setup, lakeFS can connect to and manage any combination of supported storage systems, including:
 
 * AWS S3
 * Azure Blob
@@ -56,78 +56,81 @@ For a complete list of available options, refer to the [server configuration ref
 === "On-Prem"
     This example setup configures lakeFS to manage data across two separate MinIO instances:
 
-    ```yaml
-    blockstores:
-    signing:
-        secret_key: "some-secret"
-    stores:
-        - id: "minio-prod"
-        description: "Primary on-prem MinIO storage for production data"
-        type: "s3"
-        s3:
-            force_path_style: true
-            endpoint: 'http://minio-prod.local'
-            discover_bucket_region: false
-            credentials:
-            access_key_id: "prod_access_key"
-            secret_access_key: "prod_secret_key"
-        - id: "minio-backup"
-        description: "Backup MinIO storage for disaster recovery"
-        type: "s3"
-        s3:
-            force_path_style: true
-            endpoint: 'http://minio-backup.local'
-            discover_bucket_region: false
-            credentials:
-            access_key_id: "backup_access_key"
-            secret_access_key: "backup_secret_key"
-    ```
+    !!! example
+        ```yaml
+        blockstores:
+            signing:
+                secret_key: "some-secret"
+            stores:
+                - id: "minio-prod"
+                description: "Primary on-prem MinIO storage for production data"
+                type: "s3"
+                s3:
+                    force_path_style: true
+                    endpoint: 'http://minio-prod.local'
+                    discover_bucket_region: false
+                    credentials:
+                    access_key_id: "prod_access_key"
+                    secret_access_key: "prod_secret_key"
+                - id: "minio-backup"
+                description: "Backup MinIO storage for disaster recovery"
+                type: "s3"
+                s3:
+                    force_path_style: true
+                    endpoint: 'http://minio-backup.local'
+                    discover_bucket_region: false
+                    credentials:
+                    access_key_id: "backup_access_key"
+                    secret_access_key: "backup_secret_key"
+        ```
 
 === "Multi-Cloud"
     This example setup configures lakeFS to manage data across two public cloud providers: AWS and Azure:
 
-    ```yaml
-    blockstores:
-    signing:
-        secret_key: "some-secret"
-    stores:
-        - id: "s3-prod"
-        description: "AWS S3 storage for production data"
-        type: "s3"
-        s3:
-            region: "us-east-1"
-        - id: "azure-analytics"
-        description: "Azure Blob storage for analytics data"
-        type: "azure"
-        azure:
-            storage_account: "analytics-account"
-            storage_access_key: "EXAMPLE45551FSAsVVCXCF"
-    ```
+    !!! example
+        ```yaml
+        blockstores:
+            signing:
+                secret_key: "some-secret"
+            stores:
+                - id: "s3-prod"
+                description: "AWS S3 storage for production data"
+                type: "s3"
+                s3:
+                    region: "us-east-1"
+                - id: "azure-analytics"
+                description: "Azure Blob storage for analytics data"
+                type: "azure"
+                azure:
+                    storage_account: "analytics-account"
+                    storage_access_key: "EXAMPLE45551FSAsVVCXCF"
+        ```
 
 === "Hybrid"
     This hybrid setup allows lakeFS to manage data across both cloud and on-prem storages.
 
-    ```yaml
-    blockstores:
-    signing:
-        secret_key: "some-secret"
-    stores:
-        - id: "s3-archive"
-        description: "AWS S3 storage for long-term archival"
-        type: "s3"
-        s3:
-            region: "us-west-2"
-        - id: "minio-fast-access"
-        description: "On-prem MinIO for high-performance workloads"
-        type: "s3"
-        s3:
-            force_path_style: true
-            endpoint: 'http://minio.local'
-            discover_bucket_region: false
-            credentials:
-            access_key_id: "minio_access_key"
-            secret_access_key: "minio_secret_key"
-    ```
+    !!! example
+        ```yaml
+        blockstores:
+            signing:
+                secret_key: "some-secret"
+            stores:
+                - id: "s3-archive"
+                description: "AWS S3 storage for long-term archival"
+                type: "s3"
+                s3:
+                    region: "us-west-2"
+                - id: "minio-fast-access"
+                description: "On-prem MinIO for high-performance workloads"
+                type: "s3"
+                s3:
+                    force_path_style: true
+                    endpoint: 'http://minio.local'
+                    discover_bucket_region: false
+                    credentials:
+                    access_key_id: "minio_access_key"
+                    secret_access_key: "minio_secret_key"
+        ```
 
 ### Key Considerations
 
