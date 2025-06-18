@@ -77,12 +77,22 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
 
   return (
     <>
-      <Dropdown align="end">
+      <Dropdown align="end" drop="down">
         <Dropdown.Toggle variant="light" size="sm" className={"row-hover"}>
           <GearIcon />
         </Dropdown.Toggle>
 
-        <Dropdown.Menu>
+        <Dropdown.Menu popperConfig={{
+          strategy: "fixed",
+          modifiers: [
+            {
+              name: "preventOverflow",
+              options: {
+                boundary: "viewport"
+              }
+            }
+          ]
+        }}>
           {entry.path_type === "object" && presign && (
                <Dropdown.Item
                 onClick={async e => {
