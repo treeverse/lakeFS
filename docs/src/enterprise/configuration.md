@@ -6,7 +6,7 @@ description: a configuration reference for lakeFS Enterprise
 # lakeFS Enterprise Configuration Reference
 
 !!! warning
-    ⚠️ fluffy will be deprecated in the upcoming versions and all functionality will be migrated into lakeFS-Enterprise
+    fluffy will be deprecated in the upcoming versions and all functionality will be migrated into lakeFS Enterprise
 
 Working with lakeFS Enterprise involve configuring both lakeFS and Fluffy. You can find the extended configuration references for both components below.
 
