@@ -12,3 +12,11 @@ var requestHistograms = promauto.NewHistogramVec(
 		Buckets: []float64{0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 30, 60},
 	},
 	[]string{"operation", "code"})
+
+var connections = promauto.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Name: "gateway_connections",
+		Help: "Number of active connections to the gateway server",
+	},
+	[]string{"operation"},
+)

@@ -146,12 +146,14 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 	})
 }
 
-func DurationHandler(next http.Handler) http.Handler {
+func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
+		connections.WithLabelValues(string(o.OperationID)).Inc()
+		defer connections.WithLabelValues(string(o.OperationID)).Dec()
 		next.ServeHTTP(mrw, req)
 		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
