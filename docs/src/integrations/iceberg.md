@@ -13,7 +13,7 @@ status: enterprise
 
 !!! tip
     lakeFS Iceberg REST Catalog is currently in private preview for [lakeFS Enterprise](../enterprise/index.md) customers.
-    [Contact us](https://lakefs.io/book-a-demo/) to get started!
+    [Contact us](https://lakefs.io/lp/iceberg-rest-catalog/) to get started!
 
 ### What is lakeFS Iceberg REST Catalog?
 
@@ -58,7 +58,7 @@ The Iceberg REST catalog API is exposed at `/iceberg/api` in your lakeFS server.
 
 To use it:
 
-1. Enable the feature ([contact us](https://lakefs.io/book-a-demo/) for details).
+1. Enable the feature ([contact us](https://lakefs.io/lp/iceberg-rest-catalog/) for details).
 2. Configure your Iceberg clients to use the lakeFS REST catalog endpoint.
 3. Use your lakeFS access key and secret for authentication.
 
