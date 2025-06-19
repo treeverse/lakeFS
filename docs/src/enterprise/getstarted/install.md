@@ -26,9 +26,8 @@ The guide includes example configurations, follow the steps below and adjust the
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 1. [Helm](https://helm.sh/docs/intro/install/) is installed
-1. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise features.
-1. A KV Database that will be shared by lakeFS and Fluffy. The available options are dependent in your [deployment platform](../../howto/deploy/index.md#deployment-and-setup-details).
-1. A proxy server configured to route traffic between the lakeFS and Fluffy servers, see Reverse Proxy in [lakeFS Enterprise architecture][lakefs-enterprise-architecture].
+1. Access to download *dockerhub/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise features.
+1. A KV Database. The available options are dependent in your [deployment platform](../../howto/deploy/index.md#deployment-and-setup-details).
 
 #### Optional
 
