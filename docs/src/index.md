@@ -45,9 +45,6 @@ These include [branching](./quickstart/branch.md), [merging](./quickstart/commit
 lakeFS is an open source project that supports managing data in AWS S3, Azure Blob Storage, Google Cloud Storage (GCS), S3-Compatible storage solutions and even locally mounted directories.
 It integrates seamlessly with popular data frameworks such as [Spark](./integrations/spark.md), [AWS SageMaker](./integrations/sagemaker.md), [Pandas](./integrations/python.md#integrations-with-popular-data-science-packages), [Tensorflow](./integrations/python.md#integrations-with-popular-data-science-packages), [Polars](./integrations/python.md#integrations-with-popular-data-science-packages), [HuggingFace Datasets](./integrations/huggingface_datasets.md) and many more.
 
-!!! info
-    For more details and a full list see [the integrations pages](./integrations/index.md).
-
 With lakeFS, you can use any of the tools and libraries you are used to work with to read and write data directly from a repository.
 
 !!! example "Example: lakeFS with Pandas"

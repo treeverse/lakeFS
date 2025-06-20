@@ -14,7 +14,7 @@ connectors to sync data to your S3 buckets by leveraging lakeFS branches and ato
 
 ## Use cases
 
-You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Management](../understand/data_lifecycle_management/index.md) when ingesting data to S3 using lakeFS:
+You can take advantage of lakeFS consistency guarantees and [Data Lifecycle Management](../understand/use_cases/cicd_for_data.md) when ingesting data to S3 using lakeFS:
 
 1. Consolidate many data sources to a single branch and expose them to consumers simultaneously when merging to the `main` branch.
 1. Test incoming data for breaking schema changes using [lakeFS hooks][data-quality-gates].

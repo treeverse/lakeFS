@@ -1,18 +1,18 @@
 ---
-title: Mirroring
+title: Transactional Mirroring
 description: Mirroring allows replicating commits between lakeFS installations in different geo-locations/regions
 status: enterprise
 ---
 
-# Mirroring
+# Transactional Mirroring
 
 !!! info
-    Mirroring is only available for [lakeFS Cloud](../cloud/index.md).
+    Transactional Mirroring is only available for [**lakeFS Cloud**](../cloud/index.md).
 
 
-## What is lakeFS mirroring? 
+## What is lakeFS Transactional Mirroring? 
 
-Mirroring in lakeFS allows replicating a lakeFS repository ("source") into read-only copies ("mirror") in different locations.
+Transactional Mirroring in lakeFS allows replicating a lakeFS repository ("source") into read-only copies ("mirror") in different locations.
 
 Unlike conventional mirroring, data isn't simply copied between regions - lakeFS Cloud tracks the state of each commit, advancing the commit log on the mirror only once a commit has been fully replicated and all data is available.
 
@@ -37,7 +37,7 @@ The problem is reasoning about what managed to arrive by the time of disaster an
 
 Reasoning about these is non-trivial, especially in the face of a regional disaster, however ensuring business continuity might require that we have these answers.
 
-Using lakeFS mirroring makes it much easier to answer: we are guaranteed that the latest commit that exists in the replica is in a consistent state and is fully usable, even if it isn't the absolute latest commit - it still reflects a known, consistent, point in time.
+Using lakeFS Transactional Mirroring makes it much easier to answer: we are guaranteed that the latest commit that exists in the replica is in a consistent state and is fully usable, even if it isn't the absolute latest commit - it still reflects a known, consistent, point in time.
 
 
 ### Data Locality
@@ -48,12 +48,12 @@ The challenge is reproducibility - Say we have an ML training job that reads ima
 
 If data is constantly flowing between regions, this might be harder to answer than we think. And even if we know - how can we recreate that exact state if we want to run the process again (for example, to rebuild that model for troubleshooting).
 
-Using consistent commits solves this problem - with lakeFS mirroring, it is guaranteed that a commit ID, regardless of location, will always contain the exact same data.
+Using consistent commits solves this problem - with lakeFS Transactional Mirroring, it is guaranteed that a commit ID, regardless of location, will always contain the exact same data.
 
 We can train our model in region A, and a month later feed the same commit ID into another region - and get back the same results.
 
 
-## Setting up mirroring
+## Setting up Transactional Mirroring
 
 ### Configuring bucket replication on S3
 
@@ -194,7 +194,7 @@ Using the following parameters:
 * `MIRROR_NAME` - Name used for the read-only mirror to be created on the destination region
 * `MIRROR_STORAGE_NAMESPACE` - Location acting as the replication target for the storage namespace of our source repository
 
-### Mirroring and Garbage Collection
+### Transactional Mirroring and Garbage Collection
 
 Garbage collection won't run on mirrored repositories. 
 Deletions from garbage collection should be replicated from the source:
@@ -258,8 +258,8 @@ curl --location --request DELETE 'https://<ORGANIZATION_ID>.<SOURCE_REGION>.lake
 
 ## Limitations
 
-1. Mirroring is currently only supported on [AWS S3](https://aws.amazon.com/s3/) and [lakeFS Cloud for AWS](https://lakefs.cloud)
-1. Read-only mirrors cannot be written to. Mirroring is one-way, from source to destination(s)
+1. Transactional Mirroring is currently only supported on [AWS S3](https://aws.amazon.com/s3/) and [lakeFS Cloud for AWS](https://lakefs.cloud)
+1. Read-only mirrors cannot be written to. Transactional Mirroring is one-way, from source to destination(s)
 1. Currently, only branches are mirrored. Tags and arbitrary commits that do not belong to any branch are not replicated
 1. [lakeFS Hooks](./hooks/index.md) will only run on the source repository, not its replicas
 1. Replication is still asynchronous: reading from a branch will always return a valid commit that the source has pointed to, but it is not guaranteed to be the **latest commit** the source branch is pointing to.
