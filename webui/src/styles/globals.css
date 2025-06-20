@@ -234,3 +234,24 @@ code {
   height: 100%;
   width: 100%;
 }
+
+/* Sticky license/banner alert (Enterprise only, placeholder in OSS) */
+.license-banner-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  width: 100%;
+}
+
+/* Sticky navbar below the banner */
+.navbar-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  width: 100%;
+}
+
+/* If the license banner is visible, push the navbar down */
+.license-banner-sticky:has(+ .navbar-sticky) + .navbar-sticky {
+  top: 48px; /* Adjust to banner height if needed */
+}
