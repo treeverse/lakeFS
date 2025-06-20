@@ -5,6 +5,7 @@ description: a configuration reference for lakeFS Enterprise
 
 # lakeFS Enterprise Configuration Reference
 
+
 Working with lakeFS Enterprise involve configuring both lakeFS and Fluffy. You can find the extended configuration references for both components below.
 
 ## lakeFS Configuration

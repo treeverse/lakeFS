@@ -8,8 +8,7 @@ description: Quickstart guides for lakeFS Enterprise
 Follow these quickstarts to try out lakeFS Enterprise.
 
 !!! warning
-    lakeFS Enterprise Quickstarts are not suitable for production use-cases. <br/>
-    See the [installation guide](install.md) to set up a production-grade lakeFS Enterprise installation
+    lakeFS Enterprise Quickstarts are not suitable for production use-cases. See the [installation guide](install.md) to set up a production-grade lakeFS Enterprise installation
 
 ## lakeFS Enterprise Sample
 
