@@ -150,7 +150,11 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		spinner := s.progressBar.AddSpinner("download " + path)
 		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()
-	} else {
+		return nil
+	}
+
+	retriesCount := 3
+	return retryIfError(func(attempt int) error {
 		var body io.Reader
 		if s.cfg.Presign {
 			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
@@ -180,8 +184,14 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 			body = resp.Body
 		}
 
+		if attempt > 1 {
+			// If we are retrying, we need to reset the file pointer to the beginning
+			if _, err := f.Seek(0, io.SeekStart); err != nil {
+				return fmt.Errorf("could not seek to start of file '%s': %w", destination, err)
+			}
+		}
+
 		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
-		barReader := b.Reader(body)
 		defer func() {
 			if err != nil {
 				b.Error()
@@ -191,12 +201,29 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 			}
 		}()
 
+		barReader := b.Reader(body)
 		_, err = io.Copy(f, barReader)
 		if err != nil {
 			return fmt.Errorf("could not write file '%s': %w", destination, err)
 		}
+		return nil
+	}, retriesCount)
+}
+
+// retryIfError attempts to execute the given operation up to maxAttempts times
+func retryIfError(operation func(attempt int) error, maxAttempts int) error {
+	var err error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		err = operation(attempt)
+		if err == nil {
+			return nil
+		}
+
+		if attempt == maxAttempts {
+			return err
+		}
 	}
-	return nil
+	return err
 }
 
 func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, p string) error {
