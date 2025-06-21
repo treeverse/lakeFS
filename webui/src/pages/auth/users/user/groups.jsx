@@ -20,12 +20,12 @@ import { AttachModal } from "../../../../lib/components/auth/forms";
 import { ConfirmationButton } from "../../../../lib/components/modals";
 import { useRouter } from "../../../../lib/hooks/router";
 import { Link } from "../../../../lib/components/nav";
-import {PageSize} from "../../../../constants";
+import { PageSize } from "../../../../constants";
 
 const resolveGroupDisplayName = (group) => {
-    if(!group) return "";
-    if (group?.name?.length) return group.name;
-    return group.id;
+  if (!group) return "";
+  if (group?.name?.length) return group.name;
+  return group.id;
 }
 
 const UserGroupsList = ({ userId, after, onPaginate }) => {
@@ -49,6 +49,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
           keyFn={(group) => group.id}
           rowFn={(group) => [
             <Link
+              key={group.id}
               href={{
                 pathname: "/auth/groups/:groupId",
                 params: { groupId: group.id },
@@ -56,7 +57,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
             >
               {group.name}
             </Link>,
-            <FormattedDate dateValue={group.creation_date} />,
+            <FormattedDate key={group.id} dateValue={group.creation_date} />,
           ]}
           headers={["Group Name", "Created At"]}
           actions={[
@@ -119,7 +120,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
                   setShowAddModal(false);
                 });
             }
-          }
+            }
           />
         )}
       </>

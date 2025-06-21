@@ -1,24 +1,24 @@
-import React, {FC, FormEvent, useCallback, useEffect, useState} from "react";
-import {runDuckDBQuery} from "./duckdb";
+import React, { FC, FormEvent, useCallback, useEffect, useState } from "react";
+import { runDuckDBQuery } from "./duckdb";
 import * as arrow from 'apache-arrow';
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {ChevronRightIcon} from "@primer/octicons-react";
+import { ChevronRightIcon } from "@primer/octicons-react";
 import dayjs from "dayjs";
 import Table from "react-bootstrap/Table";
 
-import {SQLEditor} from "./editor";
-import {RendererComponent} from "./types";
-import {AlertError, Loading} from "../../../../lib/components/controls";
+import { SQLEditor } from "./editor";
+import { RendererComponent } from "./types";
+import { AlertError, Loading } from "../../../../lib/components/controls";
 
 
 const MAX_RESULTS_RETURNED = 1000;
 
 export const DataLoader: FC = () => {
-    return <Loading/>
+    return <Loading />
 }
 
-export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, fileExtension }) => {
+export const DuckDBRenderer: FC<RendererComponent> = ({ repoId, refId, path, fileExtension }) => {
     let initialQuery = `SELECT * FROM READ_PARQUET('lakefs://${repoId}/${refId}/${path}', hive_partitioning=false) LIMIT 20`;
     if (fileExtension === 'csv') {
         initialQuery = `SELECT *  FROM READ_CSV('lakefs://${repoId}/${refId}/${path}', AUTO_DETECT = TRUE) LIMIT 20`
@@ -64,20 +64,20 @@ export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, file
             }
         }
         runQuery(sql).catch(console.error);
-    }, [repoId, refId, path, shouldSubmit])
+    }, [repoId, refId, path, shouldSubmit, sql])
 
     let content;
     const button = (
         <Button type="submit" variant="success" disabled={loading}>
             <ChevronRightIcon /> {" "}
-            { loading ? "Executing..." : "Execute" }
+            {loading ? "Executing..." : "Execute"}
         </Button>
     );
 
     if (error) {
-        content = <AlertError error={error}/>
+        content = <AlertError error={error} />
     } else if (data === null) {
-        content = <DataLoader/>
+        content = <DataLoader />
     } else {
         if (!data || data.numRows === 0) {
             content = (
@@ -100,27 +100,27 @@ export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, file
                     <div className="object-viewer-sql-results">
                         <Table bordered hover responsive={true}>
                             <thead className="table-dark">
-                            <tr>
-                                {fields.map((field, i) =>
-                                    <th key={i}>
-                                        <div className="d-flex flex-column">
-                                            <span>{field.name}</span>
-                                            <small>{field.type.toString()}</small>
-                                        </div>
-                                    </th>
-                                )}
-                            </tr>
+                                <tr>
+                                    {fields.map((field, i) =>
+                                        <th key={`${field.name}-${i}`}>
+                                            <div className="d-flex flex-column">
+                                                <span>{field.name}</span>
+                                                <small>{field.type.toString()}</small>
+                                            </div>
+                                        </th>
+                                    )}
+                                </tr>
                             </thead>
                             <tbody>
-                            {[...res].map((row, i) => (
-                                <tr key={`row-${i}`}>
-                                    {[...row].map((v, j: number) => {
-                                        return (
-                                            <DataRow key={`col-${i}-${j}`} value={v[1]}/>
-                                        )
-                                    })}
-                                </tr>
-                            ))}
+                                {[...res].map((row, i) => (
+                                    <tr key={`row-${i}`}>
+                                        {[...row].map((v, j: number) => {
+                                            return (
+                                                <DataRow key={`col-${i}-${j}`} value={v[1]} />
+                                            )
+                                        })}
+                                    </tr>
+                                ))}
                             </tbody>
                         </Table>
                     </div>
@@ -133,7 +133,7 @@ export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, file
         <div>
             <Form onSubmit={handleSubmit}>
                 <Form.Group className="mt-2 mb-1" controlId="objectQuery">
-                    <SQLEditor initialValue={initialQuery} onChange={sqlChangeHandler} onRun={handleRun}/>
+                    <SQLEditor initialValue={initialQuery} onChange={sqlChangeHandler} onRun={handleRun} />
                 </Form.Group>
 
 
@@ -185,5 +185,5 @@ const DataRow: FC<{ value: any }> = ({ value }) => {
         return <td className="number-cell">{value.toLocaleString("en-US")}</td>
     }
 
-    return <td>{""  + value}</td>;
+    return <td>{"" + value}</td>;
 }

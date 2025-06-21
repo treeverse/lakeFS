@@ -1,20 +1,22 @@
-import {auth, MAX_LISTING_AMOUNT} from "../../api";
+import { auth, MAX_LISTING_AMOUNT } from "../../api";
 
 export const allUsersFromLakeFS = async (resolveUserDisplayNameFN = (user => user.id)) => {
-    let after = ""
-    let hasMore = true
-    let usersList = []
-    try {
-        do {
+    const fetchUsers = async (after = "", usersList = []) => {
+        try {
             const results = await auth.listUsers("", after, MAX_LISTING_AMOUNT);
-            usersList = usersList.concat(results.results);
-            after = results.pagination.next_offset;
-            hasMore = results.pagination.has_more;
-        } while (hasMore);
-        usersList.sort((a, b) => resolveUserDisplayNameFN(a).localeCompare(resolveUserDisplayNameFN(b)));
-        return usersList;
-    } catch (error) {
-        console.error("Error fetching users:", error);
-        return [];
-    }
+            const newUsersList = usersList.concat(results.results);
+
+            if (results.pagination.has_more) {
+                return fetchUsers(results.pagination.next_offset, newUsersList);
+            }
+
+            newUsersList.sort((a, b) => resolveUserDisplayNameFN(a).localeCompare(resolveUserDisplayNameFN(b)));
+            return newUsersList;
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            return [];
+        }
+    };
+
+    return fetchUsers();
 }
