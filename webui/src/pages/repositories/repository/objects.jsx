@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { useOutletContext } from "react-router-dom";
-import {CheckboxIcon, UploadIcon, XIcon, AlertIcon, PencilIcon, GitCommitIcon, HistoryIcon, NorthStarIcon} from "@primer/octicons-react";
+import { CheckboxIcon, UploadIcon, XIcon, AlertIcon, PencilIcon, GitCommitIcon, HistoryIcon, NorthStarIcon } from "@primer/octicons-react";
 import RefDropdown from "../../../lib/components/repository/refDropdown";
 import {
-    ActionGroup,
-    ActionsBar,
-    AlertError,
-    Loading,
-    PrefixSearchWidget,
-    RefreshButton,
-    Warnings
+  ActionGroup,
+  ActionsBar,
+  AlertError,
+  Loading,
+  PrefixSearchWidget,
+  RefreshButton,
+  Warnings
 } from "../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
@@ -20,32 +20,32 @@ import Alert from "react-bootstrap/Alert";
 import Dropdown from "react-bootstrap/Dropdown";
 import { BsCloudArrowUp } from "react-icons/bs";
 
-import {humanSize, Tree, URINavigator} from "../../../lib/components/repository/tree";
-import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders, branches, commits, refs} from "../../../lib/api";
-import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
-import {useRefs} from "../../../lib/hooks/repo";
-import {useRouter} from "../../../lib/hooks/router";
-import {RefTypeBranch} from "../../../constants";
+import { humanSize, Tree, URINavigator } from "../../../lib/components/repository/tree";
+import { objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders, branches, commits, refs } from "../../../lib/api";
+import { useAPI, useAPIWithPagination } from "../../../lib/hooks/api";
+import { useRefs } from "../../../lib/hooks/repo";
+import { useRouter } from "../../../lib/hooks/router";
+import { RefTypeBranch } from "../../../constants";
 import {
-    ExecuteImportButton,
-    ImportDone,
-    ImportForm,
-    ImportPhase,
-    ImportProgress,
-    startImport
+  ExecuteImportButton,
+  ImportDone,
+  ImportForm,
+  ImportPhase,
+  ImportProgress,
+  startImport
 } from "../services/import_data";
 import { Box } from "@mui/material";
 import { RepoError } from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
-import {ProgressBar} from "react-bootstrap";
+import { ProgressBar } from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
 import { useStorageConfigs } from "../../../lib/hooks/storageConfig";
 import { getRepoStorageConfig } from "./utils";
-import {useDropzone} from "react-dropzone";
+import { useDropzone } from "react-dropzone";
 import pMap from "p-map";
-import {formatAlertText} from "../../../lib/components/repository/errors";
-import {ChangesTreeContainer, MetadataFields} from "../../../lib/components/repository/changes";
-import {ConfirmationModal} from "../../../lib/components/modals";
+import { formatAlertText } from "../../../lib/components/repository/errors";
+import { ChangesTreeContainer, MetadataFields } from "../../../lib/components/repository/changes";
+import { ConfirmationModal } from "../../../lib/components/modals";
 import { Link } from "../../../lib/components/nav";
 import Card from "react-bootstrap/Card";
 
@@ -55,155 +55,155 @@ const MAX_PARALLEL_UPLOADS = 5;
 
 
 export async function appendMoreResults(resultsState, prefix, lastSeenPath, setLastSeenPath, setResultsState, getMore) {
-    let resultsFiltered = resultsState.results
-    if (resultsState.prefix !== prefix) {
-        // prefix changed, need to delete previous results
-        setLastSeenPath("")
-        resultsFiltered = []
-    }
+  let resultsFiltered = resultsState.results
+  if (resultsState.prefix !== prefix) {
+    // prefix changed, need to delete previous results
+    setLastSeenPath("")
+    resultsFiltered = []
+  }
 
-    if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > lastSeenPath) {
-        // results already cached
-        return {prefix: prefix, results: resultsFiltered, pagination: resultsState.pagination}
-    }
+  if (resultsFiltered.length > 0 && resultsFiltered.at(-1).path > lastSeenPath) {
+    // results already cached
+    return { prefix: prefix, results: resultsFiltered, pagination: resultsState.pagination }
+  }
 
-    const {results, pagination} = await getMore()
-    // Ensure concatenated results maintain lexicographic order
-    const concatenatedResults = resultsFiltered.concat(results).sort((a, b) => a.path.localeCompare(b.path))
-    setResultsState({prefix: prefix, results: concatenatedResults, pagination: pagination})
-    return {results: resultsState.results, pagination: pagination}
+  const { results, pagination } = await getMore()
+  // Ensure concatenated results maintain lexicographic order
+  const concatenatedResults = resultsFiltered.concat(results).sort((a, b) => a.path.localeCompare(b.path))
+  setResultsState({ prefix: prefix, results: concatenatedResults, pagination: pagination })
+  return { results: resultsState.results, pagination: pagination }
 }
 
 const isAbortedError = (error, controller) => {
   return (error instanceof DOMException && error.name === 'AbortError') || controller?.signal?.aborted;
 };
 
-const CommitButton = ({repo, onCommit, enabled = false}) => {
-    const textRef = useRef(null);
+const CommitButton = ({ repo, onCommit, enabled = false }) => {
+  const textRef = useRef(null);
 
-    const [committing, setCommitting] = useState(false)
-    const [show, setShow] = useState(false)
-    const [metadataFields, setMetadataFields] = useState([])
-    
-    const hide = () => {
-        if (committing) return;
-        setShow(false)
-    }
+  const [committing, setCommitting] = useState(false)
+  const [show, setShow] = useState(false)
+  const [metadataFields, setMetadataFields] = useState([])
 
-    const onSubmit = () => {
-        const message = textRef.current.value;
-        const metadata = {};
-        metadataFields.forEach(pair => metadata[pair.key] = pair.value)
-        setCommitting(true)
-        onCommit({message, metadata}, () => {
-            setCommitting(false)
-            setShow(false);
-        })
-    };
+  const hide = () => {
+    if (committing) return;
+    setShow(false)
+  }
 
-    const alertText = formatAlertText(repo.id, null);
-    return (
-        <>
-            <Modal show={show} onHide={hide} size="lg">
-                <Modal.Header closeButton>
-                    <Modal.Title>Commit Changes</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form className="mb-2" onSubmit={(e) => {
-                        onSubmit();
-                        e.preventDefault();
-                    }}>
-                        <Form.Group controlId="message" className="mb-3">
-                            <Form.Control type="text" placeholder="Commit Message" ref={textRef}/>
-                        </Form.Group>
+  const onSubmit = () => {
+    const message = textRef.current.value;
+    const metadata = {};
+    metadataFields.forEach(pair => metadata[pair.key] = pair.value)
+    setCommitting(true)
+    onCommit({ message, metadata }, () => {
+      setCommitting(false)
+      setShow(false);
+    })
+  };
 
-                        <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields}/>
-                    </Form>
-                    {alertText ? (<Alert variant="danger">{alertText}</Alert>) : (<span/>)}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" disabled={committing} onClick={hide}>
-                        Cancel
-                    </Button>
-                    <Button variant="success" disabled={committing} onClick={onSubmit}>
-                        Commit Changes
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-            <Button variant="success" disabled={!enabled} onClick={() => setShow(true)}>
-                <GitCommitIcon/> Commit Changes
-            </Button>
-        </>
-    );
+  const alertText = formatAlertText(repo.id, null);
+  return (
+    <>
+      <Modal show={show} onHide={hide} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Commit Changes</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form className="mb-2" onSubmit={(e) => {
+            onSubmit();
+            e.preventDefault();
+          }}>
+            <Form.Group controlId="message" className="mb-3">
+              <Form.Control type="text" placeholder="Commit Message" ref={textRef} />
+            </Form.Group>
+
+            <MetadataFields metadataFields={metadataFields} setMetadataFields={setMetadataFields} />
+          </Form>
+          {alertText ? (<Alert variant="danger">{alertText}</Alert>) : (<span />)}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" disabled={committing} onClick={hide}>
+            Cancel
+          </Button>
+          <Button variant="success" disabled={committing} onClick={onSubmit}>
+            Commit Changes
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      <Button variant="success" disabled={!enabled} onClick={() => setShow(true)}>
+        <GitCommitIcon /> Commit Changes
+      </Button>
+    </>
+  );
 }
 
 
 
 export const useInterval = (callback, delay) => {
-    const savedCallback = useRef();
+  const savedCallback = useRef();
 
-    useEffect(() => {
-        savedCallback.current = callback;
-    }, [callback]);
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
 
-    useEffect(() => {
-        function tick() {
-            savedCallback.current();
-        }
-        if (delay !== null) {
-            const id = setInterval(tick, delay);
-            return () => clearInterval(id);
-        }
-    }, [delay]);
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      const id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
 }
 
-const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onDone, onHide, show = false}) => {
-    const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
-    const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
-    const [isImportEnabled, setIsImportEnabled] = useState(false);
-    const [importError, setImportError] = useState(null);
-    const [metadataFields, setMetadataFields] = useState([])
-    const [importID, setImportID] = useState("")
+const ImportModal = ({ config, repoId, referenceId, referenceType, path = '', onDone, onHide, show = false }) => {
+  const [importPhase, setImportPhase] = useState(ImportPhase.NotStarted);
+  const [numberOfImportedObjects, setNumberOfImportedObjects] = useState(0);
+  const [isImportEnabled, setIsImportEnabled] = useState(false);
+  const [importError, setImportError] = useState(null);
+  const [metadataFields, setMetadataFields] = useState([])
+  const [importID, setImportID] = useState("")
 
-    const sourceRef = useRef(null);
-    const destRef = useRef(null);
-    const commitMsgRef = useRef(null);
+  const sourceRef = useRef(null);
+  const destRef = useRef(null);
+  const commitMsgRef = useRef(null);
 
-    useInterval(() => {
-        if (importID !== "" && importPhase === ImportPhase.InProgress) {
-            const getState = async () => {
-                try {
-                    const importState = await imports.get(repoId, referenceId, importID);
-                    setNumberOfImportedObjects(importState.ingested_objects);
-                    if (importState.error) {
-                        throw importState.error;
-                    }
-                    if (importState.completed) {
-                        setImportPhase(ImportPhase.Completed);
-                        onDone();
-                    }
-                } catch (error) {
-                    setImportPhase(ImportPhase.Failed);
-                    setImportError(error);
-                    setIsImportEnabled(false);
-                }
-            };
-            getState()
+  useInterval(() => {
+    if (importID !== "" && importPhase === ImportPhase.InProgress) {
+      const getState = async () => {
+        try {
+          const importState = await imports.get(repoId, referenceId, importID);
+          setNumberOfImportedObjects(importState.ingested_objects);
+          if (importState.error) {
+            throw importState.error;
+          }
+          if (importState.completed) {
+            setImportPhase(ImportPhase.Completed);
+            onDone();
+          }
+        } catch (error) {
+          setImportPhase(ImportPhase.Failed);
+          setImportError(error);
+          setIsImportEnabled(false);
         }
-    }, 3000);
-    
-    if (!referenceId || referenceType !== RefTypeBranch) return <></>
-
-    let branchId = referenceId;
-    
-    const resetState = () => {
-        setImportError(null);
-        setImportPhase(ImportPhase.NotStarted);
-        setIsImportEnabled(false);
-        setNumberOfImportedObjects(0);
-        setMetadataFields([]);
-        setImportID("");
+      };
+      getState()
     }
+  }, 3000);
+
+  if (!referenceId || referenceType !== RefTypeBranch) return <></>
+
+  let branchId = referenceId;
+
+  const resetState = () => {
+    setImportError(null);
+    setImportPhase(ImportPhase.NotStarted);
+    setIsImportEnabled(false);
+    setNumberOfImportedObjects(0);
+    setMetadataFields([]);
+    setImportID("");
+  }
 
   const hide = () => {
     if (
@@ -215,79 +215,79 @@ const ImportModal = ({config, repoId, referenceId, referenceType, path = '', onD
     onHide();
   };
 
-    const doImport = async () => {
-        setImportPhase(ImportPhase.InProgress);
-        try {
-            const metadata = {};
-            metadataFields.forEach(pair => metadata[pair.key] = pair.value)
-            setImportPhase(ImportPhase.InProgress)
-            await startImport(
-                setImportID,
-                destRef.current.value,
-                commitMsgRef.current.value,
-                sourceRef.current.value,
-                repoId,
-                branchId,
-                metadata
-            );
-        } catch (error) {
-            setImportPhase(ImportPhase.Failed);
-            setImportError(error);
-            setIsImportEnabled(false);
-        }
+  const doImport = async () => {
+    setImportPhase(ImportPhase.InProgress);
+    try {
+      const metadata = {};
+      metadataFields.forEach(pair => metadata[pair.key] = pair.value)
+      setImportPhase(ImportPhase.InProgress)
+      await startImport(
+        setImportID,
+        destRef.current.value,
+        commitMsgRef.current.value,
+        sourceRef.current.value,
+        repoId,
+        branchId,
+        metadata
+      );
+    } catch (error) {
+      setImportPhase(ImportPhase.Failed);
+      setImportError(error);
+      setIsImportEnabled(false);
     }
-    const pathStyle = {'minWidth': '25%'};
+  }
+  const pathStyle = { 'minWidth': '25%' };
 
-    return (
-        <>
-            <Modal show={show} onHide={hide} size="lg">
-                <Modal.Header closeButton>
-                    <Modal.Title>Import data from {config.blockstore_type}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {
+  return (
+    <>
+      <Modal show={show} onHide={hide} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Import data from {config.blockstore_type}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {
 
-                        <ImportForm
-                            config={config}
-                            repo={repoId}
-                            branch={branchId}
-                            pathStyle={pathStyle}
-                            sourceRef={sourceRef}
-                            destRef={destRef}
-                            updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
-                            path={path}
-                            commitMsgRef={commitMsgRef}
-                            metadataFields={metadataFields}
-                            setMetadataFields={setMetadataFields}
-                            err={importError}
-                            className={importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed ? '' : 'd-none'}
-                        />
-                    }
-                    {
-                        importPhase === ImportPhase.InProgress &&
-                        <ImportProgress numObjects={numberOfImportedObjects}/>
-                    }
-                    {
-                        importPhase === ImportPhase.Completed &&
-                        <ImportDone branch={branchId}
-                                    numObjects={numberOfImportedObjects}/>
-                    }
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={ async () => {
-                        if (importPhase === ImportPhase.InProgress && importID.length > 0) {
-                            await imports.delete(repoId, branchId, importID);
-                        }
-                        hide();
-                    }} hidden={importPhase === ImportPhase.Completed}>
-                        Cancel
-                    </Button>
+            <ImportForm
+              config={config}
+              repo={repoId}
+              branch={branchId}
+              pathStyle={pathStyle}
+              sourceRef={sourceRef}
+              destRef={destRef}
+              updateSrcValidity={(isValid) => setIsImportEnabled(isValid)}
+              path={path}
+              commitMsgRef={commitMsgRef}
+              metadataFields={metadataFields}
+              setMetadataFields={setMetadataFields}
+              err={importError}
+              className={importPhase === ImportPhase.NotStarted || importPhase === ImportPhase.Failed ? '' : 'd-none'}
+            />
+          }
+          {
+            importPhase === ImportPhase.InProgress &&
+            <ImportProgress numObjects={numberOfImportedObjects} />
+          }
+          {
+            importPhase === ImportPhase.Completed &&
+            <ImportDone branch={branchId}
+              numObjects={numberOfImportedObjects} />
+          }
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={async () => {
+            if (importPhase === ImportPhase.InProgress && importID.length > 0) {
+              await imports.delete(repoId, branchId, importID);
+            }
+            hide();
+          }} hidden={importPhase === ImportPhase.Completed}>
+            Cancel
+          </Button>
 
-                    <ExecuteImportButton
-                        importPhase={importPhase}
-                        importFunc={doImport}
-                        doneFunc={hide}
-                        isEnabled={isImportEnabled}/>
+          <ExecuteImportButton
+            importPhase={importPhase}
+            importFunc={doImport}
+            doneFunc={hide}
+            isEnabled={isImportEnabled} />
         </Modal.Footer>
       </Modal>
     </>
@@ -309,7 +309,7 @@ function extractChecksumFromResponse(parsedHeaders) {
   return null;
 }
 
-const uploadFile = async (config, repo, reference, destinationPath, file, onProgress) => {  
+const uploadFile = async (config, repo, reference, destinationPath, file, onProgress) => {
   if (config.pre_sign_support_ui) {
     let additionalHeaders;
     if (config.blockstore_type === "azure") {
@@ -321,40 +321,40 @@ const uploadFile = async (config, repo, reference, destinationPath, file, onProg
       const parsedHeaders = parseRawHeaders(uploadResponse.rawHeaders);
       const checksum = extractChecksumFromResponse(parsedHeaders);
       await staging.link(repo.id, reference.id, destinationPath, getResp, checksum, file.size, file.type);
-    } catch(error) {
-       throw new Error(`Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ''}`);
+    } catch (error) {
+      throw new Error(`Error uploading file- HTTP ${error.status}${error.response ? `: ${error.response}` : ''}`);
     }
   } else {
     await objects.upload(repo.id, reference.id, destinationPath, file, onProgress);
-    }
+  }
 };
 
 const joinPath = (basePath, filePath) => {
-    // 1. Normalize the file path first: remove leading slash
-    const normalizedFilePath = filePath.replace(/^\//, '');
+  // 1. Normalize the file path first: remove leading slash
+  const normalizedFilePath = filePath.replace(/^\//, '');
 
-    // 2. Handle the base path
-    // If basePath is empty or just '/', the result is just the normalized file path
-    if (!basePath || basePath === '/') {
-        return normalizedFilePath;
-    }
+  // 2. Handle the base path
+  // If basePath is empty or just '/', the result is just the normalized file path
+  if (!basePath || basePath === '/') {
+    return normalizedFilePath;
+  }
 
-    // 3. If basePath is non-empty, ensure it ends with '/'
-    const normalizedBasePath = basePath.endsWith('/') ? basePath : basePath + '/';
+  // 3. If basePath is non-empty, ensure it ends with '/'
+  const normalizedBasePath = basePath.endsWith('/') ? basePath : basePath + '/';
 
-    // 4. Combine
-    return normalizedBasePath + normalizedFilePath;
+  // 4. Combine
+  return normalizedBasePath + normalizedFilePath;
 }
 
 const generateInitialDestination = (filePath, currentOverallPath) => {
-    const relativePathFromDrop = filePath.replace(/\\/g, '/');
-    return joinPath(currentOverallPath, relativePathFromDrop);
+  const relativePathFromDrop = filePath.replace(/\\/g, '/');
+  return joinPath(currentOverallPath, relativePathFromDrop);
 };
 
-const UploadCandidate = ({ 
-  file, 
-  state, 
-  destination, 
+const UploadCandidate = ({
+  file,
+  state,
+  destination,
   onDestinationChange,
   onRemove,
   isUploading,
@@ -372,22 +372,22 @@ const UploadCandidate = ({
   }, [isEditing]);
 
   if (state && state.status === "uploading") {
-    statusIndicator = <ProgressBar 
-                          animated
-                          variant="success" 
-                          now={state.percent} 
-                          className="upload-progress" 
-                          title={`${state.percent}% uploaded`}
-                          style={{ height: '8px' }}
-                        />;
+    statusIndicator = <ProgressBar
+      animated
+      variant="success"
+      now={state.percent}
+      className="upload-progress"
+      title={`${state.percent}% uploaded`}
+      style={{ height: '8px' }}
+    />;
   } else if (state && state.status === "done") {
-    statusIndicator = <span className="text-success" title="Completed"><CheckboxIcon/></span>;
+    statusIndicator = <span className="text-success" title="Completed"><CheckboxIcon /></span>;
   } else if (state && state.status === "error") {
-    statusIndicator = <span className="text-danger" title="Error"><AlertIcon/></span>;
+    statusIndicator = <span className="text-danger" title="Error"><AlertIcon /></span>;
   } else if (onRemove !== null && !isUploading && state?.status !== 'uploading') {
     statusIndicator = (
-      <button 
-        className="remove-button" 
+      <button
+        className="remove-button"
         onClick={e => { e.preventDefault(); onRemove(); }}
         title="Remove file"
         disabled={isUploading}
@@ -396,7 +396,7 @@ const UploadCandidate = ({
       </button>
     );
   }
-  
+
   const handleBlur = () => {
     onEditToggle(false);
   };
@@ -407,7 +407,7 @@ const UploadCandidate = ({
       e.preventDefault(); // Prevent form submission on Enter
     }
   };
-  
+
   return (
     <div className={`upload-item upload-item-${state ? state.status : "pending"}`}>
       <div className="file-destination-column">
@@ -420,26 +420,26 @@ const UploadCandidate = ({
             onChange={(e) => onDestinationChange(e.target.value)}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            disabled={isUploading} 
+            disabled={isUploading}
             placeholder="Destination path/name"
           />
         ) : (
           <>
-            <span 
-              className="file-destination-display" 
-              title={destination} 
-              onClick={() => !isUploading && onEditToggle(true)} 
+            <span
+              className="file-destination-display"
+              title={destination}
+              onClick={() => !isUploading && onEditToggle(true)}
             >
-              {destination || <span>&nbsp;</span>} 
+              {destination || <span>&nbsp;</span>}
             </span>
             {!isUploading && state?.status !== 'uploading' && state?.status !== 'done' && state?.status !== 'error' && (
-              <button 
-                className="edit-destination-button" 
-                onClick={(e) => {e.preventDefault(); onEditToggle(true);}}
+              <button
+                className="edit-destination-button"
+                onClick={(e) => { e.preventDefault(); onEditToggle(true); }}
                 title="Edit destination path"
                 disabled={isUploading}
               >
-                <PencilIcon size={14}/>
+                <PencilIcon size={14} />
               </button>
             )}
           </>
@@ -471,7 +471,7 @@ const UploadButtonText = ({ inProgress, uploadingCount, filesLength, averageProg
   );
 };
 
-const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, show = false, disabled = false}) => {
+const UploadButton = ({ config, repo, reference, path, onDone, onClick, onHide, show = false, disabled = false }) => {
   const initialState = {
     inProgress: false,
     error: null,
@@ -488,7 +488,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
 
   const onDrop = useCallback(acceptedFiles => {
     if (uploadState.inProgress) return;
-    
+
     const newFiles = acceptedFiles.filter(f => !files.some(existing => existing.path === f.path));
     if (newFiles.length === 0) return;
 
@@ -527,8 +527,8 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
         if (!manuallyEditedDestinations[file.path]) {
           const newDest = generateInitialDestination(file.path, overallPath);
           if (nextDestinations[file.path] !== newDest) {
-             nextDestinations[file.path] = newDest;
-             changed = true;
+            nextDestinations[file.path] = newDest;
+            changed = true;
           }
         }
       });
@@ -542,7 +542,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
   const hide = () => {
     if (uploadState.inProgress) {
       if (abortController !== null) {
-          abortController.abort();
+        abortController.abort();
       } else {
         return;
       }
@@ -582,19 +582,19 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
       }
       try {
         setFileStates(next => ({ ...next, [file.path]: { status: 'uploading', percent: 0 } }));
-        
+
         const handleProgress = (progress) => {
           if (controller.signal.aborted) return;
           setFileStates(next => {
             if (next[file.path]?.status === 'uploading') {
-                return { ...next, [file.path]: { status: 'uploading', percent: progress } };
+              return { ...next, [file.path]: { status: 'uploading', percent: progress } };
             }
             return next;
           });
         };
 
         await uploadFile(config, repo, reference, currentDestination, file, handleProgress);
-        
+
         if (controller.signal.aborted) return;
         setFileStates(next => ({ ...next, [file.path]: { status: 'done', percent: 100 } }));
 
@@ -604,7 +604,7 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
         setFileStates(next => ({ ...next, [file.path]: { status: 'error', percent: 0 } }));
         if (!isAbortedError(error, controller)) {
           setUploadState(prev => ({ ...prev, error: error }));
-        }                                                                       
+        }
         throw error;
       }
     }
@@ -616,21 +616,21 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
         stopOnError: true
       });
       if (!controller.signal.aborted) {
-          setUploadState(prev => ({ ...prev, inProgress: false, done: true, error: null }));
-          onDone();
-          hide(); 
+        setUploadState(prev => ({ ...prev, inProgress: false, done: true, error: null }));
+        onDone();
+        hide();
       }
     } catch (error) {
-       if (!isAbortedError(error, controller)) {
-           console.error("pMap upload error:", error);
-           setUploadState(prev => ({...prev, inProgress: false, error: prev.error || error })); 
-       } else {
-           console.log("Upload process aborted.");
-           setUploadState(prev => ({...prev, inProgress: false}));
-       }
+      if (!isAbortedError(error, controller)) {
+        console.error("pMap upload error:", error);
+        setUploadState(prev => ({ ...prev, inProgress: false, error: prev.error || error }));
+      } else {
+        console.log("Upload process aborted.");
+        setUploadState(prev => ({ ...prev, inProgress: false }));
+      }
     } finally {
-       setUploadState(prev => ({...prev, inProgress: false}));
-       setAbortController(null);
+      setUploadState(prev => ({ ...prev, inProgress: false }));
+      setAbortController(null);
     }
   };
 
@@ -701,24 +701,24 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
             )}
 
             <Form.Group controlId="dropzone" className="mb-3">
-              <div {...getRootProps({className: 'dropzone', 'aria-disabled': uploadState.inProgress})}>
-                <input {...getInputProps({'aria-disabled': uploadState.inProgress})} />
+              <div {...getRootProps({ className: 'dropzone', 'aria-disabled': uploadState.inProgress })}>
+                <input {...getInputProps({ 'aria-disabled': uploadState.inProgress })} />
                 <div className={isDragAccept ? "file-drop-zone file-drop-zone-focus" : "file-drop-zone"}>
                   <UploadIcon size={24} className="file-drop-zone-icon" />
-                   <div className="file-drop-zone-text">
-                     {isDragAccept ? "Drop files here" : "Drag & drop files or folders here"}
-                   </div>
-                   <div className="file-drop-zone-hint">or click to browse</div>
-                 </div>
+                  <div className="file-drop-zone-text">
+                    {isDragAccept ? "Drop files here" : "Drag & drop files or folders here"}
+                  </div>
+                  <div className="file-drop-zone-hint">or click to browse</div>
+                </div>
               </div>
             </Form.Group>
 
             <Form.Group controlId="overallPath" className="mb-3">
               <Form.Label>Common Destination Directory (Optional)</Form.Label>
-              <Form.Control 
+              <Form.Control
                 type="text"
-                disabled={uploadState.inProgress} 
-                value={overallPath} 
+                disabled={uploadState.inProgress}
+                value={overallPath}
                 onChange={handleOverallPathChange}
                 placeholder="e.g., data/images/ (leave empty for root)"
                 title="Prefix for all uploaded files. Can be overridden individually below."
@@ -760,20 +760,20 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
               </div>
             )}
           </Form>
-          {(uploadState.error && !isAbortedError(uploadState.error, abortController)) && 
-             <AlertError className="mt-3" error={uploadState.error} onDismiss={() => setUploadState(prev => ({...prev, error: null}))}/>
-          } 
+          {(uploadState.error && !isAbortedError(uploadState.error, abortController)) &&
+            <AlertError className="mt-3" error={uploadState.error} onDismiss={() => setUploadState(prev => ({ ...prev, error: null }))} />
+          }
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={hide} disabled={uploadState.inProgress}>
             {uploadState.inProgress ? "Cancel Upload" : "Close"}
           </Button>
-          <Button 
-            variant="success" 
-            disabled={!canUpload} 
-            onClick={upload} 
+          <Button
+            variant="success"
+            disabled={!canUpload}
+            onClick={upload}
           >
-            <UploadButtonText 
+            <UploadButtonText
               inProgress={uploadState.inProgress}
               uploadingCount={uploadingCount}
               filesLength={files.length}
@@ -797,32 +797,32 @@ const UploadButton = ({config, repo, reference, path, onDone, onClick, onHide, s
 
 export const EmptyChangesState = ({ repo, reference, toggleShowChanges }) => {
   return (
-      <div className="tree-container">
-          <Card className="border-0 shadow-sm">
-              <Card.Body className="text-center p-5">
-                  <h3 className="mb-3">No Changes Here</h3>
-                  <p className="text-muted mb-1">
-                      No uncommitted changes on <code>{reference.id}</code>!
-                  </p>
-                  <p className="text-muted mb-4">
-                    Upload or modify files to see them appear here.
-                  </p>
-                  <Link 
-                      href={{
-                          pathname: "/repositories/:repoId/objects",
-                          params: { repoId: repo.id },
-                          query: { ref: reference.id, upload: true }
-                      }}
-                      className="btn btn-primary me-2"
-                  >
-                      <UploadIcon className="me-1" /> Upload Files
-                  </Link>
-                  <Button variant="outline-secondary" onClick={() => toggleShowChanges(false)}>
-                      <NorthStarIcon  className="me-1" /> See All Objects
-                  </Button>
-              </Card.Body>
-          </Card>
-      </div>
+    <div className="tree-container">
+      <Card className="border-0 shadow-sm">
+        <Card.Body className="text-center p-5">
+          <h3 className="mb-3">No Changes Here</h3>
+          <p className="text-muted mb-1">
+            No uncommitted changes on <code>{reference.id}</code>!
+          </p>
+          <p className="text-muted mb-4">
+            Upload or modify files to see them appear here.
+          </p>
+          <Link
+            href={{
+              pathname: "/repositories/:repoId/objects",
+              params: { repoId: repo.id },
+              query: { ref: reference.id, upload: true }
+            }}
+            className="btn btn-primary me-2"
+          >
+            <UploadIcon className="me-1" /> Upload Files
+          </Link>
+          <Button variant="outline-secondary" onClick={() => toggleShowChanges(false)}>
+            <NorthStarIcon className="me-1" /> See All Objects
+          </Button>
+        </Card.Body>
+      </Card>
+    </div>
   );
 };
 
@@ -844,13 +844,13 @@ const TreeContainer = ({
   const [actionError, setActionError] = useState(null);
   const [internalRefresh, setInternalRefresh] = useState(true);
   const [lastSeenPath, setLastSeenPath] = useState("");
-  const [resultsState, setResultsState] = useState({prefix: path, results:[], pagination:{}});
+  const [resultsState, setResultsState] = useState({ prefix: path, results: [], pagination: {} });
 
   const delimiter = '/';
 
   // Reset results when switching between modes or changing path
   React.useEffect(() => {
-    setResultsState({prefix: path, results:[], pagination:{}});
+    setResultsState({ prefix: path, results: [], pagination: {} });
     setLastSeenPath("");
   }, [showChangesOnly, path]);
 
@@ -893,15 +893,15 @@ const TreeContainer = ({
 
     const changesMap = new Map();
     const directoryChanges = new Map(); // Store change type for directories
-    
+
     // Map direct changes and identify affected directories
     changesData.results.forEach(change => {
       // Map change type to what EntryRow expects
-      const mappedType = change.type === 'removed' ? 'removed' : 
-                        change.type === 'added' ? 'added' : 'changed';
-      
+      const mappedType = change.type === 'removed' ? 'removed' :
+        change.type === 'added' ? 'added' : 'changed';
+
       changesMap.set(change.path, mappedType);
-      
+
       // If this is a prefix entry from changes, mark it directly with its type
       if (change.path_type === "common_prefix") {
         directoryChanges.set(change.path, mappedType);
@@ -929,20 +929,20 @@ const TreeContainer = ({
       if (directChangeType) {
         return { ...entry, diff_type: directChangeType };
       }
-      
+
       // Check if this directory contains changes (either directly or has changed children)
       const directoryChangeType = directoryChanges.get(entry.path);
       if (entry.path_type === "common_prefix" && directoryChangeType) {
         return { ...entry, diff_type: directoryChangeType };
       }
-      
+
       return entry;
     });
 
     // Add missing items (deleted files, deleted/changed prefixes) to the results
     const allResults = [...enhancedResults, ...missingItems.map(item => {
-      const mappedType = item.type === 'removed' ? 'removed' : 
-                        item.type === 'added' ? 'added' : 'changed';
+      const mappedType = item.type === 'removed' ? 'removed' :
+        item.type === 'added' ? 'added' : 'changed';
       return {
         ...item,
         diff_type: mappedType
@@ -961,33 +961,33 @@ const TreeContainer = ({
   const [deleteState, setDeleteState] = useState(initialState);
 
   const refresh = () => {
-    setResultsState({prefix: path, results:[], pagination:{}})
+    setResultsState({ prefix: path, results: [], pagination: {} })
     setInternalRefresh(!internalRefresh)
     onRefresh();
   }
 
-  const getMoreUncommittedChanges = (lastSeenPath, changesPath, useDelimiter= true, amount = -1) => {
+  const getMoreUncommittedChanges = (lastSeenPath, changesPath, useDelimiter = true, amount = -1) => {
     return refs.changes(repo.id, reference.id, lastSeenPath, changesPath, useDelimiter ? delimiter : "", amount > 0 ? amount : undefined)
   }
 
   let onReset = async (entry) => {
     branches
-        .reset(repo.id, reference.id, {type: entry.path_type, path: entry.path})
-        .then(refresh)
-        .catch(error => {
-            setActionError(error)
-        })
+      .reset(repo.id, reference.id, { type: entry.path_type, path: entry.path })
+      .then(refresh)
+      .catch(error => {
+        setActionError(error)
+      })
   }
 
-  if (loading) return <Loading/>;
-  if (error) return <AlertError error={error}/>;
+  if (loading) return <Loading />;
+  if (error) return <AlertError error={error} />;
 
   // If showing changes only, use ChangesTreeContainer
   if (showChangesOnly) {
     const rawChangesResults = resultsState.results.length > 0 ? resultsState.results : results || [];
     // Always sort changes lexicographically to maintain consistent ordering
     const changesResults = rawChangesResults.sort((a, b) => a.path.localeCompare(b.path));
-    
+
     if (changesResults.length === 0) {
       return <EmptyChangesState repo={repo} reference={reference} toggleShowChanges={toggleShowChangesOnly} />;
     }
@@ -997,10 +997,10 @@ const TreeContainer = ({
 
     // Create URI navigator that preserves "show changes" mode
     const changesUriNavigator = (
-      <URINavigator 
-        path={path || ""} 
-        repo={repo} 
-        reference={reference} 
+      <URINavigator
+        path={path || ""}
+        repo={repo}
+        reference={reference}
         hasCopyButton={true}
         pathURLBuilder={(params, query) => {
           return {
@@ -1014,32 +1014,32 @@ const TreeContainer = ({
 
     return (
       <>
-        {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)}/>}
-        <ChangesTreeContainer 
-          results={changesResults} 
+        {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)} />}
+        <ChangesTreeContainer
+          results={changesResults}
           delimiter={delimiter}
           uriNavigator={changesUriNavigator}
-          leftDiffRefID={committedRef} 
+          leftDiffRefID={committedRef}
           rightDiffRefID={uncommittedRef}
-          repo={repo} 
-          reference={reference} 
-          internalRefresh={internalRefresh} 
+          repo={repo}
+          reference={reference}
+          internalRefresh={internalRefresh}
           prefix={path}
           getMore={getMoreUncommittedChanges}
-          loading={loading} 
-          nextPage={nextPage} 
+          loading={loading}
+          nextPage={nextPage}
           setLastSeenPath={setLastSeenPath}
           onNavigate={(entry) => {
             return {
               pathname: `/repositories/:repoId/objects`,
-              params: {repoId: repo.id},
+              params: { repoId: repo.id },
               query: {
                 ref: reference.id,
                 path: entry.path,
                 showChanges: 'true'
               }
             }
-          }} 
+          }}
           onRevert={onReset}
           changesTreeMessage={<p>Showing {changesResults.length} change{changesResults.length !== 1 ? 's' : ''} for branch <strong>{reference.id}</strong></p>}
           noChangesText="No changes - you can modify this branch by uploading data using the UI or any of the supported SDKs"
@@ -1052,10 +1052,10 @@ const TreeContainer = ({
   // Regular objects view
   return (
     <>
-      {deleteState.error && <AlertError error={deleteState.error} onDismiss={() => setDeleteState(initialState)}/>}
-      {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)}/>}
+      {deleteState.error && <AlertError error={deleteState.error} onDismiss={() => setDeleteState(initialState)} />}
+      {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)} />}
       <Tree
-        config={{config}}
+        config={{ config }}
         repo={repo}
         reference={reference}
         path={(path) ? path : ""}
@@ -1070,7 +1070,7 @@ const TreeContainer = ({
           objects
             .delete(repo.id, reference.id, entry.path)
             .catch(error => {
-              setDeleteState({...initialState, error: error})
+              setDeleteState({ ...initialState, error: error })
               throw error
             })
             .then(onRefresh)
@@ -1108,19 +1108,19 @@ const ReadmeContainer = ({
   const fileExtension = getFileExtension(readmePath);
   const contentType = getContentType(response?.headers);
 
-    return (
-        <FileContents 
-            repoId={repo.id} 
-            reference={reference}
-            path={readmePath}
-            fileExtension={fileExtension}
-            contentType={contentType}
-            error={error}
-            loading={loading}
-            showFullNavigator={false}
-            presign={config.pre_sign_support_ui}
-        />
-    );
+  return (
+    <FileContents
+      repoId={repo.id}
+      reference={reference}
+      path={readmePath}
+      fileExtension={fileExtension}
+      contentType={contentType}
+      error={error}
+      loading={loading}
+      showFullNavigator={false}
+      presign={config.pre_sign_support_ui}
+    />
+  );
 }
 
 const NoGCRulesWarning = ({ repoId }) => {
@@ -1131,7 +1131,7 @@ const NoGCRulesWarning = ({ repoId }) => {
   const closeAndRemember = useCallback(() => {
     window.localStorage.setItem(storageKey, "false");
     setShow(false);
-  }, [repoId]);
+  }, [storageKey]);
 
   const { response } = useAPI(async () => {
     const repo = await repositories.get(repoId);
@@ -1233,17 +1233,17 @@ const ObjectsBrowser = ({ config }) => {
     } else {
       setHasChanges(false);
     }
-  }, [repo?.id, reference?.id, refreshToken]);
+  }, [repo?.id, reference?.id, reference?.type, reference, refreshToken]);
 
   // Handle toggle changes view
   const handleToggleChanges = () => {
     const newShowChanges = !showChangesOnly;
     setShowChangesOnly(newShowChanges);
-    
+
     const query = { path: path || "" };
     if (reference) query.ref = reference.id;
     if (newShowChanges) query.showChanges = 'true';
-    
+
     router.push({
       pathname: `/repositories/:repoId/objects`,
       query,
@@ -1275,7 +1275,7 @@ const ObjectsBrowser = ({ config }) => {
               })
             }
           />
-          
+
           {/* Changes Management Button Group */}
           {reference && reference.type === RefTypeBranch && hasChanges && (
             <Dropdown as={ButtonGroup} className="me-2">
@@ -1286,19 +1286,19 @@ const ObjectsBrowser = ({ config }) => {
                 onClick={handleToggleChanges}
                 className="d-flex align-items-center"
               >
-                <NorthStarIcon className="me-1"/> 
+                <NorthStarIcon className="me-1" />
                 Uncommitted Changes
               </Button>
-              
+
               {/* Actions Dropdown */}
-              <Dropdown.Toggle 
-                variant="outline-secondary" 
+              <Dropdown.Toggle
+                variant="outline-secondary"
                 size="sm"
                 id="changes-dropdown"
               >
 
               </Dropdown.Toggle>
-              
+
               <Dropdown.Menu className="changes-dropdown-menu">
                 <div className="d-flex flex-column gap-2 p-2">
                   <Button
@@ -1317,7 +1317,7 @@ const ObjectsBrowser = ({ config }) => {
                     <GitCommitIcon className="me-1" />
                     Commit Changes
                   </Button>
-                  
+
                   <Button
                     variant="outline-secondary"
                     size="sm"
@@ -1354,9 +1354,9 @@ const ObjectsBrowser = ({ config }) => {
               }}
             />
           )}
-          
+
           <RefreshButton onClick={refresh} />
-          
+
           <Button
             variant="success"
             disabled={repo?.read_only}
@@ -1364,7 +1364,7 @@ const ObjectsBrowser = ({ config }) => {
           >
             <UploadIcon /> Upload
           </Button>
-          
+
           <Button
             variant={!config.import_support ? "success" : "light"}
             disabled={!config.import_support}
@@ -1372,18 +1372,18 @@ const ObjectsBrowser = ({ config }) => {
           >
             <BsCloudArrowUp /> Import
           </Button>
-          
+
           {/* Hidden components for modals */}
           <div style={{ display: 'none' }}>
             <div data-commit-btn>
-              <CommitButton 
-                repo={repo} 
-                enabled={hasChanges && !repo?.read_only} 
+              <CommitButton
+                repo={repo}
+                enabled={hasChanges && !repo?.read_only}
                 onCommit={async (commitDetails, done) => {
                   try {
                     await commits.commit(repo.id, reference.id, commitDetails.message, commitDetails.metadata);
                     setActionError(null);
-                    
+
                     // Reset to normal view after commit
                     setShowChangesOnly(false);
                     const query = { path: path || "" };
@@ -1394,7 +1394,7 @@ const ObjectsBrowser = ({ config }) => {
                       query,
                       params: { repoId: repo.id },
                     });
-                    
+
                     refresh();
                   } catch (err) {
                     setActionError(err);
@@ -1403,14 +1403,14 @@ const ObjectsBrowser = ({ config }) => {
                 }}
               />
             </div>
-            
+
             <UploadButton
               config={config}
               path={path}
               repo={repo}
               reference={reference}
               onDone={refresh}
-              onClick={() => {}}
+              onClick={() => { }}
               onHide={() => {
                 setShowUpload(false);
               }}
@@ -1418,9 +1418,9 @@ const ObjectsBrowser = ({ config }) => {
               disabled={repo?.read_only}
             />
           </div>
-          
 
-          
+
+
           <ImportModal
             config={config}
             path={path}
@@ -1433,13 +1433,13 @@ const ObjectsBrowser = ({ config }) => {
             }}
             show={showImport}
           />
-          
+
           <ConfirmationModal
             show={showRevertModal}
             onHide={() => setShowRevertModal(false)}
             msg="Are you sure you want to revert all uncommitted changes?"
             onConfirm={() => {
-              branches.reset(repo.id, reference.id, {type: 'reset'})
+              branches.reset(repo.id, reference.id, { type: 'reset' })
                 .then(() => {
                   // Reset to normal view after revert
                   setShowChangesOnly(false);
@@ -1451,7 +1451,7 @@ const ObjectsBrowser = ({ config }) => {
                     query,
                     params: { repoId: repo.id },
                   });
-                  
+
                   refresh();
                 })
                 .catch(error => setActionError(error));
@@ -1460,8 +1460,8 @@ const ObjectsBrowser = ({ config }) => {
           />
         </ActionGroup>
       </ActionsBar>
-      
-      {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)}/>}
+
+      {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)} />}
 
       <NoGCRulesWarning repoId={repo.id} />
 
@@ -1516,20 +1516,20 @@ const ObjectsBrowser = ({ config }) => {
 };
 
 const RepositoryObjectsPage = () => {
-    const {repo} = useRefs();
-    const {configs: storageConfigs, loading: configsLoading, error: configsError} = useStorageConfigs();
+  const { repo } = useRefs();
+  const { configs: storageConfigs, loading: configsLoading, error: configsError } = useStorageConfigs();
 
-    const [setActivePage] = useOutletContext();
-    useEffect(() => setActivePage("objects"), [setActivePage]);
+  const [setActivePage] = useOutletContext();
+  useEffect(() => setActivePage("objects"), [setActivePage]);
 
-    if (configsLoading) return <Loading/>;
-    if (configsError) return <RepoError error={configsError}/>;
+  if (configsLoading) return <Loading />;
+  if (configsError) return <RepoError error={configsError} />;
 
-    const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(storageConfigs, repo);
-    if (configLoading) return <Loading/>;
-    if (configError) return <RepoError error={configError}/>;
+  const { storageConfig, loading: configLoading, error: configError } = getRepoStorageConfig(storageConfigs, repo);
+  if (configLoading) return <Loading />;
+  if (configError) return <RepoError error={configError} />;
 
-    return <ObjectsBrowser config={storageConfig}/>;
+  return <ObjectsBrowser config={storageConfig} />;
 };
 
 export default RepositoryObjectsPage;

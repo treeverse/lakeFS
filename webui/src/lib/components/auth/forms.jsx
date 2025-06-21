@@ -1,27 +1,27 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Modal from "react-bootstrap/Modal";
 import Badge from "react-bootstrap/Badge";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import {FormControl, InputGroup} from "react-bootstrap";
-import {SearchIcon} from "@primer/octicons-react";
+import { FormControl, InputGroup } from "react-bootstrap";
+import { SearchIcon } from "@primer/octicons-react";
 
-import {useAPI} from "../../hooks/api";
-import {Checkbox, DataTable, DebouncedFormControl, AlertError, Loading} from "../controls";
-import {Paginator} from "../pagination";
+import { useAPI } from "../../hooks/api";
+import { Checkbox, DataTable, DebouncedFormControl, AlertError, Loading } from "../controls";
+import { Paginator } from "../pagination";
 
 
 export const AttachModal = ({
-                              show, searchFn, resolveEntityFn = (ent => ent.id), onAttach, onHide, addText = "Add",
-                              emptyState = 'No matches', modalTitle = 'Add', headers = ['', 'ID'],
-                              filterPlaceholder = 'Filter...'
-                            }) => {
+  show, searchFn, resolveEntityFn = (ent => ent.id), onAttach, onHide, addText = "Add",
+  emptyState = 'No matches', modalTitle = 'Add', headers = ['', 'ID'],
+  filterPlaceholder = 'Filter...'
+}) => {
   const search = useRef(null);
   const [paginationParams, setPaginationParams] = useState({ prefix: "", after: "" });
   const [selected, setSelected] = useState([]);
 
   const { response, error, loading } = useAPI(() => {
-      return searchFn(paginationParams.prefix, paginationParams.after);
+    return searchFn(paginationParams.prefix, paginationParams.after);
   }, [paginationParams]);
 
   useEffect(() => {
@@ -32,43 +32,44 @@ export const AttachModal = ({
   const nextPage = response?.pagination?.has_more ? response.pagination.next_offset : null;
 
   let content;
-  if (loading) content = <Loading/>;
-  else if (error) content = <AlertError error={error}/>;
+  if (loading) content = <Loading />;
+  else if (error) content = <AlertError error={error} />;
   else content = (
-      <>
-        <DataTable
-          headers={headers}
-          keyFn={ent => ent.id}
-          emptyState={emptyState}
-          results={response.results}
-          rowFn={ent => [
-            <Checkbox
-              defaultChecked={selected.some(selectedEnt => selectedEnt.id === ent.id)}
-              onAdd={() => setSelected([...selected, ent])}
-              onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
-              name={'selected'}/>,
-            <strong>{resolveEntityFn(ent)}</strong>
-          ]}
-          firstFixedCol={true}
-        />
-        <Paginator
-            after={paginationParams.after}
-            nextPage={nextPage}
-            onPaginate={(newAfter) => setPaginationParams(prev => ({
-                ...prev,
-                after: newAfter
-            }))}
-        />
-        <div className="mt-3">
-          {(selected.length > 0) &&
-            <p>
-              <strong>Selected: </strong>
-              {(selected.map(item => (
-                <Badge
-                  key={item.id}
-                  pill
-                  variant="primary"
-                  className="
+    <>
+      <DataTable
+        headers={headers}
+        keyFn={ent => ent.id}
+        emptyState={emptyState}
+        results={response.results}
+        rowFn={ent => [
+          <Checkbox
+            key={ent.id}
+            defaultChecked={selected.some(selectedEnt => selectedEnt.id === ent.id)}
+            onAdd={() => setSelected([...selected, ent])}
+            onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
+            name={'selected'} />,
+          <strong key={ent.id}>{resolveEntityFn(ent)}</strong>
+        ]}
+        firstFixedCol={true}
+      />
+      <Paginator
+        after={paginationParams.after}
+        nextPage={nextPage}
+        onPaginate={(newAfter) => setPaginationParams(prev => ({
+          ...prev,
+          after: newAfter
+        }))}
+      />
+      <div className="mt-3">
+        {(selected.length > 0) &&
+          <p>
+            <strong>Selected: </strong>
+            {(selected.map(item => (
+              <Badge
+                key={item.id}
+                pill
+                variant="primary"
+                className="
                       me-1
                       d-inline-block
                       w-25
@@ -77,23 +78,23 @@ export const AttachModal = ({
                       text-truncate
                       align-middle
                   "
-                  title={resolveEntityFn(item)}
-                >
-                  {resolveEntityFn(item)}
-                </Badge>
-              )))}
-            </p>
-          }
-        </div>
-      </>
-    );
+                title={resolveEntityFn(item)}
+              >
+                {resolveEntityFn(item)}
+              </Badge>
+            )))}
+          </p>
+        }
+      </div>
+    </>
+  );
 
   const handleSearchChange = () => {
-      setPaginationParams(prev => ({
-          ...prev,
-          prefix: search.current.value,
-          after: ""
-      }));
+    setPaginationParams(prev => ({
+      ...prev,
+      prefix: search.current.value,
+      after: ""
+    }));
   };
 
   return (
@@ -107,12 +108,12 @@ export const AttachModal = ({
         }}>
           <InputGroup>
             <InputGroup.Text>
-              <SearchIcon/>
+              <SearchIcon />
             </InputGroup.Text>
             <DebouncedFormControl
               ref={search}
               placeholder={filterPlaceholder}
-              onChange={handleSearchChange}/>
+              onChange={handleSearchChange} />
           </InputGroup>
         </Form>
         <div className="mt-2">
@@ -132,17 +133,17 @@ export const AttachModal = ({
 };
 
 export const EntityActionModal = ({
-                                    show,
-                                    onHide,
-                                    onAction,
-                                    title,
-                                    placeholder,
-                                    actionName,
-                                    validationFunction = null,
-                                    showExtraField = false,
-                                    extraPlaceholder = "",
-                                    extraValidationFunction = null
-                                  }) => {
+  show,
+  onHide,
+  onAction,
+  title,
+  placeholder,
+  actionName,
+  validationFunction = null,
+  showExtraField = false,
+  extraPlaceholder = "",
+  extraValidationFunction = null
+}) => {
   const [error, setError] = useState(null);
   const idField = useRef(null);
   const extraField = useRef(null);
@@ -186,13 +187,13 @@ export const EntityActionModal = ({
           e.preventDefault()
           onSubmit()
         }}>
-          <FormControl ref={idField} autoFocus placeholder={placeholder} type="text"/>
+          <FormControl ref={idField} autoFocus placeholder={placeholder} type="text" />
           {showExtraField &&
-            <FormControl ref={extraField} placeholder={extraPlaceholder} type="text" className="mt-3"/>
+            <FormControl ref={extraField} placeholder={extraPlaceholder} type="text" className="mt-3" />
           }
         </Form>
 
-        {(!!error) && <AlertError className="mt-3" error={error}/>}
+        {(!!error) && <AlertError className="mt-3" error={error} />}
 
       </Modal.Body>
 

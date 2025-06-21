@@ -1,10 +1,10 @@
-import React, {useCallback, useEffect} from "react";
-import {useState} from "react";
-import {API_ENDPOINT, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
-import {useRouter} from "../../lib/hooks/router";
-import {useAPI} from "../../lib/hooks/api";
-import {SetupComplete} from "./setupComplete";
-import {UserConfiguration} from "./userConfiguration";
+import React, { useCallback, useEffect } from "react";
+import { useState } from "react";
+import { API_ENDPOINT, setup, SETUP_STATE_INITIALIZED } from "../../lib/api";
+import { useRouter } from "../../lib/hooks/router";
+import { useAPI } from "../../lib/hooks/api";
+import { SetupComplete } from "./setupComplete";
+import { UserConfiguration } from "./userConfiguration";
 
 
 const SetupContents = () => {
@@ -52,7 +52,7 @@ const SetupContents = () => {
         } finally {
             setDisabled(false);
         }
-    }, [setDisabled, setSetupError, setup, currentStep, commPrefsMissing]);
+    }, [setDisabled, setSetupError, currentStep, commPrefsMissing]);
 
     if (error || loading) {
         return null;
@@ -64,7 +64,7 @@ const SetupContents = () => {
                 accessKeyId={setupData.access_key_id}
                 secretAccessKey={setupData.secret_access_key}
                 apiEndpoint={API_ENDPOINT}
-                />
+            />
         );
     }
 
@@ -81,10 +81,10 @@ const SetupContents = () => {
         );
     }
 
-    return router.push({pathname: '/', query: router.query});
+    return router.push({ pathname: '/', query: router.query });
 };
 
 
-const SetupPage = () => <SetupContents/>;
+const SetupPage = () => <SetupContents />;
 
 export default SetupPage;

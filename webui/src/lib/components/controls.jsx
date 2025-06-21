@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import dayjs from "dayjs";
 
 import Form from "react-bootstrap/Form";
@@ -7,9 +7,9 @@ import Button from "react-bootstrap/Button";
 import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 import Table from "react-bootstrap/Table";
-import {OverlayTrigger} from "react-bootstrap";
-import {CheckIcon, PasteIcon, SearchIcon, SyncIcon, AlertIcon, AlertFillIcon} from "@primer/octicons-react";
-import {Link} from "./nav";
+import { OverlayTrigger } from "react-bootstrap";
+import { CheckIcon, PasteIcon, SearchIcon, SyncIcon, AlertIcon, AlertFillIcon } from "@primer/octicons-react";
+import { Link } from "./nav";
 import {
     Box,
     Button as MuiButton,
@@ -28,9 +28,9 @@ const defaultDebounceMs = 300;
 
 export const debounce = (func, wait, immediate) => {
     let timeout;
-    return function() {
+    return function () {
         let args = arguments;
-        let later = function() {
+        let later = function () {
             timeout = null;
             if (!immediate) func.apply(null, args);
         };
@@ -59,7 +59,7 @@ export const useDebouncedState = (dependsOn, debounceFn, wait = 300) => {
 
 export const DebouncedFormControl = React.forwardRef((props, ref) => {
     const onChange = debounce(props.onChange, (props.debounce !== undefined) ? props.debounce : defaultDebounceMs)
-    return (<Form.Control ref={ref} {...{...props, onChange}}/>);
+    return (<Form.Control ref={ref} {...{ ...props, onChange }} />);
 });
 DebouncedFormControl.displayName = "DebouncedFormControl";
 
@@ -74,7 +74,7 @@ export const Spinner = () => {
     );
 };
 
-export const Loading = ({message = "Loading..."}) => {
+export const Loading = ({ message = "Loading..." }) => {
     return (
         <div className="loading-container d-flex flex-column align-items-center justify-content-center py-5">
             <Spinner />
@@ -91,7 +91,7 @@ export const Na = () => {
     );
 };
 
-export const AlertError = ({error, onDismiss = null, className = null}) => {
+export const AlertError = ({ error, onDismiss = null, className = null }) => {
     let content = React.isValidElement(error) ? error : error.toString();
     // handle wrapped errors
     let err = error;
@@ -101,9 +101,9 @@ export const AlertError = ({error, onDismiss = null, className = null}) => {
     const alertClassName = `${className} text-wrap text-break shadow-sm`.trim();
 
     return (
-        <Alert 
-            className={alertClassName} 
-            variant="danger" 
+        <Alert
+            className={alertClassName}
+            variant="danger"
             dismissible={onDismiss !== null}
             onClose={onDismiss}
         >
@@ -114,7 +114,7 @@ export const AlertError = ({error, onDismiss = null, className = null}) => {
                 <div>{content}</div>
             </div>
         </Alert>
-    );    
+    );
 };
 
 export const FormattedDate = ({ dateValue, format = "MM/DD/YYYY HH:mm:ss" }) => {
@@ -253,7 +253,7 @@ export const LinkButton = ({ href, children, buttonVariant, tooltip = null }) =>
     );
 };
 
-export const TooltipButton = ({ onClick, variant, children, tooltip, className="", size = "sm" }) => {
+export const TooltipButton = ({ onClick, variant, children, tooltip, className = "", size = "sm" }) => {
     return (
         <OverlayTrigger placement="bottom" overlay={<Tooltip>{tooltip}</Tooltip>}>
             <Button variant={variant} onClick={onClick} className={className} size={size}>
@@ -263,13 +263,13 @@ export const TooltipButton = ({ onClick, variant, children, tooltip, className="
     );
 };
 
-export const ClipboardButton = ({ text, variant, onSuccess, icon = <PasteIcon/>, onError, tooltip = "Copy to clipboard", ...rest}) => {
+export const ClipboardButton = ({ text, variant, onSuccess, icon = <PasteIcon />, onError, tooltip = "Copy to clipboard", ...rest }) => {
 
     const [show, setShow] = useState(false);
     const [copied, setCopied] = useState(false);
     const [target, isHovered] = useHover();
 
-    const currentIcon = (!copied) ? icon : <CheckIcon/>;
+    const currentIcon = (!copied) ? icon : <CheckIcon />;
 
     let updater = null;
 
@@ -316,7 +316,7 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
     const handleSubmit = useCallback((e) => {
         e.preventDefault()
         onFilter(ref.current.value)
-    }, [ref])
+    }, [ref, onFilter])
 
     if (expanded) {
         return (
@@ -331,7 +331,7 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
                         className="prefix-search-expanded"
                     />
                     <Button variant="light" onClick={toggle}>
-                        <SearchIcon/>
+                        <SearchIcon />
                     </Button>
                 </InputGroup>
             </Form>
@@ -345,13 +345,13 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
             </Tooltip>
         }>
             <Button variant="light" onClick={toggle}>
-                <SearchIcon/>
+                <SearchIcon />
             </Button>
         </OverlayTrigger>
     )
 }
 
-export const RefreshButton = ({ onClick, size = "md", variant = "light", tooltip = "Refresh", icon = <SyncIcon/> }) => {
+export const RefreshButton = ({ onClick, size = "md", variant = "light", tooltip = "Refresh", icon = <SyncIcon /> }) => {
     return (
         <TooltipButton
             tooltip={tooltip}
@@ -364,7 +364,7 @@ export const RefreshButton = ({ onClick, size = "md", variant = "light", tooltip
 };
 
 export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], actions = [],
-                              emptyState = null, firstFixedCol = false }) => {
+    emptyState = null, firstFixedCol = false }) => {
 
     if ((!results || results.length === 0) && emptyState !== null) {
         return <Alert variant="warning">{emptyState}</Alert>;
@@ -374,44 +374,44 @@ export const DataTable = ({ headers, results, rowFn, keyFn = (row) => row[0], ac
         <Table className="w-100" style={{ tableLayout: "fixed" }}>
             <thead>
                 <tr>
-                {headers.map((header, i) => (
-                    <th
-                        key={header}
-                        title={header}
-                        style={firstFixedCol && i === 0 ? { width: "30px" } : {}}
-                        className="text-nowrap overflow-hidden text-truncate align-middle"
-                    >
-                        {header}
-                    </th>
-                ))}
-                {(!!actions && actions.length > 0) && <th/>}
+                    {headers.map((header, i) => (
+                        <th
+                            key={header}
+                            title={header}
+                            style={firstFixedCol && i === 0 ? { width: "30px" } : {}}
+                            className="text-nowrap overflow-hidden text-truncate align-middle"
+                        >
+                            {header}
+                        </th>
+                    ))}
+                    {(!!actions && actions.length > 0) && <th />}
                 </tr>
             </thead>
             <tbody>
-            {results.map(row => (
-                <tr key={keyFn(row)}>
-                    {rowFn(row).map((cell, i) => (
-                        <td
-                            key={`${keyFn(row)}-${i}`}
-                            title={keyFn(row)}
-                            className="text-nowrap overflow-hidden text-truncate align-middle"
-                        >
-                            {cell}
-                        </td>
-                    ))}
-                    {(!!actions && actions.length > 0) && (
-                        <td>
-                            <span className="row-hover">
-                                {actions.map(action => (
-                                    <span key={`${keyFn(row)}-${action.key}`}>
-                                        {action.buttonFn(row)}
-                                    </span>
-                                ))}
-                             </span>
-                        </td>
-                    )}
-                </tr>
-            ))}
+                {results.map(row => (
+                    <tr key={keyFn(row)}>
+                        {rowFn(row).map((cell, i) => (
+                            <td
+                                key={`${keyFn(row)}-${i}`}
+                                title={keyFn(row)}
+                                className="text-nowrap overflow-hidden text-truncate align-middle"
+                            >
+                                {cell}
+                            </td>
+                        ))}
+                        {(!!actions && actions.length > 0) && (
+                            <td>
+                                <span className="row-hover">
+                                    {actions.map(action => (
+                                        <span key={`${keyFn(row)}-${action.key}`}>
+                                            {action.buttonFn(row)}
+                                        </span>
+                                    ))}
+                                </span>
+                            </td>
+                        )}
+                    </tr>
+                ))}
             </tbody>
         </Table>
     );
@@ -426,12 +426,12 @@ export const Checkbox = ({ name, onAdd, onRemove, disabled = false, defaultCheck
                 } else {
                     onRemove(name)
                 }
-            }}/>
+            }} />
         </Form.Group>
     );
 };
 
-export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
+export const ToggleSwitch = ({ label, id, defaultChecked, onChange }) => {
     return (
         <Form>
             <Form.Switch
@@ -445,39 +445,39 @@ export const ToggleSwitch = ({  label, id, defaultChecked, onChange }) => {
 };
 
 export const Warning = (props) =>
-<>
-    <Alert variant="warning" className="shadow-sm">
-        <div className="d-flex align-items-center">
-            <div className="me-3">
-                <AlertIcon size={24} />
+    <>
+        <Alert variant="warning" className="shadow-sm">
+            <div className="d-flex align-items-center">
+                <div className="me-3">
+                    <AlertIcon size={24} />
+                </div>
+                <div>{props.children}</div>
             </div>
-            <div>{ props.children }</div>
-        </div>
-    </Alert>
-</>;
+        </Alert>
+    </>;
 
 export const Warnings = ({ warnings = [] }) => {
     return <ul className="pl-0 ms-0 warnings">
-           {warnings.map((warning, i) =>
-           <Warning key={i}>{warning}</Warning>
-           )}
-       </ul>;
+        {warnings.map((warning, i) =>
+            <Warning key={`${warning}-${i}`}>{warning}</Warning>
+        )}
+    </ul>;
 };
 
-export const ProgressSpinner = ({text, changingElement =''}) => {
+export const ProgressSpinner = ({ text, changingElement = '' }) => {
     return (
-        <Box sx={{display: 'flex', alignItems: 'center'}}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box>
-                <CircularProgress size={50}/>
+                <CircularProgress size={50} />
             </Box>
-            <Box sx={{p: 4}}>
+            <Box sx={{ p: 4 }}>
                 <Typography>{text}{changingElement}</Typography>
             </Box>
         </Box>
     );
 }
 
-export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, onContinue, isOpen=false}) => {
+export const ExitConfirmationDialog = ({ dialogAlert, dialogDescription, onExit, onContinue, isOpen = false }) => {
     return (
         <Dialog
             open={isOpen}
@@ -503,7 +503,7 @@ export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, 
 };
 
 
-export const ExperimentalOverlayTooltip = ({children, show = true, placement="auto"}) => {
+export const ExperimentalOverlayTooltip = ({ children, show = true, placement = "auto" }) => {
     const experimentalTooltip = () => (
         <Tooltip id="button-tooltip" >
             Experimental
@@ -519,19 +519,19 @@ export const ExperimentalOverlayTooltip = ({children, show = true, placement="au
     ) : <></>;
 };
 
-export const GrayOut = ({children}) =>
-    <div style={{position: 'relative'}}>
-               <div>
-                   <div className={'gray-out overlay'}/>
-                   {children}
-               </div>
-           </div>;
+export const GrayOut = ({ children }) =>
+    <div style={{ position: 'relative' }}>
+        <div>
+            <div className={'gray-out overlay'} />
+            {children}
+        </div>
+    </div>;
 
 
-export const WrapIf = ({enabled, Component, children}) => (
+export const WrapIf = ({ enabled, Component, children }) => (
     enabled ? <Component>{children}</Component> : children);
 
-export const SearchInput = ({searchPrefix, setSearchPrefix, placeholder}) => {
+export const SearchInput = ({ searchPrefix, setSearchPrefix, placeholder }) => {
     return (
         <InputGroup>
             <Form.Control

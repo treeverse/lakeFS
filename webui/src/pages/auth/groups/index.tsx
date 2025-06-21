@@ -1,11 +1,11 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
 import Dropdown from "react-bootstrap/Dropdown";
 
-import {useAPIWithPagination} from "../../../lib/hooks/api";
-import {auth} from "../../../lib/api";
-import {ConfirmationButton} from "../../../lib/components/modals";
-import {Paginator} from "../../../lib/components/pagination";
+import { useAPIWithPagination } from "../../../lib/hooks/api";
+import { auth } from "../../../lib/api";
+import { ConfirmationButton } from "../../../lib/components/modals";
+import { Paginator } from "../../../lib/components/pagination";
 import {
     ActionGroup,
     ActionsBar,
@@ -18,12 +18,12 @@ import {
     useDebouncedState,
     SearchInput
 } from "../../../lib/components/controls";
-import {useRouter} from "../../../lib/hooks/router";
-import {Link} from "../../../lib/components/nav";
-import {EntityActionModal} from "../../../lib/components/auth/forms";
+import { useRouter } from "../../../lib/hooks/router";
+import { Link } from "../../../lib/components/nav";
+import { EntityActionModal } from "../../../lib/components/auth/forms";
 import { disallowPercentSign, INVALID_GROUP_NAME_ERROR_MESSAGE } from "../validation";
-import {useLoginConfigContext} from "../../../lib/hooks/conf";
-import {useAuthOutletContext} from "../../../lib/components/auth/layout";
+import { useLoginConfigContext } from "../../../lib/hooks/conf";
+import { useAuthOutletContext } from "../../../lib/components/auth/layout";
 
 interface PermissionTypes {
     Read: string;
@@ -48,8 +48,8 @@ type ACLPermissionButtonProps = {
     variant?: string;
 }
 
-const ACLPermission: React.FC<ACLPermissionButtonProps> = ({initialValue, onSelect, variant}) => {
-    const [value, setValue] = useState<string|undefined>(initialValue);
+const ACLPermission: React.FC<ACLPermissionButtonProps> = ({ initialValue, onSelect, variant }) => {
+    const [value, setValue] = useState<string | undefined>(initialValue);
     const [title, setTitle] = useState<string>("");
     variant ||= 'secondary';
 
@@ -76,13 +76,13 @@ const ACLPermission: React.FC<ACLPermissionButtonProps> = ({initialValue, onSele
         }}>
         <Dropdown.Toggle variant={variant} title={title}>{value}</Dropdown.Toggle>
         <Dropdown.Menu>
-        {Object.entries(permissions).map(([key, text]) =>
-            <Dropdown.Item key={key} eventKey={key}>
-            <div><b>{key}</b><br/>{text}</div>
-            </Dropdown.Item>
-        )}
-            </Dropdown.Menu>
-        </Dropdown>);
+            {Object.entries(permissions).map(([key, text]) =>
+                <Dropdown.Item key={key} eventKey={key}>
+                    <div><b>{key}</b><br />{text}</div>
+                </Dropdown.Item>
+            )}
+        </Dropdown.Menu>
+    </Dropdown>);
 };
 
 const getACLMaybe = async (groupId: string) => {
@@ -112,21 +112,21 @@ const GroupsContainer = () => {
 
     const [searchPrefix, setSearchPrefix] = useDebouncedState(
         prefix,
-        search => router.push({ pathname: '/auth/groups', query: {prefix: search} })
+        search => router.push({ pathname: '/auth/groups', query: { prefix: search } })
     );
 
-    const { results, loading, error, nextPage } =  useAPIWithPagination(async () => {
+    const { results, loading, error, nextPage } = useAPIWithPagination(async () => {
         const groups = await auth.listGroups(prefix, after);
-        const enrichedResults = await Promise.all(groups?.results.map(async group => ({...group, acl: simplified && await getACLMaybe(group.id)})));
-        return {...groups, results: enrichedResults};
+        const enrichedResults = await Promise.all(groups?.results.map(async group => ({ ...group, acl: simplified && await getACLMaybe(group.id) })));
+        return { ...groups, results: enrichedResults };
     }, [lc.RBAC, refresh, prefix, after]);
 
     useEffect(() => {
         setSelected([]);
     }, [after, refresh]);
 
-    if (error) return <AlertError error={error}/>;
-    if (loading) return <Loading/>;
+    if (error) return <AlertError error={error} />;
+    if (loading) return <Loading />;
     const headers = simplified ? ['', 'Group Name', 'Permission', 'Created At'] : ['', 'Group Name', 'Created At'];
 
     return (
@@ -161,7 +161,7 @@ const GroupsContainer = () => {
                         setSearchPrefix={setSearchPrefix}
                         placeholder="Find a Group..."
                     />
-                    <RefreshButton onClick={() => setRefresh(!refresh)}/>
+                    <RefreshButton onClick={() => setRefresh(!refresh)} />
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
@@ -169,8 +169,8 @@ const GroupsContainer = () => {
             </div>
 
 
-            {(!!deleteError) && <AlertError error={deleteError}/>}
-            {(!!putACLError) && <AlertError error={putACLError}/>}
+            {(!!deleteError) && <AlertError error={deleteError} />}
+            {(!!putACLError) && <AlertError error={putACLError} />}
 
             <EntityActionModal
                 show={showCreate}
@@ -197,18 +197,22 @@ const GroupsContainer = () => {
                 rowFn={group => {
                     const elements = [
                         <Checkbox
+                            key="checkbox"
                             name={group.id}
                             onAdd={() => setSelected([...selected, group])}
                             onRemove={() => setSelected(selected.filter(g => g !== group))}
+                            defaultChecked={selected.some(selectedGroup => selectedGroup.id === group.id)}
                         />,
-                        <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
+                        <Link key="name"
+                            href={{ pathname: '/auth/groups/:groupId', params: { groupId: group.id } }}>
                             {group.name}
-                        </Link>]
-                    simplified && elements.push(group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
-                            ((permission) => auth.putACL(group.id, {...group.acl, permission})
-                                .then(() => setPutACLError(null), (e) => setPutACLError(e)))
-                        }/> : <></>)
-                    elements.push(<FormattedDate dateValue={group.creation_date}/>)
+                        </Link>,
+                    ];
+                    simplified && elements.push(group.acl ? <ACLPermission key="permission" initialValue={group.acl.permission} onSelect={
+                        ((permission) => auth.putACL(group.id, { ...group.acl, permission })
+                            .then(() => setPutACLError(null), (e) => setPutACLError(e)))
+                    } /> : <></>)
+                    elements.push(<FormattedDate key="date" dateValue={group.creation_date} />)
 
                     return elements;
                 }}
@@ -218,7 +222,7 @@ const GroupsContainer = () => {
             <Paginator
                 nextPage={nextPage}
                 after={after}
-                onPaginate={after => router.push({pathname: "/auth/groups", query: {prefix, after}})}
+                onPaginate={after => router.push({ pathname: "/auth/groups", query: { prefix, after } })}
             />
         </>
     );
@@ -227,7 +231,7 @@ const GroupsContainer = () => {
 export const GroupsPage = () => {
     const [setActiveTab] = useAuthOutletContext();
     useEffect(() => setActiveTab('groups'), [setActiveTab]);
-    return <GroupsContainer/>;
+    return <GroupsContainer />;
 };
 
 export default GroupsPage;

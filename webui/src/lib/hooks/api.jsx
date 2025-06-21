@@ -1,6 +1,6 @@
-import {useEffect, useState} from 'react';
-import {AuthenticationError} from "../api";
-import {useRouter} from "./router";
+import { useEffect, useState } from 'react';
+import { AuthenticationError } from "../api";
+import { useRouter } from "./router";
 
 const initialPaginationState = {
     loading: true,
@@ -14,19 +14,19 @@ export const useAPIWithPagination = (promise, deps = []) => {
 
     // do the actual API request
     // we do this if pagination changed, or if we reset to an initial state
-    const {response, error, loading} = useAPI(() => {
-        setPagination({...initialPaginationState});
+    const { response, error, loading } = useAPI(() => {
+        setPagination({ ...initialPaginationState });
         return promise();
     }, [...deps, initialPaginationState]);
 
     useEffect(() => {
         if (loading) {
-            setPagination({results: [], loading: true});
+            setPagination({ results: [], loading: true });
             return;
         }
 
         if (!!error || !response) {
-            setPagination({error, loading: false});
+            setPagination({ error, loading: false });
             return;
         }
 
@@ -62,23 +62,28 @@ export const useAPI = (promise, deps = []) => {
             }
             router.push({
                 pathname: loginPathname,
-                query: {next: router.route, redirected: true},
+                query: { next: router.route, redirected: true },
             });
             setLogin(false);
         }
-    }, [login, router])
+    }, [login, router]);
+
+    useEffect(() => {
+        setRequest(initialAPIState);
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
-        setRequest(initialAPIState);
         const execute = async () => {
             try {
                 const response = await promise();
-                setRequest({
-                    loading: false,
-                    error: null,
-                    response,
-                });
+                if (isMounted) {
+                    setRequest({
+                        loading: false,
+                        error: null,
+                        response,
+                    });
+                }
             } catch (error) {
                 if (error instanceof AuthenticationError) {
                     if (isMounted) {
@@ -86,15 +91,18 @@ export const useAPI = (promise, deps = []) => {
                     }
                     return;
                 }
-                setRequest({
-                    loading: false,
-                    error,
-                    response: null,
-                });
+                if (isMounted) {
+                    setRequest({
+                        loading: false,
+                        error,
+                        response: null,
+                    });
+                }
             }
         };
         execute();
-        return () => isMounted = false;
-    }, deps);
-    return {...request};
+        return () => { isMounted = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [promise, ...deps]);
+    return { ...request };
 }

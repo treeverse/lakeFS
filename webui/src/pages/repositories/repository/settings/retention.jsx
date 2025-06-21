@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import {
     ActionGroup,
@@ -9,12 +9,12 @@ import {
     ToggleSwitch
 } from "../../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
-import {NotFoundError, retention} from "../../../../lib/api";
-import {useAPI} from "../../../../lib/hooks/api";
-import {useRefs} from "../../../../lib/hooks/repo";
+import { NotFoundError, retention } from "../../../../lib/api";
+import { useAPI } from "../../../../lib/hooks/api";
+import { useRefs } from "../../../../lib/hooks/repo";
 import Card from "react-bootstrap/Card";
 import Table from "react-bootstrap/Table";
-import {PolicyEditor} from "../../../../lib/components/policy";
+import { PolicyEditor } from "../../../../lib/components/policy";
 import Alert from "react-bootstrap/Alert";
 import { LightBulbIcon } from "@primer/octicons-react";
 
@@ -23,18 +23,18 @@ const exampleJson = (defaultBranch) => {
         "default_retention_days": 21,
         "branches":
             [
-                {"branch_id": defaultBranch, "retention_days": 28},
+                { "branch_id": defaultBranch, "retention_days": 28 },
             ]
     }
 }
 
-const GCPolicy = ({repo}) => {
+const GCPolicy = ({ repo }) => {
     const [refresh, setRefresh] = useState(true);
     const [jsonView, setJsonView] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
     const [isActionsDisabled, setIsActionsDisabled] = useState(false);
 
-    const {response, error, loading} = useAPI(async () => {
+    const { response, error, loading } = useAPI(async () => {
         return await retention.getGCPolicy(repo.id)
     }, [repo, refresh])
 
@@ -69,21 +69,21 @@ const GCPolicy = ({repo}) => {
     const jsonToggleBar = <ActionsBar>
         <ActionGroup orientation="right">
             <ToggleSwitch label={"JSON view"} id={"policy-json-switch"} onChange={setJsonView}
-                          defaultChecked={jsonView}/>
+                defaultChecked={jsonView} />
         </ActionGroup>
     </ActionsBar>
     const isPolicyNotSet = error && error instanceof NotFoundError
     const policy = response
     let content;
     if (loading) {
-        content = <Loading/>;
+        content = <Loading />;
     } else if (error) {
-        content = isPolicyNotSet ? <Alert variant="info" className={"mt-3"}>A garbage collection policy is not set yet.</Alert> : <AlertError error={error}/>;
+        content = isPolicyNotSet ? <Alert variant="info" className={"mt-3"}>A garbage collection policy is not set yet.</Alert> : <AlertError error={error} />;
     } else if (jsonView) {
         content = <>
             <pre className={"policy-body"}>{JSON.stringify(policy, null, 4)}</pre>
             {jsonToggleBar}
-            </>
+        </>
     } else {
         content = <>
             <Alert variant="info" className="mt-3">
@@ -93,20 +93,20 @@ const GCPolicy = ({repo}) => {
             <Card className={"mb-3"}>
                 {policy.branches && <Table>
                     <thead>
-                    <tr>
-                        <th width={"80%"}>Branch</th>
-                        <th>Retention Days</th>
-                    </tr>
+                        <tr>
+                            <th width={"80%"}>Branch</th>
+                            <th>Retention Days</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    {policy.branches.map((branch, i) => {
-                        return (
-                            <tr key={`branch-${i}`}>
-                                <td><code>{branch.branch_id}</code></td>
-                                <td><code>{branch.retention_days}</code></td>
-                            </tr>
-                        );
-                    })}
+                        {policy.branches.map((branch, i) => {
+                            return (
+                                <tr key={`branch-${i}`}>
+                                    <td><code>{branch.branch_id}</code></td>
+                                    <td><code>{branch.retention_days}</code></td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </Table>}
             </Card>
@@ -116,7 +116,7 @@ const GCPolicy = ({repo}) => {
     let editorProps = {
         policy: policy
     };
-    if (!!error  && error instanceof NotFoundError) {
+    if (!!error && error instanceof NotFoundError) {
         editorProps = {
             noID: true,
             isCreate: true,
@@ -128,7 +128,7 @@ const GCPolicy = ({repo}) => {
             <h4 className={"mb-0"}>
                 <div className={"ms-1 me-1 pl-0 d-flex"}>
                     <div className="flex-grow-1">Garbage collection policy</div>
-                    <RefreshButton className={"ms-1"} onClick={doRefresh}/>
+                    <RefreshButton className={"ms-1"} onClick={doRefresh} />
                     {!error && !loading && !isPolicyNotSet &&
                         <Button className={"ms-2 btn-secondary"} disabled={isActionsDisabled} onClick={onDelete}>Delete
                             Policy</Button>}
@@ -137,9 +137,8 @@ const GCPolicy = ({repo}) => {
             </h4>
         </div>
         <p className="mt-3">
-            {/* eslint-disable-next-line react/jsx-no-target-blank */}
             This policy determines for how long objects are kept in the storage after they are deleted in lakeFS. <a
-            href="https://docs.lakefs.io/howto/garbage-collection/" target="_blank">Learn more.</a>
+                href="https://docs.lakefs.io/howto/garbage-collection/" target="_blank" rel="noreferrer">Learn more.</a>
         </p>
         <div className={"mt-3"}>
             {content}
@@ -155,19 +154,19 @@ const GCPolicy = ({repo}) => {
 
 
 const RetentionContainer = () => {
-    const {repo, loading, error} = useRefs();
-    if (loading) return <Loading/>;
-    if (error) return <AlertError error={error}/>;
+    const { repo, loading, error } = useRefs();
+    if (loading) return <Loading />;
+    if (error) return <AlertError error={error} />;
 
     return (
-        <GCPolicy repo={repo}/>
+        <GCPolicy repo={repo} />
     );
 }
 
 const RepositoryRetentionPage = () => {
-  const [setActiveTab] = useOutletContext();
-  useEffect(() => setActiveTab("retention"), [setActiveTab]);
-  return <RetentionContainer />;
+    const [setActiveTab] = useOutletContext();
+    useEffect(() => setActiveTab("retention"), [setActiveTab]);
+    return <RetentionContainer />;
 };
 
 export default RepositoryRetentionPage;

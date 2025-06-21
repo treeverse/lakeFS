@@ -1,6 +1,6 @@
-import React, {useEffect} from "react";
-import {useOutletContext} from "react-router-dom";
-import {UserHeaderWithContext} from "./userHeaderWithContext";
+import React, { useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
+import { UserHeaderWithContext } from "./userHeaderWithContext";
 import {
     ActionGroup,
     ActionsBar,
@@ -11,15 +11,15 @@ import {
     RefreshButton
 } from "../../../../lib/components/controls";
 import Button from "react-bootstrap/Button";
-import {useAPIWithPagination} from "../../../../lib/hooks/api";
-import {auth} from "../../../../lib/api";
-import {Paginator} from "../../../../lib/components/pagination";
-import {useState} from "react";
-import {AttachModal} from "../../../../lib/components/auth/forms";
-import {ConfirmationButton} from "../../../../lib/components/modals";
-import {Link} from "../../../../lib/components/nav";
-import {useRouter} from "../../../../lib/hooks/router";
-import {PageSize} from "../../../../constants";
+import { useAPIWithPagination } from "../../../../lib/hooks/api";
+import { auth } from "../../../../lib/api";
+import { Paginator } from "../../../../lib/components/pagination";
+import { useState } from "react";
+import { AttachModal } from "../../../../lib/components/auth/forms";
+import { ConfirmationButton } from "../../../../lib/components/modals";
+import { Link } from "../../../../lib/components/nav";
+import { useRouter } from "../../../../lib/hooks/router";
+import { PageSize } from "../../../../constants";
 
 
 const UserPoliciesList = ({ userId, after, onPaginate }) => {
@@ -27,66 +27,66 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [attachError, setAttachError] = useState(null);
 
-    const {results, loading, error, nextPage} = useAPIWithPagination(() => {
+    const { results, loading, error, nextPage } = useAPIWithPagination(() => {
         return auth.listUserPolicies(userId, false, after);
     }, [userId, after, refresh]);
 
     let content;
-    if (loading) content = <Loading/>;
-    else if (error) content=  <AlertError error={error}/>;
+    if (loading) content = <Loading />;
+    else if (error) content = <AlertError error={error} />;
     else content = (
-            <>
-                {attachError && <AlertError error={attachError}/>}
-                <DataTable
-                    keyFn={policy => policy.id}
-                    rowFn={policy => [
-                        <Link href={{pathname: '/auth/policies/:policyId', params: {policyId: policy.id}}}>{policy.id}</Link>,
-                        <FormattedDate dateValue={policy.creation_date}/>
-                    ]}
-                    headers={['Policy ID', 'Created At']}
-                    actions={[{
-                        key: 'Detach',
-                        buttonFn: policy => <ConfirmationButton
-                            size="sm"
-                            variant="outline-danger"
-                            modalVariant="danger"
-                            msg={<span>Are you sure you{'\''}d like to detach policy <strong>{policy.id}</strong>?</span>}
-                            onConfirm={() => {
-                                auth.detachPolicyFromUser(userId, policy.id)
-                                    .catch(error => alert(error))
-                                    .then(() => { setRefresh(!refresh) })
-                            }}>
-                            Detach
-                        </ConfirmationButton>
-                    }]}
-                    results={results}
-                    emptyState={'No policies found'}
-                />
+        <>
+            {attachError && <AlertError error={attachError} />}
+            <DataTable
+                keyFn={policy => policy.id}
+                rowFn={policy => [
+                    <Link key={policy.id} href={{ pathname: '/auth/policies/:policyId', params: { policyId: policy.id } }}>{policy.id}</Link>,
+                    <FormattedDate key={policy.id} dateValue={policy.creation_date} />
+                ]}
+                headers={['Policy ID', 'Created At']}
+                actions={[{
+                    key: 'Detach',
+                    buttonFn: policy => <ConfirmationButton
+                        size="sm"
+                        variant="outline-danger"
+                        modalVariant="danger"
+                        msg={<span>Are you sure you{'\''}d like to detach policy <strong>{policy.id}</strong>?</span>}
+                        onConfirm={() => {
+                            auth.detachPolicyFromUser(userId, policy.id)
+                                .catch(error => alert(error))
+                                .then(() => { setRefresh(!refresh) })
+                        }}>
+                        Detach
+                    </ConfirmationButton>
+                }]}
+                results={results}
+                emptyState={'No policies found'}
+            />
 
-                <Paginator onPaginate={onPaginate} after={after} nextPage={nextPage}/>
+            <Paginator onPaginate={onPaginate} after={after} nextPage={nextPage} />
 
 
-                {showAddModal && <AttachModal
-                    show={showAddModal}
-                    emptyState={'No policies found'}
-                    filterPlaceholder={'Find Policy...'}
-                    modalTitle={'Attach Policies'}
-                    addText={'Attach Policies'}
-                    searchFn={(prefix,after) => auth.listPolicies(prefix, after, PageSize)}
-                    onHide={() => setShowAddModal(false)}
-                    onAttach={(selected) => {
-                        Promise.all(selected.map(policy => auth.attachPolicyToUser(userId, policy.id)))
-                            .then(() => { setRefresh(!refresh); setAttachError(null) })
-                            .catch(error => { setAttachError(error) })
-                            .finally(() => { setShowAddModal(false) });
-                    }}/>
-                }
-            </>
-        )
+            {showAddModal && <AttachModal
+                show={showAddModal}
+                emptyState={'No policies found'}
+                filterPlaceholder={'Find Policy...'}
+                modalTitle={'Attach Policies'}
+                addText={'Attach Policies'}
+                searchFn={(prefix, after) => auth.listPolicies(prefix, after, PageSize)}
+                onHide={() => setShowAddModal(false)}
+                onAttach={(selected) => {
+                    Promise.all(selected.map(policy => auth.attachPolicyToUser(userId, policy.id)))
+                        .then(() => { setRefresh(!refresh); setAttachError(null) })
+                        .catch(error => { setAttachError(error) })
+                        .finally(() => { setShowAddModal(false) });
+                }} />
+            }
+        </>
+    )
 
     return (
         <>
-            <UserHeaderWithContext userId={userId} page={'policies'}/>
+            <UserHeaderWithContext userId={userId} page={'policies'} />
 
             <ActionsBar>
                 <ActionGroup orientation="left">
@@ -94,7 +94,7 @@ const UserPoliciesList = ({ userId, after, onPaginate }) => {
                 </ActionGroup>
 
                 <ActionGroup orientation="right">
-                    <RefreshButton onClick={() => setRefresh(!refresh)}/>
+                    <RefreshButton onClick={() => setRefresh(!refresh)} />
                 </ActionGroup>
             </ActionsBar>
 
@@ -112,14 +112,14 @@ const UserPoliciesContainer = () => {
     return (!userId) ? <></> : <UserPoliciesList
         userId={userId}
         after={(after) ? after : ""}
-        onPaginate={after => router.push({pathname: '/auth/users/:userId/policies', params: {userId}, query: {after}})}
+        onPaginate={after => router.push({ pathname: '/auth/users/:userId/policies', params: { userId }, query: { after } })}
     />;
 };
 
 const UserPoliciesPage = () => {
-    const {setActiveTab} = useOutletContext();
+    const { setActiveTab } = useOutletContext();
     useEffect(() => setActiveTab("users"), [setActiveTab]);
-    return <UserPoliciesContainer/>;
+    return <UserPoliciesContainer />;
 };
 
 export default UserPoliciesPage;
