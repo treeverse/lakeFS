@@ -675,3 +675,348 @@ func FuzzWalkS3(f *testing.F) {
 		require.Equal(t, sortedFilesAndDirs, walkOrder)
 	})
 }
+
+func TestDiffLocal_symlinks(t *testing.T) {
+	osUid := os.Getuid()
+	osGid := os.Getgid()
+	umask := syscall.Umask(0)
+	syscall.Umask(umask)
+
+	cases := []struct {
+		Name                   string
+		IncludeUnixPermissions bool
+		IncludeGID             bool
+		IncludeUID             bool
+		SymlinkMode            local.SymlinkMode
+		LocalPath              string
+		InitLocalPath          func() string
+		CleanLocalPath         func(localPath string)
+		RemoteList             []apigen.ObjectStats
+		Expected               []*local.Change
+	}{
+		{
+			Name:        "symlink_skip_mode_ignores_symlinks",
+			LocalPath:   "testdata/localdiff/symlink_skip",
+			SymlinkMode: local.SymlinkModeSkip,
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{},
+		},
+		{
+			Name:        "symlink_support_mode_includes_symlinks",
+			LocalPath:   "testdata/localdiff/symlink_support",
+			SymlinkMode: local.SymlinkModeSupport,
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "symlink_file.txt",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
+		{
+			Name:        "symlink_follow_mode_follows_symlinks",
+			LocalPath:   "testdata/localdiff/symlink_follow",
+			SymlinkMode: local.SymlinkModeFollow,
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "symlink_file.txt",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
+		{
+			Name:        "symlink_modified_in_support_mode",
+			LocalPath:   "testdata/localdiff/symlink_modified",
+			SymlinkMode: local.SymlinkModeSupport,
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				},
+				{
+					Path:      "symlink_file.txt",
+					SizeBytes: swag.Int64(0),
+					Mtime:     diffTestCorrectTime,
+					Metadata: &apigen.ObjectUserMetadata{
+						AdditionalProperties: map[string]string{
+							local.SymlinkMetadataKey: "/different/target",
+						},
+					},
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "symlink_file.txt",
+					Type: local.ChangeTypeModified,
+				},
+			},
+		},
+		{
+			Name:        "symlink_removed_in_support_mode",
+			LocalPath:   "testdata/localdiff/symlink_removed",
+			SymlinkMode: local.SymlinkModeSupport,
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				},
+				{
+					Path:      "symlink_file.txt",
+					SizeBytes: swag.Int64(0),
+					Mtime:     diffTestCorrectTime,
+					Metadata: &apigen.ObjectUserMetadata{
+						AdditionalProperties: map[string]string{
+							local.SymlinkMetadataKey: "/target",
+						},
+					},
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "symlink_file.txt",
+					Type: local.ChangeTypeRemoved,
+				},
+			},
+		},
+		{
+			Name:                   "symlink_with_posix_permissions",
+			LocalPath:              "testdata/localdiff/symlink_posix",
+			SymlinkMode:            local.SymlinkModeSupport,
+			IncludeUnixPermissions: true,
+			IncludeGID:             true,
+			IncludeUID:             true,
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+					Metadata:  getPermissionsMetadata(osUid, osGid, local.DefaultFilePermissions-umask),
+				},
+				{
+					Path:      "symlink_file.txt",
+					SizeBytes: swag.Int64(0),
+					Mtime:     diffTestCorrectTime,
+					Metadata: &apigen.ObjectUserMetadata{
+						AdditionalProperties: map[string]string{
+							local.SymlinkMetadataKey:          "/target",
+							local.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d,\"GID\":%d,\"Mode\":%d}", osUid+1, osGid+1, 0o100755),
+						},
+					},
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "symlink_file.txt",
+					Type: local.ChangeTypeModified,
+				},
+			},
+		},
+		{
+			Name:        "symlink_directory",
+			LocalPath:   "testdata/localdiff/symlink_dir",
+			SymlinkMode: local.SymlinkModeSupport,
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "symlink_dir",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
+		{
+			Name:        "broken_symlink_in_support_mode",
+			LocalPath:   "testdata/localdiff/broken_symlink",
+			SymlinkMode: local.SymlinkModeSupport,
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{
+				{
+					Path: "broken_symlink.txt",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
+		{
+			Name:        "broken_symlink_in_skip_mode",
+			LocalPath:   "testdata/localdiff/broken_symlink",
+			SymlinkMode: local.SymlinkModeSkip,
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			Expected: []*local.Change{},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.Name, func(t *testing.T) {
+			if tt.InitLocalPath != nil {
+				tt.LocalPath = tt.InitLocalPath()
+			}
+
+			// Create test directory structure with symlinks
+			testDir := createSymlinkTestData(t, tt.Name)
+			defer os.RemoveAll(testDir)
+
+			fixTime(t, testDir, tt.IncludeUnixPermissions)
+			fixUnixPermissions(t, testDir)
+
+			left := tt.RemoteList
+			sort.SliceStable(left, func(i, j int) bool {
+				return left[i].Path < left[j].Path
+			})
+			lc := make(chan apigen.ObjectStats, len(left))
+			makeChan(lc, left)
+
+			changes, err := local.DiffLocalWithHead(lc, testDir, local.Config{
+				IncludePerm: tt.IncludeUnixPermissions,
+				IncludeUID:  tt.IncludeUID,
+				IncludeGID:  tt.IncludeGID,
+				SymlinkMode: tt.SymlinkMode,
+			})
+
+			if tt.CleanLocalPath != nil {
+				tt.CleanLocalPath(testDir)
+			}
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(changes) != len(tt.Expected) {
+				t.Fatalf("expected %d changes, got %d\n\n%v", len(tt.Expected), len(changes), changes)
+			}
+			for i, c := range changes {
+				require.Equal(t, c.Path, tt.Expected[i].Path, "wrong path")
+				require.Equal(t, c.Type, tt.Expected[i].Type, "wrong type")
+			}
+		})
+	}
+}
+
+func createSymlinkTestData(t *testing.T, testName string) string {
+	testDir := t.TempDir()
+
+	switch testName {
+	case "symlink_skip_mode_ignores_symlinks":
+		// Create regular file and symlink
+		require.NoError(t, os.WriteFile(filepath.Join(testDir, "regular_file.txt"), []byte("content"), 0644))
+		require.NoError(t, os.Symlink("/target", filepath.Join(testDir, "symlink_file.txt")))
+
+	case "symlink_support_mode_includes_symlinks":
+		// Create regular file and symlink
+		require.NoError(t, os.WriteFile(filepath.Join(testDir, "regular_file.txt"), []byte("content"), 0644))
+		require.NoError(t, os.Symlink("/target", filepath.Join(testDir, "symlink_file.txt")))
+
+	case "symlink_follow_mode_follows_symlinks":
+		// Create regular file and symlink
+		require.NoError(t, os.WriteFile(filepath.Join(testDir, "regular_file.txt"), []byte("content"), 0644))
+		require.NoError(t, os.Symlink("/target", filepath.Join(testDir, "symlink_file.txt")))
+
+	case "symlink_modified_in_support_mode":
+		// Create regular file and symlink with different target
+		require.NoError(t, os.WriteFile(filepath.Join(testDir, "regular_file.txt"), []byte("content"), 0644))
+		require.NoError(t, os.Symlink("/different/local/target", filepath.Join(testDir, "symlink_file.txt")))
+
+	case "symlink_removed_in_support_mode":
+		// Create only regular file (symlink was removed)
+		require.NoError(t, os.WriteFile(filepath.Join(testDir, "regular_file.txt"), []byte("content"), 0644))
+
+	case "symlink_with_posix_permissions":
+		// Create regular file and symlink
+		require.NoError(t, os.WriteFile(filepath.Join(testDir, "regular_file.txt"), []byte("content"), 0644))
+		require.NoError(t, os.Symlink("/target", filepath.Join(testDir, "symlink_file.txt")))
+
+	case "symlink_directory":
+		// Create regular file and symlink to directory
+		require.NoError(t, os.WriteFile(filepath.Join(testDir, "regular_file.txt"), []byte("content"), 0644))
+		require.NoError(t, os.Symlink("/some/directory", filepath.Join(testDir, "symlink_dir")))
+
+	case "broken_symlink_in_support_mode", "broken_symlink_in_skip_mode":
+		// Create regular file and broken symlink
+		require.NoError(t, os.WriteFile(filepath.Join(testDir, "regular_file.txt"), []byte("content"), 0644))
+		require.NoError(t, os.Symlink("/nonexistent/path", filepath.Join(testDir, "broken_symlink.txt")))
+
+	default:
+		t.Fatalf("Unknown test name: %s", testName)
+	}
+
+	return testDir
+}
+
+func TestSymlinkModeFromString(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected local.SymlinkMode
+	}{
+		{"follow", local.SymlinkModeFollow},
+		{"skip", local.SymlinkModeSkip},
+		{"support", local.SymlinkModeSupport},
+		{"FOLLOW", local.SymlinkModeFollow},
+		{"Skip", local.SymlinkModeSkip},
+		{"SUPPORT", local.SymlinkModeSupport},
+		{"invalid", local.SymlinkModeFollow}, // defaults to follow
+		{"", local.SymlinkModeFollow},        // defaults to follow
+		{"unknown", local.SymlinkModeFollow}, // defaults to follow
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			result := local.SymlinkModeFromString(tc.input)
+			require.Equal(t, tc.expected, result)
+		})
+	}
+}
+
+func TestSymlinkModeString(t *testing.T) {
+	testCases := []struct {
+		input    local.SymlinkMode
+		expected string
+	}{
+		{local.SymlinkModeFollow, "follow"},
+		{local.SymlinkModeSkip, "skip"},
+		{local.SymlinkModeSupport, "support"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.expected, func(t *testing.T) {
+			result := local.SymlinkModeString(tc.input)
+			require.Equal(t, tc.expected, result)
+		})
+	}
+}

@@ -389,6 +389,350 @@ func TestSyncManager_upload(t *testing.T) {
 	}
 }
 
+func TestSyncManager_download_symlinks(t *testing.T) {
+	currentUID := os.Getuid()
+	currentGID := os.Getgid()
+	ctx := context.Background()
+
+	testCases := []struct {
+		Name              string
+		Contents          []byte
+		Metadata          map[string]string
+		Path              string
+		SymlinkMode       local.SymlinkMode
+		ExpectedIsSymlink bool
+		ExpectedTarget    string
+	}{
+		{
+			Name:     "download symlink in support mode",
+			Contents: []byte{}, // Empty content for symlink
+			Metadata: map[string]string{
+				local.SymlinkMetadataKey: "/path/to/target",
+			},
+			Path:              "my_symlink",
+			SymlinkMode:       local.SymlinkModeSupport,
+			ExpectedIsSymlink: true,
+			ExpectedTarget:    "/path/to/target",
+		},
+		{
+			Name:              "download symlink in follow mode",
+			Contents:          []byte("target content"),
+			Metadata:          map[string]string{},
+			Path:              "my_symlink",
+			SymlinkMode:       local.SymlinkModeFollow,
+			ExpectedIsSymlink: false,
+			ExpectedTarget:    "",
+		},
+		{
+			Name:     "download symlink in skip mode",
+			Contents: []byte{}, // Should not be downloaded
+			Metadata: map[string]string{
+				local.SymlinkMetadataKey: "/path/to/target",
+			},
+			Path:              "my_symlink",
+			SymlinkMode:       local.SymlinkModeSkip,
+			ExpectedIsSymlink: false, // Should not exist
+			ExpectedTarget:    "",
+		},
+		{
+			Name:     "download symlink with relative target",
+			Contents: []byte{},
+			Metadata: map[string]string{
+				local.SymlinkMetadataKey: "relative/target",
+			},
+			Path:              "my_symlink",
+			SymlinkMode:       local.SymlinkModeSupport,
+			ExpectedIsSymlink: true,
+			ExpectedTarget:    "relative/target",
+		},
+		{
+			Name:     "download symlink with POSIX permissions",
+			Contents: []byte{},
+			Metadata: map[string]string{
+				local.SymlinkMetadataKey:          "/path/to/target",
+				local.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o100755),
+			},
+			Path:              "my_symlink",
+			SymlinkMode:       local.SymlinkModeSupport,
+			ExpectedIsSymlink: true,
+			ExpectedTarget:    "/path/to/target",
+		},
+	}
+
+	for _, tt := range testCases {
+		umask := syscall.Umask(0)
+		syscall.Umask(umask)
+
+		t.Run(tt.Name, func(t *testing.T) {
+			// We must create the test at the user home dir otherwise we will fail to chown
+			home, err := os.UserHomeDir()
+			require.NoError(t, err)
+			testFolderPath := filepath.Join(home, fmt.Sprintf("sync_manager_symlink_test_%s", xid.New().String()))
+			require.NoError(t, os.MkdirAll(testFolderPath, os.ModePerm))
+			defer func() {
+				_ = os.RemoveAll(testFolderPath)
+			}()
+
+			sizeBytes := int64(len(tt.Contents))
+			mtime := time.Now().Unix()
+			metadata := &apigen.ObjectUserMetadata{AdditionalProperties: tt.Metadata}
+
+			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("X-Content-Type-Options", "nosniff")
+				var res interface{}
+				switch {
+				case strings.Contains(r.RequestURI, "/stat"):
+					w.Header().Set("Content-Type", "application/json")
+					res = &apigen.ObjectStats{
+						Metadata:  metadata,
+						Mtime:     mtime,
+						Path:      tt.Path,
+						SizeBytes: &sizeBytes,
+					}
+					require.NoError(t, json.NewEncoder(w).Encode(res))
+				case strings.HasSuffix(r.URL.Path, "/objects"):
+					w.Header().Set("Content-Type", "text/plain")
+					w.Header().Set("Content-Length", fmt.Sprintf("%d", sizeBytes))
+					_, err := w.Write(tt.Contents)
+					require.NoError(t, err)
+				default:
+					t.Fatal("Unexpected request")
+				}
+				w.WriteHeader(http.StatusOK)
+			})
+			server := httptest.NewServer(h)
+			defer server.Close()
+
+			testClient := getTestClient(t, server.URL)
+			s := local.NewSyncManager(ctx, testClient, server.Client(), local.Config{
+				SyncFlags: local.SyncFlags{
+					Parallelism:      1,
+					Presign:          false,
+					PresignMultipart: false,
+				},
+				IncludePerm: true,
+				SymlinkMode: tt.SymlinkMode,
+			})
+
+			u := &uri.URI{
+				Repository: "repo",
+				Ref:        "main",
+				Path:       nil,
+			}
+			changes := make(chan *local.Change, 2)
+			changes <- &local.Change{
+				Source: local.ChangeSourceRemote,
+				Path:   tt.Path,
+				Type:   local.ChangeTypeAdded,
+			}
+			close(changes)
+
+			err = s.Sync(testFolderPath, u, changes)
+			if tt.SymlinkMode == local.SymlinkModeSkip {
+				// In skip mode, the symlink should not be downloaded
+				require.NoError(t, err)
+				localPath := filepath.Join(testFolderPath, tt.Path)
+				_, err := os.Stat(localPath)
+				require.True(t, os.IsNotExist(err), "Symlink should not exist in skip mode")
+				return
+			}
+			require.NoError(t, err)
+
+			localPath := filepath.Join(testFolderPath, tt.Path)
+			stat, err := os.Stat(localPath)
+			require.NoError(t, err)
+
+			if tt.ExpectedIsSymlink {
+				// Check if it's a symlink
+				symlinkInfo, err := os.Lstat(localPath)
+				require.NoError(t, err)
+				require.True(t, symlinkInfo.Mode()&os.ModeSymlink != 0, "Expected symlink but got regular file")
+
+				// Check symlink target
+				target, err := os.Readlink(localPath)
+				require.NoError(t, err)
+				require.Equal(t, tt.ExpectedTarget, target)
+
+				// Check mtime
+				expectedMTime := mtime
+				if clientMTime, ok := tt.Metadata[local.ClientMtimeMetadataKey]; ok {
+					expectedMTime, err = strconv.ParseInt(clientMTime, 10, 64)
+					require.NoError(t, err)
+				}
+				require.Equal(t, expectedMTime, stat.ModTime().Unix())
+
+				// Check permissions if POSIX permissions are enabled
+				if value, ok := tt.Metadata[local.POSIXPermissionsMetadataKey]; ok {
+					perm := &local.POSIXPermissions{}
+					require.NoError(t, json.Unmarshal([]byte(value), &perm))
+
+					if sys, ok := stat.Sys().(*syscall.Stat_t); ok {
+						uid := int(sys.Uid)
+						gid := int(sys.Gid)
+						require.Equal(t, perm.UID, uid)
+						require.Equal(t, perm.GID, gid)
+						require.Equal(t, int(perm.Mode), int(sys.Mode))
+					}
+				}
+			} else {
+				// Should be a regular file with content
+				require.True(t, stat.Mode().IsRegular(), "Expected regular file but got symlink")
+				data, err := os.ReadFile(localPath)
+				require.NoError(t, err)
+				require.Equal(t, tt.Contents, data)
+			}
+		})
+	}
+}
+
+func TestSyncManager_upload_symlinks(t *testing.T) {
+	ctx := context.Background()
+
+	testCases := []struct {
+		Name             string
+		Path             string
+		SymlinkMode      local.SymlinkMode
+		SymlinkTarget    string
+		ExpectedUpload   bool
+		ExpectedMetadata map[string]string
+	}{
+		{
+			Name:           "upload symlink in support mode",
+			Path:           "my_symlink",
+			SymlinkMode:    local.SymlinkModeSupport,
+			SymlinkTarget:  "/path/to/target",
+			ExpectedUpload: true,
+			ExpectedMetadata: map[string]string{
+				local.SymlinkMetadataKey: "/path/to/target",
+			},
+		},
+		{
+			Name:             "upload symlink in follow mode",
+			Path:             "my_symlink",
+			SymlinkMode:      local.SymlinkModeFollow,
+			SymlinkTarget:    "/path/to/target",
+			ExpectedUpload:   true,
+			ExpectedMetadata: map[string]string{
+				// Should not have symlink metadata, should upload target content
+			},
+		},
+		{
+			Name:             "upload symlink in skip mode",
+			Path:             "my_symlink",
+			SymlinkMode:      local.SymlinkModeSkip,
+			SymlinkTarget:    "/path/to/target",
+			ExpectedUpload:   false,
+			ExpectedMetadata: map[string]string{},
+		},
+		{
+			Name:           "upload symlink with relative target",
+			Path:           "my_symlink",
+			SymlinkMode:    local.SymlinkModeSupport,
+			SymlinkTarget:  "relative/target",
+			ExpectedUpload: true,
+			ExpectedMetadata: map[string]string{
+				local.SymlinkMetadataKey: "relative/target",
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.Name, func(t *testing.T) {
+			// We must create the test at the user home dir otherwise we will fail to chown
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			testFolderPath := filepath.Join(home, fmt.Sprintf("sync_manager_symlink_upload_test_%s", xid.New().String()))
+			require.NoError(t, os.MkdirAll(testFolderPath, os.ModePerm))
+			defer func() {
+				_ = os.RemoveAll(testFolderPath)
+			}()
+
+			localPath := filepath.Join(testFolderPath, tt.Path)
+
+			// Create the symlink
+			require.NoError(t, os.Symlink(tt.SymlinkTarget, localPath))
+
+			// Set mtime for testing
+			mtime := time.Now().Unix()
+			require.NoError(t, os.Chtimes(localPath, time.Now(), time.Unix(mtime, 0)))
+
+			uploadCalled := false
+			var uploadedMetadata map[string]string
+
+			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if !strings.HasSuffix(r.URL.Path, "/objects") {
+					t.Fatal("Unexpected request")
+				}
+
+				uploadCalled = true
+
+				// Check symlink metadata
+				symlinkTarget := r.Header.Get(apiutil.LakeFSHeaderInternalPrefix + "symlink-target")
+				if tt.ExpectedMetadata[local.SymlinkMetadataKey] != "" {
+					require.Equal(t, tt.ExpectedMetadata[local.SymlinkMetadataKey], symlinkTarget)
+				}
+
+				// Check mtime
+				expectedMtime := fmt.Sprintf("%d", mtime)
+				fileMtime := r.Header.Get(apiutil.LakeFSHeaderInternalPrefix + "client-mtime")
+				require.Equal(t, expectedMtime, fileMtime)
+
+				// Store metadata for verification
+				uploadedMetadata = make(map[string]string)
+				for key, values := range r.Header {
+					if strings.HasPrefix(key, apiutil.LakeFSHeaderInternalPrefix) {
+						uploadedMetadata[strings.TrimPrefix(key, apiutil.LakeFSHeaderInternalPrefix)] = values[0]
+					}
+				}
+
+				w.WriteHeader(http.StatusOK)
+			})
+			server := httptest.NewServer(h)
+			defer server.Close()
+
+			testClient := getTestClient(t, server.URL)
+			s := local.NewSyncManager(ctx, testClient, server.Client(), local.Config{
+				SyncFlags: local.SyncFlags{
+					Parallelism:      1,
+					Presign:          false,
+					PresignMultipart: false,
+					NoProgress:       true,
+				},
+				IncludePerm: true,
+				SymlinkMode: tt.SymlinkMode,
+			})
+
+			changes := make(chan *local.Change, 2)
+			changes <- &local.Change{
+				Source: local.ChangeSourceLocal,
+				Path:   tt.Path,
+				Type:   local.ChangeTypeAdded,
+			}
+			close(changes)
+
+			remoteURI := &uri.URI{
+				Repository: "repo",
+				Ref:        "main",
+			}
+
+			err := s.Sync(testFolderPath, remoteURI, changes)
+			require.NoError(t, err)
+
+			// Verify upload behavior
+			if tt.ExpectedUpload {
+				require.True(t, uploadCalled, "Expected upload to be called")
+
+				// Verify symlink metadata if expected
+				if expectedTarget, ok := tt.ExpectedMetadata[local.SymlinkMetadataKey]; ok {
+					require.Equal(t, expectedTarget, uploadedMetadata["symlink-target"])
+				}
+			} else {
+				require.False(t, uploadCalled, "Expected upload to be skipped")
+			}
+		})
+	}
+}
+
 func getTestClient(t *testing.T, endpoint string) *apigen.ClientWithResponses {
 	t.Helper()
 	transport := http.DefaultTransport.(*http.Transport).Clone()

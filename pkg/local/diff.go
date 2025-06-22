@@ -25,6 +25,14 @@ const (
 	ChangeSourceLocal
 )
 
+type SymlinkMode string
+
+const (
+	SymlinkModeFollow  SymlinkMode = "follow"
+	SymlinkModeSkip    SymlinkMode = "skip"
+	SymlinkModeSupport SymlinkMode = "support"
+)
+
 type ChangeType int
 
 const (
@@ -195,7 +203,7 @@ func Undo(c Changes) Changes {
 // the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
 func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
 	var stringHeap StringHeap
-	var dirsInfo = make(map[string]os.FileInfo)
+	dirsInfo := make(map[string]os.FileInfo)
 
 	fpWalkErr := filepath.Walk(root, func(p string, info fs.FileInfo, walkErr error) error {
 		if walkErr != nil {
@@ -397,18 +405,45 @@ var ignoreFileList = []string{
 }
 
 func includeLocalFileInDiff(info fs.FileInfo, cfg Config) (bool, error) {
+	// handle directories based on configuration
 	if info.IsDir() {
 		return cfg.IncludePerm, nil
 	}
+
+	// ignore files that are in the ignore list
+	if slices.Contains(ignoreFileList, info.Name()) {
+		return false, nil
+	}
+
+	// handle symlinks
+	if info.Mode()&fs.ModeSymlink != 0 {
+		// we skip symlinks based on configuration
+		if cfg.SymlinkMode != SymlinkModeSkip {
+			return true, nil
+		}
+		// in case we skip, we fall back to checking non-regular files
+	}
+
+	// fallback to regular file checks
 	if !info.Mode().IsRegular() {
 		if !cfg.SkipNonRegularFiles {
 			return false, fmt.Errorf("%s: %w", info.Name(), fileutil.ErrNotARegularFile)
 		}
 		return false, nil
 	}
-	return !slices.Contains(ignoreFileList, info.Name()), nil
+
+	return true, nil
 }
 
 func includeRemoteFileInDiff(currentRemoteFile apigen.ObjectStats, cfg Config) bool {
 	return cfg.IncludePerm || !strings.HasSuffix(currentRemoteFile.Path, uri.PathSeparator)
+}
+
+func SymlinkModeFromString(mode string) (SymlinkMode, bool) {
+	switch mode {
+	case "follow", "skip", "support":
+		return SymlinkMode(mode), true
+	default:
+		return "", false
+	}
 }

@@ -6,6 +6,7 @@ const (
 	// DefaultDirectoryPermissions Octal representation of default folder permissions
 	DefaultDirectoryPermissions = 0o040777
 	ClientMtimeMetadataKey      = apiutil.LakeFSMetadataPrefix + "client-mtime"
+	SymlinkMetadataKey          = apiutil.LakeFSMetadataPrefix + "symlink-target"
 )
 
 type SyncFlags struct {
@@ -25,4 +26,5 @@ type Config struct {
 	IncludePerm bool
 	IncludeUID  bool
 	IncludeGID  bool
+	SymlinkMode SymlinkMode
 }

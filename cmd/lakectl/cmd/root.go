@@ -115,7 +115,8 @@ type Configuration struct {
 	}
 	Local struct {
 		// SkipNonRegularFiles - By default lakectl local fails if local directory contains a symbolic link. When set, lakectl will ignore the symbolic links instead.
-		SkipNonRegularFiles bool `mapstructure:"skip_non_regular_files"`
+		SkipNonRegularFiles bool   `mapstructure:"skip_non_regular_files"`
+		SymlinkMode         string `mapstructure:"symlink_mode"` // SymlinkMode defines how to handle symlinks in local operations (follow, skip, support)
 	} `mapstructure:"local"`
 	// Experimental - Use caution when enabling experimental features. It should only be used after consulting with the lakeFS team!
 	Experimental struct {

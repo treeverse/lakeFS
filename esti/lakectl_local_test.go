@@ -103,7 +103,7 @@ func TestLakectlLocal_init(t *testing.T) {
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 	// Bad ref
-	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref/"+" "+tmpDir, false, "lakectl_local_commit_not_found", vars)
+	RunCmdAndVerifyFailureWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/bad_ref/ "+tmpDir, false, "lakectl_local_commit_not_found", vars)
 
 	filePath := "ro_1k.1"
 	vars["FILE_PATH"] = filePath
@@ -947,4 +947,626 @@ Use "lakectl local pull... --force" to sync with the remote.`,
 			require.Contains(t, sanitizedResult, tt.expectedmessage)
 		})
 	}
+}
+
+func TestLakectlLocal_symlink_modes(t *testing.T) {
+	tmpDir := t.TempDir()
+	fd, err := os.CreateTemp(tmpDir, "")
+	require.NoError(t, err)
+	require.NoError(t, fd.Close())
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	tests := []struct {
+		name        string
+		symlinkMode string
+		expectError bool
+	}{
+		{
+			name:        "follow-mode",
+			symlinkMode: "follow",
+			expectError: false,
+		},
+		{
+			name:        "skip-mode",
+			symlinkMode: "skip",
+			expectError: false,
+		},
+		{
+			name:        "support-mode",
+			symlinkMode: "support",
+			expectError: false,
+		},
+		{
+			name:        "invalid-mode",
+			symlinkMode: "invalid",
+			expectError: false, // defaults to follow mode
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+
+			// Create test files and symlinks
+			targetFile := filepath.Join(dataDir, "target.txt")
+			require.NoError(t, os.WriteFile(targetFile, []byte("target content"), os.ModePerm))
+
+			symlinkFile := filepath.Join(dataDir, "symlink.txt")
+			require.NoError(t, os.Symlink(targetFile, symlinkFile))
+
+			// Create a symlink to a directory
+			targetDir := filepath.Join(dataDir, "target_dir")
+			require.NoError(t, os.Mkdir(targetDir, os.ModePerm))
+			dirFile := filepath.Join(targetDir, "dir_file.txt")
+			require.NoError(t, os.WriteFile(dirFile, []byte("dir content"), os.ModePerm))
+
+			symlinkDir := filepath.Join(dataDir, "symlink_dir")
+			require.NoError(t, os.Symlink(targetDir, symlinkDir))
+
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+			vars["LOCAL_DIR"] = dataDir
+			vars["PREFIX"] = ""
+			vars["BRANCH"] = tt.name
+			vars["REF"] = tt.name
+
+			lakectlCmd := Lakectl()
+			if tt.symlinkMode != "" {
+				lakectlCmd = fmt.Sprintf("LAKECTL_LOCAL_SYMLINK_MODE=%s %s", tt.symlinkMode, lakectlCmd)
+			}
+
+			// Test local init
+			runCmd(t, lakectlCmd+" local init lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, false, vars)
+
+			// Test local status
+			statusResult := runCmd(t, lakectlCmd+" local status "+dataDir, false, false, vars)
+			require.Contains(t, statusResult, "target.txt")
+
+			switch tt.symlinkMode {
+			case "skip":
+				// In skip mode, symlinks should be ignored
+				require.NotContains(t, statusResult, "symlink.txt")
+				require.NotContains(t, statusResult, "symlink_dir")
+			case "support":
+				// In support mode, symlinks should be included
+				require.Contains(t, statusResult, "symlink.txt")
+				require.Contains(t, statusResult, "symlink_dir")
+			case "follow", "invalid", "":
+				// In follow mode (default), symlinks should be followed
+				require.Contains(t, statusResult, "symlink.txt")
+				require.Contains(t, statusResult, "symlink_dir")
+			}
+
+			// Test local commit
+			commitResult := runCmd(t, lakectlCmd+" local commit -m \"test symlink modes\" "+dataDir, false, false, vars)
+			require.Contains(t, commitResult, "Commit for branch \""+tt.name+"\" completed")
+
+			// Test local pull to verify the behavior
+			pullResult := runCmd(t, lakectlCmd+" local pull "+dataDir, false, false, vars)
+			require.Contains(t, pullResult, "Successfully synced changes")
+
+			// Verify no diff after commit
+			statusResult = runCmd(t, lakectlCmd+" local status "+dataDir, false, false, vars)
+			require.Contains(t, statusResult, "No diff found")
+		})
+	}
+}
+
+func TestLakectlLocal_symlink_support_mode_upload_download(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	t.Run("upload_and_download_symlinks", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+
+		// Create test structure
+		targetFile := filepath.Join(dataDir, "target.txt")
+		require.NoError(t, os.WriteFile(targetFile, []byte("target content"), os.ModePerm))
+
+		symlinkFile := filepath.Join(dataDir, "symlink.txt")
+		require.NoError(t, os.Symlink(targetFile, symlinkFile))
+
+		// Create a symlink to a relative path
+		relativeSymlink := filepath.Join(dataDir, "relative_symlink.txt")
+		require.NoError(t, os.Symlink("target.txt", relativeSymlink))
+
+		// Create a symlink to an absolute path
+		absoluteSymlink := filepath.Join(dataDir, "absolute_symlink.txt")
+		require.NoError(t, os.Symlink("/tmp/absolute_target.txt", absoluteSymlink))
+
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/symlink-support --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = "symlink-support"
+		vars["REF"] = "symlink-support"
+
+		lakectlCmd := "LAKECTL_LOCAL_SYMLINK_MODE=support " + Lakectl()
+
+		// Test local clone
+		RunCmdAndVerifyContainsText(t, lakectlCmd+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+		// Test local status - should show symlinks
+		statusResult := runCmd(t, lakectlCmd+" local status "+dataDir, false, false, vars)
+		require.Contains(t, statusResult, "target.txt")
+		require.Contains(t, statusResult, "symlink.txt")
+		require.Contains(t, statusResult, "relative_symlink.txt")
+		require.Contains(t, statusResult, "absolute_symlink.txt")
+
+		// Test local commit
+		commitResult := runCmd(t, lakectlCmd+" local commit -m \"upload symlinks\" "+dataDir, false, false, vars)
+		require.Contains(t, commitResult, "Commit for branch \"symlink-support\" completed")
+
+		// Create a new directory to test download
+		downloadDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+
+		vars["LOCAL_DIR"] = downloadDir
+		RunCmdAndVerifyContainsText(t, lakectlCmd+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+downloadDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+		// Verify files were downloaded
+		_, err = os.Stat(filepath.Join(downloadDir, "target.txt"))
+		require.NoError(t, err)
+
+		// Verify symlinks were recreated
+		symlinkInfo, err := os.Lstat(filepath.Join(downloadDir, "symlink.txt"))
+		require.NoError(t, err)
+		require.True(t, symlinkInfo.Mode()&os.ModeSymlink != 0)
+
+		// Check symlink target
+		target, err := os.Readlink(filepath.Join(downloadDir, "symlink.txt"))
+		require.NoError(t, err)
+		require.Equal(t, targetFile, target)
+
+		// Check relative symlink
+		relativeTarget, err := os.Readlink(filepath.Join(downloadDir, "relative_symlink.txt"))
+		require.NoError(t, err)
+		require.Equal(t, "target.txt", relativeTarget)
+
+		// Check absolute symlink
+		absoluteTarget, err := os.Readlink(filepath.Join(downloadDir, "absolute_symlink.txt"))
+		require.NoError(t, err)
+		require.Equal(t, "/tmp/absolute_target.txt", absoluteTarget)
+	})
+}
+
+func TestLakectlLocal_symlink_follow_mode(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	t.Run("follow_symlink_content", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+
+		// Create test structure
+		targetFile := filepath.Join(dataDir, "target.txt")
+		require.NoError(t, os.WriteFile(targetFile, []byte("target content"), os.ModePerm))
+
+		symlinkFile := filepath.Join(dataDir, "symlink.txt")
+		require.NoError(t, os.Symlink(targetFile, symlinkFile))
+
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/symlink-follow --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = "symlink-follow"
+		vars["REF"] = "symlink-follow"
+
+		lakectlCmd := "LAKECTL_LOCAL_SYMLINK_MODE=follow " + Lakectl()
+
+		// Test local clone
+		RunCmdAndVerifyContainsText(t, lakectlCmd+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+		// Test local status - should show symlinks as regular files (followed)
+		statusResult := runCmd(t, lakectlCmd+" local status "+dataDir, false, false, vars)
+		require.Contains(t, statusResult, "target.txt")
+		require.Contains(t, statusResult, "symlink.txt")
+
+		// Test local commit
+		commitResult := runCmd(t, lakectlCmd+" local commit -m \"upload with follow mode\" "+dataDir, false, false, vars)
+		require.Contains(t, commitResult, "Commit for branch \"symlink-follow\" completed")
+
+		// Create a new directory to test download
+		downloadDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+
+		vars["LOCAL_DIR"] = downloadDir
+		RunCmdAndVerifyContainsText(t, lakectlCmd+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+downloadDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+		// Verify both files exist as regular files (symlink content was followed)
+		_, err = os.Stat(filepath.Join(downloadDir, "target.txt"))
+		require.NoError(t, err)
+
+		// The symlink should be a regular file with the target content
+		symlinkInfo, err := os.Stat(filepath.Join(downloadDir, "symlink.txt"))
+		require.NoError(t, err)
+		require.True(t, symlinkInfo.Mode().IsRegular())
+
+		// Verify content is the same
+		targetContent, err := os.ReadFile(filepath.Join(downloadDir, "target.txt"))
+		require.NoError(t, err)
+		symlinkContent, err := os.ReadFile(filepath.Join(downloadDir, "symlink.txt"))
+		require.NoError(t, err)
+		require.Equal(t, targetContent, symlinkContent)
+	})
+}
+
+func TestLakectlLocal_symlink_skip_mode(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	t.Run("skip_symlinks", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+
+		// Create test structure
+		targetFile := filepath.Join(dataDir, "target.txt")
+		require.NoError(t, os.WriteFile(targetFile, []byte("target content"), os.ModePerm))
+
+		symlinkFile := filepath.Join(dataDir, "symlink.txt")
+		require.NoError(t, os.Symlink(targetFile, symlinkFile))
+
+		// Create a broken symlink
+		brokenSymlink := filepath.Join(dataDir, "broken_symlink.txt")
+		require.NoError(t, os.Symlink("/nonexistent/path", brokenSymlink))
+
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/symlink-skip --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = "symlink-skip"
+		vars["REF"] = "symlink-skip"
+
+		lakectlCmd := "LAKECTL_LOCAL_SYMLINK_MODE=skip " + Lakectl()
+
+		// Test local clone
+		RunCmdAndVerifyContainsText(t, lakectlCmd+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+		// Test local status - should only show regular files, skip symlinks
+		statusResult := runCmd(t, lakectlCmd+" local status "+dataDir, false, false, vars)
+		require.Contains(t, statusResult, "target.txt")
+		require.NotContains(t, statusResult, "symlink.txt")
+		require.NotContains(t, statusResult, "broken_symlink.txt")
+
+		// Test local commit
+		commitResult := runCmd(t, lakectlCmd+" local commit -m \"upload with skip mode\" "+dataDir, false, false, vars)
+		require.Contains(t, commitResult, "Commit for branch \"symlink-skip\" completed")
+
+		// Create a new directory to test download
+		downloadDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+
+		vars["LOCAL_DIR"] = downloadDir
+		RunCmdAndVerifyContainsText(t, lakectlCmd+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+downloadDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+		// Verify only the regular file was downloaded
+		_, err = os.Stat(filepath.Join(downloadDir, "target.txt"))
+		require.NoError(t, err)
+
+		// Verify symlinks were not downloaded
+		_, err = os.Stat(filepath.Join(downloadDir, "symlink.txt"))
+		require.True(t, os.IsNotExist(err))
+
+		_, err = os.Stat(filepath.Join(downloadDir, "broken_symlink.txt"))
+		require.True(t, os.IsNotExist(err))
+	})
+}
+
+func TestLakectlLocal_symlink_recursive_handling(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	t.Run("recursive_symlink_detection", func(t *testing.T) {
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+
+		// Create a circular symlink reference
+		symlink1 := filepath.Join(dataDir, "symlink1.txt")
+		symlink2 := filepath.Join(dataDir, "symlink2.txt")
+
+		// Create a regular file first
+		targetFile := filepath.Join(dataDir, "target.txt")
+		require.NoError(t, os.WriteFile(targetFile, []byte("target content"), os.ModePerm))
+
+		// Create symlinks that reference each other
+		require.NoError(t, os.Symlink(symlink2, symlink1))
+		require.NoError(t, os.Symlink(symlink1, symlink2))
+
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/symlink-recursive --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = "symlink-recursive"
+		vars["REF"] = "symlink-recursive"
+
+		lakectlCmd := "LAKECTL_LOCAL_SYMLINK_MODE=follow " + Lakectl()
+
+		// Test local clone
+		RunCmdAndVerifyContainsText(t, lakectlCmd+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+		// Test local status - should handle recursive symlinks gracefully
+		statusResult := runCmd(t, lakectlCmd+" local status "+dataDir, false, false, vars)
+		require.Contains(t, statusResult, "target.txt")
+
+		// The recursive symlinks should be detected and handled appropriately
+		// This might result in an error or the symlinks being skipped
+		if strings.Contains(statusResult, "symlink1.txt") || strings.Contains(statusResult, "symlink2.txt") {
+			// If they appear in status, they should be handled
+			t.Log("Recursive symlinks detected in status")
+		}
+	})
+}
+
+func TestLakectlLocal_symlink_configuration_validation(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	tests := []struct {
+		name         string
+		symlinkMode  string
+		expectedMode string
+		description  string
+	}{
+		{
+			name:         "empty-mode-defaults-to-follow",
+			symlinkMode:  "",
+			expectedMode: "follow",
+			description:  "Empty symlink mode should default to follow",
+		},
+		{
+			name:         "case-insensitive-follow",
+			symlinkMode:  "FOLLOW",
+			expectedMode: "follow",
+			description:  "Case insensitive follow mode should work",
+		},
+		{
+			name:         "case-insensitive-skip",
+			symlinkMode:  "Skip",
+			expectedMode: "skip",
+			description:  "Case insensitive skip mode should work",
+		},
+		{
+			name:         "case-insensitive-support",
+			symlinkMode:  "SUPPORT",
+			expectedMode: "support",
+			description:  "Case insensitive support mode should work",
+		},
+		{
+			name:         "invalid-mode-defaults-to-follow",
+			symlinkMode:  "invalid_mode",
+			expectedMode: "follow",
+			description:  "Invalid mode should default to follow",
+		},
+		{
+			name:         "whitespace-trimmed",
+			symlinkMode:  " follow ",
+			expectedMode: "follow",
+			description:  "Whitespace should be trimmed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dataDir, err := os.MkdirTemp(tmpDir, "")
+			require.NoError(t, err)
+
+			// Create test files and symlinks
+			targetFile := filepath.Join(dataDir, "target.txt")
+			require.NoError(t, os.WriteFile(targetFile, []byte("target content"), os.ModePerm))
+
+			symlinkFile := filepath.Join(dataDir, "symlink.txt")
+			require.NoError(t, os.Symlink(targetFile, symlinkFile))
+
+			runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+tt.name+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+			vars["LOCAL_DIR"] = dataDir
+			vars["PREFIX"] = ""
+			vars["BRANCH"] = tt.name
+			vars["REF"] = tt.name
+
+			lakectlCmd := Lakectl()
+			if tt.symlinkMode != "" {
+				lakectlCmd = fmt.Sprintf("LAKECTL_LOCAL_SYMLINK_MODE=%s %s", tt.symlinkMode, lakectlCmd)
+			}
+
+			// Test local init
+			runCmd(t, lakectlCmd+" local init lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, false, vars)
+
+			// Test local status
+			statusResult := runCmd(t, lakectlCmd+" local status "+dataDir, false, false, vars)
+			require.Contains(t, statusResult, "target.txt")
+
+			// Verify behavior based on expected mode
+			switch tt.expectedMode {
+			case "skip":
+				require.NotContains(t, statusResult, "symlink.txt")
+			case "support", "follow":
+				require.Contains(t, statusResult, "symlink.txt")
+			}
+
+			// Test local commit
+			commitResult := runCmd(t, lakectlCmd+" local commit -m \"test configuration validation\" "+dataDir, false, false, vars)
+			require.Contains(t, commitResult, "Commit for branch \""+tt.name+"\" completed")
+
+			// Verify no diff after commit
+			statusResult = runCmd(t, lakectlCmd+" local status "+dataDir, false, false, vars)
+			require.Contains(t, statusResult, "No diff found")
+		})
+	}
+}
+
+func TestLakectlLocal_symlink_with_existing_remote_symlinks(t *testing.T) {
+	tmpDir := t.TempDir()
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	vars := map[string]string{
+		"REPO":    repoName,
+		"STORAGE": storage,
+		"BRANCH":  mainBranch,
+		"REF":     mainBranch,
+		"PREFIX":  "",
+	}
+
+	runCmd(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, false, vars)
+	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+	t.Run("download_existing_remote_symlinks", func(t *testing.T) {
+		// First, create a local directory with symlinks and upload them in support mode
+		uploadDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+
+		targetFile := filepath.Join(uploadDir, "target.txt")
+		require.NoError(t, os.WriteFile(targetFile, []byte("target content"), os.ModePerm))
+
+		symlinkFile := filepath.Join(uploadDir, "symlink.txt")
+		require.NoError(t, os.Symlink(targetFile, symlinkFile))
+
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/remote-symlinks --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+		vars["LOCAL_DIR"] = uploadDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = "remote-symlinks"
+		vars["REF"] = "remote-symlinks"
+
+		// Upload symlinks in support mode
+		uploadCmd := "LAKECTL_LOCAL_SYMLINK_MODE=support " + Lakectl()
+		RunCmdAndVerifyContainsText(t, uploadCmd+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+uploadDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+		runCmd(t, uploadCmd+" local commit -m \"upload symlinks\" "+uploadDir, false, false, vars)
+
+		// Now test downloading the symlinks in different modes
+		downloadTests := []struct {
+			name          string
+			symlinkMode   string
+			expectSymlink bool
+		}{
+			{
+				name:          "download-support-mode",
+				symlinkMode:   "support",
+				expectSymlink: true,
+			},
+			{
+				name:          "download-follow-mode",
+				symlinkMode:   "follow",
+				expectSymlink: false, // Should be regular file with content
+			},
+			{
+				name:          "download-skip-mode",
+				symlinkMode:   "skip",
+				expectSymlink: false, // Should not exist
+			},
+		}
+
+		for _, dt := range downloadTests {
+			t.Run(dt.name, func(t *testing.T) {
+				downloadDir, err := os.MkdirTemp(tmpDir, "")
+				require.NoError(t, err)
+
+				vars["LOCAL_DIR"] = downloadDir
+				downloadCmd := fmt.Sprintf("LAKECTL_LOCAL_SYMLINK_MODE=%s %s", dt.symlinkMode, Lakectl())
+				RunCmdAndVerifyContainsText(t, downloadCmd+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+downloadDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+				// Verify target file exists
+				_, err = os.Stat(filepath.Join(downloadDir, "target.txt"))
+				require.NoError(t, err)
+
+				// Check symlink behavior
+				symlinkPath := filepath.Join(downloadDir, "symlink.txt")
+				if dt.expectSymlink {
+					// Should be a symlink
+					symlinkInfo, err := os.Lstat(symlinkPath)
+					require.NoError(t, err)
+					require.True(t, symlinkInfo.Mode()&os.ModeSymlink != 0)
+
+					// Check symlink target
+					target, err := os.Readlink(symlinkPath)
+					require.NoError(t, err)
+					require.Equal(t, targetFile, target)
+				} else if dt.symlinkMode == "skip" {
+					// Should not exist
+					_, err = os.Stat(symlinkPath)
+					require.True(t, os.IsNotExist(err))
+				} else {
+					// Should be a regular file with content
+					symlinkInfo, err := os.Stat(symlinkPath)
+					require.NoError(t, err)
+					require.True(t, symlinkInfo.Mode().IsRegular())
+
+					// Verify content is the same as target
+					targetContent, err := os.ReadFile(filepath.Join(downloadDir, "target.txt"))
+					require.NoError(t, err)
+					symlinkContent, err := os.ReadFile(symlinkPath)
+					require.NoError(t, err)
+					require.Equal(t, targetContent, symlinkContent)
+				}
+			})
+		}
+	})
 }

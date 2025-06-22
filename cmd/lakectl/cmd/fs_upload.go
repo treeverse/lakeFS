@@ -61,10 +61,17 @@ var fsUploadCmd = &cobra.Command{
 				c <- change
 			}
 		}()
+
+		symlinkMode, valid := local.SymlinkModeFromString(cfg.Local.SymlinkMode)
+		if !valid {
+			DieFmt("invalid symlink mode '%s'", cfg.Local.SymlinkMode)
+		}
+
 		s := local.NewSyncManager(ctx, client, getHTTPClient(), local.Config{
 			SyncFlags:           syncFlags,
 			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 			IncludePerm:         false,
+			SymlinkMode:         symlinkMode,
 		})
 		fullPath, err := filepath.Abs(source)
 		if err != nil {
