@@ -39,7 +39,7 @@ $ ./lakefs flare --stdout > lakefs.flare
 
 ### Configuration
 
-Both core lakeFS and lakeFS-Enterprise allow configuration to be supplied in multiple ways: configuration file, environment variables, `.env` files, and command flags. The `flare` command collects the fully resolved final configuration used by the lakeFS process.
+Both core lakeFS and lakeFS Enterprise allow configuration to be supplied in multiple ways: configuration file, environment variables, `.env` files, and command flags. The `flare` command collects the fully resolved final configuration used by the lakeFS process.
 
 ### Environment Variables
 
@@ -68,8 +68,8 @@ Redacted secrets are replaced by a `SHA512` hash of the value without exposing t
 
 ## Usage - Collect and Send Flare
 
-The following script is intended to be run locally and assumes that lakeFS-Enterprise is deployed to a Kubernetes cluster, since this is the recommended setup.  
-Running this script requires that `kubectl` be installed on the machine it is being run from and that `kubectl` is configured with the correct context and credentials to access the cluster. Aside from running the `flare` command on lakeFS-Enterprise, this script also fetches the logs from all running pods of lakeFS.
+The following script is intended to be run locally and assumes that lakeFS Enterprise is deployed to a Kubernetes cluster, since this is the recommended setup.  
+Running this script requires that `kubectl` be installed on the machine it is being run from and that `kubectl` is configured with the correct context and credentials to access the cluster. Aside from running the `flare` command on lakeFS Enterprise, this script also fetches the logs from all running pods of lakeFS.
 
 ### Step 1 - Set Script Variables
 
