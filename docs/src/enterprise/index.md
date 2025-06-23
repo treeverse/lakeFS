@@ -1,6 +1,7 @@
 ---
 title: lakeFS Enterprise Features
 description: lakeFS Enterprise is an enterprise-ready lakeFS solution providing additional features including RBAC, SSO and Support SLA.
+status: enterprise
 ---
 
 # lakeFS Enterprise Features
@@ -25,7 +26,7 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 
 1. A rich [Role-Based Access Control](../security/rbac.md) permission system that allows for fine-grained control by associating permissions with users and groups, granting them specific actions on specific resources. This ensures data security and compliance within an organization.
 1. To easily manage users and groups, lakeFS Enterprise provides SSO integration (including support for SAML, OIDC, ADFS, Okta, and Azure AD), supporting existing credentials from a trusted provider, eliminating separate logins.
-3. lakeFS Enterprise supports [SCIM](../howto/scim.md) for automatically provisioning and deprovisioning users and group memberships to allow organizations to maintain a single source of truth for their user database.
+3. lakeFS Enterprise supports [SCIM](../howto/scim.md) for automatically provisioning and de-provisioning users and group memberships, allowing organizations to maintain a single source of truth for their user database.
 1. [STS Auth](../security/sts-login.md) offers temporary, secure logins using an Identity Provider, simplifying user access and enhancing security.
 1. [Authentication with AWS IAM Roles](../security/external-principals-aws.md) allows authentication using AWS IAM roles instead of lakeFS credentials, removing the need to maintain static credentials for lakeFS Enterprise users running on AWS.
 1. [Auditing](../reference/auditing.md) provides a detailed action log of events happening within lakeFS, including who performed which action, on which resource - and when.
@@ -53,7 +54,7 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 | **[Role Based Access Control (RBAC)](../security/rbac.md)** |            | ✅         |
 | **[Single Sign On (SSO)](../security/sso.md)**                       |            | ✅         |
 | **[SCIM Support](../howto/scim.md)**                               |            | ✅         |
-| **[IAM Roles](../security/external-principals-aws.md)**                                  |            | ✅         |
+| **[IAM Roles](../security/external-principals-aws.md)**                                  |            | ✅ <small>(AWS)</small>         |
 | **[Mount Capability](../reference/mount.md)**                           |            | ✅         |
 | **[Iceberg REST Catalog](../integrations/iceberg.md)**                           |            | ✅         |
 | **[Audit Logs](../reference/auditing.md)**                                 |            | ✅         |

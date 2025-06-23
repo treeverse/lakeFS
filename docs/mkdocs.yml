@@ -122,21 +122,21 @@ nav:
     - "3\uFE0F\u20E3 Create a branch": quickstart/branch.md
     - "4\uFE0F\u20E3 Commit and Merge": quickstart/commit-and-merge.md
     - "5\uFE0F\u20E3 Roll back Changes": quickstart/rollback.md
-    - "6\uFE0F\u20E3 Using Actions and Hooks in lakeFS": quickstart/actions-and-hooks.md
-    - "7\uFE0F\u20E3 Work with lakeFS data locally": quickstart/work-with-data-locally.md
-    - Learn more about lakeFS: quickstart/learning-more-lakefs.md
+    - "6\uFE0F\u20E3 Using Actions and Hooks": quickstart/actions-and-hooks.md
+    - "7\uFE0F\u20E3 Work with data locally": quickstart/work-with-data-locally.md
+    - ➡️ Learn more: quickstart/learning-more-lakefs.md
   - Use Cases:
     - CI/CD for Data Lakes: understand/use_cases/cicd_for_data.md
     - ETL Testing Environment: understand/use_cases/etl_testing.md
     - Reproducibility: understand/use_cases/reproducibility.md
   - User Guides:
-    - Install lakeFS:
+    - Installing:
       - Overview: howto/deploy/index.md
       - AWS: howto/deploy/aws.md
       - Azure: howto/deploy/azure.md
       - GCP: howto/deploy/gcp.md
       - On-Premises: howto/deploy/onprem.md
-    - Upgrade lakeFS: howto/deploy/upgrade.md
+    - Upgrading: howto/deploy/upgrade.md
     - Sizing Guide: howto/sizing-guide.md
   - Data Management:
     - Git-Like Versioning:
@@ -172,17 +172,14 @@ nav:
       - Monitoring & Auditing:
         - Monitoring using Prometheus: reference/monitor.md
         - Auditing: reference/auditing.md
-      - Migrating away from lakeFS: howto/migrate-away.md
+      - Migrating away: howto/migrate-away.md
   - lakeFS Enterprise:
-    - Overview: 
-        - Features: enterprise/index.md
-        - Deployment Options: enterprise/deployment-options.md
-        - Enterprise Support: enterprise/enterprise-support.md
+    - Features: enterprise/index.md
     - lakeFS Cloud: cloud/index.md
     - On-Premises:
       - Quickstart: enterprise/getstarted/quickstart.md 
-      - Install: enterprise/getstarted/install.md
-      - Migrate from lakeFS OSS: enterprise/getstarted/migrate-from-oss.md
+      - Installation: enterprise/getstarted/install.md
+      - Migrating from lakeFS OSS: enterprise/getstarted/migrate-from-oss.md
       - Upgrading: enterprise/upgrade.md
       - Architecture: enterprise/architecture.md
       - Troubleshooting: enterprise/troubleshooting.md
@@ -252,9 +249,9 @@ nav:
     - S3 Gateway API: reference/s3.md
     - Spark Client: reference/spark-client.md
     - Authorization API: security/authorization-yaml.md
-  - The lakeFS Project:
-    - About: project/index.md
-    - Contributing to lakeFS: 
+  - Community:
+    - About the lakeFS Project: project/index.md
+    - Contributing: 
       - Code: project/contributing.md
       - Documentation: project/docs.md
 

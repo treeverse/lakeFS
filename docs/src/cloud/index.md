@@ -65,7 +65,7 @@ Using lakeFS cloud is not just a secure and managed way of using lakeFS OSS; it 
 | **[Role Based Access Control (RBAC)](../security/rbac.md)** |            | ✅         |
 | **[Single Sign On (SSO)](../security/sso.md)**                       |            | ✅         |
 | **[SCIM Support](../howto/scim.md)**                               |            | ✅         |
-| **[IAM Roles](../security/external-principals-aws.md)**                                  |            | ✅         |
+| **[IAM Roles](../security/external-principals-aws.md)**                                  |            | ✅ <small>(AWS)</small>   |
 | **[Mount Capability](../reference/mount.md)**                           |            | ✅         |
 | **[Audit Logs](../reference/auditing.md)**                                 |            | ✅         |
 | **[Transactional Mirroring (cross-region)](../howto/mirroring.md)**     |            | ✅         |
