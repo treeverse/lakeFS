@@ -69,7 +69,7 @@
       <name>Maven Central Repo</name>
       <url>https://central.sonatype.com</url>
     </repository>
-  </distributionManagement> -->
+  </distributionManagement>
 
   <build>
     <plugins>
