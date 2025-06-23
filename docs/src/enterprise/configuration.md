@@ -16,7 +16,11 @@ See the full [lakeFS Server Configuration](../reference/configuration.md)
 ### Reference
 
 This reference uses `.` to denote the nesting of values.
-
+* `license` - Configuration section for lakeFS Enterprise licensing
+  + `license.path` `(string : optional)` - The file system path to the license token file, e.g. '/path/to/your/license/file/license.txt'
+!!! note
+   If both `license.path` and `license.contents` are provided or if neither is set, lakeFS-Enterprise will fail to start with an error. You should provide only one. The `license.path` is the preferred option.
+  + `license.contents` `(string : optional)` - The license token string 
 * `auth` - Configuration section for authentication services, like SAML or OIDC.
   + `auth.logout_redirect_url` `(string : "/auth/login")` - The address to redirect to after a successful logout, e.g. login.
   + `auth.ui_config` Configuration section for UI authentication settings
@@ -55,7 +59,7 @@ This reference uses `.` to denote the nesting of values.
     + `auth.oidc.url` `(string : '')` - The OIDC provider url, e.g. 'https://oidc-provider-url.com/'
     + `auth.oidc.client_id` `(string : '')` - The application's ID.
     + `auth.oidc.client_secret` `(string : '')` - The application's secret.
-    + `auth.oidc.callback_base_url` `(string : '')` - A default callback address of the Fluffy server.
+    + `auth.oidc.callback_base_url` `(string : '')` - A default callback address of the lakeFS server.
     + `auth.oidc.callback_base_urls` `(string[] : '[]')`
 
         !!! note
