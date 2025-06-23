@@ -71,7 +71,7 @@
 /* Extra-large screens */
 @media (min-width: 1920px) {
   .md-grid {
-    max-width: 1700px; /* ample content width while preserving margins */
+    max-width: 1880px;
   }
 
   .md-sidebar--primary,
