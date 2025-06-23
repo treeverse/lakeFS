@@ -11,7 +11,7 @@ A lakeFS Enterprise deployment has multiple moving parts that must all be deploy
 
 #### Synopsis
 
-Both `lakefs` and `lakfs-enterprise` extantion include the flare command
+Both `lakeFS` and `lakeFS enterprise` extantion include the flare command
 
 ```bash
 lakefs flare [flags]
