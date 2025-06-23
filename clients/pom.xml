@@ -81,7 +81,6 @@
         <configuration>
           <publishingServerId>central</publishingServerId>
           <autoPublish>true</autoPublish>>
-          <waitUntil>published</waitUntil>
           <failOnBuildFailure>true</failOnBuildFailure>
         </configuration>
       </plugin>
