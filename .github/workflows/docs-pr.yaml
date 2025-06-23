@@ -9,7 +9,7 @@ on:
       - ".github/workflows/docs-*.yaml"
     branches:
       - master
-
+      - main-fluffy-docs   
 jobs:
   # This job name kept short because it's used in the preview URL
   preview:
