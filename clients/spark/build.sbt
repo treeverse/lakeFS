@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.14.4-maven-central-testing-CHANGE-ME.0"
+lazy val projectVersion = "0.14.3"
 version := projectVersion
 lazy val hadoopVersion = "3.2.1"
 ThisBuild / isSnapshot := false
