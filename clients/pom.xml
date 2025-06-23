@@ -63,7 +63,7 @@
     </profile>
   </profiles>
 
-  <distributionManagement>
+  <!-- <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
       <name>Nexus Snapshots Repo</name>
@@ -74,7 +74,7 @@
       <name>Nexus Staging Repo</name>
       <url>https://s01.oss.sonatype.org/nexus/service/local/staging/deploy/maven2/</url>
     </repository>
-  </distributionManagement>
+  </distributionManagement> -->
 
   <build>
     <plugins>

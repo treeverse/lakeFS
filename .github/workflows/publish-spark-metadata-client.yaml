@@ -23,34 +23,18 @@ jobs:
       - name: validate unused
         working-directory: clients/spark
         run: sbt "scalafix --check"
-      - name: Install secret key for signing
-        run: |
-          echo -e '${{ secrets.OSSRH_GPG_SECRET_KEY }}' | gpg --batch --import
-          gpg --list-secret-keys --keyid-format LONG
-      - name: Prepare publish credentials
-        run: |
-          mkdir -p ~/.sbt
-          cat << EOS > ~/.sbt/credentials
-          realm=Amazon S3" > ~/.sbt/credentials
-          host=treeverse-clients-us-east.s3.amazonaws.com
-          user=${AWS_ACCESS_KEY_ID}
-          password=${AWS_SECRET_ACCESS_KEY}
-          EOS
-          cat << EOS > ~/.sbt/sonatype_credentials
-          realm=Sonatype Nexus Repository Manager
-          host=s01.oss.sonatype.org
-          user=${MAVEN_USERNAME}
-          password=${MAVEN_PASSWORD}
-          EOS
+      - name: SBT release (Maven Central)
+        run: sbt ci-release
         env:
+          PGP_PASSPHRASE:
+          PGP_SECRET: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          SONATYPE_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+      - name: SBT release (AWS)
+        run: make publish-scala-aws
+        env:
+          PGP_PASSPHRASE:
+          PGP_SECRET: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
-      - name: Publish artifacts
-        run: make publish-scala
-        env:
           AWS_REGION: us-east-1
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
