@@ -63,16 +63,11 @@
     </profile>
   </profiles>
 
-  <!-- <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <name>Nexus Snapshots Repo</name>
-      <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
-    </snapshotRepository>
+  <distributionManagement>
     <repository>
-      <id>ossrh</id>
-      <name>Nexus Staging Repo</name>
-      <url>https://s01.oss.sonatype.org/nexus/service/local/staging/deploy/maven2/</url>
+      <id>central</id>
+      <name>Maven Central Repo</name>
+      <url>https://central.sonatype.com</url>
     </repository>
   </distributionManagement> -->
 
@@ -86,6 +81,8 @@
         <configuration>
           <publishingServerId>central</publishingServerId>
           <autoPublish>true</autoPublish>>
+          <waitUntil>published</waitUntil>
+          <failOnBuildFailure>true</failOnBuildFailure>
         </configuration>
       </plugin>
     </plugins>
