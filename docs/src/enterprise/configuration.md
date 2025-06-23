@@ -6,86 +6,28 @@ description: a configuration reference for lakeFS Enterprise
 # lakeFS Enterprise Configuration Reference
 
 
-Working with lakeFS Enterprise involve configuring both lakeFS and Fluffy. You can find the extended configuration references for both components below.
+LakeFS Enterprise configuration extends lakeFS's configuration and uses the same config file. 
 
 ## lakeFS Configuration
 
 See the full [lakeFS Server Configuration](../reference/configuration.md)
-
-## Fluffy Server Configuration
-
-Configuring Fluffy using a YAML configuration file and/or environment variables.
-The configuration file's location can be set with the '--config' flag. If not specified, the first file found in the following order will be used:
-
-1. ./config.yaml
-1. `$HOME`/fluffy/config.yaml
-1. /etc/fluffy/config.yaml
-1. `$HOME`/.fluffy.yaml
-
-Configuration items can be controlled by environment variables, see [below](#using-environment-variables).
 
 
 ### Reference
 
 This reference uses `.` to denote the nesting of values.
 
-* `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
-* `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "INFO")` - Logging level to output
-* `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
-
-    !!! note 
-        In case you configure this field to be lower than the main logger level, you won't be able to get the audit logs
-    
-* `logging.output` `(string : "-")` - A path or paths to write logs to. A `-` means the standard output, `=` means the standard error.
-* `logging.file_max_size_mb` `(int : 100)` - Output file maximum size in megabytes.
-* `logging.files_keep` `(int : 0)` - Number of log files to keep, default is all.
-* `logging.trace_request_headers` `(bool : false)` - If set to `true` and logging level is set to `TRACE`, logs request headers.
-* `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
-* `database` - Configuration section for the Fluffy key-value store database. The database must be shared between lakeFS & Fluffy
-  + `database.type` `(string ["postgres"|"dynamodb"|"cosmosdb"|"local"] : )` - Fluffy database type
-  + `database.postgres` - Configuration section when using `database.type="postgres"`
-    + `database.postgres.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
-    + `database.postgres.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
-    + `database.postgres.max_idle_connections` `(int : 25)` - Maximum number of connections in the idle connection pool
-    + `database.postgres.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused `(valid units: ns|us|ms|s|m|h)`
-  + `database.dynamodb` - Configuration section when using `database.type="dynamodb"`
-    + `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
-    + `database.dynamodb.scan_limit` `(int : 1025)` - Maximal number of items per page during scan operation
-
-        !!! note 
-            Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
-      
-    + `database.dynamodb.endpoint` `(string : )` - Endpoint URL for database instance
-    + `database.dynamodb.aws_region` `(string : )` - AWS Region of database instance
-    + `database.dynamodb.aws_profile` `(string : )` - AWS named profile to use
-    + `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
-    + `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
-
-        !!! note
-            `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
-      
-    + `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
-  + `database.cosmosdb` - Configuration section when using `database.type="cosmosdb"`
-    + `database.cosmosdb.key` `(string : "")` - If specified, will
-        be used to authenticate to the CosmosDB account. Otherwise, Azure SDK
-        default authentication (with env vars) will be used.
-    + `database.cosmosdb.endpoint` `(string : "")` - CosmosDB account endpoint, e.g. `https://<account>.documents.azure.com/`.
-    + `database.cosmosdb.database` `(string : "")` - CosmosDB database name.
-    + `database.cosmosdb.container` `(string : "")` - CosmosDB container name.
-    + `database.cosmosdb.throughput` `(int32 : )` - CosmosDB container's RU/s. If not set - the default CosmosDB container throughput is used.
-    + `database.cosmosdb.autoscale` `(bool : false)` - If set, CosmosDB container throughput is autoscaled (See CosmosDB docs for minimum throughput requirement). Otherwise, uses "Manual" mode ([Docs](https://learn.microsoft.com/en-us/azure/cosmos-db/provision-throughput-autoscale)).
-
-      + `database.local` - Configuration section when using `database.type="local"`
-        + `database.local.path` `(string : "~/fluffy/metadata")` - Local path on the filesystem to store embedded KV metadata
-        + `database.local.sync_writes` `(bool: true)` - Ensure each write is written to the disk. Disable to increase performance
-        + `database.local.prefetch_size` `(int: 256)` - How many items to prefetch when iterating over embedded KV records
-        + `database.local.enable_logging` `(bool: false)` - Enable trace logging for local driver
-* `auth` - Configuration section for the Fluffy authentication services, like SAML or OIDC.
-  + `auth.encrypt.secret_key` `(string : required)` - Same value given to lakeFS. A random (cryptographically safe) generated string that is used for encryption and HMAC signing
+* `auth` - Configuration section for authentication services, like SAML or OIDC.
   + `auth.logout_redirect_url` `(string : "/auth/login")` - The address to redirect to after a successful logout, e.g. login.
-  + `auth.post_login_redirect_url` `(string : '')` - Required when SAML is enabled. The address to redirect after a successful login. For most common configurations, setting to `/` will redirect to lakeFS homepage.
-  + `auth.serve_listen_address` `(string : '')` - If set, an endpoint serving RBAC requests binds to this address.
-  + `auth.serve_disable_authentication` `(bool : false)` - Unsafe. Disables authentication to the RBAC server.
+  + `auth.ui_config` Configuration section for UI authentication settings
+    + `auth.ui_config.rbac` `(string : "")` - The RBAC mode to use for authorization
+    + `auth.ui_config.login_url` `(string : "")` - The URL to redirect users to for login
+    + `auth.ui_config.login_failed_message` `(string : "")` - Custom message to display when login fails
+    + `auth.ui_config.fallback_login_url` `(string : optional)` - Alternative login URL to use as fallback
+    + `auth.ui_config.fallback_login_label` `(string : optional)` - Label text for the fallback login option
+    + `auth.ui_config.login_cookie_names` `([]string : [])` - List of cookie names used for login sessions
+    + `auth.ui_config.logout_url` `(string : "")` - The URL to redirect users to for logout
+    + `auth.ui_config.use_login_placeholders` `(bool : false)` - Whether to use placeholder text in login forms
   + `auth.ldap`
     + `auth.ldap.server_endpoint` `(string : required)` - The LDAP server address, e.g. 'ldaps://ldap.company.com:636'
     + `auth.ldap.bind_dn` `(string : required)` - The bind string, e.g. 'uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com'
@@ -95,18 +37,19 @@ This reference uses `.` to denote the nesting of values.
     + `auth.ldap.user_filter` `(string : required)` - The search request user filter, e.g. '(objectClass=inetOrgPerson)'
     + `auth.ldap.connection_timeout_seconds` `(int : required)` - The timeout for a single connection
     + `auth.ldap.request_timeout_seconds` `(int : required)` - The timeout for a single request
+    + `auth.ldap.default_user_group` `(string : "")` - The default group of the user 
   + `auth.saml` Configuration section for SAML
-    + `auth.saml.enabled` `(bool : false)` - Enables SAML Authentication.
     + `auth.saml.sp_root_url` `(string : '')` - The base lakeFS-URL, e.g. 'https://<lakefs-url>'
     + `auth.saml.sp_x509_key_path` `(string : '')` - The path to the private key, e.g '/etc/saml_certs/rsa_saml_private.cert'
     + `auth.saml.sp_x509_cert_path` `(string : '')` - The path to the public key, '/etc/saml_certs/rsa_saml_public.pem'
     + `auth.saml.sp_sign_request` `(bool : 'false')` SPSignRequest some IdP require the SLO request to be signed
     + `auth.saml.sp_signature_method` `(string : '')` SPSignatureMethod optional valid signature values depending on the IdP configuration, e.g. 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'
     + `auth.saml.idp_metadata_url` `(string : '')` - The URL for the metadata server, e.g. 'https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml'
+    + `auth.saml.idp_metadata_file_path` `(string : '')` -The file path to the IdP metadata XML file, e.g. '/etc/saml/idp-metadata.xml'
     + `auth.saml.idp_skip_verify_tls_cert` `(bool : false)` - Insecure skip verification of the IdP TLS certificate, like when signed by a private CA
     + `auth.saml.idp_authn_name_id_format` `(string : 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified')` - The format used in the NameIDPolicy for authentication requests
     + `auth.saml.idp_request_timeout` `(duration : '10s')` The timeout for remote authentication requests.
-    + `auth.saml.external_user_id_claim_name` `(string : '')` - The claim name to use as the user identifier with an IdP mostly for logout
+    + `auth.saml.post_login_redirect_url` `(string : '')` - The URL to redirect users to after successful SAML authentication, e.g. 'http://localhost:8000/'
   + `auth.oidc` Configuration section for OIDC
     + `auth.oidc.enabled` `(bool : false)` - Enables OIDC Authentication.
     + `auth.oidc.url` `(string : '')` - The OIDC provider url, e.g. 'https://oidc-provider-url.com/'
@@ -142,8 +85,8 @@ This reference uses `.` to denote the nesting of values.
 ### Using Environment Variables
 
 All the configuration variables can be set or overridden using environment variables.
-To set an environment variable, prepend `FLUFFY_` to its name, convert it to upper case, and replace `.` with `_`:
+To set an environment variable, prepend `LAKEFS_` to its name, convert it to upper case, and replace `.` with `_`:
 
-For example, `logging.format` becomes `FLUFFY_LOGGING_FORMAT`, `auth.saml.enabled` becomes `FLUFFY_AUTH_SAML_ENABLED`, etc.
+For example, `auth.logout_redirect_url` becomes `LAKEFS_AUTH_LOGOUT_REDIRECT_URL`, `auth.external.aws_auth.enabled` becomes `LAKEFS_AUTH_EXTERNAL_AWS_AUTH_ENABLED`, etc.
 
 To set a value for a `map[string]string` type field, use the syntax `key1=value1,key2=value2,...`.

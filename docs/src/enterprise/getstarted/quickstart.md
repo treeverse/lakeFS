@@ -166,7 +166,7 @@ You can choose from the following options:
           - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
           - LAKEFS_AUTH_AUTHENTICATION_API_ENDPOINT=http://localhost:8000/api/v1
           - LAKEFS_AUTH_AUTHENTICATION_API_EXTERNAL_PRINCIPALS_ENABLED=true
-          - LAKEFS_DATABASE_TYPE=postgres
+          - LAKEFS_DATABASE_TYPE=postgres`
           - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
           - LAKEFS_BLOCKSTORE_TYPE=local
           - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
