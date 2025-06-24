@@ -59,6 +59,7 @@ func localCheckout(cmd *cobra.Command, localPath string, specifiedRef string, co
 	sigCtx := localHandleSyncInterrupt(cmd.Context(), idx, string(checkoutOperation))
 	syncMgr := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
 		SyncFlags:           syncFlags,
+		MaxDownloadRetries:  cfg.Server.Retries.MaxAttempts,
 		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,

@@ -177,7 +177,8 @@ func TestSyncManager_download(t *testing.T) {
 					Presign:          false,
 					PresignMultipart: false,
 				},
-				IncludePerm: tt.UnixPermEnabled,
+				MaxDownloadRetries: 2,
+				IncludePerm:        tt.UnixPermEnabled,
 			})
 			u := &uri.URI{
 				Repository: "repo",

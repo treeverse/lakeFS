@@ -17,6 +17,7 @@ type SyncFlags struct {
 
 type Config struct {
 	SyncFlags
+	MaxDownloadRetries int
 	// SkipNonRegularFiles - By default lakectl local fails if local directory contains irregular files. When set, lakectl will skip these files instead.
 	SkipNonRegularFiles bool
 	// IncludePerm - Experimental: preserve Unix file permissions
