@@ -27,7 +27,7 @@ func CompletePresignMultipartUploadPermissions(repository string, path string) N
 	}
 }
 
-func ListGroupPermissions() Node {
+func ListGroupsPermissions() Node {
 	return Node{
 		Permission: Permission{
 			Action:   ListGroupsAction,
@@ -109,7 +109,7 @@ func SetGroupACLPermissions(groupID string, aclPolicyName string) Node {
 	}
 }
 
-func ListGroupUsersPermissions(groupID string) Node {
+func ListGroupMembersPermissions(groupID string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadGroupAction,
@@ -118,7 +118,7 @@ func ListGroupUsersPermissions(groupID string) Node {
 	}
 }
 
-func RemoveUserFromGroupPermissions(groupID string) Node {
+func DeleteGroupMembershipPermissions(groupID string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   RemoveGroupMemberAction,
@@ -127,7 +127,7 @@ func RemoveUserFromGroupPermissions(groupID string) Node {
 	}
 }
 
-func AddUserToGroupPermissions(groupID string) Node {
+func AddGroupMembershipPermissions(groupID string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   AddGroupMemberAction,
@@ -307,7 +307,7 @@ func AttachPolicyToUserPermissions(userID string) Node {
 	}
 }
 
-func CreateRepoPermissions(repoName string, storageNamespace string) Node {
+func CreateRepositoryPermissions(repoName string, storageNamespace string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -327,7 +327,7 @@ func CreateRepoPermissions(repoName string, storageNamespace string) Node {
 	}
 }
 
-func DeleteRepoPermissions(repository string) Node {
+func DeleteRepositoryPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   DeleteRepositoryAction,
@@ -336,7 +336,7 @@ func DeleteRepoPermissions(repository string) Node {
 	}
 }
 
-func GetRepoPermissions(repository string) Node {
+func GetRepositoryPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadRepositoryAction,
@@ -345,7 +345,7 @@ func GetRepoPermissions(repository string) Node {
 	}
 }
 
-func GetRepoMetadataPermissions(repository string) Node {
+func GetRepositoryMetadataPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadRepositoryAction,
@@ -354,7 +354,7 @@ func GetRepoMetadataPermissions(repository string) Node {
 	}
 }
 
-func UpdateRepoMetadataPermissions(repository string) Node {
+func SetRepositoryMetadataPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   UpdateRepositoryAction,
@@ -363,7 +363,7 @@ func UpdateRepoMetadataPermissions(repository string) Node {
 	}
 }
 
-func DeleteRepoMetadataPermissions(repository string) Node {
+func DeleteRepositoryMetadataPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   UpdateRepositoryAction,
@@ -417,7 +417,7 @@ func SetGCRulesPermissions(repository string) Node {
 	}
 }
 
-func ActionsRepositoryRunsPermissions(repository string) Node {
+func ListRepositoryRunsPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadActionsAction,
@@ -426,7 +426,7 @@ func ActionsRepositoryRunsPermissions(repository string) Node {
 	}
 }
 
-func ActionsGetRunPermissions(repository string) Node {
+func GetRunPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadActionsAction,
@@ -435,7 +435,7 @@ func ActionsGetRunPermissions(repository string) Node {
 	}
 }
 
-func ActionsListRunHooksPermissions(repository string) Node {
+func ListRunHooksPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadActionsAction,
@@ -444,7 +444,7 @@ func ActionsListRunHooksPermissions(repository string) Node {
 	}
 }
 
-func ActionsRunHookOutputPermissions(repository string) Node {
+func GetRunHookOutputPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadActionsAction,
@@ -508,7 +508,7 @@ func HardResetBranchPermissions(repository string, branch string) Node {
 	}
 }
 
-func ImportPermissions(repository string, branch string) Node {
+func ImportStartPermissions(repository string, branch string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -537,7 +537,7 @@ func ImportStatusPermissions(repository string, branch string) Node {
 	}
 }
 
-func CancelImportPermissions(repository string, branch string) Node {
+func ImportCancelPermissions(repository string, branch string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ImportCancelAction,
@@ -546,7 +546,7 @@ func CancelImportPermissions(repository string, branch string) Node {
 	}
 }
 
-func CreateCommitPermissions(repository string, branch string) Node {
+func CommitPermissions(repository string, branch string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   CreateCommitAction,
@@ -564,7 +564,7 @@ func CreateCommitRecordPermissions(repository string) Node {
 	}
 }
 
-func DiffWorkspacePermissions(repository string) Node {
+func DiffBranchPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ListObjectsAction,
@@ -582,7 +582,7 @@ func DeleteObjectPermissions(repository string, path string) Node {
 	}
 }
 
-func PutObjectPreflightPermissions(repository string, path string) Node {
+func UploadObjectPreflightPermissions(repository string, path string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   WriteObjectAction,
@@ -609,7 +609,7 @@ func DeleteObjectsPermissions(repository string, objectPath string) Node {
 	}
 }
 
-func GeneratePhysicalAddressPermissions(repository string, path string) Node {
+func GetPhysicalAddressPermissions(repository string, path string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   WriteObjectAction,
@@ -627,7 +627,16 @@ func StageObjectPermissions(repository string, path string) Node {
 	}
 }
 
-func ListReposPermissions() Node {
+func LinkPhysicalAddressPermissions(repository string, path string) Node {
+	return Node{
+		Permission: Permission{
+			Action:   WriteObjectAction,
+			Resource: ObjectArn(repository, path),
+		},
+	}
+}
+
+func ListRepositoriesPermissions() Node {
 	return Node{
 		Permission: Permission{
 			Action:   ListRepositoriesAction,
@@ -636,7 +645,7 @@ func ListReposPermissions() Node {
 	}
 }
 
-func PutObjectPermissions(repository string, path string) Node {
+func UploadObjectPermissions(repository string, path string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   WriteObjectAction,
@@ -703,7 +712,7 @@ func GetCommitPermissions(repository string) Node {
 	}
 }
 
-func SetGCCollectionRulesPreflightPermissions(repository string) Node {
+func SetGarbageCollectionRulesPreflightPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   SetGarbageCollectionRulesAction,
@@ -721,7 +730,7 @@ func PrepareGarbageCollectionCommitsPermissions(repository string) Node {
 	}
 }
 
-func DeleteBranchProtectionRulePermissions(repository string) Node {
+func InternalDeleteBranchProtectionRulePermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   SetBranchProtectionRulesAction,
@@ -739,7 +748,7 @@ func CreateBranchProtectionRulePreflightPermissions(repository string) Node {
 	}
 }
 
-func CreateBranchProtectionRulePermissions(repository string) Node {
+func SetBranchProtectionRulesPermissions(repository string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   SetBranchProtectionRulesAction,
@@ -748,7 +757,16 @@ func CreateBranchProtectionRulePermissions(repository string) Node {
 	}
 }
 
-func MetadataGetMetarangePermissions(repository string) Node {
+func InternalCreateBranchProtectionRulePermissions(repository string) Node {
+	return Node{
+		Permission: Permission{
+			Action:   SetBranchProtectionRulesAction,
+			Resource: RepoArn(repository),
+		},
+	}
+}
+
+func GetMetaRangePermissions(repository string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -768,7 +786,7 @@ func MetadataGetMetarangePermissions(repository string) Node {
 	}
 }
 
-func MetadataGetRangePermissions(repository string) Node {
+func GetRangePermissions(repository string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -788,7 +806,7 @@ func MetadataGetRangePermissions(repository string) Node {
 	}
 }
 
-func DumpRepositoryRefsPermissions(repository string) Node {
+func DumpRefsPermissions(repository string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -814,7 +832,7 @@ func DumpRepositoryRefsPermissions(repository string) Node {
 	}
 }
 
-func RestoreRepositoryRefsPermissions(repository string) Node {
+func RestoreRefsPermissions(repository string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -840,7 +858,7 @@ func RestoreRepositoryRefsPermissions(repository string) Node {
 	}
 }
 
-func DumpRepositoryPermissions(repository string) Node {
+func DumpSubmitPermissions(repository string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -866,7 +884,7 @@ func DumpRepositoryPermissions(repository string) Node {
 	}
 }
 
-func DumpRepoStatusPermissions(repository string) Node {
+func DumpStatusPermissions(repository string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -892,7 +910,7 @@ func DumpRepoStatusPermissions(repository string) Node {
 	}
 }
 
-func RestoreRepositoryPermissions(repository string) Node {
+func RestoreSubmitPermissions(repository string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -918,7 +936,7 @@ func RestoreRepositoryPermissions(repository string) Node {
 	}
 }
 
-func RestoreRepositoryStatusPermissions(repository string) Node {
+func RestoreStatusPermissions(repository string) Node {
 	return Node{
 		Type: NodeTypeAnd,
 		Nodes: []Node{
@@ -944,7 +962,7 @@ func RestoreRepositoryStatusPermissions(repository string) Node {
 	}
 }
 
-func CreateSymlinkPermissions(repository string, branch string) Node {
+func CreateSymlinkFilePermissions(repository string, branch string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   WriteObjectAction,
@@ -962,7 +980,7 @@ func DiffRefsPermissions(repository string) Node {
 	}
 }
 
-func GetBranchCommitLogPermissions(repository string, ref string) Node {
+func LogCommitsPermissions(repository string, ref string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadBranchAction,
@@ -1036,7 +1054,7 @@ func UpdateObjectUserMetadataPermissions(repository string, path string) Node {
 	}
 }
 
-func ObjectUnderlyingPropertiesPermissions(repository string, path string) Node {
+func GetUnderlyingPropertiesPermissions(repository string, path string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadObjectAction,
@@ -1045,7 +1063,7 @@ func ObjectUnderlyingPropertiesPermissions(repository string, path string) Node 
 	}
 }
 
-func MergeBranchesPermissions(repository string, destinationBranch string) Node {
+func MergeIntoBranchPermissions(repository string, destinationBranch string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   CreateCommitAction,

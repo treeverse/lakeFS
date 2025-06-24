@@ -816,7 +816,7 @@ func (c *Controller) StsLogin(w http.ResponseWriter, r *http.Request, body apige
 }
 
 func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.GetPhysicalAddressParams) {
-	if !c.authorize(w, r, permissions.GeneratePhysicalAddressPermissions(repository, params.Path)) {
+	if !c.authorize(w, r, permissions.GetPhysicalAddressPermissions(repository, params.Path)) {
 		return
 	}
 	ctx := r.Context()
@@ -870,7 +870,7 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request, body apigen.LinkPhysicalAddressJSONRequestBody, repository, branch string, params apigen.LinkPhysicalAddressParams) {
-	if !c.authorize(w, r, permissions.StageObjectPermissions(repository, params.Path)) {
+	if !c.authorize(w, r, permissions.LinkPhysicalAddressPermissions(repository, params.Path)) {
 		return
 	}
 
@@ -990,7 +990,7 @@ func normalizePhysicalAddress(storageNamespace, physicalAddress string) (string,
 }
 
 func (c *Controller) ListGroups(w http.ResponseWriter, r *http.Request, params apigen.ListGroupsParams) {
-	if !c.authorize(w, r, permissions.ListGroupPermissions()) {
+	if !c.authorize(w, r, permissions.ListGroupsPermissions()) {
 		return
 	}
 
@@ -1176,7 +1176,7 @@ func (c *Controller) SetGroupACL(w http.ResponseWriter, r *http.Request, body ap
 }
 
 func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, groupID string, params apigen.ListGroupMembersParams) {
-	if !c.authorize(w, r, permissions.ListGroupUsersPermissions(groupID)) {
+	if !c.authorize(w, r, permissions.ListGroupMembersPermissions(groupID)) {
 		return
 	}
 	ctx := r.Context()
@@ -1210,7 +1210,7 @@ func (c *Controller) ListGroupMembers(w http.ResponseWriter, r *http.Request, gr
 }
 
 func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Request, groupID, userID string) {
-	if !c.authorize(w, r, permissions.RemoveUserFromGroupPermissions(groupID)) {
+	if !c.authorize(w, r, permissions.DeleteGroupMembershipPermissions(groupID)) {
 		return
 	}
 
@@ -1224,7 +1224,7 @@ func (c *Controller) DeleteGroupMembership(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, groupID, userID string) {
-	if !c.authorize(w, r, permissions.AddUserToGroupPermissions(groupID)) {
+	if !c.authorize(w, r, permissions.AddGroupMembershipPermissions(groupID)) {
 		return
 	}
 	ctx := r.Context()
@@ -1893,7 +1893,7 @@ func (c *Controller) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *Controller) ListRepositories(w http.ResponseWriter, r *http.Request, params apigen.ListRepositoriesParams) {
-	if !c.authorize(w, r, permissions.ListReposPermissions()) {
+	if !c.authorize(w, r, permissions.ListRepositoriesPermissions()) {
 		return
 	}
 	ctx := r.Context()
@@ -1927,7 +1927,7 @@ func (c *Controller) CreateRepository(w http.ResponseWriter, r *http.Request, bo
 	storageID := config.GetActualStorageID(c.Config.StorageConfig(), swag.StringValue(body.StorageId))
 	storageNamespace := body.StorageNamespace
 
-	if !c.authorize(w, r, permissions.CreateRepoPermissions(body.Name, storageNamespace)) {
+	if !c.authorize(w, r, permissions.CreateRepositoryPermissions(body.Name, storageNamespace)) {
 		return
 	}
 	ctx := r.Context()
@@ -2134,7 +2134,7 @@ func (c *Controller) ensureStorageNamespace(ctx context.Context, storageID, stor
 }
 
 func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, repository string, params apigen.DeleteRepositoryParams) {
-	if !c.authorize(w, r, permissions.DeleteRepoPermissions(repository)) {
+	if !c.authorize(w, r, permissions.DeleteRepositoryPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2147,7 +2147,7 @@ func (c *Controller) DeleteRepository(w http.ResponseWriter, r *http.Request, re
 }
 
 func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.GetRepoPermissions(repository)) {
+	if !c.authorize(w, r, permissions.GetRepositoryPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2177,7 +2177,7 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 }
 
 func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.GetRepoMetadataPermissions(repository)) {
+	if !c.authorize(w, r, permissions.GetRepositoryMetadataPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2190,7 +2190,7 @@ func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) SetRepositoryMetadata(w http.ResponseWriter, r *http.Request, body apigen.SetRepositoryMetadataJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.UpdateRepoMetadataPermissions(repository)) {
+	if !c.authorize(w, r, permissions.SetRepositoryMetadataPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2203,7 +2203,7 @@ func (c *Controller) SetRepositoryMetadata(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) DeleteRepositoryMetadata(w http.ResponseWriter, r *http.Request, body apigen.DeleteRepositoryMetadataJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.DeleteRepoMetadataPermissions(repository)) {
+	if !c.authorize(w, r, permissions.DeleteRepositoryMetadataPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2235,7 +2235,7 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 }
 
 func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Request, body apigen.SetBranchProtectionRulesJSONRequestBody, repository string, params apigen.SetBranchProtectionRulesParams) {
-	if !c.authorize(w, r, permissions.CreateBranchProtectionRulePermissions(repository)) {
+	if !c.authorize(w, r, permissions.SetBranchProtectionRulesPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2308,7 +2308,7 @@ func (c *Controller) SetGCRules(w http.ResponseWriter, r *http.Request, body api
 }
 
 func (c *Controller) ListRepositoryRuns(w http.ResponseWriter, r *http.Request, repository string, params apigen.ListRepositoryRunsParams) {
-	if !c.authorize(w, r, permissions.ActionsRepositoryRunsPermissions(repository)) {
+	if !c.authorize(w, r, permissions.ListRepositoryRunsPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2371,7 +2371,7 @@ func runResultToActionRun(val *actions.RunResult) apigen.ActionRun {
 }
 
 func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository, runID string) {
-	if !c.authorize(w, r, permissions.ActionsGetRunPermissions(repository)) {
+	if !c.authorize(w, r, permissions.GetRunPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2405,7 +2405,7 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository, 
 }
 
 func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, repository, runID string, params apigen.ListRunHooksParams) {
-	if !c.authorize(w, r, permissions.ActionsListRunHooksPermissions(repository)) {
+	if !c.authorize(w, r, permissions.ListRunHooksPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2465,7 +2465,7 @@ func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) GetRunHookOutput(w http.ResponseWriter, r *http.Request, repository, runID, hookRunID string) {
-	if !c.authorize(w, r, permissions.ActionsRunHookOutputPermissions(repository)) {
+	if !c.authorize(w, r, permissions.GetRunHookOutputPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2749,7 +2749,7 @@ func (c *Controller) HardResetBranch(w http.ResponseWriter, r *http.Request, rep
 }
 
 func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body apigen.ImportStartJSONRequestBody, repository, branch string) {
-	perm := permissions.ImportPermissions(repository, branch)
+	perm := permissions.ImportStartPermissions(repository, branch)
 	// Add import permissions per source
 	// Add object permissions per destination
 	for _, source := range body.Paths {
@@ -2857,7 +2857,7 @@ func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.ImportCancelParams) {
-	if !c.authorize(w, r, permissions.CancelImportPermissions(repository, branch)) {
+	if !c.authorize(w, r, permissions.ImportCancelPermissions(repository, branch)) {
 		return
 	}
 	ctx := r.Context()
@@ -2871,7 +2871,7 @@ func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.CommitJSONRequestBody, repository, branch string, params apigen.CommitParams) {
-	if !c.authorize(w, r, permissions.CreateCommitPermissions(repository, branch)) {
+	if !c.authorize(w, r, permissions.CommitPermissions(repository, branch)) {
 		return
 	}
 	ctx := r.Context()
@@ -2928,7 +2928,7 @@ func commitResponse(w http.ResponseWriter, r *http.Request, newCommit *catalog.C
 }
 
 func (c *Controller) DiffBranch(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.DiffBranchParams) {
-	if !c.authorize(w, r, permissions.DiffWorkspacePermissions(repository)) {
+	if !c.authorize(w, r, permissions.DiffBranchPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -2984,7 +2984,7 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) UploadObjectPreflight(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.UploadObjectPreflightParams) {
-	if !c.authorize(w, r, permissions.PutObjectPreflightPermissions(repository, params.Path)) {
+	if !c.authorize(w, r, permissions.UploadObjectPreflightPermissions(repository, params.Path)) {
 		return
 	}
 
@@ -2995,7 +2995,7 @@ func (c *Controller) UploadObjectPreflight(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.UploadObjectParams) {
-	if !c.authorize(w, r, permissions.PutObjectPermissions(repository, params.Path)) {
+	if !c.authorize(w, r, permissions.UploadObjectPermissions(repository, params.Path)) {
 		return
 	}
 	ctx := r.Context()
@@ -3398,7 +3398,7 @@ func (c *Controller) InternalGetGarbageCollectionRules(w http.ResponseWriter, r 
 }
 
 func (c *Controller) SetGarbageCollectionRulesPreflight(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.SetGCCollectionRulesPreflightPermissions(repository)) {
+	if !c.authorize(w, r, permissions.SetGarbageCollectionRulesPreflightPermissions(repository)) {
 		return
 	}
 
@@ -3452,7 +3452,7 @@ func (c *Controller) InternalGetBranchProtectionRules(w http.ResponseWriter, r *
 }
 
 func (c *Controller) InternalDeleteBranchProtectionRule(w http.ResponseWriter, r *http.Request, body apigen.InternalDeleteBranchProtectionRuleJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.DeleteBranchProtectionRulePermissions(repository)) {
+	if !c.authorize(w, r, permissions.InternalDeleteBranchProtectionRulePermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -3488,7 +3488,7 @@ func (c *Controller) CreateBranchProtectionRulePreflight(w http.ResponseWriter, 
 }
 
 func (c *Controller) InternalCreateBranchProtectionRule(w http.ResponseWriter, r *http.Request, body apigen.InternalCreateBranchProtectionRuleJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.CreateBranchProtectionRulePermissions(repository)) {
+	if !c.authorize(w, r, permissions.InternalCreateBranchProtectionRulePermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -3517,7 +3517,7 @@ func (c *Controller) InternalCreateBranchProtectionRule(w http.ResponseWriter, r
 }
 
 func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, repository, metaRange string) {
-	if !c.authorize(w, r, permissions.MetadataGetMetarangePermissions(repository)) {
+	if !c.authorize(w, r, permissions.GetMetaRangePermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -3536,7 +3536,7 @@ func (c *Controller) GetMetaRange(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository, pRange string) {
-	if !c.authorize(w, r, permissions.MetadataGetRangePermissions(repository)) {
+	if !c.authorize(w, r, permissions.GetRangePermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -3554,7 +3554,7 @@ func (c *Controller) GetRange(w http.ResponseWriter, r *http.Request, repository
 }
 
 func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.DumpRepositoryRefsPermissions(repository)) {
+	if !c.authorize(w, r, permissions.DumpRefsPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -3606,7 +3606,7 @@ func (c *Controller) DumpRefs(w http.ResponseWriter, r *http.Request, repository
 }
 
 func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body apigen.RestoreRefsJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.RestoreRepositoryRefsPermissions(repository)) {
+	if !c.authorize(w, r, permissions.RestoreRefsPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -3646,7 +3646,7 @@ func (c *Controller) RestoreRefs(w http.ResponseWriter, r *http.Request, body ap
 }
 
 func (c *Controller) DumpSubmit(w http.ResponseWriter, r *http.Request, repository string) {
-	if !c.authorize(w, r, permissions.DumpRepositoryPermissions(repository)) {
+	if !c.authorize(w, r, permissions.DumpSubmitPermissions(repository)) {
 		return
 	}
 	ctx := r.Context()
@@ -3663,7 +3663,7 @@ func (c *Controller) DumpSubmit(w http.ResponseWriter, r *http.Request, reposito
 }
 
 func (c *Controller) DumpStatus(w http.ResponseWriter, r *http.Request, repository string, params apigen.DumpStatusParams) {
-	if !c.authorize(w, r, permissions.DumpRepoStatusPermissions(repository)) {
+	if !c.authorize(w, r, permissions.DumpStatusPermissions(repository)) {
 		return
 	}
 
@@ -3694,7 +3694,7 @@ func (c *Controller) DumpStatus(w http.ResponseWriter, r *http.Request, reposito
 }
 
 func (c *Controller) RestoreSubmit(w http.ResponseWriter, r *http.Request, body apigen.RestoreSubmitJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.RestoreRepositoryPermissions(repository)) {
+	if !c.authorize(w, r, permissions.RestoreSubmitPermissions(repository)) {
 		return
 	}
 
@@ -3720,7 +3720,7 @@ func (c *Controller) RestoreSubmit(w http.ResponseWriter, r *http.Request, body 
 }
 
 func (c *Controller) RestoreStatus(w http.ResponseWriter, r *http.Request, repository string, params apigen.RestoreStatusParams) {
-	if !c.authorize(w, r, permissions.RestoreRepositoryStatusPermissions(repository)) {
+	if !c.authorize(w, r, permissions.RestoreStatusPermissions(repository)) {
 		return
 	}
 
@@ -3744,7 +3744,7 @@ func (c *Controller) RestoreStatus(w http.ResponseWriter, r *http.Request, repos
 }
 
 func (c *Controller) CreateSymlinkFile(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.CreateSymlinkFileParams) {
-	if !c.authorize(w, r, permissions.CreateSymlinkPermissions(repository, branch)) {
+	if !c.authorize(w, r, permissions.CreateSymlinkFilePermissions(repository, branch)) {
 		return
 	}
 	ctx := r.Context()
@@ -3872,7 +3872,7 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 }
 
 func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.LogCommitsParams) {
-	if !c.authorize(w, r, permissions.GetBranchCommitLogPermissions(repository, ref)) {
+	if !c.authorize(w, r, permissions.LogCommitsPermissions(repository, ref)) {
 		return
 	}
 	ctx := r.Context()
@@ -4331,7 +4331,7 @@ func (c *Controller) UpdateObjectUserMetadata(w http.ResponseWriter, r *http.Req
 }
 
 func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.GetUnderlyingPropertiesParams) {
-	if !c.authorize(w, r, permissions.ObjectUnderlyingPropertiesPermissions(repository, params.Path)) {
+	if !c.authorize(w, r, permissions.GetUnderlyingPropertiesPermissions(repository, params.Path)) {
 		return
 	}
 	ctx := r.Context()
@@ -4367,7 +4367,7 @@ func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Requ
 }
 
 func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, body apigen.MergeIntoBranchJSONRequestBody, repository, sourceRef, destinationBranch string) {
-	if !c.authorize(w, r, permissions.MergeBranchesPermissions(repository, destinationBranch)) {
+	if !c.authorize(w, r, permissions.MergeIntoBranchPermissions(repository, destinationBranch)) {
 		return
 	}
 	ctx := r.Context()
