@@ -12,7 +12,7 @@ status: enterprise
 
 ## What is Multiple storage Backend Support?
 
-lakeFS multiple-storage backend support enables seamless data management across multiple storage systems —
+lakeFS multiple storage backend support enables seamless data management across multiple storage systems —
 on-premises, across public clouds, or hybrid environments. This capability makes lakeFS a unified data management platform
 for all organizational data assets, which is especially critical in AI/ML environments that rely on diverse datasets stored
 in multiple locations.
