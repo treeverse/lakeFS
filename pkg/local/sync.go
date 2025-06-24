@@ -154,7 +154,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 	}
 
 	retriesCount := 3
-	return retryIfError(func(attempt int) error {
+	return retryOnError(func(attempt int) error {
 		var body io.Reader
 		if s.cfg.Presign {
 			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
@@ -210,8 +210,8 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 	}, retriesCount)
 }
 
-// retryIfError attempts to execute the given operation up to maxAttempts times
-func retryIfError(operation func(attempt int) error, maxAttempts int) error {
+// retryOnError attempts to execute the given operation up to maxAttempts times
+func retryOnError(operation func(attempt int) error, maxAttempts int) error {
 	var err error
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		err = operation(attempt)
