@@ -18,9 +18,8 @@ to easily interact with lakeFS without the hassle of integration and experiment 
 By running the [lakeFS Enterprise Sample](https://github.com/treeverse/lakeFS-samples/tree/main/02_lakefs_enterprise), you will be getting a ready-to-use environment including
 the following containers:
 
-* lakeFS
-* Fluffy (includes lakeFS Enterprise features)
-* Postgres: used by lakeFS and Fluffy as a shared KV store
+* lakeFS Enterprise (includes additional features)
+* Postgres: used by lakeFS  as a KV store
 * MinIO container: used as the storage connected to lakeFS
 * Jupyter notebooks setup: Pre-populated with [notebooks](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/00_index.ipynb) that demonstrate lakeFS Enterprise' capabilities
 * Apache Spark: this is useful for interacting with data you'll manage with lakeFS
@@ -32,15 +31,14 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 ### Prerequisites
 
 1. You have installed [Docker Compose](https://docs.docker.com/compose/install/) version `2.23.1` or higher on your machine.
-2. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
+2. Access to download *dockerhub/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to enterprise version.
 3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
 <br>
 The quickstart docker-compose files below create a lakeFS server that's connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore) and spin up the following containers:
 
-* lakeFS
-* Fluffy (includes lakeFS Enterprise features)
-* Postgres: used by lakeFS and Fluffy as a shared KV store
+* lakeFS Enterprise
+* Postgres: used by lakeFS as a KV store
 
 You can choose from the following options:
 
@@ -62,24 +60,23 @@ You can choose from the following options:
         image: "treeverse/lakefs-enterprise:latest"
         command: "RUN"
         ports:
-          - "8080:8080"
+          - "8000:8000"
         depends_on:
           - "postgres"
         environment:
-          - LAKEFS_LISTEN_ADDRESS=0.0.0.0:8080
-          - LAKEFS_LOGGING_LEVEL=DEBUG
-          - LAKEFS_AUTH_ENCRYPT_SECRET_KEY="random_secret"
-          - LAKEFS_AUTH_API_ENDPOINT=http://fluffy:9000/api/v1
-          - LAKEFS_AUTH_API_SUPPORTS_INVITES=true
-          - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
-          - LAKEFS_AUTH_AUTHENTICATION_API_ENDPOINT=http://localhost:8000/api/v1
-          - LAKEFS_AUTH_AUTHENTICATION_API_EXTERNAL_PRINCIPALS_ENABLED=true
-          - LAKEFS_DATABASE_TYPE=postgres
-          - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-          - LAKEFS_BLOCKSTORE_TYPE=local
-          - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
-          - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
-        entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+      - LAKEFS_LISTEN_ADDRESS=0.0.0.0:8000
+      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=random_secret
+      - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
+      - LAKEFS_DATABASE_TYPE=postgres
+      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable
+      - LAKEFS_BLOCKSTORE_TYPE=local
+      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
+      - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
+      - LAKEFS_AUTH_POST_LOGIN_REDIRECT_URL=http://localhost:8000/
+      - LAKEFS_FEATURES_LOCAL_RBAC=true
+      - INT_LAKEFS_LICENSE_ENFORCE=false
+      - LAKEFS_LICENSE_CONTENTS=<license token>
         configs:
           - source: lakefs.yaml
             target: /etc/lakefs/config.yaml
@@ -90,25 +87,6 @@ You can choose from the following options:
         environment:
           POSTGRES_USER: lakefs
           POSTGRES_PASSWORD: lakefs
-
-      fluffy:
-        image: "${FLUFFY_REPO:-treeverse}/fluffy:${TAG:-latest}"
-        command: "${COMMAND:-run}"
-        ports:
-          - "8000:8000"
-          - "9000:9000"
-        depends_on:
-          - "postgres"
-        environment:
-          - FLUFFY_LOGGING_LEVEL=DEBUG
-          - FLUFFY_DATABASE_TYPE=postgres
-          - FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-          - FLUFFY_AUTH_ENCRYPT_SECRET_KEY="random_secret"
-          - FLUFFY_AUTH_SERVE_LISTEN_ADDRESS=0.0.0.0:9000
-          - FLUFFY_LISTEN_ADDRESS=0.0.0.0:8000
-          - FLUFFY_AUTH_SERVE_DISABLE_AUTHENTICATION=true
-          - FLUFFY_AUTH_POST_LOGIN_REDIRECT_URL=http://localhost:8080/
-        entrypoint: [ "/app/wait-for", "postgres:5432", "--", "/app/fluffy" ]
 
     configs:
       lakefs.yaml:
@@ -134,11 +112,11 @@ You can choose from the following options:
 
     ```
     FLUFFY_AUTH_OIDC_CLIENT_ID=
-    FLUFFY_AUTH_OIDC_CLIENT_SECRET=
+    LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=
     # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
-    FLUFFY_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=
-    FLUFFY_AUTH_OIDC_URL=https://my-sso.com/
-    FLUFFY_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
+    LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=
+    LAKEFS_AUTH_PROVIDERS_OIDC_URL=https://my-sso.com/
+    LAKEFS_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
     # Optional: display a friendly name in the lakeFS UI by specifying which claim from the provider to show (i.e name, nickname, email etc)
     LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
     ```
@@ -156,22 +134,31 @@ You can choose from the following options:
         depends_on:
           - "postgres"
         environment:
-          - LAKEFS_LISTEN_ADDRESS=0.0.0.0:8080
-          - LAKEFS_LOGGING_LEVEL=DEBUG
-          - LAKEFS_AUTH_ENCRYPT_SECRET_KEY="random_secret"
-          - LAKEFS_AUTH_API_ENDPOINT=http://fluffy:9000/api/v1
-          - LAKEFS_AUTH_API_SUPPORTS_INVITES=true
-          - LAKEFS_AUTH_UI_CONFIG_LOGIN_URL=http://localhost:8000/oidc/login
-          - LAKEFS_AUTH_UI_CONFIG_LOGOUT_URL=http://localhost:8000/oidc/logout
-          - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
-          - LAKEFS_AUTH_AUTHENTICATION_API_ENDPOINT=http://localhost:8000/api/v1
-          - LAKEFS_AUTH_AUTHENTICATION_API_EXTERNAL_PRINCIPALS_ENABLED=true
-          - LAKEFS_DATABASE_TYPE=postgres`
-          - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-          - LAKEFS_BLOCKSTORE_TYPE=local
-          - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
-          - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
-          - LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=${LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME}
+      - LAKEFS_LISTEN_ADDRESS=0.0.0.0:8000
+      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_LOGGING_AUDIT_LOG_LEVEL=INFO
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=shared-secret-key
+      - LAKEFS_AUTH_LOGOUT_REDIRECT_URL=${LAKEFS_AUTH_LOGOUT_REDIRECT_URL}
+      - LAKEFS_AUTH_UI_CONFIG_LOGIN_URL=http://localhost:8000/oidc/login
+      - LAKEFS_AUTH_UI_CONFIG_LOGOUT_URL=http://localhost:8000/oidc/logout
+      - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
+      - LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=${LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME}
+      - LAKEFS_AUTH_PROVIDERS_OIDC_ENABLED=true
+      - LAKEFS_AUTH_PROVIDERS_OIDC_POST_LOGIN_REDIRECT_URL=http://localhost:8000/
+      - LAKEFS_AUTH_PROVIDERS_OIDC_URL=${LAKEFS_AUTH_PROVIDERS_OIDC_URL}
+      - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID}
+      - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET}
+      - LAKEFS_AUTH_PROVIDERS_OIDC_CALLBACK_BASE_URL=http://localhost:8000
+      - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
+      - LAKEFS_ENTERPRISE_LICENSE_SERVER_URL=https://license.lakefs.io
+      - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS}
+      - LAKEFS_DATABASE_TYPE=postgres
+      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable
+      - LAKEFS_BLOCKSTORE_TYPE=local
+      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/tmp/lakefs/data
+      - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
+      - LAKEFS_SECURITY_CHECK_LATEST_VERSION_CACHE=false
+      - LAKEFS_FEATURES_LOCAL_RBAC=true
         entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
         configs:
           - source: lakefs.yaml
@@ -183,35 +170,6 @@ You can choose from the following options:
         environment:
           POSTGRES_USER: lakefs
           POSTGRES_PASSWORD: lakefs
-
-      fluffy:
-        image: "${FLUFFY_REPO:-treeverse}/fluffy:${TAG:-latest}"
-        command: "${COMMAND:-run}"
-        ports:
-          - "8000:8000"
-          - "9000:9000"
-        depends_on:
-          - "postgres"
-        environment:
-          - FLUFFY_LOGGING_LEVEL=DEBUG
-          - FLUFFY_DATABASE_TYPE=postgres
-          - FLUFFY_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-          - FLUFFY_AUTH_ENCRYPT_SECRET_KEY="random_secret"
-          - FLUFFY_AUTH_SERVE_LISTEN_ADDRESS=0.0.0.0:9000
-          - FLUFFY_LISTEN_ADDRESS=0.0.0.0:8000
-          - FLUFFY_AUTH_SERVE_DISABLE_AUTHENTICATION=true
-          - FLUFFY_AUTH_LOGOUT_REDIRECT_URL=${FLUFFY_AUTH_LOGOUT_REDIRECT_URL}
-          - FLUFFY_AUTH_POST_LOGIN_REDIRECT_URL=http://localhost:8080/
-          - FLUFFY_AUTH_OIDC_ENABLED=true
-          - FLUFFY_AUTH_OIDC_URL=${FLUFFY_AUTH_OIDC_URL}
-          - FLUFFY_AUTH_OIDC_CLIENT_ID=${FLUFFY_AUTH_OIDC_CLIENT_ID}
-          - FLUFFY_AUTH_OIDC_CLIENT_SECRET=${FLUFFY_AUTH_OIDC_CLIENT_SECRET}
-          - FLUFFY_AUTH_OIDC_CALLBACK_BASE_URL=http://localhost:8000
-          - FLUFFY_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${FLUFFY_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
-        entrypoint: [ "/app/wait-for", "postgres:5432", "--", "/app/fluffy" ]
-        configs:
-          - source: fluffy.yaml
-            target: /etc/fluffy/config.yaml
 
     #This tweak is unfortunate but also necessary. logout_endpoint_query_parameters is a list
     #of strings which isn't parsed nicely as env vars.
@@ -228,13 +186,6 @@ You can choose from the following options:
               default_initial_groups:
                 - Admins
 
-      fluffy.yaml:
-        content: |
-          auth:
-            oidc:
-              logout_endpoint_query_parameters:
-                - returnTo
-                - http://localhost:8080/oidc/login
     ```
 
 ## Kubernetes Helm Chart Quickstart
@@ -243,9 +194,8 @@ In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, 
 
 The values below create a fully functional lakeFS Enterprise setup without SSO support. The created setup is connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore), and spins up the following pods:
 
-* lakeFS
-* Fluffy (includes lakeFS Enterprise features)
-* Postgres: used by lakeFS and Fluffy as a shared KV store
+* lakeFS Enterprise
+* Postgres: used by lakeFS as a KV store
 
 
 !!! info
