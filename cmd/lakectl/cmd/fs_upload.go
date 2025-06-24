@@ -28,6 +28,7 @@ var fsUploadCmd = &cobra.Command{
 		contentType := Must(cmd.Flags().GetString("content-type"))
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
 		remotePath := pathURI.GetPath()
+
 		ctx := cmd.Context()
 
 		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
@@ -62,16 +63,11 @@ var fsUploadCmd = &cobra.Command{
 			}
 		}()
 
-		symlinkMode, valid := local.SymlinkModeFromString(cfg.Local.SymlinkMode)
-		if !valid {
-			DieFmt("invalid symlink mode '%s'", cfg.Local.SymlinkMode)
-		}
-
 		s := local.NewSyncManager(ctx, client, getHTTPClient(), local.Config{
 			SyncFlags:           syncFlags,
 			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 			IncludePerm:         false,
-			SymlinkMode:         symlinkMode,
+			SymlinkSupport:      cfg.Local.SymlinkSupport,
 		})
 		fullPath, err := filepath.Abs(source)
 		if err != nil {

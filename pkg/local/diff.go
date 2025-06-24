@@ -25,14 +25,6 @@ const (
 	ChangeSourceLocal
 )
 
-type SymlinkMode string
-
-const (
-	SymlinkModeFollow  SymlinkMode = "follow"
-	SymlinkModeSkip    SymlinkMode = "skip"
-	SymlinkModeSupport SymlinkMode = "support"
-)
-
 type ChangeType int
 
 const (
@@ -301,8 +293,6 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, cfg Con
 		localPath = strings.TrimPrefix(localPath, string(filepath.Separator))
 		localPath = filepath.ToSlash(localPath) // normalize to use "/" always
 
-		localBytes := info.Size()
-		localMtime := info.ModTime().Unix()
 		for {
 			if currentRemoteFile.Path == "" {
 				if currentRemoteFile, hasMore = <-left; !hasMore {
@@ -318,17 +308,11 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, cfg Con
 				}
 				currentRemoteFile.Path = ""
 			case currentRemoteFile.Path == localPath:
-				remoteMtime, err := getMtimeFromStats(currentRemoteFile)
+				changed, err := hasLocalChange(p, info, currentRemoteFile, cfg)
 				if err != nil {
 					return err
 				}
-
-				// dirs might have different sizes on different operating systems
-				sizeChanged := !info.IsDir() && localBytes != swag.Int64Value(currentRemoteFile.SizeBytes)
-				mtimeChanged := localMtime != remoteMtime
-				permissionsChanged := isPermissionsChanged(info, currentRemoteFile, cfg)
-				if sizeChanged || mtimeChanged || permissionsChanged {
-					// we made a change!
+				if changed {
 					changes = append(changes, &Change{ChangeSourceLocal, localPath, ChangeTypeModified})
 				}
 				currentRemoteFile.Path = ""
@@ -405,33 +389,29 @@ var ignoreFileList = []string{
 }
 
 func includeLocalFileInDiff(info fs.FileInfo, cfg Config) (bool, error) {
-	// handle directories based on configuration
+	// Handle directories
 	if info.IsDir() {
 		return cfg.IncludePerm, nil
 	}
 
-	// ignore files that are in the ignore list
+	// Skip ignored files
 	if slices.Contains(ignoreFileList, info.Name()) {
 		return false, nil
 	}
 
-	// handle symlinks
-	if info.Mode()&fs.ModeSymlink != 0 {
-		// we skip symlinks based on configuration
-		if cfg.SymlinkMode != SymlinkModeSkip {
+	// Handle non-regular files (including symlinks)
+	if !info.Mode().IsRegular() {
+		if cfg.SkipNonRegularFiles {
+			return false, nil
+		}
+		// Check symlink support for non-regular files
+		if cfg.SymlinkSupport && info.Mode()&fs.ModeSymlink != 0 {
 			return true, nil
 		}
-		// in case we skip, we fall back to checking non-regular files
+		return false, fmt.Errorf("%s: %w", info.Name(), fileutil.ErrNotARegularFile)
 	}
 
-	// fallback to regular file checks
-	if !info.Mode().IsRegular() {
-		if !cfg.SkipNonRegularFiles {
-			return false, fmt.Errorf("%s: %w", info.Name(), fileutil.ErrNotARegularFile)
-		}
-		return false, nil
-	}
-
+	// Regular files are included
 	return true, nil
 }
 
@@ -439,11 +419,61 @@ func includeRemoteFileInDiff(currentRemoteFile apigen.ObjectStats, cfg Config) b
 	return cfg.IncludePerm || !strings.HasSuffix(currentRemoteFile.Path, uri.PathSeparator)
 }
 
-func SymlinkModeFromString(mode string) (SymlinkMode, bool) {
-	switch mode {
-	case "follow", "skip", "support":
-		return SymlinkMode(mode), true
-	default:
-		return "", false
+// hasLocalChange detects whether the local file at `p` differs from the remote
+func hasLocalChange(p string, info os.FileInfo, remote apigen.ObjectStats, cfg Config) (bool, error) {
+	// 1. symlink target change always wins
+	if cfg.SymlinkSupport && info.Mode()&fs.ModeSymlink != 0 {
+		return isSymlinkTargetChanged(p, info, remote), nil
 	}
+
+	// 2. size changed? (exclude directories))
+	if !info.IsDir() {
+		localSize := info.Size()
+		if localSize != swag.Int64Value(remote.SizeBytes) {
+			return true, nil
+		}
+	}
+
+	// 3. mtime changed?
+	remoteMtime, err := getMtimeFromStats(remote)
+	if err != nil {
+		return false, err
+	}
+	localMtime := info.ModTime().Unix()
+	if localMtime != remoteMtime {
+		return true, nil
+	}
+
+	// 4. permissions changed?
+	if isPermissionsChanged(info, remote, cfg) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// isSymlinkTargetChanged checks if the symlink target has changed between local and remote
+func isSymlinkTargetChanged(p string, info fs.FileInfo, remoteFileStats apigen.ObjectStats) bool {
+	if info.Mode()&fs.ModeSymlink == 0 {
+		return false
+	}
+
+	// Get local symlink target
+	localTarget, err := os.Readlink(p)
+	if err != nil {
+		// If we can't read the local symlink target, consider it changed
+		return true
+	}
+
+	// Get remote symlink target from metadata
+	if remoteFileStats.Metadata == nil {
+		return true
+	}
+
+	remoteTarget, ok := remoteFileStats.Metadata.Get(SymlinkMetadataKey)
+	if !ok {
+		return true
+	}
+
+	return localTarget != remoteTarget
 }

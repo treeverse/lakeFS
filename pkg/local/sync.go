@@ -27,10 +27,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type contextKey string
-
-const symlinkFollowedContextKey contextKey = "symlink_followed"
-
 func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
 		return stats.Mtime, nil
@@ -268,25 +264,15 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 
 	if !isDir {
-		// Symlink handling
-		if symlinkTarget, ok := objStat.Metadata.Get(SymlinkMetadataKey); ok {
-			if s.cfg.SymlinkMode == SymlinkModeSkip {
-				return nil // Skip symlinks in skip mode
-			}
-			if s.cfg.SymlinkMode == SymlinkModeSupport {
-				// Create the symlink
+		// Symlink handling - handled outside 'downloadFile' to return in case of symlink support, without fallthrough
+		// which update mtime and permissions.
+		if s.cfg.SymlinkSupport {
+			if symlinkTarget, ok := objStat.Metadata.Get(SymlinkMetadataKey); ok {
+				// If symlink support is enabled and metadata contains a symlink target, create the symlink
 				defer s.progressBar.AddSpinner("download " + p).Done()
 				atomic.AddUint64(&s.tasks.Downloaded, 1)
 				return os.Symlink(symlinkTarget, destination)
 			}
-			// Symlink "follow" mode, we fall-back to download
-			// TODO(barak): do we like to download the file the symlink points to? handle recursive symlinks?
-			if v, hasMarker := ctx.Value(symlinkFollowedContextKey).(string); hasMarker {
-				return fmt.Errorf("%w: symlink '%s' follows a symlink '%s'",
-					ErrDownloadingFile, v, p)
-			}
-			ctx = context.WithValue(ctx, symlinkFollowedContextKey, symlinkTarget)
-			return s.download(ctx, rootPath, remote, symlinkTarget)
 		}
 		if err = s.downloadFile(ctx, remote, p, destination, objStat); err != nil {
 			return err
@@ -330,48 +316,35 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		return err
 	}
 
-	// Handle symlinks
-	if fileStat.Mode()&os.ModeSymlink != 0 {
-		if s.cfg.SymlinkMode == SymlinkModeSkip {
-			return nil // Skip symlinks in skip mode
+	var contentSize int64
+	mtimeString := strconv.FormatInt(fileStat.ModTime().Unix(), 10)
+	metadata := map[string]string{
+		ClientMtimeMetadataKey: mtimeString,
+	}
+	var contentReader io.ReadSeeker
+
+	handleSymlink := s.cfg.SymlinkSupport && fileStat.Mode()&os.ModeSymlink != 0
+	if handleSymlink {
+		// If symlink support is enabled, upload as symlink
+		target, err := os.Readlink(source)
+		if err != nil {
+			return fmt.Errorf("failed to read symlink target: %w", err)
 		}
-		if s.cfg.SymlinkMode == SymlinkModeSupport {
-			// Get the symlink target
-			target, err := os.Readlink(source)
-			if err != nil {
-				return fmt.Errorf("failed to read symlink target: %w", err)
-			}
-			// Upload the symlink target path as metadata
-			metadata := map[string]string{
-				ClientMtimeMetadataKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
-				SymlinkMetadataKey:     target,
-			}
-			// Create an empty file with symlink metadata
-			_, err = helpers.ClientUpload(
-				ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", bytes.NewReader([]byte{}))
+		metadata[SymlinkMetadataKey] = target
+		contentSize = 0
+		contentReader = bytes.NewReader([]byte{})
+	} else {
+		// Regular file
+		f, err := os.Open(source)
+		if err != nil {
 			return err
 		}
-		// In follow mode, we'll upload the target content
-		targetPath, err := filepath.EvalSymlinks(source)
-		if err != nil {
-			return fmt.Errorf("failed to resolve symlink target: %w", err)
-		}
-		source = targetPath
-		fileStat, err = os.Stat(source)
-		if err != nil {
-			return fmt.Errorf("failed to stat symlink target: %w", err)
-		}
+		defer func() { _ = f.Close() }()
+		contentSize = fileStat.Size()
+		contentReader = f
 	}
 
-	f, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-
-	b := s.progressBar.AddReader(fmt.Sprintf("upload %s", path), fileStat.Size())
+	b := s.progressBar.AddReader("upload "+path, contentSize)
 	defer func() {
 		if err != nil {
 			b.Error()
@@ -381,15 +354,12 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		}
 	}()
 
-	metadata := map[string]string{
-		ClientMtimeMetadataKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
-	}
-
 	readerWrapper := fileWrapper{
-		file:   f,
-		reader: b.Reader(f),
+		file:   contentReader,
+		reader: b.Reader(contentReader),
 	}
-	if s.cfg.IncludePerm {
+	// Include permissions only for regular files or directories
+	if s.cfg.IncludePerm && !handleSymlink {
 		if strings.HasSuffix(path, uri.PathSeparator) { // Create a 0 byte reader for directories
 			// Use empty bytes reader for read and seek dirs
 			readerWrapper = fileWrapper{
@@ -408,14 +378,14 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		metadata[POSIXPermissionsMetadataKey] = string(data)
 	}
 
+	// Upload the file
 	if s.cfg.Presign {
 		_, err = helpers.ClientUploadPreSign(
 			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper, s.cfg.PresignMultipart)
-		return err
+	} else {
+		_, err = helpers.ClientUpload(
+			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper)
 	}
-	// not pre-signed
-	_, err = helpers.ClientUpload(
-		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper)
 	return err
 }
 

@@ -26,5 +26,6 @@ type Config struct {
 	IncludePerm bool
 	IncludeUID  bool
 	IncludeGID  bool
-	SymlinkMode SymlinkMode
+	// SymlinkSupport - When enabled, symlinks are uploaded and downloaded as symlinks. When disabled (default), symlinks are treated as regular files.
+	SymlinkSupport bool
 }

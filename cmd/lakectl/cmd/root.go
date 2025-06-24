@@ -115,8 +115,8 @@ type Configuration struct {
 	}
 	Local struct {
 		// SkipNonRegularFiles - By default lakectl local fails if local directory contains a symbolic link. When set, lakectl will ignore the symbolic links instead.
-		SkipNonRegularFiles bool   `mapstructure:"skip_non_regular_files"`
-		SymlinkMode         string `mapstructure:"symlink_mode"` // SymlinkMode defines how to handle symlinks in local operations (follow, skip, support)
+		SkipNonRegularFiles bool `mapstructure:"skip_non_regular_files"`
+		SymlinkSupport      bool `mapstructure:"symlink_support"` // SymlinkSupport controls whether symlinks are supported (default: false)
 	} `mapstructure:"local"`
 	// Experimental - Use caution when enabling experimental features. It should only be used after consulting with the lakeFS team!
 	Experimental struct {
@@ -505,13 +505,12 @@ func preRunCmd(cmd *cobra.Command) {
 	logging.ContextUnavailable().
 		WithField("file", viper.ConfigFileUsed()).
 		Debug("loaded configuration from file")
-	err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
+	if err := viper.UnmarshalExact(&cfg, viper.DecodeHook(
 		mapstructure.ComposeDecodeHookFunc(
 			lakefsconfig.DecodeOnlyString,
 			mapstructure.StringToTimeDurationHookFunc(),
 			lakefsconfig.DecodeStringToMap(),
-		)))
-	if err != nil {
+		))); err != nil {
 		DieFmt("error unmarshal configuration: %v", err)
 	}
 }
@@ -676,5 +675,6 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
+	viper.SetDefault("local.symlink_support", false)
 	cfgErr = viper.ReadInConfig()
 }

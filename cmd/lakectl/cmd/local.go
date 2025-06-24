@@ -68,17 +68,12 @@ func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 		return local.ListRemote(ctx, client, remote, currentRemoteState, includePOSIXPermissions)
 	})
 
-	symlinkMode, valid := local.SymlinkModeFromString(cfg.Local.SymlinkMode)
-	if !valid {
-		DieFmt("invalid symlink mode '%s'", cfg.Local.SymlinkMode)
-	}
-
 	changes, err := local.DiffLocalWithHead(currentRemoteState, path, local.Config{
 		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
 		IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeGID,
-		SymlinkMode:         symlinkMode,
+		SymlinkSupport:      cfg.Local.SymlinkSupport,
 	})
 	if err != nil {
 		DieErr(err)
@@ -147,6 +142,7 @@ func buildLocalConfig(syncFlags local.SyncFlags, cfg *Configuration) local.Confi
 		SyncFlags:           syncFlags,
 		MaxDownloadRetries:  uint64(cfg.Server.Retries.MaxAttempts),
 		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
+		SymlinkSupport:      cfg.Local.SymlinkSupport,
 		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
 		IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeGID,
