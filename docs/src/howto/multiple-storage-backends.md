@@ -4,20 +4,20 @@ description: How to manage data across multiple storage systems with lakeFS
 status: enterprise
 ---
 
-# Multi-Storage Backend
+# Multiple Storage Backends
 
 !!! info
     Multi-storage backend support is only available to licensed [lakeFS Enterprise](../enterprise/index.md) customers.
     [Contact us](https://info.lakefs.io/thanks-msb) to get started!
 
-## What is Multi-storage Backend Support?
+## What is Multiple storage Backend Support?
 
-lakeFS multi-storage backend support enables seamless data management across multiple storage systems —
+lakeFS multiple storage backend support enables seamless data management across multiple storage systems —
 on-premises, across public clouds, or hybrid environments. This capability makes lakeFS a unified data management platform
 for all organizational data assets, which is especially critical in AI/ML environments that rely on diverse datasets stored
 in multiple locations.
 
-With a multi-store setup, lakeFS can connect to and manage any combination of supported storage systems, including:
+With a multiple-store setup, lakeFS can connect to and manage any combination of supported storage systems, including:
 
 * AWS S3
 * Azure Blob
@@ -56,78 +56,81 @@ For a complete list of available options, refer to the [server configuration ref
 === "On-Prem"
     This example setup configures lakeFS to manage data across two separate MinIO instances:
 
-    ```yaml
-    blockstores:
-    signing:
-        secret_key: "some-secret"
-    stores:
-        - id: "minio-prod"
-        description: "Primary on-prem MinIO storage for production data"
-        type: "s3"
-        s3:
-            force_path_style: true
-            endpoint: 'http://minio-prod.local'
-            discover_bucket_region: false
-            credentials:
-            access_key_id: "prod_access_key"
-            secret_access_key: "prod_secret_key"
-        - id: "minio-backup"
-        description: "Backup MinIO storage for disaster recovery"
-        type: "s3"
-        s3:
-            force_path_style: true
-            endpoint: 'http://minio-backup.local'
-            discover_bucket_region: false
-            credentials:
-            access_key_id: "backup_access_key"
-            secret_access_key: "backup_secret_key"
-    ```
+    !!! example
+        ```yaml
+        blockstores:
+          signing:
+            secret_key: "some-secret"
+          stores:
+            - id: "minio-prod"
+              description: "Primary on-prem MinIO storage for production data"
+              type: "s3"
+              s3:
+                force_path_style: true
+                endpoint: 'http://minio-prod.local'
+                discover_bucket_region: false
+                credentials:
+                  access_key_id: "prod_access_key"
+                  secret_access_key: "prod_secret_key"
+            - id: "minio-backup"
+              description: "Backup MinIO storage for disaster recovery"
+              type: "s3"
+              s3:
+                force_path_style: true
+                endpoint: 'http://minio-backup.local'
+                discover_bucket_region: false
+                credentials:
+                  access_key_id: "backup_access_key"
+                  secret_access_key: "backup_secret_key"
+        ```
 
 === "Multi-Cloud"
     This example setup configures lakeFS to manage data across two public cloud providers: AWS and Azure:
 
-    ```yaml
-    blockstores:
-    signing:
-        secret_key: "some-secret"
-    stores:
-        - id: "s3-prod"
-        description: "AWS S3 storage for production data"
-        type: "s3"
-        s3:
-            region: "us-east-1"
-        - id: "azure-analytics"
-        description: "Azure Blob storage for analytics data"
-        type: "azure"
-        azure:
-            storage_account: "analytics-account"
-            storage_access_key: "EXAMPLE45551FSAsVVCXCF"
-    ```
+    !!! example
+        ```yaml
+        blockstores:
+          signing:
+            secret_key: "some-secret"
+          stores:
+            - id: "s3-prod"
+              description: "AWS S3 storage for production data"
+              type: "s3"
+              s3:
+                region: "us-east-1"
+            - id: "azure-analytics"
+              description: "Azure Blob storage for analytics data"
+              type: "azure"
+              azure:
+                storage_account: "analytics-account"
+                storage_access_key: "EXAMPLE45551FSAsVVCXCF"
+        ```
 
 === "Hybrid"
     This hybrid setup allows lakeFS to manage data across both cloud and on-prem storages.
 
-    ```yaml
-    blockstores:
-    signing:
-        secret_key: "some-secret"
-    stores:
-        - id: "s3-archive"
-        description: "AWS S3 storage for long-term archival"
-        type: "s3"
-        s3:
-            region: "us-west-2"
-        - id: "minio-fast-access"
-        description: "On-prem MinIO for high-performance workloads"
-        type: "s3"
-        s3:
-            force_path_style: true
-            endpoint: 'http://minio.local'
-            discover_bucket_region: false
-            credentials:
-            access_key_id: "minio_access_key"
-            secret_access_key: "minio_secret_key"
-    ```
+    !!! example
+        ```yaml
+        blockstores:
+          signing:
+            secret_key: "some-secret"
+          stores:
+            - id: "s3-archive"
+              description: "AWS S3 storage for long-term archival"
+              type: "s3"
+              s3:
+                region: "us-west-2"
+            - id: "minio-fast-access"
+              description: "On-prem MinIO for high-performance workloads"
+              type: "s3"
+              s3:
+                force_path_style: true
+                endpoint: 'http://minio.local'
+                discover_bucket_region: false
+                credentials:
+                  access_key_id: "minio_access_key"
+                  secret_access_key: "minio_secret_key"
+        ```
 
 ### Key Considerations
 
@@ -236,16 +239,16 @@ Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup a
 
     * Update your lakeFS configuration to use a single storage backend (using the `blockstore` section instead of `blockstores`).
     * Start or restart lakeFS after applying the new configuration
-    * Example of single storage backend configuration: (multi storage backend example can be found in the [Configuration](#configuration) section)
 
-    ```yaml
-    ...
-    blockstore:
-        type: s3
-        s3:
-        region: us-east-1
-    ...
-    ```
+    ???+ example "Example of single storage backend configuration"
+        ```yaml
+        ...
+        blockstore:
+          type: s3
+          s3:
+            region: us-east-1
+        ...
+        ```
 
 4. **Copy Repository Data** (if needed)
 
@@ -267,13 +270,13 @@ Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup a
     ```json
     {
         "repository": {
-        "name": "my-repository",
-        "storage_namespace": "s3://new-bucket/path/to/repo", // ... update here ...
-        "default_branch": "main",
-        "storage_id": "storage-1"
+            "name": "my-repository",
+            "storage_namespace": "s3://new-bucket/path/to/repo", // ... update here ...
+            "default_branch": "main",
+            "storage_id": "storage-1"
         },
         "refs": {
-        // ... existing refs data ...
+            // ... existing refs data ...
         }
     }
     ```
@@ -292,13 +295,13 @@ Use the `lakefs-refs.py` script, instruction on how to aquire found in [Backup a
     python lakefs-refs.py restore repo1_manifest.json repo2_manifest.json --ignore-storage-id
     ```
 
-#### Important Notes
+!!! note "Important Notes"
 
-* Keep the manifest files safe as they contain repository metadata
-* If using different storage backends, ensure proper access permissions to copy the data
-* The `--commit` flag can be used if you want to ensure all changes are committed before dumping
-* Make sure the new storage backend has sufficient space for all repository data
-* A lakeFS instance configured with a single storage type will not start if repositories created on multiple storage setup still exist
+    * Keep the manifest files safe as they contain repository metadata
+    * If using different storage backends, ensure proper access permissions to copy the data
+    * The `--commit` flag can be used if you want to ensure all changes are committed before dumping
+    * Make sure the new storage backend has sufficient space for all repository data
+    * A lakeFS instance configured with a single storage type will not start if repositories created on multiple storage setup still exist
 
 ## Working with Repositories
 
@@ -339,7 +342,10 @@ In a multi-storage setup, users must specify a storage ID when creating a reposi
     ```python
     import lakefs
 
-    repo = lakefs.Repository("example-repo").create(storage_namespace="s3://storage-bucket/repos/example-repo", storage_id="my-storage-id")
+    repo = lakefs.Repository("example-repo").create(
+        storage_namespace="s3://storage-bucket/repos/example-repo", 
+        storage_id="my-storage-id"
+    )
     ```
 
 !!! warning "Important Notes"
