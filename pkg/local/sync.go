@@ -155,7 +155,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 	}
 
 	attempt := 0
-	bo := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), uint64(s.cfg.MaxDownloadRetries))
+	bo := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), s.cfg.MaxDownloadRetries)
 	return backoff.Retry(func() error {
 		var body io.Reader
 		if s.cfg.Presign {
