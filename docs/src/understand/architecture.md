@@ -83,7 +83,6 @@ The UI layer is a simple browser-based client that uses the OpenAPI server. It a
 ## Applications
 
 As a rule of thumb, lakeFS supports any S3-compatible application. This means that many common data applications work with lakeFS out-of-the-box.
-Check out our [integrations](../integrations/index.md) to learn more.
 
 ## lakeFS Clients
 
