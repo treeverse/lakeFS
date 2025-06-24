@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -153,7 +154,9 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		return nil
 	}
 
-	return retryOnError(func(attempt int) error {
+	attempt := 0
+	bo := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), uint64(s.cfg.MaxDownloadRetries))
+	return backoff.Retry(func() error {
 		var body io.Reader
 		if s.cfg.Presign {
 			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
@@ -189,6 +192,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 				return fmt.Errorf("could not seek to start of file '%s': %w", destination, err)
 			}
 		}
+		attempt++
 
 		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
 		defer func() {
@@ -206,23 +210,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 			return fmt.Errorf("could not write file '%s': %w", destination, err)
 		}
 		return nil
-	}, s.cfg.MaxDownloadRetries)
-}
-
-// retryOnError attempts to execute the given operation up to maxAttempts times
-func retryOnError(operation func(attempt int) error, maxRetries int) error {
-	var err error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		err = operation(attempt)
-		if err == nil {
-			return nil
-		}
-
-		if attempt == maxRetries {
-			return err
-		}
-	}
-	return err
+	}, bo)
 }
 
 func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, p string) error {

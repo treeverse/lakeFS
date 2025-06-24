@@ -17,6 +17,7 @@ type SyncFlags struct {
 
 type Config struct {
 	SyncFlags
+	// MaxDownloadRetries - Maximum number of retries for download operations
 	MaxDownloadRetries int
 	// SkipNonRegularFiles - By default lakectl local fails if local directory contains irregular files. When set, lakectl will skip these files instead.
 	SkipNonRegularFiles bool
