@@ -508,7 +508,6 @@ func TestController_LogCommitsPredefinedData(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			params := &apigen.LogCommitsParams{}
 			if tt.objects != nil {
@@ -1258,7 +1257,7 @@ func TestController_DeleteRepositoryHandler(t *testing.T) {
 	t.Run("delete repo doesnt delete other repos", func(t *testing.T) {
 		names := []string{"rr0", "rr1", "rr11", "rr2"}
 		for _, name := range names {
-			_, err := deps.catalog.CreateRepository(ctx, name, "", onBlock(deps, "foo1"), "main", false)
+			_, err := deps.catalog.CreateRepository(ctx, name, config.SingleBlockstoreID, onBlock(deps, "foo1"), "main", false)
 			testutil.Must(t, err)
 		}
 
@@ -2648,6 +2647,18 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 		require.Empty(t, string(resp.Body))
 	})
 
+	t.Run("head object not found", func(t *testing.T) {
+		resp, err := clt.HeadObjectWithResponse(ctx, repo, "main", &apigen.HeadObjectParams{Path: "foo/bar_not_found"})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusNotFound, resp.HTTPResponse.StatusCode)
+	})
+
+	t.Run("head object bad request", func(t *testing.T) {
+		resp, err := clt.HeadObjectWithResponse(ctx, repo, "invalid ref", &apigen.HeadObjectParams{Path: "foo/bar"})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.HTTPResponse.StatusCode)
+	})
+
 	t.Run("head object byte range", func(t *testing.T) {
 		rng := "bytes=0-9"
 		resp, err := clt.HeadObjectWithResponse(ctx, repo, "main", &apigen.HeadObjectParams{
@@ -2741,6 +2752,28 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("get object not found", func(t *testing.T) {
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{Path: "foo/bar_not_found"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedCode = http.StatusNotFound
+		if resp.HTTPResponse.StatusCode != expectedCode {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, expectedCode)
+		}
+	})
+
+	t.Run("get object bad request", func(t *testing.T) {
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "invalid ref", &apigen.GetObjectParams{Path: "foo/bar"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedCode = http.StatusBadRequest
+		if resp.HTTPResponse.StatusCode != expectedCode {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, expectedCode)
+		}
+	})
+
 	t.Run("get object byte range", func(t *testing.T) {
 		rng := "bytes=0-9"
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
@@ -2828,6 +2861,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		require.Equal(t, int64(37), resp.HTTPResponse.ContentLength)
 		require.Equal(t, "\"\"", resp.HTTPResponse.Header.Get("ETag"))
 	})
+
 	t.Run("get object with if-none-match returns expected response for empty etag", func(t *testing.T) {
 		eTagInput := "\"\""
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
@@ -5024,7 +5058,7 @@ func TestController_PostStatsEvents(t *testing.T) {
 					continue
 				}
 				for _, collectedMetric := range deps.collector.Metrics {
-					if collectedMetric.Event.Class == sentEv.Class && collectedMetric.Event.Name == sentEv.Name {
+					if collectedMetric.Class == sentEv.Class && collectedMetric.Name == sentEv.Name {
 						collectedEventsToCount[k] += int(collectedMetric.Value)
 					}
 				}
@@ -5573,6 +5607,7 @@ func TestController_CreateCommitRecord(t *testing.T) {
 			t.Fatalf("Expected 204 (no content) response, got %s", resp.Status())
 		}
 		resp, err = clt.CreateCommitRecordWithResponse(ctx, repo, body)
+		testutil.MustDo(t, "create commit record", err)
 		if resp.StatusCode() != http.StatusConflict {
 			t.Fatalf("Expected 409 (conflict) response, got %s", resp.Status())
 		}
@@ -5914,6 +5949,7 @@ func TestCheckPermissions_multipleResources(t *testing.T) {
 		})
 	}
 }
+
 func TestController_CreatePullRequest(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()
@@ -6013,7 +6049,7 @@ func TestController_CreatePullRequest(t *testing.T) {
 		require.Equal(t, userResp.JSON200.User.Id, getResp.JSON200.Author)
 		require.Equal(t, "open", swag.StringValue(getResp.JSON200.Status))
 		require.Equal(t, "", swag.StringValue(getResp.JSON200.MergedCommitId))
-		require.True(t, time.Now().Sub(getResp.JSON200.CreationDate) < 1*time.Minute)
+		require.True(t, time.Since(getResp.JSON200.CreationDate) < 1*time.Minute)
 		require.Nil(t, getResp.JSON200.MergedCommitId)
 		require.Nil(t, getResp.JSON200.ClosedDate)
 	})
@@ -6321,7 +6357,7 @@ func TestController_UpdatePullRequest(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, getResp.JSON200)
 				require.NotNil(t, getResp.JSON200.ClosedDate)
-				require.True(t, time.Now().Sub(*getResp.JSON200.ClosedDate) < 1*time.Minute)
+				require.True(t, time.Since(*getResp.JSON200.ClosedDate) < 1*time.Minute)
 			})
 		}
 	})
@@ -6463,7 +6499,7 @@ func TestController_MergePullRequest(t *testing.T) {
 		require.NotNil(t, getResp.JSON200.MergedCommitId)
 		require.Equal(t, mergeResp.JSON200.Reference, *getResp.JSON200.MergedCommitId)
 		require.NotNil(t, getResp.JSON200.ClosedDate)
-		require.True(t, time.Now().Sub(*getResp.JSON200.ClosedDate) < 1*time.Minute)
+		require.True(t, time.Since(*getResp.JSON200.ClosedDate) < 1*time.Minute)
 	})
 
 	t.Run("conflict", func(t *testing.T) {
@@ -6528,12 +6564,12 @@ func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, re
 }
 
 func TestController_GetLicense(t *testing.T) {
-	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
-
-	t.Run("Get license", func(t *testing.T) {
+	t.Run("not_implemented", func(t *testing.T) {
+		clt, _ := setupClientWithAdmin(t)
 		resp, err := clt.GetLicenseWithResponse(ctx)
 		require.NoError(t, err)
-		require.NotNil(t, resp.JSON501, "expected 501 (not implemented) got %v", resp.StatusCode)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected status Not Implemented")
+		require.NotNil(t, resp.JSON501, "expected HTTP-501 response, got %v", resp.StatusCode())
 	})
 }

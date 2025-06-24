@@ -21,6 +21,8 @@ All URIs are relative to */api/v1*
 | [**stsLogin**](ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS |
 | [**updateObjectUserMetadata**](ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata |
 | [**updatePullRequest**](ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request |
+| [**uploadPart**](ExperimentalApi.md#uploadPart) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber} |  |
+| [**uploadPartCopy**](ExperimentalApi.md#uploadPartCopy) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy |  |
 
 
 <a id="abortPresignMultipartUpload"></a>
@@ -1639,6 +1641,215 @@ null (empty response body)
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
+| **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="uploadPart"></a>
+# **uploadPart**
+> UploadTo uploadPart(repository, branch, uploadId, path, partNumber, uploadPartFrom).execute();
+
+
+
+Return a presigned URL to upload into a presigned multipart upload.
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ExperimentalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: saml_auth
+    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
+    saml_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //saml_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
+    String repository = "repository_example"; // String | 
+    String branch = "branch_example"; // String | 
+    String uploadId = "uploadId_example"; // String | 
+    String path = "path_example"; // String | 
+    Integer partNumber = 56; // Integer | 
+    UploadPartFrom uploadPartFrom = new UploadPartFrom(); // UploadPartFrom | 
+    try {
+      UploadTo result = apiInstance.uploadPart(repository, branch, uploadId, path, partNumber, uploadPartFrom)
+            .execute();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ExperimentalApi#uploadPart");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **branch** | **String**|  | |
+| **uploadId** | **String**|  | |
+| **path** | **String**|  | |
+| **partNumber** | **Integer**|  | |
+| **uploadPartFrom** | [**UploadPartFrom**](UploadPartFrom.md)|  | |
+
+### Return type
+
+[**UploadTo**](UploadTo.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | presigned URL to use for upload |  -  |
+| **401** | Unauthorized |  -  |
+| **404** | Resource Not Found |  -  |
+| **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="uploadPartCopy"></a>
+# **uploadPartCopy**
+> uploadPartCopy(repository, branch, uploadId, path, partNumber, uploadPartCopyFrom).execute();
+
+
+
+Upload a part by copying part of another object.
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.auth.*;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.ExperimentalApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+    
+    // Configure HTTP basic authorization: basic_auth
+    HttpBasicAuth basic_auth = (HttpBasicAuth) defaultClient.getAuthentication("basic_auth");
+    basic_auth.setUsername("YOUR USERNAME");
+    basic_auth.setPassword("YOUR PASSWORD");
+
+    // Configure API key authorization: cookie_auth
+    ApiKeyAuth cookie_auth = (ApiKeyAuth) defaultClient.getAuthentication("cookie_auth");
+    cookie_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //cookie_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: oidc_auth
+    ApiKeyAuth oidc_auth = (ApiKeyAuth) defaultClient.getAuthentication("oidc_auth");
+    oidc_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //oidc_auth.setApiKeyPrefix("Token");
+
+    // Configure API key authorization: saml_auth
+    ApiKeyAuth saml_auth = (ApiKeyAuth) defaultClient.getAuthentication("saml_auth");
+    saml_auth.setApiKey("YOUR API KEY");
+    // Uncomment the following line to set a prefix for the API key, e.g. "Token" (defaults to null)
+    //saml_auth.setApiKeyPrefix("Token");
+
+    // Configure HTTP bearer authorization: jwt_token
+    HttpBearerAuth jwt_token = (HttpBearerAuth) defaultClient.getAuthentication("jwt_token");
+    jwt_token.setBearerToken("BEARER TOKEN");
+
+    ExperimentalApi apiInstance = new ExperimentalApi(defaultClient);
+    String repository = "repository_example"; // String | 
+    String branch = "branch_example"; // String | 
+    String uploadId = "uploadId_example"; // String | 
+    String path = "path_example"; // String | 
+    Integer partNumber = 56; // Integer | 
+    UploadPartCopyFrom uploadPartCopyFrom = new UploadPartCopyFrom(); // UploadPartCopyFrom | 
+    try {
+      apiInstance.uploadPartCopy(repository, branch, uploadId, path, partNumber, uploadPartCopyFrom)
+            .execute();
+    } catch (ApiException e) {
+      System.err.println("Exception when calling ExperimentalApi#uploadPartCopy");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **repository** | **String**|  | |
+| **branch** | **String**|  | |
+| **uploadId** | **String**|  | |
+| **path** | **String**|  | |
+| **partNumber** | **Integer**|  | |
+| **uploadPartCopyFrom** | [**UploadPartCopyFrom**](UploadPartCopyFrom.md)|  | |
+
+### Return type
+
+null (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **204** | part copied |  * ETag -  <br>  |
+| **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |

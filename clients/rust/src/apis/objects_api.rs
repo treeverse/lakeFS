@@ -56,6 +56,7 @@ pub enum DeleteObjectsError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetObjectError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status410(models::Error),
@@ -80,6 +81,7 @@ pub enum GetUnderlyingPropertiesError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum HeadObjectError {
+    Status400(),
     Status401(),
     Status404(),
     Status410(),

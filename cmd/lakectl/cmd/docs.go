@@ -13,32 +13,24 @@ import (
 var cliReferenceHeader = `---
 title: lakectl (lakeFS command-line tool)
 description: lakeFS comes with its own native CLI client. Here you can see the complete command reference.
-parent: Reference
-redirect_from:
-  - /reference/commands.html
-  - /quickstart/lakefs_cli.html
 ---
 
-{% comment %}
-This file (cli.md) is automagically generated from the Go code files under cmd/lakectl. 
-Any changes made directly to the Markdown file will be overwritten, and should instead be made to the
-relevant Go files. 
-{% endcomment %}
-
 # lakectl (lakeFS command-line tool)
-{:.no_toc}
 
-{% include toc.html %}
+!!! note
+	This file (cli.md) is automatically generated from the Go code files under ` + "`cmd/lakectl`" + `. 
+	Any changes made directly to the Markdown file will be overwritten, and should instead be made to the
+	relevant Go files. 
 
 ## Installing lakectl locally
 
 ` + "`lakectl`" + ` is available for Linux, macOS, and Windows. You can also [run it using Docker](#running-lakectl-from-docker).
 
-[Download lakectl](https://github.com/treeverse/lakeFS/releases){: .btn .btn-green target="_blank"}
+[:material-download-outline: Download lakectl](https://github.com/treeverse/lakeFS/releases){: .md-button .md-button--primary target="_blank"}
 
 Or using [Homebrew](https://brew.sh/) for Linux/macOS:
 
-` + "```" + `sh
+` + "```" + `bash
 brew tap treeverse/lakefs
 brew install lakefs
 ` + "```" + `
@@ -57,7 +49,7 @@ lakectl config
 ` + "```" + `
 
 This will setup a ` + "`$HOME/.lakectl.yaml`" + ` file with the credentials and API endpoint you've supplied.
-When setting up a new installation and creating initial credentials (see [Quickstart]({{ site.baseurl }}/quickstart/)), the UI
+When setting up a new installation and creating initial credentials (see [Quickstart](/quickstart/)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
 ` + "`lakectl`" + ` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
@@ -82,6 +74,7 @@ _Bear in mind that if you are running lakeFS itself locally you will need to acc
 the Docker container. That is to say, ` + "`localhost`" + ` to a Docker container is itself, not the host machine on which it is running._
 
 ## Command Reference
+
 `
 
 var cliReferenceHiddenCommandsSeparator = `
@@ -89,17 +82,15 @@ var cliReferenceHiddenCommandsSeparator = `
 
 ## Undocumented commands
 
-**note:**
-⚠️ These commands are plumbing commands and for internal use only.
-Avoid using them unless you're _really_ sure you know what you're doing, or
-have been in contact with lakeFS support!
-{: .note .note-warning }
+!!! warning
+	These commands are plumbing commands and for internal use only.
+	Avoid using them unless you're _really_ sure you know what you're doing, or
+	have been in contact with lakeFS support!
 
 `
 
-var cliReferenceHiddenCommandBanner = `**note:**
-lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
-{: .note .note-warning }
+var cliReferenceHiddenCommandBanner = `!!! warning
+	lakeFS plumbing command. Don't use unless you're _really_ sure you know what you're doing.
 
 `
 
@@ -107,7 +98,7 @@ func printOptions(buf *bytes.Buffer, cmd *cobra.Command) error {
 	flags := cmd.NonInheritedFlags()
 	flags.SetOutput(buf)
 	if flags.HasAvailableFlags() {
-		buf.WriteString("#### Options\n{:.no_toc}\n\n```\n")
+		buf.WriteString("<h4>Options</h4>\n\n```\n")
 		flags.PrintDefaults()
 		buf.WriteString("```\n\n")
 	}
@@ -115,8 +106,8 @@ func printOptions(buf *bytes.Buffer, cmd *cobra.Command) error {
 	parentFlags.SetOutput(buf)
 
 	if cmd == rootCmd {
-		buf.WriteString("**note:** The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.\n{: .note .note-warning }\n\n")
-		buf.WriteString("#### Example usage\n{:.no_toc}\n\n")
+		buf.WriteString("!!! note\n    The `base-uri` option can be controlled with the `LAKECTL_BASE_URI` environment variable.\n\n")
+		buf.WriteString("<h4>Example usage</h4>\n\n")
 		buf.WriteString("```shell\n$ export LAKECTL_BASE_URI=\"lakefs://my-repo/my-branch\"\n# Once set, use relative lakefs uri's:\n$ lakectl fs ls /path\n```")
 	}
 	return nil
@@ -141,17 +132,17 @@ func genMarkdownForCmd(cmd *cobra.Command, w io.Writer, topLevel bool) error {
 
 	buf.WriteString(cmd.Short + "\n\n")
 	if len(cmd.Long) > 0 {
-		buf.WriteString("#### Synopsis\n{:.no_toc}\n\n")
+		buf.WriteString("<h4>Synopsis</h4>\n\n")
 		buf.WriteString(cmd.Long + "\n\n")
 	}
 
 	if cmd.Runnable() {
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.UseLine()))
+		_, _ = fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.UseLine())
 	}
 
 	if len(cmd.Example) > 0 {
-		buf.WriteString("#### Examples\n{:.no_toc}\n\n")
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.Example))
+		buf.WriteString("<h4>Examples</h4>\n\n")
+		_, _ = fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.Example)
 	}
 
 	if err := printOptions(buf, cmd); err != nil {

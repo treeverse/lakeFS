@@ -144,22 +144,23 @@ public abstract class FSTestBase {
 
         System.setProperty("hadoop.home.dir", "/");
 
-        // lakeFSFS initialization requires a blockstore.
-        mockServerClient.when(request()
-                              .withMethod("GET")
-                              .withPath("/config/storage"),
-                              Times.once())
-            .respond(response()
-                     .withStatusCode(200)
-                     .withBody(gson.toJson(new StorageConfig()
-                                           .blockstoreType("s3")
-                                           .blockstoreNamespaceExample("/not/really")
-                                           .blockstoreNamespaceValidityRegex(".*")
-                                           // TODO(ariels): Change for presigned?
-                                           .preSignSupport(false)
-                                           .preSignSupportUi(false)
-                                           .importSupport(false)
-                                           .importValidityRegex(".*"))));
+        mockServerClient.when(
+                request()
+                        .withMethod("GET")
+                        .withPath("/config"),
+                Times.once()
+        ).respond(
+                response()
+                        .withStatusCode(200)
+                        .withBody(gson.toJson(new Config()
+                                .storageConfig(new StorageConfig()
+                                        .blockstoreType("s3")
+                                        .blockstoreNamespaceExample("unused-but-checked")
+                                        .preSignSupport(false)
+                                        .preSignSupportUi(false)
+                                        .importSupport(false)
+                                        .importValidityRegex(".*")
+                                        .blockstoreNamespaceValidityRegex(".*")))));
 
         // Always allow repo "repo" to be found, it's used in all tests.
         mockServerClient.when(request()

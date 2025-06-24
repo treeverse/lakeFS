@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **version** | **str** |  | [optional] 
+**version_context** | **str** |  | [optional] 
 **latest_version** | **str** |  | [optional] 
 **upgrade_recommended** | **bool** |  | [optional] 
 **upgrade_url** | **str** |  | [optional] 

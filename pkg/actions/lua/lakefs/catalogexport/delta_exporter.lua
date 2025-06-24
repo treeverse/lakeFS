@@ -34,6 +34,18 @@ local function delta_log_entry_key_generator()
     end
 end
 
+
+-- Local function to get the table descriptor
+local function get_table_descriptor(repo, ref, table_name_yaml, table_descriptors_path)
+    local tny = table_name_yaml
+    if not strings.has_suffix(tny, ".yaml") then
+        tny = tny .. ".yaml"
+    end
+    local table_src_path = pathlib.join("/", table_descriptors_path, tny)
+    local table_descriptor = extractor.get_table_descriptor(lakefs, repo, ref, table_src_path)
+    return table_descriptor
+end
+
 --[[
     action:
         - repository_id
@@ -49,7 +61,8 @@ end
     path_transformer: function(path) used for transforming path scheme (ex: Azure https to abfss)
 
 ]]
-local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path, path_transformer)
+local function export_delta_log(action, table_def_names, write_object, delta_client, table_descriptors_path,
+                                path_transformer)
     local repo = action.repository_id
     local commit_id = action.commit_id
     if not commit_id then
@@ -61,14 +74,7 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
     end
     local response = {}
     for _, table_name_yaml in ipairs(table_def_names) do
-
-        -- Get the table descriptor
-        local tny  = table_name_yaml
-        if not strings.has_suffix(tny, ".yaml") then
-            tny = tny .. ".yaml"
-        end
-        local table_src_path = pathlib.join("/", table_descriptors_path, tny)
-        local table_descriptor = extractor.get_table_descriptor(lakefs, repo, commit_id, table_src_path)
+        local table_descriptor = get_table_descriptor(repo, commit_id, table_name_yaml, table_descriptors_path)
         local table_path = table_descriptor.path
         if not table_path then
             error("table path is required to proceed with Delta catalog export")
@@ -137,7 +143,9 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
                     elseif code == 404 then
                         if entry.remove ~= nil then
                             -- If the object is not found, and the entry is a remove entry, we can assume it was vacuumed
-                            print(string.format("Object with path '%s' of a `remove` entry wasn't found. Assuming vacuum.", unescaped_path))
+                            print(string.format(
+                                "Object with path '%s' of a `remove` entry wasn't found. Assuming vacuum.",
+                                unescaped_path))
                             unfound_paths[unescaped_path] = nil
                         else
                             unfound_paths[unescaped_path] = true
@@ -193,14 +201,57 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
             table_physical_path = path_transformer(table_physical_path)
         end
         local table_val = {
-            path=table_physical_path,
-            metadata=metadata,
+            path = table_physical_path,
+            metadata = metadata,
         }
         response[table_name_yaml] = table_val
     end
     return response
 end
 
+-- Local function to filter the list of table defs to include only those that have changed
+local function changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)
+    -- Perform a diff_refs operation to get the differences between references
+    local status, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref)
+    if status ~= 200 then
+        error("Failed to perform diff_refs with status: " .. tostring(status))
+    end
+
+    -- Now make a set out of the paths of the filenames
+    local changed_path_set = {}
+    for _, diff_item in ipairs(diff_resp.results) do
+        local dir = pathlib.extract_dir_name(diff_item.path)
+        if dir then
+            changed_path_set[dir] = true
+        end
+    end
+
+    -- Initialize the result table for storing changed table definitions
+    local changed_table_def_names = {}
+
+    -- Iterate through the table definitions and add to the result the ones that pass the filter
+    for index, table_name_yaml in ipairs(table_def_names) do
+        local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
+        if table_descriptor.path ~= nil then
+            print(index, "table_descriptor.path", table_descriptor.path)
+
+            -- filter only the changed paths from the list
+            for changed_path, value in pairs(changed_path_set) do
+                if value and strings.has_prefix(changed_path, table_descriptor.path) then
+                    table.insert(changed_table_def_names, table_name_yaml)
+                    print("  (inserted)")
+                end
+            end
+        else
+            print("  (skipped nil path)")
+        end
+    end
+
+    -- Return the changed table definitions
+    return changed_table_def_names
+end
+
 return {
     export_delta_log = export_delta_log,
+    changed_table_defs = changed_table_defs,
 }

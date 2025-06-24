@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 )
@@ -139,17 +140,20 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 				return nil
 			})
 			require.NoError(t, err)
-			var prefix string
+
+			// prepare expectedResults
+			var (
+				expectedResults []string
+				prefix          string
+			)
 			if tt.prefix == "" {
 				if adapter.BlockstoreType() != block.BlockstoreTypeLocal {
 					prefix = testPrefix
 				}
-
-				require.Equal(t, path.Join(prefix, "folder_0.txt"), results[0])
-				results = results[1:]
+				expectedResults = append(expectedResults, path.Join(prefix, "folder_0.txt"))
 				for i := 0; i < filesAndFolders; i++ {
 					for j := 0; j < filesAndFolders; j++ {
-						require.Equal(t, path.Join(prefix, fmt.Sprintf("folder_%d/test_file_%d", i, j)), results[i*filesAndFolders+j])
+						expectedResults = append(expectedResults, path.Join(prefix, fmt.Sprintf("folder_%d/test_file_%d", i, j)))
 					}
 				}
 			} else {
@@ -157,8 +161,12 @@ func testAdapterWalker(t *testing.T, adapter block.Adapter, storageNamespace str
 					prefix = tt.prefix
 				}
 				for j := 0; j < filesAndFolders; j++ {
-					require.Equal(t, path.Join(prefix, fmt.Sprintf("test_file_%d", j)), results[j])
+					expectedResults = append(expectedResults, path.Join(prefix, fmt.Sprintf("test_file_%d", j)))
 				}
+			}
+			// check that the results match the expected results
+			if diff := deep.Equal(expectedResults, results); diff != nil {
+				t.Errorf("Mismatch in expected results: %v", diff)
 			}
 		})
 	}

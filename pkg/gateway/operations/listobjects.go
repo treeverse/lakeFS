@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -29,9 +29,9 @@ const (
 	QueryParamUploadIDMarker = "upload-id-marker"
 	QueryParamKeyMarker      = "key-marker"
 	// missing implementation - will return error
-	QueryParampPrefix       = "prefix"
-	QueryParampEncodingType = "encoding-type"
-	QueryParampDelimiter    = "delimiter"
+	QueryParamPrefix       = "prefix"
+	QueryParamEncodingType = "encoding-type"
+	QueryParamDelimiter    = "delimiter"
 )
 
 type ListObjects struct{}
@@ -240,11 +240,7 @@ func (controller *ListObjects) ListV1(w http.ResponseWriter, req *http.Request, 
 	// handle ListObjects (v1)
 	params := req.URL.Query()
 	delimiter := params.Get("delimiter")
-	descend := true
-	if len(delimiter) >= 1 {
-		descend = false
-	}
-
+	descend := len(delimiter) < 1
 	maxKeys := controller.getMaxKeys(req, o)
 
 	var results []*catalog.DBEntry
@@ -415,9 +411,9 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	maxUploadsStr := query.Get(QueryParamMaxUploads)
 	uploadIDMarker := query.Get(QueryParamUploadIDMarker)
 	keyMarker := query.Get(QueryParamKeyMarker)
-	prefix := query.Get(QueryParampPrefix)
-	delimiter := query.Get(QueryParampDelimiter)
-	encodingType := query.Get(QueryParampEncodingType)
+	prefix := query.Get(QueryParamPrefix)
+	delimiter := query.Get(QueryParamDelimiter)
+	encodingType := query.Get(QueryParamEncodingType)
 	if prefix != "" || delimiter != "" || encodingType != "" {
 		_ = o.EncodeError(w, req, gatewayerrors.ErrNotImplemented, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))
 		return
@@ -446,7 +442,6 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 		StorageNamespace: o.Repository.StorageNamespace,
 		IdentifierType:   block.IdentifierTypeRelative,
 	}, opts)
-
 	if err != nil {
 		o.Log(req).WithError(err).Error("list multipart uploads failed")
 		_ = o.EncodeError(w, req, err, gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNotImplemented))
@@ -475,10 +470,10 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	resp := &serde.ListMultipartUploadsOutput{
 		Bucket:             o.Repository.Name,
 		Uploads:            uploads,
-		NextKeyMarker:      aws.StringValue(mpuResp.NextKeyMarker),
-		NextUploadIDMarker: aws.StringValue(mpuResp.NextUploadIDMarker),
+		NextKeyMarker:      aws.ToString(mpuResp.NextKeyMarker),
+		NextUploadIDMarker: aws.ToString(mpuResp.NextUploadIDMarker),
 		IsTruncated:        mpuResp.IsTruncated,
-		MaxUploads:         aws.Int32Value(mpuResp.MaxUploads),
+		MaxUploads:         aws.ToInt32(mpuResp.MaxUploads),
 	}
 	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

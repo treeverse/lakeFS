@@ -528,7 +528,7 @@ print(code, resp.id, resp.commit_id)
 			ExpectedOutput: "201\ttag1\tmain",
 			ExpectedRequest: map[string]any{
 				"repository": "repo",
-				"body":       apigen.CreateTagJSONRequestBody{Id: "tag1", Ref: "main"},
+				"body":       apigen.CreateTagJSONRequestBody{Id: "tag1", Ref: "main", Force: apiutil.Ptr(false)},
 			},
 		},
 		{
@@ -556,6 +556,7 @@ print(code, resp)
 					Amount:    apiutil.Ptr[apigen.PaginationAmount](100),
 					Prefix:    apiutil.Ptr[apigen.PaginationPrefix]("prefix"),
 					Delimiter: apiutil.Ptr[apigen.PaginationDelimiter]("delim"),
+					Type:      apiutil.Ptr("three_dot"),
 				},
 			},
 		},
@@ -628,7 +629,10 @@ print(code, resp)
 			ExpectedRequest: map[string]any{
 				"repository": "repo",
 				"ref":        "main",
-				"params":     apigen.StatObjectParams{Path: "path/to/object"},
+				"params": apigen.StatObjectParams{
+					Path:         "path/to/object",
+					UserMetadata: apiutil.Ptr(true),
+				},
 			},
 		},
 		{

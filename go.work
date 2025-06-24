@@ -1,7 +1,8 @@
-go 1.23.0
+go 1.24.4
 
 use (
 	.
+	./modules/api/factory
 	./modules/auth/factory
 	./modules/authentication/factory
 	./modules/block/factory

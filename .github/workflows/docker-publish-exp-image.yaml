@@ -37,12 +37,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.23"
+          go-version: "1.24"
         id: go
 
-      - uses: bufbuild/buf-setup-action@v1.28.1
+      - uses: bufbuild/buf-setup-action@v1.50.0
         with:
           github_token: ${{ github.token }}
+          version: 1.54.0
 
       - name: Extract version
         shell: bash
@@ -54,8 +55,6 @@ jobs:
 
       - name: Checks validator
         run: make checks-validator
-        env:
-          GOLANGCI_LINT_FLAGS: --out-format github-actions
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

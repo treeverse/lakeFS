@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+## v0.11.1
+
+:bug: Bugs fixed:
+
+- Fixed: Configuration always demanded credentials' access key and secret. Now it supports IAM provider as well (#9105)
+
+## v0.11.0
+
+:new: What's new:
+
+- Auth: Authenticate or fallback to AWS IAM authentication (if no other method provided) (#9039)
+
+:bug: Bugs fixed:
+
+- Fixed: Python library is missing a py.typed file (#7737)
+
+## v0.10.0
+
+:new: What's new:
+
+- Enable quick install and run of lakefs and lakectl (#8972)
+
 ## v0.9.1
 
 :bug: Bugs fixed:

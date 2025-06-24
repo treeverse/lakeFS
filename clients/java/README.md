@@ -181,6 +181,7 @@ Class | Method | HTTP request | Description
 *AuthApi* | [**listUserPolicies**](docs/AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies
 *AuthApi* | [**listUsers**](docs/AuthApi.md#listUsers) | **GET** /auth/users | list users
 *AuthApi* | [**login**](docs/AuthApi.md#login) | **POST** /auth/login | perform a login
+*AuthApi* | [**oauthCallback**](docs/AuthApi.md#oauthCallback) | **GET** /oidc/callback | 
 *AuthApi* | [**setGroupACL**](docs/AuthApi.md#setGroupACL) | **POST** /auth/groups/{groupId}/acl | set ACL of group
 *AuthApi* | [**updatePolicy**](docs/AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy
 *BranchesApi* | [**cherryPick**](docs/BranchesApi.md#cherryPick) | **POST** /repositories/{repository}/branches/{branch}/cherry-pick | Replay the changes from the given commit on the branch
@@ -211,6 +212,8 @@ Class | Method | HTTP request | Description
 *ExperimentalApi* | [**stsLogin**](docs/ExperimentalApi.md#stsLogin) | **POST** /sts/login | perform a login with STS
 *ExperimentalApi* | [**updateObjectUserMetadata**](docs/ExperimentalApi.md#updateObjectUserMetadata) | **PUT** /repositories/{repository}/branches/{branch}/objects/stat/user_metadata | rewrite (all) object metadata
 *ExperimentalApi* | [**updatePullRequest**](docs/ExperimentalApi.md#updatePullRequest) | **PATCH** /repositories/{repository}/pulls/{pull_request} | update pull request
+*ExperimentalApi* | [**uploadPart**](docs/ExperimentalApi.md#uploadPart) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber} | 
+*ExperimentalApi* | [**uploadPartCopy**](docs/ExperimentalApi.md#uploadPartCopy) | **PUT** /repositories/{repository}/branches/{branch}/staging/pmpu/{uploadId}/parts/{partNumber}/copy | 
 *ExternalApi* | [**createUserExternalPrincipal**](docs/ExternalApi.md#createUserExternalPrincipal) | **POST** /auth/users/{userId}/external/principals | attach external principal to user
 *ExternalApi* | [**deleteUserExternalPrincipal**](docs/ExternalApi.md#deleteUserExternalPrincipal) | **DELETE** /auth/users/{userId}/external/principals | delete external principal from user
 *ExternalApi* | [**externalPrincipalLogin**](docs/ExternalApi.md#externalPrincipalLogin) | **POST** /auth/external/principal/login | perform a login using an external authenticator
@@ -312,6 +315,7 @@ Class | Method | HTTP request | Description
  - [CommitRecordCreation](docs/CommitRecordCreation.md)
  - [CompletePresignMultipartUpload](docs/CompletePresignMultipartUpload.md)
  - [Config](docs/Config.md)
+ - [CopyPartSource](docs/CopyPartSource.md)
  - [Credentials](docs/Credentials.md)
  - [CredentialsList](docs/CredentialsList.md)
  - [CredentialsWithSecret](docs/CredentialsWithSecret.md)
@@ -395,6 +399,9 @@ Class | Method | HTTP request | Description
  - [UpdateObjectUserMetadata](docs/UpdateObjectUserMetadata.md)
  - [UpdateToken](docs/UpdateToken.md)
  - [UploadPart](docs/UploadPart.md)
+ - [UploadPartCopyFrom](docs/UploadPartCopyFrom.md)
+ - [UploadPartFrom](docs/UploadPartFrom.md)
+ - [UploadTo](docs/UploadTo.md)
  - [UsageReport](docs/UsageReport.md)
  - [User](docs/User.md)
  - [UserCreation](docs/UserCreation.md)

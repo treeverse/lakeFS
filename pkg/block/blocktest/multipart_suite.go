@@ -5,9 +5,9 @@ import (
 	"context"
 	"io"
 	"slices"
-	"strconv"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -81,7 +81,14 @@ func testAdapterMultipartUpload(t *testing.T, adapter block.Adapter, storageName
 				require.NoError(t, err)
 				require.Equal(t, int(maxParts), len(listResp.Parts))
 				require.True(t, listResp.IsTruncated)
-				require.Equal(t, strconv.Itoa(int(maxParts)), *listResp.NextPartNumberMarker)
+				require.NotNil(t, listResp.NextPartNumberMarker)
+				// check pagination with marker
+				listResp, err = adapter.ListParts(ctx, obj, resp.UploadID, block.ListPartsOpts{
+					PartNumberMarker: listResp.NextPartNumberMarker,
+				})
+				require.NoError(t, err)
+				require.Equal(t, len(parts)-maxPartsConst, len(listResp.Parts))
+				require.False(t, listResp.IsTruncated)
 			}
 
 			_, err = adapter.CompleteMultiPartUpload(ctx, obj, resp.UploadID, &block.MultipartUploadCompletion{
@@ -204,7 +211,8 @@ func verifyListInvalid(t *testing.T, ctx context.Context, adapter block.Adapter,
 	if expectOperationNotSupported(adapter.BlockstoreType()) {
 		require.ErrorIs(t, err, block.ErrOperationNotSupported)
 	} else {
-		require.NotNil(t, err)
+		// currently each adapter returns a different error, so we just check that it is not nil
+		require.NotNil(t, err, "ListParts should fail with invalid uploadID")
 	}
 }
 
@@ -212,9 +220,7 @@ func expectOperationNotSupported(blockstoreType string) bool {
 	unsupportedList := []string{
 		block.BlockstoreTypeLocal,
 		block.BlockstoreTypeAzure,
-		block.BlockstoreTypeMem,
 		block.BlockstoreTypeTransient,
-		block.BlockstoreTypeGS,
 	}
 	return slices.Contains(unsupportedList, blockstoreType)
 }
@@ -241,7 +247,7 @@ func copyPartRange(t *testing.T, ctx context.Context, adapter block.Adapter, obj
 	var startPosition int64 = 0
 	for i := 0; i < multipartNumberOfParts; i++ {
 		partNumber := i + 1
-		var endPosition = startPosition + multipartPartSize
+		endPosition := startPosition + multipartPartSize
 		partResp, err := adapter.UploadCopyPartRange(ctx, obj, objCopy, uploadID, partNumber, startPosition, endPosition)
 		if adapter.BlockstoreType() == block.BlockstoreTypeAzure {
 			require.ErrorContains(t, err, "not implemented") // azurite block store emulator did not yet implement this
@@ -283,39 +289,20 @@ func getAndCheckContents(t *testing.T, ctx context.Context, adapter block.Adapte
 	require.NoError(t, err, "Get Object failed")
 	got, err := io.ReadAll(reader)
 	require.NoError(t, err, "ReadAll returned error")
-	requireEqualBigByteSlice(t, exp, got)
-}
-
-// compare two big bytearrays one slice at a time(so that we don't blow up the console on error)
-func requireEqualBigByteSlice(t *testing.T, exp, actual []byte) {
-	t.Helper()
-	require.Equal(t, len(exp), len(actual))
-
-	const sliceLen = 100
-	sliceCount := len(exp) / sliceLen
-	if len(exp)%sliceLen > 0 {
-		sliceCount++
-	}
-
-	for i := 0; i < sliceCount; i++ {
-		var start = i * sliceLen
-		var end = min((i+1)*sliceLen, len(exp)-1)
-
-		var expSlice = exp[start:end]
-		var actualSlice = actual[start:end]
-		require.Equalf(t, expSlice, actualSlice, "Failed on slice "+strconv.Itoa(i+1)+"/"+strconv.Itoa(sliceCount))
+	if diff := deep.Equal(exp, got); diff != nil {
+		t.Errorf("Get returned different content: %v", diff)
 	}
 }
 
 func objPointers(storageNamespace string) (block.ObjectPointer, block.ObjectPointer) {
-	var obj = block.ObjectPointer{
+	obj := block.ObjectPointer{
 		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "abc",
 		IdentifierType:   block.IdentifierTypeRelative,
 	}
 
-	var objCopy = block.ObjectPointer{
+	objCopy := block.ObjectPointer{
 		StorageID:        "",
 		StorageNamespace: storageNamespace,
 		Identifier:       "abcCopy",

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -192,13 +193,12 @@ func TestSingleChunkPut(t *testing.T) {
 
 func TestStreaming(t *testing.T) {
 	const (
-		method = http.MethodPut
 		host   = "s3.amazonaws.com"
 		path   = "examplebucket/chunkObject.txt"
 		ID     = "AKIAIOSFODNN7EXAMPLE"
 		SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	)
-	req, err := http.NewRequest(method, fmt.Sprintf("https://%s/%s", host, path), nil)
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("https://%s/%s", host, path), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,18 +212,24 @@ func TestStreaming(t *testing.T) {
 		"X-Amz-Decoded-Content-Length": []string{"66560"},
 		"Content-Length":               []string{"66824"},
 	}
-	chunk1Size := 65536
-	a := bytes.Repeat([]byte("a"), chunk1Size)
-	a = append(a, '\r', '\n')
-	chunk1 := append([]byte("10000;chunk-signature=ad80c730a21e5b8d04586a2213dd63b9a0e99e0e2307b0ade35a65485a288648\r\n"), a...)
-	chunk2Size := 1024
-	b := bytes.Repeat([]byte("a"), chunk2Size)
-	b = append(b, '\r', '\n')
-	chunk2 := append([]byte("400;chunk-signature=0055627c9e194cb4542bae2aa5492e3c1575bbb81b612b7d234b86a503ef5497\r\n"), b...)
-	chunk3 := []byte("0;chunk-signature=b6c6ea8a5354eaf15b3cb7646744f4275b71ea724fed81ceb9323e279d449df9\r\n\r\n")
-	body := append(chunk1, chunk2...)
-	body = append(body, chunk3...)
-	req.Body = io.NopCloser(bytes.NewReader(body))
+	var body bytes.Buffer
+
+	// chunk1
+	body.Write([]byte("10000;chunk-signature=ad80c730a21e5b8d04586a2213dd63b9a0e99e0e2307b0ade35a65485a288648\r\n"))
+	const chunk1Size = 65536
+	body.Write(bytes.Repeat([]byte("a"), chunk1Size))
+	body.Write([]byte("\r\n"))
+
+	// chunk2
+	body.Write([]byte("400;chunk-signature=0055627c9e194cb4542bae2aa5492e3c1575bbb81b612b7d234b86a503ef5497\r\n"))
+	const chunk2Size = 1024
+	body.Write(bytes.Repeat([]byte("a"), chunk2Size))
+	body.Write([]byte("\r\n"))
+
+	// chunk3
+	body.Write([]byte("0;chunk-signature=b6c6ea8a5354eaf15b3cb7646744f4275b71ea724fed81ceb9323e279d449df9\r\n\r\n"))
+
+	req.Body = io.NopCloser(bytes.NewReader(body.Bytes()))
 
 	// now test it
 	authenticator := sig.NewV4Authenticator(req)
@@ -253,11 +259,10 @@ func TestStreaming(t *testing.T) {
 
 func TestStreamingLastByteWrong(t *testing.T) {
 	const (
-		method = http.MethodPut
-		ID     = "AKIAIOSFODNN7EXAMPLE"
-		SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		key    = "AKIAIOSFODNN7EXAMPLE"
+		secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	)
-	req, err := http.NewRequest(method, "https://s3.amazonaws.com/examplebucket/chunkObject.txt", nil)
+	req, err := http.NewRequest(http.MethodPut, "https://s3.amazonaws.com/examplebucket/chunkObject.txt", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,8 +297,8 @@ func TestStreamingLastByteWrong(t *testing.T) {
 
 	err = authenticator.Verify(&model.Credential{
 		BaseCredential: model.BaseCredential{
-			AccessKeyID:     ID,
-			SecretAccessKey: SECRET,
+			AccessKeyID:     key,
+			SecretAccessKey: secret,
 			IssuedDate:      time.Now(),
 		},
 	})
@@ -302,7 +307,7 @@ func TestStreamingLastByteWrong(t *testing.T) {
 	}
 
 	_, err = io.ReadAll(req.Body)
-	if err != gtwerrors.ErrSignatureDoesNotMatch {
+	if !errors.Is(err, gtwerrors.ErrSignatureDoesNotMatch) {
 		t.Errorf("expect %v, got %v", gtwerrors.ErrSignatureDoesNotMatch, err)
 	}
 }
@@ -346,5 +351,219 @@ func TestUnsignedPayload(t *testing.T) {
 	})
 	if err != nil {
 		t.Errorf("expect not no error, got %v", err)
+	}
+}
+
+// Helper function to truncate long strings for display in error messages
+func truncateForDisplay(s string) string {
+	if len(s) > 40 {
+		return s[:20] + "..." + s[len(s)-20:]
+	}
+	return s
+}
+
+func TestStreamingUnsignedPayloadTrailerWithChunks(t *testing.T) {
+	testCases := []struct {
+		name           string
+		method         string
+		host           string
+		path           string
+		trailerHeader  sig.ChecksumAlgorithm
+		trailerContent string
+		chunkSize      int
+		totalChunks    int
+		chunkData      [][]byte
+		expectedError  error
+	}{
+		{
+			name:           "CRC32C Trailer",
+			method:         http.MethodPut,
+			host:           "s3.amazonaws.com",
+			path:           "examplebucket/trailertest.txt",
+			trailerHeader:  sig.ChecksumAlgorithmCRC32C,
+			trailerContent: "x-amz-checksum-crc32c:%s\r\n\r\n", // %s will be replaced with actual checksum
+			chunkSize:      64,
+			totalChunks:    2,
+			chunkData: [][]byte{
+				bytes.Repeat([]byte("a"), 64),
+				bytes.Repeat([]byte("b"), 64),
+			},
+			expectedError: nil,
+		},
+		{
+			name:           "CRC32 Trailer",
+			method:         http.MethodPut,
+			host:           "s3.amazonaws.com",
+			path:           "examplebucket/trailertest.txt",
+			trailerHeader:  sig.ChecksumAlgorithmCRC32,
+			trailerContent: "x-amz-checksum-crc32:%s\r\n\r\n",
+			chunkSize:      64,
+			totalChunks:    2,
+			chunkData: [][]byte{
+				bytes.Repeat([]byte("a"), 64),
+				bytes.Repeat([]byte("b"), 64),
+			},
+			expectedError: nil,
+		},
+		{
+			name:           "Invalid TrailerHeader",
+			method:         http.MethodPut,
+			host:           "s3.amazonaws.com",
+			path:           "examplebucket/trailertest.txt",
+			trailerHeader:  sig.ChecksumAlgorithmInvalid,
+			trailerContent: "x-amz-checksum-crc32:%s\r\n\r\n",
+			chunkSize:      64,
+			totalChunks:    1,
+			chunkData: [][]byte{
+				bytes.Repeat([]byte("a"), 64),
+			},
+			expectedError: sig.ErrUnsupportedChecksum,
+		},
+		{
+			name:           "Invalid TrailerContent",
+			method:         http.MethodPut,
+			host:           "s3.amazonaws.com",
+			path:           "examplebucket/trailertest.txt",
+			trailerHeader:  sig.ChecksumAlgorithmCRC32,
+			trailerContent: "x-amz-checksum-sha1:%s\r\n\r\n",
+			chunkSize:      64,
+			totalChunks:    1,
+			chunkData: [][]byte{
+				bytes.Repeat([]byte("a"), 64),
+			},
+			expectedError: sig.ErrChecksumTypeMismatch,
+		},
+	}
+
+	const (
+		testID     = "AKIAIOSFODNN7EXAMPLE"
+		testSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+		region     = "us-east-1"
+		service    = "s3"
+		date       = "20130524"
+		timeStamp  = "20130524T000000Z"
+	)
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a request
+			req, err := http.NewRequest(tc.method, fmt.Sprintf("https://%s/%s", tc.host, tc.path), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Set required headers for unsigned trailers
+			req.Header.Set("X-Amz-Date", timeStamp)
+			req.Header.Set("X-Amz-Content-Sha256", "STREAMING-UNSIGNED-PAYLOAD-TRAILER")
+			req.Header.Set("Content-Encoding", "aws-chunked")
+			req.Header.Set("X-Amz-Trailer", string(tc.trailerHeader))
+
+			// Calculate decoded content length
+			decodedContentLength := 0
+			for _, chunk := range tc.chunkData {
+				decodedContentLength += len(chunk)
+			}
+			req.Header.Set("X-Amz-Decoded-Content-Length", fmt.Sprintf("%d", decodedContentLength))
+			req.Header.Set("Host", tc.host)
+
+			// Create AWS credentials
+			creds := aws.Credentials{
+				AccessKeyID:     testID,
+				SecretAccessKey: testSecret,
+			}
+
+			// Sign the request using AWS SDK v4 signer
+			signer := v4.NewSigner()
+			err = signer.SignHTTP(context.Background(), creds, req, "STREAMING-UNSIGNED-PAYLOAD-TRAILER", service, region, time.Date(2013, 5, 24, 0, 0, 0, 0, time.UTC))
+			if err != nil {
+				t.Fatalf("Failed to sign request: %v", err)
+			}
+
+			// Prepare chunks
+			var chunks strings.Builder
+			var combinedData []byte
+
+			// Create each chunk
+			for _, chunkData := range tc.chunkData {
+				chunkHex := fmt.Sprintf("%x\r\n", len(chunkData))
+				chunks.WriteString(chunkHex)
+				chunks.Write(chunkData)
+				chunks.WriteString("\r\n")
+				combinedData = append(combinedData, chunkData...)
+			}
+
+			// For valid trailer types, calculate checksum
+			var checksumB64 string
+			if tc.expectedError == nil {
+				// Get the appropriate checksum writer using the public API
+				checksumWriter, err := sig.GetChecksumWriter(string(tc.trailerHeader))
+				if err != nil {
+					t.Fatalf("Failed to get checksum writer for %s", tc.trailerHeader)
+				}
+
+				// Calculate checksum for the entire payload
+				checksumWriter.Write(combinedData)
+				checksum := checksumWriter.Sum(nil)
+				checksumB64 = base64.StdEncoding.EncodeToString(checksum)
+			} else {
+				// For invalid trailers, just use a dummy value
+				checksumB64 = "dummyvalue=="
+			}
+
+			// Add terminating chunk with trailer
+			chunks.WriteString("0\r\n")
+			chunks.WriteString(fmt.Sprintf(tc.trailerContent, checksumB64))
+
+			// Set the request body
+			fullBody := chunks.String()
+			req.Body = io.NopCloser(strings.NewReader(fullBody))
+			req.ContentLength = int64(len(fullBody))
+
+			// Create credential for verification
+			modelCred := model.Credential{
+				BaseCredential: model.BaseCredential{
+					AccessKeyID:     testID,
+					SecretAccessKey: testSecret,
+					IssuedDate:      time.Date(2013, 5, 24, 0, 0, 0, 0, time.UTC),
+				},
+			}
+
+			// Parse the request using our authenticator
+			authenticator := sig.NewV4Authenticator(req)
+			sigContext, err := authenticator.Parse()
+			if err != nil {
+				t.Fatalf("failed to parse request with STREAMING-UNSIGNED-PAYLOAD-TRAILER: %v", err)
+			}
+
+			// Verify the signature
+			err = authenticator.Verify(&modelCred)
+			if err != nil && errors.Is(err, tc.expectedError) {
+				t.Logf("expected an error, got: %v", err)
+				return
+			}
+
+			// Check that it properly identified the auth type
+			if sigContext.GetAccessKeyID() != testID {
+				t.Errorf("expected access key ID to be %s, got %s", testID, sigContext.GetAccessKeyID())
+			}
+
+			// Verify that content length was properly set to decoded length
+			if req.ContentLength != int64(decodedContentLength) {
+				t.Errorf("expected content length to be %d, got %d", decodedContentLength, req.ContentLength)
+			}
+
+			// Read the body to verify the chunks are correctly parsed
+			bodyData, err := io.ReadAll(req.Body)
+			if err != nil && errors.Is(err, tc.expectedError) {
+				t.Logf("expected %v error, got: %v", tc.expectedError, err)
+				return
+			}
+
+			// Verify that the decoded body contains exactly what we expect
+			if !bytes.Equal(bodyData, combinedData) {
+				t.Errorf("body data doesn't match expected content\nExpected: %s\nGot: %s",
+					truncateForDisplay(string(combinedData)), truncateForDisplay(string(bodyData)))
+			}
+		})
 	}
 }

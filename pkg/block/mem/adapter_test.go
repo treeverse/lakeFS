@@ -1,7 +1,14 @@
 package mem_test
 
-// TODO (niro): Need to enable
-//func TestMemAdapter(t *testing.T) {
-//	adapter := mem.New()
-//	blocktest.TestAdapter(t, adapter, "")
-//}
+import (
+	"context"
+	"testing"
+
+	"github.com/treeverse/lakefs/pkg/block/blocktest"
+	"github.com/treeverse/lakefs/pkg/block/mem"
+)
+
+func TestMemAdapter(t *testing.T) {
+	adapter := mem.New(context.Background())
+	blocktest.AdapterTest(t, adapter, "mem://test", "mem://external")
+}

@@ -8,14 +8,14 @@ UID_GID := $(shell id -u):$(shell id -g)
 CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
 
 # https://openapi-generator.tech
-OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.3
+OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.4
 OPENAPI_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 OPENAPI_RUST_GENERATOR_IMAGE=openapitools/openapi-generator-cli:v7.5.0
 OPENAPI_RUST_GENERATOR=$(DOCKER) run --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_RUST_GENERATOR_IMAGE)
 PY_OPENAPI_GENERATOR=$(DOCKER) run -e PYTHON_POST_PROCESS_FILE="/mnt/clients/python-static/pydantic.sh" --user $(UID_GID) --rm -v $(shell pwd):/mnt $(OPENAPI_GENERATOR_IMAGE)
 
-GOLANGCI_LINT_VERSION=v1.63.4
-BUF_CLI_VERSION=v1.28.1
+GOLANGCI_LINT=github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
+BUF_CLI_VERSION=v1.54.0
 
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0-SNAPSHOT
@@ -79,33 +79,26 @@ check-licenses-npm:
 	# The -i arg is a workaround to ignore NPM scoped packages until https://github.com/senseyeio/diligent/issues/77 is fixed
 	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
 
-docs/assets/js/swagger.yml: api/swagger.yml
+docs/src/assets/js/swagger.yml: api/swagger.yml
 	@cp api/swagger.yml docs/assets/js/swagger.yml
 
-docs: docs/assets/js/swagger.yml
+docs/src/assets/js/authorization.yml: api/authorization.yml
+	@cp api/authorization.yml docs/src/assets/js/authorization.yml
+
+docs: docs/src/assets/js/swagger.yml docs/src/assets/js/authorization.yml
 
 docs-serve: ### Serve local docs
-	cd docs; bundle exec jekyll serve --livereload
-
-docs-serve-docker: ### Serve local docs from Docker
-	docker run --rm \
-			--name lakefs_docs \
-			-e TZ="Etc/UTC" \
-			--publish 4000:4000 --publish 35729:35729 \
-			--volume="$$PWD/docs:/srv/jekyll:Z" \
-			--volume="$$PWD/docs/.jekyll-bundle-cache:/usr/local/bundle:Z" \
-			--interactive --tty \
-			jekyll/jekyll:4.2.2 \
-			jekyll serve --livereload
+	cd docs; mkdocs serve --dev-addr 127.0.0.1:4000
 
 gen-docs: ## Generate CLI docs automatically
-	$(GOCMD) run cmd/lakectl/main.go docs > docs/reference/cli.md
+	$(GOCMD) run cmd/lakectl/main.go docs > docs/src/reference/cli.md
 
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/pkg/metastore/hive/gen-go/ -o pkg/metastore/hive pkg/metastore/hive/hive_metastore.thrift
 
+.PHONY: tools
 tools: ## Install tools
-	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	$(GOCMD) install $(GOLANGCI_LINT)
 	$(GOCMD) install github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION)
 
 client-python: api/swagger.yml  ## Generate SDK for Python client - openapi generator version 7.0.0
@@ -161,7 +154,7 @@ package-python-wrapper:
 package: package-python
 
 .PHONY: gen-api
-gen-api: docs/assets/js/swagger.yml ## Run the swagger code generator
+gen-api: docs/src/assets/js/swagger.yml ## Run the swagger code generator
 	$(GOGENERATE) ./pkg/api/apigen ./pkg/auth ./pkg/authentication
 
 .PHONY: gen-code
@@ -180,12 +173,14 @@ gen-code: gen-api ## Run the generator for inline commands
 		./tools/wrapgen/testcode
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/pkg/version.Version=$(VERSION)-$(REVISION)"
-build: gen docs ## Download dependencies and build the default binary
+build: gen docs build-binaries ## Download dependencies and build the default binary
+
+build-binaries:
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
 lint: ## Lint code
-	$(GOCMD) run github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run $(GOLANGCI_LINT_FLAGS)
+	$(GOCMD) run $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS)
 	npx eslint@8.57.0 $(UI_DIR)/src --ext .js,.jsx,.ts,.tsx
 
 esti: ## run esti (system testing)
@@ -307,12 +302,14 @@ gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 	go run github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION) generate
 
-publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
-	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
+.PHONY: publish-scala
+publish-scala: ## sbt publish spark client jars to Maven Central and to s3 bucket
+	cd clients/spark && sbt 'assembly; publishSigned; s3Upload; sonaRelease'
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
+.PHONY: publish-lakefsfs-test
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
-	cd test/lakefsfs && sbt assembly && sbt s3Upload
+	cd test/lakefsfs && sbt 'assembly; s3Upload'
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
 help:  ## Show Help menu

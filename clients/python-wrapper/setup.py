@@ -1,7 +1,11 @@
-from setuptools import setup, find_packages
+from typing import Any
+
+from setuptools import setup, find_packages, Command, Distribution, glob
+import os
+import shutil
 
 NAME = "lakefs"
-VERSION = "0.9.1"
+VERSION = "0.11.1"
 # To install the library, run the following
 #
 # python setup.py install
@@ -24,7 +28,6 @@ TEST_REQUIRES = [
 
 with open('README.md') as f:
     long_description = f.read()
-
 setup(
     name=NAME,
     version=VERSION,
@@ -42,7 +45,9 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     extras_require={
+        # Install using: `pip install "lakefs-<version>-py3-none-any.whl[all,aws-iam]"`
         "all": ["boto3 >= 1.26.0"],
         "aws-iam": ["boto3 >= 1.26.0"],
     },
+    package_data={"lakefs": ["py.typed"]},
 )

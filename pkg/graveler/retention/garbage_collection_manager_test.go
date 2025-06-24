@@ -55,8 +55,8 @@ func createTestFile(t *testing.T, filename, testLine string, count int) {
 	fd, err := os.Create(filename)
 	require.NoError(t, err)
 	defer func() { _ = fd.Close() }()
-	for i := 0; i < count; i++ {
-		_, err := fd.WriteString(fmt.Sprintf("%s_%d\n", testLine, i))
+	for i := range count {
+		_, err := fmt.Fprintf(fd, "%s_%d\n", testLine, i)
 		require.NoError(t, err)
 	}
 }

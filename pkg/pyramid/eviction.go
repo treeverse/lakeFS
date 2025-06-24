@@ -19,14 +19,35 @@ const (
 
 	// 64 is the recommended buffer-items for all use-cases
 	bufferItems = 64
+
+	// Cache size threshold for adaptive counter scaling
+	smallCacheThreshold = 100 * 1024 * 1024 // 100MB
+
+	// Counter scaling parameters for small caches
+	bytesPerCounter = 1024 * 10 // 10KB per counter (~100 counters per 1MB)
+	minCounters     = 1000      // Minimum counters to ensure basic functionality
 )
 
-// nolint: unused,deadcode
+//nolint:unused
 func newRistrettoEviction(capacity int64, evict func(rPath params.RelativePath, cost int64)) (params.Eviction, error) {
 	re := &ristrettoEviction{evictCallback: evict}
 
+	// Scale numCounters based on capacity to avoid excessive memory usage for small caches
+	// Default 10M counters is too much for test environments with small cache sizes
+	var numCountersToUse int64 = numCounters
+	if capacity < smallCacheThreshold {
+		// Use a more reasonable ratio: ~100 counters per 1MB of capacity
+		numCountersToUse = capacity / bytesPerCounter
+		if numCountersToUse < minCounters {
+			numCountersToUse = minCounters
+		}
+		if numCountersToUse > numCounters {
+			numCountersToUse = numCounters // Don't exceed default for large caches
+		}
+	}
+
 	cache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: numCounters,
+		NumCounters: numCountersToUse,
 		MaxCost:     capacity,
 		BufferItems: bufferItems,
 		OnEvict:     re.onEvict,

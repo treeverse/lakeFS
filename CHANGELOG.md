@@ -1,5 +1,79 @@
 # Changelog
 
+# v1.60.0
+
+:new: What's new:
+
+- Actions: Distinguish client and internal errors in actions responses (#9162)
+- Update kin-openapi package with changes related to request validation (#9167)
+- Sample repository: remove unused images (#9156)
+
+:bug: Bugs fixed:
+
+- Fix: laktectl progress bar panic (#9148)
+- Fix issue with not showing marker icons in GeoJSON preview map (#9140)
+
+# v1.59.0
+
+:new: What's new:
+
+- UI: Overhaul lakeFS look & feel (#9022)
+
+:bug: Bugs fixed:
+
+- Fix lakefs superuser command using external authorization (#9127)
+- Fix missing BadRequest(400) in the API spec for get/head object (#9130)
+
+# v1.58.0
+
+🏢 Includes only changes for Enterprise.
+
+# v1.57.0
+
+:new: What's new:
+
+- UI: turn off hive partitioning while select parquet using DuckDB (#9056)
+- Add friendly name to GetUser API response (#9065)
+
+# v1.56.1
+
+:bug: Bugs fixed:
+
+- Fix ParseRange to fail on bytes=-0 (#9032)
+- Fix S3 ListMultipartUploads response missing NextUploadIDMarker (#9036)
+- Use MD5 as ETag in gs adapter (#9041)
+- lakectl - add AWS IAM login config (ignored) (#8994)
+
+# v1.56.0
+
+:new: What's new:
+
+- UI : Add GeoJSON preview support (#8996,#9014)
+- S3 Gateway: Add support for list parts for Google storage adapter (#9019)
+- S3 Gateway: SigV4 Support Unsigned Payload Trailers (#9009)
+- UI: Enable expand/collapse functionality for directory trees  (#8978)
+
+:bug: Bugs fixed:
+
+-  UI: Fix repository tree layout and link behavior (#8999)
+
+# v1.55.0
+
+:new: What's new:
+
+- Support list repositories and branches in lakectl by prefixes by @AliRamberg in #8860
+- Add pagination to Add Group Members and Attach Policies by @Ben-El in #8953
+- Security fix - Replace old go-jwt by @Isan-Rivkin in #8968
+- Support separate per-part requests for MPU presigned URLs by @arielshaqed in #8962
+- lua delta exporter- add a function to find changed tables by @nadavsteindler in #8957
+- Enable expand/collapse functionality for directory trees by @Ben-El in #8978
+
+:bug: Bugs fixed:
+
+- Fix - long branch name overflows in the UI by @Annaseli in #8948
+- Fix - No prompt after clicking the button in access control page #8610 by @VH992098059 in #8932
+- Fix - Parse configuration from environment slice of any by @nopcoder in #8980
+
 # v1.54.0
 
 :new: What's new:

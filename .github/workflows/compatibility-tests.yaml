@@ -22,7 +22,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.23"
+          go-version: "1.24"
         id: go
 
       - uses: actions/setup-node@v4
@@ -78,7 +78,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.23"
+          go-version: "1.24"
         id: go
 
       - name: Retrieve generated code
@@ -183,6 +183,13 @@ jobs:
           - 1.53.0
           - 1.53.1
           - 1.54.0
+          - 1.55.0
+          - 1.56.0
+          - 1.56.1
+          - 1.57.0
+          - 1.58.0
+          - 1.59.0
+          - 1.60.0
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}
@@ -226,6 +233,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          COMPOSE_PARALLEL_LIMIT: 1 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
 
       - name: Retrieve client
         uses: actions/download-artifact@v4.1.8
@@ -258,7 +266,7 @@ jobs:
       matrix:
         # Removing a version from this list means the current lakeFS is no longer compatible with
         # that Hadoop lakeFS client version.
-        client_version: [0.1.10, 0.1.11, 0.1.12, 0.1.13, 0.1.14, 0.1.15, 0.2.1]
+        client_version: [0.1.10, 0.1.11, 0.1.12, 0.1.13, 0.1.14, 0.1.15, 0.2.1, 0.2.2, 0.2.3, 0.2.4, 0.2.5]
     runs-on: ubuntu-22.04
     env:
       CLIENT_VERSION: ${{ matrix.client_version }}

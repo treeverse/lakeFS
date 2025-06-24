@@ -68,6 +68,7 @@ func TestRegister(t *testing.T) {
 		if err != nil {
 			t.Fatal("expected Store 'md'", err)
 		}
+		defer s1.Close()
 		store1, ok := s1.(*kv.StoreMetricsWrapper)
 		if !ok {
 			t.Fatal("expected StoreMetricsWrapper")

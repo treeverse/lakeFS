@@ -3,6 +3,7 @@ import SyntaxHighlighter from "react-syntax-highlighter";
 import {FileType, RendererComponent} from "./types";
 import {DuckDBRenderer} from "./data";
 import {
+    GeoJSONRenderer,
     ImageRenderer,
     IpynbRenderer,
     MarkdownRenderer,
@@ -48,9 +49,18 @@ export const Renderers: {[fileType in FileType] : FC<RendererComponent> } = {
     [FileType.TOO_LARGE]: props => (
         <ObjectTooLarge {...props}/>
     ),
+    [FileType.GEOJSON]: props => (
+        <TextDownloader {...props} onReady={text =>
+            <GeoJSONRenderer {...props} text={text}/>
+        } />
+    ),
 }
 
 export const guessLanguage =  (extension: string | null, contentType: string | null) => {
+    switch (extension) {
+        case 'py':
+            extension = 'python'
+    }
     if (extension && SyntaxHighlighter.supportedLanguages.includes(extension)) {
         return extension;
     }
@@ -102,6 +112,8 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'application/x-toml':
         case 'application/toml':
             return FileType.TEXT
+        case 'application/geo+json':
+            return FileType.GEOJSON;
         case 'application/x-ipynb+json':
         case 'application/x-ipynb':
         case 'application/ipynb':
@@ -139,11 +151,14 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'txt':
         case 'text':
         case 'yaml':
+        case 'py':
         case 'yml':
         case 'json':
         case 'jsonl':
         case 'ndjson':
             return FileType.TEXT
+        case 'geojson':
+            return FileType.GEOJSON
     }
     if (guessLanguage(fileExtension, contentType))
         return FileType.TEXT

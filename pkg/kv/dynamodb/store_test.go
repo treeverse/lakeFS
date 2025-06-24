@@ -2,13 +2,13 @@ package dynamodb_test
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/pkg/kv"
-	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
-	"github.com/treeverse/lakefs/pkg/testutil"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/dynamodb"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 	"github.com/treeverse/lakefs/pkg/kv/kvtest"
+	"github.com/treeverse/lakefs/pkg/testutil"
 )
 
 func TestDynamoKV(t *testing.T) {

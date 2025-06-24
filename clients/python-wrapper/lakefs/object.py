@@ -676,13 +676,15 @@ class StoredObject(_BaseLakeFSObject):
         """
         return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client)
 
-    def stat(self) -> ObjectInfo:
+    def stat(self, pre_sign: Optional[bool] = None) -> ObjectInfo:
         """
         Return the Stat object representing this object
         """
-        if self._stats is None:
+        # don't cache pre-signed stats
+        if self._stats is None or pre_sign:
             with api_exception_handler(_io_exception_handler):
-                stat = self._client.sdk_client.objects_api.stat_object(self._repo_id, self._ref_id, self._path)
+                stat = self._client.sdk_client.objects_api.stat_object(
+                    self._repo_id, self._ref_id, self._path, presign=pre_sign)
                 self._stats = ObjectInfo(**stat.dict())
         return self._stats
 

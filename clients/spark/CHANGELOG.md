@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.14.3 - 2024-28-05
+* Metaclient: Skip unknown files when scanning metadata prefix (#9119)
+
+## v0.14.2 - 2024-30-04
+* Spark Client StorageID support (#8918)
+
 ## v0.14.1 - 2024-07-04
 * When scanning across all commits, correctly handle lakeFS storage namespaces that do not end in `/` (#7955)
   

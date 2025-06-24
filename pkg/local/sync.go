@@ -74,7 +74,7 @@ func (s *SyncManager) Sync(rootPath string, remote *uri.URI, changeSet <-chan *C
 	defer s.progressBar.Stop()
 
 	wg, ctx := errgroup.WithContext(s.ctx)
-	for i := 0; i < s.cfg.SyncFlags.Parallelism; i++ {
+	for i := 0; i < s.cfg.Parallelism; i++ {
 		wg.Go(func() error {
 			for change := range changeSet {
 				if err := s.apply(ctx, rootPath, remote, change); err != nil {
@@ -152,7 +152,7 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		defer spinner.Done()
 	} else {
 		var body io.Reader
-		if s.cfg.SyncFlags.Presign {
+		if s.cfg.Presign {
 			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
 			if err != nil {
 				return err
@@ -219,7 +219,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 
 	statResp, err := s.client.StatObjectWithResponse(ctx, remote.Repository, remote.Ref, &apigen.StatObjectParams{
 		Path:         remotePath,
-		Presign:      swag.Bool(s.cfg.SyncFlags.Presign),
+		Presign:      swag.Bool(s.cfg.Presign),
 		UserMetadata: swag.Bool(true),
 	})
 	if err != nil {
@@ -336,9 +336,9 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		metadata[POSIXPermissionsMetadataKey] = string(data)
 	}
 
-	if s.cfg.SyncFlags.Presign {
+	if s.cfg.Presign {
 		_, err = helpers.ClientUploadPreSign(
-			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper, s.cfg.SyncFlags.PresignMultipart)
+			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper, s.cfg.PresignMultipart)
 		return err
 	}
 	// not pre-signed

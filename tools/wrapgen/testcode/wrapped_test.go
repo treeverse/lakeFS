@@ -15,9 +15,7 @@ func (b BaseArithmetic) Add(x, y int) int {
 
 const fail = -1
 
-var (
-	errForTesting = errors.New("for testing")
-)
+var errForTesting = errors.New("for testing")
 
 func (b BaseArithmetic) Double(x int) (int, error) {
 	time.Sleep(50 * time.Millisecond)
@@ -73,6 +71,9 @@ func TestMonitoring(t *testing.T) {
 	if four != 4 {
 		t.Errorf("Unexpected Double(s) == %v", four)
 	}
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
 
 	called = false
 	_, err = w.Double(fail)
@@ -82,7 +83,7 @@ func TestMonitoring(t *testing.T) {
 	if lastSuccess {
 		t.Error("Observed success")
 	}
-	if err != errForTesting {
+	if !errors.Is(err, errForTesting) {
 		t.Errorf("Unexpected error %s", err)
 	}
 }

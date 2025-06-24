@@ -12,7 +12,7 @@ import {useRefs} from "../../hooks/repo";
 import {getRepoStorageConfig} from "../../../pages/repositories/repository/utils";
 
 const maxDiffSizeBytes = 120 << 10;
-const supportedReadableFormats = ["txt", "text", "md", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson"];
+const supportedReadableFormats = ["txt", "text", "md", "csv", "tsv", "yaml", "yml", "json", "jsonl", "ndjson", "geojson"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const {repo, error: refsError, loading: refsLoading} = useRefs();
@@ -96,13 +96,15 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
     if (err) return <AlertError error={err}/>;
 
     return <div>
-        <span><DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/></span>
+        <DiffSizeReport leftSize={leftSize} rightSize={rightSize} diffType={diffType}/>
         <ReactDiffViewer
-            oldValue={left && left.response}
-            newValue={right && right.response}
+            oldValue={left?.response}
+            newValue={right?.response}
             splitView={false}
             useDarkTheme={state.settings.darkMode}
-            compareMethod={DiffMethod.WORDS}/>
+            compareMethod={DiffMethod.WORDS}
+        />
+
     </div>;
 }
 

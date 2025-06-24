@@ -253,6 +253,167 @@ func (c *Controller) CreatePresignMultipartUpload(w http.ResponseWriter, r *http
 	writeResponse(w, r, http.StatusCreated, resp)
 }
 
+func (c *Controller) UploadPart(w http.ResponseWriter, r *http.Request, body apigen.UploadPartJSONRequestBody, dstRepository string, branch string, uploadID string, partNumber int, params apigen.UploadPartParams) {
+	var (
+		ctx     = r.Context()
+		dstPath = params.Path
+	)
+	requiredPermissions := permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(dstRepository, dstPath),
+		},
+	}
+	if !c.authorize(w, r, requiredPermissions) {
+		return
+	}
+
+	c.LogAction(ctx, "upload_part", r, dstRepository, dstPath, "")
+
+	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// verify physical address
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	if addressType != catalog.AddressTypeRelative {
+		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
+		return
+	}
+
+	//  verify it has been saved for linking
+	if err := c.Catalog.VerifyLinkAddress(dstRepository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	dstObjectRef := block.ObjectPointer{
+		StorageID:        repo.StorageID,
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       physicalAddress,
+	}
+
+	presignedURL, err := c.BlockAdapter.GetPresignUploadPartURL(ctx, dstObjectRef, uploadID, partNumber)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	response := apigen.UploadTo{
+		PresignedUrl: presignedURL,
+	}
+	writeResponse(w, r, http.StatusOK, response)
+}
+
+func (c *Controller) UploadPartCopy(w http.ResponseWriter, r *http.Request,
+	body apigen.UploadPartCopyJSONRequestBody, dstRepository string, branch string, uploadID string, partNumber int,
+	params apigen.UploadPartCopyParams,
+) {
+	var (
+		ctx = r.Context()
+
+		dstPath = params.Path
+
+		srcRepository = body.CopySource.Repository
+		srcRef        = body.CopySource.Ref
+		srcPath       = body.CopySource.Path
+	)
+
+	requiredPermissions := permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(dstRepository, dstPath),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadObjectAction,
+					Resource: permissions.ObjectArn(srcRepository, srcPath),
+				},
+			},
+		},
+	}
+	if !c.authorize(w, r, requiredPermissions) {
+		return
+	}
+
+	c.LogAction(ctx, "upload_part_copy", r, dstRepository, dstPath, srcPath)
+
+	repo, err := c.Catalog.GetRepository(ctx, dstRepository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	srcRepo, err := c.Catalog.GetRepository(ctx, srcRepository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// verify physical address
+	physicalAddress, addressType := normalizePhysicalAddress(repo.StorageNamespace, body.PhysicalAddress)
+	if addressType != catalog.AddressTypeRelative {
+		writeError(w, r, http.StatusBadRequest, "physical address must be relative to the storage namespace")
+		return
+	}
+
+	//  verify it has been saved for linking
+	if err := c.Catalog.VerifyLinkAddress(dstRepository, branch, params.Path, physicalAddress); c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	dstObjectRef := block.ObjectPointer{
+		StorageID:        repo.StorageID,
+		StorageNamespace: repo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       physicalAddress,
+	}
+
+	srcEntry, err := c.Catalog.GetEntry(ctx, srcRepo.Name, srcRef, srcPath, catalog.GetEntryParams{})
+	if err != nil {
+		err = fmt.Errorf("%s/%s/%s: %w", srcRepo.Name, srcRef, srcPath, err)
+		_ = c.handleAPIError(ctx, w, r, err)
+		return
+	}
+
+	srcObjectRef := block.ObjectPointer{
+		StorageID:        srcRepo.StorageID,
+		StorageNamespace: srcRepo.StorageNamespace,
+		IdentifierType:   block.IdentifierTypeRelative,
+		Identifier:       srcEntry.PhysicalAddress,
+	}
+	var etag string
+	if rng := body.CopySource.Range; rng != nil {
+		var startPosition, endPosition int64
+		// Cannot use httputil.ParseRange without knowing the length of the source
+		// object.  Instead we will pass negative counts-from-end unchanged, the
+		// blockstore will handle them.
+
+		// Sscanf is safe for parsing ints.
+		_, err = fmt.Sscanf(*rng, "bytes=%d-%d", &startPosition, &endPosition)
+		if err != nil {
+			c.handleAPIError(ctx, w, r, fmt.Errorf("parse range \"%s\": %w", *rng, err))
+			return
+		}
+		resp, err := c.BlockAdapter.UploadCopyPartRange(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber,
+			startPosition, endPosition)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		etag = resp.ETag
+	} else {
+		resp, err := c.BlockAdapter.UploadCopyPart(ctx, srcObjectRef, dstObjectRef, uploadID, partNumber)
+		if c.handleAPIError(ctx, w, r, err) {
+			return
+		}
+		etag = resp.ETag
+	}
+
+	w.Header().Set("ETag", etag)
+	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
 func (c *Controller) AbortPresignMultipartUpload(w http.ResponseWriter, r *http.Request, body apigen.AbortPresignMultipartUploadJSONRequestBody, repository string, branch string, uploadID string, params apigen.AbortPresignMultipartUploadParams) {
 	if !c.authorize(w, r, permissions.AbortPresignMultipartUploadPermissions(repository, params.Path)) {
 		return
@@ -1435,6 +1596,7 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID stri
 		CreationDate: u.CreatedAt.Unix(),
 		Email:        u.Email,
 		Id:           u.Username,
+		FriendlyName: u.FriendlyName,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -2443,14 +2605,6 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	log := c.Logger.WithContext(ctx).WithError(err)
 
-	// Handle Hook Errors
-	var hookAbortErr *graveler.HookAbortError
-	if errors.As(err, &hookAbortErr) {
-		log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
-		cb(w, r, http.StatusPreconditionFailed, hookAbortErr.Unwrap())
-		return true
-	}
-
 	// order of case is important, more specific errors should be first
 	switch {
 	case errors.Is(err, graveler.ErrLinkAddressInvalid),
@@ -2494,6 +2648,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		errors.Is(err, graveler.ErrInvalidMergeStrategy),
 		errors.Is(err, block.ErrInvalidAddress),
 		errors.Is(err, block.ErrOperationNotSupported),
+		errors.Is(err, auth.ErrInvalidRequest),
 		errors.Is(err, authentication.ErrInvalidRequest),
 		errors.Is(err, graveler.ErrSameBranch),
 		errors.Is(err, graveler.ErrInvalidPullRequestStatus),
@@ -2535,6 +2690,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+	case errors.Is(err, actions.ErrActionFailed):
+		log.WithError(err).Debug("Precondition failed, aborted by action failure")
+		cb(w, r, http.StatusPreconditionFailed, err)
 	default:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
@@ -3822,13 +3980,14 @@ func (c *Controller) GetMetadataObject(w http.ResponseWriter, r *http.Request, r
 	}
 
 	var objPath string
-	if objectType == getTypeMetaRange {
+	switch objectType {
+	case getTypeMetaRange:
 		addr, err := c.Catalog.GetMetaRange(ctx, repository, objectID)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
 		}
 		objPath = string(addr)
-	} else if objectType == getTypeRange {
+	case getTypeRange:
 		addr, err := c.Catalog.GetRange(ctx, repository, objectID)
 		if c.handleAPIError(ctx, w, r, err) {
 			return
@@ -4447,8 +4606,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	} else {
 		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -4579,6 +4737,7 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
+		VersionContext:     swag.String(c.Config.GetVersionContext()),
 	}
 }
 
@@ -4766,6 +4925,8 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 	if !c.authorize(w, r, permissions.MergePullRequestPermissions(repository, pr.Destination)) {
 		return
 	}
+
+	c.LogAction(ctx, "merge_pull_request", r, repository, "", "")
 
 	if pr.Status != graveler.PullRequestStatus_OPEN {
 		c.Logger.WithError(err).WithField("pr_status", pr.Status.String()).Error("pull request is not open")
@@ -5062,7 +5223,9 @@ func (c *Controller) GetUsageReportSummary(w http.ResponseWriter, r *http.Reques
 	}
 
 	// flush data before collecting usage - can help for single node deployments
-	c.usageReporter.Flush(ctx)
+	if _, err := c.usageReporter.Flush(ctx); err != nil {
+		c.Logger.WithError(err).Warn("Failed to flush usage reporter")
+	}
 
 	records, err := c.usageReporter.Records(ctx)
 	if c.handleAPIError(ctx, w, r, err) {
@@ -5212,4 +5375,8 @@ func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResponse(w, r, http.StatusOK, apigen.License{Token: token})
+}
+
+func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
+	c.Authentication.OauthCallback(w, r, c.sessionStore)
 }

@@ -14,17 +14,35 @@ jobs:
     steps:
       - name: Check-out
         uses: actions/checkout@v4
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          working-directory: docs
-          ruby-version: '3.2'
-          bundler-cache: true 
+          python-version: '3.12'
+
+      - name: Install dependencies
+        working-directory: docs
+        run: pip install -r requirements-docs.txt
+
+      - name: Checkout the documentation repository
+        uses: actions/checkout@v4
+        with:
+          repository: treeverse/docs-lakeFS
+          fetch-depth: 1
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          path: docs/docs-repo
+
+      - name: Configure Git
+        working-directory: docs/docs-repo
+        run: |
+          git config --global user.name "treeverser"
+          git config --global user.email "treeverser@treeverse.io"
 
       - name: Build latest
-        working-directory: docs
-        run: bundle exec jekyll build --config _config.yml -d _site/ --verbose
+        working-directory: docs/docs-repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          mike deploy --config-file ../mkdocs.yml --branch main dev --update-aliases latest
 
       - name: Get links to check
         id: get-links
@@ -37,7 +55,7 @@ jobs:
           find webui/src -type f ! -name "*.js" -exec grep -Eo 'href="([^"]*)"' {} \; | \
             cut -d'"' -f2 | \
             grep -v -e "^/" -e "^#" | \
-            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/_site/" > /tmp/links_to_check.txt
+            sed "s/https:\/\/docs.lakefs.io/file:\/\/$escaped_pwd\/docs\/docs-repo/" > /tmp/links_to_check.txt
 
       - name: Check links
         id: lychee

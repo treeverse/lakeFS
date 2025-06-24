@@ -12,7 +12,7 @@ import { RefContextProvider } from "../../hooks/repo";
 import { ReadOnlyBadge } from "../badges";
 
 const RepoNav = () => {
-    const { repo } = useRefs();
+    const { repo, reference } = useRefs();
     const [repoId, setRepoId] = useState("");
     useEffect(() => {
         if (repo) {
@@ -20,13 +20,21 @@ const RepoNav = () => {
         }
     }, [repo]);
 
+    const repoLink = {
+        pathname: '/repositories/:repoId/objects',
+        params: { repoId },
+    };
+    if (reference?.id) {
+        repoLink.query = { ref: reference.id };
+    }
+
     return (
         <Stack direction="horizontal" gap={2}>
             <Breadcrumb>
                 <Link href={{pathname: '/repositories'}} component={Breadcrumb.Item}>
                     Repositories
                 </Link>
-                <Link href={{pathname: '/repositories/:repoId/objects', params: {repoId}}} component={Breadcrumb.Item}>
+                <Link href={repoLink} component={Breadcrumb.Item}>
                     {repoId}
                 </Link>
             </Breadcrumb>
@@ -42,7 +50,9 @@ export const RepositoryPageLayout = ({ fluid = "sm" }) => {
             <div>
                 <RepoNav/>
 
-                <RepositoryNavTabs active={activePage}/>
+                <div className="full-width-tabs-border">
+                    <RepositoryNavTabs active={activePage}/>
+                </div>
 
                 <Container fluid={fluid}>
                     <div className="mt-4">

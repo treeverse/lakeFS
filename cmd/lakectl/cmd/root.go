@@ -14,8 +14,8 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/mitchellh/go-homedir"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -68,6 +68,15 @@ type Configuration struct {
 	Credentials struct {
 		AccessKeyID     lakefsconfig.OnlyString `mapstructure:"access_key_id"`
 		SecretAccessKey lakefsconfig.OnlyString `mapstructure:"secret_access_key"`
+		Provider        struct {
+			Type   lakefsconfig.OnlyString `mapstructure:"type"`
+			AWSIAM struct {
+				TokenTTL            time.Duration      `mapstructure:"token_ttl_seconds"`
+				URLPresignTTL       time.Duration      `mapstructure:"url_presign_ttl_seconds"`
+				RefreshInterval     time.Duration      `mapstructure:"refresh_interval"`
+				TokenRequestHeaders *map[string]string `mapstructure:"token_request_headers"`
+			} `mapstructure:"aws_iam"`
+		} `mapstructure:"provider"`
 	} `mapstructure:"credentials"`
 	Network struct {
 		HTTP2 struct {
@@ -392,7 +401,7 @@ func getCommitFlags(cmd *cobra.Command) (string, map[string]string) {
 	return message, kvPairs
 }
 
-func getKV(cmd *cobra.Command, name string) (map[string]string, error) { //nolint:unparam
+func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	kvList, err := cmd.Flags().GetStringSlice(name)
 	if err != nil {
 		return nil, err

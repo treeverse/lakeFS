@@ -18,6 +18,7 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
@@ -25,7 +26,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -62,7 +62,7 @@ var runCmd = &cobra.Command{
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.ContextUnavailable()
-		cfg := loadConfig()
+		cfg := LoadConfig()
 		baseCfg := cfg.GetBaseConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
@@ -110,20 +110,21 @@ var runCmd = &cobra.Command{
 		migrator := kv.NewDatabaseMigrator(kvParams)
 		multipartTracker := multipart.NewTracker(kvStore)
 		actionsStore := actions.NewActionsKVStore(kvStore)
-		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseCfg.Installation.FixedID, baseCfg.Database.Type, kvStore)
+		installationID := licenseManager.InstallationID()
+		if installationID == "" {
+			installationID = baseCfg.Installation.FixedID
+		}
+		authMetadataManager := auth.NewKVMetadataManager(version.Version, installationID, baseCfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
-		// initialize authentication service
-		var authenticationService authentication.Service
-		authCfg := cfg.AuthConfig()
-		if authCfg.IsAuthenticationTypeAPI() {
-			authenticationService, err = authentication.NewAPIService(authCfg.AuthenticationAPI.Endpoint, authCfg.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), authCfg.AuthenticationAPI.ExternalPrincipalsEnabled)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create authentication service")
-			}
-		} else {
-			authenticationService = authentication.NewDummyService()
+		authService, err := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create authorization service")
+		}
+
+		authenticationService, err := authenticationfactory.NewAuthenticationService(ctx, cfg, logger)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create authentication service")
 		}
 
 		blockstoreType := baseCfg.Blockstore.Type
@@ -253,6 +254,7 @@ var runCmd = &cobra.Command{
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
+		authCfg := cfg.AuthConfig()
 		oidcConfig := api.OIDCConfig(authCfg.OIDC)
 		cookieAuthConfig := api.CookieAuthConfig(authCfg.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
@@ -307,6 +309,21 @@ var runCmd = &cobra.Command{
 		}
 
 		actionsService.SetEndpoint(server)
+
+		// register additional API services
+		err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
+			Config:                cfg,
+			Authenticator:         middlewareAuthenticator,
+			AuthService:           authService,
+			AuthenticationService: authenticationService,
+			BlockAdapter:          blockStore,
+			Collector:             bufferedCollector,
+			Logger:                logger,
+			LicenseManager:        licenseManager,
+		}, apiHandler)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to register services on router")
+		}
 
 		go func() {
 			var err error
