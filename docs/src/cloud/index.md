@@ -46,9 +46,9 @@ Using lakeFS cloud is not just a secure and managed way of using lakeFS OSS; it 
 
 1. [lakeFS Mount](../reference/mount.md) allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
 1. [lakeFS Metadata Search](https://info.lakefs.io/metadata-search) - Allows a granular search API to filter and query versioned objects based on attached metadata. This is especially useful for machine learning environments to filter by labels and file attributes
-1. [lakeFS for Databricks](https://lakefs.io/lakefs-for-databricks) - Provides a turnkey solution for Databricks customers for analytics, machine learning and business intelligence use cases including full support for Delta Lake tables, Unity Catalog, MLFlow and the rest of the Databricks product suite.
+1. [Iceberg REST Catalog](../integrations/iceberg.md) - Provides full support for managing Iceberg tables alongside other data formats in the same lakeFS repository. Built using open standards and works with any Iceberg client.
 1. [lakeFS for Snowflake](https://info.lakefs.io/lakefs-for-snowflake) - Provides full integration into the Snowflake ecosystem, including full support for Iceberg managed tables.
-1. [lakeFS Cross Cloud](https://info.lakefs.io/cross-cloud) - Allows central management of repositories that span across multiple cloud providers including Azure, AWS, GCP and on-prem environments.
+1. [lakeFS Cross-Cloud](https://info.lakefs.io/cross-cloud) - Allows central management of repositories that span across multiple cloud providers including Azure, AWS, GCP and on-prem environments.
 1. [Transactional Mirroring](../howto/mirroring.md) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
 
 
@@ -62,18 +62,17 @@ Using lakeFS cloud is not just a secure and managed way of using lakeFS OSS; it 
 | **Configurable Garbage Collection**            | ✅         | ✅         |
 | **Data CI/CD using lakeFS hooks**              | ✅         | ✅         |
 | **Integrates with your data stack**            | ✅         | ✅         |
-| **[Role Based Access Control (RBAC)](https://docs.lakefs.io/security/rbac.html)** |            | ✅         |
-| **[Single Sign On (SSO)](https://docs.lakefs.io/security/sso.html)**                       |            | ✅         |
-| **[SCIM Support](https://docs.lakefs.io/howto/scim.html)**                               |            | ✅         |
-| **[IAM Roles](https://docs.lakefs.io/security/external-principals-aws.html)**                                  |            | ✅         |
-| **[Mount Capability](https://docs.lakefs.io/reference/mount.html)**                           |            | ✅         |
-| **[Audit Logs](https://docs.lakefs.io/reference/auditing.html)**                                 |            | ✅         |
-| **[Transactional Mirroring (cross-region)](https://docs.lakefs.io/howto/mirroring.html)**     |            | ✅         |
+| **[Role Based Access Control (RBAC)](../security/rbac.md)** |            | ✅         |
+| **[Single Sign On (SSO)](../security/sso.md)**                       |            | ✅         |
+| **[SCIM Support](../howto/scim.md)**                               |            | ✅         |
+| **[IAM Roles](../security/external-principals-aws.md)**                                  |            | ✅ <small>(AWS)</small>   |
+| **[Mount Capability](../reference/mount.md)**                           |            | ✅         |
+| **[Audit Logs](../reference/auditing.md)**                                 |            | ✅         |
+| **[Transactional Mirroring (cross-region)](../howto/mirroring.md)**     |            | ✅         |
 | **Managed Service (auto updates, scaling)**    |            | ✅         |
-| **[Managed Garbage Collection](https://docs.lakefs.io/howto/garbage-collection/managed-gc.html)**                 |            | ✅         |
-| **[SOC2 Compliant](https://docs.lakefs.io/security/)**                             |            | ✅         |
+| **[Managed Garbage Collection](../howto/garbage-collection/managed-gc.md)**                 |            | ✅         |
+| **[SOC2 Compliant](../security/index.md#soc2-compliance)**                             |            | ✅         |
 | **Support SLA**                                |            | ✅         |
-
 
 
 ## How lakeFS Cloud interacts with your infrastructure
