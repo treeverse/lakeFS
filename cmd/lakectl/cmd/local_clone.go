@@ -86,14 +86,7 @@ var localCloneCmd = &cobra.Command{
 		}
 		sigCtx := localHandleSyncInterrupt(ctx, idx, string(cloneOperation))
 		syncFlags := getSyncFlags(cmd, client, remote.Repository)
-		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), local.Config{
-			SyncFlags:           syncFlags,
-			MaxDownloadRetries:  cfg.Server.Retries.MaxAttempts,
-			SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
-			IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
-			IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
-			IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeGID,
-		})
+		s := local.NewSyncManager(sigCtx, client, getHTTPClient(), buildLocalConfig(syncFlags, cfg))
 		err = s.Sync(localPath, stableRemote, ch)
 		if err != nil {
 			DieErr(err)
