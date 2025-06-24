@@ -10,7 +10,7 @@ status: enterprise
     Multi-storage backend support is only available to licensed [lakeFS Enterprise](../enterprise/index.md) customers.
     [Contact us](https://info.lakefs.io/thanks-msb) to get started!
 
-## What is Multiple-storage Backend Support?
+## What is Multiple storage Backend Support?
 
 lakeFS multiple-storage backend support enables seamless data management across multiple storage systems —
 on-premises, across public clouds, or hybrid environments. This capability makes lakeFS a unified data management platform
