@@ -142,7 +142,7 @@ func buildLocalConfig(syncFlags local.SyncFlags, cfg *Configuration) local.Confi
 	}
 	return local.Config{
 		SyncFlags:           syncFlags,
-		MaxDownloadRetries:  uint64(cfg.Server.Retries.MaxAttempts),
+		MaxDownloadRetries:  uint64(cfg.Server.Retries.MaxAttempts), // #nosec G115 - already checked above
 		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
