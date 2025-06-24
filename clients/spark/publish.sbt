@@ -1,7 +1,8 @@
 val nexus = "https://s01.oss.sonatype.org/"
 publishTo := {
-  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+  if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+  else localStaging.value
 }
 // Remove all additional repository other than Maven Central from POM
 pomIncludeRepository := { _ => false }
