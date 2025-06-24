@@ -3,9 +3,10 @@ name: docs
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - "docs/**"
+      - ".github/workflows/docs.yaml"
       - ".github/workflows/docs-*.yaml"
   release:
     types: [published]

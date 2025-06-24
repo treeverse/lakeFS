@@ -77,6 +77,31 @@ tr:hover .row-hover .btn-outline-danger {
   visibility: visible;
 }
 
+/* Consistent width for diff indicator columns */
+.diff-indicator,
+.entry-type-indicator {
+  width: 40px !important; /* Just enough for icon + padding */
+  min-width: 40px;
+  max-width: 40px;
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px 12px 8px 16px !important; /* More left padding for spacing from border */
+}
+
+/* Override action-bar button margins for button groups */
+.action-bar .btn-group .btn {
+  margin-right: 0 !important;
+}
+
+/* Changes dropdown styling */
+.changes-dropdown-menu {
+  min-width: 200px;
+}
+
+.changes-action-btn {
+  margin: 0 !important;
+}
+
 /* Fix for object browser gear icon dropdown */
 .tree-container .dropdown-menu,
 .change-entry-row .dropdown-menu {

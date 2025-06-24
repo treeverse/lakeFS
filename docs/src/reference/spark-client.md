@@ -1,6 +1,6 @@
 ---
 title: Spark Client
-description: The lakeFS Spark client performs operations on lakeFS committed metadata stored in the object store. 
+description: The lakeFS Spark client performs operations on lakeFS committed metadata stored in the object store.
 ---
 
 # lakeFS Spark Metadata Client
@@ -43,7 +43,7 @@ can work for other Spark versions and higher Hadoop versions.
 
 ## Configuration
 
-1. To read metadata from lakeFS, the client should be configured with your lakeFS endpoint and credentials, using the following Hadoop configurations:
+To read metadata from lakeFS, the client should be configured with your lakeFS endpoint and credentials, using the following Hadoop configurations:
 
    | Configuration                        | Description                                                  |
    |--------------------------------------|--------------------------------------------------------------|
@@ -57,7 +57,7 @@ can work for other Spark versions and higher Hadoop versions.
 
     ```scala
     import io.treeverse.clients.LakeFSContext
-    
+
     val commitID = "a1b2c3d4"
     val df = LakeFSContext.newDF(spark, "example-repo", commitID)
     df.show

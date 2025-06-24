@@ -1,3 +1,3 @@
 module github.com/treeverse/lakefs/modules/config/factory
 
-go 1.23.0
+go 1.24.4

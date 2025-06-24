@@ -77,12 +77,22 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
 
   return (
     <>
-      <Dropdown align="end">
+      <Dropdown align="end" drop="down">
         <Dropdown.Toggle variant="light" size="sm" className={"row-hover"}>
           <GearIcon />
         </Dropdown.Toggle>
 
-        <Dropdown.Menu>
+        <Dropdown.Menu popperConfig={{
+          strategy: "fixed",
+          modifiers: [
+            {
+              name: "preventOverflow",
+              options: {
+                boundary: "viewport"
+              }
+            }
+          ]
+        }}>
           {entry.path_type === "object" && presign && (
                <Dropdown.Item
                 onClick={async e => {
@@ -407,9 +417,9 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
             <Link
               className="me-2"
               href={{
-                pathname: "/repositories/:repoId/changes",
+                pathname: "/repositories/:repoId/objects",
                 params: { repoId: repo.id },
-                query: { ref: reference.id },
+                query: { ref: reference.id, showChanges: 'true' },
               }}
             >
               uncommitted change
@@ -533,7 +543,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
       diffIndicator = (
         <OverlayTrigger
           placement="bottom"
-          overlay={<Tooltip>removed in diff</Tooltip>}
+          overlay={<Tooltip>removed</Tooltip>}
         >
           <span>
             <TrashIcon />
@@ -545,7 +555,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
       diffIndicator = (
         <OverlayTrigger
           placement="bottom"
-          overlay={<Tooltip>added in diff</Tooltip>}
+          overlay={<Tooltip>added</Tooltip>}
         >
           <span>
             <PlusIcon />
@@ -557,7 +567,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
       diffIndicator = (
         <OverlayTrigger
           placement="bottom"
-          overlay={<Tooltip>changed in diff</Tooltip>}
+          overlay={<Tooltip>changed</Tooltip>}
         >
           <span>
             <PencilIcon />
@@ -586,7 +596,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
   return (
     <>
       <tr className={rowClass}>
-        {diffIndicator && <td className="diff-indicator">{diffIndicator}</td>}
+        <td className="diff-indicator">{diffIndicator || ""}</td>
         <td className="tree-path">
           {entry.path_type === "common_prefix" ? (
             <FileDirectoryIcon />

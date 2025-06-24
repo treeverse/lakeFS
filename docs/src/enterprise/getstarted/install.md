@@ -32,7 +32,7 @@ The guide includes example configurations, follow the steps below and adjust the
 
 #### Optional
 
-1. Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
+Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
 
 !!! info
     You can install lakeFS Enterprise without configuring SSO and still benefit from all other lakeFS Enterprise features.

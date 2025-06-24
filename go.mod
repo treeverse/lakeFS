@@ -1,6 +1,6 @@
 module github.com/treeverse/lakefs
 
-go 1.23.0
+go 1.24.4
 
 require (
 	cloud.google.com/go v0.120.0 // indirect
@@ -13,7 +13,7 @@ require (
 	github.com/dgraph-io/ristretto v0.2.0
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/getkin/kin-openapi v0.132.0
-	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-openapi/swag v0.23.0
 	github.com/go-test/deep v1.1.0
 	github.com/gobwas/glob v0.2.3

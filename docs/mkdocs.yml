@@ -43,7 +43,7 @@ extra:
       find what they're searching for. With your consent, you're helping us to
           make our documentation better.
     cookies:
-      gtm: Google Tag Manager
+      gtm: Analytics & Marketing
   homepage: https://lakefs.io
   status:
     new: New
@@ -59,8 +59,6 @@ extra:
   palette:
     primary: white
     accent: teal
-  analytics:
-    provider: gtm
 
 # Markdown settings
 markdown_extensions:
@@ -186,12 +184,12 @@ nav:
   - Understanding lakeFS:
     - Overview: understand/index.md
     - Architecture: understand/architecture.md
-    - Concepts and  Model: understand/model.md
+    - Concepts and Model: understand/model.md
     - Data Lifecycle Management:
       - Overview: understand/data_lifecycle_management/index.md
+      - In Test: understand/data_lifecycle_management/data-devenv.md
       - During Deployment: understand/data_lifecycle_management/ci.md
       - In Production: understand/data_lifecycle_management/production.md
-      - In Test: understand/data_lifecycle_management/data-devenv.md
     - Data Structure: understand/data-structure.md
     - FAQ: understand/faq.md
     - Glossary: understand/glossary.md

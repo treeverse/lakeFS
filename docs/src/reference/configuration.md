@@ -343,6 +343,10 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 This section provides configuration references exclusive to [lakeFS Enterprise](../enterprise/index.md), and serves as a complement
 to the general configuration [reference](#reference) above.
 
+### iceberg_catalog
+
+* `iceberg_catalog.token_duration` `(time duration : "1h")` - Authenticated token duration
+
 ### blockstores
 
 !!! info

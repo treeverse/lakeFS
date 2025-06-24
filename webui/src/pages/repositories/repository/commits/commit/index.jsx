@@ -6,7 +6,7 @@ import {commits, refs} from "../../../../../lib/api";
 import {ChangesTreeContainer, defaultGetMoreChanges} from "../../../../../lib/components/repository/changes";
 import {useRouter} from "../../../../../lib/hooks/router";
 import {URINavigator} from "../../../../../lib/components/repository/tree";
-import {appendMoreResults} from "../../changes";
+import {appendMoreResults} from "../../objects";
 import {CommitInfoCard} from "../../../../../lib/components/repository/commits";
 import { useOutletContext } from "react-router-dom";
 
