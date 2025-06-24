@@ -165,10 +165,17 @@ By doing so, all namespaces passed by the user will be relative to the namespace
 
 ???+ example "Example: DuckDB"
     DuckDB allows limited nesting in the form of `<database>.<schema>`. When using the [Iceberg REST Catalog integration](https://duckdb.org/docs/stable/core_extensions/iceberg/iceberg_rest_catalogs.html){ target="_blank"}, the database is replaced by the name given to the catalog.
-    We can use relative namespaces to allow scoping the catalog connecting to to a specific repository and branch:
+    We can use relative namespaces to allow scoping the catalog connecting to a specific repository and branch:
     ```sql
     LOAD iceberg;
     LOAD httpfs;
+
+    CREATE SECRET lakefs_credentials (
+        TYPE ICEBERG,
+        CLIENT_ID '...',
+        CLIENT_SECRET '...',
+        OAUTH2_SERVER_URI 'https://lakefs.example.com/iceberg/api/v1/oauth/tokens'
+    );
     
     ATTACH 'lakefs' AS main_branch (
         TYPE iceberg,
