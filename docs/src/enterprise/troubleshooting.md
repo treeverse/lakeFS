@@ -5,7 +5,7 @@ description: Guidance on troubleshooting a lakeFS Enterprise deployment
 
 # Troubleshooting lakeFS Enterprise
 
-A lakeFS Enterprise deployment has multiple moving parts that must all be deployed and configured correctly. This is especially true during initial setup. To help troubleshoot issues, lakeFS includs the `flare` command.
+A lakeFS Enterprise deployment includes various configuration components that must be set up correctly, especially during initial setup. To help troubleshoot configuration and deployment issues, lakeFS includes the `flare` command.
 
 ## The `flare` command
 

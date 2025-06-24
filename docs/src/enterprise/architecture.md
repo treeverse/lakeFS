@@ -7,9 +7,7 @@ description: lakeFS Enterprise architecture explained!!!!!1
 # Architecture
 
 
-The lakeFS Enterprise software consists of two components:
-1. lakeFS Core: The open-source lakeFS engine that handles versioning, branching, and data management
-2. Enterprise Extensions: Proprietary modules integrated as submodules that provide advanced features like SSO, RBAC, and audit capabilities
+lakeFS Enterprise is an extension of the open-source lakeFS foundation, providing a complete data versioning and governance solution with enterprise features seamlessly integrated, such as SSO, RBAC, mounting capabilities, and more.
 
 ![img.png](../assets/img/enterprise/lakefs-enterprise-architecture.png)
 
