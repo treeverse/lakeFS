@@ -262,7 +262,7 @@ func DeleteCredentialsPermissions(userID string) Node {
 	}
 }
 
-func GetCredentialsForUserPermissions(userID string) Node {
+func GetCredentialsPermissions(userID string) Node {
 	return Node{
 		Permission: Permission{
 			Action:   ReadCredentialsAction,

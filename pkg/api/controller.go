@@ -1670,7 +1670,7 @@ func (c *Controller) DeleteCredentials(w http.ResponseWriter, r *http.Request, u
 }
 
 func (c *Controller) GetCredentials(w http.ResponseWriter, r *http.Request, userID, accessKeyID string) {
-	if !c.authorize(w, r, permissions.GetCredentialsForUserPermissions(userID)) {
+	if !c.authorize(w, r, permissions.GetCredentialsPermissions(userID)) {
 		return
 	}
 	ctx := r.Context()
