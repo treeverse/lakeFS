@@ -153,6 +153,36 @@ Examples:
 
 The repository and branch components must already exist in lakeFS before using them in the Iceberg catalog.
 
+
+#### Relative Namespace support
+
+Some Apache Iceberg clients do not support nested namespaces.
+
+To support those, the lakeFS REST Catalog allows specifying relative namespaces:
+passing a partial namespace as part of the catalog URL endpoint (commonly, `<repository>.<branch>`). 
+
+By doing so, all namespaces passed by the user will be relative to the namespaces passed in the URL.
+
+???+ example "Example: DuckDB"
+    DuckDB allows limited nesting in the form of `<database>.<schema>`. When using the [Iceberg REST Catalog integration](https://duckdb.org/docs/stable/core_extensions/iceberg/iceberg_rest_catalogs.html){ target="_blank"}, the database is replaced by the name given to the catalog.
+    We can use relative namespaces to allow scoping the catalog connecting to to a specific repository and branch:
+    ```sql
+    LOAD iceberg;
+    LOAD httpfs;
+    
+    ATTACH 'lakefs' AS main_branch (
+        TYPE iceberg,
+        SECRET lakefs_credentials,
+        -- notice the "/relative_to/.../" part:
+        ENDPOINT 'https://lakefs.example.com/iceberg/relative_to/my-repo.main/api'
+    );
+
+    USE main_branch.inventory;
+    SELECT * FROM books;
+    ```
+
+    See the [DuckDB documentation](https://duckdb.org/docs/stable/core_extensions/iceberg/iceberg_rest_catalogs.html){ target="_blank" } for a full reference on how to setup an Iceberg catalog integration.
+
 #### Namespace Restrictions
 
 - Repository and branch names must follow lakeFS naming conventions.
