@@ -14,12 +14,9 @@ lakeFS Enterprise extends the open-source lakeFS foundation, delivering a comple
 [1] Any user request to lakeFS via Browser or Programmatic access (SDK, HTTP
 API, lakectl).
 
-[2] A reverse proxy (e.g., NGINX, Traefik, Kubernetes Ingress) will handle user requests between lakeFS server instances.
+[2] A reverse proxy (e.g., NGINX, Traefik, Kubernetes Ingress, Load Balanacer) will distribute requests between lakeFS server instances, SSL termination etc. Required when using more than 1 lakeFS instance.
 
-[3] lakeFS Enterprise - lakeFS with additional enterprise functionality, including advanced security, compliance, audit logging, and enterprise support.
-
-1. SSO authentication (Browser login via Azure AD, Okta, Auth0)
-1. RBAC authorization and policy enforcement
+[3] lakeFS Enterprise - lakeFS with additional enterprise functionality, including advanced security, SSO authentication, RBAC authorization, compliance, audit logging, and enterprise support.
 
 [4] The [KV Store](../understand/architecture.md) - Where metadata is stored, used by both core lakeFS and enterprise features.
 

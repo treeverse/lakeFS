@@ -11,7 +11,7 @@ A lakeFS Enterprise deployment includes various configuration components that mu
 
 #### Synopsis
 
-Both `lakeFS` and `lakeFS enterprise` include the flare command
+The `lakeFS` binary include the flare command
 
 ```bash
 lakefs flare [flags]
@@ -39,7 +39,7 @@ $ ./lakefs flare --stdout > lakefs.flare
 
 ### Configuration
 
-Both core lakeFS and lakeFS Enterprise allow configuration to be supplied in multiple ways: configuration file, environment variables, and command flags. The `flare` command collects the fully resolved final configuration used by the lakeFS process.
+lakeFS Enterprise allow configuration to be supplied in multiple ways: configuration file, environment variables, and command flags. The `flare` command collects the fully resolved final configuration used by the lakeFS process.
 
 ### Environment Variables
 
@@ -75,7 +75,7 @@ Running this script requires that `kubectl` be installed on the machine it is be
 
 At the top of the script you'll find the `Variables` block. It is important to change these values according to how lakeFS is deployed in your cluster.  
 
-`NAMESPACE` - The K8s namespace where lakeFS is deployed
+`NAMESPACE` - The K8s namespace where lakeFS is deployed  
 `LAKEFS_DEPLOYMENT` - The name of the lakeFS K8s deployment  
 `LAKEFS_LOGS_OUTPUT_FILE` - The name of the local file where lakeFS logs will be saved  
 `LAKEFS_FLARE_FILE` - The name of the local file where the lakeFS `flare` result will be saved  
