@@ -137,12 +137,9 @@ func warnOnCaseInsensitiveDirectory(path string) {
 }
 
 func buildLocalConfig(syncFlags local.SyncFlags, cfg *Configuration) local.Config {
-	if cfg.Server.Retries.MaxAttempts < 0 {
-		Die("Invalid configuration: max download retries must be non-negative", 1)
-	}
 	return local.Config{
 		SyncFlags:           syncFlags,
-		MaxDownloadRetries:  uint64(cfg.Server.Retries.MaxAttempts), // #nosec G115 - already checked above
+		MaxDownloadRetries:  uint64(cfg.Server.Retries.MaxAttempts),
 		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
 		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,

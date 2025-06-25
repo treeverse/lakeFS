@@ -154,8 +154,8 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		return nil
 	}
 
-	attempt := 0
 	bo := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), s.cfg.MaxDownloadRetries)
+	isRetry := false
 	return backoff.Retry(func() error {
 		var body io.Reader
 		if s.cfg.Presign {
@@ -186,13 +186,13 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 			body = resp.Body
 		}
 
-		if attempt > 0 {
+		if isRetry {
 			// If we are retrying, we need to reset the file pointer to the beginning
 			if _, err := f.Seek(0, io.SeekStart); err != nil {
 				return fmt.Errorf("could not seek to start of file '%s': %w", destination, err)
 			}
 		}
-		attempt++
+		isRetry = true
 
 		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
 		defer func() {
