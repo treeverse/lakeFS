@@ -11,7 +11,7 @@
 :bug: Bugs fixed:
 
 - Fix web ui action menu dropdown position (#9198)
-- Support all refs in lakeFS log (#9170)
+- Fix lakectl log to support all refs  (#9170)
 
 # v1.60.0
 
