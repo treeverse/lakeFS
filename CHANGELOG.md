@@ -1,5 +1,18 @@
 # Changelog
 
+# v1.61.0
+
+:new: What's new:
+
+- UI: Unify uncommitted changes tab into objects (#9181)
+- Add retries to local sync download (#9191)
+- Switch maven publishing portal from ossrh to new maven central (#9214)
+
+:bug: Bugs fixed:
+
+- Fix web ui action menu dropdown position (#9198)
+- Support all refs in lakeFS log (#9170)
+
 # v1.60.0
 
 :new: What's new:
