@@ -64,19 +64,19 @@ You can choose from the following options:
         depends_on:
           - "postgres"
         environment:
-      - LAKEFS_LISTEN_ADDRESS=0.0.0.0:8000
-      - LAKEFS_LOGGING_LEVEL=DEBUG
-      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=random_secret
-      - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
-      - LAKEFS_DATABASE_TYPE=postgres
-      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable
-      - LAKEFS_BLOCKSTORE_TYPE=local
-      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
-      - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
-      - LAKEFS_AUTH_POST_LOGIN_REDIRECT_URL=http://localhost:8000/
-      - LAKEFS_FEATURES_LOCAL_RBAC=true
-      - INT_LAKEFS_LICENSE_ENFORCE=false
-      - LAKEFS_LICENSE_CONTENTS=<license token>
+          - LAKEFS_LISTEN_ADDRESS=0.0.0.0:8000
+          - LAKEFS_LOGGING_LEVEL=DEBUG
+          - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=random_secret
+          - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
+          - LAKEFS_DATABASE_TYPE=postgres
+          - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable
+          - LAKEFS_BLOCKSTORE_TYPE=local
+          - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
+          - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
+          - LAKEFS_AUTH_POST_LOGIN_REDIRECT_URL=http://localhost:8000/
+          - LAKEFS_FEATURES_LOCAL_RBAC=true
+          - INT_LAKEFS_LICENSE_ENFORCE=false
+          - LAKEFS_LICENSE_CONTENTS=<license token>
         configs:
           - source: lakefs.yaml
             target: /etc/lakefs/config.yaml
@@ -134,31 +134,31 @@ You can choose from the following options:
         depends_on:
           - "postgres"
         environment:
-      - LAKEFS_LISTEN_ADDRESS=0.0.0.0:8000
-      - LAKEFS_LOGGING_LEVEL=DEBUG
-      - LAKEFS_LOGGING_AUDIT_LOG_LEVEL=INFO
-      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=shared-secret-key
-      - LAKEFS_AUTH_LOGOUT_REDIRECT_URL=${LAKEFS_AUTH_LOGOUT_REDIRECT_URL}
-      - LAKEFS_AUTH_UI_CONFIG_LOGIN_URL=http://localhost:8000/oidc/login
-      - LAKEFS_AUTH_UI_CONFIG_LOGOUT_URL=http://localhost:8000/oidc/logout
-      - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
-      - LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=${LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME}
-      - LAKEFS_AUTH_PROVIDERS_OIDC_ENABLED=true
-      - LAKEFS_AUTH_PROVIDERS_OIDC_POST_LOGIN_REDIRECT_URL=http://localhost:8000/
-      - LAKEFS_AUTH_PROVIDERS_OIDC_URL=${LAKEFS_AUTH_PROVIDERS_OIDC_URL}
-      - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID}
-      - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET}
-      - LAKEFS_AUTH_PROVIDERS_OIDC_CALLBACK_BASE_URL=http://localhost:8000
-      - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
-      - LAKEFS_ENTERPRISE_LICENSE_SERVER_URL=https://license.lakefs.io
-      - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS}
-      - LAKEFS_DATABASE_TYPE=postgres
-      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable
-      - LAKEFS_BLOCKSTORE_TYPE=local
-      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/tmp/lakefs/data
-      - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
-      - LAKEFS_SECURITY_CHECK_LATEST_VERSION_CACHE=false
-      - LAKEFS_FEATURES_LOCAL_RBAC=true
+          - LAKEFS_LISTEN_ADDRESS=0.0.0.0:8000
+          - LAKEFS_LOGGING_LEVEL=DEBUG
+          - LAKEFS_LOGGING_AUDIT_LOG_LEVEL=INFO
+          - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=shared-secret-key
+          - LAKEFS_AUTH_LOGOUT_REDIRECT_URL=${LAKEFS_AUTH_LOGOUT_REDIRECT_URL}
+          - LAKEFS_AUTH_UI_CONFIG_LOGIN_URL=http://localhost:8000/oidc/login
+          - LAKEFS_AUTH_UI_CONFIG_LOGOUT_URL=http://localhost:8000/oidc/logout
+          - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
+          - LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=${LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME}
+          - LAKEFS_AUTH_PROVIDERS_OIDC_ENABLED=true
+          - LAKEFS_AUTH_PROVIDERS_OIDC_POST_LOGIN_REDIRECT_URL=http://localhost:8000/
+          - LAKEFS_AUTH_PROVIDERS_OIDC_URL=${LAKEFS_AUTH_PROVIDERS_OIDC_URL}
+          - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID}
+          - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET}
+          - LAKEFS_AUTH_PROVIDERS_OIDC_CALLBACK_BASE_URL=http://localhost:8000
+          - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
+          - LAKEFS_ENTERPRISE_LICENSE_SERVER_URL=https://license.lakefs.io
+          - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS}
+          - LAKEFS_DATABASE_TYPE=postgres
+          - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable
+          - LAKEFS_BLOCKSTORE_TYPE=local
+          - LAKEFS_BLOCKSTORE_LOCAL_PATH=/tmp/lakefs/data
+          - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
+          - LAKEFS_SECURITY_CHECK_LATEST_VERSION_CACHE=false
+          - LAKEFS_FEATURES_LOCAL_RBAC=true
         entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
         configs:
           - source: lakefs.yaml

@@ -6,7 +6,7 @@ description: a configuration reference for lakeFS Enterprise
 # lakeFS Enterprise Configuration Reference
 
 
-LakeFS Enterprise configuration extends lakeFS's configuration and uses the same config file. 
+lakeFS Enterprise configuration extends lakeFS's configuration and uses the same config file. 
 
 ## lakeFS Configuration
 
@@ -17,23 +17,23 @@ See the full [lakeFS Server Configuration](../reference/configuration.md)
 
 This reference uses `.` to denote the nesting of values.
 
-* `license` - Configuration section for lakeFS Enterprise licensing
-  + `license.path` `(string : optional)` - The file system path to the license token file, e.g. '/path/to/your/license/file/license.txt'
-  + `license.contents` `(string : optional)` - The license token string provided directly in configuration, e.g. 'eyJhbGciOiJSUzI1NiIs...'
+* `license` - Configuration section for licensing
+  + `license.path` `(string)` - The file system path to the license token file, e.g. '/path/to/your/license/file/license.txt'
+  + `license.contents` `(string)` - The license token string provided directly in configuration, e.g. 'eyJhbGciOiJSUzI1NiIs...'
 
 !!! note
-    If both `license.path` and `license.contents` are provided or if neither is set, lakeFS-Enterprise will fail to start with an error. You should provide only one. The `license.path` is the preferred option.
+    If both `license.path` and `license.contents` are provided or if neither is set, lakeFS Enterprise will fail to start with an error. You should provide only one. The `license.path` is the preferred option.
 
 * `auth` - Configuration section for authentication services, like SAML or OIDC.
   + `auth.logout_redirect_url` `(string : "/auth/login")` - The address to redirect to after a successful logout, e.g. login.
   + `auth.ui_config` Configuration section for UI authentication settings
-    + `auth.ui_config.rbac` `(string : "")` - The RBAC mode to use for authorization
-    + `auth.ui_config.login_url` `(string : "")` - The URL to redirect users to for login
+    + `auth.ui_config.rbac` `(string: "none")` - The RBAC mode to use for authorization, options: "none", "simplified", "external" or "internal" 
+    + `auth.ui_config.login_url` `(string : "")` - The URL to redirect users on login
     + `auth.ui_config.login_failed_message` `(string : "")` - Custom message to display when login fails
-    + `auth.ui_config.fallback_login_url` `(string : optional)` - Alternative login URL to use as fallback
-    + `auth.ui_config.fallback_login_label` `(string : optional)` - Label text for the fallback login option
-    + `auth.ui_config.login_cookie_names` `([]string : [])` - List of cookie names used for login sessions
-    + `auth.ui_config.logout_url` `(string : "")` - The URL to redirect users to for logout
+    + `auth.ui_config.fallback_login_url` `(string)` - Alternative login URL to use as fallback
+    + `auth.ui_config.fallback_login_label` `(string)` - Label text for the fallback login option
+    + `auth.ui_config.login_cookie_names` `([]string : ["internal_auth_session"])` - The name of the cookie(s) lakeFS will set following a successful authentication. The value is the authenticated user's JWT
+    + `auth.ui_config.logout_url` `(string : "")` - The URL to redirect users on logout
     + `auth.ui_config.use_login_placeholders` `(bool : false)` - Whether to use placeholder text in login forms
   + `auth.ldap`
     + `auth.ldap.server_endpoint` `(string : required)` - The LDAP server address, e.g. 'ldaps://ldap.company.com:636'
@@ -44,7 +44,7 @@ This reference uses `.` to denote the nesting of values.
     + `auth.ldap.user_filter` `(string : required)` - The search request user filter, e.g. '(objectClass=inetOrgPerson)'
     + `auth.ldap.connection_timeout_seconds` `(int : required)` - The timeout for a single connection
     + `auth.ldap.request_timeout_seconds` `(int : required)` - The timeout for a single request
-    + `auth.ldap.default_user_group` `(string : "")` - The default group of the user 
+    + `auth.ldap.default_user_group` `(string : "")` - The default group for the users initially authenticated by the remote service
   + `auth.saml` Configuration section for SAML
     + `auth.saml.sp_root_url` `(string : '')` - The base lakeFS-URL, e.g. 'https://<lakefs-url>'
     + `auth.saml.sp_x509_key_path` `(string : '')` - The path to the private key, e.g '/etc/saml_certs/rsa_saml_private.cert'
@@ -52,7 +52,7 @@ This reference uses `.` to denote the nesting of values.
     + `auth.saml.sp_sign_request` `(bool : 'false')` SPSignRequest some IdP require the SLO request to be signed
     + `auth.saml.sp_signature_method` `(string : '')` SPSignatureMethod optional valid signature values depending on the IdP configuration, e.g. 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'
     + `auth.saml.idp_metadata_url` `(string : '')` - The URL for the metadata server, e.g. 'https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml'
-    + `auth.saml.idp_metadata_file_path` `(string : '')` -The file path to the IdP metadata XML file, e.g. '/etc/saml/idp-metadata.xml'
+    + `auth.saml.idp_metadata_file_path` `(string : '')` - The path to the Identity Provider (IdP) metadata XML file, e.g. '/etc/saml/idp-metadata.xml'
     + `auth.saml.idp_skip_verify_tls_cert` `(bool : false)` - Insecure skip verification of the IdP TLS certificate, like when signed by a private CA
     + `auth.saml.idp_authn_name_id_format` `(string : 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified')` - The format used in the NameIDPolicy for authentication requests
     + `auth.saml.idp_request_timeout` `(duration : '10s')` The timeout for remote authentication requests.
@@ -63,7 +63,7 @@ This reference uses `.` to denote the nesting of values.
     + `auth.oidc.client_id` `(string : '')` - The application's ID.
     + `auth.oidc.client_secret` `(string : '')` - The application's secret.
     + `auth.oidc.callback_base_url` `(string : '')` - A default callback address of the lakeFS server.
-    + `auth.oidc.callback_base_urls` `(string[] : '[]')`
+    + `auth.oidc.callback_base_urls` `(string[] : '[]')` - If callback_base_urls is configured, check current host is whitelisted otherwise use callback_base_url (without 's'). These config keys are mutually exclusive
 
         !!! note
             You may configure a list of URLs that the OIDC provider may redirect to. This allows lakeFS to be accessed from multiple hostnames while retaining federated auth capabilities.
