@@ -5,8 +5,8 @@
 :new: What's new:
 
 - UI: Unify uncommitted changes tab into objects (#9181)
-- lakectl local: Add retries to sync download (#9191)
-- lakectl log: support all refs  (#9170)
+- lakectl: Add retries to sync download (#9191)
+- lakectl log: Support all refs  (#9170)
 
 :bug: Bugs fixed:
 
