@@ -1,5 +1,17 @@
 # Changelog
 
+# v1.61.0
+
+:new: What's new:
+
+- UI: Unify uncommitted changes tab into objects (#9181)
+- lakectl: Add retries to sync download (#9191)
+- lakectl log: Support all refs  (#9170)
+
+:bug: Bugs fixed:
+
+- Fix web ui action menu dropdown position (#9198)
+
 # v1.60.0
 
 :new: What's new:
