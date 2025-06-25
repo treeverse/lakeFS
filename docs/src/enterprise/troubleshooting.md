@@ -11,7 +11,7 @@ A lakeFS Enterprise deployment includes various configuration components that mu
 
 #### Synopsis
 
-Both `lakeFS` and `lakeFS enterprise` extantion include the flare command
+Both `lakeFS` and `lakeFS enterprise` include the flare command
 
 ```bash
 lakefs flare [flags]
@@ -39,7 +39,7 @@ $ ./lakefs flare --stdout > lakefs.flare
 
 ### Configuration
 
-Both core lakeFS and lakeFS Enterprise allow configuration to be supplied in multiple ways: configuration file, environment variables, `.env` files, and command flags. The `flare` command collects the fully resolved final configuration used by the lakeFS process.
+Both core lakeFS and lakeFS Enterprise allow configuration to be supplied in multiple ways: configuration file, environment variables, and command flags. The `flare` command collects the fully resolved final configuration used by the lakeFS process.
 
 ### Environment Variables
 

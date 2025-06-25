@@ -1,22 +1,22 @@
 ---
 title: Architecture
-description: lakeFS Enterprise architecture explained!!!!!1
+description: lakeFS Enterprise architecture explained!
 ---
 
 
 # Architecture
 
 
-lakeFS Enterprise is an extension of the open-source lakeFS foundation, providing a complete data versioning and governance solution with enterprise features seamlessly integrated, such as SSO, RBAC, mounting capabilities, and more.
+lakeFS Enterprise extends the open-source lakeFS foundation, delivering a complete data versioning and governance solution with seamlessly integrated enterprise features like SSO, RBAC, mounting capabilities, and more.
 
 ![img.png](../assets/img/enterprise/lakefs-enterprise-architecture.png)
 
 [1] Any user request to lakeFS via Browser or Programmatic access (SDK, HTTP
 API, lakectl).
 
-[2] Reverse Proxy (e.g. NGINX, Traefik, K8S Ingress): will handle user requests between lakeFS server instances
+[2] A reverse proxy (e.g., NGINX, Traefik, Kubernetes Ingress) will handle user requests between lakeFS server instances.
 
-[3] lakeFS Enterprise - A proprietary wrapper that extends lakeFS Core using submodules to provide additional enterprise functionality
+[3] lakeFS Enterprise - lakeFS with additional enterprise functionality, including advanced security, compliance, audit logging, and enterprise support.
 
 1. SSO authentication (Browser login via Azure AD, Okta, Auth0)
 1. RBAC authorization and policy enforcement

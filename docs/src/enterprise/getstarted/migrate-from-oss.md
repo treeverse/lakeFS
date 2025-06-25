@@ -7,13 +7,13 @@ description: How to migrate from lakeFS OSS to lakeFS Enterprise
 
 To migrate from lakeFS Open Source to lakeFS Enterprise, follow the steps below:
 
-1. Make sure you have the lakeFS Enterprise Docker token, if not [contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise. You will be granted with a token that enables downloading *dockerhub/lakeFS-Enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse).
-1. Update lakeFS docker image to enterprise. Use `treeverse/lakefs-enterprise` instead of `treeverse/lakefs`. The image can be pulled using the lakeFS Enterprise token.
+1. Make sure you have the lakeFS Enterprise Docker token. if not, [contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise. You will be granted a token that enables downloading *dockerhub/lakeFS-Enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse).
+1. Update the lakeFS Docker image to the enterprise version. Replace `treeverse/lakefs` with `treeverse/lakefs-enterprise` in your configuration. The enterprise image can be pulled using your lakeFS Enterprise token.
 1. Sanity Test (Optional): Install a new test lakeFS Enterprise before moving your current production setup. Test the setup > login > Create repository etc. Once everything seems to work, delete and cleanup the test setup and we will move to the migration process.
 1. Follow lakeFS [Enterprise installation guide][lakefs-enterprise-install]
     1. Make sure that you meet the [prerequisites][lakefs-enterprise-install-prerequisites]
     1. Update your existing `values.yaml` file for your deployment
-1. DB Migration: we are going to use the same DB for lakeFS Enterprise, so we need to migrate the DB schema.
+1. DB Migration: We are going to use the same database for lakeFS Enterprise, so we need to migrate the database schema.
 1. Make sure to SSH / exec into the lakeFS server (old pre-upgrade version), the point is to use the same lakefs configuration file when running a migration.
     1. If upgrading `lakefs` version do this or skip to the next step: Install the new lakeFS binary, if not use the existing one (the one you are running).
     1. Run the command: `LAKEFS_AUTH_UI_CONFIG_RBAC=internal lakefs migrate up` (use the **new binary** if upgrading lakeFS version).
