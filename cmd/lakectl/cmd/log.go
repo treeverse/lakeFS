@@ -168,6 +168,7 @@ var logCmd = &cobra.Command{
 					After:   pagination.NextOffset,
 				},
 			}
+
 			// case --no-merges, filter commits and subtract that amount from amount desired
 			if noMerges {
 				data.Commits = filterMergeCommits(data.Commits)
@@ -183,6 +184,7 @@ var logCmd = &cobra.Command{
 			} else {
 				Write(commitsTemplate, data)
 			}
+
 			if amount <= 0 {
 				// user request only one page
 				break
