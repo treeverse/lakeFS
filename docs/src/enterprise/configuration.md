@@ -141,6 +141,10 @@ This reference uses `.` to denote the nesting of values.
       + `auth.external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS.
       + `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS.
 
+* `iceberg_catalog` - Configuration section for the Iceberg REST Catalog
+  + `iceberg_catalog.token_duration` `(duration : 1h)` - Authenticated token duration
+
+
 ### Using Environment Variables
 
 All the configuration variables can be set or overridden using environment variables.
