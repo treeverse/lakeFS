@@ -131,7 +131,7 @@ lakeFS Cloud uses Auth0 for authentication and thus support the same identity pr
 
 ## SSO for lakeFS Enterprise
 
-Details for configuring the supported identity providers with lakeFS Enterprise are shown below. In addition, please review the necessary [Helm configuration](#helm) to configure lakeFS.
+Details for configuring the supported identity providers with lakeFS Enterprise are shown below. Please also review the necessary [Helm configuration](#helm).
 
 * Active Directory Federation Services (AD FS) (using SAML)
 * OpenID Connect
@@ -141,14 +141,14 @@ If you're using an authentication provider that is not listed please [contact us
 
 === "Active Directory Federation Services (AD FS) (using SAML)"
     !!! note
-        AD FS integration uses certificates to sign & encrypt requests going out from lakeFS and decrypt incoming requests from AD FS server.
+        AD FS integration uses certificates to sign and encrypt requests going out from lakeFS and decrypt incoming requests from the AD FS server.
     
-    In order for lakeFS Enterprise to work with AD FS, the following configuration must be set:
+    To enbale worikng with AD FS, the following configuration must be set:
     1. Replace certificate paths (`sp_x509_key_path` and `sp_x509_cert_path`) with your actual certificate files
-    2. Replace `https://lakefs.company.com` with your actual lakeFS server URL
-    3. Replace `idp_metadata_url` with your AD FS metadata URL
-    4. Update `external_user_id_claim_name` to match your AD FS claim configuration
-    5. Set appropriate `default_initial_groups` for your users
+    1. Replace `https://lakefs.company.com` with your actual lakeFS server URL
+    1. Replace `idp_metadata_url` with your AD FS metadata URL
+    1. Update `external_user_id_claim_name` to match your AD FS claim configuration
+    1. Set appropriate `default_initial_groups` for your users
     
     If you'd like to generate the certificates using OpenSSL, you can use the following example:
     ```sh
@@ -204,15 +204,15 @@ If you're using an authentication provider that is not listed please [contact us
   
 === "OpenID Connect"
 
-    In order for lakeFS Enterprise to work with OIDC, the following configuration must be set:
+    To enable working with OIDC, the following configuration must be set:
     1. Replace `friendly_name_claim_name` with the right claim name from your OIDC provider
-    2. Replace `default_initial_groups` with desired groups (See [pre-configured][rbac-preconfigured] groups for enterprise)
-    3. Replace `logout_redirect_url` with your full OIDC logout URL (e.g `https://oidc-provider-url.com/v2/logout`)
-    4. Replace `providers.oidc.url` with your OIDC provider URL (e.g `https://oidc-provider-url.com/`)
-    5. Replace `providers.oidc.client_id` and `providers.oidc.client_secret` with the client ID & secret for OIDC
-    6. Replace `logout_client_id_query_parameter` with the query parameter that represents the client_id required by your OIDC provider
-    7. Replace `http://localhost:8000` with your actual lakeFS server URL
-    8. Update `logout_endpoint_query_parameters` with parameters required by your OIDC provider for logout
+    1. Replace `default_initial_groups` with desired groups (See [pre-configured][rbac-preconfigured] groups for enterprise)
+    1. Replace `logout_redirect_url` with your full OIDC logout URL (e.g `https://oidc-provider-url.com/v2/logout`)
+    1. Replace `providers.oidc.url` with your OIDC provider URL (e.g `https://oidc-provider-url.com/`)
+    1. Replace `providers.oidc.client_id` and `providers.oidc.client_secret` with the client ID & secret for OIDC
+    1. Replace `logout_client_id_query_parameter` with the query parameter that represents the client_id required by your OIDC provider
+    1. Replace `http://localhost:8000` with your actual lakeFS server URL
+    1. Update `logout_endpoint_query_parameters` with parameters required by your OIDC provider for logout
     
     lakeFS Enterprise Configuration:
     ```yaml
@@ -264,13 +264,13 @@ If you're using an authentication provider that is not listed please [contact us
 
     **Important:** An administrative bind user must be configured. It should have search permissions for the LDAP server that will be used to query for user information.
 
-    **Configuration Requirements:**
+    To enable working with LDAP, the following configuration must be set:
 
     1. Replace `providers.ldap.server_endpoint` with your LDAP server endpoint (e.g `ldaps://ldap.company.com:636`)
-    2. Replace `providers.ldap.bind_dn` with the LDAP bind user that has permissions to query your LDAP server
-    3. Replace `providers.ldap.bind_password` with the bind user's password
-    4. Replace `providers.ldap.user_base_dn` with the user base DN to search users in
-    5. Update other LDAP settings as needed for your environment
+    1. Replace `providers.ldap.bind_dn` with the LDAP bind user that has permissions to query your LDAP server
+    1. Replace `providers.ldap.bind_password` with the bind user's password
+    1. Replace `providers.ldap.user_base_dn` with the user base DN to search users in
+    1. Update other LDAP settings as needed for your environment
 
     **lakeFS Enterprise Configuration:**
 
