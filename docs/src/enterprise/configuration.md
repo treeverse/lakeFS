@@ -17,6 +17,12 @@ See the full [lakeFS Server Configuration](../reference/configuration.md)
 
 This reference uses `.` to denote the nesting of values.
 
+### features
+
+* `features.local_rbac` `(bool: false)` - lakeFS uses fluffy legacy  service for RBAC
+* `features.iceberg_catalog` `(bool: false)` - Iceberg catalog feature enabled 
+* `features.msb` `(bool: false)` - Multiple storage backends enabled
+
 ### auth
 
 Configuration section for authentication services, like SAML or OIDC.
@@ -27,7 +33,7 @@ Configuration section for authentication services, like SAML or OIDC.
 
 Configuration section for UI authentication settings
 
-* `auth.ui_config.rbac` `(string: "none")` - The RBAC mode to use for authorization, options: "none", "simplified", "external" or "internal" 
+* `auth.ui_config.rbac` `(string : "none")` - The RBAC mode to use for authorization, options: "none", "simplified", "external" or "internal" 
 * `auth.ui_config.login_url` `(string : "")` - The URL to redirect users on login
 * `auth.ui_config.login_failed_message` `(string : "")` - Custom message to display when login fails
 * `auth.ui_config.fallback_login_url` `(string)` - Alternative login URL to use as fallback
