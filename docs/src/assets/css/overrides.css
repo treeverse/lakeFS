@@ -1,14 +1,12 @@
 /* lakeFS custom theme overrides for MkDocs Material */
+:root {
+  --md-active-color: #00aa94;
+}
+
 
 .md-button {
   font-size: 0.7rem;
 }
-/* 
-:root > * {
-  --md-primary-fg-color:        #258C82;
-  --md-primary-fg-color--light: #2CE5B5;
-  --md-primary-fg-color--dark:  #258C82;
-} */
 
 /* ----------------------------- */
 /* Footer customization          */
@@ -54,60 +52,59 @@
 /* ----------------------------- */
 /* Layout refinements for large displays */
 /* ----------------------------- */
+.md-grid {
+  max-width: calc(100% - 60px);
+}
+
+.md-content__inner {
+  max-width: 1000px;
+}
 
 @media (min-width: 1440px) {
-  /* allow overall layout to occupy more horizontal space while preserving margins */
-  .md-grid {
-    max-width: 1440px;
-  }
-
-  .md-sidebar--primary, .md-sidebar--secondary {
+  .md-sidebar--primary {
     width: 14rem;
     flex: 0 0 14rem;
   }
-  
 }
 
 /* Extra-large screens */
 @media (min-width: 1920px) {
-  .md-grid {
-    max-width: 1700px; /* ample content width while preserving margins */
-  }
-  .md-sidebar--primary, .md-sidebar--secondary {
+  .md-sidebar--primary {
     width: 16rem;
     flex: 0 0 16rem;
+  }
+
+  .md-sidebar--secondary {
+    width: 24rem;
+    flex: 0 0 24rem;
   }
 }
 
 @media (min-width: 2200px) {
-  .md-grid {
-    max-width: 2000px;
-  }
-  .md-sidebar--primary, .md-sidebar--secondary {
-    width: 16rem;
-    flex: 0 0 16rem;
+  .md-sidebar--secondary {
+    width: 28rem;
+    flex: 0 0 28rem;
   }
 }
 
 /* Extra-Extra-large screens */
 @media (min-width: 2500px) {
-  .md-grid {
-    max-width: 2400px;
-  }
-  .md-sidebar--primary, .md-sidebar--secondary {
-    width: 16rem;
-    flex: 0 0 16rem;
+  .md-sidebar--secondary {
+    width: 30rem;
+    flex: 0 0 30rem;
   }
 }
 
 @supports selector(::-webkit-scrollbar) {
   [dir=ltr] .md-sidebar__inner {
-    padding-right: 0;
+    padding-right: 20px;
   }
 }
 
 
-
+/* -------------------------- */
+/* Enterprise status badge    */
+/* -------------------------- */
 .md-status--enterprise::after {
   mask-image: none;
   -webkit-mask-image: none;
@@ -118,6 +115,12 @@
 .md-status.md-status--enterprise:hover:after {
   background-color: transparent !important;
 }
+
+.md-nav__item .md-nav__link--active, .md-nav__item .md-nav__link--active code {
+  color: var(--md-active-color);
+  font-weight: 600;
+}
+
 
 
 /* ----------------------------------------------------------------------------------------*/
