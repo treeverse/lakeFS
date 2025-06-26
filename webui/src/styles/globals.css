@@ -120,15 +120,6 @@
   --color-uri-link: #93c5fd;
 }
 
-
-/* Fix code elements in dark mode */
-[data-bs-theme="dark"] code {
-  background-color: #374151;
-  color: #e5e7eb;
-  border: 1px solid #4b5563;
-}
-
-
 [data-bs-theme="dark"] .bg-light {
   background-color: #2d3748 !important;
 }
@@ -159,12 +150,8 @@ a:hover {
   color: var(--primary-dark);
 }
 
-code {
-  font-family: var(--font-mono);
-  font-size: 1em;
-  background-color: var(--border-light);
-  padding: 0.2em 0.4em;
-  border-radius: var(--radius-sm);
+pre {
+  margin-bottom: 0;
 }
 
 /* Layout */

@@ -60,6 +60,14 @@ export const guessLanguage =  (extension: string | null, contentType: string | n
     switch (extension) {
         case 'py':
             extension = 'python'
+            break;
+        case 'ts':
+            extension = 'typescript'
+            break;
+        case 'js':
+        case 'jsx':
+            extension = 'javascript'
+            break;
     }
     if (extension && SyntaxHighlighter.supportedLanguages.includes(extension)) {
         return extension;
