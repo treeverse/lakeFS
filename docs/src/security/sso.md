@@ -165,7 +165,7 @@ If you're using an authentication provider that is not listed please [contact us
         friendly_name_claim_name: displayName
         default_initial_groups: ["Admins"]
         external_user_id_claim_name: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
-		# Additional claim validation - ensures user has specific claim values before allowing access
+		# Additional claim validation (optional) - ensures user has specific claim values before allowing access
         validate_id_token_claims:
           department: r_n_d
       providers:
