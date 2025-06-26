@@ -563,7 +563,6 @@ func TestSyncManager_upload_symlinks(t *testing.T) {
 				if !strings.HasSuffix(r.URL.Path, "/objects") {
 					t.Fatal("Unexpected request")
 				}
-
 				uploadCalled = true
 
 				// Check symlink metadata
