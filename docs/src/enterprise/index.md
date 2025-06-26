@@ -1,7 +1,6 @@
 ---
 title: lakeFS Enterprise Features
 description: lakeFS Enterprise is an enterprise-ready lakeFS solution providing additional features including RBAC, SSO and Support SLA.
-status: enterprise
 ---
 
 # lakeFS Enterprise Features

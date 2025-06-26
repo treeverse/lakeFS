@@ -107,6 +107,9 @@ plugins:
   - render_swagger:
       allow_arbitrary_locations : true
   - meta
+  - redirects:
+      redirect_maps:
+        reference/mount-csi-driver.md: reference/mount.md#mount-csi-driver-everest-on-kubernetes
 
 
 
@@ -137,6 +140,7 @@ nav:
       - GCP: howto/deploy/gcp.md
       - On-Premises: howto/deploy/onprem.md
     - Upgrading: howto/deploy/upgrade.md
+    - Work with Data locally: howto/local-checkouts.md
     - Sizing Guide: howto/sizing-guide.md
   - Data Management:
     - Git-Like Versioning:
@@ -149,7 +153,7 @@ nav:
       - Export Data: howto/export.md
       - Copying data to/from lakeFS: howto/copying.md
       - Data Catalogs Exports: howto/catalog_exports.md
-    - Work with Data locally: howto/local-checkouts.md
+    - lakeFS Mount: reference/mount.md
     - Actions and Hooks:
       - Overview: howto/hooks/index.md
       - Airflow Hooks: howto/hooks/airflow.md
@@ -165,15 +169,11 @@ nav:
     - Advanced Operations:
       - Private Link: howto/private-link.md
       - S3 Virtual-host addressing: howto/virtual-host-addressing.md
-      - Mount:
-        - Overview: reference/mount.md
-        - Mount CSI Driver: reference/mount-csi-driver.md
-        - Mount Write Mode Semantics: reference/mount-write-mode-semantics.md
       - Monitoring & Auditing:
         - Monitoring using Prometheus: reference/monitor.md
         - Auditing: reference/auditing.md
       - Migrating away: howto/migrate-away.md
-  - lakeFS Enterprise:
+  - lakeFS Enterprise &nbsp; 🚀:
     - Features: enterprise/index.md
     - lakeFS Cloud: cloud/index.md
     - On-Premises:
@@ -222,6 +222,7 @@ nav:
     - Model: understand/model.md
     - Data Structure: understand/data-structure.md
     - Performance Best Practices: understand/performance-best-practices.md
+    - Mount Write Mode Semantics: reference/mount-write-mode-semantics.md
     - Internals:
       - Versioning Internals: understand/how/versioning-internals.md
       - Database structure: understand/how/kv.md
