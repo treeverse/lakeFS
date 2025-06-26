@@ -21,6 +21,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -31,7 +32,7 @@ func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
 		return stats.Mtime, nil
 	}
-	clientMtime, hasClientMtime := stats.Metadata.Get(ClientMtimeMetadataKey)
+	clientMtime, hasClientMtime := stats.Metadata.Get(apiutil.ClientMtimeMetadataKey)
 	if hasClientMtime {
 		// parse
 		return strconv.ParseInt(clientMtime, 10, 64)
@@ -267,7 +268,7 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		// Symlink handling - handled outside 'downloadFile' to return in case of symlink support, without fallthrough
 		// which update mtime and permissions.
 		if s.cfg.SymlinkSupport {
-			if symlinkTarget, ok := objStat.Metadata.Get(SymlinkMetadataKey); ok {
+			if symlinkTarget, ok := objStat.Metadata.Get(apiutil.SymlinkMetadataKey); ok {
 				// If symlink support is enabled and metadata contains a symlink target, create the symlink
 				defer s.progressBar.AddSpinner("download " + p).Done()
 				atomic.AddUint64(&s.tasks.Downloaded, 1)
@@ -319,7 +320,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	var contentSize int64
 	mtimeString := strconv.FormatInt(fileStat.ModTime().Unix(), 10)
 	metadata := map[string]string{
-		ClientMtimeMetadataKey: mtimeString,
+		apiutil.ClientMtimeMetadataKey: mtimeString,
 	}
 	var contentReader io.ReadSeeker
 
@@ -330,7 +331,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		if err != nil {
 			return fmt.Errorf("failed to read symlink target: %w", err)
 		}
-		metadata[SymlinkMetadataKey] = target
+		metadata[apiutil.SymlinkMetadataKey] = target
 		contentSize = 0
 		contentReader = bytes.NewReader([]byte{})
 	} else {

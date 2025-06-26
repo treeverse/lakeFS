@@ -11,6 +11,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
+
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/fileutil"
@@ -470,7 +472,7 @@ func isSymlinkTargetChanged(p string, info fs.FileInfo, remoteFileStats apigen.O
 		return true
 	}
 
-	remoteTarget, ok := remoteFileStats.Metadata.Get(SymlinkMetadataKey)
+	remoteTarget, ok := remoteFileStats.Metadata.Get(apiutil.SymlinkMetadataKey)
 	if !ok {
 		return true
 	}

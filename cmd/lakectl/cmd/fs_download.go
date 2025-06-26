@@ -41,6 +41,7 @@ var fsDownloadCmd = &cobra.Command{
 
 		downloader := helpers.NewDownloader(client, syncFlags.Presign)
 		downloader.PartSize = downloadPartSize
+		downloader.SymlinkSupport = cfg.Local.SymlinkSupport
 
 		remotePath := remote.GetPath()
 		if !recursive {

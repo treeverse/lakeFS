@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
+
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -854,7 +856,7 @@ func TestDiffLocal_symlinks(t *testing.T) {
 					Mtime:     diffTestCorrectTime,
 					Metadata: &apigen.ObjectUserMetadata{
 						AdditionalProperties: map[string]string{
-							local.SymlinkMetadataKey: "original_target",
+							apiutil.SymlinkMetadataKey: "original_target",
 						},
 					},
 				},
@@ -885,7 +887,7 @@ func TestDiffLocal_symlinks(t *testing.T) {
 					Mtime:     diffTestCorrectTime,
 					Metadata: &apigen.ObjectUserMetadata{
 						AdditionalProperties: map[string]string{
-							local.SymlinkMetadataKey: "target",
+							apiutil.SymlinkMetadataKey: "target",
 						},
 					},
 				},
@@ -975,7 +977,7 @@ func TestDiffLocal_symlinks(t *testing.T) {
 					Mtime:     diffTestCorrectTime,
 					Metadata: &apigen.ObjectUserMetadata{
 						AdditionalProperties: map[string]string{
-							local.SymlinkMetadataKey: "target_file",
+							apiutil.SymlinkMetadataKey: "target_file",
 						},
 					},
 				},

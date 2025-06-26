@@ -50,7 +50,7 @@ func TestSyncManager_download(t *testing.T) {
 			Name:     "download with client mtime",
 			Contents: []byte("foobar\n"),
 			Metadata: map[string]string{
-				local.ClientMtimeMetadataKey: strconv.FormatInt(time.Now().Add(24*time.Hour).Unix(), 10),
+				apiutil.ClientMtimeMetadataKey: strconv.FormatInt(time.Now().Add(24*time.Hour).Unix(), 10),
 			},
 			Path: "my_object",
 		},
@@ -209,7 +209,7 @@ func TestSyncManager_download(t *testing.T) {
 
 				// Check mtime
 				expectedMTime := mtime
-				if clientMTime, ok := tt.Metadata[local.ClientMtimeMetadataKey]; ok {
+				if clientMTime, ok := tt.Metadata[apiutil.ClientMtimeMetadataKey]; ok {
 					expectedMTime, err = strconv.ParseInt(clientMTime, 10, 64)
 					require.NoError(t, err)
 				}
@@ -401,7 +401,7 @@ func TestSyncManager_download_symlinks(t *testing.T) {
 			Name:     "symlink_support_enabled",
 			Contents: []byte{}, // Empty content for symlink
 			Metadata: map[string]string{
-				local.SymlinkMetadataKey: "path/to/target",
+				apiutil.SymlinkMetadataKey: "path/to/target",
 			},
 			SymlinkSupport:    true,
 			ExpectedIsSymlink: true,
@@ -419,7 +419,7 @@ func TestSyncManager_download_symlinks(t *testing.T) {
 			Name:     "symlink_support_disabled_with_symlink_metadata",
 			Contents: []byte{}, // Should be downloaded as regular file
 			Metadata: map[string]string{
-				local.SymlinkMetadataKey: "path/to/target",
+				apiutil.SymlinkMetadataKey: "path/to/target",
 			},
 			SymlinkSupport:    false,
 			ExpectedIsSymlink: false, // Should be a regular file
@@ -521,7 +521,7 @@ func TestSyncManager_upload_symlinks(t *testing.T) {
 			SymlinkSupport: true,
 			ExpectedUpload: true,
 			ExpectedMetadata: map[string]string{
-				local.SymlinkMetadataKey: "target_file", // Will be the actual target path
+				apiutil.SymlinkMetadataKey: "target_file", // Will be the actual target path
 			},
 		},
 		{
@@ -537,7 +537,7 @@ func TestSyncManager_upload_symlinks(t *testing.T) {
 			SymlinkSupport: true,
 			ExpectedUpload: true,
 			ExpectedMetadata: map[string]string{
-				local.SymlinkMetadataKey: "target_file", // The actual target path used in the test
+				apiutil.SymlinkMetadataKey: "target_file", // The actual target path used in the test
 			},
 		},
 	}
@@ -599,8 +599,8 @@ func TestSyncManager_upload_symlinks(t *testing.T) {
 			require.True(t, uploadCalled, "Upload should have been called")
 
 			// Verify symlink metadata if expected
-			if tt.ExpectedMetadata[local.SymlinkMetadataKey] != "" {
-				require.Equal(t, tt.ExpectedMetadata[local.SymlinkMetadataKey], actualSymlinkTarget)
+			if tt.ExpectedMetadata[apiutil.SymlinkMetadataKey] != "" {
+				require.Equal(t, tt.ExpectedMetadata[apiutil.SymlinkMetadataKey], actualSymlinkTarget)
 			}
 		})
 	}
