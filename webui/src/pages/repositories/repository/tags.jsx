@@ -39,8 +39,8 @@ const TagWidget = ({ repo, tag, onDelete }) => {
     return (
         <ListGroup.Item>
             <div className="clearfix">
-                <div className="float-start w-100">
-                    <h6>
+                <div className="float-start">
+                    <h6 className="mb-0">
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
                             params: { repoId: repo.id },
@@ -177,16 +177,21 @@ const EmptyTagsState = ({ repo, onCreateTag }) => {
         <div className="text-center py-5">
             <div className="mb-5">
                 <div className="mb-4">
-                    <TagIcon size={64} className="text-muted mb-4" />
-                    <h2 className="mb-3">No tags yet</h2>
+                    <h2 className="mb-3">
+                        <TagIcon size={36} className="me-2"/>
+                        No tags yet
+                    </h2>
                     <p className="text-muted mb-4 fs-5">
                         Tags help you mark important points in your data&apos;s history, like releases, experiments, or versions. 
+                        <br/>
                         They&apos;re perfect for <a 
                             href="https://docs.lakefs.io/latest/understand/use_cases/reproducibility/" 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-decoration-none"
                         >reproducibility</a> and making your data workflows more reliable. 
+                    </p>
+                        <p>
                         Learn more about <a 
                             href="https://docs.lakefs.io/latest/understand/model/#tags" 
                             target="_blank" 
@@ -221,9 +226,7 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
     }, [repo.id, prefix, refresh, after]);
 
     const doRefresh = () => setRefresh(!refresh);
-
     let content;
-    let showFooter = false;
 
     if (loading) content = <Loading />;
     else if (error) content = <AlertError error={error} />;
@@ -238,12 +241,13 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
                     </ListGroup>
                 </Card>
                 <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
+                <div className={"mt-2"}>
+                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/model.html#tags" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                </div>
             </>
         );
-        showFooter = true;
     } else {
         content = <EmptyTagsState repo={repo} onCreateTag={doRefresh} />;
-        showFooter = false;
     }
 
     return (
@@ -269,11 +273,6 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
                     </ActionGroup>
                 </ActionsBar>
                 {content}
-                {showFooter && (
-                    <div className={"mt-2"}>
-                        A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/model.html#tags" target="_blank" rel="noopener noreferrer">Learn more.</a>
-                    </div>
-                )}
             </div>
         </>
     );
