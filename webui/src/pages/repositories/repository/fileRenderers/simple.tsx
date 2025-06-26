@@ -17,7 +17,7 @@ import "react-ipynb-renderer/dist/styles/default.css";
 import { useMarkdownProcessor } from "./useMarkdownProcessor";
 import { AppContext } from "../../../../lib/hooks/appContext";
 import {GeoJSONPreview} from "../../../../lib/components/repository/GeoJSONPreview";
-
+import {github as lightTheme, nightOwl as darkTheme} from "react-syntax-highlighter/dist/esm/styles/hljs";
 
 export const ObjectTooLarge: FC<RendererComponent> = ({ path, sizeBytes }) => {
   return (
@@ -85,28 +85,17 @@ export const TextRenderer: FC<RendererComponentWithText> = ({
 }) => {
   const {state} = useContext(AppContext);
   const language = guessLanguage(fileExtension, contentType) ?? "plaintext";
+  const syntaxHighlightStyle = state.settings.darkMode ? darkTheme : lightTheme;
 
   return (
-    <SyntaxHighlighter
-      language={language}
-      showInlineLineNumbers={true}
-      showLineNumbers={true}
-      className="react-syntax-highlighter"
-      lineNumberStyle={{minWidth: '3em'}}
+    <SyntaxHighlighter 
+      language={language} 
+      className="react-syntax-highlighter" 
+      style={syntaxHighlightStyle}
       customStyle={{
-        borderRadius: 'var(--radius-md)',
-        margin: 'var(--spacing-md) 0',
-        fontSize: '0.9rem',
-        lineHeight: '1.5',
+        margin: 0,
         padding: 'var(--spacing-md)',
-        backgroundColor: state.settings.darkMode ? '#1e293b' : 'var(--background-alt)',
-        color: state.settings.darkMode ? '#f9fafb' : 'var(--text)',
-      }}
-      codeTagProps={{
-        style: {
-          backgroundColor: 'transparent',
-          fontFamily: 'var(--font-mono)',
-        }
+        borderRadius: 'var(--radius-md)',
       }}
     >
       {text}
