@@ -358,18 +358,3 @@ If you're using an authentication provider that is not listed please [contact us
     ```sh
     ldapsearch -H ldaps://ldap.company.com:636 -x -b "ou=Users,o=org-id,dc=company,dc=com" -D "uid=bind-user-name,ou=Users,o=org-id,dc=company,dc=com" -w 'bind_user_pwd' "(&(uid=dev-user)(objectClass=inetOrgPerson))"
     ```
-
-### Helm
-
-In order to use lakeFS Enterprise, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts).
-
-Notes:
-
-
-* Check the [examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc/adfs/ldap + rbac).
-* The examples are provisioned with a Postgres pod for quick-start, make sure to replace that to a stable database once ready.
-<!-- # TODO:  set correct version -->
-* The lakeFS `image.tag` must be >= 1.0.0
-* Change the `ingress.hosts[0]` from `lakefs.company.com` to a real host (usually same as lakeFS), also update additional references in the file (note: URL path after host if provided should stay unchanged).
-* Update the `ingress` configuration with other optional fields if used
-* lakeFS Enterprise docker image: replace the `lakefs-enterprise.image.privateRegistry.secretToken` with real token to dockerhub for the lakeFS Enterprise docker image.
