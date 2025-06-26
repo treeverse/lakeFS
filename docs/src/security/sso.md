@@ -143,12 +143,13 @@ If you're using an authentication provider that is not listed please [contact us
     !!! note
         AD FS integration uses certificates to sign and encrypt requests going out from lakeFS and decrypt incoming requests from the AD FS server. 
     
-    To enbale worikng with AD FS, the following configuration must be set:  
-    1. Replace certificate paths (`sp_x509_key_path` and `sp_x509_cert_path`) with your actual certificate files 
-    1. Replace `https://lakefs.company.com` with your actual lakeFS server URL 
-    1. Replace `idp_metadata_url` with your AD FS metadata URL 
-    1. Update `external_user_id_claim_name` to match your AD FS claim configuration 
-    1. Set appropriate `default_initial_groups` for your users 
+    To enable working with AD FS, the following configuration must be set:
+    
+    1. Replace certificate paths (`sp_x509_key_path` and `sp_x509_cert_path`) with your actual certificate files
+    1. Replace `https://lakefs.company.com` with your actual lakeFS server URL
+    1. Replace `idp_metadata_url` with your AD FS metadata URL
+    1. Update `external_user_id_claim_name` to match your AD FS claim configuration
+    1. Set appropriate `default_initial_groups` for your users
     
     If you'd like to generate the certificates using OpenSSL, you can use the following example:
     ```sh
