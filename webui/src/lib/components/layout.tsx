@@ -15,6 +15,8 @@ const Layout: FC<{logged: boolean}> = ({ logged }) => {
 
     return (
         <>
+            {/* Sticky license/banner alert placeholder (conditionally rendered in Enterprise) */}
+            <div id="license-banner-placeholder" className="license-banner-sticky" style={{display: 'none'}}></div>
             <TopNav logged={isLogged}/>
             <div className="main-app">
                 <StorageConfigProvider>
