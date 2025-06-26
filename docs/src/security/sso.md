@@ -141,14 +141,14 @@ If you're using an authentication provider that is not listed please [contact us
 
 === "Active Directory Federation Services (AD FS) (using SAML)"
     !!! note
-        AD FS integration uses certificates to sign and encrypt requests going out from lakeFS and decrypt incoming requests from the AD FS server.
+        AD FS integration uses certificates to sign and encrypt requests going out from lakeFS and decrypt incoming requests from the AD FS server. 
     
-    To enbale worikng with AD FS, the following configuration must be set:
-    1. Replace certificate paths (`sp_x509_key_path` and `sp_x509_cert_path`) with your actual certificate files
-    1. Replace `https://lakefs.company.com` with your actual lakeFS server URL
-    1. Replace `idp_metadata_url` with your AD FS metadata URL
-    1. Update `external_user_id_claim_name` to match your AD FS claim configuration
-    1. Set appropriate `default_initial_groups` for your users
+    To enbale worikng with AD FS, the following configuration must be set:  
+    1. Replace certificate paths (`sp_x509_key_path` and `sp_x509_cert_path`) with your actual certificate files 
+    1. Replace `https://lakefs.company.com` with your actual lakeFS server URL 
+    1. Replace `idp_metadata_url` with your AD FS metadata URL 
+    1. Update `external_user_id_claim_name` to match your AD FS claim configuration 
+    1. Set appropriate `default_initial_groups` for your users 
     
     If you'd like to generate the certificates using OpenSSL, you can use the following example:
     ```sh
@@ -157,16 +157,6 @@ If you're using an authentication provider that is not listed please [contact us
     
     lakeFS Enterprise Configuration:
     ```yaml
-    security:
-      check_latest_version_cache: false
-    logging:
-      format: json
-      level: DEBUG
-      output: "-"
-    database:
-      type: local
-      local: 
-        path: /tmp/lakefs/data
     auth:
       logout_redirect_url: https://lakefs.company.com
       cookie_auth_verification:
@@ -174,6 +164,7 @@ If you're using an authentication provider that is not listed please [contact us
         friendly_name_claim_name: displayName
         default_initial_groups: ["Admins"]
         external_user_id_claim_name: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
+		# Additional claim validation - ensures user has specific claim values before allowing access
         validate_id_token_claims:
           department: r_n_d
       providers:
@@ -185,17 +176,13 @@ If you're using an authentication provider that is not listed please [contact us
           sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
           idp_metadata_url: "https://adfs-auth.company.com/federationmetadata/2007-06/federationmetadata.xml"
           post_login_redirect_url: /
-      encrypt:
-        secret_key: "your-secret-key"
       ui_config:
         login_url: https://lakefs.company.com/sso/login-saml
-        logout_url: /sso/logout-saml
+        logout_url: https://lakefs.company.com/sso/logout-saml
         login_cookie_names:
           - internal_auth_session
           - saml_auth_session
         rbac: internal
-    blockstore:
-      type: local
     features:
       local_rbac: true
     installation:
@@ -216,25 +203,10 @@ If you're using an authentication provider that is not listed please [contact us
     
     lakeFS Enterprise Configuration:
     ```yaml
-    security:
-      check_latest_version_cache: false
-    database:
-      type: local
-      local:
-        path: /tmp/lakefs/data
-    logging:
-        level: "DEBUG"
-        audit_log_level: "INFO"
-    blockstore:
-      type: local
-      local:
-        path: /tmp/lakefs/data
     features: 
       local_rbac: true
     auth:
       logout_redirect_url: https://oidc-provider-url.com/v2/logout
-      encrypt:
-        secret_key: shared-secrey-key
       ui_config:
         login_url: https://lakefs.company.com/oidc/login
         logout_url: https://lakefs.company.com/oidc/logout
@@ -275,24 +247,9 @@ If you're using an authentication provider that is not listed please [contact us
     **lakeFS Enterprise Configuration:**
 
     ```yaml
-    security:
-      check_latest_version_cache: false
-    database:
-      type: local
-      local:
-        path: /tmp/lakefs/data
-    logging:
-        level: "DEBUG"
-        audit_log_level: "INFO"
-    blockstore:
-      type: local
-      local:
-        path: /tmp/lakefs/data
     features: 
       local_rbac: true
     auth:
-      encrypt:
-        secret_key: shared-secrey-key
       ui_config:
         logout_url: /logout
         login_cookie_names:
