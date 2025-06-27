@@ -23,11 +23,12 @@ const (
 )
 
 type Downloader struct {
-	Client         *apigen.ClientWithResponses
-	PreSign        bool
-	HTTPClient     *http.Client
-	PartSize       int64
-	SymlinkSupport bool
+	Client              *apigen.ClientWithResponses
+	PreSign             bool
+	HTTPClient          *http.Client
+	PartSize            int64
+	SkipNonRegularFiles bool
+	SymlinkSupport      bool
 }
 
 type downloadPart struct {
@@ -45,11 +46,12 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 	}
 
 	return &Downloader{
-		Client:         client,
-		PreSign:        preSign,
-		HTTPClient:     httpClient,
-		PartSize:       DefaultDownloadPartSize,
-		SymlinkSupport: false, // Default to disabled for backward compatibility
+		Client:              client,
+		PreSign:             preSign,
+		HTTPClient:          httpClient,
+		PartSize:            DefaultDownloadPartSize,
+		SkipNonRegularFiles: false,
+		SymlinkSupport:      false,
 	}
 }
 
@@ -80,11 +82,15 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 	if d.SymlinkSupport {
 		symlinkTarget, found := objectStat.Metadata.Get(apiutil.SymlinkMetadataKey)
 		if found && symlinkTarget != "" {
-			// Create symlink instead of downloading file content
 			if tracker != nil {
 				tracker.UpdateTotal(0)
 				tracker.MarkAsDone()
 			}
+			// Skip non-regular files
+			if d.SkipNonRegularFiles {
+				return nil
+			}
+			// Create symlink instead of downloading file content
 			return os.Symlink(symlinkTarget, dst)
 		}
 		// fallthrough to download object
