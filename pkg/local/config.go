@@ -1,11 +1,8 @@
 package local
 
-import "github.com/treeverse/lakefs/pkg/api/apiutil"
-
 const (
 	// DefaultDirectoryPermissions Octal representation of default folder permissions
 	DefaultDirectoryPermissions = 0o040777
-	ClientMtimeMetadataKey      = apiutil.LakeFSMetadataPrefix + "client-mtime"
 )
 
 type SyncFlags struct {
@@ -25,4 +22,7 @@ type Config struct {
 	IncludePerm bool
 	IncludeUID  bool
 	IncludeGID  bool
+	// SymlinkSupport - When enabled, symlinks are uploaded and downloaded as symlinks. When disabled (default), symlinks are treated as regular files.
+	// Uploaded object is a zero-byte file with the symlink target as metadata.
+	SymlinkSupport bool
 }
