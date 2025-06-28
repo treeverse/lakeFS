@@ -23,7 +23,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: "18.17.0"
+          node-version: "22"
 
       - name: Setup Go
         uses: actions/setup-go@v4
