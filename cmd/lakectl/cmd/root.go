@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -422,7 +423,11 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 var rootCmd = &cobra.Command{
 	Use:   "lakectl",
 	Short: "A cli tool to explore manage and work with lakeFS",
-	Long:  `lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
+	Long: `lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment.
+
+It can be extended with plugins; see 'lakectl plugin --help' for more information.`,
+	SilenceErrors: true, // We handle error printing ourselves to avoid "unknown command" for valid plugins
+	SilenceUsage:  true, // We handle usage printing ourselves as well
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		preRunCmd(cmd)
 		sendStats(cmd, "")
@@ -603,13 +608,109 @@ func getClient() *apigen.ClientWithResponses {
 	return client
 }
 
+// isUnknownCommandError checks if the error from ExecuteC is an unknown command error.
+// Cobra doesn't expose a specific error type for this, so we check the message.
+func isUnknownCommandError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// This is based on the error message format from cobra.findSuggestions
+	// It might be brittle if Cobra changes its error messages.
+	return strings.HasPrefix(err.Error(), "unknown command ")
+}
+
+// handlePluginCommand attempts to find and execute a lakectl plugin.
+// It returns true if a plugin was found and executed (or an attempt was made),
+// and false otherwise.
+func handlePluginCommand(args []string) bool {
+	if len(args) == 0 {
+		return false // No command to interpret as a plugin
+	}
+
+	pluginCmdName := args[0]
+	pluginExecName := "lakectl-" + pluginCmdName
+
+	// Find the plugin in PATH
+	pluginPath, err := exec.LookPath(pluginExecName)
+	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			// Plugin not found in PATH, not necessarily an error here,
+			// could be a genuine unknown command for lakectl itself.
+			return false
+		}
+		// Other error from LookPath (e.g., permission issues)
+		DieFmt("error looking up plugin %s: %s", pluginExecName, err)
+	}
+
+	// Check file stats
+	info, err := os.Stat(pluginPath)
+	if err != nil {
+		// This might happen if the file was removed between LookPath and Stat, or permissions changed.
+		DieFmt("error getting info for plugin %s: %s", pluginPath, err)
+	}
+	if info.IsDir() {
+		return false
+	}
+
+	// Prepare and execute the plugin command
+	pluginArgs := args[1:]
+	externalCmd := exec.Command(pluginPath, pluginArgs...)
+	externalCmd.Stdout = os.Stdout
+	externalCmd.Stderr = os.Stderr
+	externalCmd.Stdin = os.Stdin
+	externalCmd.Env = os.Environ() // Pass parent environment
+
+	// Run the command
+	if err := externalCmd.Run(); err != nil {
+		// use the process exit code if available
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
+			os.Exit(exitError.ExitCode())
+		}
+		// Other errors (e.g., failed to start, I/O errors not related to exit status)
+		DieFmt("failed to run plugin %s: %s", pluginExecName, err)
+	}
+	return true
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		DieErr(err)
+	executedCmd, err := rootCmd.ExecuteC()
+	if err == nil {
+		return
 	}
+	if !isUnknownCommandError(err) {
+		// For other errors, print them ourselves since we have SilenceErrors=true
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		os.Exit(1)
+	}
+
+	pluginCandidateArgs := executedCmd.Flags().Args()
+
+	// If pluginCandidateArgs is empty, we need to extract from os.Args
+	// This happens when Cobra fails to parse the unknown command into Args()
+	if len(pluginCandidateArgs) == 0 && len(os.Args) > 1 {
+		// Find the first non-flag argument which should be the plugin command
+		for i := 1; i < len(os.Args); i++ {
+			arg := os.Args[i]
+			if !strings.HasPrefix(arg, "-") {
+				// Found the first non-flag argument, assume it's the plugin command
+				pluginCandidateArgs = os.Args[i:]
+				break
+			}
+		}
+	}
+
+	if handlePluginCommand(pluginCandidateArgs) {
+		// The plugin was found and executed successfully
+		return
+	}
+
+	// No plugin found, print the error and help ourselves since we silenced Cobra's output
+	fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+	fmt.Fprintf(os.Stderr, "Run '%s --help' for usage.\n", rootCmd.Name())
+	os.Exit(1)
 }
 
 //nolint:gochecknoinits
