@@ -23,5 +23,6 @@ type Config struct {
 	IncludeUID  bool
 	IncludeGID  bool
 	// SymlinkSupport - When enabled, symlinks are uploaded and downloaded as symlinks. When disabled (default), symlinks are treated as regular files.
+	// Uploaded object is a zero-byte file with the symlink target as metadata.
 	SymlinkSupport bool
 }

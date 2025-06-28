@@ -93,7 +93,7 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 			// Create symlink instead of downloading file content
 			return os.Symlink(symlinkTarget, dst)
 		}
-		// fallthrough to download object
+		// fallthrough to download the object
 	}
 
 	// download object

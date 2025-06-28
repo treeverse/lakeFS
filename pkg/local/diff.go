@@ -11,10 +11,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
-
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/uri"

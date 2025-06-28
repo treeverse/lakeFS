@@ -12,11 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
-
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
@@ -496,7 +495,7 @@ func createTempEmptyFolder(t *testing.T) string {
 func getPermissionsMetadata(uid, gid, mode int) *apigen.ObjectUserMetadata {
 	return &apigen.ObjectUserMetadata{
 		AdditionalProperties: map[string]string{
-			local.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d,\"GID\":%d,\"Mode\":%d}", uid, gid, mode),
+			apiutil.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d,\"GID\":%d,\"Mode\":%d}", uid, gid, mode),
 		},
 	}
 }

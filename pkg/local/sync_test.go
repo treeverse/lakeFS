@@ -58,7 +58,7 @@ func TestSyncManager_download(t *testing.T) {
 			Name:     "download file POSIX perm metadata disabled",
 			Contents: []byte("foobar\n"),
 			Metadata: map[string]string{
-				local.POSIXPermissionsMetadataKey: "{\"UID\":0,\"GID\":0,\"Mode\":775}",
+				apiutil.POSIXPermissionsMetadataKey: "{\"UID\":0,\"GID\":0,\"Mode\":775}",
 			},
 			Path: "my_object",
 		},
@@ -73,7 +73,7 @@ func TestSyncManager_download(t *testing.T) {
 			Name:     "download file POSIX perm enabled with metadata",
 			Contents: []byte("foobar\n"),
 			Metadata: map[string]string{
-				local.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o100755),
+				apiutil.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o100755),
 			},
 			Path:            "my_object",
 			UnixPermEnabled: true,
@@ -89,7 +89,7 @@ func TestSyncManager_download(t *testing.T) {
 			Name:     "download folder POSIX perm with metadata",
 			Contents: nil,
 			Metadata: map[string]string{
-				local.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o40770),
+				apiutil.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d, \"GID\": %d, \"Mode\":%d}", currentUID, currentGID, 0o40770),
 			},
 			Path:            "folder2/",
 			UnixPermEnabled: true,
@@ -224,7 +224,7 @@ func TestSyncManager_download(t *testing.T) {
 				}
 
 				if tt.UnixPermEnabled {
-					if value, ok := tt.Metadata[local.POSIXPermissionsMetadataKey]; ok {
+					if value, ok := tt.Metadata[apiutil.POSIXPermissionsMetadataKey]; ok {
 						perm := &local.POSIXPermissions{}
 						require.NoError(t, json.Unmarshal([]byte(value), &perm))
 						expectedUser = perm.UID

@@ -376,7 +376,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		if err != nil {
 			return err
 		}
-		metadata[POSIXPermissionsMetadataKey] = string(data)
+		metadata[apiutil.POSIXPermissionsMetadataKey] = string(data)
 	}
 
 	// Upload the file

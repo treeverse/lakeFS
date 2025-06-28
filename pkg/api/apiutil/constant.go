@@ -6,8 +6,9 @@ const LakeFSMetadataPrefix = "::lakefs::"
 
 // metadata keys
 const (
-	SymlinkMetadataKey     = LakeFSMetadataPrefix + "symlink-target"
-	ClientMtimeMetadataKey = LakeFSMetadataPrefix + "client-mtime"
+	ClientMtimeMetadataKey      = LakeFSMetadataPrefix + "client-mtime"
+	SymlinkMetadataKey          = LakeFSMetadataPrefix + "symlink-target"
+	POSIXPermissionsMetadataKey = LakeFSMetadataPrefix + "posix-permissions"
 )
 
 const (
