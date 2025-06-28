@@ -309,9 +309,9 @@ diff 'lakefs://is-alpaca/589f87704418c6bac80c5a6fc1b52c245af347b9ad1ea8d06597e44
 ╔════════╦════════╦════════════════════════════╗
 ║ SOURCE ║ CHANGE ║ PATH                       ║
 ╠════════╬════════╬════════════════════════════╣
-║ local  ║ added  ║ not_alpaca/axolotl2.jpeg ║
-║ local  ║ added  ║ not_alpaca/axolotl3.png  ║
-║ local  ║ added  ║ not_alpaca/axolotl4.jpeg ║
+║ local  ║ added  ║ not_alpaca/axolotl2.jpeg   ║
+║ local  ║ added  ║ not_alpaca/axolotl3.png    ║
+║ local  ║ added  ║ not_alpaca/axolotl4.jpeg   ║
 ╚════════╩════════╩════════════════════════════╝
 ```
 
