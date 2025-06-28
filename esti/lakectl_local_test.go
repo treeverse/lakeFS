@@ -1,9 +1,11 @@
 package esti
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/fs"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/local"
@@ -162,10 +165,12 @@ func TestLakectlLocal_init(t *testing.T) {
 		require.NoError(t, os.Symlink(regularFile, symlinkFile))
 
 		vars["LOCAL_DIR"] = symlinkDir
+		vars["REF"] = mainBranch
+		vars["PREFIX"] = "symlink_test/"
 
 		// Test with symlink support enabled
 		lakectlWithSymlinks := "LAKECTL_LOCAL_SYMLINK_SUPPORT=true " + Lakectl()
-		RunCmdAndVerifySuccessWithFile(t, lakectlWithSymlinks+" local init lakefs://"+repoName+"/"+mainBranch+"/ "+symlinkDir, false, "lakectl_local_init_symlink", vars)
+		RunCmdAndVerifySuccessWithFile(t, lakectlWithSymlinks+" local init lakefs://"+repoName+"/"+mainBranch+"/symlink_test "+symlinkDir, false, "lakectl_local_init_symlink", vars)
 
 		// Verify both files are detected
 		result := runCmd(t, lakectlWithSymlinks+" local status "+symlinkDir, false, false, vars)
@@ -293,8 +298,8 @@ func TestLakectlLocal_clone(t *testing.T) {
 		// Create symlink using metadata
 		symlinkFile := "symlink_to_target.txt"
 		content := ""
-		_, err := uploadContentDirect(context.Background(), client, repoName, symlinkBranch, symlinkFile, map[string]string{
-			"lakefs-symlink-target": "target_file.txt",
+		_, err := UploadContentWithMetadata(context.Background(), client, repoName, symlinkBranch, symlinkFile, map[string]string{
+			apiutil.SymlinkMetadataKey: "target_file.txt",
 		}, "text/plain", strings.NewReader(content))
 		require.NoError(t, err)
 
@@ -577,18 +582,21 @@ func TestLakectlLocal_pull(t *testing.T) {
 		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local clone lakefs://"+repoName+"/"+symlinkBranch+"/ "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
 
 		// Add files with symlinks to remote
-		regularFile := "target_file.txt"
+		const regularFile = "target_file.txt"
 		vars["FILE_PATH"] = regularFile
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+symlinkBranch+"/"+regularFile, false, "lakectl_fs_upload_symlink", vars)
 
 		// Create symlink using metadata
-		symlinkFile := "symlink_to_target.txt"
-		content := ""
-		_, err = uploadContentDirect(context.Background(), client, repoName, symlinkBranch, symlinkFile, map[string]string{
-			"lakefs-symlink-target": "target_file.txt",
-		}, "text/plain", strings.NewReader(content))
+		const symlinkFile = "symlink_to_target.txt"
+		metadata := map[string]string{
+			apiutil.SymlinkMetadataKey: "target_file.txt",
+		}
+		ctx := context.Background()
+		uploadResponse, err := UploadContentWithMetadata(ctx, client, repoName, symlinkBranch, symlinkFile, metadata, "text/plain", bytes.NewReader([]byte{}))
 		require.NoError(t, err)
+		require.Equal(t, uploadResponse.StatusCode(), http.StatusCreated)
 
+		// Commit changes with symlinks
 		runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+symlinkBranch+" -m 'add files with symlinks'", false, false, vars)
 
 		// Pull changes with symlinks
@@ -1140,5 +1148,4 @@ Use "lakectl local pull... --force" to sync with the remote.`,
 			require.Contains(t, sanitizedResult, tt.expectedmessage)
 		})
 	}
-
 }
