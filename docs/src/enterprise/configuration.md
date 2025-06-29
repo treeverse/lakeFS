@@ -20,8 +20,6 @@ This reference uses `.` to denote the nesting of values.
 ### features
 
 * `features.local_rbac` `(bool: false)` - Backward compatibility if you use an external RBAC service (such as legacy fluffy). If `true` lakeFS will expect to use `auth.api` and all fluffy related configuration for RBAC.
-* `features.iceberg_catalog` `(bool: false)` - Iceberg catalog feature enabled 
-* `features.msb` `(bool: false)` - Multiple storage backends enabled
 
 ### auth
 
@@ -104,7 +102,6 @@ Configuration section for authenticating to lakeFS using AWS presign get-caller-
 
 * `auth.external.aws_auth.enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
 * `auth.external.aws_auth.get_caller_identity_max_age` `(duration : 15m)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set.
-* `auth.authentication_api.external_principals_enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
 * `auth.external.aws_auth.valid_sts_hosts` `([]string)` - The default are all the valid AWS STS hosts (`sts.amazonaws.com`, `sts.us-east-2.amazonaws.com` etc).
 * `auth.external.aws_auth.required_headers` `(map[string]string : )` - Headers that must be present by the client when doing login request (e.g `X-LakeFS-Server-ID: <lakefs.ingress.domain>`).
 * `auth.external.aws_auth.optional_headers` `(map[string]string : )` - Optional headers that can be present by the client when doing login request.
