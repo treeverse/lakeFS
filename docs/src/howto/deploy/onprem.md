@@ -139,7 +139,7 @@ By default, lakeFS operates on port 8000 and exposes a `/_health` endpoint that 
     Some clients use bigger chunks to upload objects - for example, multipart upload to lakeFS using the [S3-compatible Gateway][s3-gateway] or
     a simple PUT request using the [OpenAPI Server][openapi].
 
-    Checkout the Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://docs.min.io/docs/setup-nginx-proxy-with-minio.html).
+    Checkout the Nginx [documentation](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/#custom-max-body-size) for increasing the limit, or an example of Nginx configuration with [MinIO](https://min.io/docs/minio/linux/integrations/setup-nginx-proxy-with-minio.html).
 
 ## Secure connection
 
