@@ -19,7 +19,7 @@ This reference uses `.` to denote the nesting of values.
 
 ### features
 
-* `features.local_rbac` `(bool: false)` - lakeFS uses fluffy legacy  service for RBAC
+* `features.local_rbac` `(bool: false)` - Backward compatibility if you use an external RBAC service (such as legacy fluffy). If `true` lakeFS will expect to use `auth.api` and all fluffy related configuration for RBAC.
 * `features.iceberg_catalog` `(bool: false)` - Iceberg catalog feature enabled 
 * `features.msb` `(bool: false)` - Multiple storage backends enabled
 
