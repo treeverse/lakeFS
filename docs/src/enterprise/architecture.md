@@ -1,39 +1,27 @@
 ---
 title: Architecture
-description: lakeFS Enterprise architecture explained!!!!!1
+description: lakeFS Enterprise architecture explained!
 ---
 
 
 # Architecture
 
-!!! warning
-    fluffy will be deprecated in the upcoming versions and all functionality will be migrated into lakeFS Enterprise
 
-The lakeFS Enterprise software consists of two components:
-1. lakeFS Enterprise: a proprietary version of lakeFS which is based on the OSS version and includes advanced functionality.
-2. A proprietary component called **Fluffy** which includes lakeFS' Enterprise features.
+lakeFS Enterprise extends the open-source lakeFS foundation, delivering a complete data versioning and governance solution with seamlessly integrated enterprise features like SSO, RBAC, mounting capabilities, and more.
 
-![img.png](../assets/img/enterprise/enterprise-arch.png)
+![img.png](../assets/img/enterprise/lakefs-enterprise-architecture.png)
 
 [1] Any user request to lakeFS via Browser or Programmatic access (SDK, HTTP
 API, lakectl).
 
-[2] Reverse Proxy (e.g. NGINX, Traefik, K8S Ingress): will handle user requests
-and proxy between lakeFS server and fluffy server based on the path prefix
-while maintaining the same host.
+[2] A reverse proxy (e.g., NGINX, Traefik, Kubernetes Ingress, Load Balanacer) will distribute requests between lakeFS server instances, SSL termination etc. Required when using more than 1 lakeFS instance.
 
-[3] lakeFS server - the main lakeFS service.
+[3] lakeFS Enterprise - lakeFS with additional enterprise functionality, including advanced security, SSO authentication, RBAC authorization, compliance, audit logging, and enterprise support.
 
-[4] fluffy server - service that is responsible for the Enterprise features.,
-it is separated by ports for security reasons.
+[4] The [KV Store](../understand/architecture.md) - Where metadata is stored, used by both core lakeFS and enterprise features.
 
-1. SSO auth (i.e Browser login via Azure AD, Okta, Auth0), default port 8000.
-1. RBAC authorization, default port 9000.
-
-[5] The [KV Store](../understand/architecture.md) - Where metadata is stored used both by lakeFS and fluffy.
-
-[6] SSO IdP - Identity provider (e.g. Azure AD, Okta, JumpCloud). fluffy
-implements SAML and Oauth2 protocols.
+[5] SSO IdP - External identity provider (e.g. Azure AD, Okta, JumpCloud). 
+lakeFS Enterprise implements SAML, OAuth2, and OIDC protocols.
 
 For more details and pricing, please [contact sales](https://lakefs.io/contact-sales/).
 
