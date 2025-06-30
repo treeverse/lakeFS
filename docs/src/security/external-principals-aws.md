@@ -51,7 +51,7 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 
 * in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at [configuration reference](../reference/configuration.md)
 
-For the full list of the Fluffy server configuration, see [Fluffy Configuration][fluffy-configuration] under `auth.external.aws_auth`
+For the full list of the lakeFS Enterprise server configuration, see [lakeFS Enterprise configuration][lakeFS-Enterprise-configuration] under `auth.external.aws_auth`
 
 
 !!! note
@@ -65,22 +65,7 @@ Configuration for `lakefs.yaml`:
 ```yaml
 auth:
   authentication_api:
-    endpoint: http://<fluffy-sso>/api/v1
     external_principals_enabled: true
-  api:
-    endpoint: http://<fluffy-rbac>/api/v1
-```
-
-Configuration for `fluffy.yaml`:
-
-```yaml
-# fluffy address for lakefs auth.authentication_api.endpoint
-# used by lakeFS to log in and get the token
-listen_address: <fluffy-sso>
-auth:
-  # fluffy address for lakeFS auth.api.endpoint 
-  # used by lakeFS to manage the lifecycle attach/detach of the external principals
-  serve_listen_address: <fluffy-rbac>
   external:
     aws_auth:
       enabled: true
@@ -194,4 +179,4 @@ There are two ways in which external principals can be used to authenticate to l
 [login-api]: ../reference/api.md#auth/externalPrincipalLogin
 [lakefs-hadoopfs]:  ../integrations/spark.md#lakefs-hadoop-filesystem
 [lakefs-spark]:  ../integrations/spark.md#usage-with-temporaryawscredentialslakefstokenprovider
-[fluffy-configuration]: ../enterprise/configuration.md#fluffy-server-configuration
+[lakeFS-enterprise-configuration]: ../enterprise/configuration.md
