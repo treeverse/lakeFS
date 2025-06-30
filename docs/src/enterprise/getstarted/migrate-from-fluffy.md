@@ -10,16 +10,6 @@ The new lakeFS Enterprise integrates all enterprise features directly into a sin
 
 ## Configuration Changes
 
-### License Configuration (New Requirement)
-
-Add license configuration section to your lakeFS Enterprise config:
-
-```yaml
-license:
-  path: "/path/to/license.jwt"
-  # OR
-  # contents: "eyJhbGciOiJSUzI1NiIs..."
-```
 
 ### Authentication configuration
 
