@@ -252,7 +252,7 @@ const DiffSizeReport = ({leftSize, rightSize, diffType}) => {
 const ImageDiffSummary= ({ leftSize, rightSize, diffType }) => {
     let diffValue = '';
     let cls = '';
-    if (diffType === 'changed' && leftSize != null && rightSize != null) {
+    if (diffType === 'changed' && leftSize !== null && rightSize !== null) {
         const d = rightSize - leftSize;
         const sign = d > 0 ? '+' : '-';
         const abs = Math.abs(d);
