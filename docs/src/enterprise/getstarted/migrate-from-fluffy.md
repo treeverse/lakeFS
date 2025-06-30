@@ -13,11 +13,11 @@ The new lakeFS Enterprise integrates all enterprise features directly into a sin
 
 ### Authentication configuration
 
-Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the same structure.  Below are the differences between the configurations. 
+Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the same structure. Below are the differences between the configurations.
 
-!!! note  "SAML"
-
-    === Fluffy (old)
+!!! note "SAML"
+    
+    === "Fluffy (old)"
         
         ```yaml
         # fluffy.yaml
@@ -29,8 +29,8 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
             enabled: true 
             external_user_id_claim_name: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
         ```
-
-    === lakeFS Enterprise (new)
+    
+    === "lakeFS Enterprise (new)"
      
         ```yaml
         # lakefs.yaml
@@ -47,7 +47,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
 
 !!! note "OIDC"
    
-    === Fluffy (old)
+    === "Fluffy (old)"
         
         ```yaml
         # fluffy.yaml
@@ -59,8 +59,8 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
           oidc:
             enabled: true
         ```
-
-    === lakeFS Enterprise (new)
+    
+    === "lakeFS Enterprise (new)"
         
         ```yaml
         # lakefs.yaml
