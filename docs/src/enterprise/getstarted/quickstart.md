@@ -30,8 +30,15 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 
 ### Prerequisites
 
+!!! note
+    In order to use lakeFS enterprise you must have:
+    - Access token to download binaries from Docker hub
+    - License to run lakeFS Enterprise
+    [Contact us](https://lakefs.io/contact-sales/) to gain access for both.
+	
+
 1. You have installed [Docker Compose](https://docs.docker.com/compose/install/) version `2.23.1` or higher on your machine.
-2. Access to download *dockerhub/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to enterprise version.
+2. Access to download *dockerhub/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse). 
 3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
 <br>
@@ -75,7 +82,6 @@ You can choose from the following options:
           - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
           - LAKEFS_AUTH_POST_LOGIN_REDIRECT_URL=http://localhost:8000/
           - LAKEFS_FEATURES_LOCAL_RBAC=true
-          - INT_LAKEFS_LICENSE_ENFORCE=false
           - LAKEFS_LICENSE_CONTENTS=<license token>
         configs:
           - source: lakefs.yaml
@@ -111,7 +117,6 @@ You can choose from the following options:
     `.env`
 
     ```
-    FLUFFY_AUTH_OIDC_CLIENT_ID=
     LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=
     # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
     LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=
@@ -157,7 +162,6 @@ You can choose from the following options:
           - LAKEFS_BLOCKSTORE_TYPE=local
           - LAKEFS_BLOCKSTORE_LOCAL_PATH=/tmp/lakefs/data
           - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
-          - LAKEFS_SECURITY_CHECK_LATEST_VERSION_CACHE=false
           - LAKEFS_FEATURES_LOCAL_RBAC=true
         entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
         configs:
@@ -190,7 +194,7 @@ You can choose from the following options:
 
 ## Kubernetes Helm Chart Quickstart
 
-In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
+In order to use lakeFS Enterprise, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts/tree/master/charts/lakefs).
 
 The values below create a fully functional lakeFS Enterprise setup without SSO support. The created setup is connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore), and spins up the following pods:
 
@@ -206,12 +210,14 @@ The values below create a fully functional lakeFS Enterprise setup without SSO s
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 2. [Helm](https://helm.sh/docs/intro/install/) is installed
-3. Access to download *dockerhub/fluffy* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to Fluffy.
+3. Access to download *dockerhub/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse).
+4. lakeFS Enterprise license
+[Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise.
 
 ### Instructions
 
 1. Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
-1. Create a `values.yaml` file with the following content and make sure to replace `<fluffy-docker-registry-token>` with the token Docker Hub token you recieved, `<lakefs.acme.com>` and `<ingress-class-name>`.
+1. Create a `values.yaml` file with the following content and make sure to replace `<lakefs-enterprise-docker-registry-token>` with the token Docker Hub token you recieved, `<lakefs.acme.com>` and `<ingress-class-name>`.
 1. In the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
 1. In your browser go to the Ingress host to access lakeFS UI.
 
