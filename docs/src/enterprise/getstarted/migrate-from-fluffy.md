@@ -13,6 +13,7 @@ To migrate from fluffy to lakeFS Enterprise, follow the steps below:
 1. Update the lakeFS Enterprise Docker image to the latest enterprise version.
 1. Sanity Test (Optional): Install a new test lakeFS Enterprise before moving your current production setup. Test the setup > login > Create repository etc. Once everything seems to work, delete and cleanup the test setup and we will move to the migration process.
 1. Update configuration: Unlike lakeFS + Fluffy, lakeFS Enterprise uses only one configuration file. See [Configuration Changes](#configuration-changes), make sure to add the [license](#license-configuration) to the configuration.
+1. Spin down lakeFS and fluffy, and run lakeFS Enterprise!
 
 !!! warning
     Please note that there will be a short downtime while replacing the lakeFS instances.
