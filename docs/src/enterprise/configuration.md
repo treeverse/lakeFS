@@ -84,7 +84,7 @@ Configuration section for OIDC
 
 Configuration section for the external authentication methods
 
-##### auth.external.aws_auth
+#### auth.external.aws_auth
 
 Configuration section for authenticating to lakeFS using AWS presign get-caller-identity request: [External Principals AWS Auth](../security/external-principals-aws.md)
 
