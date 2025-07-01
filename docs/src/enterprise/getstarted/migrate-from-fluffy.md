@@ -90,9 +90,8 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
-          oidc:
-		    ldap:
-              default_user_group: "admins" // This field moved here!
+		  ldap:
+            default_user_group: "admins" // This field moved here!
         ```
 
 !!! note "AWS"
