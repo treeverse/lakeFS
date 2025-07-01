@@ -24,6 +24,7 @@ To migrate from fluffy to lakeFS Enterprise, follow the steps below:
 
 Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the same structure. Below are the differences between the configurations.
 
+
 !!! note "SAML"
     
     === "Fluffy (old)"
@@ -31,7 +32,6 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # fluffy.yaml
         auth:
-          logout_redirect_url: "https://auth0.com/v2/logout"
           post_login_redirect_url: http://localhost:8000/
           saml:
             enabled: true 
@@ -43,7 +43,6 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
-          logout_redirect_url: "https://auth0.com/v2/logout"
           cookie_auth_verification:
             external_user_id_claim_name: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name # This field was moved here!
           providers:
@@ -60,7 +59,6 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # fluffy.yaml
         auth:
-          logout_redirect_url: "https://auth0.com/v2/logout"
           post_login_redirect_url: http://localhost:8000/
           oidc:
             enabled: true
@@ -71,24 +69,20 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
-          logout_redirect_url: "https://auth0.com/v2/logout"
           oidc:
             post_login_redirect_url: http://localhost:8000/ # This field was moved here!
             # enabled: true  // This field was dropped! 
         ```
 
 
-!!! note "OIDC"
+!!! note "LDAP"
    
     === "Fluffy (old)"
         
         ```yaml
         # fluffy.yaml
         auth:
-          logout_redirect_url: "https://auth0.com/v2/logout"
-          post_login_redirect_url: http://localhost:8000/
-          oidc:
-            enabled: true
+          ldap:
         ```
     
     === "lakeFS Enterprise (new)"
@@ -96,15 +90,39 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
-          logout_redirect_url: "https://auth0.com/v2/logout"
           oidc:
-            post_login_redirect_url: http://localhost:8000/ # This field was moved here!
-            # enabled: true  // This field was dropped! 
+		    ldap:
+              default_user_group: "admins" // This field moved here!
         ```
 
 !!! note "AWS"
     The structure of AWS STS authentication remains the same.
 
+### Authorization configuration
+
+!!! note "RBAC"
+   
+    === "Fluffy (old)"
+        
+        ```yaml
+        # fluffy.yaml
+        auth:
+          serve_disable_authentication: false
+          serve_listen_address: "localhost:8000"
+		  cache:
+			enabled: true
+        ```
+    
+    === "lakeFS Enterprise (new)"
+        
+        ```yaml
+        # lakefs.yaml
+        auth:
+          # serve_disable_authentication: false // this field was dropped!
+          # serve_listen_address: "localhost:8000" // this field was dropped!
+		  cache:
+			enabled: true
+        ```
 
 ### Database Configuration
 
