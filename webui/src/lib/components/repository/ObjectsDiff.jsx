@@ -1,4 +1,4 @@
-import React, {useContext, useMemo} from "react";
+import React, {useContext} from "react";
 import {useAPI} from "../../hooks/api";
 import {objects, qs} from "../../api";
 import ReactDiffViewer, {DiffMethod} from "react-diff-viewer-continued";
@@ -96,16 +96,14 @@ const NoContentDiff = ({left, right, diffType}) => {
     </div>;
 }
 
-const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, settings}) => {
-    const query = useMemo(() => qs({ path, presign: config.pre_sign_support_ui }),
-        [path, config.pre_sign_support_ui]);
-    const oldUrl = leftRef && buildUrl(repoId, leftRef, query);
-    const newUrl = rightRef && buildUrl(repoId, rightRef, query);
-
-    return isImage(path)
-        ? <ImageDiff
-            oldUrl={oldUrl}
-            newUrl={newUrl}
+const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, settings}) =>
+    isImage(path)
+        ? <ImageCardDiff
+            config={config}
+            repoId={repoId}
+            path={path}
+            leftRef={leftRef}
+            rightRef={rightRef}
             leftSize={leftSize}
             rightSize={rightSize}
             diffType={diffType}
@@ -119,11 +117,11 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
             leftSize={leftSize}
             rightSize={rightSize}
             diffType={diffType}
-            settings={settings}
+            settings={settings.darkMode}
         />;
-};
 
-const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, settings }) => {
+
+const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, darkMode }) => {
     const left = leftRef && useAPI(async () => objects.get(repoId, leftRef, path, config.pre_sign_support_ui),
         [repoId, leftRef, path]);
     const right = rightRef && useAPI(async () => objects.get(repoId, rightRef, path, config.pre_sign_support_ui),
@@ -139,40 +137,45 @@ const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize
             oldValue={left?.response}
             newValue={right?.response}
             splitView={false}
-            useDarkTheme={settings.darkMode}
+            useDarkTheme={darkMode}
             compareMethod={DiffMethod.WORDS}
         />
-
     </div>;
 }
 
-const ImageDiff = ({oldUrl, newUrl, leftSize, rightSize, diffType}) => (
-    <div>
-        <ImageDiffSummary leftSize={leftSize} rightSize={rightSize} diffType={diffType} />
-        <div style={{ display: 'flex', gap: '1rem' }}>
-            {oldUrl && (
-                <Card style={{ flex: 1 }}>
-                    <Card.Header className="text-danger text-center" style={{ backgroundColor: '#ffeef0', padding: '0.5rem' }}>
-                        Deleted
-                    </Card.Header>
-                    <Card.Body className="d-flex justify-content-center p-3" style={{ overflow: 'auto' }}>
-                        <img src={oldUrl} alt="old" />
-                    </Card.Body>
-                </Card>
-            )}
-            {newUrl && (
-                <Card style={{ flex: 1 }}>
-                    <Card.Header className="text-success text-center" style={{ backgroundColor: '#e6ffed', padding: '0.5rem' }}>
-                        Added
-                    </Card.Header>
-                    <Card.Body className="d-flex justify-content-center p-3" style={{ overflow: 'auto' }}>
-                        <img src={newUrl} alt="new"  />
-                    </Card.Body>
-                </Card>
-            )}
+const ImageCardDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType }) => {
+    const query = qs({ path, presign: config.pre_sign_support_ui });
+    const oldUrl = leftRef  && buildUrl(repoId, leftRef,  query);
+    const newUrl = rightRef && buildUrl(repoId, rightRef, query);
+
+    return (
+        <div>
+            <ImageDiffSummary leftSize={leftSize} rightSize={rightSize} diffType={diffType} />
+            <div className="image-diff-card-container">
+                {oldUrl && (
+                    <Card className="image-diff-card-flex">
+                        <Card.Header className="text-danger text-center image-diff-header-deleted">
+                            Deleted
+                        </Card.Header>
+                        <Card.Body className="d-flex overflow-auto justify-content-center p-3">
+                            <img className="image-diff-card" src={oldUrl} alt="old" />
+                        </Card.Body>
+                    </Card>
+                )}
+                {newUrl && (
+                    <Card className="image-diff-card-flex">
+                        <Card.Header className="text-success text-center image-diff-header-added">
+                            Added
+                        </Card.Header>
+                        <Card.Body className="d-flex overflow-auto justify-content-center p-3">
+                            <img className="image-diff-card" src={newUrl} alt="new"  />
+                        </Card.Body>
+                    </Card>
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
+}
 
 function validateDiffInput(left, right, diffType) {
     switch (diffType) {
@@ -267,7 +270,7 @@ const ImageDiffSummary= ({ leftSize, rightSize, diffType }) => {
         diffValue = `-${humanSize(leftSize)}`;
     }
     return (
-        <div className={`text-center mb-2 ${cls}`} style={{ fontWeight: 500, fontSize: '0.95rem' }}>
+        <div className={`text-center mb-2 ${cls} image-diff-summary`}>
             {diffValue}
         </div>
     );
