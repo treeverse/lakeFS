@@ -133,6 +133,8 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'image/png':
         case 'image/gif':
         case 'image/webm':
+        case 'image/bmp':
+        case 'image/webp':
             return FileType.IMAGE
         case 'application/pdf':
         case 'application/x-pdf':
@@ -153,6 +155,8 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'jpg':
         case 'webm':
         case 'gif':
+        case 'bmp':
+        case 'webp':
             return FileType.IMAGE
         case 'pdf':
             return FileType.PDF
