@@ -27,22 +27,10 @@ Configuration section for authentication services, like SAML or OIDC.
 
 * `auth.logout_redirect_url` `(string : "/auth/login")` - The address to redirect to after a successful logout, e.g. login.
 
-#### auth.ui_config
-
-Configuration section for UI authentication settings
-
-* `auth.ui_config.rbac` `(string : "none")` - The RBAC mode to use for authorization, options: "none", "simplified", "external" or "internal" 
-* `auth.ui_config.login_url` `(string : "")` - The URL to redirect users on login
-* `auth.ui_config.login_failed_message` `(string : "")` - Custom message to display when login fails
-* `auth.ui_config.fallback_login_url` `(string)` - Alternative login URL to use as fallback
-* `auth.ui_config.fallback_login_label` `(string)` - Label text for the fallback login option
-* `auth.ui_config.login_cookie_names` `([]string : ["internal_auth_session"])` - The name of the cookie(s) lakeFS will set following a successful authentication. The value is the authenticated user's JWT
-* `auth.ui_config.logout_url` `(string : "")` - The URL to redirect users on logout
-* `auth.ui_config.use_login_placeholders` `(bool : false)` - Whether to use placeholder text in login forms
 
 ### auth.providers
 
-Configuration section externalidentity providers
+Configuration section external identity providers
 
 #### auth.providers.ldap
 
@@ -63,7 +51,7 @@ Configuration section for SAML
 * `auth.providers.saml.sp_root_url` `(string : '')` - The base lakeFS-URL, e.g. 'https://<lakefs-url>'
 * `auth.providers.saml.sp_x509_key_path` `(string : '')` - The path to the private key, e.g '/etc/saml_certs/rsa_saml_private.cert'
 * `auth.providers.saml.sp_x509_cert_path` `(string : '')` - The path to the public key, '/etc/saml_certs/rsa_saml_public.pem'
-* `auth.providers.saml.sp_sign_request` `(bool : 'false')` SPSignRequest some IdP require the SLO request to be signed
+* `auth.providers.saml.sp_sign_request` `(bool : false)` SPSignRequest some IdP require the SLO request to be signed
 * `auth.providers.saml.sp_signature_method` `(string : '')` SPSignatureMethod optional valid signature values depending on the IdP configuration, e.g. 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'
 * `auth.providers.saml.idp_metadata_url` `(string : '')` - The URL for the metadata server, e.g. 'https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml'
 * `auth.providers.saml.idp_metadata_file_path` `(string : '')` - The path to the Identity Provider (IdP) metadata XML file, e.g. '/etc/saml/idp-metadata.xml'
@@ -76,23 +64,23 @@ Configuration section for SAML
 
 Configuration section for OIDC
 
-* `auth.providers.oidc.enabled` `(bool : false)` - Enables OIDC Authentication.
 * `auth.providers.oidc.url` `(string : '')` - The OIDC provider url, e.g. 'https://oidc-provider-url.com/'
 * `auth.providers.oidc.client_id` `(string : '')` - The application's ID.
 * `auth.providers.oidc.client_secret` `(string : '')` - The application's secret.
 * `auth.providers.oidc.callback_base_url` `(string : '')` - A default callback address of the lakeFS server.
 * `auth.providers.oidc.callback_base_urls` `(string[] : '[]')` - If callback_base_urls is configured, check current host is whitelisted otherwise use callback_base_url (without 's'). These config keys are mutually exclusive
 
-   !!! note
-       You may configure a list of URLs that the OIDC provider may redirect to. This allows lakeFS to be accessed from multiple hostnames while retaining federated auth capabilities.
-       If the provider redirects to a URL not in this list, the login will fail. This property and callback_base_url are mutually exclusive.
+!!! note
+    You may configure a list of URLs that the OIDC provider may redirect to. This allows lakeFS to be accessed from multiple hostnames while retaining federated auth capabilities.
+    If the provider redirects to a URL not in this list, the login will fail. This property and callback_base_url are mutually exclusive.
 
-* `auth.providers.oidc.authorize_endpoint_query_parameters` `(bool : map[string]string)` - key/value parameters that are passed to a provider's authorization endpoint.
-* `auth.providers.oidc.logout_endpoint_query_parameters` `(string[] : '[]')` - The query parameters that will be used to redirect the user to the OIDC provider after logout, e.g. '[returnTo, https://<lakefs.ingress.domain>/oidc/login]'
+* `auth.providers.oidc.authorize_endpoint_query_parameters` `(map[string]string : )` - key/value parameters that are passed to a provider's authorization endpoint.
+* `auth.providers.oidc.logout_endpoint_query_parameters` `(string[] : [])` - The query parameters that will be used to redirect the user to the OIDC provider after logout, e.g. `["returnTo", "https://<lakefs.ingress.domain>/oidc/login"]`
 * `auth.providers.oidc.logout_client_id_query_parameter` `(string : '')` - The claim name that represents the client identifier in the OIDC provider
 * `auth.providers.oidc.additional_scope_claims` `(string[] : '[]')` - Specifies optional requested permissions, other than `openid` and `profile` that are being used.
+* `auth.providers.oidc.post_login_redirect_url` `(string : '')` - The URL to redirect users to after successful OIDC authentication, e.g. 'http://localhost:8000/'
 
-#### auth.external
+### auth.external
 
 Configuration section for the external authentication methods
 
@@ -103,7 +91,7 @@ Configuration section for authenticating to lakeFS using AWS presign get-caller-
 * `auth.external.aws_auth.enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
 * `auth.external.aws_auth.get_caller_identity_max_age` `(duration : 15m)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set.
 * `auth.external.aws_auth.valid_sts_hosts` `([]string)` - The default are all the valid AWS STS hosts (`sts.amazonaws.com`, `sts.us-east-2.amazonaws.com` etc).
-* `auth.external.aws_auth.required_headers` `(map[string]string : )` - Headers that must be present by the client when doing login request (e.g `X-LakeFS-Server-ID: <lakefs.ingress.domain>`).
+* `auth.external.aws_auth.required_headers` `(map[string]string : )` - Headers that must be present by the client when doing login request. For security reasons it is recommended to set `X-LakeFS-Server-ID: <lakefs.ingress.domain>`, lakeFS clients assume that's the default. 
 * `auth.external.aws_auth.optional_headers` `(map[string]string : )` - Optional headers that can be present by the client when doing login request.
 * `auth.external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS.
 * `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS.
