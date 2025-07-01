@@ -121,7 +121,7 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
         />;
 
 
-const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, darkMode }) => {
+const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, isDarkMode }) => {
     const left = leftRef && useAPI(async () => objects.get(repoId, leftRef, path, config.pre_sign_support_ui),
         [repoId, leftRef, path]);
     const right = rightRef && useAPI(async () => objects.get(repoId, rightRef, path, config.pre_sign_support_ui),
@@ -137,7 +137,7 @@ const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize
             oldValue={left?.response}
             newValue={right?.response}
             splitView={false}
-            useDarkTheme={darkMode}
+            useDarkTheme={isDarkMode}
             compareMethod={DiffMethod.WORDS}
         />
     </div>;
