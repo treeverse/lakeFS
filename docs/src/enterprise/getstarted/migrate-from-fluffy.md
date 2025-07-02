@@ -61,7 +61,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
-          logout_redirect_url: "https://lakefs.company.com" # optional, URL to redirect to after logout
+          logout_redirect_url: "https://lakefs.company.com"
           cookie_auth_verification:
             auth_source: saml
             friendly_name_claim_name: displayName
@@ -83,7 +83,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
-          logout_redirect_url: "https://lakefs.company.com/sso/logout-saml"
+          logout_redirect_url: "https://lakefs.company.com/sso/logout-saml" # optional, URL to redirect to after logout
           cookie_auth_verification:
             auth_source: saml
             friendly_name_claim_name: displayName
