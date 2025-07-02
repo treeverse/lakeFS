@@ -1,32 +1,32 @@
-import React, {useContext, useEffect, useState} from "react";
-import {refs as refsAPI} from "../../../lib/api";
+import React, { useContext, useEffect, useState } from "react";
+import { refs as refsAPI } from "../../../lib/api";
 import Alert from "react-bootstrap/Alert";
-import {RefTypeBranch, RefTypeCommit} from "../../../constants";
-import {useAPIWithPagination} from "../../hooks/api";
-import {appendMoreResults} from "../../../pages/repositories/repository/objects";
-import {AlertError, Loading} from "../controls";
-import {ChangesTreeContainer, defaultGetMoreChanges} from "./changes";
-import {URINavigator} from "./tree";
+import { RefTypeBranch, RefTypeCommit } from "../../../constants";
+import { useAPIWithPagination } from "../../hooks/api";
+import { appendMoreResults } from "../../../pages/repositories/repository/objects";
+import { AlertError, Loading } from "../controls";
+import { ChangesTreeContainer, defaultGetMoreChanges } from "./changes";
+import { URINavigator } from "./tree";
 import CompareBranchesActionsBar from "./compareBranchesActionBar";
-import {DiffActionType, DiffContext} from "../../hooks/diffContext";
+import { DiffActionType, DiffContext } from "../../hooks/diffContext";
 
 const CompareBranches = (
-    {repo, reference, compareReference, showActionsBar, prefix = "", baseSelectURL}
+    { repo, reference, compareReference, showActionsBar, prefix = "", baseSelectURL }
 ) => {
-    const {dispatch} = useContext(DiffContext);
+    const { dispatch } = useContext(DiffContext);
 
     const [internalRefresh, setInternalRefresh] = useState(true);
 
     const [afterUpdated, setAfterUpdated] = useState(""); // state of pagination of the item's children
-    const [resultsState, setResultsState] = useState({prefix, results: [], pagination: {}}); // current retrieved children of the item
+    const [resultsState, setResultsState] = useState({ prefix, results: [], pagination: {} }); // current retrieved children of the item
 
     const delimiter = "/"
 
-    const {nextPage, loading, error} = useAPIWithPagination(async () => {
+    const { nextPage, loading, error } = useAPIWithPagination(async () => {
         if (!repo) return
 
         if (compareReference.id === reference.id) {
-            return {pagination: {has_more: false}, results: []}; // nothing to compare here.
+            return { pagination: { has_more: false }, results: [] }; // nothing to compare here.
         }
 
         const getMoreResults = () =>
@@ -34,21 +34,21 @@ const CompareBranches = (
         return await appendMoreResults(resultsState, prefix, afterUpdated, setAfterUpdated, setResultsState, getMoreResults);
     }, [repo.id, reference.id, internalRefresh, afterUpdated, delimiter, prefix])
 
-    const {results} = resultsState;
-    const apiResult = {results, loading, error, nextPage};
+    const { results } = resultsState;
+    const apiResult = { results, loading, error, nextPage };
 
     useEffect(() => {
         // dispatch for dependent components
         dispatch({
             type: DiffActionType.setResults,
-            value: {results, loading, error, nextPage}
+            value: { results, loading, error, nextPage }
         });
-    }, [results, loading, error, nextPage]);
+    }, [results, loading, error, nextPage, dispatch]);
 
     const isEmptyDiff = (!loading && !error && !!results && results.length === 0);
 
     const doRefresh = () => {
-        setResultsState({prefix, results: [], pagination: {}})
+        setResultsState({ prefix, results: [], pagination: {} })
         setInternalRefresh(!internalRefresh)
     }
 
@@ -79,12 +79,12 @@ const CompareBranches = (
 };
 
 const BranchChangesList = (
-    {apiResult, repo, reference, compareReference, prefix, delimiter, refresh, setAfterUpdated}
+    { apiResult, repo, reference, compareReference, prefix, delimiter, refresh, setAfterUpdated }
 ) => {
-    const {results, loading, error, nextPage} = apiResult;
+    const { results, loading, error, nextPage } = apiResult;
 
-    if (loading) return <Loading/>;
-    if (error) return <AlertError error={error}/>;
+    if (loading) return <Loading />;
+    if (error) return <AlertError error={error} />;
 
     const changesTreeMessage =
         <p>
@@ -94,8 +94,8 @@ const BranchChangesList = (
 
     if (compareReference.id === reference.id) {
         return <Alert variant="warning">
-            <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
-            You’ll need to use two different sources to get a valid comparison.
+            <Alert.Heading>There isn't anything to compare.</Alert.Heading>
+            You'll need to use two different sources to get a valid comparison.
         </Alert>;
     }
 
@@ -148,14 +148,14 @@ const CompareURINavigator = (prefix, reference, compareReference, repo) =>
             }
             return {
                 pathname: '/repositories/:repoId/compare',
-                params: {repoId: repo.id},
+                params: { repoId: repo.id },
                 query: q
             };
-        }}/>;
+        }} />;
 
 const getNavigatorToComparePage = (repo, ref, compareRef) => entry => ({
     pathname: `/repositories/:repoId/compare`,
-    params: {repoId: repo.id},
+    params: { repoId: repo.id },
     query: {
         ref: ref.id,
         compare: compareRef.id,

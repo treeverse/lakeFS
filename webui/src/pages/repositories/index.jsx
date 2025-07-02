@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
@@ -9,22 +9,22 @@ import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Modal from "react-bootstrap/Modal";
 import Spinner from "react-bootstrap/Spinner";
 
-import {RepoIcon, SearchIcon} from "@primer/octicons-react";
+import { RepoIcon, SearchIcon } from "@primer/octicons-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
-import {ActionsBar, AlertError, Loading, useDebouncedState} from "../../lib/components/controls";
-import {config, repositories} from '../../lib/api';
-import {useAPI, useAPIWithPagination} from "../../lib/hooks/api";
-import {Paginator} from "../../lib/components/pagination";
+import { ActionsBar, AlertError, Loading, useDebouncedState } from "../../lib/components/controls";
+import { config, repositories } from '../../lib/api';
+import { useAPI, useAPIWithPagination } from "../../lib/hooks/api";
+import { Paginator } from "../../lib/components/pagination";
 import Container from "react-bootstrap/Container";
-import {Link} from "../../lib/components/nav";
-import {useRouter} from "../../lib/hooks/router";
-import {ReadOnlyBadge} from "../../lib/components/badges";
+import { Link } from "../../lib/components/nav";
+import { useRouter } from "../../lib/hooks/router";
+import { ReadOnlyBadge } from "../../lib/components/badges";
 
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
-import {usePluginManager} from "../../extendable/plugins/pluginsContext";
+import { usePluginManager } from "../../extendable/plugins/pluginsContext";
 
 dayjs.extend(relativeTime);
 
@@ -32,30 +32,30 @@ const LOCAL_BLOCKSTORE_TYPE = "local";
 const LOCAL_BLOCKSTORE_SAMPLE_REPO_NAME = "quickstart";
 const LOCAL_BLOCKSTORE_SAMPLE_REPO_DEFAULT_BRANCH = "main";
 
-const CreateRepositoryButton = ({variant = "success", enabled = false, onClick}) => {
+const CreateRepositoryButton = ({ variant = "success", enabled = false, onClick }) => {
     return (
         <Button variant={variant} disabled={!enabled} onClick={onClick} className="d-flex align-items-center">
-            <RepoIcon className="me-2"/> Create Repository
+            <RepoIcon className="me-2" /> Create Repository
         </Button>
     );
 }
 
-const GettingStartedCreateRepoButton = ({text, variant = "success", enabled = false, onClick, creatingRepo, className = ""}) => {
+const GettingStartedCreateRepoButton = ({ text, variant = "success", enabled = false, onClick, creatingRepo, className = "" }) => {
     return (
         <Button className={`create-sample-repo-button ${className}`} variant={variant} disabled={!enabled || creatingRepo} onClick={onClick}>
-            { creatingRepo && <><Spinner as="span" role="status" aria-hidden="true" animation="border" size="sm" className="me-2"/><span className="visually-hidden">Loading...</span></> }
+            {creatingRepo && <><Spinner as="span" role="status" aria-hidden="true" animation="border" size="sm" className="me-2" /><span className="visually-hidden">Loading...</span></>}
             {text}
         </Button>
     );
 }
 
-const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) => {
+const CreateRepositoryModal = ({ show, error, onSubmit, onCancel, inProgress }) => {
     const pluginManager = usePluginManager();
     const repoCreationFormPlugin = pluginManager.repoCreationForm
 
     const [formValid, setFormValid] = useState(false);
 
-    const {response: storageConfigs, error: err, loading} = useAPI(() => config.getStorageConfigs());
+    const { response: storageConfigs, error: err, loading } = useAPI(() => config.getStorageConfigs());
 
     const buttonContent = inProgress ? (
         <>
@@ -69,7 +69,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
         return (
             <Modal show={show} onHide={onCancel} size="lg">
                 <Modal.Body>
-                    <Loading/>
+                    <Loading />
                 </Modal.Body>
             </Modal>
         );
@@ -88,8 +88,8 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
                 })}
             </Modal.Body>
             <Modal.Footer className="border-0 pt-0">
-                <Button 
-                    variant="outline-secondary" 
+                <Button
+                    variant="outline-secondary"
                     onClick={(e) => {
                         e.preventDefault();
                         onCancel();
@@ -97,10 +97,10 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
                 >
                     Cancel
                 </Button>
-                <Button 
-                    variant="success" 
-                    type="submit" 
-                    form="repository-create-form" 
+                <Button
+                    variant="success"
+                    type="submit"
+                    form="repository-create-form"
                     className="ms-2"
                     disabled={!formValid || inProgress}
                 >
@@ -111,44 +111,44 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
     );
 };
 
-const GetStarted = ({allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, createRepoError }) => {
+const GetStarted = ({ allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyRepo, creatingRepo, createRepoError }) => {
     return (
         <Card className="getting-started-card">
             <h2 className="main-title">Welcome to lakeFS!</h2>
             <Row className="text-container">
                 <Col md={7}>
                     <p className="lead mb-4">
-                        Create your first sample repository to get started with lakeFS. 
-                        This includes sample data, quickstart instructions, and everything 
+                        Create your first sample repository to get started with lakeFS.
+                        This includes sample data, quickstart instructions, and everything
                         you need to explore lakeFS capabilities.
                     </p>
-                    
+
                     {allowSampleRepoCreation && (
                         <div className="mb-4">
-                            <GettingStartedCreateRepoButton 
+                            <GettingStartedCreateRepoButton
                                 text={<span>Create Sample Repository</span>}
-                                creatingRepo={creatingRepo} 
-                                variant={"success"} 
-                                enabled={true} 
+                                creatingRepo={creatingRepo}
+                                variant={"success"}
+                                enabled={true}
                                 onClick={onCreateSampleRepo}
                             />
                         </div>
                     )}
-                    
+
                     {createRepoError && (
                         <Alert className="mb-3" variant={"danger"}>
                             {createRepoError.message}
                         </Alert>
                     )}
-                    
+
                     <div className="d-flex align-items-center mt-4">
                         <span className="learn-more">Already working with lakeFS?</span>
-                        <GettingStartedCreateRepoButton 
+                        <GettingStartedCreateRepoButton
                             className="inline-link-button"
-                            text="Create an empty repository" 
-                            variant={"link"} 
-                            enabled={true} 
-                            onClick={onCreateEmptyRepo} 
+                            text="Create an empty repository"
+                            variant={"link"}
+                            enabled={true}
+                            onClick={onCreateEmptyRepo}
                         />
                     </div>
                 </Col>
@@ -161,14 +161,14 @@ const GetStarted = ({allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyR
 
 const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCreation, onCreateSampleRepo, onCreateEmptyRepo, toggleShowActionsBar, creatingRepo, createRepoError }) => {
 
-    const {results, loading, error, nextPage} = useAPIWithPagination(() => {
+    const { results, loading, error, nextPage } = useAPIWithPagination(() => {
         return repositories.list(search, after);
     }, [refresh, search, after]);
     useEffect(() => {
-      toggleShowActionsBar();
+        toggleShowActionsBar();
     }, [toggleShowActionsBar]);
-    if (loading) return <Loading/>;
-    if (error) return <AlertError error={error}/>;
+    if (loading) return <Loading />;
+    if (error) return <AlertError error={error} />;
     if (!after && !search && results.length === 0) {
         return <GetStarted
             allowSampleRepoCreation={allowSampleRepoCreation}
@@ -191,7 +191,7 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
                                         <h5 className="repository-title mb-0">
                                             <Link href={{
                                                 pathname: `/repositories/:repoId/objects`,
-                                                params: {repoId: repo.id}
+                                                params: { repoId: repo.id }
                                             }}>
                                                 <div className="d-flex align-items-center">
                                                     <div className="repo-icon-wrapper me-2">
@@ -211,7 +211,7 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
                                         <ReadOnlyBadge readOnly={repo?.read_only} />
                                     </div>
                                 </div>
-                                
+
                                 <div className="repository-details-compact mt-2">
                                     <div className="detail-row">
                                         <div className="detail-item-compact">
@@ -220,7 +220,7 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
                                                 <code>{repo.default_branch}</code>
                                             </div>
                                         </div>
-                                        
+
                                         {repo.storage_id && repo.storage_id.length &&
                                             <div className="detail-item-compact">
                                                 <div className="detail-label-compact">Storage</div>
@@ -229,7 +229,7 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
                                                 </div>
                                             </div>
                                         }
-                                        
+
                                         <div className="detail-item-compact storage-namespace">
                                             <div className="detail-label-compact">Namespace</div>
                                             <div className="detail-value-compact">
@@ -244,7 +244,7 @@ const RepositoryList = ({ onPaginate, search, after, refresh, allowSampleRepoCre
                 </Row>
             ))}
 
-            <Paginator after={after} nextPage={nextPage} onPaginate={onPaginate}/>
+            <Paginator after={after} nextPage={nextPage} onPaginate={onPaginate} />
         </div>
     );
 };
@@ -263,19 +263,19 @@ const RepositoriesPage = () => {
     const routerPfx = (router.query.search) ? router.query.search : "";
     const [search, setSearch] = useDebouncedState(
         routerPfx,
-        (search) => router.push({pathname: `/repositories`, query: {search}})
+        (search) => router.push({ pathname: `/repositories`, query: { search } })
     );
 
     const { response: storageConfigs, error: err, loading } = useAPI(() => config.getStorageConfigs());
 
-    const createRepo = async (repo, presentRepo = true) => {
+    const createRepo = useCallback(async (repo, presentRepo = true) => {
         try {
             setCreatingRepo(true);
             setCreateRepoError(null);
             await repositories.create(repo);
             setRefresh(!refresh);
             if (presentRepo) {
-                router.push({pathname: `/repositories/:repoId/objects`, params: {repoId: repo.name}});
+                router.push({ pathname: `/repositories/:repoId/objects`, params: { repoId: repo.name } });
             }
             return true;
         } catch (error) {
@@ -283,7 +283,7 @@ const RepositoriesPage = () => {
             setCreateRepoError(error);
             return false;
         }
-    };
+    }, [refresh, router]);
 
     const toggleShowActionsBar = useCallback((show = true) => {
         setShowActionsBar(show);
@@ -292,7 +292,7 @@ const RepositoriesPage = () => {
     const createRepositoryButtonCallback = useCallback(() => {
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
-    }, [showCreateRepositoryModal, setShowCreateRepositoryModal]);
+    }, [setShowCreateRepositoryModal]);
 
     const allowSampleRepoCreation = pluginManager.repoCreationForm.allowSampleRepoCreationFunc(storageConfigs);
     const createSampleRepoButtonCallback = useCallback(async () => {
@@ -305,24 +305,24 @@ const RepositoriesPage = () => {
                 default_branch: LOCAL_BLOCKSTORE_SAMPLE_REPO_DEFAULT_BRANCH,
                 sample_data: true,
             }
-    
+
             await createRepo(sampleRepo);
             return;
         }
         setShowCreateRepositoryModal(true);
         setCreateRepoError(null);
-    }, [showCreateRepositoryModal, setShowCreateRepositoryModal, loading, err, storageConfigs, createRepo]);
+    }, [loading, err, storageConfigs, createRepo]);
 
     return (
         <Container fluid="xl" className="mt-3">
-            {showActionsBar && 
+            {showActionsBar &&
                 <ActionsBar className="mb-4 p-3 bg-white rounded shadow-sm">
-                    <Form style={{minWidth: 300}} onSubmit={e => { e.preventDefault(); }}>
+                    <Form style={{ minWidth: 300 }} onSubmit={e => { e.preventDefault(); }}>
                         <Form.Group>
                             <Col>
                                 <InputGroup className="search-input-group">
                                     <InputGroup.Text className="bg-light border-end-0">
-                                        <SearchIcon/>
+                                        <SearchIcon />
                                     </InputGroup.Text>
                                     <Form.Control
                                         className="border-start-0 bg-light"
@@ -341,22 +341,22 @@ const RepositoriesPage = () => {
                 </ActionsBar>
             }
 
-                <RepositoryList
-                    search={routerPfx}
-                    refresh={refresh}
-                    after={(router.query.after) ? router.query.after : ""}
-                    onPaginate={after => {
-                        const query = {after};
-                        if (router.query.search) query.search = router.query.search;
-                        router.push({pathname: `/repositories`, query});
-                    }}
-                    allowSampleRepoCreation={allowSampleRepoCreation}
-                    onCreateSampleRepo={createSampleRepoButtonCallback}
-                    onCreateEmptyRepo={createRepositoryButtonCallback}
-                    toggleShowActionsBar={toggleShowActionsBar}
-                    creatingRepo={creatingRepo}
-                    createRepoError={createRepoError}
-                    />
+            <RepositoryList
+                search={routerPfx}
+                refresh={refresh}
+                after={(router.query.after) ? router.query.after : ""}
+                onPaginate={after => {
+                    const query = { after };
+                    if (router.query.search) query.search = router.query.search;
+                    router.push({ pathname: `/repositories`, query });
+                }}
+                allowSampleRepoCreation={allowSampleRepoCreation}
+                onCreateSampleRepo={createSampleRepoButtonCallback}
+                onCreateEmptyRepo={createRepositoryButtonCallback}
+                toggleShowActionsBar={toggleShowActionsBar}
+                creatingRepo={creatingRepo}
+                createRepoError={createRepoError}
+            />
 
             <CreateRepositoryModal
                 onCancel={() => {
@@ -367,7 +367,7 @@ const RepositoriesPage = () => {
                 error={createRepoError}
                 onSubmit={(repo) => createRepo(repo, true)}
                 inProgress={creatingRepo}
-                />
+            />
 
         </Container>
     );

@@ -25,17 +25,17 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Dropdown from "react-bootstrap/Dropdown";
 import Modal from "react-bootstrap/Modal";
-import {FaDownload} from "react-icons/fa";
+import { FaDownload } from "react-icons/fa";
 
 import { commits, linkToPath, objects } from "../../api";
 import { ConfirmationModal } from "../modals";
 import { Paginator } from "../pagination";
 import { Link } from "../nav";
 import { RefTypeBranch, RefTypeCommit } from "../../../constants";
-import {ClipboardButton, copyTextToClipboard, AlertError, Loading} from "../controls";
+import { ClipboardButton, copyTextToClipboard, AlertError, Loading } from "../controls";
 import { useAPI } from "../../hooks/api";
 import noop from "lodash/noop";
-import {CommitInfoCard} from "./commits";
+import { CommitInfoCard } from "./commits";
 
 
 export const humanSize = (bytes) => {
@@ -94,19 +94,19 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
           ]
         }}>
           {entry.path_type === "object" && presign && (
-               <Dropdown.Item
-                onClick={async e => {
-                  try {
-                    const resp = await objects.getStat(repo.id, reference.id, entry.path, true);
-                    copyTextToClipboard(resp.physical_address);
-                  } catch (err) {
-                    alert(err);
-                  }
-                  e.preventDefault();
-                }}
-              >
-                <LinkIcon /> Copy Presigned URL
-              </Dropdown.Item>
+            <Dropdown.Item
+              onClick={async e => {
+                try {
+                  const resp = await objects.getStat(repo.id, reference.id, entry.path, true);
+                  copyTextToClipboard(resp.physical_address);
+                } catch (err) {
+                  alert(err);
+                }
+                e.preventDefault();
+              }}
+            >
+              <LinkIcon /> Copy Presigned URL
+            </Dropdown.Item>
           )}
           {entry.path_type === "object" && (
             <PathLink
@@ -258,14 +258,14 @@ const StatModal = ({ show, onHide, entry }) => {
               </tr>
             )}
             {entry.metadata && (
-                <tr>
-                  <td>
-                    <strong>Metadata</strong>
-                  </td>
-                  <td>
-                    <EntryMetadata metadata={entry.metadata}/>
-                  </td>
-                </tr>
+              <tr>
+                <td>
+                  <strong>Metadata</strong>
+                </td>
+                <td>
+                  <EntryMetadata metadata={entry.metadata} />
+                </td>
+              </tr>
             )}
           </tbody>
         </Table>
@@ -275,24 +275,24 @@ const StatModal = ({ show, onHide, entry }) => {
 };
 
 const EntryMetadata = ({ metadata }) => {
-    return (
-        <Table hover striped>
-          <thead>
-          <tr>
-            <th>Key</th>
-            <th>Value</th>
+  return (
+    <Table hover striped>
+      <thead>
+        <tr>
+          <th>Key</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {Object.getOwnPropertyNames(metadata).map(key =>
+          <tr key={`metadata:${key}`}>
+            <td><code>{key}</code></td>
+            <td><code>{metadata[key]}</code></td>
           </tr>
-          </thead>
-          <tbody>
-          {Object.getOwnPropertyNames(metadata).map(key =>
-              <tr key={`metadata:${key}`}>
-                <td><code>{key}</code></td>
-                <td><code>{metadata[key]}</code></td>
-              </tr>
-          )}
-          </tbody>
-        </Table>
-    )
+        )}
+      </tbody>
+    </Table>
+  )
 };
 
 export const PrefixSizeInfoCard = ({ entry, totalObjects }) => {
@@ -301,18 +301,18 @@ export const PrefixSizeInfoCard = ({ entry, totalObjects }) => {
     <Table>
       <Table bordered hover>
         <tbody>
-        <tr>
-          <td><strong>path</strong></td>
-          <td><code>{entry.path}</code></td>
-        </tr>
-        <tr>
-          <td><strong>Total Objects</strong></td>
-          <td><code>{totalObjects.length.toLocaleString()}</code></td>
-        </tr>
-        <tr>
-          <td><strong>Total Size</strong></td>
-          <td><code>{totalBytes.toLocaleString()} Bytes ({humanSize(totalBytes)})</code></td>
-        </tr>
+          <tr>
+            <td><strong>path</strong></td>
+            <td><code>{entry.path}</code></td>
+          </tr>
+          <tr>
+            <td><strong>Total Objects</strong></td>
+            <td><code>{totalObjects.length.toLocaleString()}</code></td>
+          </tr>
+          <tr>
+            <td><strong>Total Size</strong></td>
+            <td><code>{totalBytes.toLocaleString()} Bytes ({humanSize(totalBytes)})</code></td>
+          </tr>
         </tbody>
       </Table>
     </Table>
@@ -320,25 +320,26 @@ export const PrefixSizeInfoCard = ({ entry, totalObjects }) => {
   return table;
 }
 
-const PrefixSizeModal = ({show, onHide, entry, repo, reference }) => {
-  const [progress, setProgress] = useState(0)
-  const {
-    response,
-    error,
-    loading,
-  } = useAPI(async () => {
+const PrefixSizeModal = ({ show, onHide, entry, repo, reference }) => {
+  const [progress, setProgress] = useState(0);
+  const { response, error, loading } = useAPI(async () => {
     if (show) {
-      setProgress(0)
-      let accumulator = []
-      let finished = false
-      const iterator = objects.listAll(repo.id, reference.id, entry.path)
-      while (!finished) {
-        let {page, done} = await iterator.next()
-        accumulator = accumulator.concat(page)
-        setProgress(accumulator.length)
-        if (done) finished = true
-      }
-      return accumulator;
+      setProgress(0);
+      const iterator = objects.listAll(repo.id, reference.id, entry.path);
+
+      const collectAllObjects = async (accumulator = []) => {
+        const { page, done } = await iterator.next();
+        const newAccumulator = accumulator.concat(page);
+        setProgress(newAccumulator.length);
+
+        if (done) {
+          return newAccumulator;
+        }
+
+        return collectAllObjects(newAccumulator);
+      };
+
+      return await collectAllObjects();
     }
     return null;
   }, [show, repo.id, reference.id, entry.path, setProgress]);
@@ -350,7 +351,7 @@ const PrefixSizeModal = ({show, onHide, entry, repo, reference }) => {
   }
   if (!loading && !error && response) {
     content = (
-      <PrefixSizeInfoCard repo={repo} reference={reference} entry={entry} totalObjects={response}/>
+      <PrefixSizeInfoCard repo={repo} reference={reference} entry={entry} totalObjects={response} />
     );
   }
 
@@ -404,7 +405,7 @@ const OriginModal = ({ show, onHide, entry, repo, reference }) => {
   }
   if (!loading && !error && commit) {
     content = (
-      <CommitInfoCard bare={true} repo={repo} commit={commit}/>
+      <CommitInfoCard bare={true} repo={repo} commit={commit} />
     );
   }
 
@@ -473,7 +474,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
 
   const subPath = path.lastIndexOf("/") !== -1 ? path.substr(0, path.lastIndexOf("/")) : "";
   const buttonText =
-      subPath.length > 0 ? entry.path.substr(subPath.length + 1) : entry.path;
+    subPath.length > 0 ? entry.path.substr(subPath.length + 1) : entry.path;
 
   const params = { repoId: repo.id };
   const query = { ref: reference.id, path: entry.path };
@@ -656,44 +657,44 @@ export const URINavigator = ({
   const parts = pathParts(path, isPathToFile);
   const params = { repoId: repo.id };
   const displayedReference =
-      reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id;
+    reference.type === RefTypeCommit ? reference.id.substr(0, 12) : reference.id;
 
   return (
     <div className="d-flex">
       <div className="lakefs-uri flex-grow-1">
         <div
-            title={displayedReference}
-            className="w-100 text-nowrap overflow-hidden text-truncate"
+          title={displayedReference}
+          className="w-100 text-nowrap overflow-hidden text-truncate"
         >
           {relativeTo === "" ? (
-              <>
-                <strong>lakefs://</strong>
-                <Link
-                    href={{
-                      pathname: "/repositories/:repoId/objects",
-                      params,
-                      query: { ref: reference.id },
-                    }}
-                >
-                  {repo.id}
-                </Link>
-                <strong>/</strong>
-                <Link
-                    href={{
-                      pathname: "/repositories/:repoId/objects",
-                      params,
-                      query: { ref: reference.id },
-                    }}
-                >
-                  {displayedReference}
-                </Link>
-                <strong>/</strong>
-              </>
+            <>
+              <strong>lakefs://</strong>
+              <Link
+                href={{
+                  pathname: "/repositories/:repoId/objects",
+                  params,
+                  query: { ref: reference.id },
+                }}
+              >
+                {repo.id}
+              </Link>
+              <strong>/</strong>
+              <Link
+                href={{
+                  pathname: "/repositories/:repoId/objects",
+                  params,
+                  query: { ref: reference.id },
+                }}
+              >
+                {displayedReference}
+              </Link>
+              <strong>/</strong>
+            </>
           ) : (
-              <>
-                <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
-                <strong>/</strong>
-              </>
+            <>
+              <Link href={pathURLBuilder(params, { path: "" })}>{relativeTo}</Link>
+              <strong>/</strong>
+            </>
           )}
 
           {parts.map((part, i) => {
@@ -718,19 +719,19 @@ export const URINavigator = ({
       </div>
       <div className="object-viewer-buttons" style={{ flexShrink: 0 }}>
         {hasCopyButton &&
-        <ClipboardButton
+          <ClipboardButton
             text={`lakefs://${repo.id}/${reference.id}/${path}`}
             variant="link"
             size="sm"
             onSuccess={noop}
             onError={noop}
             className={"me-1"}
-            tooltip={"copy URI to clipboard"}/>}
+            tooltip={"copy URI to clipboard"} />}
         {(downloadUrl) && (
           <a
-              href={downloadUrl}
-              download={path.split('/').pop()}
-              className="btn btn-link btn-sm download-button me-1">
+            href={downloadUrl}
+            download={path.split('/').pop()}
+            className="btn btn-link btn-sm download-button me-1">
             <FaDownload />
           </a>
         )}
@@ -741,20 +742,20 @@ export const URINavigator = ({
 
 const GetStarted = ({ config, onUpload, onImport, readOnly = false }) => {
   const importDisabled = !config.config.import_support;
-  
+
   return (
     <Container className="get-started-container pb-5">
       <div className="mb-4">
-        <img 
-          src="/getting-started.png" 
-          alt="Empty repository" 
+        <img
+          src="/getting-started.png"
+          alt="Empty repository"
           className="img-fluid get-started-image"
         />
       </div>
-      
+
       <h2 className="mb-0">Your repository is ready!</h2>
       {!readOnly && <h6 className="lead mb-5">Let&apos;s add some data to get started</h6>}
-      
+
       {!readOnly && <Row className="justify-content-center">
         <Col md={5} className="mb-4">
           <Card className="h-100 get-started-card">
@@ -787,7 +788,7 @@ const GetStarted = ({ config, onUpload, onImport, readOnly = false }) => {
             </Card.Footer>
           </Card>
         </Col>
-        
+
         <Col md={5} className="mb-4">
           <Card className="h-100 get-started-card">
             <Card.Body className="d-flex flex-column align-items-center p-4">
@@ -863,7 +864,7 @@ export const Tree = ({
     <div className="tree-container">
       <Card>
         <Card.Header>
-          <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true}/>
+          <URINavigator path={path} repo={repo} reference={reference} hasCopyButton={true} />
         </Card.Header>
         <Card.Body>{body}</Card.Body>
       </Card>

@@ -1,15 +1,15 @@
-import React, {createContext, useCallback, useEffect, useState} from "react";
-import {Outlet, useOutletContext} from "react-router-dom";
+import React, { createContext, useCallback, useEffect, useState } from "react";
+import { Outlet, useOutletContext } from "react-router-dom";
 
 import Button from "react-bootstrap/Button";
 
-import {useAPI} from "../../../lib/hooks/api";
-import {auth} from "../../../lib/api";
+import { useAPI } from "../../../lib/hooks/api";
+import { auth } from "../../../lib/api";
 import useUser from "../../../lib/hooks/user";
-import {ConfirmationButton} from "../../../lib/components/modals";
-import {EntityActionModal} from "../../../lib/components/auth/forms";
-import {Paginator} from "../../../lib/components/pagination";
-import {Link} from "../../../lib/components/nav";
+import { ConfirmationButton } from "../../../lib/components/modals";
+import { EntityActionModal } from "../../../lib/components/auth/forms";
+import { Paginator } from "../../../lib/components/pagination";
+import { Link } from "../../../lib/components/nav";
 import {
     ActionGroup,
     ActionsBar,
@@ -23,10 +23,10 @@ import {
     useDebouncedState
 } from "../../../lib/components/controls";
 import validator from "validator/es";
-import {disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE} from "../validation";
-import {resolveUserDisplayName} from "../../../lib/utils";
-import {allUsersFromLakeFS} from "../../../lib/components/auth/users";
-import {useRouter} from "../../../lib/hooks/router";
+import { disallowPercentSign, INVALID_USER_NAME_ERROR_MESSAGE } from "../validation";
+import { resolveUserDisplayName } from "../../../lib/utils";
+import { allUsersFromLakeFS } from "../../../lib/components/auth/users";
+import { useRouter } from "../../../lib/hooks/router";
 
 const DEFAULT_LISTING_AMOUNT = 100;
 const DECIMAL_RADIX = 10;
@@ -47,7 +47,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     const [showCreate, setShowCreate] = useState(false);
     const [showInvite, setShowInvite] = useState(false);
     const [paginationData, setPaginationData] = useState(
-        { hasMorePages: false, paginatedFilteredUsers: []});
+        { hasMorePages: false, paginatedFilteredUsers: [] });
     const [searchPrefix, setSearchPrefix] = useDebouncedState(
         prefix,
         search => {
@@ -77,9 +77,9 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
         return router.push({ pathname: "/auth/users", query: { prefix, after } });
     }
 
-    if (error) return <AlertError error={error}/>;
-    if (loading) return <Loading/>;
-    if (authCapabilities.loading) return <Loading/>;
+    if (error) return <AlertError error={error} />;
+    if (loading) return <Loading />;
+    if (authCapabilities.loading) return <Loading />;
 
     const canInviteUsers = !authCapabilities.error && authCapabilities.response && authCapabilities.response.invite_user;
 
@@ -87,28 +87,29 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
         <>
             <ActionsBar>
                 <UserActionsActionGroup canInviteUsers={canInviteUsers} selected={selected}
-                                        onClickInvite={() => setShowInvite(true)} onClickCreate={() => setShowCreate(true)}
-                                        onConfirmDelete={() => {
-                                            auth.deleteUsers(selected.map(u => u.id))
-                                                .catch(err => setDeleteError(err))
-                                                .then(() => {
-                                                    setSelected([]);
-                                                    setRefresh(!refresh);
-                                                })}}/>
+                    onClickInvite={() => setShowInvite(true)} onClickCreate={() => setShowCreate(true)}
+                    onConfirmDelete={() => {
+                        auth.deleteUsers(selected.map(u => u.id))
+                            .catch(err => setDeleteError(err))
+                            .then(() => {
+                                setSelected([]);
+                                setRefresh(!refresh);
+                            })
+                    }} />
                 <ActionGroup orientation="right">
                     <SearchInput
                         searchPrefix={searchPrefix}
                         setSearchPrefix={setSearchPrefix}
                         placeholder="Find a User..."
                     />
-                    <RefreshButton onClick={() => setRefresh(!refresh)}/>
+                    <RefreshButton onClick={() => setRefresh(!refresh)} />
                 </ActionGroup>
             </ActionsBar>
             <div className="auth-learn-more">
                 Users are entities that access and use lakeFS. <a href="https://docs.lakefs.io/reference/authentication.html" target="_blank" rel="noopener noreferrer">Learn more.</a>
             </div>
 
-            {(!!deleteError) && <AlertError error={deleteError}/>}
+            {(!!deleteError) && <AlertError error={deleteError} />}
 
             <EntityActionModal
                 show={showCreate}
@@ -149,15 +150,17 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
                 keyFn={user => user.id}
                 rowFn={user => [
                     <Checkbox
+                        key={user.id}
                         disabled={(!!currentUser && currentUser.id === user.id)}
                         name={user.id}
                         onAdd={() => setSelected([...selected, user])}
                         onRemove={() => setSelected(selected.filter(u => u !== user))}
+                        defaultChecked={selected.some(selectedUser => selectedUser.id === user.id)}
                     />,
-                    <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>
-                        { resolveUserDisplayName(user) }
+                    <Link key={user.id} href={{ pathname: '/auth/users/:userId', params: { userId: user.id } }}>
+                        {resolveUserDisplayName(user)}
                     </Link>,
-                    <FormattedDate dateValue={user.creation_date}/>
+                    <FormattedDate key={user.id} dateValue={user.creation_date} />
                 ]}
                 firstFixedCol={true}
             />
@@ -171,7 +174,7 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
     );
 };
 
-const UserActionsActionGroup = ({canInviteUsers, selected, onClickInvite, onClickCreate, onConfirmDelete }) => {
+const UserActionsActionGroup = ({ canInviteUsers, selected, onClickInvite, onClickCreate, onConfirmDelete }) => {
 
     return (
         <ActionGroup orientation="left">
