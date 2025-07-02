@@ -73,6 +73,7 @@ docs/MetadataApi.md
 docs/ObjectCopyCreation.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
+docs/ObjectMetadata.md
 docs/ObjectStageCreation.md
 docs/ObjectStats.md
 docs/ObjectStatsList.md
@@ -215,6 +216,7 @@ lakefs_sdk/models/meta_range_creation_response.py
 lakefs_sdk/models/object_copy_creation.py
 lakefs_sdk/models/object_error.py
 lakefs_sdk/models/object_error_list.py
+lakefs_sdk/models/object_metadata.py
 lakefs_sdk/models/object_stage_creation.py
 lakefs_sdk/models/object_stats.py
 lakefs_sdk/models/object_stats_list.py
@@ -345,6 +347,7 @@ test/test_metadata_api.py
 test/test_object_copy_creation.py
 test/test_object_error.py
 test/test_object_error_list.py
+test/test_object_metadata.py
 test/test_object_stage_creation.py
 test/test_object_stats.py
 test/test_object_stats_list.py

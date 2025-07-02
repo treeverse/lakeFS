@@ -112,6 +112,8 @@ pub mod object_error;
 pub use self::object_error::ObjectError;
 pub mod object_error_list;
 pub use self::object_error_list::ObjectErrorList;
+pub mod object_metadata;
+pub use self::object_metadata::ObjectMetadata;
 pub mod object_stage_creation;
 pub use self::object_stage_creation::ObjectStageCreation;
 pub mod object_stats;
