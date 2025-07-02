@@ -40,7 +40,15 @@ class TestDiff(unittest.TestCase):
                 type = 'added',
                 path = '',
                 path_type = 'common_prefix',
-                size_bytes = 56
+                size_bytes = 56,
+                metadata = lakefs_sdk.models.object_metadata.ObjectMetadata(
+                    physical_address = '', 
+                    checksum = '', 
+                    mtime = 56, 
+                    content_type = '', 
+                    user_metadata = {
+                        'key' : ''
+                        }, )
             )
         else:
             return Diff(

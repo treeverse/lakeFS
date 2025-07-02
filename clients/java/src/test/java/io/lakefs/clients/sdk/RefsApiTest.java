@@ -52,12 +52,14 @@ public class RefsApiTest {
         String prefix = null;
         String delimiter = null;
         String type = null;
+        Boolean includeMetadata = null;
         DiffList response = api.diffRefs(repository, leftRef, rightRef)
                 .after(after)
                 .amount(amount)
                 .prefix(prefix)
                 .delimiter(delimiter)
                 .type(type)
+                .includeMetadata(includeMetadata)
                 .execute();
         // TODO: test validations
     }

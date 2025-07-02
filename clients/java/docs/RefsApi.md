@@ -12,7 +12,7 @@ All URIs are relative to */api/v1*
 
 <a id="diffRefs"></a>
 # **diffRefs**
-> DiffList diffRefs(repository, leftRef, rightRef).after(after).amount(amount).prefix(prefix).delimiter(delimiter).type(type).execute();
+> DiffList diffRefs(repository, leftRef, rightRef).after(after).amount(amount).prefix(prefix).delimiter(delimiter).type(type).includeMetadata(includeMetadata).execute();
 
 diff references
 
@@ -67,6 +67,7 @@ public class Example {
     String prefix = "prefix_example"; // String | return items prefixed with this value
     String delimiter = "delimiter_example"; // String | delimiter used to group common prefixes by
     String type = "two_dot"; // String | 
+    Boolean includeMetadata = false; // Boolean | If set to true, the diff will include system and user metadata
     try {
       DiffList result = apiInstance.diffRefs(repository, leftRef, rightRef)
             .after(after)
@@ -74,6 +75,7 @@ public class Example {
             .prefix(prefix)
             .delimiter(delimiter)
             .type(type)
+            .includeMetadata(includeMetadata)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -99,6 +101,7 @@ public class Example {
 | **prefix** | **String**| return items prefixed with this value | [optional] |
 | **delimiter** | **String**| delimiter used to group common prefixes by | [optional] |
 | **type** | **String**|  | [optional] [default to three_dot] [enum: two_dot, three_dot] |
+| **includeMetadata** | **Boolean**| If set to true, the diff will include system and user metadata | [optional] [default to false] |
 
 ### Return type
 

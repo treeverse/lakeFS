@@ -65,7 +65,7 @@ pub enum MergeIntoBranchError {
 }
 
 
-pub async fn diff_refs(configuration: &configuration::Configuration, repository: &str, left_ref: &str, right_ref: &str, after: Option<&str>, amount: Option<i32>, prefix: Option<&str>, delimiter: Option<&str>, r#type: Option<&str>) -> Result<models::DiffList, Error<DiffRefsError>> {
+pub async fn diff_refs(configuration: &configuration::Configuration, repository: &str, left_ref: &str, right_ref: &str, after: Option<&str>, amount: Option<i32>, prefix: Option<&str>, delimiter: Option<&str>, r#type: Option<&str>, include_metadata: Option<bool>) -> Result<models::DiffList, Error<DiffRefsError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -87,6 +87,9 @@ pub async fn diff_refs(configuration: &configuration::Configuration, repository:
     }
     if let Some(ref local_var_str) = r#type {
         local_var_req_builder = local_var_req_builder.query(&[("type", &local_var_str.to_string())]);
+    }
+    if let Some(ref local_var_str) = include_metadata {
+        local_var_req_builder = local_var_req_builder.query(&[("include_metadata", &local_var_str.to_string())]);
     }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());

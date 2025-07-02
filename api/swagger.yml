@@ -421,6 +421,28 @@ components:
           type: boolean
           default: false
 
+    ObjectMetadata:
+      type: object
+      required:
+        - physical_address
+        - checksum
+        - mtime
+        - content_type
+      properties:
+        physical_address:
+          type: string
+        checksum:
+          type: string
+        mtime:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+        content_type:
+          type: string
+          description: Object media type
+        user_metadata:
+          $ref: "#/components/schemas/ObjectUserMetadata"
+
     ObjectUserMetadata:
       type: object
       additionalProperties:
@@ -475,6 +497,9 @@ components:
           type: integer
           description: represents the size of the added/changed/deleted entry
           format: int64
+        metadata:
+          $ref: "#/components/schemas/ObjectMetadata"
+          description: Optional. System and user metadata for the diff entry.
 
     DiffList:
       type: object
@@ -4259,6 +4284,13 @@ paths:
           type: string
           enum: [two_dot, three_dot]
           default: three_dot
+      - in: query
+        name: include_metadata
+        description: If set to true, the diff will include system and user metadata
+        required: false
+        schema:
+          type: boolean
+          default: false
 
     get:
       tags:
