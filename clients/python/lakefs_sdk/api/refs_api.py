@@ -59,13 +59,13 @@ class RefsApi:
         self.api_client = api_client
 
     @validate_arguments
-    def diff_refs(self, repository : StrictStr, left_ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], right_ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID) to compare against")], after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, delimiter : Annotated[Optional[StrictStr], Field(description="delimiter used to group common prefixes by")] = None, type : Optional[StrictStr] = None, **kwargs) -> DiffList:  # noqa: E501
+    def diff_refs(self, repository : StrictStr, left_ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], right_ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID) to compare against")], after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, delimiter : Annotated[Optional[StrictStr], Field(description="delimiter used to group common prefixes by")] = None, type : Optional[StrictStr] = None, include_metadata : Annotated[Optional[StrictBool], Field(description="If set to true, the diff will include system and user metadata")] = None, **kwargs) -> DiffList:  # noqa: E501
         """diff references  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.diff_refs(repository, left_ref, right_ref, after, amount, prefix, delimiter, type, async_req=True)
+        >>> thread = api.diff_refs(repository, left_ref, right_ref, after, amount, prefix, delimiter, type, include_metadata, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -84,6 +84,8 @@ class RefsApi:
         :type delimiter: str
         :param type:
         :type type: str
+        :param include_metadata: If set to true, the diff will include system and user metadata
+        :type include_metadata: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request.
@@ -99,16 +101,16 @@ class RefsApi:
         if '_preload_content' in kwargs:
             message = "Error! Please call the diff_refs_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.diff_refs_with_http_info(repository, left_ref, right_ref, after, amount, prefix, delimiter, type, **kwargs)  # noqa: E501
+        return self.diff_refs_with_http_info(repository, left_ref, right_ref, after, amount, prefix, delimiter, type, include_metadata, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def diff_refs_with_http_info(self, repository : StrictStr, left_ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], right_ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID) to compare against")], after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, delimiter : Annotated[Optional[StrictStr], Field(description="delimiter used to group common prefixes by")] = None, type : Optional[StrictStr] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def diff_refs_with_http_info(self, repository : StrictStr, left_ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID)")], right_ref : Annotated[StrictStr, Field(..., description="a reference (could be either a branch or a commit ID) to compare against")], after : Annotated[Optional[StrictStr], Field(description="return items after this value")] = None, amount : Annotated[Optional[conint(strict=True, le=1000, ge=-1)], Field(description="how many items to return")] = None, prefix : Annotated[Optional[StrictStr], Field(description="return items prefixed with this value")] = None, delimiter : Annotated[Optional[StrictStr], Field(description="delimiter used to group common prefixes by")] = None, type : Optional[StrictStr] = None, include_metadata : Annotated[Optional[StrictBool], Field(description="If set to true, the diff will include system and user metadata")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """diff references  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.diff_refs_with_http_info(repository, left_ref, right_ref, after, amount, prefix, delimiter, type, async_req=True)
+        >>> thread = api.diff_refs_with_http_info(repository, left_ref, right_ref, after, amount, prefix, delimiter, type, include_metadata, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -127,6 +129,8 @@ class RefsApi:
         :type delimiter: str
         :param type:
         :type type: str
+        :param include_metadata: If set to true, the diff will include system and user metadata
+        :type include_metadata: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -162,7 +166,8 @@ class RefsApi:
             'amount',
             'prefix',
             'delimiter',
-            'type'
+            'type',
+            'include_metadata'
         ]
         _all_params.extend(
             [
@@ -216,6 +221,9 @@ class RefsApi:
 
         if _params.get('type') is not None:  # noqa: E501
             _query_params.append(('type', _params['type']))
+
+        if _params.get('include_metadata') is not None:  # noqa: E501
+            _query_params.append(('include_metadata', _params['include_metadata']))
 
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))

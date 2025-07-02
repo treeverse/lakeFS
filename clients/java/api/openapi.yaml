@@ -4236,6 +4236,15 @@ paths:
           - three_dot
           type: string
         style: form
+      - description: "If set to true, the diff will include system and user metadata"
+        explode: true
+        in: query
+        name: include_metadata
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -8115,6 +8124,36 @@ components:
       - physical_address
       - size_bytes
       type: object
+    ObjectMetadata:
+      example:
+        physical_address: physical_address
+        user_metadata:
+          key: user_metadata
+        content_type: content_type
+        checksum: checksum
+        mtime: 6
+      properties:
+        physical_address:
+          type: string
+        checksum:
+          type: string
+        mtime:
+          description: Unix Epoch in seconds
+          format: int64
+          type: integer
+        content_type:
+          description: Object media type
+          type: string
+        user_metadata:
+          additionalProperties:
+            type: string
+          type: object
+      required:
+      - checksum
+      - content_type
+      - mtime
+      - physical_address
+      type: object
     ObjectUserMetadata:
       additionalProperties:
         type: string
@@ -8166,6 +8205,13 @@ components:
     Diff:
       example:
         path: path
+        metadata:
+          physical_address: physical_address
+          user_metadata:
+            key: user_metadata
+          content_type: content_type
+          checksum: checksum
+          mtime: 6
         size_bytes: 0
         path_type: common_prefix
         type: added
@@ -8189,6 +8235,8 @@ components:
           description: represents the size of the added/changed/deleted entry
           format: int64
           type: integer
+        metadata:
+          $ref: '#/components/schemas/ObjectMetadata'
       required:
       - path
       - path_type
@@ -8203,10 +8251,24 @@ components:
           results: 0
         results:
         - path: path
+          metadata:
+            physical_address: physical_address
+            user_metadata:
+              key: user_metadata
+            content_type: content_type
+            checksum: checksum
+            mtime: 6
           size_bytes: 0
           path_type: common_prefix
           type: added
         - path: path
+          metadata:
+            physical_address: physical_address
+            user_metadata:
+              key: user_metadata
+            content_type: content_type
+            checksum: checksum
+            mtime: 6
           size_bytes: 0
           path_type: common_prefix
           type: added

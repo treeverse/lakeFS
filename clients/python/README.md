@@ -330,6 +330,7 @@ Class | Method | HTTP request | Description
  - [ObjectCopyCreation](docs/ObjectCopyCreation.md)
  - [ObjectError](docs/ObjectError.md)
  - [ObjectErrorList](docs/ObjectErrorList.md)
+ - [ObjectMetadata](docs/ObjectMetadata.md)
  - [ObjectStageCreation](docs/ObjectStageCreation.md)
  - [ObjectStats](docs/ObjectStats.md)
  - [ObjectStatsList](docs/ObjectStatsList.md)

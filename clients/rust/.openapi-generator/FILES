@@ -72,6 +72,7 @@ docs/MetadataApi.md
 docs/ObjectCopyCreation.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
+docs/ObjectMetadata.md
 docs/ObjectStageCreation.md
 docs/ObjectStats.md
 docs/ObjectStatsList.md
@@ -212,6 +213,7 @@ src/models/model_ref.rs
 src/models/object_copy_creation.rs
 src/models/object_error.rs
 src/models/object_error_list.rs
+src/models/object_metadata.rs
 src/models/object_stage_creation.rs
 src/models/object_stats.rs
 src/models/object_stats_list.rs
