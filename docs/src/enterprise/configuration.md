@@ -17,16 +17,14 @@ See the full [lakeFS Server Configuration](../reference/configuration.md)
 
 This reference uses `.` to denote the nesting of values.
 
-### features
-
-* `features.local_rbac` `(bool: false)` - Backward compatibility if you use an external RBAC service (such as legacy fluffy). If `true` lakeFS will expect to use `auth.api` and all fluffy related configuration for RBAC.
 
 ### auth
 
 Configuration section for authentication services, like SAML or OIDC.
 
-* `auth.logout_redirect_url` `(string : "/auth/login")` - The address to redirect to after a successful logout, e.g. login.
-
+* `auth.logout_redirect_url` `(string : "/auth/login")` - The URL to redirect to after logout. The behavior depends on the authentication provider:
+  - **For OIDC**: The logout URL of the OIDC provider (e.g., Auth0 logout endpoint)
+  - **For SAML**: The URL within lakeFS where the IdP should redirect after logout (e.g., `/auth/login`)
 
 ### auth.providers
 
@@ -95,6 +93,11 @@ Configuration section for authenticating to lakeFS using AWS presign get-caller-
 * `auth.external.aws_auth.optional_headers` `(map[string]string : )` - Optional headers that can be present by the client when doing login request
 * `auth.external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS
 * `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS
+
+### features
+
+* `features.local_rbac` `(bool: true)` - Backward compatibility if you use an external RBAC service (such as legacy fluffy). If `true` lakeFS will expect to use `auth.api` and all fluffy related configuration for RBAC.
+
 
 ### Using Environment Variables
 
