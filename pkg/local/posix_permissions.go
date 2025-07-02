@@ -14,8 +14,7 @@ import (
 
 const (
 	// DefaultFilePermissions Octal representation of default file permissions
-	DefaultFilePermissions      = 0o100666
-	POSIXPermissionsMetadataKey = apiutil.LakeFSMetadataPrefix + "posix-permissions"
+	DefaultFilePermissions = 0o100666
 )
 
 var (
@@ -67,7 +66,7 @@ func getPermissionFromStats(stats apigen.ObjectStats, withDefault bool) (*POSIXP
 	}
 
 	if stats.Metadata != nil {
-		posixPermissions, ok := stats.Metadata.Get(POSIXPermissionsMetadataKey)
+		posixPermissions, ok := stats.Metadata.Get(apiutil.POSIXPermissionsMetadataKey)
 		if ok {
 			// Unmarshal struct
 			if err := json.Unmarshal([]byte(posixPermissions), &permissions); err != nil {
