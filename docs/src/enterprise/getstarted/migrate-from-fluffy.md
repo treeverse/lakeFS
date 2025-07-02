@@ -15,8 +15,8 @@ The new lakeFS Enterprise integrates all enterprise features directly into a sin
 1. Your lakeFS-Enterprise version is >= x.y.z. 
 
 !!! note
-   [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise. You will be granted a token that enables downloading *dockerhub/lakeFS-Enterprise* 
-   from [Docker Hub](https://hub.docker.com/u/treeverse), and a license to run lakeFS Enterprise. 
+    [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise. You will be granted a token that enables downloading *dockerhub/lakeFS-Enterprise* 
+    from [Docker Hub](https://hub.docker.com/u/treeverse), and a license to run lakeFS Enterprise.
 
 
 To migrate from fluffy to lakeFS Enterprise, follow the steps below:
