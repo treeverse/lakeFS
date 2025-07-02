@@ -9,10 +9,10 @@ The new lakeFS Enterprise integrates all enterprise features directly into a sin
 
 ## Pre-requisite
 
-1. you posses a lakeFS Enterprise license.
 1. You're using lakeFS enterprise binary or the image in Dockerhub treeverse/lakefs-enterprise with fluffy.
 <!-- TODO: insert lakefs version  -->
 1. Your lakeFS-Enterprise version is >= x.y.z. 
+1. You possess a lakeFS Enterprise license.
 
 !!! note
     [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise. You will be granted a token that enables downloading *dockerhub/lakeFS-Enterprise* 
@@ -48,11 +48,11 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
           saml:
             enabled: true 
             sp_root_url: https://lakefs.company.com
-            sp_x509_key_path: '/etc/saml_certs/rsa_saml_private.cert'
-            sp_x509_cert_path: '/etc/saml_certs/rsa_saml_public.pem'
+            sp_x509_key_path: dummy_saml_rsa.key
+            sp_x509_cert_path: dummy_saml_rsa.cert
             sp_sign_request: true
             sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
-            idp_metadata_url: "https://adfs-auth.company.com/federationmetadata/2007-06/federationmetadata.xml"
+            idp_metadata_url: "https://my.saml-provider/federationmetadata/2007-06/federationmetadata.xml"
             # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
             external_user_id_claim_name: samName
             # idp_metadata_file_path: 
@@ -61,6 +61,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
+          logout_redirect_url: "https://lakefs.company.com" # optional, URL to redirect to after logout
           cookie_auth_verification:
             auth_source: saml
             friendly_name_claim_name: displayName
@@ -68,7 +69,6 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
             external_user_id_claim_name: samName
             default_initial_groups:
             - "Developers"
-          logout_redirect_url: "https://lakefs.company.com/logout-saml"
         ui_config:
           login_url: "https://lakefs.company.com/sso/login-saml"
           logout_url: "https://lakefs.company.com/sso/logout-saml"
@@ -82,14 +82,13 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
      
         ```yaml
         # lakefs.yaml
-
         auth:
           logout_redirect_url: "https://lakefs.company.com/sso/logout-saml"
           cookie_auth_verification:
             auth_source: saml
             friendly_name_claim_name: displayName
             default_initial_groups: ["Admins"]
-            external_user_id_claim_name: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" # This field was moved here!
+            external_user_id_claim_name: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" 
             validate_id_token_claims:
               department: r_n_d
           providers:
@@ -100,8 +99,9 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
               sp_x509_cert_path: dummy_saml_rsa.cert
               sp_sign_request: true
               sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
-              idp_metadata_url: "https://adfs-auth.company.com/federationmetadata/2007-06/federationmetadata.xml"
-              post_login_redirect_url: / # This field was moved here!
+              idp_metadata_url: "https://my.saml-provider/federationmetadata/2007-06/federationmetadata.xml"
+              post_login_redirect_url: / # Where to redirect after successful SAML login
+              # external_user_id_claim_name: # This field was moved to auth.cookie_auth_verification
           ui_config:
             login_url: "https://lakefs.company.com/sso/login-saml"
             logout_url: "https://lakefs.company.com/sso/logout-saml"
@@ -111,7 +111,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```
 
 
-!!! note "OIDC"
+!!! note "OIDC + OIDC STS"
    
     === "lakeFS + Fluffy (old)"
         
@@ -160,22 +160,21 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
             login_cookie_names:
               - internal_auth_session
               - oidc_auth_session
-          auth_source:
           oidc:
             friendly_name_claim_name: "nickname"
             default_initial_groups: ["Admins"]
           providers:
             oidc:
               # enabled: true  // This field was dropped!
-              post_login_redirect_url: http://localhost:8000/ # This field was moved here!
-              url: https://lakefs-cloud-dev.us.auth0.com/
+              post_login_redirect_url: / # This field was moved here!
+              url: https://oidc-provider-url.com/
               client_id: <oidc-client-id>
               client_secret: <oidc-client-secret>
-              callback_base_url: http://localhost:8000
+              callback_base_url: https://lakefs.company.com
               logout_client_id_query_parameter: client_id
               logout_endpoint_query_parameters:
                 - returnTo
-                - http://localhost:8000/oidc/login
+                - http://lakefs.company.com/oidc/login
         ```
 
 
@@ -229,7 +228,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
               user_filter: (objectClass=inetOrgPerson)
               connection_timeout_seconds: 15
               request_timeout_seconds: 7
-              default_user_group: "admins" // This field moved here!
+              default_user_group: "Developers" // This field moved here!
         ```
 
 !!! note "AWS IAM"
@@ -238,8 +237,8 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         
         ```yaml
         # fluffy.yaml
+        serve_listen: "localhost:9001"
         auth:
-          serve_listen_address: "localhost:9000"
           external:
             aws_auth:
               enabled: true
@@ -252,8 +251,6 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
           authentication_api:
             endpoint: http://localhost:9001/api/v1
             external_principals_enabled: true
-          api:
-           endpoint: http://localhost:9000/api/v1
         ```
     
     === "lakeFS Enterprise (new)"
@@ -268,8 +265,6 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
 
         ```
 
-!!! note "STS auth"
-    The structure of STS authentication remains the same.
 
 ### Authorization configuration
 
@@ -280,8 +275,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # fluffy.yaml
         auth:
-          serve_disable_authentication: false
-          serve_listen_address: "localhost:8000"
+          serve_listen_address: "localhost:9000"
 		  cache:
 			enabled: true
         ```
@@ -299,18 +293,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         # lakefs.yaml
         auth:
           # serve_disable_authentication: false // this field was dropped!
-          # serve_listen_address: "localhost:8000" // this field was dropped!
+          # serve_listen_address: "localhost:9000" // this field was dropped!
 		  cache:
 			enabled: true
         ```
-
-### Database Configuration
-
-Use the same database configuration, but only in the lakeFS Enterprise config:
-
-```yaml
-database:
-  type: postgres
-  postgres:
-    connection_string: "postgres://user:pass@host:5432/db?sslmode=disable"
-```
