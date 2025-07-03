@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -16,7 +17,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/mem"
+	"github.com/treeverse/lakefs/pkg/cache"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/pyramid/params"
@@ -240,6 +243,65 @@ func TestMultipleConcurrentReads(t *testing.T) {
 	require.Equal(t, int64(1), adapter.GetCount())
 }
 
+func TestRemoveTempFileOnStoreError(t *testing.T) {
+	ctx := context.Background()
+
+	// Create a temporary directory for testing
+	tempDir := t.TempDir()
+	fsName := uniqueNamespace()
+	baseDir := path.Join(tempDir, fsName)
+
+	// Create TierFS with failing adapter
+	failingAdapter := &mockFailingAdapter{Adapter: mem.New(ctx)}
+	tfs := &TierFS{
+		logger:         logging.ContextUnavailable(),
+		adapter:        failingAdapter,
+		fsLocalBaseDir: baseDir,
+		fsName:         fsName,
+		syncDir:        &directory{ceilingDir: baseDir},
+		keyLock:        cache.NewChanOnlyOne(),
+		remotePrefix:   blockStoragePrefix,
+	}
+
+	// Create eviction control that accepts all files
+	tfs.eviction = &mockEv{}
+
+	namespace := uniqueNamespace()
+	filename := "test_file.txt"
+	content := []byte("test content")
+
+	// Create a file using TierFS.Create()
+	storedFile, err := tfs.Create(ctx, config.SingleBlockstoreID, namespace)
+	require.NoError(t, err)
+
+	// Write content to the file
+	n, err := storedFile.Write(content)
+	require.NoError(t, err)
+	require.Equal(t, len(content), n)
+
+	// Close the file
+	require.NoError(t, storedFile.Close())
+
+	// Get the actual temp file path from the WRFile
+	wrFile, ok := storedFile.(*WRFile)
+	require.True(t, ok, "storedFile should be *WRFile")
+	tempPath := wrFile.File.Name()
+
+	// Verify the temp file exists before calling Store()
+	_, err = os.Stat(tempPath)
+	require.NoError(t, err, "temp file should exist before Store()")
+
+	// Call Store() - this should fail due to the mock adapter and trigger removeTempFile()
+	err = storedFile.Store(ctx, filename)
+	require.Error(t, err, "Store() should fail due to mock adapter")
+	require.Contains(t, err.Error(), "mock adapter put failure")
+
+	// Verify the temp file was removed by removeTempFile()
+	_, err = os.Stat(tempPath)
+	require.Error(t, err, "temp file should be removed after Store() failure")
+	require.True(t, os.IsNotExist(err), "temp file should not exist after removal")
+}
+
 func writeToFile(t *testing.T, ctx context.Context, storageID, namespace, filename string, content []byte) {
 	t.Helper()
 	f, err := fs.Create(ctx, storageID, namespace)
@@ -280,4 +342,13 @@ func (*mockEv) Touch(params.RelativePath) {}
 
 func (*mockEv) Store(params.RelativePath, int64) bool {
 	return true
+}
+
+// mockFailingAdapter is a mock adapter that fails on Put operations
+type mockFailingAdapter struct {
+	*mem.Adapter
+}
+
+func (m *mockFailingAdapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) (*block.PutResponse, error) {
+	return nil, fmt.Errorf("mock adapter put failure")
 }
