@@ -156,6 +156,14 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 	if err != nil {
 		return fmt.Errorf("open file %s: %w", originalPath, err)
 	}
+	defer func() {
+		if err != nil {
+			// If there is an error, remove the temp file (in the happy path, it's removed in the end of the "store" func)
+			if removeErr := os.Remove(originalPath); removeErr != nil {
+				err = fmt.Errorf("%w and remove tempfile: %w", err, removeErr)
+			}
+		}
+	}()
 
 	stat, err := f.Stat()
 	if err != nil {
