@@ -159,9 +159,7 @@ Configuration section for the lakeFS key-value store database.
 * `auth.oidc.persist_friendly_name` `(string : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.oidc.friendly_name_claim_name`.
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
 
-#### auth.providers.oidc
 
-* `auth.providers.oidc.post_login_redirect_url` `(string : '')` - The URL to redirect users to after successful OIDC authentication, e.g. 'http://localhost:8000/'
 
 ### blockstore
 

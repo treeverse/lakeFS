@@ -189,7 +189,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
           ldap: 
             server_endpoint: 'ldaps://ldap.company.com:636'
             bind_dn: uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
-            bind_password: '<ldap pwd>'
+            bind_password: '<ldap password>'
             username_attribute: uid
             user_base_dn: ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
             user_filter: (objectClass=inetOrgPerson)
@@ -222,7 +222,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
             ldap:
               server_endpoint: ldaps://ldap.jumpcloud.com:636
               bind_dn: uid=bind_app,ou=Users,o=63eb8e248d5156c875be4124,dc=jumpcloud,dc=com
-              bind_password: g4udFrCC8FXyU@c
+              bind_password: '<ldap password>'
               username_attribute: uid 
               user_base_dn: ou=Users,o=63eb8e248d5156c875be4124,dc=jumpcloud,dc=com 
               user_filter: (objectClass=inetOrgPerson)
@@ -246,7 +246,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
                 X-LakeFS-Server-ID: "localhost"
         ```
         ```yaml
-		# lakefs.yaml
+        # lakefs.yaml
         auth:
           authentication_api:
             endpoint: http://localhost:9001/api/v1
