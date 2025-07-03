@@ -9,8 +9,8 @@ The new lakeFS Enterprise integrates all enterprise features directly into a sin
 
 ## Prerequisites
 
-1. You're using lakeFS enterprise binary or the image in Dockerhub treeverse/lakefs-enterprise with fluffy.
 <!-- TODO: insert lakefs version  -->
+1. You're using lakeFS enterprise binary or the image in Dockerhub treeverse/lakefs-enterprise with fluffy.
 1. Your lakeFS-Enterprise version is >= x.y.z.
 1. You possess a lakeFS Enterprise license.
 
@@ -21,8 +21,8 @@ The new lakeFS Enterprise integrates all enterprise features directly into a sin
 
 To migrate from fluffy to lakeFS Enterprise, follow the steps below:
 
-1. Sanity Test (Optional): Install a new test lakeFS Enterprise before moving your current production setup. **Make sure to include your lakeFS Enterprise license in the configuration before setup**. Test the setup → login → create repository, etc. Once everything seems to work, delete and cleanup the test setup and we will move to the migration process.
 <!-- TODO add license cfg link -->
+1. Sanity Test (Optional): Install a new test lakeFS Enterprise before moving your current production setup. **Make sure to include your lakeFS Enterprise license in the configuration before setup**. Test the setup → login → create repository, etc. Once everything seems to work, delete and cleanup the test setup and we will move to the migration process.
 1. Update configuration: Unlike lakeFS + Fluffy, lakeFS Enterprise uses only one configuration file. See [Configuration Changes](#configuration-changes), make sure to add the license to the configuration.
 1. Spin down lakeFS and fluffy, and run lakeFS Enterprise!
 
