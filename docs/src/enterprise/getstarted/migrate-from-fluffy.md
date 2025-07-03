@@ -227,7 +227,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
               bind_dn: uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
               bind_password: '<ldap password>'
               username_attribute: uid 
-              user_base_dn: ou=Users,o=63eb8e248d5156c875be4124,dc=jumpcloud,dc=com 
+              user_base_dn: ou=<some-ou>,o=<org-id>,dc=<company>,dc=com 
               user_filter: (objectClass=inetOrgPerson)
               connection_timeout_seconds: 15
               request_timeout_seconds: 7
