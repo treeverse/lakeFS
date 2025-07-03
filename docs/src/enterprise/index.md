@@ -36,8 +36,9 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 1. [lakeFS Metadata Search](https://info.lakefs.io/metadata-search) - Allows a granular search API to filter and query versioned objects based on attached metadata. This is especially useful for machine learning environments to filter by labels and file attributes
 1. [Iceberg REST Catalog](../integrations/iceberg.md) - Provides full support for managing Iceberg tables alongside other data formats in the same lakeFS repository. Built using open standards and works with any Iceberg client.
 1. [lakeFS for Snowflake](https://info.lakefs.io/lakefs-for-snowflake) - Provides full integration into the Snowflake ecosystem, including full support for Iceberg managed tables.
-1. [Transactional Mirroring](../howto/mirroring.md) - allows replicating lakeFS repositories into consistent read-only copies in remote locations.
-1. [Multiple Storage Backends](../howto/multiple-storage-backends.md) - allows managing data stored across multiple storage locations: on-prem, hybrid, or multi-cloud.        
+1. [Transactional Mirroring](../howto/mirroring.md) - Allows replicating lakeFS repositories into consistent read-only copies in remote locations.
+1. [Multiple Storage Backends](../howto/multiple-storage-backends.md) - Allows managing data stored across multiple storage locations: on-prem, hybrid, or multi-cloud.
+1. [Metadata Search](../howto/metadata-search.md) - Enables powerful object search using object metadata, from system metadata (like path and size) to user-defined metadata.  
 
 
 | Feature                                   | OSS       | Enterprise     |
