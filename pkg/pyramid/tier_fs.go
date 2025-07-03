@@ -154,18 +154,23 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 
 	f, err := os.Open(originalPath)
 	if err != nil {
-		defer tfs.removeTempFile(originalPath)
 		return fmt.Errorf("open file %s: %w", originalPath, err)
 	}
+	defer func() {
+		if err != nil {
+			// If there is an error, remove the temp file (in the happy path, it's removed in the end of the "store" func)
+			if removeErr := os.Remove(originalPath); removeErr != nil {
+				err = fmt.Errorf("%w and remove tempfile: %w", err, removeErr)
+			}
+		}
+	}()
 
 	stat, err := f.Stat()
 	if err != nil {
-		defer tfs.removeTempFile(originalPath)
 		return fmt.Errorf("file stat %s: %w", originalPath, err)
 	}
 
 	if _, err = tfs.adapter.Put(ctx, tfs.objPointer(storageID, namespace, filename), stat.Size(), f, block.PutOpts{}); err != nil {
-		defer tfs.removeTempFile(originalPath)
 		return fmt.Errorf("adapter put %s %s: %w", namespace, filename, err)
 	}
 
@@ -179,18 +184,6 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 		return tfs.syncDir.renameFile(originalPath, fileRef.fullPath)
 	} else {
 		return os.Remove(originalPath)
-	}
-}
-
-// removeTempFile removes a temporary file created during the Create operation.
-// It logs a warning if the file removal fails, but does not return an error since this is a cleanup operation.
-func (tfs *TierFS) removeTempFile(filePath string) {
-	if tfs.logger.IsTracing() {
-		tfs.log(context.Background()).WithField("path", filePath).Trace("remove temp file")
-	}
-	if err := os.Remove(filePath); err != nil {
-		tfs.log(context.Background()).WithError(err).WithField("path", filePath).Warn("Removing temp file failed")
-		return
 	}
 }
 
