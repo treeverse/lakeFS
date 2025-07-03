@@ -72,7 +72,7 @@ Configuration section for OIDC
     You may configure a list of URLs that the OIDC provider may redirect to. This allows lakeFS to be accessed from multiple hostnames while retaining federated auth capabilities.
     If the provider redirects to a URL not in this list, the login will fail. This property and callback_base_url are mutually exclusive.
 
-* `auth.providers.oidc.authorize_endpoint_query_parameters` `(map[string]string : )` - key/value parameters that are passed to a provider's authorization endpoint
+* `auth.providers.oidc.authorize_endpoint_query_parameters` `(map[string]string : {} )` - key/value parameters that are passed to a provider's authorization endpoint
 * `auth.providers.oidc.logout_endpoint_query_parameters` `(string[] : [])` - The query parameters that will be used to redirect the user to the OIDC provider after logout, e.g. `["returnTo", "https://<lakefs.ingress.domain>/oidc/login"]`
 * `auth.providers.oidc.logout_client_id_query_parameter` `(string : '')` - The claim name that represents the client identifier in the OIDC provider
 * `auth.providers.oidc.additional_scope_claims` `(string[] : '[]')` - Specifies optional requested permissions, other than `openid` and `profile` that are being used
@@ -96,7 +96,7 @@ Configuration section for authenticating to lakeFS using AWS presign get-caller-
 
 ### features
 
-* `features.local_rbac` `(bool: true)` - Backward compatibility if you use an external RBAC service (such as legacy fluffy). If `true` lakeFS will expect to use `auth.api` and all fluffy related configuration for RBAC.
+* `features.local_rbac` `(bool: true)` - Backward compatibility if you use an external RBAC service (such as legacy fluffy). If `false` lakeFS will expect to use `auth.api` and all fluffy related configuration for RBAC.
 
 
 ### Using Environment Variables

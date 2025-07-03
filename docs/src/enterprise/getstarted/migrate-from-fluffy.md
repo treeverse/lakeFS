@@ -190,7 +190,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         auth:
           post_login_redirect_url: /
           ldap: 
-            server_endpoint: 'ldaps://ldap.company.com:636'
+            server_endpoint: ldaps://ldap.company.com:636
             bind_dn: uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
             bind_password: '<ldap password>'
             username_attribute: uid
@@ -223,7 +223,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
               - internal_auth_session
           providers:
             ldap:
-              server_endpoint: ldaps://ldap.jumpcloud.com:636
+              server_endpoint: ldaps://ldap.company.com:636
               bind_dn: uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
               bind_password: '<ldap password>'
               username_attribute: uid 
@@ -279,8 +279,8 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         # fluffy.yaml
         auth:
           serve_listen_address: "localhost:9000"
-		  cache:
-			enabled: true
+          cache:
+            enabled: true
         ```
         
         ```yaml
@@ -295,8 +295,10 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
-          # serve_disable_authentication: false # this field was dropped!
-          # serve_listen_address: "localhost:9000" # this field was dropped!
-		  cache:
-			enabled: true
+          # serve_disable_authentication: false      # this field was dropped!
+          # serve_listen_address: "localhost:9000"   # this field was dropped!
+          # api:                                     # this field was dropped! 
+          #   endpoint: http://localhost:9000/api/v1 # this field was dropped!
+          cache:
+            enabled: true
         ```
