@@ -11,7 +11,7 @@ The new lakeFS Enterprise integrates all enterprise features directly into a sin
 
 1. You're using lakeFS enterprise binary or the image in Dockerhub treeverse/lakefs-enterprise with fluffy.
 <!-- TODO: insert lakefs version  -->
-1. Your lakeFS-Enterprise version is >= x.y.z. 
+1. Your lakeFS-Enterprise version is >= x.y.z.
 1. You possess a lakeFS Enterprise license.
 
 !!! note
@@ -22,7 +22,8 @@ The new lakeFS Enterprise integrates all enterprise features directly into a sin
 To migrate from fluffy to lakeFS Enterprise, follow the steps below:
 
 1. Sanity Test (Optional): Install a new test lakeFS Enterprise before moving your current production setup. **Make sure to include your lakeFS Enterprise license in the configuration before setup**. Test the setup → login → create repository, etc. Once everything seems to work, delete and cleanup the test setup and we will move to the migration process.
-1. Update configuration: Unlike lakeFS + Fluffy, lakeFS Enterprise uses only one configuration file. See [Configuration Changes](#configuration-changes), make sure to add the [license](#license-configuration) to the configuration.
+<!-- TODO add license cfg link -->
+1. Update configuration: Unlike lakeFS + Fluffy, lakeFS Enterprise uses only one configuration file. See [Configuration Changes](#configuration-changes), make sure to add the license to the configuration.
 1. Spin down lakeFS and fluffy, and run lakeFS Enterprise!
 
 !!! warning
@@ -52,7 +53,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
             sp_x509_cert_path: dummy_saml_rsa.cert
             sp_sign_request: true
             sp_signature_method: http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
-            idp_metadata_url: https://my.saml-provider/federationmetadata/2007-06/federationmetadata.xml
+            idp_metadata_url: https://my.saml-provider.com/federationmetadata/2007-06/federationmetadata.xml
             # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
             external_user_id_claim_name: samName
             # idp_metadata_file_path: 
@@ -67,6 +68,8 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
             friendly_name_claim_name: displayName
             persist_friendly_name: true
             external_user_id_claim_name: samName
+            validate_id_token_claims:
+              department: r_n_d
             default_initial_groups:
             - "Developers"
         ui_config:
@@ -83,7 +86,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
-          logout_redirect_url: https://lakefs.company.com/sso/logout-saml # optional, URL to redirect to after logout
+          logout_redirect_url: https://lakefs.company.com/ # optional, URL to redirect to after logout
           cookie_auth_verification:
             auth_source: saml
             friendly_name_claim_name: displayName
@@ -99,7 +102,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
               sp_x509_cert_path: dummy_saml_rsa.cert
               sp_sign_request: true
               sp_signature_method: http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
-              idp_metadata_url: https://my.saml-provider/federationmetadata/2007-06/federationmetadata.xml
+              idp_metadata_url: https://my.saml-provider.com/federationmetadata/2007-06/federationmetadata.xml
               post_login_redirect_url: / # Where to redirect after successful SAML login
               # external_user_id_claim_name: # This field was moved to auth.cookie_auth_verification
           ui_config:
@@ -153,7 +156,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
         ```yaml
         # lakefs.yaml
         auth:
-          logout_redirect_url:  https://oidc-provider-url.com/logout/url
+          logout_redirect_url:  https://oidc-provider-url.com/logout/url # optional, URL to redirect to after logout 
           ui_config:
             login_url: /oidc/login
             logout_url: /oidc/logout
@@ -221,7 +224,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
           providers:
             ldap:
               server_endpoint: ldaps://ldap.jumpcloud.com:636
-              bind_dn: uid=bind_app,ou=Users,o=63eb8e248d5156c875be4124,dc=jumpcloud,dc=com
+              bind_dn: uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
               bind_password: '<ldap password>'
               username_attribute: uid 
               user_base_dn: ou=Users,o=63eb8e248d5156c875be4124,dc=jumpcloud,dc=com 
