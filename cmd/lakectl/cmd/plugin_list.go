@@ -13,23 +13,20 @@ import (
 
 const pluginListTemplate = `The following lakectl-compatible plugins are available:
 
-{{- range .Plugins }}
-  {{- if or .Verbose .Warning }}
+{{- if .Verbose }}
+  {{- range .Plugins }}
   {{ .Path }}
-  {{- else }}
-  {{ .Name }}
   {{- end }}
-  {{- if .Warning }}
-    - {{ "warning:" | yellow }} {{ .Warning }}
+{{- else }}
+  {{- range .Plugins }}
+  {{ .Name }}
   {{- end }}
 {{- end }}
 `
 
 type pluginInfo struct {
-	Name    string
-	Path    string
-	Warning string
-	Verbose bool
+	Name string
+	Path string
 }
 
 var pluginListCmd = &cobra.Command{
@@ -45,8 +42,7 @@ var pluginListCmd = &cobra.Command{
 		seen := make(map[string]struct{})
 		for _, dir := range envPathDirs {
 			if dir == "" {
-				// Skip empty entries in PATH
-				continue
+				dir = "."
 			}
 			if _, ok := seen[dir]; !ok {
 				seen[dir] = struct{}{}
@@ -57,20 +53,23 @@ var pluginListCmd = &cobra.Command{
 		// Iterate through pathDirs to build the final list with correct overshadowing
 		pluginsOutput := make([]pluginInfo, 0)
 		foundEffectivePlugins := make(map[string]string) // plugin name -> path of chosen executable
+		const pluginPrefix = "lakectl-"
 
 		for _, dir := range pathDirs {
 			files, err := os.ReadDir(dir)
 			if err != nil {
-				// Silently ignore errors from non-existent or unreadable directories in PATH
+				if verbose && !os.IsNotExist(err) {
+					Warning(fmt.Sprintf("reading directory %s - %s", dir, err))
+				}
 				continue
 			}
 
 			for _, file := range files {
 				fileName := file.Name()
-				if !strings.HasPrefix(fileName, "lakectl-") {
+				if !strings.HasPrefix(fileName, pluginPrefix) {
 					continue
 				}
-				pluginName := strings.TrimPrefix(fileName, "lakectl-")
+				pluginName := strings.TrimPrefix(fileName, pluginPrefix)
 				if pluginName == "" {
 					continue
 				}
@@ -78,13 +77,17 @@ var pluginListCmd = &cobra.Command{
 				fullPath := filepath.Join(dir, fileName)
 				absPath, err := filepath.Abs(fullPath)
 				if err != nil {
-					// Silently ignore errors from file paths that cannot be resolved
+					if verbose {
+						Warning(fmt.Sprintf("getting absolute path for %s - %s", fullPath, err))
+					}
 					continue
 				}
 
 				fileInfo, statErr := file.Info()
 				if statErr != nil {
-					pluginsOutput = append(pluginsOutput, pluginInfo{Name: pluginName, Path: fullPath, Warning: fmt.Sprintf("error getting file info: %v", statErr), Verbose: verbose})
+					if verbose {
+						Warning(fmt.Sprintf("getting file info for %s - %s", fullPath, statErr))
+					}
 					continue
 				}
 				if fileInfo.IsDir() {
@@ -101,24 +104,24 @@ var pluginListCmd = &cobra.Command{
 					isExec = fileInfo.Mode().Perm()&0111 != 0 //nolint:mnd
 				}
 
-				currentPI := pluginInfo{Name: pluginName, Path: absPath, Verbose: verbose}
+				// Skip non-executable files
 				if !isExec {
-					currentPI.Warning = "identified as a lakectl plugin, but it is not executable"
-				}
-
-				if existingPath, ok := foundEffectivePlugins[pluginName]; ok {
-					// Already found an effective plugin for this name. This one is overshadowed.
-					if currentPI.Warning != "" { // It has its own issue (e.g. not executable)
-						currentPI.Warning = fmt.Sprintf("%s (also overshadowed by %s)", currentPI.Warning, existingPath)
-					} else {
-						currentPI.Warning = fmt.Sprintf("overshadowed by %s", existingPath)
+					if verbose {
+						Warning(fmt.Sprintf("%s is not executable", absPath))
 					}
-				} else if isExec {
-					// This is the first executable plugin found for this name.
-					foundEffectivePlugins[pluginName] = absPath
+					continue
 				}
 
-				pluginsOutput = append(pluginsOutput, currentPI)
+				// Check if this is the first executable plugin found for this name
+				if existingPath, ok := foundEffectivePlugins[pluginName]; ok {
+					if verbose {
+						Warning(fmt.Sprintf("found multiple executables for plugin %s: %s and %s", pluginName, existingPath, absPath))
+					}
+					continue
+				}
+				foundEffectivePlugins[pluginName] = absPath
+
+				pluginsOutput = append(pluginsOutput, pluginInfo{Name: pluginName, Path: absPath})
 			}
 		}
 
@@ -129,8 +132,10 @@ var pluginListCmd = &cobra.Command{
 
 		// Use the standard Write function for template execution
 		Write(pluginListTemplate, struct {
+			Verbose bool
 			Plugins []pluginInfo
 		}{
+			Verbose: verbose,
 			Plugins: pluginsOutput,
 		})
 	},

@@ -619,7 +619,7 @@ func isUnknownCommandError(err error) bool {
 	return strings.HasPrefix(err.Error(), "unknown command ")
 }
 
-// handlePluginCommand attempts to find and execute a lakectl plugin.
+// handlePluginCommand attempts to find and execute a lakectl plugin (based on basename).
 // It returns true if a plugin was found and executed (or an attempt was made),
 // and false otherwise.
 func handlePluginCommand(args []string) bool {
@@ -627,34 +627,11 @@ func handlePluginCommand(args []string) bool {
 		return false // No command to interpret as a plugin
 	}
 
+	// Prepare and execute the plugin command
 	pluginCmdName := args[0]
 	pluginExecName := "lakectl-" + pluginCmdName
-
-	// Find the plugin in PATH
-	pluginPath, err := exec.LookPath(pluginExecName)
-	if err != nil {
-		if errors.Is(err, exec.ErrNotFound) {
-			// Plugin not found in PATH, not necessarily an error here,
-			// could be a genuine unknown command for lakectl itself.
-			return false
-		}
-		// Other error from LookPath (e.g., permission issues)
-		DieFmt("error looking up plugin %s: %s", pluginExecName, err)
-	}
-
-	// Check file stats
-	info, err := os.Stat(pluginPath)
-	if err != nil {
-		// This might happen if the file was removed between LookPath and Stat, or permissions changed.
-		DieFmt("error getting info for plugin %s: %s", pluginPath, err)
-	}
-	if info.IsDir() {
-		return false
-	}
-
-	// Prepare and execute the plugin command
 	pluginArgs := args[1:]
-	externalCmd := exec.Command(pluginPath, pluginArgs...)
+	externalCmd := exec.Command(pluginExecName, pluginArgs...)
 	externalCmd.Stdout = os.Stdout
 	externalCmd.Stderr = os.Stderr
 	externalCmd.Stdin = os.Stdin
@@ -662,6 +639,12 @@ func handlePluginCommand(args []string) bool {
 
 	// Run the command
 	if err := externalCmd.Run(); err != nil {
+		// If plugin not found, return false.
+		// Cloud be a genuine unknown command for lakectl itself.
+		if errors.Is(err, exec.ErrNotFound) {
+			return false
+		}
+
 		// use the process exit code if available
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {

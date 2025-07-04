@@ -11,7 +11,7 @@ var pluginCmd = &cobra.Command{
 	Long: `Provides utilities for managing lakectl plugins.
 
 Plugins are standalone executable files that extend lakectl's functionality.
-lakectl discovers plugins by looking for executables in your system's PATH
+lakectl discovers plugins by looking for executables in your PATH
 that are named with the prefix "lakectl-".
 
 For example, an executable named "lakectl-myfeature" can be invoked as
@@ -25,7 +25,8 @@ Plugin Naming:
     (e.g., "lakectl-foo-bar" -> "lakectl foo-bar")
 
 Installation:
-  - Place your "lakectl-..." executable file in a directory listed in your PATH.
+  - Place your "lakectl-..." executable file (which may be any executable,
+    e.g. a Python application) in a directory listed in your PATH.
   - Ensure the file has execute permissions.
 
 Execution:
