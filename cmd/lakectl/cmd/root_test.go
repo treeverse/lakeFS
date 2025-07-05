@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/swag"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -150,5 +151,24 @@ func TestInitConfig_LoadingScenarios(t *testing.T) {
 
 			assert.Equal(t, tt.expectedURL, localCfg.Server.EndpointURL.String())
 		})
+	}
+}
+
+func TestIsUnknownCommandError(t *testing.T) {
+	testRootCmd := &cobra.Command{Use: "lakectl"}
+	testRootCmd.AddCommand(&cobra.Command{Use: "known"})
+	testRootCmd.SetArgs([]string{"unknown-command"})
+
+	// Verify that the command is unknown
+	_, err := testRootCmd.ExecuteC()
+	if !isUnknownCommandError(err) {
+		t.Errorf("Expected isUnknownCommandError to return true for unknown command, got false")
+	}
+
+	// Verify that a known command does not trigger the unknown command error
+	testRootCmd.SetArgs([]string{"known"})
+	_, err = testRootCmd.ExecuteC()
+	if isUnknownCommandError(err) {
+		t.Errorf("Expected isUnknownCommandError to return false for known command, got true")
 	}
 }
