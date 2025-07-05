@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/go-openapi/swag"
@@ -158,6 +161,8 @@ func TestIsUnknownCommandError(t *testing.T) {
 	testRootCmd := &cobra.Command{Use: "lakectl"}
 	testRootCmd.AddCommand(&cobra.Command{Use: "known"})
 	testRootCmd.SetArgs([]string{"unknown-command"})
+	testRootCmd.SetOut(io.Discard)
+	testRootCmd.SetErr(io.Discard)
 
 	// Verify that the command is unknown
 	_, err := testRootCmd.ExecuteC()
@@ -170,5 +175,100 @@ func TestIsUnknownCommandError(t *testing.T) {
 	_, err = testRootCmd.ExecuteC()
 	if isUnknownCommandError(err) {
 		t.Errorf("Expected isUnknownCommandError to return false for known command, got true")
+	}
+}
+
+func TestPlugin(t *testing.T) {
+	type testCase struct {
+		name           string
+		args           []string
+		expectedOutput string // Expected substring in the output (if not empty)
+		expectedResult bool   // Expected boolean result from pluginExecute
+	}
+
+	// Define the test table
+	tests := []testCase{
+		{
+			name:           "no_command",
+			args:           []string{},
+			expectedResult: true,
+		},
+		{
+			name:           "known_command",
+			args:           []string{"known"},
+			expectedResult: true,
+		},
+		{
+			name:           "unknown_command",
+			args:           []string{"unknown"},
+			expectedResult: false,
+		},
+		{
+			name:           "plugin_command",
+			args:           []string{"test-me"},
+			expectedResult: true,
+			expectedOutput: "test-me plugin",
+		},
+		{
+			name:           "plugin_command_with_args",
+			args:           []string{"test-me", "arg1", "arg2"},
+			expectedResult: true,
+			expectedOutput: "test-me plugin",
+		},
+	}
+
+	// setup the test environment
+	tempDir := t.TempDir()
+
+	// Create lakectl plugin
+	const pluginName = "test-me"
+	pluginFile := filepath.Join(tempDir, "lakectl-"+pluginName)
+	var (
+		pluginContent []byte
+		fileMode      os.FileMode
+	)
+	if runtime.GOOS == "windows" {
+		pluginFile += ".bat"
+		pluginContent = []byte(`echo "` + pluginName + ` plugin"`)
+		fileMode = 0o644
+	} else {
+		pluginContent = []byte("#!/bin/sh\necho \"" + pluginName + ` plugin"`)
+		fileMode = 0o755
+	}
+	err := os.WriteFile(pluginFile, pluginContent, fileMode)
+	require.NoError(t, err, "Failed to write plugin file: %s", pluginName)
+
+	// Set the PATH environment variable to include only the temporary directory with our plugin.
+	t.Setenv("PATH", tempDir)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save and restore os.Args to prevent side effects between test runs.
+			// This is necessary because override the command args of the command using SetArgs,
+			// will not pass to the plugin as the command execution fails with not found command.
+			originalOsArgs := os.Args
+			defer func() {
+				os.Args = originalOsArgs
+			}()
+			os.Args = append([]string{"lakectl"}, tt.args...)
+
+			// Setup root command with a known command
+			testRootCmd := &cobra.Command{Use: "lakectl", SilenceErrors: true, SilenceUsage: true}
+			testRootCmd.AddCommand(&cobra.Command{Use: "known", Short: "A known command"})
+			// Capture the output of the command
+			var buf bytes.Buffer
+			testRootCmd.SetOut(&buf)
+			testRootCmd.SetErr(&buf)
+
+			// Run the command with plugin execution
+			cmd, err := testRootCmd.ExecuteC()
+			res := pluginExecute(cmd, err)
+
+			require.Equal(t, tt.expectedResult, res)
+			if tt.expectedOutput != "" {
+				out := buf.String()
+				require.Contains(t, out, tt.expectedOutput)
+			}
+		})
 	}
 }

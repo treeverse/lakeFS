@@ -622,7 +622,7 @@ func isUnknownCommandError(err error) bool {
 // handlePluginCommand attempts to find and execute a lakectl plugin (based on basename).
 // It returns true if a plugin was found and executed (or an attempt was made),
 // and false otherwise.
-func handlePluginCommand(args []string) bool {
+func handlePluginCommand(cmd *cobra.Command, args []string) bool {
 	if len(args) == 0 {
 		return false // No command to interpret as a plugin
 	}
@@ -632,9 +632,9 @@ func handlePluginCommand(args []string) bool {
 	pluginExecName := "lakectl-" + pluginCmdName
 	pluginArgs := args[1:]
 	externalCmd := exec.Command(pluginExecName, pluginArgs...)
-	externalCmd.Stdout = os.Stdout
-	externalCmd.Stderr = os.Stderr
-	externalCmd.Stdin = os.Stdin
+	externalCmd.Stdout = cmd.OutOrStdout()
+	externalCmd.Stderr = cmd.ErrOrStderr()
+	externalCmd.Stdin = cmd.InOrStdin()
 	externalCmd.Env = os.Environ() // Pass parent environment
 
 	// Run the command
@@ -658,18 +658,44 @@ func handlePluginCommand(args []string) bool {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
+// It handles unknown commands by checking and running plugins if available.
 func Execute() {
 	executedCmd, err := rootCmd.ExecuteC()
+	if !pluginExecute(executedCmd, err) {
+		os.Exit(1)
+	}
+}
+
+// pluginExecute attempts to handle unknown commands as plugin commands.
+//
+// Parameters:
+//
+//	cmd: The root Cobra command that was executed.
+//	err: The error returned from executing the command.
+//
+// Behavior:
+//
+//   - If err is nil, returns true (no error, nothing to handle).
+//
+//   - If err is not an unknown command error, prints the error and returns false.
+//
+//   - If err is an unknown command error, attempts to interpret the first non-flag argument as a plugin command.
+//     If a plugin command is found and executed, returns true.
+//     Otherwise, returns false, signaling the main application to exit with an error.
+//
+//     It is expected to force exit with error in case we return true
+func pluginExecute(cmd *cobra.Command, err error) bool {
 	if err == nil {
-		return
+		// No error, no need to handle plugins
+		return true
 	}
 	if !isUnknownCommandError(err) {
 		// For other errors, print them ourselves since we have SilenceErrors=true
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-		os.Exit(1)
+		cmd.PrintErrf("Error: %s\n", err)
+		return false
 	}
 
-	pluginCandidateArgs := executedCmd.Flags().Args()
+	pluginCandidateArgs := cmd.Flags().Args()
 
 	// If pluginCandidateArgs is empty, we need to extract from os.Args
 	// This happens when Cobra fails to parse the unknown command into Args()
@@ -685,15 +711,14 @@ func Execute() {
 		}
 	}
 
-	if handlePluginCommand(pluginCandidateArgs) {
-		// The plugin was found and executed successfully
-		return
+	// Execute the plugin command if it exists
+	if !handlePluginCommand(cmd, pluginCandidateArgs) {
+		// No plugin found, print the error and help ourselves since we silenced Cobra's output
+		cmd.PrintErrf("Error: %s\n", err)
+		cmd.PrintErrf("Run '%s --help' for usage.\n", rootCmd.Name())
+		return false
 	}
-
-	// No plugin found, print the error and help ourselves since we silenced Cobra's output
-	fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-	fmt.Fprintf(os.Stderr, "Run '%s --help' for usage.\n", rootCmd.Name())
-	os.Exit(1)
+	return true
 }
 
 //nolint:gochecknoinits
