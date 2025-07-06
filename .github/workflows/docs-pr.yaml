@@ -62,7 +62,7 @@ jobs:
         with:
           script: |
             const previewUrl = `https://pr-${context.payload.pull_request.number}.docs-lakefs-preview.io/`;
-            const commentBody = `📚 Documentation preview at ${previewUrl}`;
+            let commentBody = `📚 Documentation preview at ${previewUrl}`;
 
             // Check if a preview comment already exists
             const { data: comments } = await github.rest.issues.listComments({
