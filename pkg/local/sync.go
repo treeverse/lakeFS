@@ -219,12 +219,17 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		return err
 	}
 
-	// In all of the below lines of code, we purposefully do not use the Join methods in order to avoid the path cleaning they perform
+	// In all the below lines of code, we purposefully do not use the Join methods in order to avoid the path cleaning they perform
 	destination := filepath.ToSlash(fmt.Sprintf("%s%c%s", rootPath, filepath.Separator, p))
 	destinationDirectory := filepath.Dir(destination)
 	remotePath := filepath.ToSlash(p)
 	if remote.GetPath() != "" {
 		remotePath = fmt.Sprintf("%s%s%s", path.Clean(remote.GetPath()), uri.PathSeparator, remotePath)
+	}
+
+	// Ensure the destination directory is not a symlink
+	if stat, err := os.Lstat(destinationDirectory); err == nil && stat.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("%w: destination directory '%s' is a symlink", ErrDownloadingFile, destinationDirectory)
 	}
 
 	// This is where we create directories (i.e. for directory markers in lakeFS) Permissions are modified later in code as needed
@@ -408,11 +413,8 @@ func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
 		}()
 	}()
 	source := filepath.Join(rootPath, change.Path)
-	err = fileutil.RemoveFile(source)
-	if err != nil {
-		return err
-	}
-	return nil
+	err = os.Remove(source)
+	return
 }
 
 func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change *Change) (err error) {

@@ -129,17 +129,6 @@ func PruneEmptyDirectories(dirPath string) ([]string, error) {
 	return pruned, nil
 }
 
-func RemoveFile(p string) error {
-	fileExists, err := FileExists(p)
-	if err != nil {
-		return err
-	}
-	if !fileExists {
-		return nil // does not exist
-	}
-	return os.Remove(p)
-}
-
 func FileExists(p string) (bool, error) {
 	info, err := os.Stat(p)
 	if os.IsNotExist(err) {

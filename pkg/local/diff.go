@@ -236,11 +236,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 		}
 
 		// Process the file after we finished processing all the dirs that precede it
-		if err := callbackFunc(p, info, nil); err != nil {
-			return err
-		}
-
-		return nil
+		return callbackFunc(p, info, nil)
 	})
 	if fpWalkErr != nil {
 		return fpWalkErr
@@ -283,11 +279,9 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, cfg Con
 		}
 
 		includeFile, err := includeLocalFileInDiff(info, cfg)
-		if err != nil {
+		if err != nil || !includeFile {
+			// if we can't include the file, we skip it, return the error if any
 			return err
-		}
-		if !includeFile {
-			return nil
 		}
 
 		localPath := strings.TrimPrefix(p, rightPath)
