@@ -12,7 +12,71 @@ Working with lakeFS Enterprise involve configuring both lakeFS and Fluffy. You c
 
 ## lakeFS Configuration
 
-See the full [lakeFS Server Configuration](../reference/configuration.md)
+For a complete list of configuration options, see the [lakeFS Server Configuration](../reference/configuration.md).
+The sections below provide additional configuration references that complement the main configuration guide.
+
+### blockstores
+
+!!! info
+    The `blockstores` configuration is required for [multi-storage backend](../howto/multiple-storage-backends.md) setups and replaces the previous `blockstore` configuration.
+
+* `blockstores.signing.secret_key` `(string : required)` - A random generated string that is used for HMAC signing when using get/link physical address
+* `blockstores.stores` `([{id: string, type: string, ...}] : required)` - Defines multiple storage backends used in a multi-storage backend setup. Each storage backend must have a unique id and a valid configuration.
+
+#### Common Fields for All Stores
+
+* `blockstores.stores[].id` `(string : required)` - Unique identifier for the storage backend.
+* `blockstores.stores[].backward_compatible` `(bool : false)` - Optional. Defaults to false. Used to migrate from a single to a multi-storage backend setup.
+* `blockstores.stores[].description` `(string : )` - A human-readable description of the storage backend.
+* `blockstores.stores[].type` `(string : required)` - `(one of ["local", "s3", "gs", "azure", "mem"] : required)`. Block adapter to use. This controls where the underlying data will be stored.
+
+=== "`blockstores.stores.local`"
+
+    * `blockstores.stores[].local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
+    * `blockstores.stores[].local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
+    * `blockstores.stores[].local.import_hidden` `(bool: false)` - When enabled import will scan and import any file or folder that starts with a dot character.
+    * `blockstores.stores[].local.allowed_external_prefixes` `([]string: [])` - List of absolute path prefixes used to match any access for external location (ex: /var/data/). Empty list mean no access to external location.
+
+=== "`blockstores.stores.s3`"
+
+    * `blockstores.stores[].s3.region` `(string : "us-east-1")` - Default region for lakeFS to use when interacting with S3.
+    * `blockstores.stores[].s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
+    * `blockstores.stores[].credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
+    * `blockstores.stores[].credentials.access_key_id` `(string : )` - If specified, will be used as a static set of credential
+    * `blockstores.stores[].credentials.secret_access_key` `(string : )` - If specified, will be used as a static set of credential
+    * `blockstores.stores[].s3.credentials.session_token` `(string : )` - If specified, will be used as a static session token
+    * `blockstores.stores[].s3.endpoint` `(string : )` - If specified, custom endpoint for the AWS S3 API (https://s3_compatible_service_endpoint:port)
+    * `blockstores.stores[].s3.force_path_style` `(bool : false)` - When true, use path-style S3 URLs (https://<host>/<bucket> instead of https://<bucket>.<host>)
+    * `blockstores.stores[].s3.discover_bucket_region` `(bool : true)` - (Can be turned off if the underlying S3 bucket doesn't support the GetBucketRegion API).
+    * `blockstores.stores[].s3.skip_verify_certificate_test_only` `(bool : false)` - Skip certificate verification while connecting to the storage endpoint. Should be used only for testing.
+    * `blockstores.stores[].s3.server_side_encryption` `(string : )` - Server side encryption format used (Example on AWS using SSE-KMS while passing "aws:kms")
+    * `blockstores.stores[].s3.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID
+    * `blockstores.stores[].s3.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
+    * `blockstores.stores[].s3.pre_signed_endpoint` `(string : )` - Custom endpoint for pre-signed URLs.
+    * `blockstores.stores[].s3.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
+    * `blockstores.stores[].s3.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
+    * `blockstores.stores[].s3.disable_pre_signed_multipart` `(bool : )` - Disable use of pre-signed multipart upload **experimental**, enabled on S3 block adapter with presign support.
+    * `blockstores.stores[].s3.client_log_request` `(bool : false)` - Set SDK logging bit to log requests
+    * `blockstores.stores[].s3.client_log_retries` `(bool : false)` - Set SDK logging bit to log retries
+
+=== "`blockstores.azure`"
+
+    * `blockstores.stores[].azure.storage_account` `(string : )` - If specified, will be used as the Azure storage account
+    * `blockstores.stores[].azure.storage_access_key` `(string : )` - If specified, will be used as the Azure storage access key
+    * `blockstores.stores[].azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
+    * `blockstores.stores[].azure.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
+    * `blockstores.stores[].azure.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
+    * `blockstores.stores[].azure.domain` `(string : blob.core.windows.net)` - Enables support of different Azure cloud domains. Current supported domains (in Beta stage): [`blob.core.chinacloudapi.cn`, `blob.core.usgovcloudapi.net`]
+
+=== "`blockstores.gs`"
+
+    * `blockstores.stores[].gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
+    * `blockstores.stores[].gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
+    * `blockstores.stores[].gs.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
+    * `blockstores.stores[].gs.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
+    * `blockstores.stores[].gs.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
+    * `blockstores.stores[].gs.server_side_encryption_customer_supplied` `(string : )` - Server side encryption with AES key in hex format, exclusive with key ID below
+    * `blockstores.stores[].gs.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID, exclusive with above
 
 ## Fluffy Server Configuration
 
