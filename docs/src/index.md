@@ -5,7 +5,7 @@ description: The lakeFS documentation provides guidance on how to use lakeFS to 
 
 # Welcome to the Lake!
 
-### Change1
+### Change2
 
 <img src="./assets/img/waving-axolotl-transparent.gif" width="90"/>
 
