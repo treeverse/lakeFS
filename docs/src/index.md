@@ -8,7 +8,7 @@ description: The lakeFS documentation provides guidance on how to use lakeFS to 
 ### Change2
 
 !!! warning "🚧 Under Construction"
-This documentation is still under construction.
+    This documentation is still under construction.
 
 <img src="./assets/img/waving-axolotl-transparent.gif" width="90"/>
 
