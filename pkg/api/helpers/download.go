@@ -78,7 +78,7 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 			return fmt.Errorf("download failed: %w", err)
 		}
 		if statResp.JSON200 == nil {
-			return fmt.Errorf("download failed: %w with %s", ErrRequestFailed, statResp.Status())
+			return fmt.Errorf("download failed: %w: %s", ErrRequestFailed, statResp.Status())
 		}
 		objectStat = statResp.JSON200
 	}
