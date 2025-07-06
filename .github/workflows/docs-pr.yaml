@@ -76,6 +76,8 @@ jobs:
             );
 
             if (existingComment) {
+              const shortSHA = context.sha.substring(0, 7);
+              commentBody += `\n\n*(Updated: ${new Date().toLocaleString()} - Commit: ${shortSHA})*`;
               await github.rest.issues.updateComment({
                 comment_id: existingComment.id,
                 owner: context.repo.owner,
