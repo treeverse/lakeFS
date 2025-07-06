@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/treeverse/lakefs/pkg/local"
-
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
