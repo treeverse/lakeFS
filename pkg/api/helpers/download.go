@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/treeverse/lakefs/pkg/local"
+
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -75,10 +77,10 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 			Presign:      swag.Bool(d.PreSign),        // Only presign if needed
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("download failed: %w", err)
 		}
 		if statResp.JSON200 == nil {
-			return fmt.Errorf("%w - get object stats: %s", ErrRequestFailed, statResp.Status())
+			return fmt.Errorf("download failed: %w with %s", ErrRequestFailed, statResp.Status())
 		}
 		objectStat = statResp.JSON200
 	}
