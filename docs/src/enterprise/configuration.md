@@ -18,7 +18,7 @@ The sections below provide additional configuration references that complement t
 ### blockstores
 
 !!! info
-The `blockstores` configuration is required for [multi-storage backend](../howto/multiple-storage-backends.md) setups and replaces the previous `blockstore` configuration.
+  The `blockstores` configuration is required for [multi-storage backend](../howto/multiple-storage-backends.md) setups and replaces the previous `blockstore` configuration.
 
 * `blockstores.signing.secret_key` `(string : required)` - A random generated string that is used for HMAC signing when using get/link physical address
 * `blockstores.stores` `([{id: string, type: string, ...}] : required)` - Defines multiple storage backends used in a multi-storage backend setup. Each storage backend must have a unique id and a valid configuration.
