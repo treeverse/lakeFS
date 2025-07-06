@@ -57,6 +57,11 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 
 // Download downloads an object from lakeFS to a local file, create the destination directory if needed.
 func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {
+	// delete destination file if it exists
+	if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove existing destination file '%s': %w", dst, err)
+	}
+
 	// create destination dir if needed
 	dir := filepath.Dir(dst)
 	_ = os.MkdirAll(dir, os.ModePerm)

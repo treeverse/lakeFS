@@ -265,6 +265,11 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 
 	if !isDir {
+		// To avoid content truncation, we need to ensure the file does not exist before downloading
+		if err := os.Remove(destination); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("could not remove existing file '%s': %w", destination, err)
+		}
+
 		// Symlink handling - handled outside 'downloadFile' to return in case of symlink support, without fallthrough
 		// which update mtime and permissions.
 		if s.cfg.SymlinkSupport {
