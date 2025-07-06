@@ -154,7 +154,7 @@ nav:
       - Copying data to/from lakeFS: howto/copying.md
       - Data Catalogs Exports: howto/catalog_exports.md
     - lakeFS Mount: reference/mount.md
-    - Metadata search: howto/metadata-search.md
+    - Metadata search: datamanagment/metadata-search.md
     - Actions and Hooks:
       - Overview: howto/hooks/index.md
       - Airflow Hooks: howto/hooks/airflow.md
