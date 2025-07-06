@@ -77,9 +77,7 @@ jobs:
             );
 
             if (existingComment) {
-              const pr = context.payload.pull_request;
-              const commentSha = pr ? pr.head.sha: process.env.GITHUB_SHA;
-              const shortSha = commentSha.substring(0,7);
+              const shortSha = context.sha.substring(0,7);
               commentBody += `\n\n*(Updated: ${new Date().toLocaleString()} - Commit: ${shortSha})*`;
               await github.rest.issues.updateComment({
                 comment_id: existingComment.id,
