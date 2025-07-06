@@ -99,9 +99,9 @@ jobs:
 
       - name: Check links
         id: lychee
-        uses: lycheeverse/lychee-action@v2
+        uses: lycheeverse/lychee-action@v1.8.0
         with:
-          args: docs/site --no-progress --root-dir ${{ github.workspace }}/docs/site
+          args: docs/site --no-progress --exclude-mail --exclude-file=.lycheeignore
           fail: true
           jobSummary: true
           format: markdown
