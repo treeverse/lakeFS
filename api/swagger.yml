@@ -421,28 +421,6 @@ components:
           type: boolean
           default: false
 
-    DiffObjectInfo:
-      type: object
-      required:
-        - physical_address
-        - checksum
-        - mtime
-        - content_type
-      properties:
-        physical_address:
-          type: string
-        checksum:
-          type: string
-        mtime:
-          type: integer
-          format: int64
-          description: Unix Epoch in seconds
-        content_type:
-          type: string
-          description: Object media type
-        user_metadata:
-          $ref: "#/components/schemas/ObjectUserMetadata"
-
     ObjectUserMetadata:
       type: object
       additionalProperties:
@@ -498,8 +476,8 @@ components:
           description: represents the size of the added/changed/deleted entry
           format: int64
         right:
-          $ref: "#/components/schemas/DiffObjectInfo"
-          description: Optional. System and user object details.
+          $ref: "#/components/schemas/ObjectStats"
+          description: ObjectStats of the right side of the diff.
 
     DiffList:
       type: object
@@ -4285,8 +4263,8 @@ paths:
           enum: [two_dot, three_dot]
           default: three_dot
       - in: query
-        name: include_right
-        description: If set to true, the diff will include system and user object info. *EXPERIMENTAL*
+        name: include_right_info
+        description: If set to true, the diff will include right-side object info. *EXPERIMENTAL*
         required: false
         schema:
           type: boolean

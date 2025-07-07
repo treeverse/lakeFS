@@ -2017,6 +2017,11 @@ func TestController_DiffRefsHandler(t *testing.T) {
 			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
 	})
+}
+
+func TestController_DiffRefs_ObjectInfo(t *testing.T) {
+	clt, deps := setupClientWithAdmin(t)
+	ctx := context.Background()
 
 	t.Run("diff refs with metadata", func(t *testing.T) {
 		repoName := testUniqueRepoName()
@@ -2043,8 +2048,7 @@ func TestController_DiffRefsHandler(t *testing.T) {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
 
-		useRight := true
-		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{IncludeRight: &useRight})
+		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{IncludeRightInfo: apiutil.Ptr(true)})
 		verifyResponseOK(t, resp2, err)
 		results := resp2.JSON200.Results
 		if len(results) != 1 {
@@ -2059,7 +2063,7 @@ func TestController_DiffRefsHandler(t *testing.T) {
 		if results[0].Right == nil {
 			t.Fatal("expected right info in diff result")
 		}
-		if results[0].Right.Checksum == "" || results[0].Right.ContentType == "" || results[0].Right.Mtime == 0 {
+		if results[0].Right.Checksum == "" || results[0].Right.Mtime == 0 {
 			t.Fatal("expected right info checksum and mtime in diff result")
 		}
 	})

@@ -4236,11 +4236,11 @@ paths:
           - three_dot
           type: string
         style: form
-      - description: "If set to true, the diff will include system and user object\
-          \ info. *EXPERIMENTAL*"
+      - description: "If set to true, the diff will include right-side object info.\
+          \ *EXPERIMENTAL*"
         explode: true
         in: query
-        name: include_right
+        name: include_right_info
         required: false
         schema:
           default: false
@@ -7962,12 +7962,12 @@ components:
         path: path
         metadata:
           key: metadata
-        size_bytes: 6
+        size_bytes: 1
         content_type: content_type
-        physical_address_expiry: 0
+        physical_address_expiry: 6
         checksum: checksum
         path_type: common_prefix
-        mtime: 1
+        mtime: 5
       properties:
         path:
           type: string
@@ -8031,22 +8031,22 @@ components:
           path: path
           metadata:
             key: metadata
-          size_bytes: 6
+          size_bytes: 1
           content_type: content_type
-          physical_address_expiry: 0
+          physical_address_expiry: 6
           checksum: checksum
           path_type: common_prefix
-          mtime: 1
+          mtime: 5
         - physical_address: physical_address
           path: path
           metadata:
             key: metadata
-          size_bytes: 6
+          size_bytes: 1
           content_type: content_type
-          physical_address_expiry: 0
+          physical_address_expiry: 6
           checksum: checksum
           path_type: common_prefix
-          mtime: 1
+          mtime: 5
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -8125,36 +8125,6 @@ components:
       - physical_address
       - size_bytes
       type: object
-    DiffObjectInfo:
-      example:
-        physical_address: physical_address
-        user_metadata:
-          key: user_metadata
-        content_type: content_type
-        checksum: checksum
-        mtime: 6
-      properties:
-        physical_address:
-          type: string
-        checksum:
-          type: string
-        mtime:
-          description: Unix Epoch in seconds
-          format: int64
-          type: integer
-        content_type:
-          description: Object media type
-          type: string
-        user_metadata:
-          additionalProperties:
-            type: string
-          type: object
-      required:
-      - checksum
-      - content_type
-      - mtime
-      - physical_address
-      type: object
     ObjectUserMetadata:
       additionalProperties:
         type: string
@@ -8210,11 +8180,15 @@ components:
         path_type: common_prefix
         right:
           physical_address: physical_address
-          user_metadata:
-            key: user_metadata
+          path: path
+          metadata:
+            key: metadata
+          size_bytes: 1
           content_type: content_type
+          physical_address_expiry: 6
           checksum: checksum
-          mtime: 6
+          path_type: common_prefix
+          mtime: 5
         type: added
       properties:
         type:
@@ -8237,7 +8211,7 @@ components:
           format: int64
           type: integer
         right:
-          $ref: '#/components/schemas/DiffObjectInfo'
+          $ref: '#/components/schemas/ObjectStats'
       required:
       - path
       - path_type
@@ -8256,22 +8230,30 @@ components:
           path_type: common_prefix
           right:
             physical_address: physical_address
-            user_metadata:
-              key: user_metadata
+            path: path
+            metadata:
+              key: metadata
+            size_bytes: 1
             content_type: content_type
+            physical_address_expiry: 6
             checksum: checksum
-            mtime: 6
+            path_type: common_prefix
+            mtime: 5
           type: added
         - path: path
           size_bytes: 0
           path_type: common_prefix
           right:
             physical_address: physical_address
-            user_metadata:
-              key: user_metadata
+            path: path
+            metadata:
+              key: metadata
+            size_bytes: 1
             content_type: content_type
+            physical_address_expiry: 6
             checksum: checksum
-            mtime: 6
+            path_type: common_prefix
+            mtime: 5
           type: added
       properties:
         pagination:

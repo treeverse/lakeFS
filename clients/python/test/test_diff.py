@@ -41,14 +41,18 @@ class TestDiff(unittest.TestCase):
                 path = '',
                 path_type = 'common_prefix',
                 size_bytes = 56,
-                right = lakefs_sdk.models.diff_object_info.DiffObjectInfo(
+                right = lakefs_sdk.models.object_stats.ObjectStats(
+                    path = '', 
+                    path_type = 'common_prefix', 
                     physical_address = '', 
+                    physical_address_expiry = 56, 
                     checksum = '', 
+                    size_bytes = 56, 
                     mtime = 56, 
-                    content_type = '', 
-                    user_metadata = {
+                    metadata = {
                         'key' : ''
-                        }, )
+                        }, 
+                    content_type = '', )
             )
         else:
             return Diff(
