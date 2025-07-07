@@ -263,13 +263,6 @@ func TestS3IfNoneMatch(t *testing.T) {
 
 	s3Endpoint := viper.GetString("s3_endpoint")
 	s3Client := createS3Client(s3Endpoint, t)
-
-	_, _ = s3Client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(repo),
-		Key:    aws.String("main/object1"),
-		Body:   strings.NewReader("test-content"),
-	})
-
 	testCases := []struct {
 		Name          string
 		Path          string
@@ -301,7 +294,6 @@ func TestS3IfNoneMatch(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
 			input := &s3.PutObjectInput{
 				Bucket: aws.String(repo),
 				Key:    aws.String(tt.Path),
