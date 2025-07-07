@@ -138,12 +138,12 @@ export class MockServer {
         return;
       }
 
-      let filePath = req.url === '/' ? '/index.html' : req.url;
-      if (filePath?.includes('?')) {
-        filePath = filePath.split('?')[0];
-      }
-
-      if (!filePath || filePath === '/') {
+      // Use URL constructor to properly parse the request URL
+      const url = new URL(req.url, `http://${this.hostname}:${this.port}`);
+      let filePath = url.pathname;
+      
+      // Default to index.html for root path
+      if (filePath === '/') {
         filePath = '/index.html';
       }
       
