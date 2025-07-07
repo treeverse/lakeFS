@@ -1,14 +1,12 @@
 /* lakeFS custom theme overrides for MkDocs Material */
+:root {
+  --md-active-color: #00aa94;
+}
+
 
 .md-button {
   font-size: 0.7rem;
 }
-/* 
-:root > * {
-  --md-primary-fg-color:        #258C82;
-  --md-primary-fg-color--light: #2CE5B5;
-  --md-primary-fg-color--dark:  #258C82;
-} */
 
 /* ----------------------------- */
 /* Footer customization          */
@@ -54,47 +52,75 @@
 /* ----------------------------- */
 /* Layout refinements for large displays */
 /* ----------------------------- */
+.md-grid {
+  max-width: calc(100% - 60px);
+}
+
+.md-content__inner {
+  max-width: 1000px;
+}
 
 @media (min-width: 1440px) {
-  /* allow overall layout to occupy more horizontal space while preserving margins */
-  .md-grid {
-    max-width: 1440px;
-  }
-  /* widen sidebars (navigation & table of contents) */
-  .md-sidebar--primary,
-  .md-sidebar--secondary {
-    width: 18rem;      /* 288px */
-    flex: 0 0 18rem;   /* fixed flex-basis */
+  .md-sidebar--primary {
+    width: 14rem;
+    flex: 0 0 14rem;
   }
 }
 
 /* Extra-large screens */
 @media (min-width: 1920px) {
-  .md-grid {
-    max-width: 1700px; /* ample content width while preserving margins */
+  .md-sidebar--primary {
+    width: 16rem;
+    flex: 0 0 16rem;
   }
 
-  .md-sidebar--primary,
   .md-sidebar--secondary {
-    width: 18rem; /* 320px */
-    flex: 0 0 18rem;
-  }
-
-  @supports selector(::-webkit-scrollbar) {
-    [dir=ltr] .md-sidebar__inner {
-        padding-right: calc(100% - 16rem);
-    }
+    width: 24rem;
+    flex: 0 0 24rem;
   }
 }
 
-:root {
-  --md-status--enterprise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M12 2l2.47 6.87H22l-5.73 4.16L17.94 22 12 17.77 6.06 22l1.67-8.97L2 8.87h7.53L12 2z'/></svg>");
+@media (min-width: 2200px) {
+  .md-sidebar--secondary {
+    width: 28rem;
+    flex: 0 0 28rem;
+  }
 }
 
+/* Extra-Extra-large screens */
+@media (min-width: 2500px) {
+  .md-sidebar--secondary {
+    width: 30rem;
+    flex: 0 0 30rem;
+  }
+}
+
+@supports selector(::-webkit-scrollbar) {
+  [dir=ltr] .md-sidebar__inner {
+    padding-right: 20px;
+  }
+}
+
+
+/* -------------------------- */
+/* Enterprise status badge    */
+/* -------------------------- */
 .md-status--enterprise::after {
-  mask-image: var(--md-status--enterprise);
-  -webkit-mask-image: var(--md-status--enterprise);
+  mask-image: none;
+  -webkit-mask-image: none;
+  content: "🚀";
+  font-size: 0.6rem;
+  background-color: transparent;
 }
+.md-status.md-status--enterprise:hover:after {
+  background-color: transparent !important;
+}
+
+.md-nav__item .md-nav__link--active, .md-nav__item .md-nav__link--active code {
+  color: var(--md-active-color);
+  font-weight: 600;
+}
+
 
 
 /* ----------------------------------------------------------------------------------------*/
@@ -117,4 +143,19 @@
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+
+/* Join us on Slack */
+[data-md-color-primary=white] .md-button.md-button-nav-cta,
+[data-md-color-primary=white] .md-button.md-button-nav-cta:hover
+.md-button-nav-cta
+.md-button-nav-cta:hover {
+  background-color: #f24886;
+  color: white;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-right: 1.4rem;
 }
