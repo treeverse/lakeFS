@@ -25,9 +25,9 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field, StrictInt, StrictStr
 
-class ObjectMetadata(BaseModel):
+class DiffObjectInfo(BaseModel):
     """
-    ObjectMetadata
+    DiffObjectInfo
     """
     physical_address: StrictStr = Field(...)
     checksum: StrictStr = Field(...)
@@ -50,8 +50,8 @@ class ObjectMetadata(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> ObjectMetadata:
-        """Create an instance of ObjectMetadata from a JSON string"""
+    def from_json(cls, json_str: str) -> DiffObjectInfo:
+        """Create an instance of DiffObjectInfo from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -63,15 +63,15 @@ class ObjectMetadata(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> ObjectMetadata:
-        """Create an instance of ObjectMetadata from a dict"""
+    def from_dict(cls, obj: dict) -> DiffObjectInfo:
+        """Create an instance of DiffObjectInfo from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return ObjectMetadata.parse_obj(obj)
+            return DiffObjectInfo.parse_obj(obj)
 
-        _obj = ObjectMetadata.parse_obj({
+        _obj = DiffObjectInfo.parse_obj({
             "physical_address": obj.get("physical_address"),
             "checksum": obj.get("checksum"),
             "mtime": obj.get("mtime"),

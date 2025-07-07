@@ -24,7 +24,7 @@ try:
     from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, validator
 except ImportError:
     from pydantic import BaseModel, Field, StrictInt, StrictStr, validator
-from lakefs_sdk.models.object_metadata import ObjectMetadata
+from lakefs_sdk.models.diff_object_info import DiffObjectInfo
 
 class Diff(BaseModel):
     """
@@ -34,8 +34,8 @@ class Diff(BaseModel):
     path: StrictStr = Field(...)
     path_type: StrictStr = Field(...)
     size_bytes: Optional[StrictInt] = Field(None, description="represents the size of the added/changed/deleted entry")
-    metadata: Optional[ObjectMetadata] = None
-    __properties = ["type", "path", "path_type", "size_bytes", "metadata"]
+    right: Optional[DiffObjectInfo] = None
+    __properties = ["type", "path", "path_type", "size_bytes", "right"]
 
     @validator('type')
     def type_validate_enum(cls, value):
@@ -75,9 +75,9 @@ class Diff(BaseModel):
                           exclude={
                           },
                           exclude_none=True)
-        # override the default output from pydantic by calling `to_dict()` of metadata
-        if self.metadata:
-            _dict['metadata'] = self.metadata.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of right
+        if self.right:
+            _dict['right'] = self.right.to_dict()
         return _dict
 
     @classmethod
@@ -94,7 +94,7 @@ class Diff(BaseModel):
             "path": obj.get("path"),
             "path_type": obj.get("path_type"),
             "size_bytes": obj.get("size_bytes"),
-            "metadata": ObjectMetadata.from_dict(obj.get("metadata")) if obj.get("metadata") is not None else None
+            "right": DiffObjectInfo.from_dict(obj.get("right")) if obj.get("right") is not None else None
         })
         return _obj
 

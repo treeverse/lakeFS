@@ -21,8 +21,8 @@ pub struct Diff {
     /// represents the size of the added/changed/deleted entry
     #[serde(rename = "size_bytes", skip_serializing_if = "Option::is_none")]
     pub size_bytes: Option<i64>,
-    #[serde(rename = "metadata", skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<Box<models::ObjectMetadata>>,
+    #[serde(rename = "right", skip_serializing_if = "Option::is_none")]
+    pub right: Option<Box<models::DiffObjectInfo>>,
 }
 
 impl Diff {
@@ -32,7 +32,7 @@ impl Diff {
             path,
             path_type,
             size_bytes: None,
-            metadata: None,
+            right: None,
         }
     }
 }

@@ -74,6 +74,7 @@ from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
 from lakefs_sdk.models.current_user import CurrentUser
 from lakefs_sdk.models.diff import Diff
 from lakefs_sdk.models.diff_list import DiffList
+from lakefs_sdk.models.diff_object_info import DiffObjectInfo
 from lakefs_sdk.models.error import Error
 from lakefs_sdk.models.error_no_acl import ErrorNoACL
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation
@@ -106,7 +107,6 @@ from lakefs_sdk.models.meta_range_creation_response import MetaRangeCreationResp
 from lakefs_sdk.models.object_copy_creation import ObjectCopyCreation
 from lakefs_sdk.models.object_error import ObjectError
 from lakefs_sdk.models.object_error_list import ObjectErrorList
-from lakefs_sdk.models.object_metadata import ObjectMetadata
 from lakefs_sdk.models.object_stage_creation import ObjectStageCreation
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.models.object_stats_list import ObjectStatsList

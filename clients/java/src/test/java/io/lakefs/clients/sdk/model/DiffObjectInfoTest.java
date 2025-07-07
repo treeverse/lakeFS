@@ -26,17 +26,17 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for ObjectMetadata
+ * Model tests for DiffObjectInfo
  */
-public class ObjectMetadataTest {
-    private final ObjectMetadata model = new ObjectMetadata();
+public class DiffObjectInfoTest {
+    private final DiffObjectInfo model = new DiffObjectInfo();
 
     /**
-     * Model tests for ObjectMetadata
+     * Model tests for DiffObjectInfo
      */
     @Test
-    public void testObjectMetadata() {
-        // TODO: test ObjectMetadata
+    public void testDiffObjectInfo() {
+        // TODO: test DiffObjectInfo
     }
 
     /**

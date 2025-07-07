@@ -421,7 +421,7 @@ components:
           type: boolean
           default: false
 
-    ObjectMetadata:
+    DiffObjectInfo:
       type: object
       required:
         - physical_address
@@ -497,9 +497,9 @@ components:
           type: integer
           description: represents the size of the added/changed/deleted entry
           format: int64
-        metadata:
-          $ref: "#/components/schemas/ObjectMetadata"
-          description: Optional. System and user metadata for the diff entry.
+        right:
+          $ref: "#/components/schemas/DiffObjectInfo"
+          description: Optional. System and user object details.
 
     DiffList:
       type: object
@@ -4285,8 +4285,8 @@ paths:
           enum: [two_dot, three_dot]
           default: three_dot
       - in: query
-        name: include_metadata
-        description: If set to true, the diff will include system and user metadata
+        name: include_right
+        description: If set to true, the diff will include system and user object info. *EXPERIMENTAL*
         required: false
         schema:
           type: boolean

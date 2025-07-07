@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **path** | **str** |  | 
 **path_type** | **str** |  | 
 **size_bytes** | **int** | represents the size of the added/changed/deleted entry | [optional] 
-**metadata** | [**ObjectMetadata**](ObjectMetadata.md) |  | [optional] 
+**right** | [**DiffObjectInfo**](DiffObjectInfo.md) |  | [optional] 
 
 ## Example
 

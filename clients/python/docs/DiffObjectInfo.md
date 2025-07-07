@@ -1,4 +1,4 @@
-# ObjectMetadata
+# DiffObjectInfo
 
 
 ## Properties
@@ -14,19 +14,19 @@ Name | Type | Description | Notes
 ## Example
 
 ```python
-from lakefs_sdk.models.object_metadata import ObjectMetadata
+from lakefs_sdk.models.diff_object_info import DiffObjectInfo
 
 # TODO update the JSON string below
 json = "{}"
-# create an instance of ObjectMetadata from a JSON string
-object_metadata_instance = ObjectMetadata.from_json(json)
+# create an instance of DiffObjectInfo from a JSON string
+diff_object_info_instance = DiffObjectInfo.from_json(json)
 # print the JSON string representation of the object
-print ObjectMetadata.to_json()
+print DiffObjectInfo.to_json()
 
 # convert the object into a dict
-object_metadata_dict = object_metadata_instance.to_dict()
-# create an instance of ObjectMetadata from a dict
-object_metadata_form_dict = object_metadata.from_dict(object_metadata_dict)
+diff_object_info_dict = diff_object_info_instance.to_dict()
+# create an instance of DiffObjectInfo from a dict
+diff_object_info_form_dict = diff_object_info.from_dict(diff_object_info_dict)
 ```
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

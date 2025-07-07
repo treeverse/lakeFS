@@ -2043,8 +2043,8 @@ func TestController_DiffRefsHandler(t *testing.T) {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
 
-		useMetadata := true
-		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{IncludeMetadata: &useMetadata})
+		useRight := true
+		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{IncludeRight: &useRight})
 		verifyResponseOK(t, resp2, err)
 		results := resp2.JSON200.Results
 		if len(results) != 1 {
@@ -2056,11 +2056,11 @@ func TestController_DiffRefsHandler(t *testing.T) {
 		if results[0].Type != "added" {
 			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
-		if results[0].Metadata == nil {
-			t.Fatal("expected metadata in diff result")
+		if results[0].Right == nil {
+			t.Fatal("expected right info in diff result")
 		}
-		if results[0].Metadata.Checksum == "" || results[0].Metadata.ContentType == "" || results[0].Metadata.Mtime == 0 {
-			t.Fatal("expected metadata checksum and mtime in diff result")
+		if results[0].Right.Checksum == "" || results[0].Right.ContentType == "" || results[0].Right.Mtime == 0 {
+			t.Fatal("expected right info checksum and mtime in diff result")
 		}
 	})
 }

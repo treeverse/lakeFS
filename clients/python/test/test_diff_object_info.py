@@ -16,10 +16,10 @@
 import unittest
 import datetime
 
-from lakefs_sdk.models.object_metadata import ObjectMetadata  # noqa: E501
+from lakefs_sdk.models.diff_object_info import DiffObjectInfo  # noqa: E501
 
-class TestObjectMetadata(unittest.TestCase):
-    """ObjectMetadata unit test stubs"""
+class TestDiffObjectInfo(unittest.TestCase):
+    """DiffObjectInfo unit test stubs"""
 
     def setUp(self):
         pass
@@ -27,16 +27,16 @@ class TestObjectMetadata(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> ObjectMetadata:
-        """Test ObjectMetadata
+    def make_instance(self, include_optional) -> DiffObjectInfo:
+        """Test DiffObjectInfo
             include_option is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `ObjectMetadata`
+        # uncomment below to create an instance of `DiffObjectInfo`
         """
-        model = ObjectMetadata()  # noqa: E501
+        model = DiffObjectInfo()  # noqa: E501
         if include_optional:
-            return ObjectMetadata(
+            return DiffObjectInfo(
                 physical_address = '',
                 checksum = '',
                 mtime = 56,
@@ -46,7 +46,7 @@ class TestObjectMetadata(unittest.TestCase):
                     }
             )
         else:
-            return ObjectMetadata(
+            return DiffObjectInfo(
                 physical_address = '',
                 checksum = '',
                 mtime = 56,
@@ -54,8 +54,8 @@ class TestObjectMetadata(unittest.TestCase):
         )
         """
 
-    def testObjectMetadata(self):
-        """Test ObjectMetadata"""
+    def testDiffObjectInfo(self):
+        """Test DiffObjectInfo"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

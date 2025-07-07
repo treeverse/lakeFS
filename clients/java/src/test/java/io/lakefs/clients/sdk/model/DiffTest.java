@@ -18,7 +18,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.ObjectMetadata;
+import io.lakefs.clients.sdk.model.DiffObjectInfo;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.jupiter.api.Disabled;
@@ -71,11 +71,11 @@ public class DiffTest {
     }
 
     /**
-     * Test the property 'metadata'
+     * Test the property 'right'
      */
     @Test
-    public void metadataTest() {
-        // TODO: test metadata
+    public void rightTest() {
+        // TODO: test right
     }
 
 }

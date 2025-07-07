@@ -11,7 +11,7 @@
 use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ObjectMetadata {
+pub struct DiffObjectInfo {
     #[serde(rename = "physical_address")]
     pub physical_address: String,
     #[serde(rename = "checksum")]
@@ -26,9 +26,9 @@ pub struct ObjectMetadata {
     pub user_metadata: Option<std::collections::HashMap<String, String>>,
 }
 
-impl ObjectMetadata {
-    pub fn new(physical_address: String, checksum: String, mtime: i64, content_type: String) -> ObjectMetadata {
-        ObjectMetadata {
+impl DiffObjectInfo {
+    pub fn new(physical_address: String, checksum: String, mtime: i64, content_type: String) -> DiffObjectInfo {
+        DiffObjectInfo {
             physical_address,
             checksum,
             mtime,

@@ -33,6 +33,7 @@ docs/CredentialsWithSecret.md
 docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
+docs/DiffObjectInfo.md
 docs/Error.md
 docs/ErrorNoAcl.md
 docs/ExperimentalApi.md
@@ -72,7 +73,6 @@ docs/MetadataApi.md
 docs/ObjectCopyCreation.md
 docs/ObjectError.md
 docs/ObjectErrorList.md
-docs/ObjectMetadata.md
 docs/ObjectStageCreation.md
 docs/ObjectStats.md
 docs/ObjectStatsList.md
@@ -179,6 +179,7 @@ src/models/credentials_with_secret.rs
 src/models/current_user.rs
 src/models/diff.rs
 src/models/diff_list.rs
+src/models/diff_object_info.rs
 src/models/error.rs
 src/models/error_no_acl.rs
 src/models/external_login_information.rs
@@ -213,7 +214,6 @@ src/models/model_ref.rs
 src/models/object_copy_creation.rs
 src/models/object_error.rs
 src/models/object_error_list.rs
-src/models/object_metadata.rs
 src/models/object_stage_creation.rs
 src/models/object_stats.rs
 src/models/object_stats_list.rs

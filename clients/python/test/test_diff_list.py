@@ -48,7 +48,7 @@ class TestDiffList(unittest.TestCase):
                         path = '', 
                         path_type = 'common_prefix', 
                         size_bytes = 56, 
-                        metadata = lakefs_sdk.models.object_metadata.ObjectMetadata(
+                        right = lakefs_sdk.models.diff_object_info.DiffObjectInfo(
                             physical_address = '', 
                             checksum = '', 
                             mtime = 56, 
@@ -71,7 +71,7 @@ class TestDiffList(unittest.TestCase):
                         path = '', 
                         path_type = 'common_prefix', 
                         size_bytes = 56, 
-                        metadata = lakefs_sdk.models.object_metadata.ObjectMetadata(
+                        right = lakefs_sdk.models.diff_object_info.DiffObjectInfo(
                             physical_address = '', 
                             checksum = '', 
                             mtime = 56, 

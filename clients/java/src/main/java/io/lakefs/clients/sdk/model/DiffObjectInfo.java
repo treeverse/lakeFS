@@ -49,10 +49,10 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * ObjectMetadata
+ * DiffObjectInfo
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class ObjectMetadata {
+public class DiffObjectInfo {
   public static final String SERIALIZED_NAME_PHYSICAL_ADDRESS = "physical_address";
   @SerializedName(SERIALIZED_NAME_PHYSICAL_ADDRESS)
   private String physicalAddress;
@@ -73,10 +73,10 @@ public class ObjectMetadata {
   @SerializedName(SERIALIZED_NAME_USER_METADATA)
   private Map<String, String> userMetadata = new HashMap<>();
 
-  public ObjectMetadata() {
+  public DiffObjectInfo() {
   }
 
-  public ObjectMetadata physicalAddress(String physicalAddress) {
+  public DiffObjectInfo physicalAddress(String physicalAddress) {
     
     this.physicalAddress = physicalAddress;
     return this;
@@ -97,7 +97,7 @@ public class ObjectMetadata {
   }
 
 
-  public ObjectMetadata checksum(String checksum) {
+  public DiffObjectInfo checksum(String checksum) {
     
     this.checksum = checksum;
     return this;
@@ -118,7 +118,7 @@ public class ObjectMetadata {
   }
 
 
-  public ObjectMetadata mtime(Long mtime) {
+  public DiffObjectInfo mtime(Long mtime) {
     
     this.mtime = mtime;
     return this;
@@ -139,7 +139,7 @@ public class ObjectMetadata {
   }
 
 
-  public ObjectMetadata contentType(String contentType) {
+  public DiffObjectInfo contentType(String contentType) {
     
     this.contentType = contentType;
     return this;
@@ -160,13 +160,13 @@ public class ObjectMetadata {
   }
 
 
-  public ObjectMetadata userMetadata(Map<String, String> userMetadata) {
+  public DiffObjectInfo userMetadata(Map<String, String> userMetadata) {
     
     this.userMetadata = userMetadata;
     return this;
   }
 
-  public ObjectMetadata putUserMetadataItem(String key, String userMetadataItem) {
+  public DiffObjectInfo putUserMetadataItem(String key, String userMetadataItem) {
     if (this.userMetadata == null) {
       this.userMetadata = new HashMap<>();
     }
@@ -201,9 +201,9 @@ public class ObjectMetadata {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the ObjectMetadata instance itself
+   * @return the DiffObjectInfo instance itself
    */
-  public ObjectMetadata putAdditionalProperty(String key, Object value) {
+  public DiffObjectInfo putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -242,13 +242,13 @@ public class ObjectMetadata {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    ObjectMetadata objectMetadata = (ObjectMetadata) o;
-    return Objects.equals(this.physicalAddress, objectMetadata.physicalAddress) &&
-        Objects.equals(this.checksum, objectMetadata.checksum) &&
-        Objects.equals(this.mtime, objectMetadata.mtime) &&
-        Objects.equals(this.contentType, objectMetadata.contentType) &&
-        Objects.equals(this.userMetadata, objectMetadata.userMetadata)&&
-        Objects.equals(this.additionalProperties, objectMetadata.additionalProperties);
+    DiffObjectInfo diffObjectInfo = (DiffObjectInfo) o;
+    return Objects.equals(this.physicalAddress, diffObjectInfo.physicalAddress) &&
+        Objects.equals(this.checksum, diffObjectInfo.checksum) &&
+        Objects.equals(this.mtime, diffObjectInfo.mtime) &&
+        Objects.equals(this.contentType, diffObjectInfo.contentType) &&
+        Objects.equals(this.userMetadata, diffObjectInfo.userMetadata)&&
+        Objects.equals(this.additionalProperties, diffObjectInfo.additionalProperties);
   }
 
   @Override
@@ -259,7 +259,7 @@ public class ObjectMetadata {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class ObjectMetadata {\n");
+    sb.append("class DiffObjectInfo {\n");
     sb.append("    physicalAddress: ").append(toIndentedString(physicalAddress)).append("\n");
     sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
     sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
@@ -306,17 +306,17 @@ public class ObjectMetadata {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to ObjectMetadata
+  * @throws IOException if the JSON Element is invalid with respect to DiffObjectInfo
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!ObjectMetadata.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in ObjectMetadata is not found in the empty JSON string", ObjectMetadata.openapiRequiredFields.toString()));
+        if (!DiffObjectInfo.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in DiffObjectInfo is not found in the empty JSON string", DiffObjectInfo.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : ObjectMetadata.openapiRequiredFields) {
+      for (String requiredField : DiffObjectInfo.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
@@ -337,16 +337,16 @@ public class ObjectMetadata {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!ObjectMetadata.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'ObjectMetadata' and its subtypes
+       if (!DiffObjectInfo.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'DiffObjectInfo' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<ObjectMetadata> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(ObjectMetadata.class));
+       final TypeAdapter<DiffObjectInfo> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(DiffObjectInfo.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<ObjectMetadata>() {
+       return (TypeAdapter<T>) new TypeAdapter<DiffObjectInfo>() {
            @Override
-           public void write(JsonWriter out, ObjectMetadata value) throws IOException {
+           public void write(JsonWriter out, DiffObjectInfo value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -369,12 +369,12 @@ public class ObjectMetadata {
            }
 
            @Override
-           public ObjectMetadata read(JsonReader in) throws IOException {
+           public DiffObjectInfo read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             ObjectMetadata instance = thisAdapter.fromJsonTree(jsonObj);
+             DiffObjectInfo instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -401,18 +401,18 @@ public class ObjectMetadata {
   }
 
  /**
-  * Create an instance of ObjectMetadata given an JSON string
+  * Create an instance of DiffObjectInfo given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of ObjectMetadata
-  * @throws IOException if the JSON string is invalid with respect to ObjectMetadata
+  * @return An instance of DiffObjectInfo
+  * @throws IOException if the JSON string is invalid with respect to DiffObjectInfo
   */
-  public static ObjectMetadata fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, ObjectMetadata.class);
+  public static DiffObjectInfo fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, DiffObjectInfo.class);
   }
 
  /**
-  * Convert an instance of ObjectMetadata to an JSON string
+  * Convert an instance of DiffObjectInfo to an JSON string
   *
   * @return JSON string
   */

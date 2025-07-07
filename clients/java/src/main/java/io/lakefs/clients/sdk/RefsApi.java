@@ -78,7 +78,7 @@ public class RefsApi {
         this.localCustomBaseUrl = customBaseUrl;
     }
 
-    private okhttp3.Call diffRefsCall(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, Boolean includeMetadata, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call diffRefsCall(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, Boolean includeRight, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -126,8 +126,8 @@ public class RefsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("type", type));
         }
 
-        if (includeMetadata != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("include_metadata", includeMetadata));
+        if (includeRight != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("include_right", includeRight));
         }
 
         final String[] localVarAccepts = {
@@ -150,7 +150,7 @@ public class RefsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call diffRefsValidateBeforeCall(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, Boolean includeMetadata, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call diffRefsValidateBeforeCall(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, Boolean includeRight, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling diffRefs(Async)");
@@ -166,20 +166,20 @@ public class RefsApi {
             throw new ApiException("Missing the required parameter 'rightRef' when calling diffRefs(Async)");
         }
 
-        return diffRefsCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeMetadata, _callback);
+        return diffRefsCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeRight, _callback);
 
     }
 
 
-    private ApiResponse<DiffList> diffRefsWithHttpInfo(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, Boolean includeMetadata) throws ApiException {
-        okhttp3.Call localVarCall = diffRefsValidateBeforeCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeMetadata, null);
+    private ApiResponse<DiffList> diffRefsWithHttpInfo(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, Boolean includeRight) throws ApiException {
+        okhttp3.Call localVarCall = diffRefsValidateBeforeCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeRight, null);
         Type localVarReturnType = new TypeToken<DiffList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call diffRefsAsync(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, Boolean includeMetadata, final ApiCallback<DiffList> _callback) throws ApiException {
+    private okhttp3.Call diffRefsAsync(String repository, String leftRef, String rightRef, String after, Integer amount, String prefix, String delimiter, String type, Boolean includeRight, final ApiCallback<DiffList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = diffRefsValidateBeforeCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeMetadata, _callback);
+        okhttp3.Call localVarCall = diffRefsValidateBeforeCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeRight, _callback);
         Type localVarReturnType = new TypeToken<DiffList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -194,7 +194,7 @@ public class RefsApi {
         private String prefix;
         private String delimiter;
         private String type;
-        private Boolean includeMetadata;
+        private Boolean includeRight;
 
         private APIdiffRefsRequest(String repository, String leftRef, String rightRef) {
             this.repository = repository;
@@ -253,12 +253,12 @@ public class RefsApi {
         }
 
         /**
-         * Set includeMetadata
-         * @param includeMetadata If set to true, the diff will include system and user metadata (optional, default to false)
+         * Set includeRight
+         * @param includeRight If set to true, the diff will include system and user object info. *EXPERIMENTAL* (optional, default to false)
          * @return APIdiffRefsRequest
          */
-        public APIdiffRefsRequest includeMetadata(Boolean includeMetadata) {
-            this.includeMetadata = includeMetadata;
+        public APIdiffRefsRequest includeRight(Boolean includeRight) {
+            this.includeRight = includeRight;
             return this;
         }
 
@@ -278,7 +278,7 @@ public class RefsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return diffRefsCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeMetadata, _callback);
+            return diffRefsCall(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeRight, _callback);
         }
 
         /**
@@ -296,7 +296,7 @@ public class RefsApi {
          </table>
          */
         public DiffList execute() throws ApiException {
-            ApiResponse<DiffList> localVarResp = diffRefsWithHttpInfo(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeMetadata);
+            ApiResponse<DiffList> localVarResp = diffRefsWithHttpInfo(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeRight);
             return localVarResp.getData();
         }
 
@@ -315,7 +315,7 @@ public class RefsApi {
          </table>
          */
         public ApiResponse<DiffList> executeWithHttpInfo() throws ApiException {
-            return diffRefsWithHttpInfo(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeMetadata);
+            return diffRefsWithHttpInfo(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeRight);
         }
 
         /**
@@ -334,7 +334,7 @@ public class RefsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<DiffList> _callback) throws ApiException {
-            return diffRefsAsync(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeMetadata, _callback);
+            return diffRefsAsync(repository, leftRef, rightRef, after, amount, prefix, delimiter, type, includeRight, _callback);
         }
     }
 

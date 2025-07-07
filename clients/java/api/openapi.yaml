@@ -4236,10 +4236,11 @@ paths:
           - three_dot
           type: string
         style: form
-      - description: "If set to true, the diff will include system and user metadata"
+      - description: "If set to true, the diff will include system and user object\
+          \ info. *EXPERIMENTAL*"
         explode: true
         in: query
-        name: include_metadata
+        name: include_right
         required: false
         schema:
           default: false
@@ -8124,7 +8125,7 @@ components:
       - physical_address
       - size_bytes
       type: object
-    ObjectMetadata:
+    DiffObjectInfo:
       example:
         physical_address: physical_address
         user_metadata:
@@ -8205,15 +8206,15 @@ components:
     Diff:
       example:
         path: path
-        metadata:
+        size_bytes: 0
+        path_type: common_prefix
+        right:
           physical_address: physical_address
           user_metadata:
             key: user_metadata
           content_type: content_type
           checksum: checksum
           mtime: 6
-        size_bytes: 0
-        path_type: common_prefix
         type: added
       properties:
         type:
@@ -8235,8 +8236,8 @@ components:
           description: represents the size of the added/changed/deleted entry
           format: int64
           type: integer
-        metadata:
-          $ref: '#/components/schemas/ObjectMetadata'
+        right:
+          $ref: '#/components/schemas/DiffObjectInfo'
       required:
       - path
       - path_type
@@ -8251,26 +8252,26 @@ components:
           results: 0
         results:
         - path: path
-          metadata:
+          size_bytes: 0
+          path_type: common_prefix
+          right:
             physical_address: physical_address
             user_metadata:
               key: user_metadata
             content_type: content_type
             checksum: checksum
             mtime: 6
-          size_bytes: 0
-          path_type: common_prefix
           type: added
         - path: path
-          metadata:
+          size_bytes: 0
+          path_type: common_prefix
+          right:
             physical_address: physical_address
             user_metadata:
               key: user_metadata
             content_type: content_type
             checksum: checksum
             mtime: 6
-          size_bytes: 0
-          path_type: common_prefix
           type: added
       properties:
         pagination:

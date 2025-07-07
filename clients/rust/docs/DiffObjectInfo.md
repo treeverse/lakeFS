@@ -1,4 +1,4 @@
-# ObjectMetadata
+# DiffObjectInfo
 
 ## Properties
 
