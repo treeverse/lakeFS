@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 
@@ -16,27 +16,25 @@ var pluginListCmd = &cobra.Command{
 	Short: "List available lakectl plugins",
 	Long:  `Scans the PATH for executables named "lakectl-*" and lists the detected plugins.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		envPathDirs := filepath.SplitList(os.Getenv("PATH"))
+		pathDirs := filepath.SplitList(os.Getenv("PATH"))
 
-		// Filter out duplicates from envPathDirs
-		var pathDirs []string
-		seen := make(map[string]struct{})
-		for _, dir := range envPathDirs {
-			if dir == "" {
-				dir = "."
-			}
-			if _, ok := seen[dir]; !ok {
-				seen[dir] = struct{}{}
-				pathDirs = append(pathDirs, dir)
-			}
-		}
-
-		// Iterate through pathDirs to build the final list with correct overshadowing
-		pluginsOutput := make([]string, 0)
-		foundPlugins := make(map[string]struct{})
+		// Iterate through pathDirs to build a list of possible names for plugins.
+		// To avoid duplication of the executable lookup code we will verify each one later that it can be executed.
+		possibleNames := make(map[string]struct{})
+		pathSeen := make(map[string]struct{})
 		const pluginPrefix = "lakectl-"
 
 		for _, dir := range pathDirs {
+			if dir == "" {
+				dir = "."
+			}
+			// Skip if we've already seen this directory
+			if _, ok := pathSeen[dir]; ok {
+				continue
+			}
+			pathSeen[dir] = struct{}{}
+
+			// Read directory content and collect potential plugin names
 			files, err := os.ReadDir(dir)
 			if err != nil {
 				if !os.IsNotExist(err) {
@@ -47,51 +45,40 @@ var pluginListCmd = &cobra.Command{
 
 			for _, file := range files {
 				fileName := file.Name()
-				if !strings.HasPrefix(fileName, pluginPrefix) {
-					continue
-				}
-				pluginName := strings.TrimPrefix(fileName, pluginPrefix)
-				if pluginName == "" {
+				// Skip if the file name does not start with the plugin prefix and is not long enough to have a name
+				if len(fileName) <= len(pluginPrefix) || !strings.HasPrefix(fileName, pluginPrefix) {
 					continue
 				}
 
+				fullPath := filepath.Join(dir, fileName)
 				fileInfo, statErr := file.Info()
 				if statErr != nil {
-					fullPath := filepath.Join(dir, fileName)
 					Warning(fmt.Sprintf("getting file info for %s - %s", fullPath, statErr))
 					continue
 				}
 				if fileInfo.IsDir() {
 					continue
 				}
-
-				// Skip non-executable files
-				var isExec bool
-				if runtime.GOOS == "windows" {
-					// On Windows, check if the file is executable by checking its extension
-					ext := strings.ToLower(filepath.Ext(fileName))
-					isExec = ext == ".exe" || ext == ".com" || ext == ".bat" || ext == ".cmd"
-				} else {
-					// On Unix-like systems, check if the file is executable by user, group, or others
-					isExec = fileInfo.Mode().Perm()&0o111 != 0 //nolint:mnd
-				}
-				if !isExec {
-					continue
-				}
-
-				// Skip if we already found a plugin with the same name
-				if _, ok := foundPlugins[pluginName]; ok {
-					continue
-				}
-				foundPlugins[pluginName] = struct{}{}
-				pluginsOutput = append(pluginsOutput, pluginName)
+				possibleNames[fileName] = struct{}{}
 			}
+		}
+
+		// Now verify each possible name and check if it can be executed using LookPath
+		pluginsOutput := make([]string, 0)
+		for name := range possibleNames {
+			_, err := exec.LookPath(name)
+			if err != nil {
+				continue
+			}
+			pluginsOutput = append(pluginsOutput, strings.TrimPrefix(name, pluginPrefix))
+		}
+		if len(pluginsOutput) == 0 {
+			cmd.Printf("No lakectl plugins found in your PATH.\n")
+			return
 		}
 
 		// Sort the final list by path for consistent output
 		sort.Strings(pluginsOutput)
-
-		// Use the standard Write function for template execution
 		cmd.Printf("Available plugins:\n")
 		for _, plugin := range pluginsOutput {
 			cmd.Printf("  %s\n", plugin)
