@@ -62,7 +62,7 @@ jobs:
         with:
           script: |
             const previewUrl = `https://pr-${context.payload.pull_request.number}.docs-lakefs-preview.io/`;
-            const commentBody = `📚 Documentation preview at ${previewUrl}`;
+            let commentBody = `📚 Documentation preview at ${previewUrl}`;
 
             // Check if a preview comment already exists
             const { data: comments } = await github.rest.issues.listComments({
@@ -76,8 +76,10 @@ jobs:
             );
 
             if (existingComment) {
-              const shortSHA = context.sha.substring(0, 7);
-              commentBody += `\n\n*(Updated: ${new Date().toLocaleString()} - Commit: ${shortSHA})*`;
+              const pr = context.payload.pull_request
+              const useSha = pr ? pr.head.sha : context.sha;
+              const shortSha = useSha.substring(0,7);
+              commentBody += `\n\n*(Updated: ${new Date().toLocaleString()} - Commit: ${shortSha})*`;
               await github.rest.issues.updateComment({
                 comment_id: existingComment.id,
                 owner: context.repo.owner,
