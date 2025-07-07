@@ -37,6 +37,202 @@ Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-ent
 !!! info
     You can install lakeFS Enterprise without configuring SSO and still benefit from all other lakeFS Enterprise features.
 
+### lakeFS Enterprise Licensing
+
+??? tip "Overview"
+    - lakeFS Enterprise requires a valid license to run and **cannot run without a valid license**.
+    - The license is a JSON Web Token (JWT) that provides access to the lakeFS Enterprise server and paid features.
+    - A license is tied to a specific installation via an installation ID, and to a specific organization via an organization ID.
+
+??? tip "Licensed Features"
+    The following lakeFS Enterprise features must be included in the lakeFS Enterprise license in order to be available:
+
+    ##### Authentication & Authorization
+    - **SSO (Single Sign-On)**
+    - **RBAC (Role-Based Access Control)**
+    - **SCIM (System for Cross-domain Identity Management)**
+    - **IAM (Identity and Access Management) Role Authentication**
+
+    ##### Advanced Functionality
+    - **Mount**
+    - **Metadata Search**
+    - **MSB (Multiple Storage Backends)**
+    - **Transactional Mirroring**
+    - **Sparkless GC (Garbage Collection)**
+
+    > **Note**: Without a license for these features, they will be disabled and return "feature not licensed" error.
+
+#### License Configuration in lakeFS Enterprise
+
+**Step 1: Contact Support for a License**
+
+📧 **Email**: [support@treeverse.io](mailto:support@treeverse.io)
+
+**Step 2: Receive Your License File**
+
+You will receive a JWT token that contains:
+- Organization ID
+- Installation ID
+- Issue date
+- Expiry date
+- Enabled features
+- Features limits 
+
+**Step 3: Configure lakeFS Enterprise Server**
+
+lakeFS Enterprise server supports two methods for providing the license token. **You must use exactly one method**, providing both or neither will cause the server to fail to start.
+
+**Method 1: File Path (Recommended)**
+
+```yaml
+license:
+  path: "/path/to/your/license.txt"
+```
+
+> **Note**: Instead of configuring the license token path via the lakeFS Enterprise configuration file, you can set it via the environment variable: `LAKEFS_LICENSE_PATH`.
+
+**Method 2: Direct Contents**
+
+```yaml
+license:
+  contents: "eyJhbGciOiJSUzI1NiIs..."
+```
+
+> **Note**: Instead of configuring the license token content via the lakeFS Enterprise configuration file, you can set it via the environment variable: `LAKEFS_LICENSE_CONTENTS`.
+
+??? tip "License Monitoring & Updates"
+    **Automatic Monitoring**
+
+    - **Validation Check**: Every 24 hours to verify license validity and expiry.
+    - **File Monitoring**: When using `license.path`, the server checks every minute to detect license file changes so that when the license token gets updated in the file given in the path, there is no need to restart the server and the license updates automatically.
+
+    **Updating Your License**
+
+    _When Using File Path_  
+    1. Replace the content of your license file with the new JWT token.  
+    2. lakeFS Enterprise will automatically detect and reload the new license within 1 minute.  
+    3. **Important**: You cannot change the file path itself to point to a new file while the server is running.
+
+    _When Using Direct Contents_  
+    1. Update your configuration file with the new license token.  
+    2. Restart the lakeFS Enterprise server to apply changes.
+
+    **License Expiry Server Behavior**
+
+    - **31+ days before expiry**: No warnings.
+    - **30 to 0 days before expiry**: Warning notification appears in the web UI.
+    - **1 to 30 days After expiry**: Error notification appears, but server continues running.
+    - **31+ days after expiry**: The server will shut down and refuse to start.
+
+??? tip "Reading License Token via API"
+    ```bash
+    GET https://your-lakefs-server/api/v1/license
+    ```
+
+    **Response:**  
+    ```json
+    {
+      "token": "eyJhbGciOiJSUzI1NiIs..."
+    }
+    ```
+
+??? tip "Troubleshooting"
+    ##### Server Won't Start
+    ```
+    Error: no valid license found for this lakeFS Enterprise Server
+    ```
+
+    **Solution:** Ensure you have configured either `license.path` or `license.contents` in the lakeFS Enterprise configuration file or environment variables.
+
+    ##### Server Won't Start
+    ```
+    Error: cannot provide both license path and contents
+    ```
+
+    **Solution:** Remove one of the license configuration methods from your lakeFS Enterprise configuration file or environment variables.
+
+    ##### License Signature Verification Failed
+    ```
+    Error: token signature did not match any known public key: token signature is invalid: crypto/rsa
+    ```
+
+    **Solutions:**
+    1. Re-download your license token from the original source.
+    2. Verify the license file contains only the JWT token with no extra characters or line breaks.
+    3. Contact [support@treeverse.io](mailto:support@treeverse.io) to get a valid license token.
+
+    ##### License Has Expired
+    ```
+    Error: license has expired. Please contact support immediately: invalid license found
+    ```
+
+    or 
+
+    ```
+    Error: license expired: invalid expiry date
+    ```
+
+    **Solutions:**
+    1. If recently renewed, ensure you've updated the license file with the new token.
+    2. Contact [support@treeverse.io](mailto:support@treeverse.io) immediately for license renewal.
+
+    ##### License File Not Found
+    ```
+    Error: open /path/to/license/file/you/provided: no such file or directory
+    ```
+
+    **Solutions:**
+    1. Verify the exact path and filename in your `license.path` configuration.
+    2. Check for typos in filename.
+    3. Check that license file wasn't moved or removed after configuration.
+    4. Check that the license file exists at the specified location.
+    5. Ensure the file extension is included.
+    6. Use absolute paths instead of relative paths. 
+
+    ##### License File Permission Denied
+    ```
+    Error: open /path/to/license/file/you/provided: permission denied
+    ```
+
+    **Solutions:**
+    1. Check file permissions: `ls -la /path/to/license/file`.
+    2. Set appropriate permissions: `chmod 644 /path/to/license/file`.
+    3. Ensure lakeFS Enterprise user can read the file and access parent directories.
+
+    ##### Installation ID Mismatch
+    ```
+    Error: license belongs to installation ID X (current installation ID: Y)
+    ```
+
+    **Solutions:**
+    1. Check if you have the correct license file for this specific installation.
+    2. Check that installation ID didn't change.
+    3. Contact [support@treeverse.io](mailto:support@treeverse.io) to get a correct new license.
+
+    ##### Malformed or Empty License Token
+    ```
+    Error: parsing token: token is malformed: token contains an invalid number of segments
+    ```
+
+    or 
+
+    ```
+    Error: license has invalid expiry (no license?): invalid license found
+    ```
+
+    **Solutions:**
+    1. Verify the license file contains the complete JWT token (should start with `eyJ`).
+    2. Remove any extra whitespace, newlines, or characters from the license file.
+    3. Re-copy the license token from the original source.
+    4. Ensure the file contains only the JWT token and nothing else.
+
+    ##### Feature Not Available
+    ```
+    Error: feature not licensed - to enable, contact support@treeverse.io
+    ```
+
+    **Solution:** Your current license doesn't include this feature. Contact [support@treeverse.io](mailto:support@treeverse.io) to upgrade your license.
+
 ### Add the lakeFS Helm Chart
 
 * Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
