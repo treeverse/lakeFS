@@ -130,13 +130,14 @@ local:
   symlink_support: true
 ```
 
-When `symlink_support` is enabled, `lakectl local` commands will handle symbolic links by creating special metadata objects that specify the symlink target. During data upload operations, these metadata objects are created to represent the symlinks. Conversely, when downloading data, `lakectl` will recreate the symbolic links in the local directory based on these metadata objects. This allows for a seamless integration of symlinks within your data management workflow. However, if the feature is turned off, any previously created symlinks will be treated as empty objects, meaning their targets will not be preserved or recreated during sync operations. It is crucial to enable this feature if your workflow relies on symbolic links to ensure data integrity and consistency.
-
-!!! warning
-    Using symbolic links can be potentially dangerous as they can point to any file on your system. While `lakectl` will not read the content of the target file, users should be aware that syncing data may create such links locally. It is important to ensure that the symbolic links do not unintentionally expose or alter sensitive files on your system.
+When `symlink_support` is enabled, `lakectl local` commands will store and restore the state of the symlinks by creating special metadata objects that specify the symlink target. Metadata objects representing symlinks are created during data uploads. In contrast, during data downloads, `lakectl` will recreate the symbolic links in the local directory based on these metadata objects. This allows for a seamless integration of symlinks within your data management workflow. However, if the feature is turned off, any previously created symlinks will be treated as empty objects, meaning their targets will not be preserved or recreated during sync operations. It is crucial to enable this feature if your workflow relies on symbolic links to ensure data integrity and consistency.
 
 !!! note
     When `skip_non_regular_files` is enabled, symbolic links in your local directory will be ignored during sync operations. If you need to work with symbolic links, consider using `symlink_support` instead, though this feature may have different behavior and limitations.
+
+!!! warning
+    Using symbolic links can be potentially dangerous as they can point to any file on your system.
+    When `symlink_support` is enabled, lakeFS will not download data to a target which is a symlink, to prevent any unexpected behavior.
 
 ## Example: Using _lakectl local_ in tandem with Git
 
