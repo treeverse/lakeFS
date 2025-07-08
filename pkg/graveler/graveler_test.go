@@ -174,12 +174,13 @@ func (h *Hooks) PreCherryPickHook(_ context.Context, record graveler.HookRecord)
 	return h.Errs["PreCherryPickHook"]
 }
 
-func (h *Hooks) PostCherryPickHook(_ context.Context, record graveler.HookRecord) {
+func (h *Hooks) PostCherryPickHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = append(h.Called, "PostCherryPickHook")
 	h.RepositoryID = record.Repository.RepositoryID
 	h.BranchID = record.BranchID
 	h.CommitID = record.CommitID
 	h.Commit = record.Commit
+	return h.Errs["PostCherryPickHook"]
 }
 
 func (h *Hooks) NewRunID() string {
