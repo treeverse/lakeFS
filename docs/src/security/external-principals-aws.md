@@ -9,10 +9,10 @@ search:
 # Authenticate to lakeFS with AWS IAM Roles
 
 !!! info
-Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
-If you're using the open-source version, you can check the [pluggable APIs](./rbac.md#pluggable-authentication-and-authorization).
+    Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
+    If you're using the open-source version you can check the [pluggable APIs](./rbac.md#pluggable-authentication-and-authorization).
 
-## Overview
+## Overview 
 
 lakeFS supports authenticating users programmatically using AWS IAM roles instead of using static lakeFS access and secret keys.
 The method enables you to bound IAM principal ARNs to lakeFS users.
@@ -21,7 +21,7 @@ A single lakeFS user may have many AWS's principle ARNs attached to it. When a c
 ### Using Session Names
 
 The bound ARN can be attached to a single lakeFS user with or without SessionName, serving different users.
-For example, consider the following mapping:
+For example, consider the following mapping: 
 
 | Principal ARN                                       | lakeFS User |
 |-----------------------------------------------------|-------------|
@@ -47,7 +47,7 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 ## Server Configuration
 
 !!! info
-lakeFS Helm chart supports the configuration below since version x.y.z (TODO: specify the minimum version that supports these features) @idanovo @ItamarYuran
+    lakeFS Helm chart supports the configuration below since version x.y.z (TODO: specify the minimum version that supports these features) @idanovo @ItamarYuran
 
 To enable AWS IAM authentication in lakeFS Enterprise:
 
@@ -82,7 +82,7 @@ lakefsConfig: |
 ```
 
 !!! note
-By default, lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
+    By default, lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
 
 **Direct Configuration File (`lakefs.yaml`):**
 
@@ -157,7 +157,7 @@ For other use cases authenticated to lakeFS via login endpoint, this will requir
 There are two ways in which external principals can be used to authenticate to lakeFS:
 
 1. If no other authentication flow is provided, and the `credentials.provider.type` configuration is set to `aws_iam` in `.lakectl.yaml`, the client will use the machine's AWS role to authenticate with lakeFS:
-
+    
     ```yaml
     credentials:
         provider:
@@ -168,14 +168,14 @@ There are two ways in which external principals can be used to authenticate to l
             token_request_headers:       # Optional headers for token requests
             HeaderName: HeaderValue
     ```
-   Or using environment variables:
+    Or using environment variables:
     ```bash
     export LAKECTL_CREDENTIALS_PROVIDER_TYPE="aws_iam"
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_TTL_SECONDS="3600"
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_PRESIGNED_URL_TTL_SECONDS="60"
     export LAKECTL_CREDENTIALS_PROVIDER_AWS_IAM_TOKEN_REQUEST_HEADERS='{"HeaderName":"HeaderValue"}'
     ```
-   To use the client, merely `import lakefs` and use it as you would normally do:
+    To use the client, merely `import lakefs` and use it as you would normally do:
     ```python
     import lakefs
 
@@ -183,8 +183,8 @@ There are two ways in which external principals can be used to authenticate to l
     print(branch)
     ```
 
-   !!! warning
-   Please note, using the IAM provider configurations will not work with the lakectl command line tool, and will stop you from running it.
+    !!! warning
+        Please note, using the IAM provider configurations will not work with the lakectl command line tool, and will stop you from running it.
 
 
 2. Generate a lakeFS client with the assumed role by initiating a boto3 session with the desired role and call `lakefs.client.frow_aws_role`:

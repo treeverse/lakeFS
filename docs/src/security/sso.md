@@ -9,12 +9,12 @@ search:
 # Single Sign On (SSO)
 
 !!! info
-Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
-If you're using the open-source version of lakeFS you can read more about the [authentication options available](./authentication.md).
+    Available in **lakeFS Cloud** and **lakeFS Enterprise**<br/>
+    If you're using the open-source version of lakeFS you can read more about the [authentication options available](./authentication.md).
 
 ## SSO for lakeFS Cloud
 
-lakeFS Cloud uses Auth0 for authentication and thus support the same identity providers as Auth0 including Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML, and Azure Active Directory.
+lakeFS Cloud uses Auth0 for authentication and thus supports the same identity providers as Auth0 including Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML, and Azure Active Directory.
 
 === "Okta"
 
@@ -331,13 +331,13 @@ If you're using an authentication provider that is not listed, please [contact u
     To verify that the main bind user can connect:
     
     ```sh 
-    ldapwhoami -H ldaps://ldap.company.com:636 -D "uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com" -x -W
+    ldapwhoami -H ldap://ldap.company.com:636 -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
     ```
 
     To verify that a specific lakeFS user `dev-user` can connect:
 
     ```sh 
-    ldapwhoami -H ldaps://ldap.company.com:636 -D "uid=dev-user,ou=Users,o=<org-id>,dc=<company>,dc=com" -x -W
+    ldapwhoami -H ldap://ldap.company.com:636 -D "uid=dev-user,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
     ```
 
     <h4>User not found issue</h4>
@@ -347,13 +347,13 @@ If you're using an authentication provider that is not listed, please [contact u
     Search ALL users in the base DN (no filters):
 
     ```sh
-    ldapsearch -H ldaps://ldap.company.com:636 -x -b "ou=Users,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>'
+    ldapsearch -H ldap://ldap.company.com:636 -x -b "ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>'
     ```
 
     Search for a specific user with filters:
 
     ```sh
-    ldapsearch -H ldaps://ldap.company.com:636 -x -b "ou=Users,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>' "(&(uid=dev-user)(objectClass=inetOrgPerson))"
+    ldapsearch -H ldap://ldap.company.com:636 -x -b "ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>' "(&(uid=dev-user)(objectClass=inetOrgPerson))"
     ```
 
 === "External AWS Authentication"

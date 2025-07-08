@@ -6,11 +6,11 @@ description: lakeFS Enterprise Installation Guide
 # Install
 
 !!! info
-For production deployments of lakeFS Enterprise, follow this guide.
+    For production deployments of lakeFS Enterprise, follow this guide.
 
 ## lakeFS Enterprise Architecture
 
-lakeFS Enterprise extends the open-source lakeFS with enterprise features including advanced authentication, authorization, and audit capabilities. All enterprise features are integrated directly into the lakeFS Enterprise binary - no additional services are required.
+We recommend reviewing the [lakeFS Enterprise architecture][lakefs-enterprise-architecture] to understand the components you will be deploying.
 
 ## Deploy lakeFS Enterprise on Kubernetes
 
@@ -34,7 +34,7 @@ The guide includes example configurations, follow the steps below and adjust the
 Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-enterprise-spec].
 
 !!! info
-You can install lakeFS Enterprise without configuring SSO and still benefit from all other lakeFS Enterprise features.
+    You can install lakeFS Enterprise without configuring SSO and still benefit from all other lakeFS Enterprise features.
 
 ### Add the lakeFS Helm Chart
 
@@ -322,7 +322,7 @@ After populating your values.yaml file with the relevant configuration, in the d
 
 ### Access the lakeFS UI
 
-In your browser go to the Ingress host to access lakeFS UI.
+In your browser, go to the Ingress host to access lakeFS UI.
 
 ## Log Collection
 

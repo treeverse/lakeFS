@@ -8,7 +8,7 @@ description: Quickstart guides for lakeFS Enterprise
 Follow these quickstarts to try out lakeFS Enterprise.
 
 !!! warning
-lakeFS Enterprise Quickstarts are not suitable for production use-cases. See the [installation guide](install.md) to set up a production-grade lakeFS Enterprise installation
+    lakeFS Enterprise Quickstarts are not suitable for production use-cases. See the [installation guide](install.md) to set up a production-grade lakeFS Enterprise installation
 
 ## lakeFS Enterprise Sample
 
@@ -31,11 +31,11 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 ### Prerequisites
 
 !!! note
-To use lakeFS enterprise you must have:
-- Access token to download binaries from Docker hub
-- License to run lakeFS Enterprise
-[Contact us](https://lakefs.io/contact-sales/) to gain access for both.
-
+    To use lakeFS enterprise you must have:
+    - Access token to download binaries from Docker hub
+    - License to run lakeFS Enterprise
+    [Contact us](https://lakefs.io/contact-sales/) to gain access for both.
+	
 
 1. You have installed [Docker Compose](https://docs.docker.com/compose/install/) version `2.23.1` or higher on your machine.
 2. Access to download *treeverse/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse).
@@ -52,13 +52,13 @@ You can choose from the following options:
 1. Recommended: A fully functional lakeFS Enterprise setup without SSO support
 2. Advanced: A fully functional lakeFS Enterprise setup including SSO support with OIDC integration configured
 
-   !!! info
-   If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
+    !!! info
+        If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later.
 
 === "Recommended (SSO Disabled)"
-1. Create a `docker-compose.yaml` file with the following content
-2. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
-3. In your browser, go to <http://localhost:8000> to access lakeFS UI.
+    1. Create a `docker-compose.yaml` file with the following content
+    2. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
+    3. In your browser, go to <http://localhost:8080> to access lakeFS UI.
 
     ```yaml
     version: "3"
@@ -104,7 +104,7 @@ You can choose from the following options:
     ```
 
 === "Advanced (SSO Enabled)"
-This setup uses OIDC as the SSO authentication method thus requiring a valid OIDC configuration.
+    This setup uses OIDC as the SSO authentication method, thus requiring a valid OIDC configuration.
 
     1. Create a `docker-compose.yaml` with the content below.
     2. Create a `.env` file with the configurations below in the same directory as the `docker-compose.yaml`, docker compose will automatically use that.
@@ -208,8 +208,8 @@ The values below create a fully functional lakeFS Enterprise setup without SSO s
 
 
 !!! info
-If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later. To
-try lakeFS Enterprise SSO capability on a Kubernetes cluster, check out the [production deployment guide](install.md).
+    If you can postpone the evaluation of the SSO integration, we suggest starting without it to speed up overall testing. The SSO integration requires additional configurations and is best addressed later. To
+    try lakeFS Enterprise SSO capability on a Kubernetes cluster, check out the [production deployment guide](install.md).
 
 ### Prerequisites
 
