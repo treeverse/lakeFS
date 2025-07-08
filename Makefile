@@ -80,7 +80,7 @@ check-licenses-npm:
 	$(GOBINPATH)/diligent check -w permissive -i ^@[^/]+?/[^/]+ $(UI_DIR)
 
 docs/src/assets/js/swagger.yml: api/swagger.yml
-	@cp api/swagger.yml docs/assets/js/swagger.yml
+	@cp api/swagger.yml docs/src/assets/js/swagger.yml
 
 docs/src/assets/js/authorization.yml: api/authorization.yml
 	@cp api/authorization.yml docs/src/assets/js/authorization.yml
