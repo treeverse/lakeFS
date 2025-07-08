@@ -158,9 +158,13 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 	}
 	defer func() {
 		if err != nil {
-			// If there is an error, remove the temp file (in the happy path, it's removed in the end of the "store" func)
+			// If there is an error, remove the temp file (in the happy path, it's removed at the end of the "store" func)
 			if removeErr := os.Remove(originalPath); removeErr != nil {
-				err = fmt.Errorf("%w and remove tempfile: %w", err, removeErr)
+				tfs.log(ctx).WithFields(logging.Fields{
+					"storageID":     storageID,
+					"namespace":     namespace,
+					"original_path": originalPath,
+				}).Error("failed to remove temp file")
 			}
 		}
 	}()
@@ -238,6 +242,7 @@ func (tfs *TierFS) Open(ctx context.Context, storageID, namespace, filename stri
 	if err == nil {
 		if tfs.logger.IsTracing() {
 			tfs.log(ctx).WithFields(logging.Fields{
+				"storageID": storageID,
 				"namespace": namespace,
 				"ns_path":   nsPath,
 				"filename":  filename,
@@ -274,6 +279,7 @@ func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.Fi
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
 		tfs.fileTracker.Delete(fileRef.fsRelativePath)
 		tfs.log(ctx).WithFields(logging.Fields{
+			"storageID": fileRef.storageID,
 			"namespace": fileRef.namespace,
 			"file":      fileRef.filename,
 			"full_path": fileRef.fullPath,
@@ -357,6 +363,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		// copy from temp path to actual path
 		if log.IsTracing() {
 			log.WithFields(logging.Fields{
+				"storageID":    fileRef.storageID,
 				"namespace":    fileRef.namespace,
 				"file":         fileRef.filename,
 				"tmp_fullpath": tmpFullPath,
