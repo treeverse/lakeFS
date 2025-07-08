@@ -205,6 +205,7 @@ Class | Method | HTTP request | Description
  - [CurrentUser](docs/CurrentUser.md)
  - [Diff](docs/Diff.md)
  - [DiffList](docs/DiffList.md)
+ - [DiffObjectStats](docs/DiffObjectStats.md)
  - [Error](docs/Error.md)
  - [ErrorNoAcl](docs/ErrorNoAcl.md)
  - [ExternalLoginInformation](docs/ExternalLoginInformation.md)

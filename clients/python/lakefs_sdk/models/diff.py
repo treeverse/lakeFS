@@ -24,7 +24,7 @@ try:
     from pydantic.v1 import BaseModel, Field, StrictInt, StrictStr, validator
 except ImportError:
     from pydantic import BaseModel, Field, StrictInt, StrictStr, validator
-from lakefs_sdk.models.object_stats import ObjectStats
+from lakefs_sdk.models.diff_object_stats import DiffObjectStats
 
 class Diff(BaseModel):
     """
@@ -34,7 +34,7 @@ class Diff(BaseModel):
     path: StrictStr = Field(...)
     path_type: StrictStr = Field(...)
     size_bytes: Optional[StrictInt] = Field(None, description="represents the size of the added/changed/deleted entry")
-    right: Optional[ObjectStats] = None
+    right: Optional[DiffObjectStats] = None
     __properties = ["type", "path", "path_type", "size_bytes", "right"]
 
     @validator('type')
@@ -94,7 +94,7 @@ class Diff(BaseModel):
             "path": obj.get("path"),
             "path_type": obj.get("path_type"),
             "size_bytes": obj.get("size_bytes"),
-            "right": ObjectStats.from_dict(obj.get("right")) if obj.get("right") is not None else None
+            "right": DiffObjectStats.from_dict(obj.get("right")) if obj.get("right") is not None else None
         })
         return _obj
 

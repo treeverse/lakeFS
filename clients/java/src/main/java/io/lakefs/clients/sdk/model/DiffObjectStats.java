@@ -19,9 +19,10 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.DiffObjectStats;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -48,235 +49,118 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * Diff
+ * DiffObjectStats
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Diff {
-  /**
-   * Gets or Sets type
-   */
-  @JsonAdapter(TypeEnum.Adapter.class)
-  public enum TypeEnum {
-    ADDED("added"),
-    
-    REMOVED("removed"),
-    
-    CHANGED("changed"),
-    
-    CONFLICT("conflict"),
-    
-    PREFIX_CHANGED("prefix_changed");
+public class DiffObjectStats {
+  public static final String SERIALIZED_NAME_CHECKSUM = "checksum";
+  @SerializedName(SERIALIZED_NAME_CHECKSUM)
+  private String checksum;
 
-    private String value;
+  public static final String SERIALIZED_NAME_MTIME = "mtime";
+  @SerializedName(SERIALIZED_NAME_MTIME)
+  private Long mtime;
 
-    TypeEnum(String value) {
-      this.value = value;
-    }
+  public static final String SERIALIZED_NAME_CONTENT_TYPE = "content_type";
+  @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
+  private String contentType;
 
-    public String getValue() {
-      return value;
-    }
+  public static final String SERIALIZED_NAME_METADATA = "metadata";
+  @SerializedName(SERIALIZED_NAME_METADATA)
+  private Map<String, String> metadata = new HashMap<>();
 
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    public static TypeEnum fromValue(String value) {
-      for (TypeEnum b : TypeEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-
-    public static class Adapter extends TypeAdapter<TypeEnum> {
-      @Override
-      public void write(final JsonWriter jsonWriter, final TypeEnum enumeration) throws IOException {
-        jsonWriter.value(enumeration.getValue());
-      }
-
-      @Override
-      public TypeEnum read(final JsonReader jsonReader) throws IOException {
-        String value =  jsonReader.nextString();
-        return TypeEnum.fromValue(value);
-      }
-    }
+  public DiffObjectStats() {
   }
 
-  public static final String SERIALIZED_NAME_TYPE = "type";
-  @SerializedName(SERIALIZED_NAME_TYPE)
-  private TypeEnum type;
-
-  public static final String SERIALIZED_NAME_PATH = "path";
-  @SerializedName(SERIALIZED_NAME_PATH)
-  private String path;
-
-  /**
-   * Gets or Sets pathType
-   */
-  @JsonAdapter(PathTypeEnum.Adapter.class)
-  public enum PathTypeEnum {
-    COMMON_PREFIX("common_prefix"),
+  public DiffObjectStats checksum(String checksum) {
     
-    OBJECT("object");
-
-    private String value;
-
-    PathTypeEnum(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    public static PathTypeEnum fromValue(String value) {
-      for (PathTypeEnum b : PathTypeEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-
-    public static class Adapter extends TypeAdapter<PathTypeEnum> {
-      @Override
-      public void write(final JsonWriter jsonWriter, final PathTypeEnum enumeration) throws IOException {
-        jsonWriter.value(enumeration.getValue());
-      }
-
-      @Override
-      public PathTypeEnum read(final JsonReader jsonReader) throws IOException {
-        String value =  jsonReader.nextString();
-        return PathTypeEnum.fromValue(value);
-      }
-    }
-  }
-
-  public static final String SERIALIZED_NAME_PATH_TYPE = "path_type";
-  @SerializedName(SERIALIZED_NAME_PATH_TYPE)
-  private PathTypeEnum pathType;
-
-  public static final String SERIALIZED_NAME_SIZE_BYTES = "size_bytes";
-  @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
-  private Long sizeBytes;
-
-  public static final String SERIALIZED_NAME_RIGHT = "right";
-  @SerializedName(SERIALIZED_NAME_RIGHT)
-  private DiffObjectStats right;
-
-  public Diff() {
-  }
-
-  public Diff type(TypeEnum type) {
-    
-    this.type = type;
+    this.checksum = checksum;
     return this;
   }
 
    /**
-   * Get type
-   * @return type
+   * Get checksum
+   * @return checksum
   **/
   @javax.annotation.Nonnull
-  public TypeEnum getType() {
-    return type;
+  public String getChecksum() {
+    return checksum;
   }
 
 
-  public void setType(TypeEnum type) {
-    this.type = type;
+  public void setChecksum(String checksum) {
+    this.checksum = checksum;
   }
 
 
-  public Diff path(String path) {
+  public DiffObjectStats mtime(Long mtime) {
     
-    this.path = path;
+    this.mtime = mtime;
     return this;
   }
 
    /**
-   * Get path
-   * @return path
+   * Unix Epoch in seconds
+   * @return mtime
   **/
   @javax.annotation.Nonnull
-  public String getPath() {
-    return path;
+  public Long getMtime() {
+    return mtime;
   }
 
 
-  public void setPath(String path) {
-    this.path = path;
+  public void setMtime(Long mtime) {
+    this.mtime = mtime;
   }
 
 
-  public Diff pathType(PathTypeEnum pathType) {
+  public DiffObjectStats contentType(String contentType) {
     
-    this.pathType = pathType;
+    this.contentType = contentType;
     return this;
   }
 
    /**
-   * Get pathType
-   * @return pathType
+   * Object media type
+   * @return contentType
   **/
   @javax.annotation.Nonnull
-  public PathTypeEnum getPathType() {
-    return pathType;
+  public String getContentType() {
+    return contentType;
   }
 
 
-  public void setPathType(PathTypeEnum pathType) {
-    this.pathType = pathType;
+  public void setContentType(String contentType) {
+    this.contentType = contentType;
   }
 
 
-  public Diff sizeBytes(Long sizeBytes) {
+  public DiffObjectStats metadata(Map<String, String> metadata) {
     
-    this.sizeBytes = sizeBytes;
+    this.metadata = metadata;
+    return this;
+  }
+
+  public DiffObjectStats putMetadataItem(String key, String metadataItem) {
+    if (this.metadata == null) {
+      this.metadata = new HashMap<>();
+    }
+    this.metadata.put(key, metadataItem);
     return this;
   }
 
    /**
-   * represents the size of the added/changed/deleted entry
-   * @return sizeBytes
+   * Get metadata
+   * @return metadata
   **/
   @javax.annotation.Nullable
-  public Long getSizeBytes() {
-    return sizeBytes;
+  public Map<String, String> getMetadata() {
+    return metadata;
   }
 
 
-  public void setSizeBytes(Long sizeBytes) {
-    this.sizeBytes = sizeBytes;
-  }
-
-
-  public Diff right(DiffObjectStats right) {
-    
-    this.right = right;
-    return this;
-  }
-
-   /**
-   * Get right
-   * @return right
-  **/
-  @javax.annotation.Nullable
-  public DiffObjectStats getRight() {
-    return right;
-  }
-
-
-  public void setRight(DiffObjectStats right) {
-    this.right = right;
+  public void setMetadata(Map<String, String> metadata) {
+    this.metadata = metadata;
   }
 
   /**
@@ -292,9 +176,9 @@ public class Diff {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the Diff instance itself
+   * @return the DiffObjectStats instance itself
    */
-  public Diff putAdditionalProperty(String key, Object value) {
+  public DiffObjectStats putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -333,29 +217,27 @@ public class Diff {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Diff diff = (Diff) o;
-    return Objects.equals(this.type, diff.type) &&
-        Objects.equals(this.path, diff.path) &&
-        Objects.equals(this.pathType, diff.pathType) &&
-        Objects.equals(this.sizeBytes, diff.sizeBytes) &&
-        Objects.equals(this.right, diff.right)&&
-        Objects.equals(this.additionalProperties, diff.additionalProperties);
+    DiffObjectStats diffObjectStats = (DiffObjectStats) o;
+    return Objects.equals(this.checksum, diffObjectStats.checksum) &&
+        Objects.equals(this.mtime, diffObjectStats.mtime) &&
+        Objects.equals(this.contentType, diffObjectStats.contentType) &&
+        Objects.equals(this.metadata, diffObjectStats.metadata)&&
+        Objects.equals(this.additionalProperties, diffObjectStats.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, path, pathType, sizeBytes, right, additionalProperties);
+    return Objects.hash(checksum, mtime, contentType, metadata, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Diff {\n");
-    sb.append("    type: ").append(toIndentedString(type)).append("\n");
-    sb.append("    path: ").append(toIndentedString(path)).append("\n");
-    sb.append("    pathType: ").append(toIndentedString(pathType)).append("\n");
-    sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
-    sb.append("    right: ").append(toIndentedString(right)).append("\n");
+    sb.append("class DiffObjectStats {\n");
+    sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
+    sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
+    sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
+    sb.append("    metadata: ").append(toIndentedString(metadata)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -379,51 +261,43 @@ public class Diff {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
-    openapiFields.add("type");
-    openapiFields.add("path");
-    openapiFields.add("path_type");
-    openapiFields.add("size_bytes");
-    openapiFields.add("right");
+    openapiFields.add("checksum");
+    openapiFields.add("mtime");
+    openapiFields.add("content_type");
+    openapiFields.add("metadata");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
-    openapiRequiredFields.add("type");
-    openapiRequiredFields.add("path");
-    openapiRequiredFields.add("path_type");
+    openapiRequiredFields.add("checksum");
+    openapiRequiredFields.add("mtime");
+    openapiRequiredFields.add("content_type");
   }
 
  /**
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Diff
+  * @throws IOException if the JSON Element is invalid with respect to DiffObjectStats
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!Diff.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in Diff is not found in the empty JSON string", Diff.openapiRequiredFields.toString()));
+        if (!DiffObjectStats.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in DiffObjectStats is not found in the empty JSON string", DiffObjectStats.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : Diff.openapiRequiredFields) {
+      for (String requiredField : DiffObjectStats.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
-      if (!jsonObj.get("type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("type").toString()));
+      if (!jsonObj.get("checksum").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `checksum` to be a primitive type in the JSON string but got `%s`", jsonObj.get("checksum").toString()));
       }
-      if (!jsonObj.get("path").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `path` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path").toString()));
-      }
-      if (!jsonObj.get("path_type").isJsonPrimitive()) {
-        throw new IllegalArgumentException(String.format("Expected the field `path_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path_type").toString()));
-      }
-      // validate the optional field `right`
-      if (jsonObj.get("right") != null && !jsonObj.get("right").isJsonNull()) {
-        DiffObjectStats.validateJsonElement(jsonObj.get("right"));
+      if (!jsonObj.get("content_type").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `content_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("content_type").toString()));
       }
   }
 
@@ -431,16 +305,16 @@ public class Diff {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!Diff.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'Diff' and its subtypes
+       if (!DiffObjectStats.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'DiffObjectStats' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<Diff> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(Diff.class));
+       final TypeAdapter<DiffObjectStats> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(DiffObjectStats.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<Diff>() {
+       return (TypeAdapter<T>) new TypeAdapter<DiffObjectStats>() {
            @Override
-           public void write(JsonWriter out, Diff value) throws IOException {
+           public void write(JsonWriter out, DiffObjectStats value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -463,12 +337,12 @@ public class Diff {
            }
 
            @Override
-           public Diff read(JsonReader in) throws IOException {
+           public DiffObjectStats read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             Diff instance = thisAdapter.fromJsonTree(jsonObj);
+             DiffObjectStats instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -495,18 +369,18 @@ public class Diff {
   }
 
  /**
-  * Create an instance of Diff given an JSON string
+  * Create an instance of DiffObjectStats given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of Diff
-  * @throws IOException if the JSON string is invalid with respect to Diff
+  * @return An instance of DiffObjectStats
+  * @throws IOException if the JSON string is invalid with respect to DiffObjectStats
   */
-  public static Diff fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, Diff.class);
+  public static DiffObjectStats fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, DiffObjectStats.class);
   }
 
  /**
-  * Convert an instance of Diff to an JSON string
+  * Convert an instance of DiffObjectStats to an JSON string
   *
   * @return JSON string
   */

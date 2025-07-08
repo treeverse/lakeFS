@@ -22,7 +22,7 @@ pub struct Diff {
     #[serde(rename = "size_bytes", skip_serializing_if = "Option::is_none")]
     pub size_bytes: Option<i64>,
     #[serde(rename = "right", skip_serializing_if = "Option::is_none")]
-    pub right: Option<Box<models::ObjectStats>>,
+    pub right: Option<Box<models::DiffObjectStats>>,
 }
 
 impl Diff {

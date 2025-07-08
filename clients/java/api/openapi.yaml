@@ -7956,18 +7956,44 @@ components:
       required:
       - paths
       type: object
+    DiffObjectStats:
+      example:
+        metadata:
+          key: metadata
+        content_type: content_type
+        checksum: checksum
+        mtime: 6
+      properties:
+        checksum:
+          type: string
+        mtime:
+          description: Unix Epoch in seconds
+          format: int64
+          type: integer
+        content_type:
+          description: Object media type
+          type: string
+        metadata:
+          additionalProperties:
+            type: string
+          type: object
+      required:
+      - checksum
+      - content_type
+      - mtime
+      type: object
     ObjectStats:
       example:
         physical_address: physical_address
         path: path
         metadata:
           key: metadata
-        size_bytes: 1
+        size_bytes: 6
         content_type: content_type
-        physical_address_expiry: 6
+        physical_address_expiry: 0
         checksum: checksum
         path_type: common_prefix
-        mtime: 5
+        mtime: 1
       properties:
         path:
           type: string
@@ -8031,22 +8057,22 @@ components:
           path: path
           metadata:
             key: metadata
-          size_bytes: 1
+          size_bytes: 6
           content_type: content_type
-          physical_address_expiry: 6
+          physical_address_expiry: 0
           checksum: checksum
           path_type: common_prefix
-          mtime: 5
+          mtime: 1
         - physical_address: physical_address
           path: path
           metadata:
             key: metadata
-          size_bytes: 1
+          size_bytes: 6
           content_type: content_type
-          physical_address_expiry: 6
+          physical_address_expiry: 0
           checksum: checksum
           path_type: common_prefix
-          mtime: 5
+          mtime: 1
       properties:
         pagination:
           $ref: '#/components/schemas/Pagination'
@@ -8179,16 +8205,11 @@ components:
         size_bytes: 0
         path_type: common_prefix
         right:
-          physical_address: physical_address
-          path: path
           metadata:
             key: metadata
-          size_bytes: 1
           content_type: content_type
-          physical_address_expiry: 6
           checksum: checksum
-          path_type: common_prefix
-          mtime: 5
+          mtime: 6
         type: added
       properties:
         type:
@@ -8211,7 +8232,7 @@ components:
           format: int64
           type: integer
         right:
-          $ref: '#/components/schemas/ObjectStats'
+          $ref: '#/components/schemas/DiffObjectStats'
       required:
       - path
       - path_type
@@ -8229,31 +8250,21 @@ components:
           size_bytes: 0
           path_type: common_prefix
           right:
-            physical_address: physical_address
-            path: path
             metadata:
               key: metadata
-            size_bytes: 1
             content_type: content_type
-            physical_address_expiry: 6
             checksum: checksum
-            path_type: common_prefix
-            mtime: 5
+            mtime: 6
           type: added
         - path: path
           size_bytes: 0
           path_type: common_prefix
           right:
-            physical_address: physical_address
-            path: path
             metadata:
               key: metadata
-            size_bytes: 1
             content_type: content_type
-            physical_address_expiry: 6
             checksum: checksum
-            path_type: common_prefix
-            mtime: 5
+            mtime: 6
           type: added
       properties:
         pagination:

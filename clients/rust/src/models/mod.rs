@@ -48,6 +48,8 @@ pub mod diff;
 pub use self::diff::Diff;
 pub mod diff_list;
 pub use self::diff_list::DiffList;
+pub mod diff_object_stats;
+pub use self::diff_object_stats::DiffObjectStats;
 pub mod error;
 pub use self::error::Error;
 pub mod error_no_acl;

@@ -308,6 +308,25 @@ components:
             type: string
             description: Object path
 
+    DiffObjectStats:
+      type: object
+      required:
+        - checksum
+        - mtime
+        - content_type
+      properties:
+        checksum:
+          type: string
+        mtime:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+        content_type:
+          type: string
+          description: Object media type
+        metadata:
+          $ref: "#/components/schemas/ObjectUserMetadata"
+
     ObjectStats:
       type: object
       required:
@@ -476,7 +495,7 @@ components:
           description: represents the size of the added/changed/deleted entry
           format: int64
         right:
-          $ref: "#/components/schemas/ObjectStats"
+          $ref: "#/components/schemas/DiffObjectStats"
           description: ObjectStats of the right side of the diff.
 
     DiffList:
