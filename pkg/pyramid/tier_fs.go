@@ -157,7 +157,7 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 		return fmt.Errorf("open file %s: %w", originalPath, err)
 	}
 	defer func() {
-		if err != nil {
+		if f != nil {
 			// If there is an error, remove the temp file (in the happy path, it's removed at the end of the "store" func)
 			if removeErr := os.Remove(originalPath); removeErr != nil {
 				tfs.log(ctx).WithFields(logging.Fields{
@@ -181,6 +181,7 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 	if err := f.Close(); err != nil {
 		return fmt.Errorf("closing file %s: %w", filename, err)
 	}
+	f = nil
 
 	fileRef := tfs.newLocalFileRef(storageID, namespace, nsPath, filename)
 	if tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
