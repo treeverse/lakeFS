@@ -26,17 +26,17 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for DiffObjectStats
+ * Model tests for DiffObjectStat
  */
-public class DiffObjectStatsTest {
-    private final DiffObjectStats model = new DiffObjectStats();
+public class DiffObjectStatTest {
+    private final DiffObjectStat model = new DiffObjectStat();
 
     /**
-     * Model tests for DiffObjectStats
+     * Model tests for DiffObjectStat
      */
     @Test
-    public void testDiffObjectStats() {
-        // TODO: test DiffObjectStats
+    public void testDiffObjectStat() {
+        // TODO: test DiffObjectStat
     }
 
     /**

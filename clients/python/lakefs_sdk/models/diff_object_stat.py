@@ -25,9 +25,9 @@ try:
 except ImportError:
     from pydantic import BaseModel, Field, StrictInt, StrictStr
 
-class DiffObjectStats(BaseModel):
+class DiffObjectStat(BaseModel):
     """
-    DiffObjectStats
+    DiffObjectStat
     """
     checksum: StrictStr = Field(...)
     mtime: StrictInt = Field(..., description="Unix Epoch in seconds")
@@ -49,8 +49,8 @@ class DiffObjectStats(BaseModel):
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_json(cls, json_str: str) -> DiffObjectStats:
-        """Create an instance of DiffObjectStats from a JSON string"""
+    def from_json(cls, json_str: str) -> DiffObjectStat:
+        """Create an instance of DiffObjectStat from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self):
@@ -62,15 +62,15 @@ class DiffObjectStats(BaseModel):
         return _dict
 
     @classmethod
-    def from_dict(cls, obj: dict) -> DiffObjectStats:
-        """Create an instance of DiffObjectStats from a dict"""
+    def from_dict(cls, obj: dict) -> DiffObjectStat:
+        """Create an instance of DiffObjectStat from a dict"""
         if obj is None:
             return None
 
         if not isinstance(obj, dict):
-            return DiffObjectStats.parse_obj(obj)
+            return DiffObjectStat.parse_obj(obj)
 
-        _obj = DiffObjectStats.parse_obj({
+        _obj = DiffObjectStat.parse_obj({
             "checksum": obj.get("checksum"),
             "mtime": obj.get("mtime"),
             "content_type": obj.get("content_type"),

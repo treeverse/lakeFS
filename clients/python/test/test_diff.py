@@ -41,7 +41,7 @@ class TestDiff(unittest.TestCase):
                 path = '',
                 path_type = 'common_prefix',
                 size_bytes = 56,
-                right = lakefs_sdk.models.diff_object_stats.DiffObjectStats(
+                right = lakefs_sdk.models.diff_object_stat.DiffObjectStat(
                     checksum = '', 
                     mtime = 56, 
                     content_type = '', 

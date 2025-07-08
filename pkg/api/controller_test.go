@@ -2062,8 +2062,14 @@ func TestController_DiffRefsHandler(t *testing.T) {
 			t.Fatal("expected right info in diff result")
 		}
 		rightStats := results[0].Right
-		if rightStats.Checksum == "" || rightStats.Mtime == 0 || rightStats.ContentType == "" {
-			t.Fatal("expected right info checksum, mtime and content type in diff result")
+		if rightStats.Checksum == "" {
+			t.Error("expected right info checksum in diff result")
+		}
+		if rightStats.ContentType == "" {
+			t.Error("expected right info content type in diff result")
+		}
+		if rightStats.Mtime == 0 {
+			t.Error("expected right info mtime in diff result")
 		}
 	})
 }

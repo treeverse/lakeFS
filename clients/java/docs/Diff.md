@@ -11,7 +11,7 @@
 |**path** | **String** |  |  |
 |**pathType** | [**PathTypeEnum**](#PathTypeEnum) |  |  |
 |**sizeBytes** | **Long** | represents the size of the added/changed/deleted entry |  [optional] |
-|**right** | [**DiffObjectStats**](DiffObjectStats.md) |  |  [optional] |
+|**right** | [**DiffObjectStat**](DiffObjectStat.md) |  |  [optional] |
 
 
 

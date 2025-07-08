@@ -11,7 +11,7 @@
 use crate::models;
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct DiffObjectStats {
+pub struct DiffObjectStat {
     #[serde(rename = "checksum")]
     pub checksum: String,
     /// Unix Epoch in seconds
@@ -24,9 +24,9 @@ pub struct DiffObjectStats {
     pub metadata: Option<std::collections::HashMap<String, String>>,
 }
 
-impl DiffObjectStats {
-    pub fn new(checksum: String, mtime: i64, content_type: String) -> DiffObjectStats {
-        DiffObjectStats {
+impl DiffObjectStat {
+    pub fn new(checksum: String, mtime: i64, content_type: String) -> DiffObjectStat {
+        DiffObjectStat {
             checksum,
             mtime,
             content_type,

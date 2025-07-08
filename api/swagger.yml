@@ -308,7 +308,7 @@ components:
             type: string
             description: Object path
 
-    DiffObjectStats:
+    DiffObjectStat:
       type: object
       required:
         - checksum
@@ -495,7 +495,7 @@ components:
           description: represents the size of the added/changed/deleted entry
           format: int64
         right:
-          $ref: "#/components/schemas/DiffObjectStats"
+          $ref: "#/components/schemas/DiffObjectStat"
           description: ObjectStats of the right side of the diff.
 
     DiffList:

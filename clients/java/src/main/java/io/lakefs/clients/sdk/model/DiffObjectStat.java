@@ -49,10 +49,10 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * DiffObjectStats
+ * DiffObjectStat
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class DiffObjectStats {
+public class DiffObjectStat {
   public static final String SERIALIZED_NAME_CHECKSUM = "checksum";
   @SerializedName(SERIALIZED_NAME_CHECKSUM)
   private String checksum;
@@ -69,10 +69,10 @@ public class DiffObjectStats {
   @SerializedName(SERIALIZED_NAME_METADATA)
   private Map<String, String> metadata = new HashMap<>();
 
-  public DiffObjectStats() {
+  public DiffObjectStat() {
   }
 
-  public DiffObjectStats checksum(String checksum) {
+  public DiffObjectStat checksum(String checksum) {
     
     this.checksum = checksum;
     return this;
@@ -93,7 +93,7 @@ public class DiffObjectStats {
   }
 
 
-  public DiffObjectStats mtime(Long mtime) {
+  public DiffObjectStat mtime(Long mtime) {
     
     this.mtime = mtime;
     return this;
@@ -114,7 +114,7 @@ public class DiffObjectStats {
   }
 
 
-  public DiffObjectStats contentType(String contentType) {
+  public DiffObjectStat contentType(String contentType) {
     
     this.contentType = contentType;
     return this;
@@ -135,13 +135,13 @@ public class DiffObjectStats {
   }
 
 
-  public DiffObjectStats metadata(Map<String, String> metadata) {
+  public DiffObjectStat metadata(Map<String, String> metadata) {
     
     this.metadata = metadata;
     return this;
   }
 
-  public DiffObjectStats putMetadataItem(String key, String metadataItem) {
+  public DiffObjectStat putMetadataItem(String key, String metadataItem) {
     if (this.metadata == null) {
       this.metadata = new HashMap<>();
     }
@@ -176,9 +176,9 @@ public class DiffObjectStats {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the DiffObjectStats instance itself
+   * @return the DiffObjectStat instance itself
    */
-  public DiffObjectStats putAdditionalProperty(String key, Object value) {
+  public DiffObjectStat putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -217,12 +217,12 @@ public class DiffObjectStats {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    DiffObjectStats diffObjectStats = (DiffObjectStats) o;
-    return Objects.equals(this.checksum, diffObjectStats.checksum) &&
-        Objects.equals(this.mtime, diffObjectStats.mtime) &&
-        Objects.equals(this.contentType, diffObjectStats.contentType) &&
-        Objects.equals(this.metadata, diffObjectStats.metadata)&&
-        Objects.equals(this.additionalProperties, diffObjectStats.additionalProperties);
+    DiffObjectStat diffObjectStat = (DiffObjectStat) o;
+    return Objects.equals(this.checksum, diffObjectStat.checksum) &&
+        Objects.equals(this.mtime, diffObjectStat.mtime) &&
+        Objects.equals(this.contentType, diffObjectStat.contentType) &&
+        Objects.equals(this.metadata, diffObjectStat.metadata)&&
+        Objects.equals(this.additionalProperties, diffObjectStat.additionalProperties);
   }
 
   @Override
@@ -233,7 +233,7 @@ public class DiffObjectStats {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class DiffObjectStats {\n");
+    sb.append("class DiffObjectStat {\n");
     sb.append("    checksum: ").append(toIndentedString(checksum)).append("\n");
     sb.append("    mtime: ").append(toIndentedString(mtime)).append("\n");
     sb.append("    contentType: ").append(toIndentedString(contentType)).append("\n");
@@ -277,17 +277,17 @@ public class DiffObjectStats {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to DiffObjectStats
+  * @throws IOException if the JSON Element is invalid with respect to DiffObjectStat
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!DiffObjectStats.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in DiffObjectStats is not found in the empty JSON string", DiffObjectStats.openapiRequiredFields.toString()));
+        if (!DiffObjectStat.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in DiffObjectStat is not found in the empty JSON string", DiffObjectStat.openapiRequiredFields.toString()));
         }
       }
 
       // check to make sure all required properties/fields are present in the JSON string
-      for (String requiredField : DiffObjectStats.openapiRequiredFields) {
+      for (String requiredField : DiffObjectStat.openapiRequiredFields) {
         if (jsonElement.getAsJsonObject().get(requiredField) == null) {
           throw new IllegalArgumentException(String.format("The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
@@ -305,16 +305,16 @@ public class DiffObjectStats {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!DiffObjectStats.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'DiffObjectStats' and its subtypes
+       if (!DiffObjectStat.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'DiffObjectStat' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<DiffObjectStats> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(DiffObjectStats.class));
+       final TypeAdapter<DiffObjectStat> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(DiffObjectStat.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<DiffObjectStats>() {
+       return (TypeAdapter<T>) new TypeAdapter<DiffObjectStat>() {
            @Override
-           public void write(JsonWriter out, DiffObjectStats value) throws IOException {
+           public void write(JsonWriter out, DiffObjectStat value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -337,12 +337,12 @@ public class DiffObjectStats {
            }
 
            @Override
-           public DiffObjectStats read(JsonReader in) throws IOException {
+           public DiffObjectStat read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             DiffObjectStats instance = thisAdapter.fromJsonTree(jsonObj);
+             DiffObjectStat instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -369,18 +369,18 @@ public class DiffObjectStats {
   }
 
  /**
-  * Create an instance of DiffObjectStats given an JSON string
+  * Create an instance of DiffObjectStat given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of DiffObjectStats
-  * @throws IOException if the JSON string is invalid with respect to DiffObjectStats
+  * @return An instance of DiffObjectStat
+  * @throws IOException if the JSON string is invalid with respect to DiffObjectStat
   */
-  public static DiffObjectStats fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, DiffObjectStats.class);
+  public static DiffObjectStat fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, DiffObjectStat.class);
   }
 
  /**
-  * Convert an instance of DiffObjectStats to an JSON string
+  * Convert an instance of DiffObjectStat to an JSON string
   *
   * @return JSON string
   */

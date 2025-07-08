@@ -1,6 +1,6 @@
 
 
-# DiffObjectStats
+# DiffObjectStat
 
 
 ## Properties

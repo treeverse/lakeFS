@@ -298,7 +298,7 @@ Class | Method | HTTP request | Description
  - [CurrentUser](docs/CurrentUser.md)
  - [Diff](docs/Diff.md)
  - [DiffList](docs/DiffList.md)
- - [DiffObjectStats](docs/DiffObjectStats.md)
+ - [DiffObjectStat](docs/DiffObjectStat.md)
  - [Error](docs/Error.md)
  - [ErrorNoACL](docs/ErrorNoACL.md)
  - [ExternalLoginInformation](docs/ExternalLoginInformation.md)

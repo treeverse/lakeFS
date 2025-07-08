@@ -19,7 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.DiffObjectStats;
+import io.lakefs.clients.sdk.model.DiffObjectStat;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -170,7 +170,7 @@ public class Diff {
 
   public static final String SERIALIZED_NAME_RIGHT = "right";
   @SerializedName(SERIALIZED_NAME_RIGHT)
-  private DiffObjectStats right;
+  private DiffObjectStat right;
 
   public Diff() {
   }
@@ -259,7 +259,7 @@ public class Diff {
   }
 
 
-  public Diff right(DiffObjectStats right) {
+  public Diff right(DiffObjectStat right) {
     
     this.right = right;
     return this;
@@ -270,12 +270,12 @@ public class Diff {
    * @return right
   **/
   @javax.annotation.Nullable
-  public DiffObjectStats getRight() {
+  public DiffObjectStat getRight() {
     return right;
   }
 
 
-  public void setRight(DiffObjectStats right) {
+  public void setRight(DiffObjectStat right) {
     this.right = right;
   }
 
@@ -423,7 +423,7 @@ public class Diff {
       }
       // validate the optional field `right`
       if (jsonObj.get("right") != null && !jsonObj.get("right").isJsonNull()) {
-        DiffObjectStats.validateJsonElement(jsonObj.get("right"));
+        DiffObjectStat.validateJsonElement(jsonObj.get("right"));
       }
   }
 

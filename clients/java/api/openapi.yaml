@@ -7956,7 +7956,7 @@ components:
       required:
       - paths
       type: object
-    DiffObjectStats:
+    DiffObjectStat:
       example:
         metadata:
           key: metadata
@@ -8232,7 +8232,7 @@ components:
           format: int64
           type: integer
         right:
-          $ref: '#/components/schemas/DiffObjectStats'
+          $ref: '#/components/schemas/DiffObjectStat'
       required:
       - path
       - path_type
