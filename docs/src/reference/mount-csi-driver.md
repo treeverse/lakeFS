@@ -92,7 +92,6 @@ All the driver CLI flags can be configured via environment variables (prefixed `
     # # Optional CSI Driver override version (default .Chart.AppVersion)
     #   tag: 1.2.3
 
-    # Same as fluffy https://github.com/treeverse/fluffy?tab=readme-ov-file#1-dockerhub-token-for-fluffy
     imagePullSecret:
     token: <dockerhub-token>
     username: <dockerhub-user>
