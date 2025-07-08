@@ -170,13 +170,13 @@ If you're using an authentication provider that is not listed, please [contact u
       auth:
         saml:
           enabled: true
-          createCertificateSecret: true
+          createCertificateSecret: true  # NEW: Auto-creates secret
           certificate:
-            samlRsaPublicCert: |
+            samlRsaPublicCert: |           # RENAMED: from saml_rsa_public_cert
               -----BEGIN CERTIFICATE-----
               ...
               -----END CERTIFICATE-----
-            samlRsaPrivateKey: |
+            samlRsaPrivateKey: |           # RENAMED: from saml_rsa_private_key
               -----BEGIN PRIVATE KEY-----
               ...
               -----END PRIVATE KEY-----
@@ -190,24 +190,24 @@ If you're using an authentication provider that is not listed, please [contact u
       blockstore:
         type: local
       auth:
-        logout_redirect_url: https://<lakefs.ingress.domain>
+        logout_redirect_url: https://<lakefs.ingress.domain>  # MOVED: from fluffy.fluffyConfig
         cookie_auth_verification:
           auth_source: saml
           # claim name to display user in the UI
           friendly_name_claim_name: displayName
           # claim name from IDP to use as the unique user name
-          external_user_id_claim_name: samName
+          external_user_id_claim_name: samName # MOVED: from fluffy.fluffyConfig
           default_initial_groups:
             - "Developers"
         providers:
           saml:
             post_login_redirect_url: https://<lakefs.ingress.domain>
             sp_root_url: https://<lakefs.ingress.domain>
-            sp_sign_request: true
+            sp_sign_request: true  # MOVED: from fluffy.fluffyConfig
             # depends on IDP
             sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
             # url to the metadata of the IDP
-            idp_metadata_url: "https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml"
+            idp_metadata_url: "https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml" # MOVED: from fluffy.fluffyConfig
             # IDP SAML claims format default unspecified
             idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
             # depending on IDP setup, if CA certs are self signed and not trusted by a known CA
@@ -235,7 +235,7 @@ If you're using an authentication provider that is not listed, please [contact u
         oidc:
           enabled: true
           # secret given by the OIDC provider (e.g auth0, Okta, etc)
-          client_secret: <oidc-client-secret>
+          client_secret: <oidc-client-secret>  # MOVED: from fluffy.sso.oidc
 
     image:
       privateRegistry:
@@ -246,15 +246,15 @@ If you're using an authentication provider that is not listed, please [contact u
       blockstore:
         type: local
       auth:
-        logout_redirect_url: https://oidc-provider-url.com/logout/example
+        logout_redirect_url: https://oidc-provider-url.com/logout/example  # MOVED: from fluffy.fluffyConfig
         oidc:
           friendly_name_claim_name: <some-oidc-provider-claim-name>
           default_initial_groups: ["Developers"]
         providers:
           oidc:
             post_login_redirect_url: /
-            url: https://oidc-provider-url.com/
-            client_id: <oidc-client-id>
+            url: https://oidc-provider-url.com/  # MOVED: from fluffy.fluffyConfig
+            client_id: <oidc-client-id>          # MOVED: from fluffy.fluffyConfig
             callback_base_url: https://<lakefs.ingress.domain>
             # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
             logout_client_id_query_parameter: client_id
@@ -299,14 +299,15 @@ If you're using an authentication provider that is not listed, please [contact u
       auth:
         providers:
           ldap:
-            server_endpoint: ldaps://ldap.company.com:636
-            bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com        
-            username_attribute: uid
-            user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com        
-            user_filter: (objectClass=inetOrgPerson)
-            default_user_group: "Developers"
+            server_endpoint: ldaps://ldap.company.com:636 # MOVED: from fluffy.fluffyConfig
+            bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com  # MOVED: from fluffy.fluffyConfig
+            username_attribute: uid # MOVED: from fluffy.fluffyConfig
+            user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com  # MOVED: from fluffy.fluffyConfig 
+            user_filter: (objectClass=inetOrgPerson) # MOVED: from fluffy.fluffyConfig
             connection_timeout_seconds: 15
             request_timeout_seconds: 7
+            # RBAC group for first time users
+            default_user_group: "Developers"
     ```
 
     <h3>Troubleshooting LDAP issues</h3>
@@ -385,10 +386,6 @@ enterprise:
 
 # Common lakeFS configuration
 lakefsConfig: |
-  # Enable local RBAC for enterprise
-  features:
-    local_rbac: true
-  
   # Basic auth configuration
   auth:
     encrypt:
