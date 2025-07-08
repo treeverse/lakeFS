@@ -26,8 +26,9 @@ The guide includes example configurations, follow the steps below and adjust the
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 1. [Helm](https://helm.sh/docs/intro/install/) is installed
-1. Access to download lakeFS Enterprise image from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise features.
-1. A KV Database for lakeFS. The available options are dependent in your [deployment platform](../../howto/deploy/index.md#deployment-and-setup-details).
+1. Access to download *treeverse/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse). [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise features.
+1. A KV Database. The available options are dependent in your [deployment platform](../../howto/deploy/index.md#deployment-and-setup-details).
+1. A method to route traffic into lakeFS from outside of the cluster (via Ingress or Service).
 
 #### Optional
 
@@ -76,8 +77,6 @@ The examples below include example configuration for each of the supported SSO p
         level: "INFO"
       blockstore:
         type: s3
-      features:
-        local_rbac: true
       auth:
         logout_redirect_url: https://oidc-provider-url.com/logout/example
         oidc:
@@ -170,8 +169,6 @@ The examples below include example configuration for each of the supported SSO p
         level: "DEBUG"
       blockstore:
         type: local
-      features:
-        local_rbac: true
       auth:
         logout_redirect_url: https://<lakefs.acme.com>
         cookie_auth_verification:
@@ -233,8 +230,6 @@ The examples below include example configuration for each of the supported SSO p
         level: "INFO"
       blockstore:
         type: local
-      features:
-        local_rbac: true
       auth:
         ui_config:
           login_url: /auth/login
@@ -271,7 +266,7 @@ In this section, you will learn how to configure lakeFS Enterprise to work with 
 
 Notes:
 
-* By default, the lakeFS Helm chart comes with `useDevPostgres: false`, you can change it to `useDevPostgres: true` for dev use.
+* By default, the lakeFS Helm chart comes with `useDevPostgres: false`, you can change it to `useDevPostgres: true` for dev use. This setup is useful when you want to run a setup with multiple replicas or want to prevent data loss between containers restarts.
 * See [lakeFS database configuration](../../reference/configuration.md#database).
 
 The database configuration can be set directly via `lakefsConfig`, via K8S Secret Kind, or via environment variables.

@@ -189,8 +189,6 @@ If you're using an authentication provider that is not listed, please [contact u
     lakefsConfig: |
       blockstore:
         type: local
-      features:
-        local_rbac: true
       auth:
         logout_redirect_url: https://<lakefs.ingress.domain>
         cookie_auth_verification:
@@ -247,8 +245,6 @@ If you're using an authentication provider that is not listed, please [contact u
     lakefsConfig: |
       blockstore:
         type: local
-      features:
-        local_rbac: true
       auth:
         logout_redirect_url: https://oidc-provider-url.com/logout/example
         oidc:
@@ -300,12 +296,7 @@ If you're using an authentication provider that is not listed, please [contact u
     lakefsConfig: |
       blockstore:
         type: local
-      features:
-        local_rbac: true
       auth:
-        ui_config:
-          login_cookie_names:
-            - internal_auth_session
         providers:
           ldap:
             server_endpoint: ldaps://ldap.company.com:636
@@ -448,25 +439,3 @@ LAKEFS_AUTH_PROVIDERS_LDAP_BIND_DN=uid=bind-user,ou=Users,o=org,dc=company,dc=co
 # External AWS Auth
 LAKEFS_AUTH_EXTERNAL_AWS_AUTH_ENABLED=true
 ```
-
-### Migration from Fluffy
-
-If you're upgrading from a version that used the Fluffy authentication service:
-
-1. Remove all `fluffy.*` configuration from your values.yaml
-2. Move authentication settings to the appropriate sections as shown above
-3. Update ingress rules to remove Fluffy-specific paths
-4. The chart will automatically detect and prevent deployment if Fluffy configuration is present
-
-### Helm
-
-lakeFS Enterprise authentication can be configured using the [lakeFS Helm chart](https://github.com/treeverse/charts).
-
-Notes:
-
-* Check the [examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) for complete configuration examples for each authentication method
-* The examples include local blockstore for quick-start - replace with S3/Azure/GCS for production
-* Minimum lakeFS Enterprise version: x.y.z (TODO: specify the minimum version that supports these features) @idanovo @ItamarYuran
-* Configure the `image.privateRegistry.secretToken` with your DockerHub token for accessing enterprise images
-* Update all placeholder values (marked with `<>`) with your actual configuration
-* Enable `features.local_rbac: true` to use the enterprise RBAC features

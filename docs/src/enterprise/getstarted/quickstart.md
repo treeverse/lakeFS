@@ -240,8 +240,6 @@ lakefsConfig: |
     level: "DEBUG"
   blockstore:
     type: local
-  features:
-    local_rbac: true
   auth:
     ui_config:
       rbac: internal
