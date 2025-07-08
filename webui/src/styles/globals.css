@@ -128,6 +128,35 @@
   border: 1px solid #4b5563;
 }
 
+/* Fix dropdown menus in dark mode */
+[data-bs-theme="dark"] .dropdown-menu {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+  color: #f9fafb;
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+[data-bs-theme="dark"] .dropdown-item:focus {
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+[data-bs-theme="dark"] .dropdown-item:active {
+  background-color: #4b5563;
+  color: #f9fafb;
+}
+
+[data-bs-theme="dark"] .dropdown-divider {
+  border-color: #374151;
+}
 
 [data-bs-theme="dark"] .bg-light {
   background-color: #2d3748 !important;
@@ -159,12 +188,8 @@ a:hover {
   color: var(--primary-dark);
 }
 
-code {
-  font-family: var(--font-mono);
-  font-size: 1em;
-  background-color: var(--border-light);
-  padding: 0.2em 0.4em;
-  border-radius: var(--radius-sm);
+pre {
+  margin-bottom: 0;
 }
 
 /* Layout */
@@ -233,4 +258,12 @@ code {
 .geojson-map-container {
   height: 100%;
   width: 100%;
+}
+
+/* Dark mode badge fix for ReadOnlyBadge */
+[data-bs-theme="dark"] .badge.bg-light, [data-bs-theme="dark"] .badge.bg-light.text-dark, [data-bs-theme="dark"] .badge.text-dark {
+  background-color: #374151 !important;
+  color: #f9fafb !important;
+  border: 1px solid #6b7280 !important;
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.2);
 }

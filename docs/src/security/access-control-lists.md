@@ -6,10 +6,11 @@ status: deprecated
 
 # Access Control Lists (ACLs)
 
-!!! warning
+!!! warning "Deprecated"
     ACLs were [removed from core lakeFS](https://lakefs.io/blog/why-moving-acls-out-of-core-lakefs/).
 
     For a more robust authorization solution, please see [Role-Based Access Control](rbac.md), available in [lakeFS Cloud](../cloud/index.md) and [lakeFS Enterprise](../enterprise/index.md).  
+
     The following documentation is aimed for users with existing installations who wish to continue working with ACLs. 
 
 ## Basic Auth Functionality

@@ -28,7 +28,6 @@ import RefDropdown from "../../../lib/components/repository/refDropdown";
 import { Link } from "../../../lib/components/nav";
 import { useRouter } from "../../../lib/hooks/router";
 import {ConfirmationButton} from "../../../lib/components/modals";
-import Alert from "react-bootstrap/Alert";
 import {RepoError} from "./error";
 import {AppContext} from "../../../lib/hooks/appContext";
 
@@ -40,8 +39,8 @@ const TagWidget = ({ repo, tag, onDelete }) => {
     return (
         <ListGroup.Item>
             <div className="clearfix">
-                <div className="float-start w-100">
-                    <h6>
+                <div className="float-start">
+                    <h6 className="mb-0">
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
                             params: { repoId: repo.id },
@@ -173,6 +172,52 @@ const CreateTagButton = ({ repo, variant = "success", onCreate = null, readOnly 
 };
 
 
+const EmptyTagsState = ({ repo, onCreateTag }) => {
+    return (
+        <div className="text-center py-5">
+            <div className="mb-5">
+                <div className="mb-4">
+                    <h2 className="mb-3">
+                        <TagIcon size={36} className="me-2"/>
+                        No tags yet
+                    </h2>
+                    <p className="text-muted mb-4 fs-5">
+                        Tags help you mark important points in your data&apos;s history, like releases, experiments, or versions. 
+                        <br/>
+                        They&apos;re perfect for <a 
+                            href="https://docs.lakefs.io/latest/understand/use_cases/reproducibility/" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-decoration-none"
+                        >reproducibility</a> and making your data workflows more reliable. 
+                    </p>
+                        <p>
+                        Learn more about <a 
+                            href="https://docs.lakefs.io/latest/understand/model/#tags" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-decoration-none"
+                        >what tags are</a> and how to use them effectively.
+                    </p>
+                </div>
+                
+                <div className="mb-5">
+                    <CreateTagButton 
+                        repo={repo} 
+                        readOnly={repo?.read_only} 
+                        variant="success" 
+                        onCreate={onCreateTag}
+                        className="btn-lg px-4 py-2"
+                    >
+                        <TagIcon /> Create Your First Tag
+                    </CreateTagButton>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const TagList = ({ repo, after, prefix, onPaginate }) => {
     const router = useRouter()
     const [refresh, setRefresh] = useState(true);
@@ -181,23 +226,29 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
     }, [repo.id, prefix, refresh, after]);
 
     const doRefresh = () => setRefresh(!refresh);
-
     let content;
 
     if (loading) content = <Loading />;
     else if (error) content = <AlertError error={error} />;
-    else content = ( results && !!results.length  ?
-        <>
-            <Card>
-                <ListGroup variant="flush">
-                    {results.map(tag => (
-                        <TagWidget key={tag.id} repo={repo} tag={tag} onDelete={doRefresh} />
-                    ))}
-                </ListGroup>
-            </Card>
-            <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
-        </> : <Alert variant="info">There aren&apos;t any tags yet.</Alert>
-    )
+    else if (results && !!results.length) {
+        content = (
+            <>
+                <Card>
+                    <ListGroup variant="flush">
+                        {results.map(tag => (
+                            <TagWidget key={tag.id} repo={repo} tag={tag} onDelete={doRefresh} />
+                        ))}
+                    </ListGroup>
+                </Card>
+                <Paginator onPaginate={onPaginate} nextPage={nextPage} after={after} />
+                <div className={"mt-2"}>
+                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/model.html#tags" target="_blank" rel="noopener noreferrer">Learn more.</a>
+                </div>
+            </>
+        );
+    } else {
+        content = <EmptyTagsState repo={repo} onCreateTag={doRefresh} />;
+    }
 
     return (
         <>
@@ -222,9 +273,6 @@ const TagList = ({ repo, after, prefix, onPaginate }) => {
                     </ActionGroup>
                 </ActionsBar>
                 {content}
-                <div className={"mt-2"}>
-                    A tag is an immutable pointer to a single commit. <a href="https://docs.lakefs.io/understand/model.html#tags" target="_blank" rel="noopener noreferrer">Learn more.</a>
-                </div>
             </div>
         </>
     );

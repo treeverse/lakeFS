@@ -31,11 +31,14 @@ func TestSyncManager_download(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
-		Name            string
-		Contents        []byte
-		Metadata        map[string]string
-		Path            string
-		UnixPermEnabled bool
+		Name             string
+		Contents         []byte
+		Metadata         map[string]string
+		Path             string
+		UnixPermEnabled  bool
+		FailAttempts     int
+		ExpectError      bool
+		ExpectedAttempts int
 	}{
 		{
 			Name:     "basic download",
@@ -91,6 +94,24 @@ func TestSyncManager_download(t *testing.T) {
 			Path:            "folder2/",
 			UnixPermEnabled: true,
 		},
+		{
+			Name:             "succeeds on second attempt",
+			Contents:         []byte("foobar\n"),
+			Metadata:         map[string]string{},
+			Path:             "my_object",
+			FailAttempts:     1,
+			ExpectError:      false,
+			ExpectedAttempts: 2,
+		},
+		{
+			Name:             "fails after three attempts",
+			Contents:         []byte("foobar\n"),
+			Metadata:         map[string]string{},
+			Path:             "my_object",
+			FailAttempts:     3,
+			ExpectError:      true,
+			ExpectedAttempts: 3,
+		},
 	}
 
 	for _, tt := range testCases {
@@ -109,6 +130,7 @@ func TestSyncManager_download(t *testing.T) {
 			sizeBytes := int64(len(tt.Contents))
 			mtime := time.Now().Unix()
 			metadata := &apigen.ObjectUserMetadata{AdditionalProperties: tt.Metadata}
+			var downloadAttempts int
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("X-Content-Type-Options", "nosniff")
 				var res interface{}
@@ -123,6 +145,19 @@ func TestSyncManager_download(t *testing.T) {
 					}
 					require.NoError(t, json.NewEncoder(w).Encode(res))
 				case strings.HasSuffix(r.URL.Path, "/objects"):
+					downloadAttempts++
+					if tt.FailAttempts > 0 && downloadAttempts <= tt.FailAttempts {
+						// attempt fails during io.Copy
+						hj, ok := w.(http.Hijacker)
+						require.True(t, ok, "http server must support hijacking")
+						conn, _, err := hj.Hijack()
+						require.NoError(t, err)
+						// write partial response and close connection
+						_, _ = conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Length: " + strconv.Itoa(len(tt.Contents)) + "\r\n\r\n" + string(tt.Contents[:2])))
+						conn.Close()
+						return
+					}
+					// successful attempt
 					w.Header().Set("Content-Type", "text/plain")
 					w.Header().Set("Content-Length", fmt.Sprintf("%d", sizeBytes))
 					_, err := w.Write(tt.Contents)
@@ -142,7 +177,8 @@ func TestSyncManager_download(t *testing.T) {
 					Presign:          false,
 					PresignMultipart: false,
 				},
-				IncludePerm: tt.UnixPermEnabled,
+				MaxDownloadRetries: 2,
+				IncludePerm:        tt.UnixPermEnabled,
 			})
 			u := &uri.URI{
 				Repository: "repo",
@@ -156,51 +192,61 @@ func TestSyncManager_download(t *testing.T) {
 				Type:   local.ChangeTypeAdded,
 			}
 			close(changes)
-			require.NoError(t, s.Sync(testFolderPath, u, changes))
-			localPath := fmt.Sprintf("%s%c%s", testFolderPath, os.PathSeparator, tt.Path) // Have to build manually due to Clean
-			stat, err := os.Stat(localPath)
-			require.NoError(t, err)
-
-			if !stat.IsDir() {
-				data, err := os.ReadFile(localPath)
+			err = s.Sync(testFolderPath, u, changes)
+			if tt.ExpectError {
+				require.Error(t, err)
+			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.Contents, data)
-			}
 
-			// Check mtime
-			expectedMTime := mtime
-			if clientMTime, ok := tt.Metadata[local.ClientMtimeMetadataKey]; ok {
-				expectedMTime, err = strconv.ParseInt(clientMTime, 10, 64)
+				localPath := fmt.Sprintf("%s%c%s", testFolderPath, os.PathSeparator, tt.Path) // Have to build manually due to Clean
+				stat, err := os.Stat(localPath)
 				require.NoError(t, err)
-			}
-			require.Equal(t, expectedMTime, stat.ModTime().Unix())
 
-			// Check perm
-			expectedUser := os.Getuid()
-			expectedGroup := os.Getgid()
-			expectedMode := local.DefaultFilePermissions - umask
-			if stat.IsDir() {
-				expectedMode = local.DefaultDirectoryPermissions - umask
-			}
+				if !stat.IsDir() {
+					data, err := os.ReadFile(localPath)
+					require.NoError(t, err)
+					require.Equal(t, tt.Contents, data)
+				}
 
-			if tt.UnixPermEnabled {
-				if value, ok := tt.Metadata[local.POSIXPermissionsMetadataKey]; ok {
-					perm := &local.POSIXPermissions{}
-					require.NoError(t, json.Unmarshal([]byte(value), &perm))
-					expectedUser = perm.UID
-					expectedGroup = perm.GID
-					expectedMode = int(perm.Mode)
+				// Check mtime
+				expectedMTime := mtime
+				if clientMTime, ok := tt.Metadata[local.ClientMtimeMetadataKey]; ok {
+					expectedMTime, err = strconv.ParseInt(clientMTime, 10, 64)
+					require.NoError(t, err)
+				}
+				require.Equal(t, expectedMTime, stat.ModTime().Unix())
+
+				// Check perm
+				expectedUser := os.Getuid()
+				expectedGroup := os.Getgid()
+				expectedMode := local.DefaultFilePermissions - umask
+				if stat.IsDir() {
+					expectedMode = local.DefaultDirectoryPermissions - umask
+				}
+
+				if tt.UnixPermEnabled {
+					if value, ok := tt.Metadata[local.POSIXPermissionsMetadataKey]; ok {
+						perm := &local.POSIXPermissions{}
+						require.NoError(t, json.Unmarshal([]byte(value), &perm))
+						expectedUser = perm.UID
+						expectedGroup = perm.GID
+						expectedMode = int(perm.Mode)
+					}
+				}
+
+				if sys, ok := stat.Sys().(*syscall.Stat_t); ok {
+					uid := int(sys.Uid)
+					gid := int(sys.Gid)
+					require.Equal(t, expectedUser, uid)
+					require.Equal(t, expectedGroup, gid)
+					require.Equal(t, expectedMode, int(sys.Mode))
+				} else {
+					t.Fatal("failed to get stat")
 				}
 			}
 
-			if sys, ok := stat.Sys().(*syscall.Stat_t); ok {
-				uid := int(sys.Uid)
-				gid := int(sys.Gid)
-				require.Equal(t, expectedUser, uid)
-				require.Equal(t, expectedGroup, gid)
-				require.Equal(t, expectedMode, int(sys.Mode))
-			} else {
-				t.Fatal("failed to get stat")
+			if tt.FailAttempts > 0 {
+				require.EqualValues(t, tt.ExpectedAttempts, downloadAttempts, "download should be attempted the expected number of times")
 			}
 		})
 	}

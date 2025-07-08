@@ -136,6 +136,17 @@ func warnOnCaseInsensitiveDirectory(path string) {
 	}
 }
 
+func buildLocalConfig(syncFlags local.SyncFlags, cfg *Configuration) local.Config {
+	return local.Config{
+		SyncFlags:           syncFlags,
+		MaxDownloadRetries:  uint64(cfg.Server.Retries.MaxAttempts),
+		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
+		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
+		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
+		IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeGID,
+	}
+}
+
 var localCmd = &cobra.Command{
 	Use:   "local",
 	Short: "Sync local directories with lakeFS paths",
