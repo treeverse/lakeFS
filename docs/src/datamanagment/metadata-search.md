@@ -82,10 +82,6 @@ keeping performance consistent and predictable.
 | content_type       | no      | string             | The MIME type of the object (e.g., `application/json`, `image/png`).                                                                                                                                                     |
 | creation_date      | yes     | Timestamp          | The original creation timestamp of the object in the repository.                                                                                                                             |
 
-
-### Consistency Model
-
-
 ## Getting Started
 
 ## Configuring Metadata Search
