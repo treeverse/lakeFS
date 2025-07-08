@@ -231,7 +231,6 @@ nav:
       - Quickstart: enterprise/getstarted/quickstart.md
       - Install: enterprise/getstarted/install.md
       - Migrate from lakeFS OSS: enterprise/getstarted/migrate-from-oss.md
-      - Migrate from fluffy: enterprise/getstarted/migrate-from-fluffy.md
     - Upgrade: enterprise/upgrade.md
     - Troubleshooting lakeFS Enterprise: enterprise/troubleshooting.md
     - Configuration Reference: enterprise/configuration.md
