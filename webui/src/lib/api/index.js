@@ -78,7 +78,7 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}) => {
         ...defaultAPIHeaders,
         ...additionalHeaders,
     });
-    const response = await fetch(`${API_ENDPOINT}${uri}`, {headers, ...requestData});
+    const response = await fetch(`${API_ENDPOINT}${uri}`, { headers, ...requestData });
 
     // check if we're missing credentials
     if (response.status === 401) {
@@ -157,7 +157,7 @@ class Auth {
         const response = await fetch(`${API_ENDPOINT}/auth/login`, {
             headers: new Headers(defaultAPIHeaders),
             method: 'POST',
-            body: JSON.stringify({access_key_id: accessKeyId, secret_access_key: secretAccessKey})
+            body: JSON.stringify({ access_key_id: accessKeyId, secret_access_key: secretAccessKey })
         });
 
         if (response.status === 401) {
@@ -194,7 +194,7 @@ class Auth {
     }
 
     async listUsers(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({prefix, after, amount});
+        const query = qs({ prefix, after, amount });
         const response = await apiRequest(`/auth/users?${query}`);
         if (response.status !== 200) {
             throw new Error(`could not list users: ${await extractError(response)}`);
@@ -204,7 +204,7 @@ class Auth {
 
     async createUser(userId, inviteUser = false) {
         const response = await apiRequest(`/auth/users`,
-            {method: 'POST', body: JSON.stringify({id: userId, invite_user: inviteUser})});
+            { method: 'POST', body: JSON.stringify({ id: userId, invite_user: inviteUser }) });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
@@ -212,7 +212,7 @@ class Auth {
     }
 
     async listGroups(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({prefix, after, amount});
+        const query = qs({ prefix, after, amount });
         const response = await apiRequest(`/auth/groups?${query}`);
         if (response.status !== 200) {
             throw new Error(`could not list groups: ${await extractError(response)}`);
@@ -221,7 +221,7 @@ class Auth {
     }
 
     async listGroupMembers(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({ after, amount });
         const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/members?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list group members: ${await extractError(response)}`);
@@ -252,59 +252,61 @@ class Auth {
     }
 
     async addUserToGroup(userId, groupId) {
-        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`, {method: 'PUT'});
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`, { method: 'PUT' });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
     }
 
     async removeUserFromGroup(userId, groupId) {
-        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`, { method: 'DELETE' });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
     }
 
     async attachPolicyToUser(userId, policyId) {
-        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies/${encodeURIComponent(policyId)}`, {method: 'PUT'});
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies/${encodeURIComponent(policyId)}`, { method: 'PUT' });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
     }
 
     async detachPolicyFromUser(userId, policyId) {
-        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies/${encodeURIComponent(policyId)}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/policies/${encodeURIComponent(policyId)}`, { method: 'DELETE' });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
     }
 
     async attachPolicyToGroup(groupId, policyId) {
-        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/policies/${encodeURIComponent(policyId)}`, {method: 'PUT'});
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/policies/${encodeURIComponent(policyId)}`, { method: 'PUT' });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
     }
 
     async detachPolicyFromGroup(groupId, policyId) {
-        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/policies/${encodeURIComponent(policyId)}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/policies/${encodeURIComponent(policyId)}`, { method: 'DELETE' });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
     }
 
     async deleteCredentials(userId, accessKeyId) {
-        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/credentials/${encodeURIComponent(accessKeyId)}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/credentials/${encodeURIComponent(accessKeyId)}`, { method: 'DELETE' });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
     }
 
     async createGroup(groupName, groupDescription) {
-        const response = await apiRequest(`/auth/groups`, {method: 'POST', body: JSON.stringify({
+        const response = await apiRequest(`/auth/groups`, {
+            method: 'POST', body: JSON.stringify({
                 id: groupName,
                 description: groupDescription
-        })});
+            })
+        });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
@@ -320,7 +322,7 @@ class Auth {
     }
 
     async listPolicies(prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({prefix, after, amount});
+        const query = qs({ prefix, after, amount });
         const response = await apiRequest(`/auth/policies?${query}`);
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`);
@@ -330,7 +332,7 @@ class Auth {
 
     async createPolicy(policyId, policyDocument) {
         // keep id after policy document to override the id the user entered
-        const policy = {...JSON.parse(policyDocument), id: policyId};
+        const policy = { ...JSON.parse(policyDocument), id: policyId };
         const response = await apiRequest(`/auth/policies`, {
             method: 'POST',
             body: JSON.stringify(policy)
@@ -342,7 +344,7 @@ class Auth {
     }
 
     async editPolicy(policyId, policyDocument) {
-        const policy = {...JSON.parse(policyDocument), id: policyId};
+        const policy = { ...JSON.parse(policyDocument), id: policyId };
         const response = await apiRequest(`/auth/policies/${encodeURIComponent(policyId)}`, {
             method: 'PUT',
             body: JSON.stringify(policy)
@@ -354,7 +356,7 @@ class Auth {
     }
 
     async listCredentials(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({ after, amount });
         const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/credentials?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list credentials: ${await extractError(response)}`);
@@ -373,7 +375,7 @@ class Auth {
     }
 
     async listUserGroups(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({ after, amount });
         const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}/groups?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list user groups: ${await extractError(response)}`);
@@ -382,7 +384,7 @@ class Auth {
     }
 
     async listUserPolicies(userId, effective = false, after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const params = {after, amount};
+        const params = { after, amount };
         if (effective) {
             params.effective = 'true'
         }
@@ -403,7 +405,7 @@ class Auth {
     }
 
     async listGroupPolicies(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({ after, amount });
         const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}/policies?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`);
@@ -412,46 +414,36 @@ class Auth {
     }
 
     async deleteUser(userId) {
-        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/users/${encodeURIComponent(userId)}`, { method: 'DELETE' });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
     }
 
     async deleteUsers(userIds) {
-        for (let i = 0; i < userIds.length; i++) {
-            const userId = userIds[i];
-            await this.deleteUser(userId);
-        }
-
+        await Promise.all(userIds.map(userId => this.deleteUser(userId)));
     }
 
     async deleteGroup(groupId) {
-        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/groups/${encodeURIComponent(groupId)}`, { method: 'DELETE' });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
     }
 
     async deleteGroups(groupIds) {
-        for (let i = 0; i < groupIds.length; i++) {
-            const groupId = groupIds[i]
-            await this.deleteGroup(groupId);
-        }
+        await Promise.all(groupIds.map(groupId => this.deleteGroup(groupId)));
     }
 
     async deletePolicy(policyId) {
-        const response = await apiRequest(`/auth/policies/${encodeURIComponent(policyId)}`, {method: 'DELETE'});
+        const response = await apiRequest(`/auth/policies/${encodeURIComponent(policyId)}`, { method: 'DELETE' });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
     }
 
     async deletePolicies(policyIds) {
-        for (let i = 0; i < policyIds.length; i++) {
-            const policyId = policyIds[i];
-            await this.deletePolicy(policyId);
-        }
+        await Promise.all(policyIds.map(policyId => this.deletePolicy(policyId)));
     }
 }
 
@@ -470,7 +462,7 @@ class Repositories {
     }
 
     async list(search = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({search, after, amount});
+        const query = qs({ search, after, amount });
         const response = await apiRequest(`/repositories?${query}`);
         if (response.status !== 200) {
             throw new Error(`could not list repositories: ${await extractError(response)}`);
@@ -490,7 +482,7 @@ class Repositories {
     }
 
     async delete(repoId) {
-        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`, {method: 'DELETE'});
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}`, { method: 'DELETE' });
         if (response.status !== 204) {
             throw new Error(await extractError(response));
         }
@@ -514,7 +506,7 @@ class Branches {
     async create(repoId, name, source) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches`, {
             method: 'POST',
-            body: JSON.stringify({name, source}),
+            body: JSON.stringify({ name, source }),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -542,7 +534,7 @@ class Branches {
     }
 
     async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({prefix, after, amount});
+        const query = qs({ prefix, after, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list branches: ${await extractError(response)}`);
@@ -564,7 +556,7 @@ class Tags {
     }
 
     async list(repoId, prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({prefix, after, amount});
+        const query = qs({ prefix, after, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/tags?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list tags: ${await extractError(response)}`);
@@ -575,7 +567,7 @@ class Tags {
     async create(repoId, id, ref) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/tags`, {
             method: 'POST',
-            body: JSON.stringify({id, ref}),
+            body: JSON.stringify({ id, ref }),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -606,7 +598,7 @@ class Pulls {
     }
 
     async list(repoId, status = "open", prefix = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({status, prefix, after, amount});
+        const query = qs({ status, prefix, after, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/pulls?` + query);
         if (response.status !== 200) {
             const baseMessage = 'Could not list pull requests';
@@ -727,7 +719,7 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
 class Objects {
 
     async list(repoId, ref, tree, after = "", presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
-        const query = qs({prefix: tree, amount, after, delimiter, presign});
+        const query = qs({ prefix: tree, amount, after, delimiter, presign });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
 
         if (response.status === 404) {
@@ -744,7 +736,7 @@ class Objects {
         let after = "";
         return {
             next: async () => {
-                const query = qs({prefix, presign, after, amount: MAX_LISTING_AMOUNT});
+                const query = qs({ prefix, presign, after, amount: MAX_LISTING_AMOUNT });
                 const response = await apiRequest(
                     `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
                 if (response.status === 404) {
@@ -756,13 +748,13 @@ class Objects {
                 const responseBody = await response.json();
                 const done = !responseBody.pagination.has_more;
                 if (!done) after = responseBody.pagination.next_offset;
-                return {page: responseBody.results, done}
+                return { page: responseBody.results, done }
             },
         }
     }
 
     async uploadPreflight(repoId, branchId, path) {
-        const query = qs({path});
+        const query = qs({ path });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects/stage_allowed?` + query);
 
         if (response.status === 204) {
@@ -777,9 +769,9 @@ class Objects {
     }
 
     async upload(repoId, branchId, path, fileObject, onProgressFn = null) {
-        const query = qs({path});
+        const query = qs({ path });
         const uploadUrl = `${API_ENDPOINT}/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query;
-        const {status, body, rawHeaders} = await uploadWithProgress(uploadUrl, fileObject, 'POST', onProgressFn)
+        const { status, body, rawHeaders } = await uploadWithProgress(uploadUrl, fileObject, 'POST', onProgressFn)
         if (status !== 201) {
             const contentType = rawHeaders ? parseRawHeaders(rawHeaders)['content-type'] : undefined;
             if (contentType === "application/json" && body) {
@@ -791,7 +783,7 @@ class Objects {
     }
 
     async delete(repoId, branchId, path) {
-        const query = qs({path});
+        const query = qs({ path });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects?` + query, {
             method: 'DELETE',
         });
@@ -801,7 +793,7 @@ class Objects {
     }
 
     async get(repoId, ref, path, presign = false) {
-        const query = qs({path, presign});
+        const query = qs({ path, presign });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'GET',
         });
@@ -813,7 +805,7 @@ class Objects {
     }
 
     async head(repoId, ref, path) {
-        const query = qs({path});
+        const query = qs({ path });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
             method: 'HEAD',
         });
@@ -828,7 +820,7 @@ class Objects {
     }
 
     async getStat(repoId, ref, path, presign = false) {
-        const query = qs({path, presign});
+        const query = qs({ path, presign });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/stat?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -839,7 +831,7 @@ class Objects {
 
 class Commits {
     async log(repoId, refId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({ after, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(refId)}/commits?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -848,7 +840,7 @@ class Commits {
     }
 
     async blame(repoId, refId, path, type) {
-        const params = {amount: 1};
+        const params = { amount: 1 };
         if (type === 'object') {
             params.objects = path
         } else {
@@ -876,9 +868,9 @@ class Commits {
     }
 
     async commit(repoId, branchId, message, metadata = {}) {
-        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`, {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits`, {
             method: 'POST',
-            body: JSON.stringify({message, metadata}),
+            body: JSON.stringify({ message, metadata }),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -890,7 +882,7 @@ class Commits {
 class Refs {
 
     async changes(repoId, branchId, after, prefix, delimiter, amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, prefix, delimiter, amount});
+        const query = qs({ after, prefix, delimiter, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/diff?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -899,7 +891,7 @@ class Refs {
     }
 
     async diff(repoId, leftRef, rightRef, after, prefix = "", delimiter = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount, delimiter, prefix});
+        const query = qs({ after, amount, delimiter, prefix });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(leftRef)}/diff/${encodeURIComponent(rightRef)}?` + query);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
@@ -910,7 +902,7 @@ class Refs {
     async merge(repoId, sourceBranch, destinationBranch, strategy = "", message = "", metadata = {}) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(sourceBranch)}/merge/${encodeURIComponent(destinationBranch)}`, {
             method: 'POST',
-            body: JSON.stringify({strategy, message, metadata})
+            body: JSON.stringify({ strategy, message, metadata })
         });
 
         let resp;
@@ -930,7 +922,7 @@ class Refs {
 class Actions {
 
     async listRuns(repoId, branch = "", commit = "", after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({branch, commit, after, amount});
+        const query = qs({ branch, commit, after, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/actions/runs?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list actions runs: ${await extractError(response)}`);
@@ -947,7 +939,7 @@ class Actions {
     }
 
     async listRunHooks(repoId, runId, after = "", amount = DEFAULT_LISTING_AMOUNT) {
-        const query = qs({after, amount});
+        const query = qs({ after, amount });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/actions/runs/${encodeURIComponent(runId)}/hooks?` + query);
         if (response.status !== 200) {
             throw new Error(`could not list actions run hooks: ${await extractError(response)}`)
@@ -957,7 +949,7 @@ class Actions {
 
     async getRunHookOutput(repoId, runId, hookRunId) {
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/actions/runs/${encodeURIComponent(runId)}/hooks/${encodeURIComponent(hookRunId)}/output`, {
-            headers: {"Content-Type": "application/octet-stream"},
+            headers: { "Content-Type": "application/octet-stream" },
         });
         if (response.status !== 200) {
             throw new Error(`could not get actions run hook output: ${await extractError(response)}`);
@@ -1029,7 +1021,7 @@ class Setup {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({username: username}),
+            body: JSON.stringify({ username: username }),
         });
         switch (response.status) {
             case 200:
@@ -1166,7 +1158,7 @@ class Statistics {
 
 class Staging {
     async get(repoId, branchId, path, presign = false) {
-        const query = qs({path, presign});
+        const query = qs({ path, presign });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'GET'
         });
@@ -1177,7 +1169,7 @@ class Staging {
     }
 
     async link(repoId, branchId, path, staging, checksum, sizeBytes, contentType = 'application/octet-stream') {
-        const query = qs({path});
+        const query = qs({ path });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/staging/backing?` + query, {
             method: 'PUT',
             body: JSON.stringify({
@@ -1197,7 +1189,7 @@ class Staging {
 class Import {
 
     async get(repoId, branchId, importId) {
-        const query = qs({id: importId});
+        const query = qs({ id: importId });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/import?` + query);
         if (response.status === 404) {
             throw new NotFoundError(`could not find import ${importId}`);
@@ -1234,7 +1226,7 @@ class Import {
     }
 
     async delete(repoId, branchId, importId) {
-        const query = qs({id: importId});
+        const query = qs({ id: importId });
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/import?` + query, {
             method: 'DELETE',
         });
