@@ -103,4 +103,36 @@
 .color-fg-conflict {
   color: var(--color-fg-conflict);
   font-weight: 600;
-} 
+}
+
+.image-diff-card-container {
+  display: flex;
+  gap: 1rem;
+}
+
+.image-diff-card img {
+  max-height: 60vh;
+  width: auto;
+  height: auto;
+}
+
+.image-diff-card-flex {
+  flex: 1 1 0;
+}
+
+.image-diff-header-deleted {
+  background-color: #ffeef0 !important;
+  color: #fdb8c0;
+  padding: 0.5rem !important;
+}
+
+.image-diff-header-added {
+  background-color: #e6ffed !important;
+  color: #acf2bd;
+  padding: 0.5rem !important;
+}
+
+.image-diff-summary {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
