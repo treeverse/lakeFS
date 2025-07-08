@@ -357,11 +357,11 @@ helm search repo lakefs/everest-lakefs-csi-driver -l
 helm show values lakefs/everest-lakefs-csi-driver --version <version>
 ```
 
-**CSI driver config:**
+**CSI driver configuration:**
 
 All the driver CLI flags can be configured via environment variables (prefixed `CSI_DRIVER_`) and can be passed to the driver.
 
-!!! example "Example: Minimal required arguments not commented"
+!!! example "`values.yaml` example (minimal required arguments not commented)"
 
     ```yaml
     # image:  
@@ -371,25 +371,25 @@ All the driver CLI flags can be configured via environment variables (prefixed `
 
     # Same as fluffy https://github.com/treeverse/fluffy?tab=readme-ov-file#1-dockerhub-token-for-fluffy
     imagePullSecret:
-    token: <dockerhub-token>
-    username: <dockerhub-user>
+      token: <dockerhub-token>
+      username: <dockerhub-user>
 
     # Credentials that will be used by everest as a default to access lakeFS mount paths
     lakeFSAccessSecret:
-    keyId: <lakefs-key-id>
-    accessKey: <lakefs-access-key>
-    endpoint: <lakefs-endpoint>
+      keyId: <lakefs-key-id>
+      accessKey: <lakefs-access-key>
+      endpoint: <lakefs-endpoint>
 
     node:
-    # verbosity level of the driver (normal values are 0-4, 5 would be most verbose)
-    logLevel: 4
-    # Only set if having issues with running or installing the everest binary 
-    # Path directory where the everest binary accessed by the underlying K8S Nodes (${everestInstallPath}/everest)
-    # The binary will copied from the CSI pod into that location by the init container job in the node.yaml
-    # This path will be a host path on the K8S Nodes
-    # depending on the underlying OS and the SELinux policy the binary will be executed by systemd on the Host.
-    # Known issue when using Bottlerocket OS https://github.com/bottlerocket-os/bottlerocket/pull/3779 
-    # everestInstallPath: /opt/everest-mount/bin/  # should end with "/"
+      # verbosity level of the driver (normal values are 0-4, 5 would be most verbose)
+      logLevel: 4
+      # Only set if having issues with running or installing the everest binary 
+      # Path directory where the everest binary accessed by the underlying K8S Nodes (${everestInstallPath}/everest)
+      # The binary will copied from the CSI pod into that location by the init container job in the node.yaml
+      # This path will be a host path on the K8S Nodes
+      # depending on the underlying OS and the SELinux policy the binary will be executed by systemd on the Host.
+      # Known issue when using Bottlerocket OS https://github.com/bottlerocket-os/bottlerocket/pull/3779 
+      # everestInstallPath: /opt/everest-mount/bin/  # should end with "/"
 
     # Additional environment variables that will be passed to the driver can be used to configure the csi driver
     # extraEnvVars:
