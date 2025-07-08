@@ -302,12 +302,14 @@ gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 	go run github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION) generate
 
-publish-scala: ## sbt publish spark client jars to nexus and s3 bucket
-	cd clients/spark && sbt assembly && sbt s3Upload && sbt publishSigned
+.PHONY: publish-scala
+publish-scala: ## sbt publish spark client jars to Maven Central and to s3 bucket
+	cd clients/spark && sbt 'assembly; publishSigned; s3Upload; sonaRelease'
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
+.PHONY: publish-lakefsfs-test
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
-	cd test/lakefsfs && sbt assembly && sbt s3Upload
+	cd test/lakefsfs && sbt 'assembly; s3Upload'
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
 help:  ## Show Help menu

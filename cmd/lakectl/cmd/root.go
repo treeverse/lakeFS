@@ -57,7 +57,7 @@ Get the latest release {{ .UpgradeURL|blue }}
 
 type RetriesCfg struct {
 	Enabled         bool          `mapstructure:"enabled"`
-	MaxAttempts     int           `mapstructure:"max_attempts"`      // MaxAttempts is the maximum number of attempts
+	MaxAttempts     uint32        `mapstructure:"max_attempts"`      // MaxAttempts is the maximum number of attempts
 	MinWaitInterval time.Duration `mapstructure:"min_wait_interval"` // MinWaitInterval is the minimum amount of time to wait between retries
 	MaxWaitInterval time.Duration `mapstructure:"max_wait_interval"` // MaxWaitInterval is the maximum amount of time to wait between retries
 }

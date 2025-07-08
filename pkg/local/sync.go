@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -150,7 +151,12 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 		spinner := s.progressBar.AddSpinner("download " + path)
 		atomic.AddUint64(&s.tasks.Downloaded, 1)
 		defer spinner.Done()
-	} else {
+		return nil
+	}
+
+	bo := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), s.cfg.MaxDownloadRetries)
+	isRetry := false
+	return backoff.Retry(func() error {
 		var body io.Reader
 		if s.cfg.Presign {
 			resp, err := s.httpClient.Get(objStat.PhysicalAddress)
@@ -180,8 +186,15 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 			body = resp.Body
 		}
 
+		if isRetry {
+			// If we are retrying, we need to reset the file pointer to the beginning
+			if _, err := f.Seek(0, io.SeekStart); err != nil {
+				return fmt.Errorf("could not seek to start of file '%s': %w", destination, err)
+			}
+		}
+		isRetry = true
+
 		b := s.progressBar.AddReader(fmt.Sprintf("download %s", path), sizeBytes)
-		barReader := b.Reader(body)
 		defer func() {
 			if err != nil {
 				b.Error()
@@ -191,12 +204,13 @@ func (s *SyncManager) downloadFile(ctx context.Context, remote *uri.URI, path, d
 			}
 		}()
 
+		barReader := b.Reader(body)
 		_, err = io.Copy(f, barReader)
 		if err != nil {
 			return fmt.Errorf("could not write file '%s': %w", destination, err)
 		}
-	}
-	return nil
+		return nil
+	}, bo)
 }
 
 func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri.URI, p string) error {

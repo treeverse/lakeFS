@@ -24,7 +24,7 @@ func NewRetryClient(retriesCfg RetriesCfg, transport *http.Transport) *http.Clie
 		retryClient.HTTPClient.Transport = transport
 	}
 	retryClient.Logger = nil
-	retryClient.RetryMax = retriesCfg.MaxAttempts
+	retryClient.RetryMax = int(retriesCfg.MaxAttempts)
 	retryClient.RetryWaitMin = retriesCfg.MinWaitInterval
 	retryClient.RetryWaitMax = retriesCfg.MaxWaitInterval
 	retryClient.CheckRetry = lakectlRetryPolicy

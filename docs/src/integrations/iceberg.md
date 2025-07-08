@@ -13,7 +13,7 @@ status: enterprise
 
 !!! tip
     lakeFS Iceberg REST Catalog is currently in private preview for [lakeFS Enterprise](../enterprise/index.md) customers.
-    [Contact us](https://lakefs.io/book-a-demo/) to get started!
+    [Contact us](https://lakefs.io/lp/iceberg-rest-catalog/) to get started!
 
 ### What is lakeFS Iceberg REST Catalog?
 
@@ -58,7 +58,7 @@ The Iceberg REST catalog API is exposed at `/iceberg/api` in your lakeFS server.
 
 To use it:
 
-1. Enable the feature ([contact us](https://lakefs.io/book-a-demo/) for details).
+1. Enable the feature ([contact us](https://lakefs.io/lp/iceberg-rest-catalog/) for details).
 2. Configure your Iceberg clients to use the lakeFS REST catalog endpoint.
 3. Use your lakeFS access key and secret for authentication.
 
@@ -152,6 +152,43 @@ Examples:
 - `my-repo.feature-branch.inventory.books`
 
 The repository and branch components must already exist in lakeFS before using them in the Iceberg catalog.
+
+
+#### Relative Namespace support
+
+Some Apache Iceberg clients do not support nested namespaces.
+
+To support those, the lakeFS REST Catalog allows specifying relative namespaces:
+passing a partial namespace as part of the catalog URL endpoint (commonly, `<repository>.<branch>`). 
+
+By doing so, all namespaces passed by the user will be relative to the namespaces passed in the URL.
+
+???+ example "Example: DuckDB"
+    DuckDB allows limited nesting in the form of `<database>.<schema>`. When using the [Iceberg REST Catalog integration](https://duckdb.org/docs/stable/core_extensions/iceberg/iceberg_rest_catalogs.html){ target="_blank"}, the database is replaced by the name given to the catalog.
+    We can use relative namespaces to allow scoping the catalog connecting to a specific repository and branch:
+    ```sql
+    LOAD iceberg;
+    LOAD httpfs;
+
+    CREATE SECRET lakefs_credentials (
+        TYPE ICEBERG,
+        CLIENT_ID '...',
+        CLIENT_SECRET '...',
+        OAUTH2_SERVER_URI 'https://lakefs.example.com/iceberg/api/v1/oauth/tokens'
+    );
+    
+    ATTACH 'lakefs' AS main_branch (
+        TYPE iceberg,
+        SECRET lakefs_credentials,
+        -- notice the "/relative_to/.../" part:
+        ENDPOINT 'https://lakefs.example.com/iceberg/relative_to/my-repo.main/api'
+    );
+
+    USE main_branch.inventory;
+    SELECT * FROM books;
+    ```
+
+    See the [DuckDB documentation](https://duckdb.org/docs/stable/core_extensions/iceberg/iceberg_rest_catalogs.html){ target="_blank" } for a full reference on how to setup an Iceberg catalog integration.
 
 #### Namespace Restrictions
 

@@ -99,6 +99,10 @@ Configuration section for authenticating to lakeFS using AWS presign get-caller-
 * `features.local_rbac` `(bool: true)` - Backward compatibility if you use an external RBAC service (such as legacy fluffy). If `false` lakeFS will expect to use `auth.api` and all fluffy related configuration for RBAC.
 
 
+* `iceberg_catalog` - Configuration section for the Iceberg REST Catalog
+  + `iceberg_catalog.token_duration` `(duration : 1h)` - Authenticated token duration
+
+
 ### Using Environment Variables
 
 All the configuration variables can be set or overridden using environment variables.

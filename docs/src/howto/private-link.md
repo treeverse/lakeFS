@@ -1,6 +1,7 @@
 ---
 title: Private Link
 description: Private Link enables lakeFS Cloud to interact with your infrastructure using private networking.
+status: enterprise
 ---
 
 # Private Link
