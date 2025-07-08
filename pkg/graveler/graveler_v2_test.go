@@ -1014,6 +1014,7 @@ func TestGravelerImport(t *testing.T) {
 
 	importTest := func(t *testing.T, metadata graveler.Metadata) {
 		test := testutil.InitGravelerTest(t)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
