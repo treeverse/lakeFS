@@ -4263,8 +4263,8 @@ paths:
           enum: [two_dot, three_dot]
           default: three_dot
       - in: query
-        name: include_right_info
-        description: If set to true, the diff will include right-side object info. *EXPERIMENTAL*
+        name: include_right_stats
+        description: If set to true, the diff will include right-side object stats. *EXPERIMENTAL*
         required: false
         schema:
           type: boolean

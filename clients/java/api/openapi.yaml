@@ -4236,11 +4236,11 @@ paths:
           - three_dot
           type: string
         style: form
-      - description: "If set to true, the diff will include right-side object info.\
+      - description: "If set to true, the diff will include right-side object stats.\
           \ *EXPERIMENTAL*"
         explode: true
         in: query
-        name: include_right_info
+        name: include_right_stats
         required: false
         schema:
           default: false

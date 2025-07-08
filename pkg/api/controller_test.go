@@ -2016,14 +2016,12 @@ func TestController_DiffRefsHandler(t *testing.T) {
 		if results[0].Type != "prefix_changed" {
 			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
+		if results[0].Right != nil {
+			t.Fatalf("expected no right info in diff result for prefix, got: %+v", results[0].Right)
+		}
 	})
-}
 
-func TestController_DiffRefs_ObjectInfo(t *testing.T) {
-	clt, deps := setupClientWithAdmin(t)
-	ctx := context.Background()
-
-	t.Run("diff refs with metadata", func(t *testing.T) {
+	t.Run("diff refs with object stats", func(t *testing.T) {
 		repoName := testUniqueRepoName()
 		const newBranchName = "main2"
 		_, err := deps.catalog.CreateRepository(ctx, repoName, "", onBlock(deps, "foo1"), "main", false)
@@ -2048,7 +2046,7 @@ func TestController_DiffRefs_ObjectInfo(t *testing.T) {
 			t.Fatalf("failed to commit 'repo1': %s", err)
 		}
 
-		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{IncludeRightInfo: apiutil.Ptr(true)})
+		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{IncludeRightStats: apiutil.Ptr(true)})
 		verifyResponseOK(t, resp2, err)
 		results := resp2.JSON200.Results
 		if len(results) != 1 {
@@ -2063,8 +2061,9 @@ func TestController_DiffRefs_ObjectInfo(t *testing.T) {
 		if results[0].Right == nil {
 			t.Fatal("expected right info in diff result")
 		}
-		if results[0].Right.Checksum == "" || results[0].Right.Mtime == 0 {
-			t.Fatal("expected right info checksum and mtime in diff result")
+		rightStats := results[0].Right
+		if rightStats.Checksum == "" || rightStats.Mtime == 0 || rightStats.Path == "" {
+			t.Fatal("expected right info checksum, mtime and path in diff result")
 		}
 	})
 }
