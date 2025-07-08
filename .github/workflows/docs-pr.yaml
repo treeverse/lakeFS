@@ -1,6 +1,7 @@
 name: Docs Preview and Link Check
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, closed]
     paths:
@@ -99,9 +100,9 @@ jobs:
 
       - name: Check links
         id: lychee
-        uses: lycheeverse/lychee-action@v1.8.0
+        uses: lycheeverse/lychee-action@v2
         with:
-          args: docs/site --no-progress --exclude-mail --exclude-file=.lycheeignore
+          args: docs/site --no-progress --root-dir ${{ github.workspace }}/docs/site
           fail: true
           jobSummary: true
           format: markdown
