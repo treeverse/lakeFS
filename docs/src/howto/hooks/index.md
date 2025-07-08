@@ -138,6 +138,8 @@ For example, lakeFS will search and execute all the matching Action files with t
 | `post-create-tag`    | Runs after the tag was created                                                                   |
 | `pre-delete-tag`     | Runs prior to deleting a tag                                                                     |
 | `post-delete-tag`    | Runs after the tag was deleted                                                                   |
+| `pre-cherry-pick`    | Runs when the cherry-pick occurs, before the it is finalized                                     |
+| `post-cherry-pick`   | Runs after the cherry-pick is finalized                                                          |
 
 
 !!! warning

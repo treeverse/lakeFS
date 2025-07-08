@@ -165,6 +165,23 @@ func (h *Hooks) PostRevertHook(_ context.Context, record graveler.HookRecord) er
 	return h.Errs["PostRevertHook"]
 }
 
+func (h *Hooks) PreCherryPickHook(_ context.Context, record graveler.HookRecord) error {
+	h.Called = append(h.Called, "PreCherryPickHook")
+	h.RepositoryID = record.Repository.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.BranchID = record.BranchID
+	h.Commit = record.Commit
+	return h.Errs["PreCherryPickHook"]
+}
+
+func (h *Hooks) PostCherryPickHook(_ context.Context, record graveler.HookRecord) {
+	h.Called = append(h.Called, "PostCherryPickHook")
+	h.RepositoryID = record.Repository.RepositoryID
+	h.BranchID = record.BranchID
+	h.CommitID = record.CommitID
+	h.Commit = record.Commit
+}
+
 func (h *Hooks) NewRunID() string {
 	return ""
 }
@@ -3275,8 +3292,8 @@ func TestGraveler_CherryPickHooks(t *testing.T) {
 			ctx := context.Background()
 			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
 			h := &Hooks{Errs: map[string]error{
-				"PreCommitHook":  tt.err,
-				"PostCommitHook": tt.err,
+				"PreCherryPickHook":  tt.err,
+				"PostCherryPickHook": tt.err,
 			}}
 			if tt.hook {
 				g.SetHooksHandler(h)
@@ -3301,21 +3318,21 @@ func TestGraveler_CherryPickHooks(t *testing.T) {
 			}
 
 			// verify that calls made until the first error
-			preCommitCalled := slices.Contains(h.Called, "PreCommitHook")
-			postCommitCalled := slices.Contains(h.Called, "PostCommitHook")
+			preCommitCalled := slices.Contains(h.Called, "PreCherryPickHook")
+			postCommitCalled := slices.Contains(h.Called, "PostCherryPickHook")
 
 			if (tt.hook && !tt.readOnlyRepo) != preCommitCalled {
-				t.Fatalf("CherryPick invalid pre-commit hook call, %v expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+				t.Fatalf("CherryPick invalid pre-cherry-pick hook call, %v expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
 			}
 
-			// PostCommit should only be called if PreCommit succeeded and operation completed
+			// PostCherryPick should only be called if PreCherryPick succeeded and operation completed
 			if tt.hook && !tt.readOnlyRepo && tt.err == nil {
 				if !postCommitCalled {
-					t.Fatalf("CherryPick post-commit hook should be called when pre-commit succeeds, %v", h.Called)
+					t.Fatalf("CherryPick post-cherry-pick hook should be called when pre-cherry-pick succeeds, %v", h.Called)
 				}
 			} else {
 				if postCommitCalled {
-					t.Fatalf("CherryPick post-commit hook should not be called when pre-commit fails or repo is read-only, %v", h.Called)
+					t.Fatalf("CherryPick post-cherry-pick hook should not be called when pre-cherry-pick fails or repo is read-only, %v", h.Called)
 				}
 			}
 
@@ -3330,9 +3347,9 @@ func TestGraveler_CherryPickHooks(t *testing.T) {
 			diff := deep.Equal(h.Commit.Metadata, cherryPickMetadata)
 			require.Nil(t, diff, "Hook commit metadata diff:", diff)
 
-			// verify post-commit hook parameters if it was called
+			// verify post-cherry-pick hook parameters if it was called
 			if postCommitCalled {
-				require.Equal(t, cherryPickCommitID, h.CommitID, "Post-commit hook commit ID mismatch")
+				require.Equal(t, cherryPickCommitID, h.CommitID, "Post-cherry-pick hook commit ID mismatch")
 			}
 		})
 	}

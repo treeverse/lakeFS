@@ -2902,9 +2902,9 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 
 		if !repository.ReadOnly {
 			preRunID = g.hooks.NewRunID()
-			err = g.hooks.PreCommitHook(ctx, HookRecord{
+			err = g.hooks.PreCherryPickHook(ctx, HookRecord{
 				RunID:      preRunID,
-				EventType:  EventTypePreCommit,
+				EventType:  EventTypePreCherryPick,
 				SourceRef:  branchID.Ref(),
 				Repository: repository,
 				BranchID:   branchID,
@@ -2912,7 +2912,7 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 			})
 			if err != nil {
 				return nil, &HookAbortError{
-					EventType: EventTypePreCommit,
+					EventType: EventTypePreCherryPick,
 					RunID:     preRunID,
 					Err:       err,
 				}
@@ -2937,8 +2937,8 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 
 	if !repository.ReadOnly {
 		postRunID := g.hooks.NewRunID()
-		err = g.hooks.PostCommitHook(ctx, HookRecord{
-			EventType:  EventTypePostCommit,
+		err = g.hooks.PostCherryPickHook(ctx, HookRecord{
+			EventType:  EventTypePostCherryPick,
 			RunID:      postRunID,
 			Repository: repository,
 			SourceRef:  commitID.Ref(),
@@ -2951,7 +2951,7 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 			g.log(ctx).WithError(err).
 				WithField("run_id", postRunID).
 				WithField("pre_run_id", preRunID).
-				Error("Post-commit hook failed")
+				Error("Post-cherry-pick hook failed")
 		}
 	}
 
