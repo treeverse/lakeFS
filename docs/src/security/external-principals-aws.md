@@ -47,7 +47,7 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 ## Server Configuration
 
 !!! info
-    lakeFS Helm chart supports the configuration below since version x.y.z (TODO: specify the minimum version that supports these features) @idanovo @ItamarYuran
+    lakeFS Helm chart supports the configuration below since version 1.5.0
 
 To enable AWS IAM authentication in lakeFS Enterprise:
 

@@ -308,15 +308,141 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
             enabled: true
         ```
 
-## Helm Configuration
+## Migrating from Fluffy to lakeFS Enterprise Authentication
 
-lakeFS Enterprise authentication can be configured using the [lakeFS Helm chart](https://github.com/treeverse/charts).
-If you're upgrading from a version that used the Fluffy authentication service:
+### Overview
 
-1. Remove all `fluffy.*` configuration from your values.yaml
-2. Move authentication settings to the appropriate sections as shown below
-3. Update ingress rules to remove Fluffy-specific paths
-4. The chart will automatically detect and prevent deployment if Fluffy configuration is present
+Starting with **lakeFS Helm chart version 1.5.0**, the Fluffy authentication service has been deprecated and replaced with native lakeFS Enterprise authentication. This migration consolidates authentication into the main lakeFS application, simplifying deployment and maintenance.
+
+#### What's Changing
+
+When you upgrade to lakeFS Enterprise:
+
+- **Fluffy Deployment Removed**: The separate Fluffy deployment, service, and associated Kubernetes resources are no longer needed
+- **Simplified Architecture**: Authentication is now handled directly by lakeFS Enterprise, reducing the number of pods and services
+- **Streamlined Ingress**: No more routing between Fluffy and lakeFS - all traffic goes directly to lakeFS
+- **Updated values.yaml Structure**: Authentication configuration moves from `fluffy.*` to `enterprise.auth.*` and `lakefsConfig.auth.providers.*`
+- **Enterprise Image Required**: The chart now uses `treeverse/lakefs-enterprise` image (minimum version 1.0.0)
+
+#### Prerequisites
+
+- Current lakeFS deployment using Fluffy authentication (chart version < 1.5.0)
+- Access to update Helm values
+- lakeFS Enterprise Docker Hub token
+- Backup of your current values.yaml
+
+### Step-by-Step Migration Guide
+
+#### Step 1: Update Helm Repository
+
+```bash
+helm repo update lakefs
+```
+
+Verify you have access to chart version 1.5.0 or later:
+```bash
+helm search repo lakefs/lakefs --versions
+```
+
+#### Step 2: Review New Chart Values
+
+Examine all available configuration options in the new chart:
+```bash
+helm show values lakefs/lakefs --version 1.5.0 > new-values-reference.yaml
+```
+
+#### Step 3: Update Your Image Configuration
+
+If you're overriding the image in your values.yaml, update it to use lakeFS Enterprise:
+
+```yaml
+image:
+  repository: treeverse/lakefs-enterprise
+  tag: 1.0.0  # or later
+  privateRegistry:
+    enabled: true
+    secretToken: <your-dockerhub-token>
+```
+
+**Note**: If you're not overriding the image, the chart will automatically use the correct Enterprise image.
+
+#### Step 4: Migrate Your Authentication Configuration
+
+Using the configuration examples below, update your values.yaml file:
+1. Remove all `fluffy.*` configuration sections
+2. Add the new `enterprise.auth.*` configuration for your authentication method
+3. Move authentication settings to `lakefsConfig.auth.providers.*`
+
+Refer to the complete examples in the [lakeFS Helm chart repository](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise).
+
+#### Step 5: Validate with Dry Run
+
+Before applying changes, validate your configuration:
+```bash
+helm upgrade <release-name> lakefs/lakefs \
+  --version 1.5.0 \
+  --namespace <namespace> \
+  --values <your-updated-values.yaml> \
+  --dry-run
+```
+
+Review the output to ensure:
+- No Fluffy resources are being created
+- lakeFS Enterprise deployment is configured correctly
+- Ingress configuration is simplified
+
+#### Step 6: Perform the Upgrade
+
+Once validated, perform the actual upgrade:
+```bash
+helm upgrade <release-name> lakefs/lakefs \
+  --version 1.5.0 \
+  --namespace <namespace> \
+  --values <your-updated-values.yaml>
+```
+
+#### Step 7: Verify the Migration
+
+After the upgrade completes:
+
+1. **Check Pod Status**:
+   ```bash
+   kubectl get pods -n <namespace>
+   # Fluffy pods should no longer exist
+   ```
+
+2. **Verify lakeFS Health**:
+   ```bash
+   kubectl exec -n <namespace> <lakefs-pod> -- curl http://localhost:8000/_health
+   ```
+
+3. **Check Logs**:
+   ```bash
+   kubectl logs -n <namespace> <lakefs-pod>
+   # Look for successful authentication provider initialization
+   ```
+
+4. **Test Authentication**:
+    - Navigate to your lakeFS URL
+    - Verify SSO login works correctly
+    - Confirm RBAC permissions are preserved
+
+5. **Verify Fluffy Resources Removed**:
+   ```bash
+   kubectl get all -n <namespace> | grep fluffy
+   # Should return no results
+   ```
+
+#### Step 8: Rollback (if needed)
+
+If you encounter issues, rollback to the previous version:
+```bash
+# Find the previous revision
+helm history <release-name> -n <namespace>
+
+# Rollback to previous revision
+helm rollback <release-name> <previous-revision> -n <namespace>
+```
 
 ### Configuration Examples
 
@@ -740,9 +866,21 @@ Below are complete configuration examples for each authentication method, showin
 
 ### Important Notes
 
-* Check the [examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) for complete configuration examples for each authentication method. (TODO: replace with actual links after merging https://github.com/treeverse/charts/pull/343 @idanovo)
-* The examples include local blockstore for quick-start - replace with S3/Azure/GCS for production
-* Minimum lakeFS Enterprise version: x.y.z (TODO: specify the minimum version that supports these features) @idanovo @ItamarYuran
+* Complete configuration examples for each authentication method are available in the [lakeFS Helm chart repository](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise)
+* The examples include local blockstore for quick-start - replace with S3/Azure/GCS for production deployments
+* Minimum lakeFS Enterprise version: 1.0.0
 * Configure the `image.privateRegistry.secretToken` with your DockerHub token for accessing enterprise images
 * Update all placeholder values (marked with `<>`) with your actual configuration
 * Enable `features.local_rbac: true` to use the enterprise RBAC features
+* The simplified architecture reduces operational complexity and improves performance
+
+### Troubleshooting
+
+If you encounter issues during migration:
+
+1. **Authentication Failures**: Check that all authentication settings have been properly moved to the new configuration structure
+2. **Missing Permissions**: Verify that `features.local_rbac: true` is set in your lakefsConfig
+3. **Image Pull Errors**: Ensure your DockerHub token has access to the lakeFS Enterprise image
+4. **Ingress Issues**: Confirm that your ingress is pointing directly to lakeFS (not Fluffy)
+
+For additional support, consult the [lakeFS documentation](https://docs.lakefs.io) or contact lakeFS support.
