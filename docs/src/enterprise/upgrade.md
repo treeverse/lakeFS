@@ -308,17 +308,437 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
             enabled: true
         ```
 
-### Helm
+## Helm Configuration
 
 lakeFS Enterprise authentication can be configured using the [lakeFS Helm chart](https://github.com/treeverse/charts).
 If you're upgrading from a version that used the Fluffy authentication service:
 
 1. Remove all `fluffy.*` configuration from your values.yaml
-2. Move authentication settings to the appropriate sections as shown above
+2. Move authentication settings to the appropriate sections as shown below
 3. Update ingress rules to remove Fluffy-specific paths
 4. The chart will automatically detect and prevent deployment if Fluffy configuration is present
 
-### Helm
+### Configuration Examples
+
+Below are complete configuration examples for each authentication method, showing both the old (Fluffy) and new (Enterprise) configurations:
+
+!!! note "SAML with Helm"
+
+    === "lakeFS + Fluffy (old)"
+        
+        ```yaml
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths: 
+                - /
+
+        fluffy:
+          enabled: true
+          image:
+            privateRegistry:
+              enabled: true
+              secretToken: <dockerhub-token-fluffy-image>
+          fluffyConfig: |
+            auth:  
+              # logout_redirect_url: https://<lakefs.ingress.domain>
+              # post_login_redirect_url: https://<lakefs.ingress.domain>
+              saml:
+                sp_sign_request: true
+                # depends on IDP
+                sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+                # url to the metadata of the IDP
+                idp_metadata_url: "https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml"
+                # IDP SAML claims format default unspecified
+                # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+                # claim name from IDP to use as the unique user name
+                external_user_id_claim_name: samName
+                # depending on IDP setup, if CA certs are self signed and not trusted by a known CA
+                idp_skip_verify_tls_cert: true
+          rbac:
+            enabled: true
+          secrets:
+            create: true
+          sso:
+            enabled: true
+            saml:
+              enabled: true
+              createSecret: true
+              lakeFSServiceProviderIngress: https://<lakefs.ingress.domain>
+              certificate:
+                saml_rsa_public_cert: |
+                  -----BEGIN CERTIFICATE-----
+                  ...
+                  -----END CERTIFICATE-----
+                saml_rsa_private_key: |
+                  -----BEGIN PRIVATE KEY-----
+                  ...
+                  -----END PRIVATE KEY-----
+
+        lakefsConfig: | 
+          blockstore:
+            type: local
+          auth:
+            cookie_auth_verification:
+            # claim name to display user in the UI
+              friendly_name_claim_name: displayName
+              # claim name from IDP to use as the unique user name
+              external_user_id_claim_name: samName
+              default_initial_groups:
+                - "Developers"
+            ui_config:
+              login_cookie_names:
+                - internal_auth_session
+                - saml_auth_session
+        ```
+
+    === "lakeFS Enterprise (new)"
+        
+        ```yaml
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths: 
+                - /
+
+        enterprise:
+          enabled: true
+          auth:
+            saml:
+              enabled: true
+              createCertificateSecret: true
+              certificate:
+                samlRsaPublicCert: |
+                  -----BEGIN CERTIFICATE-----
+                  ...
+                  -----END CERTIFICATE-----
+                samlRsaPrivateKey: |
+                  -----BEGIN PRIVATE KEY-----
+                  ...
+                  -----END PRIVATE KEY-----
+
+        image:
+          privateRegistry:
+            enabled: true
+            secretToken: <dockerhub-token>
+
+        lakefsConfig: |
+          blockstore:
+            type: local
+          features:
+            local_rbac: true
+          auth:
+            logout_redirect_url: https://<lakefs.ingress.domain>
+            cookie_auth_verification:
+              auth_source: saml
+              # claim name to display user in the UI
+              friendly_name_claim_name: displayName
+              # claim name from IDP to use as the unique user name
+              external_user_id_claim_name: samName
+              default_initial_groups:
+                - "Developers"
+            providers:
+              saml:
+                post_login_redirect_url: https://<lakefs.ingress.domain>
+                sp_root_url: https://<lakefs.ingress.domain>
+                sp_sign_request: true
+                # depends on IDP
+                sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+                # url to the metadata of the IDP
+                idp_metadata_url: "https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml"
+                # IDP SAML claims format default unspecified
+                idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+                # depending on IDP setup, if CA certs are self signed and not trusted by a known CA
+                #idp_skip_verify_tls_cert: true
+        ```
+
+!!! note "OIDC with Helm"
+
+    === "lakeFS + Fluffy (old)"
+        
+        ```yaml
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths: 
+                - /
+
+        fluffy:
+          enabled: true
+          image:
+            privateRegistry:
+              enabled: true
+              secretToken: <dockerhub-token-fluffy-image>
+          fluffyConfig: |
+            auth:
+              logout_redirect_url: https://oidc-provider-url.com/logout/example
+              oidc:
+                enabled: true
+                url: https://oidc-provider-url.com/
+                client_id: <oidc-client-id>
+                callback_base_url: https://<lakefs.ingress.domain>
+                # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
+                logout_client_id_query_parameter: client_id
+                # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
+                logout_endpoint_query_parameters:
+                  - returnTo
+                  - https://<lakefs.ingress.domain>/oidc/login
+          secrets:
+            create: true
+          sso:
+            enabled: true
+            oidc:
+              enabled: true
+              # secret given by the OIDC provider (e.g auth0, Okta, etc)
+              client_secret: <oidc-client-secret>
+          rbac:
+            enabled: true
+
+        lakefsConfig: |
+          database:
+            type: local
+          blockstore:
+            type: local
+          features:
+            local_rbac: true
+          auth:
+            ui_config:
+              login_cookie_names:
+                - internal_auth_session
+                - oidc_auth_session
+            oidc:
+              friendly_name_claim_name: <some-oidc-provider-claim-name>
+              default_initial_groups: ["Developers"]
+        ```
+
+    === "lakeFS Enterprise (new)"
+        
+        ```yaml
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths: 
+                - /
+
+        enterprise:
+          enabled: true
+          auth:
+            oidc:
+              enabled: true
+              # secret given by the OIDC provider (e.g auth0, Okta, etc)
+              client_secret: <oidc-client-secret>
+
+        image:
+          privateRegistry:
+            enabled: true
+            secretToken: <dockerhub-token>
+
+        lakefsConfig: |
+          blockstore:
+            type: local
+          features:
+            local_rbac: true
+          auth:
+            logout_redirect_url: https://oidc-provider-url.com/logout/example
+            oidc:
+              friendly_name_claim_name: <some-oidc-provider-claim-name>
+              default_initial_groups: ["Developers"]
+            providers:
+              oidc:
+                post_login_redirect_url: /
+                url: https://oidc-provider-url.com/
+                client_id: <oidc-client-id>
+                callback_base_url: https://<lakefs.ingress.domain>
+                # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
+                logout_client_id_query_parameter: client_id
+                # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
+                logout_endpoint_query_parameters:
+                  - returnTo
+                  - https://<lakefs.ingress.domain>/oidc/login
+        ```
+
+!!! note "LDAP with Helm"
+
+    === "lakeFS + Fluffy (old)"
+        
+        ```yaml
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths: 
+               - /
+
+        fluffy:
+          enabled: true
+          image:
+            privateRegistry:
+              enabled: true
+              secretToken: <dockerhub-token-fluffy-image>
+          fluffyConfig: |
+            auth:
+              post_login_redirect_url: /
+              ldap: 
+                server_endpoint: ldaps://ldap.company.com:636
+                bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com
+                username_attribute: uid
+                user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com
+                user_filter: (objectClass=inetOrgPerson)
+                connection_timeout_seconds: 15
+                request_timeout_seconds: 7
+
+          secrets:
+            create: true
+            
+          sso:
+            enabled: true
+            ldap:
+              enabled: true
+              bind_password: <ldap bind password>
+          rbac:
+            enabled: true
+
+        lakefsConfig: |
+          blockstore:
+            type: local
+          auth:
+            remote_authenticator:
+              enabled: true
+              default_user_group: "Developers"
+            ui_config:
+              login_cookie_names:
+                - internal_auth_session
+        ```
+
+    === "lakeFS Enterprise (new)"
+        
+        ```yaml
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths:
+                - /
+
+        enterprise:
+          enabled: true
+          auth:
+            ldap:
+              enabled: true
+              bindPassword: <ldap bind password>
+
+        image:
+          privateRegistry:
+            enabled: true
+            secretToken: <dockerhub-token>
+
+        lakefsConfig: |
+          blockstore:
+            type: local
+          features:
+            local_rbac: true
+          auth:
+            ui_config:
+              login_cookie_names:
+                - internal_auth_session
+            providers:
+              ldap:
+                server_endpoint: ldaps://ldap.company.com:636
+                bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com        
+                username_attribute: uid
+                user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com        
+                user_filter: (objectClass=inetOrgPerson)
+                default_user_group: "Developers"
+                connection_timeout_seconds: 15
+                request_timeout_seconds: 7
+        ```
+
+!!! note "AWS IAM with Helm"
+
+    === "lakeFS + Fluffy (old)"
+        
+        ```yaml
+        lakefsConfig: |
+          auth:
+            authentication_api:
+              external_principals_enabled: true
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths:
+                - /
+
+        fluffy:
+          enabled: true
+          image:
+            repository: treeverse/fluffy
+            pullPolicy: IfNotPresent
+            privateRegistry:
+              enabled: true
+              secretToken: <dockerhub-token-fluffy-image>
+          fluffyConfig: |
+            auth:
+              external:
+                aws_auth:
+                  enabled: true
+                  # the maximum age in seconds for the GetCallerIdentity request
+                  #get_caller_identity_max_age: 60
+                  # headers that must be present by the client when doing login request
+                  required_headers:
+                    # same host as the lakeFS server ingress
+                    X-LakeFS-Server-ID: <lakefs.ingress.domain>
+          secrets:
+            create: true
+          sso:
+            enabled: true
+          rbac:
+            enabled: true
+        ```
+
+    === "lakeFS Enterprise (new)"
+        
+        ```yaml
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths:
+                - /
+
+        lakefsConfig: |
+          auth:
+            external_aws_auth:
+              enabled: true
+              # the maximum age in seconds for the GetCallerIdentity request
+              #get_caller_identity_max_age: 60
+              # headers that must be present by the client when doing login request
+              required_headers:
+                # same host as the lakeFS server ingress
+                X-LakeFS-Server-ID: <lakefs.ingress.domain>
+        ```
+
+### Important Notes
 
 * Check the [examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) for complete configuration examples for each authentication method. (TODO: replace with actual links after merging https://github.com/treeverse/charts/pull/343 @idanovo)
 * The examples include local blockstore for quick-start - replace with S3/Azure/GCS for production

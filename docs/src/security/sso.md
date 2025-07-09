@@ -310,42 +310,53 @@ If you're using an authentication provider that is not listed, please [contact u
             default_user_group: "Developers"
     ```
 
-    <h3>Troubleshooting LDAP issues</h3>
+    ### Troubleshooting LDAP issues
 
-    <h4>Inspecting Logs</h4>
+    #### Inspecting Logs
 
-    If you encounter LDAP connection errors, inspect the **lakeFS Enterprise container** logs for more information.
+    If you encounter LDAP connection errors, inspect the lakeFS container logs to get more information.
 
-    <h4>Authentication issues</h4>
+    #### Authentication issues
 
-    Auth issues (e.g. user not found, invalid credentials) can be debugged with the `ldapwhoami` CLI tool:
+    Auth issues (e.g. user not found, invalid credentials) can be debugged with the `ldapwhoami` CLI tool. 
+
+    The examples are based on the configuration above:
 
     To verify that the main bind user can connect:
     
     ```sh 
-    ldapwhoami -H ldap://ldap.company.com:636 -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
+    ldapwhoami -H ldaps://ldap.company.com:636 -D "uid=bind-user-name,ou=Users,o=org-id,dc=company,dc=com" -x -W
     ```
 
     To verify that a specific lakeFS user `dev-user` can connect:
 
     ```sh 
-    ldapwhoami -H ldap://ldap.company.com:636 -D "uid=dev-user,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
+    ldapwhoami -H ldaps://ldap.company.com:636 -D "uid=dev-user,ou=Users,o=org-id,dc=company,dc=com" -x -W
     ```
 
-    <h4>User not found issue</h4>
+    #### User not found issue
 
-    You can search for users using [ldapsearch](https://docs.ldap.com/ldap-sdk/docs/tool-usages/ldapsearch.html):
+    Upon a login request, the bind user will search for the user in the LDAP server. If the user is not found it will be presented in the logs.
+
+    We can search the user using [ldapsearch](https://docs.ldap.com/ldap-sdk/docs/tool-usages/ldapsearch.html) CLI tool. 
 
     Search ALL users in the base DN (no filters):
 
+    !!! note
+        `-b` is the `user_base_dn`, `-D` is `bind_dn` and `-w` is `bind_password` from the lakeFS configuration.
+
     ```sh
-    ldapsearch -H ldap://ldap.company.com:636 -x -b "ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>'
+    ldapsearch -H ldaps://ldap.company.com:636 -x -b "ou=Users,o=org-id,dc=company,dc=com" -D "uid=bind-user-name,ou=Users,o=org-id,dc=company,dc=com" -w 'bind_user_pwd'
     ```
 
-    Search for a specific user with filters:
+    If the user is found, we should now use filters for the specific user the same way lakeFS does it and expect to see the user. 
+
+    For example, to reproduce the same search as lakeFS does:
+    - user `dev-user` set from `uid` attribute in LDAP 
+    - Configuration values: `user_filter: (objectClass=inetOrgPerson)` and `username_attribute: uid`
 
     ```sh
-    ldapsearch -H ldap://ldap.company.com:636 -x -b "ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>' "(&(uid=dev-user)(objectClass=inetOrgPerson))"
+    ldapsearch -H ldaps://ldap.company.com:636 -x -b "ou=Users,o=org-id,dc=company,dc=com" -D "uid=bind-user-name,ou=Users,o=org-id,dc=company,dc=com" -w 'bind_user_pwd' "(&(uid=dev-user)(objectClass=inetOrgPerson))"
     ```
 
 === "External AWS Authentication"
