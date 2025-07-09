@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/img/logo_large.png"/>
+  <img src="docs/src/assets/img/logo_large.png"/>
 </p>
 <p align="center">
 	<a href="https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE" >
