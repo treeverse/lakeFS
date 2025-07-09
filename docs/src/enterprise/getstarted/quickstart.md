@@ -67,7 +67,7 @@ You can choose from the following options:
         image: "treeverse/lakefs-enterprise:latest"
         command: "RUN"
         ports:
-          - "8080:8080"
+          - "8000:8000"
         depends_on:
           - "postgres"
         environment:
@@ -137,7 +137,7 @@ You can choose from the following options:
         image: "treeverse/lakefs-enterprise:latest"
         command: "RUN"
         ports:
-          - "8000:8000"
+          - "8080:8080"
         depends_on:
           - "postgres"
         environment:
