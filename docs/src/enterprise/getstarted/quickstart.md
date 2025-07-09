@@ -67,7 +67,7 @@ You can choose from the following options:
         image: "treeverse/lakefs-enterprise:latest"
         command: "RUN"
         ports:
-          - "8000:8000"
+          - "8080:8080"
         depends_on:
           - "postgres"
         environment:
@@ -110,7 +110,7 @@ You can choose from the following options:
     2. Create a `.env` file with the configurations below in the same directory as the `docker-compose.yaml`, docker compose will automatically use that.
     3. Run `docker compose up` in the same directory as the `docker-compose.yaml` file.
     4. Validate the OIDC configuration:
-      * In your browser, go to <http://localhost:8000> to access lakeFS UI
+      * In your browser, go to <http://localhost:8080> to access lakeFS UI
       * Complete the Setup process, and login with your Admin credentials
       * Logout and try to login again, you will be redirected to the OIDC login page.
 
@@ -146,8 +146,8 @@ You can choose from the following options:
           - LAKEFS_LOGGING_AUDIT_LOG_LEVEL=INFO
           - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=shared-secret-key
           - LAKEFS_AUTH_LOGOUT_REDIRECT_URL=${LAKEFS_AUTH_LOGOUT_REDIRECT_URL}
-          - LAKEFS_AUTH_UI_CONFIG_LOGIN_URL=/oidc/login
-          - LAKEFS_AUTH_UI_CONFIG_LOGOUT_URL=/oidc/logout
+          - LAKEFS_AUTH_UI_CONFIG_LOGIN_URL=http://localhost:8000/oidc/login
+          - LAKEFS_AUTH_UI_CONFIG_LOGOUT_URL=http://localhost:8000/oidc/logout
           - LAKEFS_AUTH_UI_CONFIG_RBAC=internal
           - LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=${LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME}
           - LAKEFS_AUTH_PROVIDERS_OIDC_ENABLED=true
@@ -156,6 +156,9 @@ You can choose from the following options:
           - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID}
           - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET}
           - LAKEFS_AUTH_PROVIDERS_OIDC_CALLBACK_BASE_URL=http://localhost:8000
+          - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
+          - LAKEFS_ENTERPRISE_LICENSE_SERVER_URL=https://license.lakefs.io
+          - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS}
           - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
           - LAKEFS_DATABASE_TYPE=postgres
           - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable
@@ -163,7 +166,6 @@ You can choose from the following options:
           - LAKEFS_BLOCKSTORE_LOCAL_PATH=/tmp/lakefs/data
           - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
           - LAKEFS_FEATURES_LOCAL_RBAC=true
-          - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS}
         entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
         configs:
           - source: lakefs.yaml
@@ -176,8 +178,8 @@ You can choose from the following options:
           POSTGRES_USER: lakefs
           POSTGRES_PASSWORD: lakefs
 
-    # This tweak is unfortunate but also necessary. logout_endpoint_query_parameters is a list
-    # of strings which isn't parsed nicely as env vars.
+    #This tweak is unfortunate but also necessary. logout_endpoint_query_parameters is a list
+    #of strings which isn't parsed nicely as env vars.
     configs:
       lakefs.yaml:
         content: |

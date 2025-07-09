@@ -65,7 +65,7 @@ The examples below include example configuration for each of the supported SSO p
         oidc:
           enabled: true
           # secret given by the OIDC provider (e.g auth0, Okta, etc)
-          client_secret: <oidc-client-secret>  # MOVED: from fluffy.sso.oidc
+          client_secret: <oidc-client-secret>
 
     image:
       privateRegistry:
@@ -78,18 +78,19 @@ The examples below include example configuration for each of the supported SSO p
       blockstore:
         type: s3
       auth:
-        logout_redirect_url: https://oidc-provider-url.com/logout/example # MOVED: from fluffy.fluffyConfig
+        logout_redirect_url: https://oidc-provider-url.com/logout/example
         oidc:
-          # the claim that's provided by the OIDC provider that will be used as the username
+          # the claim that's provided by the OIDC provider (e.g Okta) that will be used as the username according to OIDC provider claims provided after successful authentication
           friendly_name_claim_name: "<some-oidc-provider-claim-name>"
           default_initial_groups: ["Developers", "Admins"]
-          # if true then the value of friendly_name_claim_name will be refreshed during each login
+          # if true then the value of friendly_name_claim_name will be refreshed during each login to maintain the latest value
+          # and the the claim value (i.e user name) will be stored in the lakeFS database
           persist_friendly_name: true
         providers:
           oidc:
             post_login_redirect_url: /
-            url: https://oidc-provider-url.com/  # MOVED: from fluffy.fluffyConfig
-            client_id: <oidc-client-id>          # MOVED: from fluffy.fluffyConfig
+            url: https://oidc-provider-url.com/ 
+            client_id: <oidc-client-id>         
             callback_base_url: https://<lakefs.acme.com>
             # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
             logout_client_id_query_parameter: client_id
@@ -170,21 +171,21 @@ The examples below include example configuration for each of the supported SSO p
       blockstore:
         type: local
       auth:
-        logout_redirect_url: https://<lakefs.acme.com> # MOVED: from fluffy.fluffyConfig
+        logout_redirect_url: https://<lakefs.acme.com>
         cookie_auth_verification:
           auth_source: saml
           # claim name to use for friendly name in lakeFS UI
           friendly_name_claim_name: displayName
-          external_user_id_claim_name: samName # MOVED: from fluffy.fluffyConfig
+          external_user_id_claim_name: samName
           default_initial_groups:
             - "Developers"
         providers:
           saml:
             post_login_redirect_url: https://<lakefs.acme.com>
             sp_root_url: https://<lakefs.acme.com>
-            sp_sign_request: false  # MOVED: from fluffy.fluffyConfig
+            sp_sign_request: false 
             sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
-            idp_metadata_url: "https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml"  # MOVED: from fluffy.fluffyConfig
+            idp_metadata_url: "https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml" 
             # the default id format urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
             # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
             idp_skip_verify_tls_cert: true
@@ -238,11 +239,11 @@ The examples below include example configuration for each of the supported SSO p
             - internal_auth_session
         providers:
           ldap:
-            server_endpoint: 'ldaps://ldap.company.com:636' # MOVED: from fluffy.fluffyConfig
-            bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com # MOVED: from fluffy.fluffyConfig
-            username_attribute: uid # MOVED: from fluffy.fluffyConfig
-            user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com # MOVED: from fluffy.fluffyConfig
-            user_filter: (objectClass=inetOrgPerson) # MOVED: from fluffy.fluffyConfig
+            server_endpoint: 'ldaps://ldap.company.com:636'
+            bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com
+            username_attribute: uid
+            user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com
+            user_filter: (objectClass=inetOrgPerson)
             connection_timeout_seconds: 15
             request_timeout_seconds: 17
             # RBAC group for first time users
