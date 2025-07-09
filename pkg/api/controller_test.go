@@ -2016,6 +2016,61 @@ func TestController_DiffRefsHandler(t *testing.T) {
 		if results[0].Type != "prefix_changed" {
 			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
+		if results[0].Right != nil {
+			t.Fatalf("expected no right info in diff result for prefix, got: %+v", results[0].Right)
+		}
+	})
+
+	t.Run("diff refs with object stats", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		const newBranchName = "main2"
+		_, err := deps.catalog.CreateRepository(ctx, repoName, "", onBlock(deps, "foo1"), "main", false)
+		testutil.Must(t, err)
+
+		resp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
+			Name:   newBranchName,
+			Source: "main",
+		})
+		verifyResponseOK(t, resp, err)
+		reference := string(resp.Body)
+		if len(reference) == 0 {
+			t.Fatalf("branch %s creation got no reference", newBranchName)
+		}
+		const objPath = "path"
+		const content = "hello world!"
+
+		uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repoName, newBranchName)
+		verifyResponseOK(t, uploadResp, err)
+
+		if _, err := deps.catalog.Commit(ctx, repoName, newBranchName, "commit 1", "some_user", nil, nil, nil, false); err != nil {
+			t.Fatalf("failed to commit 'repo1': %s", err)
+		}
+
+		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{IncludeRightStats: apiutil.Ptr(true)})
+		verifyResponseOK(t, resp2, err)
+		results := resp2.JSON200.Results
+		if len(results) != 1 {
+			t.Fatalf("unexpected length of results: %d", len(results))
+		}
+		if results[0].Path != objPath {
+			t.Fatalf("wrong result: %s", results[0].Path)
+		}
+		if results[0].Type != "added" {
+			t.Fatalf("wrong diff type: %s", results[0].Type)
+		}
+		if results[0].Right == nil {
+			t.Fatal("expected right info in diff result")
+		}
+		rightStats := results[0].Right
+		if rightStats.Checksum == "" {
+			t.Error("expected right info checksum in diff result")
+		}
+		if rightStats.ContentType == "" {
+			t.Error("expected right info content type in diff result")
+		}
+		if rightStats.Mtime == 0 {
+			t.Error("expected right info mtime in diff result")
+		}
 	})
 }
 

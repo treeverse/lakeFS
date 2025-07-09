@@ -11,7 +11,7 @@ Method | HTTP request | Description
 
 
 # **diff_refs**
-> DiffList diff_refs(repository, left_ref, right_ref, after=after, amount=amount, prefix=prefix, delimiter=delimiter, type=type)
+> DiffList diff_refs(repository, left_ref, right_ref, after=after, amount=amount, prefix=prefix, delimiter=delimiter, type=type, include_right_stats=include_right_stats)
 
 diff references
 
@@ -83,10 +83,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     prefix = 'prefix_example' # str | return items prefixed with this value (optional)
     delimiter = 'delimiter_example' # str | delimiter used to group common prefixes by (optional)
     type = 'three_dot' # str |  (optional) (default to 'three_dot')
+    include_right_stats = False # bool | If set to true, the diff will include right-side object stats. *EXPERIMENTAL* (optional) (default to False)
 
     try:
         # diff references
-        api_response = api_instance.diff_refs(repository, left_ref, right_ref, after=after, amount=amount, prefix=prefix, delimiter=delimiter, type=type)
+        api_response = api_instance.diff_refs(repository, left_ref, right_ref, after=after, amount=amount, prefix=prefix, delimiter=delimiter, type=type, include_right_stats=include_right_stats)
         print("The response of RefsApi->diff_refs:\n")
         pprint(api_response)
     except Exception as e:
@@ -108,6 +109,7 @@ Name | Type | Description  | Notes
  **prefix** | **str**| return items prefixed with this value | [optional] 
  **delimiter** | **str**| delimiter used to group common prefixes by | [optional] 
  **type** | **str**|  | [optional] [default to &#39;three_dot&#39;]
+ **include_right_stats** | **bool**| If set to true, the diff will include right-side object stats. *EXPERIMENTAL* | [optional] [default to False]
 
 ### Return type
 

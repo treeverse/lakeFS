@@ -47,7 +47,14 @@ class TestDiffList(unittest.TestCase):
                         type = 'added', 
                         path = '', 
                         path_type = 'common_prefix', 
-                        size_bytes = 56, )
+                        size_bytes = 56, 
+                        right = lakefs_sdk.models.diff_object_stat.DiffObjectStat(
+                            checksum = '', 
+                            mtime = 56, 
+                            content_type = '', 
+                            metadata = {
+                                'key' : ''
+                                }, ), )
                     ]
             )
         else:
@@ -62,7 +69,14 @@ class TestDiffList(unittest.TestCase):
                         type = 'added', 
                         path = '', 
                         path_type = 'common_prefix', 
-                        size_bytes = 56, )
+                        size_bytes = 56, 
+                        right = lakefs_sdk.models.diff_object_stat.DiffObjectStat(
+                            checksum = '', 
+                            mtime = 56, 
+                            content_type = '', 
+                            metadata = {
+                                'key' : ''
+                                }, ), )
                     ],
         )
         """
