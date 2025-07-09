@@ -18,64 +18,57 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.DiffObjectStat;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for Diff
+ * Model tests for DiffObjectStat
  */
-public class DiffTest {
-    private final Diff model = new Diff();
+public class DiffObjectStatTest {
+    private final DiffObjectStat model = new DiffObjectStat();
 
     /**
-     * Model tests for Diff
+     * Model tests for DiffObjectStat
      */
     @Test
-    public void testDiff() {
-        // TODO: test Diff
+    public void testDiffObjectStat() {
+        // TODO: test DiffObjectStat
     }
 
     /**
-     * Test the property 'type'
+     * Test the property 'checksum'
      */
     @Test
-    public void typeTest() {
-        // TODO: test type
+    public void checksumTest() {
+        // TODO: test checksum
     }
 
     /**
-     * Test the property 'path'
+     * Test the property 'mtime'
      */
     @Test
-    public void pathTest() {
-        // TODO: test path
+    public void mtimeTest() {
+        // TODO: test mtime
     }
 
     /**
-     * Test the property 'pathType'
+     * Test the property 'contentType'
      */
     @Test
-    public void pathTypeTest() {
-        // TODO: test pathType
+    public void contentTypeTest() {
+        // TODO: test contentType
     }
 
     /**
-     * Test the property 'sizeBytes'
+     * Test the property 'metadata'
      */
     @Test
-    public void sizeBytesTest() {
-        // TODO: test sizeBytes
-    }
-
-    /**
-     * Test the property 'right'
-     */
-    @Test
-    public void rightTest() {
-        // TODO: test right
+    public void metadataTest() {
+        // TODO: test metadata
     }
 
 }

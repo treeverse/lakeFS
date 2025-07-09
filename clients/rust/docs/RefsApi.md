@@ -13,7 +13,7 @@ Method | HTTP request | Description
 
 ## diff_refs
 
-> models::DiffList diff_refs(repository, left_ref, right_ref, after, amount, prefix, delimiter, r#type)
+> models::DiffList diff_refs(repository, left_ref, right_ref, after, amount, prefix, delimiter, r#type, include_right_stats)
 diff references
 
 ### Parameters
@@ -29,6 +29,7 @@ Name | Type | Description  | Required | Notes
 **prefix** | Option<**String**> | return items prefixed with this value |  |
 **delimiter** | Option<**String**> | delimiter used to group common prefixes by |  |
 **r#type** | Option<**String**> |  |  |[default to three_dot]
+**include_right_stats** | Option<**bool**> | If set to true, the diff will include right-side object stats. *EXPERIMENTAL* |  |[default to false]
 
 ### Return type
 

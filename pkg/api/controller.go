@@ -4503,6 +4503,16 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 		}
 		if !d.CommonLevel {
 			diff.SizeBytes = swag.Int64(d.Size)
+			if apiutil.Value(params.IncludeRightStats) {
+				diff.Right = &apigen.DiffObjectStat{
+					Checksum:    d.Checksum,
+					ContentType: d.ContentType,
+					Mtime:       d.CreationDate.Unix(),
+					Metadata: &apigen.ObjectUserMetadata{
+						AdditionalProperties: d.Metadata,
+					},
+				}
+			}
 		}
 		results = append(results, diff)
 	}

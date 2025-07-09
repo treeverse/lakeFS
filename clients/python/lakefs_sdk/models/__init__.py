@@ -40,6 +40,7 @@ from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
 from lakefs_sdk.models.current_user import CurrentUser
 from lakefs_sdk.models.diff import Diff
 from lakefs_sdk.models.diff_list import DiffList
+from lakefs_sdk.models.diff_object_stat import DiffObjectStat
 from lakefs_sdk.models.error import Error
 from lakefs_sdk.models.error_no_acl import ErrorNoACL
 from lakefs_sdk.models.external_login_information import ExternalLoginInformation
