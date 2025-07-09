@@ -2810,14 +2810,6 @@ func (g *Graveler) Revert(ctx context.Context, repository *RepositoryRecord, bra
 // CherryPick creates a new commit on the given branch, with the changes from the given commit.
 // If the commit is a merge commit, 'parentNumber' is the parent number (1-based) relative to which the cherry-pick is done.
 func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord, branchID BranchID, ref Ref, parentNumber *int, committer string, commitOverrides *CommitOverrides, opts ...SetOptionsFunc) (CommitID, error) {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_COMMIT)
-	if err != nil {
-		return "", err
-	}
-	if isProtected {
-		return "", ErrCommitToProtectedBranch
-	}
-
 	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
@@ -3145,14 +3137,6 @@ func (g *Graveler) retryRepoMetadataUpdate(ctx context.Context, repository *Repo
 }
 
 func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, destination BranchID, source MetaRangeID, commitParams CommitParams, prefixes []Prefix, opts ...SetOptionsFunc) (CommitID, error) {
-	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, destination, BranchProtectionBlockedAction_COMMIT)
-	if err != nil {
-		return "", err
-	}
-	if isProtected {
-		return "", ErrCommitToProtectedBranch
-	}
-
 	options := NewSetOptions(opts)
 	if repository.ReadOnly && !options.Force {
 		return "", ErrReadOnlyRepository
@@ -3165,7 +3149,7 @@ func (g *Graveler) Import(ctx context.Context, repository *RepositoryRecord, des
 	)
 
 	storageNamespace := repository.StorageNamespace
-	err = g.prepareForCommitIDUpdate(ctx, repository, destination, "import")
+	err := g.prepareForCommitIDUpdate(ctx, repository, destination, "import")
 	if err != nil {
 		return "", err
 	}

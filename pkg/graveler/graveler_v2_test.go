@@ -761,7 +761,6 @@ func TestGravelerCherryPick(t *testing.T) {
 	}
 	t.Run("cherry-pick successful", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
-		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 
@@ -781,7 +780,6 @@ func TestGravelerCherryPick(t *testing.T) {
 
 	t.Run("cherry-pick override commit fields", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
-		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 		commitOverrides := graveler.CommitOverrides{
@@ -810,7 +808,6 @@ func TestGravelerCherryPick(t *testing.T) {
 
 	t.Run("cherry-pick partially override commit fields", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
-		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 		commitOverrides := graveler.CommitOverrides{
@@ -836,7 +833,6 @@ func TestGravelerCherryPick(t *testing.T) {
 
 	t.Run("cherry-pick with nil overrides", func(t *testing.T) {
 		test := testutil.InitGravelerTest(t)
-		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 
@@ -1014,7 +1010,6 @@ func TestGravelerImport(t *testing.T) {
 
 	importTest := func(t *testing.T, metadata graveler.Metadata) {
 		test := testutil.InitGravelerTest(t)
-		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
 		firstUpdateBranch(test)
 		emptyStagingTokenCombo(test, 2)
 		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(3).Return(&commit1, nil)
