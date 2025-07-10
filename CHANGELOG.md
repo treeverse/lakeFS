@@ -4,14 +4,14 @@
 
 :new: What's new:
 
-- lakectl: plugin support with listing and execution (#9242)
+- Basic plugin support for lakectl (#9242)
 - UI: Image content diff view (#9246)
 - UI: Improved empty states for actions, tags (#9230)
 - Support right object info in commit diff (#9248)
 
 :bug: Bugs fixed:
 
-- TierFS temp files cleanup (#9250)
+- Clean temp cache files (#9250)
 - UI: Fix some dark mode elements (#9237)
 
 # v1.61.0
