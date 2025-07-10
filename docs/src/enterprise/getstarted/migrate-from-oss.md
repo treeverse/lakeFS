@@ -13,11 +13,11 @@ To migrate from lakeFS Open Source to lakeFS Enterprise, follow the steps below:
 1. Make sure to configure the lakeFS enterprise properly, see [Enterprise installation guide][lakefs-enterprise-install]
     1. Update your existing lakeFS configuration for enterprise (i.e `values.yaml` file for your deployment if using helm)
 1. DB Migration: We are going to use the same database for lakeFS Enterprise, so we need to migrate the database schema.
-1. Make sure to SSH / exec into the lakeFS server (old pre-upgrade version), the point is to use the same lakefs configuration file when running a migration.
+1. Make sure to SSH / exec into the lakeFS server (old pre-upgrade version); the point is to use the same lakeFS configuration file when running a migration.
     1. If upgrading `lakefs` version do this or skip to the next step: Install the new lakeFS binary, if not use the existing one (the one you are running).
     1. Run the command: `LAKEFS_AUTH_UI_CONFIG_RBAC=internal lakefs migrate up` (use the **new binary** if upgrading lakeFS version).
     1. You should expect to see a log message saying Migration completed successfully.
-    1. During this short db migration process please make sure not to make any policy / RBAC related changes.
+    1. During this short DB migration process, please make sure not to make any policy / RBAC related changes.
 1. Once the migration completed - Upgrade your helm release with the modified `values.yaml` and the new version and run `helm ugprade`.
 1. Login to the new lakeFS pod: Execute the following command, make sure you have proper credentials, or discard to get new ones:
 
@@ -25,7 +25,7 @@ To migrate from lakeFS Open Source to lakeFS Enterprise, follow the steps below:
     lakefs setup --user-name <admin> --access-key-id <key> --secret-access-key <secret> --no-check
     ```
 !!! warning
-    Please note that the newly set up lakeFS instance remains inaccessible to users until full setup completion, due to the absence of established credentials within the system.
+    Please note that the newly set-up lakeFS instance remains inaccessible to users until full setup completion, due to the absence of established credentials within the system.
 
 
 [lakefs-enterprise-install]: install.md

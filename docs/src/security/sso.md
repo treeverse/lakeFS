@@ -14,7 +14,7 @@ search:
 
 ## SSO for lakeFS Cloud
 
-lakeFS Cloud uses Auth0 for authentication and thus support the same identity providers as Auth0 including Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML, and Azure Active Directory.
+lakeFS Cloud uses Auth0 for authentication and thus supports the same identity providers as Auth0 including Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML, and Azure Active Directory.
 
 === "Okta"
 
@@ -131,137 +131,176 @@ lakeFS Cloud uses Auth0 for authentication and thus support the same identity pr
 
 ## SSO for lakeFS Enterprise
 
-Details for configuring the supported identity providers with [lakeFS Enterprise](../enterprise/getstarted/install.md) are shown below.
+Authentication in lakeFS Enterprise is handled directly by the lakeFS Enterprise service. 
+lakeFS Enterprise supports the following identity providers:
 
 * Active Directory Federation Services (AD FS) (using SAML)
 * OpenID Connect
 * LDAP
+* External AWS Authentication (using IAM)
 
-If you're using an authentication provider that is not listed please [contact us](https://lakefs.io/contact-us/) for further assistance.
+If you're using an authentication provider that is not listed, please [contact us](https://lakefs.io/contact-us/) for further assistance.
 
 === "Active Directory Federation Services (AD FS) (using SAML)"
+
     !!! note
-        AD FS integration uses certificates to sign and encrypt requests going out from lakeFS and decrypt incoming requests from the AD FS server. 
-    
-    To enable working with AD FS, the following configuration must be set:
-    
-    1. Replace certificate paths (`sp_x509_key_path` and `sp_x509_cert_path`) with your actual certificate files
-    1. Replace `https://lakefs.company.com` with your actual lakeFS server URL
-    1. Replace `idp_metadata_url` with your AD FS metadata URL
-    1. Update `external_user_id_claim_name` to match your AD FS claim configuration
-    1. Set appropriate `default_initial_groups` for your users
-    
-    If you'd like to generate the certificates using OpenSSL, you can use the following example:
+        AD FS integration uses certificates to sign and encrypt requests going out from lakeFS Enterprise and decrypt incoming requests from AD FS server.
+
+    If you'd like to generate a self-signed certificates using OpenSSL:
+
     ```sh
-    openssl req -x509 -newkey rsa:2048 -keyout dummy_saml_rsa.key -out dummy_saml_rsa.cert -days 365 -nodes -subj "/CN=lakefs.company.com"
+    openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.company.com"
     ```
-    
-    lakeFS Enterprise Configuration:
+    In order for SAML authentication to work, configure the following values in your chart's `values.yaml` file:
+
     ```yaml
-    auth:
-      logout_redirect_url: https://lakefs.company.com
-      cookie_auth_verification:
-        auth_source: saml
-        friendly_name_claim_name: displayName
-        default_initial_groups: ["Admins"]
-        external_user_id_claim_name: http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
-		# Additional claim validation (optional) - ensures user has specific claim values before allowing access
-        validate_id_token_claims:
-          department: r_n_d
-      providers:
+    ingress:
+      enabled: true
+      ingressClassName: <class-name>
+      hosts:
+        - host: <lakefs.ingress.domain>
+          paths: 
+            - /
+
+    enterprise:
+      enabled: true
+      auth:
         saml:
-          sp_root_url: https://lakefs.company.com
-          sp_x509_key_path: dummy_saml_rsa.key
-          sp_x509_cert_path: dummy_saml_rsa.cert
-          sp_sign_request: true
-          sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
-          idp_metadata_url: "https://adfs-auth.company.com/federationmetadata/2007-06/federationmetadata.xml"
-          post_login_redirect_url: /
-      ui_config:
-        login_url: https://lakefs.company.com/sso/login-saml
-        logout_url: https://lakefs.company.com/sso/logout-saml
-        login_cookie_names:
-          - internal_auth_session
-          - saml_auth_session
-        rbac: internal
+          enabled: true
+          createCertificateSecret: true  # NEW: Auto-creates secret
+          certificate:
+            samlRsaPublicCert: |           # RENAMED: from saml_rsa_public_cert
+              -----BEGIN CERTIFICATE-----
+              ...
+              -----END CERTIFICATE-----
+            samlRsaPrivateKey: |           # RENAMED: from saml_rsa_private_key
+              -----BEGIN PRIVATE KEY-----
+              ...
+              -----END PRIVATE KEY-----
+
+    image:
+      privateRegistry:
+        enabled: true
+        secretToken: <dockerhub-token>
+
+    lakefsConfig: |
+      blockstore:
+        type: local
+      auth:
+        logout_redirect_url: https://<lakefs.ingress.domain> 
+        cookie_auth_verification:
+          auth_source: saml
+          # claim name to display user in the UI
+          friendly_name_claim_name: displayName
+          # claim name from IDP to use as the unique user name
+          external_user_id_claim_name: samName
+          default_initial_groups:
+            - "Developers"
+        providers:
+          saml:
+            post_login_redirect_url: https://<lakefs.ingress.domain>
+            sp_root_url: https://<lakefs.ingress.domain>
+            sp_sign_request: true 
+            # depends on IDP
+            sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+            # url to the metadata of the IDP
+            idp_metadata_url: "https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml"
+            # IDP SAML claims format default unspecified
+            idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+            # depending on IDP setup, if CA certs are self signed and not trusted by a known CA
+            #idp_skip_verify_tls_cert: true
     ```
-  
+
 === "OpenID Connect"
 
-    To enable working with OIDC, the following configuration must be set:
-    1. Replace `friendly_name_claim_name` with the right claim name from your OIDC provider
-    1. Replace `default_initial_groups` with desired groups (See [pre-configured][rbac-preconfigured] groups for enterprise)
-    1. Replace `logout_redirect_url` with your full OIDC logout URL (e.g `https://oidc-provider-url.com/v2/logout`)
-    1. Replace `providers.oidc.url` with your OIDC provider URL (e.g `https://oidc-provider-url.com/`)
-    1. Replace `providers.oidc.client_id` and `providers.oidc.client_secret` with the client ID & secret for OIDC
-    1. Replace `logout_client_id_query_parameter` with the query parameter that represents the client_id required by your OIDC provider
-    1. Replace `http://localhost:8000` with your actual lakeFS server URL
-    1. Update `logout_endpoint_query_parameters` with parameters required by your OIDC provider for logout
-    
-    lakeFS Enterprise Configuration:
+    In order for OIDC to work, configure the following values in your chart's `values.yaml` file:
+
     ```yaml
-    features: 
-      local_rbac: true
-    auth:
-      logout_redirect_url: https://oidc-provider-url.com/v2/logout
-      ui_config:
-        login_url: https://lakefs.company.com/oidc/login
-        logout_url: https://lakefs.company.com/oidc/logout
-        login_cookie_names:
-          - internal_auth_session
-          - oidc_auth_session
-        rbac: internal
-      oidc:
-        friendly_name_claim_name: "nickname"
-        default_initial_groups: ["Admins"]
-      providers:
+    ingress:
+      enabled: true
+      ingressClassName: <class-name>
+      hosts:
+        - host: <lakefs.ingress.domain>
+          paths: 
+            - /
+
+    enterprise:
+      enabled: true
+      auth:
         oidc:
-          post_login_redirect_url: https://lakefs.company.com/
-          url: https://oidc-provider-url.com/
-          client_id: <your-client-id>
-          client_secret: <your-client-secret>
-          callback_base_url: https://lakefs.company.com
-          logout_client_id_query_parameter: client_id
-          logout_endpoint_query_parameters:
-            - returnTo
-            - https://lakefs.company.com/oidc/login
+          enabled: true
+          # secret given by the OIDC provider (e.g auth0, Okta, etc)
+          client_secret: <oidc-client-secret>
+
+    image:
+      privateRegistry:
+        enabled: true
+        secretToken: <dockerhub-token>
+
+    lakefsConfig: |
+      blockstore:
+        type: local
+      auth:
+        logout_redirect_url: https://oidc-provider-url.com/logout/example 
+        oidc:
+          friendly_name_claim_name: <some-oidc-provider-claim-name>
+          default_initial_groups: ["Developers"]
+        providers:
+          oidc:
+            post_login_redirect_url: /
+            url: https://oidc-provider-url.com/ 
+            client_id: <oidc-client-id>         
+            callback_base_url: https://<lakefs.ingress.domain>
+            # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
+            logout_client_id_query_parameter: client_id
+            # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
+            logout_endpoint_query_parameters:
+              - returnTo
+              - https://<lakefs.ingress.domain>/oidc/login
     ```
 
 === "LDAP"
 
-    lakeFS Enterprise provides LDAP authentication by querying the LDAP server for user information and authenticating users based on the provided credentials.
+    lakeFS Enterprise provides direct LDAP authentication by querying the LDAP server for user information and authenticating the user based on the provided credentials.
 
-    **Important:** An administrative bind user must be configured. It should have search permissions for the LDAP server that will be used to query for user information.
-
-    To enable working with LDAP, the following configuration must be set:
-
-    1. Replace `providers.ldap.server_endpoint` with your LDAP server endpoint (e.g `ldaps://ldap.company.com:636`)
-    1. Replace `providers.ldap.bind_dn` with the LDAP bind user that has permissions to query your LDAP server
-    1. Replace `providers.ldap.bind_password` with the bind user's password
-    1. Replace `providers.ldap.user_base_dn` with the user base DN to search users in
-    1. Update other LDAP settings as needed for your environment
-
-    **lakeFS Enterprise Configuration:**
+    **Important:** An administrative bind user must be configured. It should have search permissions for the LDAP server.
 
     ```yaml
-    features: 
-      local_rbac: true
-    auth:
-      ui_config:
-        logout_url: /logout
-        login_cookie_names:
-          - internal_auth_session
-        rbac: internal
-      providers:
+    ingress:
+      enabled: true
+      ingressClassName: <class-name>
+      hosts:
+        - host: <lakefs.ingress.domain>
+          paths:
+            - /
+
+    enterprise:
+      enabled: true
+      auth:
         ldap:
-          server_endpoint: ldaps://ldap.company.com:636
-          bind_dn: uid=bind-user-name,ou=Users,o=org-id,dc=company,dc=com
-          bind_password: your-bind-password
-          username_attribute: uid 
-          user_base_dn: ou=Users,o=org-id,dc=company,dc=com 
-          user_filter: (objectClass=inetOrgPerson)
-          connection_timeout_seconds: 15
-          request_timeout_seconds: 7
+          enabled: true
+          bindPassword: <ldap bind password>
+
+    image:
+      privateRegistry:
+        enabled: true
+        secretToken: <dockerhub-token>
+
+    lakefsConfig: |
+      blockstore:
+        type: local
+      auth:
+        providers:
+          ldap:
+            server_endpoint: ldaps://ldap.company.com:636
+            bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com 
+            username_attribute: uid
+            user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com  
+            user_filter: (objectClass=inetOrgPerson)
+            connection_timeout_seconds: 15
+            request_timeout_seconds: 7
+            # RBAC group for first time users
+            default_user_group: "Developers"
     ```
 
     ### Troubleshooting LDAP issues
@@ -312,3 +351,90 @@ If you're using an authentication provider that is not listed please [contact us
     ```sh
     ldapsearch -H ldaps://ldap.company.com:636 -x -b "ou=Users,o=org-id,dc=company,dc=com" -D "uid=bind-user-name,ou=Users,o=org-id,dc=company,dc=com" -w 'bind_user_pwd' "(&(uid=dev-user)(objectClass=inetOrgPerson))"
     ```
+
+=== "External AWS Authentication"
+
+    lakeFS Enterprise supports authentication using AWS IAM credentials. This allows users to authenticate using their AWS credentials via GetCallerIdentity.
+
+    ```yaml
+    ingress:
+      enabled: true
+      ingressClassName: <class-name>
+      hosts:
+        - host: <lakefs.ingress.domain>
+          paths:
+            - /
+
+    lakefsConfig: |
+      auth:
+        external_aws_auth:
+          enabled: true
+          # the maximum age in seconds for the GetCallerIdentity request
+          #get_caller_identity_max_age: 60
+          # headers that must be present by the client when doing login request
+          required_headers:
+            # same host as the lakeFS server ingress
+            X-LakeFS-Server-ID: <lakefs.ingress.domain>
+    ```
+
+### Common Configuration
+
+All authentication methods share some common configuration options:
+
+```yaml
+# Enable enterprise features
+enterprise:
+  enabled: true
+
+# Common lakeFS configuration
+lakefsConfig: |
+  # Basic auth configuration
+  auth:
+    encrypt:
+      secret_key: <your-encryption-secret>  # Set via secrets.authEncryptSecretKey
+    login_duration: 24h                      # Session duration
+    login_max_duration: 168h                 # Maximum session duration
+```
+
+### Secrets Management
+
+The Helm chart will automatically create Kubernetes secrets for sensitive values:
+
+```yaml
+secrets:
+  # Required: encryption key for auth cookies
+  authEncryptSecretKey: <your-random-secret-string>
+  
+  # For database connection (if using external DB)
+  databaseConnectionString: <postgres-connection-string>
+
+# Or use existing secrets
+secrets:
+  existingSecret: my-lakefs-secrets
+  # Define the keys in your secret:
+  authEncryptSecretKeyName: authEncryptSecretKey
+  databaseConnectionStringKeyName: databaseConnectionString
+```
+
+Authentication provider secrets are managed separately via the `enterprise.auth.*` configuration.
+
+### Environment Variables
+
+All configurations can also be set via environment variables:
+
+```bash
+# SAML
+LAKEFS_AUTH_PROVIDERS_SAML_SP_ROOT_URL=https://lakefs.company.com
+LAKEFS_AUTH_COOKIE_AUTH_VERIFICATION_EXTERNAL_USER_ID_CLAIM_NAME=samName
+
+# OIDC
+LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID=your-client-id
+LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=name
+
+# LDAP
+LAKEFS_AUTH_PROVIDERS_LDAP_SERVER_ENDPOINT=ldaps://ldap.company.com:636
+LAKEFS_AUTH_PROVIDERS_LDAP_BIND_DN=uid=bind-user,ou=Users,o=org,dc=company,dc=com
+
+# External AWS Auth
+LAKEFS_AUTH_EXTERNAL_AWS_AUTH_ENABLED=true
+```

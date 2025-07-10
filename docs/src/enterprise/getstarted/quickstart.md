@@ -19,7 +19,7 @@ By running the [lakeFS Enterprise Sample](https://github.com/treeverse/lakeFS-sa
 the following containers:
 
 * lakeFS Enterprise (includes additional features)
-* Postgres: used by lakeFS  as a KV store
+* Postgres: used by lakeFS as a KV store
 * MinIO container: used as the storage connected to lakeFS
 * Jupyter notebooks setup: Pre-populated with [notebooks](https://github.com/treeverse/lakeFS-samples/blob/main/00_notebooks/00_index.ipynb) that demonstrate lakeFS Enterprise' capabilities
 * Apache Spark: this is useful for interacting with data you'll manage with lakeFS
@@ -38,7 +38,7 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 	
 
 1. You have installed [Docker Compose](https://docs.docker.com/compose/install/) version `2.23.1` or higher on your machine.
-2. Access to download *dockerhub/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse). 
+2. Access to download *treeverse/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse).
 3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
 <br>
@@ -104,7 +104,7 @@ You can choose from the following options:
     ```
 
 === "Advanced (SSO Enabled)"
-    This setup uses OIDC as the SSO authentication method thus requiring a valid OIDC configuration.
+    This setup uses OIDC as the SSO authentication method, thus requiring a valid OIDC configuration.
 
     1. Create a `docker-compose.yaml` with the content below.
     2. Create a `.env` file with the configurations below in the same directory as the `docker-compose.yaml`, docker compose will automatically use that.
@@ -117,13 +117,15 @@ You can choose from the following options:
     `.env`
 
     ```
-    LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=
+    LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID=<your-oidc-client-id>
+    LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=<your-oidc-client-secret>
     # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
     LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=
     LAKEFS_AUTH_PROVIDERS_OIDC_URL=https://my-sso.com/
     LAKEFS_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
     # Optional: display a friendly name in the lakeFS UI by specifying which claim from the provider to show (i.e name, nickname, email etc)
     LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
+    LAKEFS_LICENSE_CONTENTS=<license token>
     ```
 
     `docker-compose.yaml`
@@ -157,6 +159,7 @@ You can choose from the following options:
           - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
           - LAKEFS_ENTERPRISE_LICENSE_SERVER_URL=https://license.lakefs.io
           - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS}
+          - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
           - LAKEFS_DATABASE_TYPE=postgres
           - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable
           - LAKEFS_BLOCKSTORE_TYPE=local
@@ -189,7 +192,11 @@ You can choose from the following options:
               # friendly_name_claim_name: "name"
               default_initial_groups:
                 - Admins
-
+            providers:
+              oidc:
+                logout_endpoint_query_parameters:
+                  - returnTo
+                  - http://localhost:8000/oidc/login
     ```
 
 ## Kubernetes Helm Chart Quickstart
@@ -210,23 +217,35 @@ The values below create a fully functional lakeFS Enterprise setup without SSO s
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 2. [Helm](https://helm.sh/docs/intro/install/) is installed
-3. Access to download *dockerhub/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse).
+3. Access to download *treeverse/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse).
 4. lakeFS Enterprise license
-[Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise.
+   [Contact us](https://lakefs.io/contact-sales/) to gain access to lakeFS Enterprise.
 
 ### Instructions
 
 1. Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
-1. Create a `values.yaml` file with the following content and make sure to replace `<lakefs-enterprise-docker-registry-token>` with the token Docker Hub token you recieved, `<lakefs.acme.com>` and `<ingress-class-name>`.
+1. Create a `values.yaml` file with the following content and make sure to replace `<lakefs-enterprise-docker-registry-token>` with the Docker Hub token you received, `<lakefs.acme.com>` and `<ingress-class-name>`.
 1. In the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
-1. In your browser go to the Ingress host to access lakeFS UI.
+1. In your browser, go to the Ingress host to access lakeFS UI.
 
 ```yaml
+enterprise:
+  enabled: true
+
+image:
+  privateRegistry:
+    enabled: true
+    secretToken: <lakefs-enterprise-docker-registry-token>
+
 lakefsConfig: |
   logging:
-      level: "DEBUG"
+    level: "DEBUG"
   blockstore:
     type: local
+  auth:
+    ui_config:
+      rbac: internal
+
 ingress:
   enabled: true
   ingressClassName: <ingress-class-name>
@@ -235,22 +254,8 @@ ingress:
     - host: <lakefs.acme.com>
       paths:
        - /
-fluffy:
-  enabled: true
-  image:
-    privateRegistry:
-      enabled: true
-      secretToken: <fluffy-docker-registry-token>
-  fluffyConfig: |
-    logging:
-      level: "DEBUG"
-  secrets:
-    create: true
-  sso:
-    enabled: false
-  rbac:
-    enabled: true
 
-# useDevPostgres is true by default and will override any other db configuration, set false for configuring your own db
+# useDevPostgres is false by default and will override any other db configuration, 
+# set false or remove for configuring your own db
 useDevPostgres: true
 ```
