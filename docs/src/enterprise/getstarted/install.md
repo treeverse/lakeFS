@@ -59,27 +59,21 @@ You will receive a license token that contains:
 &nbsp;- Issue date  
 &nbsp;- Expiry date  
 &nbsp;- Enabled features  
-&nbsp;- Features limits  
+&nbsp;- Feature limitations  
 
 3. **Configure lakeFS Enterprise Server**  
-lakeFS Enterprise server supports two methods for providing the license token.
+   &nbsp;1. Save the license token to a file.  
+   &nbsp;2. Provide the file path in the lakeFS Enterprise configuration file:
 
-    - **File Path (Recommended)**
-    ```yaml
-    license:
-      path: "/path/to/your/license.txt"
-    ```
-    > **Note**: Instead of configuring the license token path via the lakeFS Enterprise configuration file, you can set it via the environment variable: `LAKEFS_LICENSE_PATH`.  
+      ```yaml
+      license:
+        path: "/path/to/your/license.txt"
+      ```
 
-    - **Direct Contents**
-    ```yaml
-    license:
-      contents: "eyJhbGciOiJSUzI1NiIs..."
-    ```
-    > **Note**: Instead of configuring the license token content via the lakeFS Enterprise configuration file, you can set it via the environment variable: `LAKEFS_LICENSE_CONTENTS`.
-
-    !!! warning
-        You must use exactly one method, providing both or neither will cause the server to fail to start.
+      > **Note**: Instead of configuring the license token path via the lakeFS Enterprise configuration file, you can set it via the environment variable: `LAKEFS_LICENSE_PATH`.
+   
+!!! warning 
+    After the license expires, lakeFS Enterprise server shuts down and fails to start due to a license expiry error.
 
 ??? info "Licensed Features"
     The following lakeFS Enterprise features must be included in the lakeFS Enterprise license in order to be available:
@@ -105,30 +99,17 @@ lakeFS Enterprise server supports two methods for providing the license token.
 ??? info "License Monitoring & Updates"
     **Updating Your License**
 
-    _When Using File Path:_
-
     1. Replace the content of your license file with the new license token.  
     2. lakeFS Enterprise will automatically detect and reload the new license within 1 minute.  
     
     !!! warning
         You cannot change the file path itself to point to a new file while the server is running.
 
-    _When Using Direct Contents:_
-
-    1. Update your configuration file with the new license token.
-    2. Restart the lakeFS Enterprise server to apply changes.
-
     **Automatic Monitoring**
 
-    - **Validation and Expiry Check**: Occurs every 24 hours to verify license validity and expiry.
-    - **File Monitoring**: When using `license.path`, the server checks every minute to detect license file changes so that when the license token gets updated in the file given in the path, there is no need to restart the server and the license updates automatically.
-
-    **License Expiry Server Behavior**
-
-    - **31+ days before expiry**: No warnings.
-    - **30 to 0 days before expiry**: A warning notification appears in the web UI.
-    - **1 to 30 days After expiry**: An error notification appears in the web UI and logs, but the server continues running.
-    - **31+ days after expiry**: The server will shut down and refuse to start.
+    - **Validation and Expiry Check**: Occurs periodically to verify license validity and expiry.
+    - **File Monitoring**: The server checks periodically to detect license file changes so that when the license token gets updated in the file, there is no need to restart the server and the license updates automatically.
+    
 
 ??? info "Reading License Token via API"
 
@@ -144,17 +125,15 @@ lakeFS Enterprise server supports two methods for providing the license token.
     }
     ```
 
+    > **Note**: The token can be decoded using any JWT decoding tool to view the license information.
+
 ??? question "Troubleshooting"
     - **Server Won't Start**
     ```
     Error: no valid license found for this lakeFS Enterprise Server
     ```
-    **Solution:** Ensure you have configured either `license.path` or `license.contents` in the lakeFS Enterprise configuration file or environment variables.
-    ```
-    Error: cannot provide both license path and contents
-    ```
-    **Solution:** Remove one of the license configuration methods from your lakeFS Enterprise configuration file or environment variables.
-
+    **Solution:** Ensure you have configured the `license.path` in the lakeFS Enterprise configuration file or environment variables.
+    
     ---
 
     - **License Signature Verification Failed**
@@ -201,7 +180,7 @@ lakeFS Enterprise server supports two methods for providing the license token.
     ```
     **Solutions:**  
     &nbsp;1. Check file permissions and set appropriate permissions.  
-    &nbsp;2. Ensure lakeFS Enterprise user can read the file and access parent directories.  
+    &nbsp;2. Ensure lakeFS Enterprise process has permission to read the file and access parent directories.  
 
     ---
 
@@ -224,7 +203,7 @@ lakeFS Enterprise server supports two methods for providing the license token.
     Error: license has invalid expiry (no license?): invalid license found
     ```
     **Solutions:**  
-    &nbsp;1. Verify the license file contains the complete license token (should start with `eyJ`).  
+    &nbsp;1. Verify the license file contains the complete license token.  
     &nbsp;2. Remove any extra whitespace, newlines, or characters from the license file.  
     &nbsp;3. Re-copy the license token from the original source.  
     &nbsp;4. Ensure the file contains only the license token and nothing else.  
@@ -237,6 +216,8 @@ lakeFS Enterprise server supports two methods for providing the license token.
     ```
     **Solution:** Your current license doesn't include this feature. Contact [support@treeverse.io](mailto:support@treeverse.io) to upgrade your license.
 
+    !!! tip "Need Help?"
+        If you encounter an issue not covered here, contact our support team at [support@treeverse.io](mailto:support@treeverse.io).
 ---
 
 ### **Add the lakeFS Helm Chart**
