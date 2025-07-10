@@ -107,6 +107,7 @@ plugins:
   - render_swagger:
       allow_arbitrary_locations : true
   - meta
+  - glightbox
   - redirects:
       redirect_maps:
         reference/mount-csi-driver.md: reference/mount.md#mount-csi-driver-everest-on-kubernetes

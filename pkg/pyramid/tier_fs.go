@@ -156,6 +156,18 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 	if err != nil {
 		return fmt.Errorf("open file %s: %w", originalPath, err)
 	}
+	defer func() {
+		if f != nil {
+			// If there is an error, remove the temp file (in the happy path, it's removed at the end of the "store" func)
+			if removeErr := os.Remove(originalPath); removeErr != nil {
+				tfs.log(ctx).WithFields(logging.Fields{
+					"storageID":     storageID,
+					"namespace":     namespace,
+					"original_path": originalPath,
+				}).Error("failed to remove temp file")
+			}
+		}
+	}()
 
 	stat, err := f.Stat()
 	if err != nil {
@@ -169,6 +181,7 @@ func (tfs *TierFS) store(ctx context.Context, storageID, namespace, originalPath
 	if err := f.Close(); err != nil {
 		return fmt.Errorf("closing file %s: %w", filename, err)
 	}
+	f = nil
 
 	fileRef := tfs.newLocalFileRef(storageID, namespace, nsPath, filename)
 	if tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
@@ -230,6 +243,7 @@ func (tfs *TierFS) Open(ctx context.Context, storageID, namespace, filename stri
 	if err == nil {
 		if tfs.logger.IsTracing() {
 			tfs.log(ctx).WithFields(logging.Fields{
+				"storageID": storageID,
 				"namespace": namespace,
 				"ns_path":   nsPath,
 				"filename":  filename,
@@ -266,6 +280,7 @@ func (tfs *TierFS) openFile(ctx context.Context, fileRef localFileRef, fh *os.Fi
 	if !tfs.eviction.Store(fileRef.fsRelativePath, stat.Size()) {
 		tfs.fileTracker.Delete(fileRef.fsRelativePath)
 		tfs.log(ctx).WithFields(logging.Fields{
+			"storageID": fileRef.storageID,
 			"namespace": fileRef.namespace,
 			"file":      fileRef.filename,
 			"full_path": fileRef.fullPath,
@@ -349,6 +364,7 @@ func (tfs *TierFS) openWithLock(ctx context.Context, fileRef localFileRef) (*os.
 		// copy from temp path to actual path
 		if log.IsTracing() {
 			log.WithFields(logging.Fields{
+				"storageID":    fileRef.storageID,
 				"namespace":    fileRef.namespace,
 				"file":         fileRef.filename,
 				"tmp_fullpath": tmpFullPath,
