@@ -82,7 +82,7 @@
     "dotenv": "^16.3.1",
     "eslint-plugin-compat": "^4.2.0",
     "eslint-plugin-react": "^7.33.2",
-    "happy-dom": "^12.10.3",
+    "happy-dom": "^18.0.1",
     "playwright": "^1.40.1",
     "sass": "^1.69.5",
     "typescript": "^5.3.3",
