@@ -308,7 +308,7 @@ Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the sam
             enabled: true
         ```
 
-## Migrating from Fluffy to lakeFS Enterprise Authentication
+## Kubernetes: Migrating with Helm from Fluffy to new lakeFS Enterprise
 
 ### Overview
 
@@ -322,7 +322,6 @@ When you upgrade to lakeFS Enterprise:
 - **Simplified Architecture**: Authentication is now handled directly by lakeFS Enterprise, reducing the number of pods and services
 - **Streamlined Ingress**: No more routing between Fluffy and lakeFS - all traffic goes directly to lakeFS
 - **Updated values.yaml Structure**: Authentication configuration moves from `fluffy.*` to `enterprise.auth.*` and `lakefsConfig.auth.providers.*`
-- **Enterprise Image Required**: The chart now uses `treeverse/lakefs-enterprise` image (minimum version 1.0.0)
 
 #### Prerequisites
 
@@ -358,7 +357,7 @@ If you're overriding the image in your values.yaml, update it to use lakeFS Ente
 ```yaml
 image:
   repository: treeverse/lakefs-enterprise
-  tag: 1.0.0  # or later
+  tag: (TODO: specify the version tag, e.g., 1.5.0)@ItamarYuran
   privateRegistry:
     enabled: true
     secretToken: <your-dockerhub-token>
@@ -368,7 +367,7 @@ image:
 
 #### Step 4: Migrate Your Authentication Configuration
 
-Using the configuration examples below, update your values.yaml file:
+Using the [configuration examples below](#configuration-examples), update your values.yaml file:
 1. Remove all `fluffy.*` configuration sections
 2. Add the new `enterprise.auth.*` configuration for your authentication method
 3. Move authentication settings to `lakefsConfig.auth.providers.*`
@@ -447,6 +446,117 @@ helm rollback <release-name> <previous-revision> -n <namespace>
 ### Configuration Examples
 
 Below are complete configuration examples for each authentication method, showing both the old (Fluffy) and new (Enterprise) configurations:
+
+#### OIDC with Helm
+
+!!! note "OIDC with Helm"
+
+    === "lakeFS + Fluffy (old)"
+        
+        ```yaml
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths: 
+                - /
+
+        fluffy:
+          enabled: true
+          image:
+            privateRegistry:
+              enabled: true
+              secretToken: <dockerhub-token-fluffy-image>
+          fluffyConfig: |
+            auth:
+              logout_redirect_url: https://oidc-provider-url.com/logout/example
+              oidc:
+                enabled: true
+                url: https://oidc-provider-url.com/
+                client_id: <oidc-client-id>
+                callback_base_url: https://<lakefs.ingress.domain>
+                # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
+                logout_client_id_query_parameter: client_id
+                # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
+                logout_endpoint_query_parameters:
+                  - returnTo
+                  - https://<lakefs.ingress.domain>/oidc/login
+          secrets:
+            create: true
+          sso:
+            enabled: true
+            oidc:
+              enabled: true
+              # secret given by the OIDC provider (e.g auth0, Okta, etc)
+              client_secret: <oidc-client-secret>
+          rbac:
+            enabled: true
+
+        lakefsConfig: |
+          database:
+            type: local
+          blockstore:
+            type: local
+          auth:
+            ui_config:
+              login_cookie_names:
+                - internal_auth_session
+                - oidc_auth_session
+            oidc:
+              friendly_name_claim_name: <some-oidc-provider-claim-name>
+              default_initial_groups: ["Developers"]
+        ```
+
+    === "lakeFS Enterprise (new)"
+        
+        ```yaml
+        ingress:
+          enabled: true
+          ingressClassName: <class-name>
+          hosts:
+            # the ingress that will be created for lakeFS
+            - host: <lakefs.ingress.domain>
+              paths: 
+                - /
+
+        enterprise:
+          enabled: true
+          auth:
+            oidc:
+              enabled: true
+              # secret given by the OIDC provider (e.g auth0, Okta, etc)
+              client_secret: <oidc-client-secret>
+
+        image:
+          privateRegistry:
+            enabled: true
+            secretToken: <dockerhub-token>
+
+        lakefsConfig: |
+          blockstore:
+            type: local
+          auth:
+            logout_redirect_url: https://oidc-provider-url.com/logout/example
+            oidc:
+              friendly_name_claim_name: <some-oidc-provider-claim-name>
+              default_initial_groups: ["Developers"]
+            providers:
+              oidc:
+                post_login_redirect_url: /
+                url: https://oidc-provider-url.com/
+                client_id: <oidc-client-id>
+                callback_base_url: https://<lakefs.ingress.domain>
+                # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
+                logout_client_id_query_parameter: client_id
+                # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
+                logout_endpoint_query_parameters:
+                  - returnTo
+                  - https://<lakefs.ingress.domain>/oidc/login
+        ```
+
+#### SAML with Helm
 
 !!! note "SAML with Helm"
 
@@ -557,8 +667,6 @@ Below are complete configuration examples for each authentication method, showin
         lakefsConfig: |
           blockstore:
             type: local
-          features:
-            local_rbac: true
           auth:
             logout_redirect_url: https://<lakefs.ingress.domain>
             cookie_auth_verification:
@@ -584,116 +692,7 @@ Below are complete configuration examples for each authentication method, showin
                 #idp_skip_verify_tls_cert: true
         ```
 
-!!! note "OIDC with Helm"
-
-    === "lakeFS + Fluffy (old)"
-        
-        ```yaml
-        ingress:
-          enabled: true
-          ingressClassName: <class-name>
-          hosts:
-            # the ingress that will be created for lakeFS
-            - host: <lakefs.ingress.domain>
-              paths: 
-                - /
-
-        fluffy:
-          enabled: true
-          image:
-            privateRegistry:
-              enabled: true
-              secretToken: <dockerhub-token-fluffy-image>
-          fluffyConfig: |
-            auth:
-              logout_redirect_url: https://oidc-provider-url.com/logout/example
-              oidc:
-                enabled: true
-                url: https://oidc-provider-url.com/
-                client_id: <oidc-client-id>
-                callback_base_url: https://<lakefs.ingress.domain>
-                # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
-                logout_client_id_query_parameter: client_id
-                # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
-                logout_endpoint_query_parameters:
-                  - returnTo
-                  - https://<lakefs.ingress.domain>/oidc/login
-          secrets:
-            create: true
-          sso:
-            enabled: true
-            oidc:
-              enabled: true
-              # secret given by the OIDC provider (e.g auth0, Okta, etc)
-              client_secret: <oidc-client-secret>
-          rbac:
-            enabled: true
-
-        lakefsConfig: |
-          database:
-            type: local
-          blockstore:
-            type: local
-          features:
-            local_rbac: true
-          auth:
-            ui_config:
-              login_cookie_names:
-                - internal_auth_session
-                - oidc_auth_session
-            oidc:
-              friendly_name_claim_name: <some-oidc-provider-claim-name>
-              default_initial_groups: ["Developers"]
-        ```
-
-    === "lakeFS Enterprise (new)"
-        
-        ```yaml
-        ingress:
-          enabled: true
-          ingressClassName: <class-name>
-          hosts:
-            # the ingress that will be created for lakeFS
-            - host: <lakefs.ingress.domain>
-              paths: 
-                - /
-
-        enterprise:
-          enabled: true
-          auth:
-            oidc:
-              enabled: true
-              # secret given by the OIDC provider (e.g auth0, Okta, etc)
-              client_secret: <oidc-client-secret>
-
-        image:
-          privateRegistry:
-            enabled: true
-            secretToken: <dockerhub-token>
-
-        lakefsConfig: |
-          blockstore:
-            type: local
-          features:
-            local_rbac: true
-          auth:
-            logout_redirect_url: https://oidc-provider-url.com/logout/example
-            oidc:
-              friendly_name_claim_name: <some-oidc-provider-claim-name>
-              default_initial_groups: ["Developers"]
-            providers:
-              oidc:
-                post_login_redirect_url: /
-                url: https://oidc-provider-url.com/
-                client_id: <oidc-client-id>
-                callback_base_url: https://<lakefs.ingress.domain>
-                # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
-                logout_client_id_query_parameter: client_id
-                # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
-                logout_endpoint_query_parameters:
-                  - returnTo
-                  - https://<lakefs.ingress.domain>/oidc/login
-        ```
+#### LDAP with Helm
 
 !!! note "LDAP with Helm"
 
@@ -777,8 +776,6 @@ Below are complete configuration examples for each authentication method, showin
         lakefsConfig: |
           blockstore:
             type: local
-          features:
-            local_rbac: true
           auth:
             ui_config:
               login_cookie_names:
@@ -794,6 +791,8 @@ Below are complete configuration examples for each authentication method, showin
                 connection_timeout_seconds: 15
                 request_timeout_seconds: 7
         ```
+
+#### AWS IAM with Helm
 
 !!! note "AWS IAM with Helm"
 
@@ -868,19 +867,15 @@ Below are complete configuration examples for each authentication method, showin
 
 * Complete configuration examples for each authentication method are available in the [lakeFS Helm chart repository](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise)
 * The examples include local blockstore for quick-start - replace with S3/Azure/GCS for production deployments
-* Minimum lakeFS Enterprise version: 1.0.0
 * Configure the `image.privateRegistry.secretToken` with your DockerHub token for accessing enterprise images
 * Update all placeholder values (marked with `<>`) with your actual configuration
-* Enable `features.local_rbac: true` to use the enterprise RBAC features
-* The simplified architecture reduces operational complexity and improves performance
 
 ### Troubleshooting
 
 If you encounter issues during migration:
 
 1. **Authentication Failures**: Check that all authentication settings have been properly moved to the new configuration structure
-2. **Missing Permissions**: Verify that `features.local_rbac: true` is set in your lakefsConfig
-3. **Image Pull Errors**: Ensure your DockerHub token has access to the lakeFS Enterprise image
-4. **Ingress Issues**: Confirm that your ingress is pointing directly to lakeFS (not Fluffy)
+2. **Image Pull Errors**: Ensure your DockerHub token has access to the lakeFS Enterprise image
+3. **Ingress Issues**: Confirm that your ingress is pointing directly to lakeFS (not Fluffy)
 
 For additional support, consult the [lakeFS documentation](https://docs.lakefs.io) or contact lakeFS support.

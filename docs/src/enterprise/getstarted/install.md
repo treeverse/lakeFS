@@ -11,6 +11,9 @@ description: lakeFS Enterprise Installation Guide
 ## lakeFS Enterprise Architecture
 
 We recommend reviewing the [lakeFS Enterprise architecture][lakefs-enterprise-architecture] to understand the components you will be deploying.
+!!! note
+    Fluffy service is deprecated in chart version 1.5.0 and later.
+    For more information, see the [Upgrade Guide][lakefs-enterprise-upgrade].
 
 ## Deploy lakeFS Enterprise on Kubernetes
 
@@ -98,12 +101,6 @@ The examples below include example configuration for each of the supported SSO p
             logout_endpoint_query_parameters:
               - returnTo
               - https://<lakefs.acme.com>/oidc/login
-        ui_config:
-          login_url: /oidc/login
-          logout_url: /oidc/logout
-          login_cookie_names:
-            - internal_auth_session
-            - oidc_auth_session
 
     ingress:
       enabled: true
@@ -189,12 +186,6 @@ The examples below include example configuration for each of the supported SSO p
             # the default id format urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified
             # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
             idp_skip_verify_tls_cert: true
-        ui_config:
-          login_url: /saml/login
-          logout_url: /saml/logout
-          login_cookie_names:
-            - internal_auth_session
-            - saml_auth_session
 
     ingress:
       enabled: true
@@ -362,7 +353,7 @@ extraManifests:
   - apiVersion: v1
     kind: ConfigMap
     metadata:
-      name: 'lakefs-extra-config'
+      name: '{% raw %}{{ .Values.lakefs.name }}{% endraw %}-extra-config'
     data:
       config.yaml: my-data
 ```
@@ -372,3 +363,4 @@ extraManifests:
 [lakefs-sso-enterprise-spec-saml]: ../../security/sso.md#active-directory-federation-services-ad-fs-using-saml
 [lakefs-sso-enterprise-spec-ldap]: ../../security/sso.md#ldap
 [lakefs-enterprise-architecture]: ../../understand/architecture.md
+[lakefs-enterprise-upgrade]: ../../enterprise/upgrade.md

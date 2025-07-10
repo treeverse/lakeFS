@@ -67,9 +67,6 @@ ingress:
 
 lakefsConfig: |
   auth:
-    # Enable external principals support
-    authentication_api:
-      external_principals_enabled: true
     # Configure external AWS authentication
     external_aws_auth:
       enabled: true
@@ -88,8 +85,6 @@ lakefsConfig: |
 
 ```yaml
 auth:
-  authentication_api:
-    external_principals_enabled: true
   external_aws_auth:
     enabled: true
     # Optional: max age for GetCallerIdentity requests (default: 24h)
