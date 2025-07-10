@@ -16,7 +16,7 @@ search:
 
 lakeFS supports authenticating users programmatically using AWS IAM roles instead of using static lakeFS access and secret keys.
 The method enables you to bound IAM principal ARNs to lakeFS users.
-A single lakeFS user may have many AWS's principle ARNs attached to it. When a client is authenticated to a lakeFS server with an AWS's session, the actions performed by the client are on behalf of the user attached to the ARN.
+A single lakeFS user may have many AWS principal ARNs attached to it. When a client is authenticated to a lakeFS server with an AWS session, the actions performed by the client are on behalf of the user attached to the ARN.
 
 ### Using Session Names
 
@@ -148,7 +148,7 @@ For other use cases authenticated to lakeFS via login endpoint, this will requir
 
 1. lakeFS should be [configured](#server-configuration) to allow external principals to authenticate, and the used IAM role should be [attached](#administration-of-iam-roles-in-lakefs) to the relevant lakeFS user
 2. The Python SDK requires additional packages to be installed to generate a lakeFS client with the assumed role.
-   To install the required packages, run the following command:
+To install the required packages, run the following command:
 
 ```shell
   pip install "lakefs[aws-iam]"

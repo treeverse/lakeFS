@@ -144,17 +144,16 @@ If you're using an authentication provider that is not listed, please [contact u
 === "Active Directory Federation Services (AD FS) (using SAML)"
 
     !!! note
-        AD FS integration uses certificates to sign & encrypt requests going out from lakeFS Enterprise and decrypt incoming requests from AD FS server.
+        AD FS integration uses certificates to sign and encrypt requests going out from lakeFS Enterprise and decrypt incoming requests from AD FS server.
 
-    In order for SAML authentication to work, configure the following values in your chart's `values.yaml` file:
-
-    If you'd like to generate the certificates using OpenSSL:
+    If you'd like to generate a self-signed certificates using OpenSSL:
 
     ```sh
     openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.company.com"
     ```
+    In order for SAML authentication to work, configure the following values in your chart's `saml-values.yaml` file:
 
-    **Helm Configuration (`values.yaml`):**
+    **Helm Configuration (`saml-values.yaml`):**
 
     ```yaml
     ingress:

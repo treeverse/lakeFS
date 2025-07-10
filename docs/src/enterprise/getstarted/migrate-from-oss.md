@@ -17,7 +17,7 @@ To migrate from lakeFS Open Source to lakeFS Enterprise, follow the steps below:
     1. If upgrading `lakefs` version do this or skip to the next step: Install the new lakeFS binary, if not use the existing one (the one you are running).
     1. Run the command: `LAKEFS_AUTH_UI_CONFIG_RBAC=internal lakefs migrate up` (use the **new binary** if upgrading lakeFS version).
     1. You should expect to see a log message saying Migration completed successfully.
-    1. During this short db migration process, please make sure not to make any policy / RBAC related changes.
+    1. During this short DB migration process, please make sure not to make any policy / RBAC related changes.
 1. Once the migration completed - Upgrade your helm release with the modified `values.yaml` and the new version and run `helm ugprade`.
 1. Login to the new lakeFS pod: Execute the following command, make sure you have proper credentials, or discard to get new ones:
 

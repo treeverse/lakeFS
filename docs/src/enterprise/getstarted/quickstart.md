@@ -120,11 +120,11 @@ You can choose from the following options:
     LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID=<your-oidc-client-id>
     LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=<your-oidc-client-secret>
     # The name of the query parameter that is used to pass the client ID to the logout endpoint of the SSO provider, i.e client_id
-    LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=client_id
+    LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=
     LAKEFS_AUTH_PROVIDERS_OIDC_URL=https://my-sso.com/
     LAKEFS_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
     # Optional: display a friendly name in the lakeFS UI by specifying which claim from the provider to show (i.e name, nickname, email etc)
-    LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=name
+    LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
     LAKEFS_LICENSE_CONTENTS=<license token>
     ```
 
