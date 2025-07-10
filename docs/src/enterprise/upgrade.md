@@ -8,7 +8,7 @@ description: How to upgrade lakeFS Enterprise
 For upgrading from lakeFS enterprise to a newer version see [lakefs migration](../howto/deploy/upgrade.md).
 
 
-# Migrate From Fluffy to lakeFS Enterprise
+## Migrate From Fluffy to lakeFS Enterprise
 
 The new lakeFS Enterprise integrates all enterprise features directly into a single binary, eliminating the need for the separate Fluffy service. This simplifies deployment, configuration, and maintenance.
 
