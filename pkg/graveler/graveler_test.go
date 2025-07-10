@@ -3345,6 +3345,7 @@ func TestGraveler_CherryPickHooks(t *testing.T) {
 			require.Equal(t, repo.RepositoryID, h.RepositoryID, "Hook repository ID mismatch")
 			require.Equal(t, cherryPickBranchID, h.BranchID, "Hook branch ID mismatch")
 			require.Equal(t, cherryPickMessage, h.Commit.Message, "Hook commit message mismatch")
+			require.Equal(t, commitCommitter, h.Commit.Committer, "Hook commit committer mismatch")
 			diff := deep.Equal(h.Commit.Metadata, cherryPickMetadata)
 			require.Nil(t, diff, "Hook commit metadata diff:", diff)
 
