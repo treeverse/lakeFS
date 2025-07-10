@@ -46,10 +46,9 @@ debug pipeline issues, and understand how data was created or modified - all wit
 
 ## How it Works
 
-lakeFS Metadata Search is built on top of [lakeFS Iceberg support](../integrations/iceberg.md#what-is-lakefs-iceberg-rest-catalog),
-using internal system tables to manage and expose object metadata.
+lakeFS Metadata Search is built on top of [lakeFS Iceberg support](../integrations/iceberg.md#what-is-lakefs-iceberg-rest-catalog), using internal system tables to manage and expose object metadata.
 
-For every searchable repository and branch, lakeFS creates an Iceberg **metadata table** at: `<repo>-metadata.<branch>.system.object_metadata`. 
+For every searchable repository and branch, lakeFS creates an Iceberg **metadata table** at: `<repository_id>-metadata.<branch>.system.object_metadata`. 
 These tables are fully managed by lakeFS and optimized for metadata search.
 
 Metadata is versioned, allowing you to query by branch names and immutable references like commit IDs and tags. 
@@ -72,7 +71,7 @@ keeping performance consistent and predictable.
 
 | Column name        | Required| Data Type          | Description                                                                                                                                          |
 |--------------------|---------|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| repository         | yes     | sting              | The name of the repository where the object is stored.                                                                                               |
+| repository         | yes     | sting              | The name of the repository where the object is **stored**.                                                                                               |
 | path               | yes     | string             | The unique path identifying the object within the repository.                                                                                        | 
 | commit_id          | yes     | string             | The **latest commit ID** where the object was added or modified.                                                                                     |
 | size               | yes     | Long               | The object's size in bytes.                                                                                                                          |
