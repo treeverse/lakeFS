@@ -160,8 +160,6 @@ func (m *MetricsAdapter) BlockstoreType() string {
 
 func (m *MetricsAdapter) BlockstoreMetadata(ctx context.Context) (*BlockstoreMetadata, error) {
 	ctx = httputil.SetClientTrace(ctx, m.adapter.BlockstoreType())
-	concurrentOperations.WithLabelValues("blockstore_metadata", m.adapter.BlockstoreType()).Inc()
-	defer concurrentOperations.WithLabelValues("blockstore_metadata", m.adapter.BlockstoreType()).Dec()
 	return m.adapter.BlockstoreMetadata(ctx)
 }
 
