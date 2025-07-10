@@ -25,6 +25,8 @@ const (
 	EventTypePostDeleteBranch EventType = "post-delete-branch"
 	EventTypePreRevert        EventType = "pre-revert"
 	EventTypePostRevert       EventType = "post-revert"
+	EventTypePreCherryPick    EventType = "pre-cherry-pick"
+	EventTypePostCherryPick   EventType = "post-cherry-pick"
 
 	UnixYear3000 = 32500915200
 )
@@ -68,6 +70,8 @@ type HooksHandler interface {
 	PostDeleteBranchHook(ctx context.Context, record HookRecord)
 	PreRevertHook(ctx context.Context, record HookRecord) error
 	PostRevertHook(ctx context.Context, record HookRecord) error
+	PreCherryPickHook(ctx context.Context, record HookRecord) error
+	PostCherryPickHook(ctx context.Context, record HookRecord) error
 	// NewRunID TODO (niro): WA for now until KV feature complete
 	NewRunID() string
 }
@@ -127,6 +131,14 @@ func (h *HooksNoOp) PreRevertHook(context.Context, HookRecord) error {
 }
 
 func (h *HooksNoOp) PostRevertHook(context.Context, HookRecord) error {
+	return nil
+}
+
+func (h *HooksNoOp) PreCherryPickHook(context.Context, HookRecord) error {
+	return nil
+}
+
+func (h *HooksNoOp) PostCherryPickHook(context.Context, HookRecord) error {
 	return nil
 }
 
