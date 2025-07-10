@@ -151,9 +151,7 @@ If you're using an authentication provider that is not listed, please [contact u
     ```sh
     openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.company.com"
     ```
-    In order for SAML authentication to work, configure the following values in your chart's `saml-values.yaml` file:
-
-    **Helm Configuration (`saml-values.yaml`):**
+    In order for SAML authentication to work, configure the following values in your chart's `values.yaml` file:
 
     ```yaml
     ingress:
@@ -217,8 +215,6 @@ If you're using an authentication provider that is not listed, please [contact u
 
     In order for OIDC to work, configure the following values in your chart's `values.yaml` file:
 
-    **Helm Configuration (`values.yaml`):**
-
     ```yaml
     ingress:
       enabled: true
@@ -268,8 +264,6 @@ If you're using an authentication provider that is not listed, please [contact u
     lakeFS Enterprise provides direct LDAP authentication by querying the LDAP server for user information and authenticating the user based on the provided credentials.
 
     **Important:** An administrative bind user must be configured. It should have search permissions for the LDAP server.
-
-    **Helm Configuration (`values.yaml`):**
 
     ```yaml
     ingress:
@@ -361,8 +355,6 @@ If you're using an authentication provider that is not listed, please [contact u
 === "External AWS Authentication"
 
     lakeFS Enterprise supports authentication using AWS IAM credentials. This allows users to authenticate using their AWS credentials via GetCallerIdentity.
-
-    **Helm Configuration (`values.yaml`):**
 
     ```yaml
     ingress:
