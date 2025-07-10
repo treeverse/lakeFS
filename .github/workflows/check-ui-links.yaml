@@ -1,6 +1,7 @@
 name: Check links from the UI
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - master
@@ -59,13 +60,16 @@ jobs:
 
       - name: Check links
         id: lychee
-        uses: lycheeverse/lychee-action@v1.9.0
+        uses: lycheeverse/lychee-action@v2
         with:
           args: /tmp/links_to_check.txt
           fail: false
           jobSummary: false
           format: markdown
           output: /tmp/lychee/results.md
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
 
       - name: Check Lychee output
         run: |
@@ -79,13 +83,11 @@ jobs:
                   matching_files=$(grep -lr "$search_phrase" "webui/src")
                   echo "* 🚨 Broken reference to \`$search_phrase\` found in \`$matching_files\`" >> $GITHUB_STEP_SUMMARY
               fi
-            done < /tmp/lychee/results.md        
+            done < /tmp/lychee/results.md
             echo "" >> $GITHUB_STEP_SUMMARY
 
             sed -e '/## Errors per input/,$d' /tmp/lychee/results.md >> $GITHUB_STEP_SUMMARY
-            
             cat $GITHUB_STEP_SUMMARY
-
             exit 1
           else
             echo "## ✅ All outbound links found in the lakeFS UI are working" > $GITHUB_STEP_SUMMARY
