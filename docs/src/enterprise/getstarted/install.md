@@ -625,6 +625,6 @@ extraManifests:
 [fluffy-configuration]: ../../enterprise/configuration.md#fluffy-server-configuration
 [lakefs-enterprise-architecture]: ../../understand/architecture.md
 [lakefs-sso-enterprise-spec-oidc]: ../../security/sso.md#openid-connect
-[lakefs-sso-enterprise-spec-saml]: ../../security/sso.
+[lakefs-sso-enterprise-spec-saml]: ../../security/sso.md#saml
 [lakefs-sso-enterprise-spec-ldap]: ../../security/sso.md#ldap
 
