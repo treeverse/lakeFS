@@ -1,7 +1,6 @@
 package local
 
 import (
-	"fmt"
 	"io"
 	"time"
 
@@ -134,8 +133,9 @@ func NewProgressPool() *ProgressPool {
 }
 
 type fileWrapper struct {
-	file   io.Seeker
-	reader io.Reader
+	file     io.Seeker
+	reader   io.Reader
+	readerAt io.ReaderAt
 }
 
 func (f fileWrapper) Read(p []byte) (n int, err error) {
@@ -143,10 +143,7 @@ func (f fileWrapper) Read(p []byte) (n int, err error) {
 }
 
 func (f fileWrapper) ReadAt(p []byte, off int64) (int, error) {
-	if ra, ok := f.file.(io.ReaderAt); ok {
-		return ra.ReadAt(p, off)
-	}
-	return 0, fmt.Errorf("ReaderAt not supported")
+	return f.readerAt.ReadAt(p, off)
 }
 
 func (f fileWrapper) Seek(offset int64, whence int) (int64, error) {
