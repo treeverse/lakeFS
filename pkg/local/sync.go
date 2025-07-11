@@ -328,9 +328,8 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	}
 
 	readerWrapper := fileWrapper{
-		file:     f,
-		reader:   b.Reader(f),
-		readerAt: f,
+		file:   f,
+		reader: b.Reader(f),
 	}
 	if s.cfg.IncludePerm {
 		if strings.HasSuffix(path, uri.PathSeparator) { // Create a 0 byte reader for directories
@@ -338,7 +337,6 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 			readerWrapper = fileWrapper{
 				file:   bytes.NewReader([]byte{}),
 				reader: bytes.NewReader([]byte{}),
-				// readerAt is not used for directories, so we can use a nil readerAt
 			}
 		}
 		permissions, err := getPermissionFromFileInfo(fileStat)
