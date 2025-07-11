@@ -144,7 +144,7 @@ func (u *PreSignUploader) Upload(ctx context.Context, repoID string, branchID st
 	if _, seekErr := content.Seek(0, io.SeekStart); seekErr != nil {
 		return nil, seekErr
 	}
-	// check if content implements io.ReaderAt for multipart upload
+	// set "readerAt" if "content" implements io.ReaderAt for multipart upload (otherwise it will be nil)
 	readerAt, _ := content.(io.ReaderAt)
 
 	// create upload object - represents a single upload request
