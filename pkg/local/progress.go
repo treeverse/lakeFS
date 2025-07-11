@@ -1,6 +1,7 @@
 package local
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -139,6 +140,13 @@ type fileWrapper struct {
 
 func (f fileWrapper) Read(p []byte) (n int, err error) {
 	return f.reader.Read(p)
+}
+
+func (f fileWrapper) ReadAt(p []byte, off int64) (int, error) {
+	if ra, ok := f.file.(io.ReaderAt); ok {
+		return ra.ReadAt(p, off) // delegate
+	}
+	return 0, fmt.Errorf("ReaderAt not supported")
 }
 
 func (f fileWrapper) Seek(offset int64, whence int) (int64, error) {
