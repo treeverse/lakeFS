@@ -144,7 +144,7 @@ func (f fileWrapper) Read(p []byte) (n int, err error) {
 
 func (f fileWrapper) ReadAt(p []byte, off int64) (int, error) {
 	if ra, ok := f.file.(io.ReaderAt); ok {
-		return ra.ReadAt(p, off) // delegate
+		return ra.ReadAt(p, off)
 	}
 	return 0, fmt.Errorf("ReaderAt not supported")
 }
