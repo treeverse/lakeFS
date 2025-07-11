@@ -21,6 +21,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -31,7 +32,7 @@ func getMtimeFromStats(stats apigen.ObjectStats) (int64, error) {
 	if stats.Metadata == nil {
 		return stats.Mtime, nil
 	}
-	clientMtime, hasClientMtime := stats.Metadata.Get(ClientMtimeMetadataKey)
+	clientMtime, hasClientMtime := stats.Metadata.Get(apiutil.ClientMtimeMetadataKey)
 	if hasClientMtime {
 		// parse
 		return strconv.ParseInt(clientMtime, 10, 64)
@@ -218,12 +219,17 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		return err
 	}
 
-	// In all of the below lines of code, we purposefully do not use the Join methods in order to avoid the path cleaning they perform
+	// In all the below lines of code, we purposefully do not use the Join methods in order to avoid the path cleaning they perform
 	destination := filepath.ToSlash(fmt.Sprintf("%s%c%s", rootPath, filepath.Separator, p))
 	destinationDirectory := filepath.Dir(destination)
 	remotePath := filepath.ToSlash(p)
 	if remote.GetPath() != "" {
 		remotePath = fmt.Sprintf("%s%s%s", path.Clean(remote.GetPath()), uri.PathSeparator, remotePath)
+	}
+
+	// Ensure the destination directory is not a symlink
+	if stat, err := os.Lstat(destinationDirectory); err == nil && stat.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("%w: destination directory '%s' is a symlink", ErrDownloadingFile, destinationDirectory)
 	}
 
 	// This is where we create directories (i.e. for directory markers in lakeFS) Permissions are modified later in code as needed
@@ -264,11 +270,27 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 	}
 
 	if !isDir {
+		// To avoid content truncation, we need to ensure the file does not exist before downloading
+		if err := os.Remove(destination); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("could not remove existing file '%s': %w", destination, err)
+		}
+
+		// Symlink handling - handled outside 'downloadFile' to return in case of symlink support, without fallthrough
+		// which update mtime and permissions.
+		if s.cfg.SymlinkSupport {
+			if symlinkTarget, ok := objStat.Metadata.Get(apiutil.SymlinkMetadataKey); ok {
+				// If symlink support is enabled and metadata contains a symlink target, create the symlink
+				defer s.progressBar.AddSpinner("download " + p).Done()
+				atomic.AddUint64(&s.tasks.Downloaded, 1)
+				return os.Symlink(symlinkTarget, destination)
+			}
+		}
 		if err = s.downloadFile(ctx, remote, p, destination, objStat); err != nil {
 			return err
 		}
 	}
-	// set mtime to the server returned one
+
+	// If we set mtime to the server returned one
 	err = os.Chtimes(destination, time.Now(), lastModified) // Explicit to catch in deferred func
 	if err != nil {
 		return err
@@ -300,20 +322,40 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	remotePath := strings.TrimRight(remote.GetPath(), uri.PathSeparator)
 	dest := strings.TrimPrefix(filepath.ToSlash(fmt.Sprintf("%s%s%s", remotePath, uri.PathSeparator, path)), uri.PathSeparator)
 
-	f, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-
-	fileStat, err := f.Stat()
+	fileStat, err := os.Lstat(source)
 	if err != nil {
 		return err
 	}
 
-	b := s.progressBar.AddReader(fmt.Sprintf("upload %s", path), fileStat.Size())
+	var contentSize int64
+	mtimeString := strconv.FormatInt(fileStat.ModTime().Unix(), 10)
+	metadata := map[string]string{
+		apiutil.ClientMtimeMetadataKey: mtimeString,
+	}
+	var contentReader io.ReadSeeker
+
+	handleSymlink := s.cfg.SymlinkSupport && fileStat.Mode()&os.ModeSymlink != 0
+	if handleSymlink {
+		// If symlink support is enabled, upload as symlink
+		target, err := os.Readlink(source)
+		if err != nil {
+			return fmt.Errorf("failed to read symlink target: %w", err)
+		}
+		metadata[apiutil.SymlinkMetadataKey] = target
+		contentSize = 0
+		contentReader = bytes.NewReader([]byte{})
+	} else {
+		// Regular file
+		f, err := os.Open(source)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = f.Close() }()
+		contentSize = fileStat.Size()
+		contentReader = f
+	}
+
+	b := s.progressBar.AddReader("upload "+path, contentSize)
 	defer func() {
 		if err != nil {
 			b.Error()
@@ -323,15 +365,12 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		}
 	}()
 
-	metadata := map[string]string{
-		ClientMtimeMetadataKey: strconv.FormatInt(fileStat.ModTime().Unix(), 10),
-	}
-
 	readerWrapper := fileWrapper{
-		file:   f,
-		reader: b.Reader(f),
+		file:   contentReader,
+		reader: b.Reader(contentReader),
 	}
-	if s.cfg.IncludePerm {
+	// Include permissions only for regular files or directories
+	if s.cfg.IncludePerm && !handleSymlink {
 		if strings.HasSuffix(path, uri.PathSeparator) { // Create a 0 byte reader for directories
 			// Use empty bytes reader for read and seek dirs
 			readerWrapper = fileWrapper{
@@ -347,17 +386,17 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		if err != nil {
 			return err
 		}
-		metadata[POSIXPermissionsMetadataKey] = string(data)
+		metadata[apiutil.POSIXPermissionsMetadataKey] = string(data)
 	}
 
+	// Upload the file
 	if s.cfg.Presign {
 		_, err = helpers.ClientUploadPreSign(
 			ctx, s.client, s.httpClient, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper, s.cfg.PresignMultipart)
-		return err
+	} else {
+		_, err = helpers.ClientUpload(
+			ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper)
 	}
-	// not pre-signed
-	_, err = helpers.ClientUpload(
-		ctx, s.client, remote.Repository, remote.Ref, dest, metadata, "", readerWrapper)
 	return err
 }
 
@@ -374,11 +413,8 @@ func (s *SyncManager) deleteLocal(rootPath string, change *Change) (err error) {
 		}()
 	}()
 	source := filepath.Join(rootPath, change.Path)
-	err = fileutil.RemoveFile(source)
-	if err != nil {
-		return err
-	}
-	return nil
+	err = os.Remove(source)
+	return
 }
 
 func (s *SyncManager) deleteRemote(ctx context.Context, remote *uri.URI, change *Change) (err error) {

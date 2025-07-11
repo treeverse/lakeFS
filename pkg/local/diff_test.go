@@ -15,6 +15,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/local"
 )
 
@@ -35,7 +36,7 @@ func TestDiffLocal(t *testing.T) {
 		InitLocalPath          func() string
 		CleanLocalPath         func(localPath string)
 		RemoteList             []apigen.ObjectStats
-		Expected               []*local.Change
+		Expected               local.Changes
 	}{
 		{
 			Name:      "t1_no_diff",
@@ -147,15 +148,16 @@ func TestDiffLocal(t *testing.T) {
 		{
 			Name:      "t1_local_after",
 			LocalPath: "testdata/localdiff/t1",
-			RemoteList: []apigen.ObjectStats{{
-				Path:      ".hidden-file",
-				SizeBytes: swag.Int64(64),
-				Mtime:     diffTestCorrectTime,
-			}, {
-				Path:      "tub/r.txt",
-				SizeBytes: swag.Int64(6),
-				Mtime:     1690957665,
-			},
+			RemoteList: []apigen.ObjectStats{
+				{
+					Path:      ".hidden-file",
+					SizeBytes: swag.Int64(64),
+					Mtime:     diffTestCorrectTime,
+				}, {
+					Path:      "tub/r.txt",
+					SizeBytes: swag.Int64(6),
+					Mtime:     1690957665,
+				},
 			},
 			Expected: []*local.Change{
 				{
@@ -456,9 +458,25 @@ func TestDiffLocal(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			// Sort changes for comparison
+			sort.Slice(changes, func(i, j int) bool {
+				return changes[i].Path < changes[j].Path
+			})
+			sort.Slice(tt.Expected, func(i, j int) bool {
+				return tt.Expected[i].Path < tt.Expected[j].Path
+			})
+
+			// Debug output
 			if len(changes) != len(tt.Expected) {
-				t.Fatalf("expected %d changes, got %d\n\n%v", len(tt.Expected), len(changes), changes)
+				t.Logf("Expected changes: %v", tt.Expected)
+				t.Logf("Actual changes: %v", changes)
+				for i, change := range changes {
+					t.Logf("Change %d: Path=%s, Type=%s", i, change.Path, local.ChangeTypeString(change.Type))
+				}
 			}
+
+			require.Equal(t, len(tt.Expected), len(changes),
+				"expected %d changes, got %d", len(tt.Expected), len(changes))
 			for i, c := range changes {
 				require.Equal(t, c.Path, tt.Expected[i].Path, "wrong path")
 				require.Equal(t, c.Type, tt.Expected[i].Type, "wrong type")
@@ -470,14 +488,14 @@ func TestDiffLocal(t *testing.T) {
 func createTempEmptyFolder(t *testing.T) string {
 	dataDir, err := os.MkdirTemp("", "")
 	require.NoError(t, err)
-	_ = os.Mkdir(filepath.Join(dataDir, "empty-folder"), 0755)
+	_ = os.Mkdir(filepath.Join(dataDir, "empty-folder"), 0o755)
 	return dataDir
 }
 
 func getPermissionsMetadata(uid, gid, mode int) *apigen.ObjectUserMetadata {
 	return &apigen.ObjectUserMetadata{
 		AdditionalProperties: map[string]string{
-			local.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d,\"GID\":%d,\"Mode\":%d}", uid, gid, mode),
+			apiutil.POSIXPermissionsMetadataKey: fmt.Sprintf("{\"UID\":%d,\"GID\":%d,\"Mode\":%d}", uid, gid, mode),
 		},
 	}
 }
@@ -674,4 +692,352 @@ func FuzzWalkS3(f *testing.F) {
 
 		require.Equal(t, sortedFilesAndDirs, walkOrder)
 	})
+}
+
+func TestDiffLocal_symlinks(t *testing.T) {
+	// Helpers used to setup environment for each test
+	createRegularFile := func(t *testing.T, localPath string, filename string, content string) {
+		filePath := filepath.Join(localPath, filename)
+		err := os.WriteFile(filePath, []byte(content), 0o644)
+		require.NoError(t, err)
+		// Fix the mtime to match our test constant
+		fixTime(t, filePath, false)
+	}
+
+	createSymlink := func(t *testing.T, localPath string, filename string, target string) {
+		filePath := filepath.Join(localPath, filename)
+		err := os.Symlink(target, filePath)
+		require.NoError(t, err)
+		// Fix the mtime to match our test constant
+		// Use Lchtimes if available, otherwise skip for broken symlinks
+		err = os.Chtimes(filePath, time.Now(), time.Unix(diffTestCorrectTime, 0))
+		if err != nil {
+			// If we can't set the time (e.g., on broken symlinks), that's ok for tests
+			t.Logf("Warning: could not set mtime for symlink %s: %v", filePath, err)
+		}
+	}
+
+	// Test cases
+	cases := []struct {
+		name                string
+		symlinkSupport      bool
+		skipNonRegularFiles bool
+		setupLocal          func(t *testing.T, localPath string) // Setup local filesystem
+		remoteList          []apigen.ObjectStats
+		expectedChanges     []*local.Change
+		expectError         bool
+		errorContains       string
+	}{
+		{
+			name:                "symlink_disabled_skip_non_regular_files_ignores_symlinks",
+			symlinkSupport:      false,
+			skipNonRegularFiles: true,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "target_file", "target content")
+				createSymlink(t, localPath, "symlink_file.txt", "target_file")
+				createSymlink(t, localPath, "symlink_dir", "target_dir")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "target_file",
+					SizeBytes: swag.Int64(14), // matches "target content" length
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			expectedChanges: []*local.Change{},
+		},
+		{
+			name:                "symlink_disabled_no_skip_regular_files_errors_on_symlinks",
+			symlinkSupport:      false,
+			skipNonRegularFiles: false,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "target_file", "target content")
+				createSymlink(t, localPath, "symlink_file.txt", "target_file")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "target_file",
+					SizeBytes: swag.Int64(14), // matches "target content" length
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			expectError:   true,
+			errorContains: "not a regular file",
+		},
+		{
+			name:                "symlink_enabled_includes_symlinks_to_files",
+			symlinkSupport:      true,
+			skipNonRegularFiles: false,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "target_file", "target content")
+				createSymlink(t, localPath, "symlink_file.txt", "target_file")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "target_file",
+					SizeBytes: swag.Int64(14), // matches "target content" length
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			expectedChanges: []*local.Change{
+				{
+					Path: "symlink_file.txt",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
+		{
+			name:                "symlink_enabled_includes_symlinks_to_directories",
+			symlinkSupport:      true,
+			skipNonRegularFiles: false,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "target_file", "target content")
+				createSymlink(t, localPath, "symlink_dir", "target_dir")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "target_file",
+					SizeBytes: swag.Int64(14), // matches "target content" length
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			expectedChanges: []*local.Change{
+				{
+					Path: "symlink_dir",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
+		{
+			name:                "symlink_enabled_includes_both_file_and_dir_symlinks",
+			symlinkSupport:      true,
+			skipNonRegularFiles: false,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "regular_file.txt", "test content")
+				createSymlink(t, localPath, "symlink_file.txt", "target_file")
+				createSymlink(t, localPath, "symlink_dir", "target_dir")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(12), // matches "test content" length
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			expectedChanges: []*local.Change{
+				{
+					Path: "symlink_dir",
+					Type: local.ChangeTypeAdded,
+				},
+				{
+					Path: "symlink_file.txt",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
+		{
+			name:                "symlink_modified_in_enabled_mode",
+			symlinkSupport:      true,
+			skipNonRegularFiles: false,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "regular_file.txt", "test content")
+				createSymlink(t, localPath, "symlink_file.txt", "different_target")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(12), // matches "test content" length
+					Mtime:     diffTestCorrectTime,
+				},
+				{
+					Path:      "symlink_file.txt",
+					SizeBytes: swag.Int64(0),
+					Mtime:     diffTestCorrectTime,
+					Metadata: &apigen.ObjectUserMetadata{
+						AdditionalProperties: map[string]string{
+							apiutil.SymlinkMetadataKey: "original_target",
+						},
+					},
+				},
+			},
+			expectedChanges: []*local.Change{
+				{
+					Path: "symlink_file.txt",
+					Type: local.ChangeTypeModified,
+				},
+			},
+		},
+		{
+			name:                "symlink_removed_in_enabled_mode",
+			symlinkSupport:      true,
+			skipNonRegularFiles: false,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "regular_file.txt", "test content")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(12), // matches "test content" length
+					Mtime:     diffTestCorrectTime,
+				},
+				{
+					Path:      "symlink_file.txt",
+					SizeBytes: swag.Int64(0),
+					Mtime:     diffTestCorrectTime,
+					Metadata: &apigen.ObjectUserMetadata{
+						AdditionalProperties: map[string]string{
+							apiutil.SymlinkMetadataKey: "target",
+						},
+					},
+				},
+			},
+			expectedChanges: []*local.Change{
+				{
+					Path: "symlink_file.txt",
+					Type: local.ChangeTypeRemoved,
+				},
+			},
+		},
+		{
+			name:                "broken_symlink_in_enabled_mode",
+			symlinkSupport:      true,
+			skipNonRegularFiles: false,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "regular_file.txt", "test content")
+				createSymlink(t, localPath, "broken_symlink.txt", "nonexistent_path")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(12), // matches "test content" length
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			expectedChanges: []*local.Change{
+				{
+					Path: "broken_symlink.txt",
+					Type: local.ChangeTypeAdded,
+				},
+			},
+		},
+		{
+			name:                "broken_symlink_disabled_skip_non_regular_files",
+			symlinkSupport:      false,
+			skipNonRegularFiles: true,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "regular_file.txt", "test content")
+				createSymlink(t, localPath, "broken_symlink.txt", "nonexistent_path")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(12), // matches "test content" length
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			expectedChanges: []*local.Change{},
+		},
+		{
+			name:                "symlink_enabled_skip_non_regular_files_ignores_symlinks",
+			symlinkSupport:      true,
+			skipNonRegularFiles: true,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "regular_file.txt", "test content")
+				createSymlink(t, localPath, "symlink_file.txt", "target_file")
+				createSymlink(t, localPath, "symlink_dir", "target_dir")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(12), // matches "test content" length
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			expectedChanges: []*local.Change{},
+		},
+		{
+			name:                "symlink_enabled_no_changes",
+			symlinkSupport:      true,
+			skipNonRegularFiles: false,
+			setupLocal: func(t *testing.T, localPath string) {
+				createRegularFile(t, localPath, "regular_file.txt", "test content")
+				createRegularFile(t, localPath, "target_file", "target content") // Create the target so symlink is not broken
+				createSymlink(t, localPath, "symlink_file.txt", "target_file")
+			},
+			remoteList: []apigen.ObjectStats{
+				{
+					Path:      "regular_file.txt",
+					SizeBytes: swag.Int64(12), // matches content length
+					Mtime:     diffTestCorrectTime,
+				},
+				{
+					Path:      "symlink_file.txt",
+					SizeBytes: swag.Int64(0),
+					Mtime:     diffTestCorrectTime,
+					Metadata: &apigen.ObjectUserMetadata{
+						AdditionalProperties: map[string]string{
+							apiutil.SymlinkMetadataKey: "target_file",
+						},
+					},
+				},
+				{
+					Path:      "target_file",
+					SizeBytes: swag.Int64(14), // matches "target content" length
+					Mtime:     diffTestCorrectTime,
+				},
+			},
+			expectedChanges: []*local.Change{},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			testDir := t.TempDir()
+
+			tt.setupLocal(t, testDir)
+
+			// Create channel for remote objects
+			remoteChan := make(chan apigen.ObjectStats, len(tt.remoteList))
+			makeChan(remoteChan, tt.remoteList)
+
+			// Run diff
+			cfg := local.Config{
+				SkipNonRegularFiles: tt.skipNonRegularFiles,
+				SymlinkSupport:      tt.symlinkSupport,
+			}
+
+			changes, err := local.DiffLocalWithHead(remoteChan, testDir, cfg)
+
+			// Check for expected errors
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					require.Contains(t, err.Error(), tt.errorContains)
+				}
+				return
+			}
+
+			require.NoError(t, err)
+
+			// Sort changes for comparison
+			sort.Slice(changes, func(i, j int) bool {
+				return changes[i].Path < changes[j].Path
+			})
+			sort.Slice(tt.expectedChanges, func(i, j int) bool {
+				return tt.expectedChanges[i].Path < tt.expectedChanges[j].Path
+			})
+
+			require.Equal(t, len(tt.expectedChanges), len(changes),
+				"expected %d changes, got %d", len(tt.expectedChanges), len(changes))
+
+			for i, expected := range tt.expectedChanges {
+				require.Equal(t, expected.Path, changes[i].Path,
+					"change %d: expected path %s, got %s", i, expected.Path, changes[i].Path)
+				require.Equalf(t, expected.Type, changes[i].Type,
+					"change %d: expected type %s, got %s", i,
+					local.ChangeTypeString(expected.Type),
+					local.ChangeTypeString(changes[i].Type))
+			}
+		})
+	}
 }
