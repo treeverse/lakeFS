@@ -16,7 +16,7 @@ search:
 
 lakeFS supports authenticating users programmatically using AWS IAM roles instead of using static lakeFS access and secret keys.
 The method enables you to bound IAM principal ARNs to lakeFS users.
-A single lakeFS user may have many AWS's principle ARNs attached to it. When a client is authenticating to a lakeFS server with an AWS's session, the actions performed by the client are on behalf of the user attached to the ARN.
+A single lakeFS user may have many AWS principal ARNs attached to it. When a client is authenticated to a lakeFS server with an AWS session, the actions performed by the client are on behalf of the user attached to the ARN.
 
 ### Using Session Names
 
@@ -33,13 +33,13 @@ If the `SessionName` is `john@acme.com` then lakeFS would return token for `john
 
 ### How AWS authentication works
 
-The AWS STS API includes a method, `sts:GetCallerIdentity`, which allows you to validate the identity of a client. The client signs a GetCallerIdentity query using the AWS Signature v4 algorithm and sends it to the lakeFS server. 
+The AWS STS API includes a method, `sts:GetCallerIdentity`, which allows you to validate the identity of a client. The client signs a GetCallerIdentity query using the AWS Signature v4 algorithm and sends it to the lakeFS server.
 
 The `GetCallerIdentity` query consists of four pieces of information: the request URL, the request body, the request headers and the request method. The AWS signature is computed over those fields. The lakeFS server reconstructs the query using this information and forwards it on to the AWS STS service. Depending on the response from the STS service, the server authenticates the client.
 
 Notably, clients don't need network-level access themselves to talk to the AWS STS API endpoint; they merely need access to the credentials to sign the request. However, it means that the lakeFS server does need network-level access to send requests to the STS endpoint.
 
-Each signed AWS request includes the current timestamp to mitigate the risk of replay attacks. In addition, lakeFS allows you to require an additional header, `X-LakeFS-Server-ID` (added by default), to be present to mitigate against different types of replay attacks (such as a signed `GetCallerIdentity` request stolen from a dev lakeFS instance and used to authenticate to a prod lakeFS instance). 
+Each signed AWS request includes the current timestamp to mitigate the risk of replay attacks. In addition, lakeFS allows you to require an additional header, `X-LakeFS-Server-ID` (added by default), to be present to mitigate against different types of replay attacks (such as a signed `GetCallerIdentity` request stolen from a dev lakeFS instance and used to authenticate to a prod lakeFS instance).
 
 It's also important to note that Amazon does NOT appear to include any sort of authorization around calls to GetCallerIdentity. For example, if you have an IAM policy on your credential that requires all access to be MFA authenticated, non-MFA authenticated credentials will still be able to authenticate to lakeFS using this method.
 
@@ -47,53 +47,60 @@ It's also important to note that Amazon does NOT appear to include any sort of a
 ## Server Configuration
 
 !!! info
-    lakeFS Helm chart supports the configuration since version `1.2.11` - see usage [values.yaml example](https://github.com/treeverse/charts/blob/master/examples/lakefs/enterprise/values-external-aws.yaml).
+    lakeFS Helm chart supports the configuration below since version 1.5.0
 
-* in lakeFS `auth.authentication_api.external_principals_enabled` must be set to `true` in the configuration file, other configuration (`auth.authentication_api.*`) can be found at [configuration reference](../reference/configuration.md)
+To enable AWS IAM authentication in lakeFS Enterprise:
 
-For the full list of the Fluffy server configuration, see [Fluffy Configuration][fluffy-configuration] under `auth.external.aws_auth`
+1. Enable external principals in lakeFS configuration
+2. Configure external AWS authentication settings
 
-
-!!! note
-    By default, lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
-
-
-**Example configuration with required headers:**
-
-Configuration for `lakefs.yaml`: 
+**Helm Configuration (`values.yaml`):**
 
 ```yaml
-auth:
-  authentication_api:
-    endpoint: http://<fluffy-sso>/api/v1
-    external_principals_enabled: true
-  api:
-    endpoint: http://<fluffy-rbac>/api/v1
-```
+ingress:
+  enabled: true
+  ingressClassName: <class-name>
+  hosts:
+    - host: <lakefs.ingress.domain>
+      paths:
+        - /
 
-Configuration for `fluffy.yaml`:
-
-```yaml
-# fluffy address for lakefs auth.authentication_api.endpoint
-# used by lakeFS to log in and get the token
-listen_address: <fluffy-sso>
-auth:
-  # fluffy address for lakeFS auth.api.endpoint 
-  # used by lakeFS to manage the lifecycle attach/detach of the external principals
-  serve_listen_address: <fluffy-rbac>
-  external:
-    aws_auth:
+lakefsConfig: |
+  auth:
+    # Configure external AWS authentication
+    external_aws_auth:
       enabled: true
+      # the maximum age in seconds for the GetCallerIdentity request
+      #get_caller_identity_max_age: 60
       # headers that must be present by the client when doing login request
       required_headers:
         # same host as the lakeFS server ingress
         X-LakeFS-Server-ID: <lakefs.ingress.domain>
 ```
 
+!!! note
+    By default, lakeFS clients will add the parameter `X-LakeFS-Server-ID: <lakefs.ingress.domain>` to the initial [login request][login-api] for STS.
+
+**Direct Configuration File (`lakefs.yaml`):**
+
+```yaml
+auth:
+  external_aws_auth:
+    enabled: true
+    # Optional: max age for GetCallerIdentity requests (default: 24h)
+    get_caller_identity_max_age: 3600
+    # Required headers for login requests
+    required_headers:
+      X-LakeFS-Server-ID: <lakefs.ingress.domain>
+    # Optional headers that may be present
+    optional_headers:
+      X-Custom-Header: value
+```
+
 ## Administration of IAM Roles in lakeFS
 
 Administration refers to the management of the IAM roles that are allowed to authenticate to lakeFS.
-Operations such as attaching and detaching IAM roles to a user, listing the roles attached to a user, and listing the users attached to a role. 
+Operations such as attaching and detaching IAM roles to a user, listing the roles attached to a user, and listing the users attached to a role.
 Currently, this is done through the lakeFS [External Principals API][external-principal-admin] and generated clients.
 
 Example of attaching an IAM roles to a user:
@@ -128,14 +135,14 @@ Currently, the login operation is supported out of the box in:
 - [python](#login-with-python)
 - [Everest mount](../reference/mount.md#authenticating-with-aws-iam-role.md)
 
-For other use cases authenticate to lakeFS via login endpoint, this will require building the request input.
+For other use cases authenticated to lakeFS via login endpoint, this will require building the request input.
 
 ## Login with python
 
 ### prerequisites
 
-1. lakeFS should be [configured](#server-configuration) to allow external principals to authenticate and the used IAM role should be [attached](#administration-of-iam-roles-in-lakefs) to the relevant lakeFS user
-2. The Python SDK requires additional packages to be installed in order to generate a lakeFS client with the assumed role.
+1. lakeFS should be [configured](#server-configuration) to allow external principals to authenticate, and the used IAM role should be [attached](#administration-of-iam-roles-in-lakefs) to the relevant lakeFS user
+2. The Python SDK requires additional packages to be installed to generate a lakeFS client with the assumed role.
 To install the required packages, run the following command:
 
 ```shell
@@ -194,4 +201,3 @@ There are two ways in which external principals can be used to authenticate to l
 [login-api]: ../reference/api.md#auth/externalPrincipalLogin
 [lakefs-hadoopfs]:  ../integrations/spark.md#lakefs-hadoop-filesystem
 [lakefs-spark]:  ../integrations/spark.md#usage-with-temporaryawscredentialslakefstokenprovider
-[fluffy-configuration]: ../enterprise/configuration.md#fluffy-server-configuration
