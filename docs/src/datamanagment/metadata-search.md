@@ -107,7 +107,7 @@ TODO
 * metadata server configurations 
 * Iceberg catalog configurations
 
-## How to Query Metadata
+## How to Search by Metadata
 
 To search object metadata in lakeFS, you query the Iceberg metadata tables automatically maintained by lakeFS.
 
@@ -135,7 +135,7 @@ one_week_ago = (datetime.now() - timedelta(weeks=1)).isoformat()
 
 catalog = load_catalog(uri='host:port/iceberg/api')
 
-con = catalog.load_table('data-repo-metadata.main.system.object_metadata').scan().to_duckdb('object_metadata')
+con = catalog.load_table('repo-metadata.main.system.object_metadata').scan().to_duckdb('object_metadata')
 
 query = f"""
 SELECT path   
@@ -149,27 +149,6 @@ df = con.execute(query).df()
 
 This query finds all newly added cat images (added in the past week), demonstrating how you can combine user-defined and
 system metadata fields in powerful, version-aware searches.
-
-### Example Queries
-
-TODO
-
-#### Filter by Object Annotation
-
-#### Filter by Object Annotation on past commit
-
-#### View Metadata from AI-Powered Annotators
-
-#### Filter by File Extension & Size
-
-#### Detect Errors in Sensitive Data Tagging
-
-Assume all objects under a specific path are expected to have PII=true. To identify tagging errors, query for objects in
-that path where PII=false or where the PII annotation is missing.
-
-#### Filter objects by addition Time
-
-Find all objects added to a branch after certain timeframe
 
 ### Writing Reproducible Queries
 
@@ -186,16 +165,16 @@ Assume your main branch has the following commit history: `c0 → c1`
 
 #### Using Branch Names
 
-Querying the table: `my-repo-metadata.main.system.object_metadata` will return metadata reflecting the current HEAD of
+Querying the table: `repo-metadata.main.system.object_metadata` will return metadata reflecting the current HEAD of
 main (in this case, commit `c1`). As new commits are added, the results may change.
 
 #### Using Commit IDs
 
-To query metadata for a specific historical snapshot (e.g., commit `c0`), use: `my-repo-metadata.commit-c0.system.object_metadata`
+To query metadata for a specific historical snapshot (e.g., commit `c0`), use: `repo-metadata.commit-c0.system.object_metadata`
 
 !!! info
-Note: When querying by commit, you must prefix the commit ID with `commit-`. This requirement is temporary and will
-be simplified in future versions.
+    When querying by commit, you must prefix the commit ID with `commit-`. You must also use the **full** commit SHA 
+    (not a shortened version). This requirement is temporary and will be simplified in future versions.
 
 #### Using Tags
 
@@ -219,11 +198,101 @@ tag = lakefs.Tag(repo.id, "v1.2").create(main_branch.id)
 tag_commit_id = tag.get_commit()
 ```
 
-You would then query metadata using: `my-repo-metadata.commit-<tag_commit_id>.system.object_metadata`.
+You would then query metadata using: `repo-metadata.commit-<tag_commit_id>.system.object_metadata`.
 
 !!! info
-Direct querying by tag name (e.g., `my-repo-metadata.v1.2.system.object_metadata`) is not yet supported. You must
+Direct querying by tag name (e.g., `repo-metadata.v1.2.system.object_metadata`) is not yet supported. You must
 resolve the tag to a commit ID and use the `commit-<id>` pattern instead.
+
+### Example Queries
+
+This section showcases how to use lakeFS Metadata Search to answer different types of questions using standard SQL.
+
+For simplicity and readability, the examples are written in Trino SQL. If you're using another engine (e.g., DuckDB, 
+Spark, or PyIceberg), you may need to adjust the syntax accordingly.
+
+#### Filter by Object Labels
+
+The following example returns images labeled as dogs that are not in a sitting position:
+```sql
+USE "repo-metadata.main.system";
+SHOW TABLES;
+
+SELECT * FROM object_metadata
+WHERE path LIKE `%.jpg`
+  AND user_metadata['animal'] = 'dog'
+  AND user_metadata['position'] != 'sitting';
+```
+
+#### Filter by Object Labels on past commit 
+
+This example demonstrates how to write reproducible queries by referencing a specific lakeFS commit.
+It returns images labeled as dogs that are not sitting, based on the metadata state at that commit:
+
+```sql
+USE "repo-metadata.commit-dc3117ec3a727104226c896bf7ab9350ee5da06ae052406262840e9a4a8c9ffb.system";
+SHOW TABLES;
+
+SELECT * FROM object_metadata
+WHERE path LIKE `%.jpg`
+  AND user_metadata['animal'] = 'dog'
+  AND user_metadata['position'] != 'sitting';
+```
+
+#### View Metadata from AI-Powered Annotators
+
+Assume that any object annotated by an AI-powered tool includes the object metadata key-value pair `source: autolabel` to 
+indicate its origin. The following example returns all such AI-annotated objects: 
+
+```sql
+USE "repo-metadata.main.system";
+
+SELECT *
+FROM object_metadata
+WHERE user_metadata['source'] = 'autolabel';
+```
+
+#### Filter by File Extension & Size
+
+Find all `.png` files larger than 2MB.
+
+```sql
+USE "repo-metadata.main.system";
+
+SELECT *
+FROM object_metadata
+WHERE path LIKE '%.png'
+  AND size::INT > 2000000;
+```
+
+#### Detect Errors in Sensitive Data Tagging
+
+Assume all objects under `customers/` must have user metadata `PII=true`. 
+This example returns objects where `PII=false`, or PII key is missing. 
+
+```sql
+USE "repo-metadata.main.system";
+
+SELECT *
+FROM object_metadata
+WHERE path LIKE 'customers/%'
+  AND (
+    user_metadata['PII'] = 'false'
+        OR user_metadata['PII'] IS NULL
+    );
+```
+
+#### Filter objects by addition Time
+
+This example finds all objects added in the last 7 days.
+
+```sql
+USE "repo-metadata.main.system";
+
+SELECT *
+FROM object_metadata
+WHERE creation_date >= current_timestamp - interval '7' day;
+```
 
 ## Limitations
 
