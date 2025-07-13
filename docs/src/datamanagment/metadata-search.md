@@ -52,7 +52,7 @@ For every searchable repository and branch, lakeFS creates an Iceberg **metadata
 These tables are fully managed by lakeFS and optimized for metadata search.
 
 Metadata is versioned, allowing you to query by branch names and immutable references like commit IDs and tags. 
-(See [Understanding References](#understanding-references) for more on querying by different reference types.)
+(See [Writing reproducible queries](#writing-reproducible-queries) for more on querying by different reference types.)
 
 !!! info
     You can use Metadata Search even if you’re not licensed for full lakeFS Iceberg support.
@@ -97,15 +97,12 @@ keeping performance consistent and predictable.
 
 ## Getting Started
 
-This section assumes that you are already using lakeFS object metadata. Not already using it? see... for quickly get started, 
+This section assumes that you are already using lakeFS object metadata. Not already using it? see...TODO for quickly get started, 
 make your metadata manageable and enrich you data context. 
 
 ## Configuring Metadata Search
 
-### Understanding References
-
-TODO
-How to use branches, commit IDs, and tags in metadata queries
+Data repo vs. Meatadata Search repo
 
 ## Writing Queries
 
@@ -115,6 +112,60 @@ branch being queried.
 
 TODO
 See the Iceberg docs for how to query using duckDB (because it is different)  
+
+### Writing Reproducible Queries
+
+When you search metadata on a branch, the results reflect the state of the branch’s head commit at the time the query is
+run. However, since a branch’s HEAD is mutable, it moves forward as new commits are added. Therefore, queries using branch 
+names are not reproducible over time.
+
+To make queries reproducible, you must use immutable references, such as lakeFS [commits](../understand/glossary.md#commit) 
+or [tags](../understand/glossary.md#tag), which always point to a specific snapshot of your data.
+
+Let’s walk through a concrete example:
+
+Assume your main branch has the following commit history: `c0 → c1`
+
+#### Using Branch Names
+
+Querying the table: `my-repo-metadata.main.system.object_metadata` will return metadata reflecting the current HEAD of 
+main (in this case, commit `c1`). As new commits are added, the results may change.
+
+#### Using Commit IDs 
+
+To query metadata for a specific historical snapshot (e.g., commit `c0`), use: `my-repo-metadata.commit-c0.system.object_metadata`
+
+!!! info
+    Note: When querying by commit, you must prefix the commit ID with `commit-`. This requirement is temporary and will
+    be simplified in future versions.    
+
+#### Using Tags
+
+To search metadata associated with a specific tag:
+1. Retrieve the commit ID the tag points to.
+2. Use the commit-based pattern described [above](#using-commit-ids-).
+
+Example using lakefs and PyIceberg:
+```python
+import lakefs
+from pyiceberg.catalog import load_catalog
+
+# Load the Iceberg catalog
+catalog = load_catalog(uri='host:port/iceberg/api')
+
+repo = lakefs.repository("data-repo")
+main_branch = repo.branch("main")
+
+# Create a tag pointing to current HEAD
+tag = lakefs.Tag(repo.id, "v1.2").create(main_branch.id)
+tag_commit_id = tag.get_commit()
+```
+
+You would then query metadata using: `my-repo-metadata.commit-<tag_commit_id>.system.object_metadata`.
+
+!!! info
+    Direct querying by tag name (e.g., `my-repo-metadata.v1.2.system.object_metadata`) is not yet supported. You must 
+    resolve the tag to a commit ID and use the `commit-<id>` pattern instead.
 
 ### Example Queries
 
@@ -142,4 +193,4 @@ Find all objects added to a branch after certain timeframe
 * Applies to new or changed objects only: lakeFS metadata tables do not include objects that existed in your repository 
 before the feature was enabled. Only objects added or modified after metadata search was turned on will be indexed.
 * No direct commit and tag support: Metadata tables do not natively support referencing commits and tags. To query by 
-commit or tag, see the [Understanding References](#understanding-references) section for the recommended approach.
+commit or tag, see the [Understanding References](#writing-reproducible-queries) section for the recommended approach.
