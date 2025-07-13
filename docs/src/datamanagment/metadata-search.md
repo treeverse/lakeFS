@@ -19,7 +19,7 @@ lakeFS Metadata Search makes large-scale data lakes easily searchable by object 
 versioning to search. This enables reproducible queries which are essential in collaborative and ML-driven environments
 where data evolves constantly and metadata is key to making informed decisions. 
 
-With lakeFS Metadata Search, you can query both:
+With Metadata Search, you can query both:
 * **System metadata**: Automatically captured properties such as object path, size, last modified time, and committer.
 * **User-defined metadata**: Custom labels, annotations, or tags stored as lakeFS object metadata — typically added during ingestion, processing, or curation.
 
@@ -51,7 +51,7 @@ lakeFS Metadata Search is built on top of [lakeFS Iceberg support](../integratio
 For every searchable repository and branch, lakeFS creates an Iceberg **object metadata table** at: `<repository_id>-metadata.<branch>.system.object_metadata`. 
 These tables are fully managed by lakeFS and optimized for metadata search.
 
-Metadata is versioned, allowing you to query by branch names and immutable references like commit IDs and tags. 
+Because object metadata is versioned, you can query it using both mutable references (branches) and immutable ones (commits and tags).
 (See [Writing reproducible queries](#writing-reproducible-queries) for more on querying by different reference types.)
 
 !!! info
@@ -59,41 +59,44 @@ Metadata is versioned, allowing you to query by branch names and immutable refer
     If you're already using another Iceberg REST catalog, you don’t need to switch — metadata search will still work using 
     the lakeFS-managed catalog, which operates independently.
 
-### Metadata Table Schema
+### Object Metadata Table Schema
 
-Each row in the lakeFS metadata table represents the latest metadata for an object on the branch the table corresponds to.
-lakeFS Metadata Search runs a background processing pipeline that keeps these tables **eventually consistent** with changes 
+Each row in the lakeFS object metadata table represents the latest metadata for an object on the branch the table corresponds to.
+Metadata Search runs a background processing pipeline that keeps these tables **eventually consistent** with changes 
 made to the branch.
 
-Because metadata tables are versioned by lakeFS, they reflect the current state of the branch. Each table includes 
+Because object metadata tables are versioned by lakeFS, they reflect the current state of the branch. Each table includes 
 at most one row per object, ensuring that the number of records matches the number of objects present on that branch, 
 keeping performance consistent and predictable. 
 
-| Column name        | Required| Data Type          | Description                                                                                                                                          |
-|--------------------|---------|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| repository         | yes     | sting              | The name of the repository where the object is **stored**.                                                                                               |
-| path               | yes     | string             | The unique path identifying the object within the repository.                                                                                        | 
-| commit_id          | yes     | string             | The **latest commit ID** where the object was added or modified.                                                                                     |
-| size               | yes     | Long               | The object's size in bytes.                                                                                                                          |
-| last_modified_date | yes     | Timestamp          | The time the object was last modified.                                                                                                                   |
-| etag               | yes     | string             | The object’s ETag (content hash). This reflects changes to the object's content only, not its metadata.                   |
-| user_metadata      | no      | Map<string, string>| User-defined metadata (e.g., annotations, tags). If none exists, an empty map is stored. |
-| committer          | yes     | string             | The user who committed the object’s latest change.                                                                                                     |
-| content_type       | no      | string             | The MIME type of the object (e.g., `application/json`, `image/png`).                                                                                                                                                     |
-| creation_date      | yes     | Timestamp          | The original creation timestamp of the object in the repository.                                                                                                                             |
+| Column name        | Required| Data Type           | Description                                                                                                                                          |
+|--------------------|---------|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| repository         | yes     | string              | The name of the repository where the object is **stored**.                                                                                               |
+| path               | yes     | string              | The unique path identifying the object within the repository.                                                                                        | 
+| commit_id          | yes     | string              | The **latest commit ID** where the object was added or modified.                                                                                     |
+| size               | yes     | Long                | The object's size in bytes.                                                                                                                          |
+| last_modified_date | yes     | Timestamp           | The time the object was last modified.                                                                                                                   |
+| etag               | yes     | string              | The object’s ETag (content hash). This reflects changes to the object's content only, not its metadata.                   |
+| user_metadata      | no      | Map<string, string> | User-defined metadata (e.g., annotations, tags). If none exists, an empty map is stored. |
+| committer          | yes     | string              | The user who committed the object’s latest change.                                                                                                     |
+| content_type       | no      | string              | The MIME type of the object (e.g., `application/json`, `image/png`).                                                                                                                                                     |
+| creation_date      | yes     | Timestamp           | The original creation timestamp of the object in the repository.                                                                                                                             |
 
 !!! info
     lakeFS object metadata tables are eventually consistent, which means it may take up to a few minutes for newly committed 
-    objects to become searchable. Metadata becomes searchable **atomically** — either all object metadata from the commit is available, or none of it
-    is. There is no partial availability.
-    To check whether the most recent state of your repository is available for metadata search,
-    run the following query:
+    objects to become searchable. Metadata becomes searchable **atomically** — either all object metadata from the commit 
+    is available, or none of it is. There is no partial availability. 
+
+!!! tip 
+    To check whether the most recent state of your repository is available for metadata search, check if the following 
+    query returns results:
     ```sql
-    SELECT * from <repo>-metadata.<branch>.system.object_metadata
+    USE "<repo>-metadata.main.system";
+    SHOW TABLES;
+    SELECT * FROM object_metadata
     WHERE commit_id = <head_commit> -- Replace with the head commit ID
     LIMIT 1;
     ```
-    If the query returns results, you can safely search using the latest metadata.
 
 ## Getting Started
 
@@ -109,9 +112,10 @@ TODO
 
 ## How to Search by Metadata
 
-To search object metadata in lakeFS, you query the Iceberg metadata tables automatically maintained by lakeFS.
+To search object metadata in lakeFS, you query the Iceberg object metadata tables automatically maintained by lakeFS.
 
-Because these are standard Iceberg tables, you can use any engine that supports Iceberg, including DuckDB, Trino, Spark, or PyIceberg.
+These are standard Iceberg tables, so you can query them using any Iceberg-compatible engine, including DuckDB, Trino, 
+Spark, or PyIceberg.
 
 !!! tip
     Query performance depends heavily on the engine. For example, Trino typically delivers better performance than PyIceberg.
@@ -123,7 +127,7 @@ details on how to reference object_metadata tables.
 
 To run a metadata search:
 1. Load the lakeFS Iceberg catalog.
-2. Load the metadata table you want to query.
+2. Load the object metadata table you want to query.
 3. Use SQL to search by system or user-defined metadata.
 
 Here’s an example using PyIceberg and DuckDB: 
@@ -211,7 +215,9 @@ This section showcases how to use lakeFS Metadata Search to answer different typ
 For simplicity and readability, the examples are written in Trino SQL. If you're using another engine (e.g., DuckDB, 
 Spark, or PyIceberg), you may need to adjust the syntax accordingly.
 
-#### Filter by Object Labels
+#### Object Annotation and Labeling
+
+##### Filter by Object Labels
 
 The following example returns images labeled as dogs that are not in a sitting position:
 ```sql
@@ -224,7 +230,7 @@ WHERE path LIKE `%.jpg`
   AND user_metadata['position'] != 'sitting';
 ```
 
-#### Filter by Object Labels on past commit 
+##### Filter by Object Labels on past commit 
 
 This example demonstrates how to write reproducible queries by referencing a specific lakeFS commit.
 It returns images labeled as dogs that are not sitting, based on the metadata state at that commit:
@@ -239,7 +245,7 @@ WHERE path LIKE `%.jpg`
   AND user_metadata['position'] != 'sitting';
 ```
 
-#### View Metadata from AI-Powered Annotators
+##### View Metadata from AI-Powered Annotators
 
 Assume that any object annotated by an AI-powered tool includes the object metadata key-value pair `source: autolabel` to 
 indicate its origin. The following example returns all such AI-annotated objects: 
@@ -252,7 +258,9 @@ FROM object_metadata
 WHERE user_metadata['source'] = 'autolabel';
 ```
 
-#### Filter by File Extension & Size
+#### File Properties and Storage
+
+##### Filter by File Extension & Size
 
 Find all `.png` files larger than 2MB.
 
@@ -265,7 +273,21 @@ WHERE path LIKE '%.png'
   AND size::INT > 2000000;
 ```
 
-#### Detect Errors in Sensitive Data Tagging
+#### Filter objects by addition Time
+
+This example finds all objects added in the last 7 days.
+
+```sql
+USE "repo-metadata.main.system";
+
+SELECT *
+FROM object_metadata
+WHERE creation_date >= current_timestamp - interval '7' day;
+```
+
+#### Audit and Governance
+
+##### Detect Errors in Sensitive Data Tagging
 
 Assume all objects under `customers/` must have user metadata `PII=true`. 
 This example returns objects where `PII=false`, or PII key is missing. 
@@ -282,21 +304,9 @@ WHERE path LIKE 'customers/%'
     );
 ```
 
-#### Filter objects by addition Time
-
-This example finds all objects added in the last 7 days.
-
-```sql
-USE "repo-metadata.main.system";
-
-SELECT *
-FROM object_metadata
-WHERE creation_date >= current_timestamp - interval '7' day;
-```
-
 ## Limitations
 
-* Applies to new or changed objects only: lakeFS metadata tables do not include objects that existed in your repository 
+* Applies only to objects added or modified after the feature was enabled. Existing objects before that point are not indexed. 
 before the feature was enabled. Only objects added or modified after metadata search was turned on will be indexed.
-* No direct commit and tag support: Metadata tables do not natively support referencing commits and tags. To query by 
-commit or tag, see the [Understanding References](#writing-reproducible-queries) section for the recommended approach.
+* No direct commit and tag support: To query by commit or tag, see the [Understanding References](#writing-reproducible-queries)
+section for the recommended approach.
