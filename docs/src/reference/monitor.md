@@ -33,8 +33,10 @@ In addition, lakeFS exposes the following metrics to help monitor your deploymen
 | Name in Prometheus               | Description                                                 | Labels |
 |----------------------------------|-------------------------------------------------------------|--------|
 | `api_requests_total`               | [lakeFS API](./api.md) requests (counter)                     | **code**: http status<br/>**method**: http method
+| `lakefs_concurrent_requests`        | Number of concurrent requests being processed by lakeFS (gauge) | **service**: "api" or "gateway"<br/>**operation**: name of operation
 | `api_request_duration_seconds`     | Durations of lakeFS API requests (histogram)                | <br/>**operation**: name of API operation<br/>**code**: http status
 | `gateway_request_duration_seconds` | lakeFS [S3-compatible endpoint](./s3.md) request (histogram)  | <br/>**operation**: name of gateway operation<br/>**code**: http status
+| `blockstore_concurrent_operations` | Number of concurrent blockstore operations (gauge)            | **operation**: blockstore operation name<br/>**blockstore_type**: type of blockstore (s3, gs, azure, etc)
 | `s3_operation_duration_seconds`    | Outgoing S3 operations (histogram)                          | <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
 | `gs_operation_duration_seconds`    | Outgoing Google Storage operations (histogram)              | <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
 | `azure_operation_duration_seconds` | Outgoing Azure storage operations (histogram)               | <br/>**operation**: operation name<br/>**error**: "true" if error, "false" otherwise
