@@ -25,6 +25,8 @@ func MetricsMiddleware(swagger *openapi3.T, requestHistogram *prometheus.Histogr
 			route, _, err := router.FindRoute(r)
 			start := time.Now()
 			mrw := httputil.NewMetricResponseWriter(w)
+			httputil.ConcurrentRequests.WithLabelValues("api", route.Operation.OperationID).Inc()
+			defer httputil.ConcurrentRequests.WithLabelValues("api", route.Operation.OperationID).Dec()
 			next.ServeHTTP(mrw, r)
 			if err == nil {
 				requestHistogram.
