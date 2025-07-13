@@ -131,8 +131,7 @@ lakeFS Cloud uses Auth0 for authentication and thus supports the same identity p
 
 ## SSO for lakeFS Enterprise
 
-Authentication in lakeFS Enterprise is handled directly by the lakeFS Enterprise service. 
-lakeFS Enterprise supports the following identity providers:
+Starting from v1.63.0, authentication in lakeFS Enterprise is handled directly by the lakeFS Enterprise service. lakeFS Enterprise supports the following identity providers:
 
 * Active Directory Federation Services (AD FS) (using SAML)
 * OpenID Connect
