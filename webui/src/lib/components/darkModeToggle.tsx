@@ -6,10 +6,10 @@ import { AppActionType, AppContext } from "../hooks/appContext";
 const DarkModeToggle: FC = () => {
     const { state, dispatch } = useContext(AppContext);
 
-    const toggleDarkMode = (toggled: boolean) => {
+    const toggleDarkMode = (isOn: boolean) => {
         dispatch({
             type: AppActionType.setDarkMode,
-            value: toggled,
+            value: isOn,
         });
     };
 
