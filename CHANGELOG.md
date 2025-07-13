@@ -1,5 +1,13 @@
 # Changelog
 
+# v1.63.0
+
+:new: What's new:
+
+- Implement Pre/Post Cherry-Pick Hooks (#9263)
+- Support multipart for lakectl presigned uploads (#9283)
+- Add gauge metrics for API, Gateway and Blockstore endpoints (#9260)
+
 # v1.62.0
 
 :new: What's new:
