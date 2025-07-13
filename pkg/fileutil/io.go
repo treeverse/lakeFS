@@ -169,3 +169,32 @@ func VerifySafeFilename(absPath string) error {
 	}
 	return nil
 }
+
+// VerifyNoSymlinksInPath checks that none of the directory levels from the given path up to the root are symlinks.
+// It traverses the directory tree from the specified path up to the root or "." and verifies that no symlinks are encountered.
+func VerifyNoSymlinksInPath(path, root string) error {
+	// Ensure path is absolute
+	dirPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %s: %w", path, err)
+	}
+
+	// Check each directory level from the path up to the root
+	for dirPath != root && dirPath != "." && dirPath != "/" {
+		// Check if the current directory is a symlink
+		stat, err := os.Lstat(dirPath)
+		if !os.IsNotExist(err) {
+			if err != nil {
+				return fmt.Errorf("failed to stat directory %s: %w", dirPath, err)
+			}
+
+			if stat.Mode()&os.ModeSymlink != 0 {
+				return fmt.Errorf("%w: directory '%s' is a symlink", ErrBadPath, dirPath)
+			}
+		}
+		// Move up to the parent directory
+		dirPath = filepath.Dir(dirPath)
+	}
+
+	return nil
+}

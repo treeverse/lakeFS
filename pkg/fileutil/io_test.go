@@ -214,3 +214,68 @@ func TestPruneEmptyDirectories(t *testing.T) {
 		})
 	}
 }
+
+func TestVerifyNoSymlinksInPath(t *testing.T) {
+	root := t.TempDir()
+
+	// Create a directory structure
+	dir2 := filepath.Join(root, "dir1", "dir2")
+	dir3 := filepath.Join(root, "dir1", "dir2", "dir3")
+
+	require.NoError(t, os.MkdirAll(dir3, fileutil.DefaultDirectoryMask))
+
+	// Create a file in the deepest directory
+	testFile := filepath.Join(dir3, "test.txt")
+	f, err := os.Create(testFile)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+
+	t.Run("no_symlinks", func(t *testing.T) {
+		err := fileutil.VerifyNoSymlinksInPath(testFile, root)
+		require.NoError(t, err)
+	})
+
+	t.Run("symlink_in_middle", func(t *testing.T) {
+		// Create a symlink for dir2
+		symlinkDir := filepath.Join(root, "symlink_dir")
+		require.NoError(t, os.Symlink(dir2, symlinkDir))
+
+		// Test with symlink in the path - should fail
+		testFileWithSymlink := filepath.Join(symlinkDir, "dir3", "test.txt")
+		err := fileutil.VerifyNoSymlinksInPath(testFileWithSymlink, root)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "is a symlink")
+	})
+
+	t.Run("symlink_at_root", func(t *testing.T) {
+		// Create a symlink for the root directory
+		symlinkRoot := filepath.Join(t.TempDir(), "symlink_root")
+		require.NoError(t, os.Symlink(root, symlinkRoot))
+
+		// Test with symlink at root - should pass (root is excluded from check)
+		testFileInSymlinkRoot := filepath.Join(symlinkRoot, "dir1", "dir2", "dir3", "test.txt")
+		err := fileutil.VerifyNoSymlinksInPath(testFileInSymlinkRoot, symlinkRoot)
+		require.NoError(t, err)
+	})
+
+	t.Run("non_existent_path", func(t *testing.T) {
+		nonExistentFile := filepath.Join(root, "dir1", "non_existent", "file.txt")
+		err := fileutil.VerifyNoSymlinksInPath(nonExistentFile, root)
+		require.NoError(t, err)
+	})
+
+	t.Run("relative_paths", func(t *testing.T) {
+		// Test with relative paths - should work (function converts to absolute)
+		// Change to the root directory first
+		originalWorkdir, err := os.Getwd()
+		require.NoError(t, err)
+		defer func() {
+			require.NoError(t, os.Chdir(originalWorkdir))
+		}()
+
+		require.NoError(t, os.Chdir(root))
+		relPath := filepath.Join("dir1", "dir2", "dir3", "test.txt")
+		err = fileutil.VerifyNoSymlinksInPath(relPath, root)
+		require.NoError(t, err)
+	})
+}

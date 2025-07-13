@@ -227,9 +227,9 @@ func (s *SyncManager) download(ctx context.Context, rootPath string, remote *uri
 		remotePath = fmt.Sprintf("%s%s%s", path.Clean(remote.GetPath()), uri.PathSeparator, remotePath)
 	}
 
-	// Ensure the destination directory is not a symlink
-	if stat, err := os.Lstat(destinationDirectory); err == nil && stat.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("%w: destination directory '%s' is a symlink", ErrDownloadingFile, destinationDirectory)
+	// Ensure no symlinks exist in the path from destination to root
+	if err := fileutil.VerifyNoSymlinksInPath(destinationDirectory, rootPath); err != nil {
+		return fmt.Errorf("%w: %s", ErrDownloadingFile, err)
 	}
 
 	// This is where we create directories (i.e. for directory markers in lakeFS) Permissions are modified later in code as needed
