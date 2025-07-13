@@ -48,7 +48,7 @@ debug pipeline issues, and understand how data was created or modified - all wit
 
 lakeFS Metadata Search is built on top of [lakeFS Iceberg support](../integrations/iceberg.md#what-is-lakefs-iceberg-rest-catalog), using internal system tables to manage and expose object metadata.
 
-For every searchable repository and branch, lakeFS creates an Iceberg **metadata table** at: `<repository_id>-metadata.<branch>.system.object_metadata`. 
+For every searchable repository and branch, lakeFS creates an Iceberg **object metadata table** at: `<repository_id>-metadata.<branch>.system.object_metadata`. 
 These tables are fully managed by lakeFS and optimized for metadata search.
 
 Metadata is versioned, allowing you to query by branch names and immutable references like commit IDs and tags. 
@@ -97,29 +97,87 @@ keeping performance consistent and predictable.
 
 ## Getting Started
 
-This section assumes that you are already using lakeFS object metadata. Not already using it? see...TODO for quickly get started, 
-make your metadata manageable and enrich you data context. 
+!!! info 
+    This section assumes that you are already using lakeFS [object metadata](../understand/glossary.md#object-metadata).
 
 ## Configuring Metadata Search
 
-Data repo vs. Meatadata Search repo
+TODO
+* Data repo vs. Meatadata Search repo
+* metadata server configurations 
+* Iceberg catalog configurations
 
-## Writing Queries
+## How to Query Metadata
 
-You can write metadata queries using any engine that supports Iceberg tables, including DuckDB, Trino, Spark, and PyIceberg.
-Query performance depends on both the engine used (e.g., Trino typically outperforms PyIceberg) and the size of the lakeFS
-branch being queried.
+To search object metadata in lakeFS, you query the Iceberg metadata tables automatically maintained by lakeFS.
+
+Because these are standard Iceberg tables, you can use any engine that supports Iceberg, including DuckDB, Trino, Spark, or PyIceberg.
+
+!!! tip
+    Query performance depends heavily on the engine. For example, Trino typically delivers better performance than PyIceberg.
+
+If you're using DuckDB, see the Iceberg REST Catalog [guide](../integrations/iceberg.md#relative-namespace-support) for 
+details on how to reference object_metadata tables.
+
+#### Search Steps
+
+To run a metadata search:
+1. Load the lakeFS Iceberg catalog.
+2. Load the metadata table you want to query.
+3. Use SQL to search by system or user-defined metadata.
+
+Here’s an example using PyIceberg and DuckDB: 
+```python
+from pyiceberg.catalog import load_catalog
+from datetime import datetime, timedelta
+
+one_week_ago = (datetime.now() - timedelta(weeks=1)).isoformat()
+
+catalog = load_catalog(uri='host:port/iceberg/api')
+
+con = catalog.load_table('data-repo-metadata.main.system.object_metadata').scan().to_duckdb('object_metadata')
+
+query = f"""
+SELECT path   
+FROM object_metadata
+WHERE user_metadata['animal'] = 'cat' 
+  AND creation_date > TIMESTAMP '{one_week_ago}' 
+"""
+
+df = con.execute(query).df()
+```
+
+This query finds all newly added cat images (added in the past week), demonstrating how you can combine user-defined and
+system metadata fields in powerful, version-aware searches.
+
+### Example Queries
 
 TODO
-See the Iceberg docs for how to query using duckDB (because it is different)  
+
+#### Filter by Object Annotation
+
+#### Filter by Object Annotation on past commit
+
+#### View Metadata from AI-Powered Annotators
+
+#### Filter by File Extension & Size
+
+#### Detect Errors in Sensitive Data Tagging
+
+Assume all objects under a specific path are expected to have PII=true. To identify tagging errors, query for objects in
+that path where PII=false or where the PII annotation is missing.
+
+#### Filter objects by addition Time
+
+Find all objects added to a branch after certain timeframe
 
 ### Writing Reproducible Queries
 
 When you search metadata on a branch, the results reflect the state of the branch’s head commit at the time the query is
-run. However, since a branch’s HEAD is mutable, it moves forward as new commits are added. Therefore, queries using branch 
+run. However, since a branch’s HEAD is mutable, it moves forward as new commits are added. Therefore, queries using branch
 names are not reproducible over time.
 
-To make queries reproducible, you must use immutable references, such as lakeFS [commits](../understand/glossary.md#commit) 
+To make queries reproducible, you must use immutable references, such as lakeFS [commits](../understand/glossary.md#commit)
 or [tags](../understand/glossary.md#tag), which always point to a specific snapshot of your data.
 
 Let’s walk through a concrete example:
@@ -128,16 +186,16 @@ Assume your main branch has the following commit history: `c0 → c1`
 
 #### Using Branch Names
 
-Querying the table: `my-repo-metadata.main.system.object_metadata` will return metadata reflecting the current HEAD of 
+Querying the table: `my-repo-metadata.main.system.object_metadata` will return metadata reflecting the current HEAD of
 main (in this case, commit `c1`). As new commits are added, the results may change.
 
-#### Using Commit IDs 
+#### Using Commit IDs
 
 To query metadata for a specific historical snapshot (e.g., commit `c0`), use: `my-repo-metadata.commit-c0.system.object_metadata`
 
 !!! info
-    Note: When querying by commit, you must prefix the commit ID with `commit-`. This requirement is temporary and will
-    be simplified in future versions.    
+Note: When querying by commit, you must prefix the commit ID with `commit-`. This requirement is temporary and will
+be simplified in future versions.
 
 #### Using Tags
 
@@ -164,29 +222,8 @@ tag_commit_id = tag.get_commit()
 You would then query metadata using: `my-repo-metadata.commit-<tag_commit_id>.system.object_metadata`.
 
 !!! info
-    Direct querying by tag name (e.g., `my-repo-metadata.v1.2.system.object_metadata`) is not yet supported. You must 
-    resolve the tag to a commit ID and use the `commit-<id>` pattern instead.
-
-### Example Queries
-
-TODO
-
-#### Filter by Object Annotation
-
-#### Filter by Object Annotation on past commit
-
-#### View Metadata from AI-Powered Annotators
-
-#### Filter by File Extension & Size
-
-#### Detect Errors in Sensitive Data Tagging
-
-Assume all objects under a specific path are expected to have PII=true. To identify tagging errors, query for objects in
-that path where PII=false or where the PII annotation is missing.
-
-#### Filter objects by addition Time
-
-Find all objects added to a branch after certain timeframe
+Direct querying by tag name (e.g., `my-repo-metadata.v1.2.system.object_metadata`) is not yet supported. You must
+resolve the tag to a commit ID and use the `commit-<id>` pattern instead.
 
 ## Limitations
 
