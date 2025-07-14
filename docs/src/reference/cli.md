@@ -63,19 +63,6 @@ will provide a link to download a preconfigured configuration file for you.
 * `server.retries.min_wait_interval` `(duration : 200ms)` - Minimum back-off between retries.
 * `server.retries.max_wait_interval` `(duration : 30s)` - Maximum back-off between retries.
 * `options.parallelism` `(int : 25)` - Default concurrency level for I/O operations (upload, download, etc.).
-* `metastore.type` `(string : "")` - Metastore integration: `hive` or `glue` (leave empty to disable).
-  * Hive
-    * `metastore.hive.uri` `(string : "")` - Hive metastore Thrift URI.
-    * `metastore.hive.db_location_uri` `(string : /user/hive/warehouse/)`- Default database location.
-  * Glue
-    * `metastore.glue.profile` `(string : "")` - AWS SDK profile name.
-    * `metastore.glue.credentials_file` `(string : "")` - Path to an AWS credentials file.
-    * `metastore.glue.region` `(string : "")` - AWS region for the Glue catalog.
-    * `metastore.glue.catalog_id` `(string : "")` - Glue catalog ID.
-    * `metastore.glue.db_location_uri` `(string : "")` - Default database location.
-    * `metastore.glue.credentials.access_key_id` `(string : "")` - Static AWS credentials (optional).
-    * `metastore.glue.credentials.access_secret_key` `(string : "")`
-    * `metastore.glue.credentials.session_token` `(string : "")`
 * `local.skip_non_regular_files` `(bool : false)` - When true, symbolic links and other non-regular files are skipped during `lakectl local` operations instead of causing an error.
 * `experimental.local.posix_permissions.enabled` `(bool : false)` - Preserve POSIX permissions when syncing files.
   * `experimental.local.posix_permissions.include_uid` `(bool : false)` - Include UID in the stored metadata.
