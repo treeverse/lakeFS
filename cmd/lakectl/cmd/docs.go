@@ -54,45 +54,44 @@ will provide a link to download a preconfigured configuration file for you.
 
 ## lakectl Configuration
 
-` + "`lakectl`" + ` reads its configuration from a YAML file (default path ` + "`~/.lakectl.yaml`" + `, overridable with ` + "`--config`" + `) and/or from environment variables.
+` + "`lakectl`" + ` reads its configuration from a YAML file (default path ` + "`~/.lakectl.yaml`" + `, overridable with ` + "`--config`" + ` or ` + "`LAKECTL_CONFIG_FILE`" + `) and/or from environment variables.
 
 * Every configuration key can be supplied through an environment variable using the pattern ` + "`LAKECTL_<UPPERCASE_KEY_WITH_DOTS_REPLACED_BY_UNDERSCORES>`" + `.
 * Any value given on the command-line flags overrides the value in the configuration file, which in turn overrides the value supplied through the environment.
 
 ### Reference
 
-* ` + "`credentials.access_key_id` `(string : required)`" + ` – Access-key ID used to authenticate against lakeFS.
-* ` + "`credentials.secret_access_key` `(string : required)`" + `  – Secret access key paired with the access key ID.
-* ` + "`credentials.provider.type` `(string : \"\"" + ")`" + ` – Set to ` + "`aws_iam`" + ` to obtain temporary credentials from AWS IAM; empty for static credentials (default).
-  * ` + "`credentials.provider.aws_iam.token_ttl_seconds` `(duration : 0s)`" + ` – Lifetime of the generated lakeFS token.
-  * ` + "`credentials.provider.aws_iam.url_presign_ttl_seconds` `(duration : 0s)`" + ` – TTL of pre-signed URLs created by lakectl.
-  * ` + "`credentials.provider.aws_iam.refresh_interval` `(duration : 0s)`" + ` – How often lakectl refreshes the IAM credentials.
-  * ` + "`credentials.provider.aws_iam.token_request_headers` `(map[string]string : {})`" + ` – Extra HTTP headers to include when requesting the token.
-* ` + "`network.http2.enabled` `(bool : true)`" + ` – Enable HTTP/2 for the API client.
-* ` + "`server.endpoint_url` `(string : ` " + `http://127.0.0.1:8000` + " `)" + ` – Base URL of the lakeFS server.
-* ` + "`server.retries.enabled` `(bool : true)`" + ` – Whether lakectl tries more than once.
-* ` + "`server.retries.max_attempts` `(uint : 4)`" + ` – Maximum number of attempts per request.
-* ` + "`server.retries.min_wait_interval` `(duration : 200ms)`" + ` – Minimum back-off between retries.
-* ` + "`server.retries.max_wait_interval` `(duration : 30s)`" + ` – Maximum back-off between retries.
-* ` + "`options.parallelism` `(int : 25)`" + ` – Default concurrency level for I/O operations (upload, download, etc.).
-* ` + "`metastore.type` `(string : \"\"" + `` + ")`" + ` – Metastore integration: ` + "`hive`" + ` or ` + "`glue`" + ` (leave empty to disable).
+* ` + "`credentials.access_key_id` `(string : required)`" + ` - Access-key ID used to authenticate against lakeFS.
+* ` + "`credentials.secret_access_key` `(string : required)`" + `  - Secret access key paired with the access key ID.
+* ` + "`credentials.provider.type` `(string : \"\"" + ")`" + ` - Enterprise only. Set to ` + "`aws_iam`" + ` to obtain temporary credentials from AWS IAM; empty for static credentials (default).
+  * ` + "`credentials.provider.aws_iam.token_ttl_seconds` `(duration : 6h)`" + ` - Lifetime of the generated lakeFS token.
+  * ` + "`credentials.provider.aws_iam.url_presign_ttl_seconds` `(duration : 1m)`" + ` - TTL of pre-signed URLs created by lakectl.
+  * ` + "`credentials.provider.aws_iam.refresh_interval` `(duration : 5m)`" + ` - How often lakectl refreshes the IAM credentials.
+  * ` + "`credentials.provider.aws_iam.token_request_headers` `(map[string]string : {})`" + ` - Extra HTTP headers to include when requesting the token.
+* ` + "`network.http2.enabled` `(bool : true)`" + ` - Enable HTTP/2 for the API client.
+* ` + "`server.endpoint_url` `(string : ` " + `http://127.0.0.1:8000` + " `)" + ` - Base URL of the lakeFS server.
+* ` + "`server.retries.enabled` `(bool : true)`" + ` - Whether lakectl tries more than once.
+* ` + "`server.retries.max_attempts` `(uint : 4)`" + ` - Maximum number of attempts per request.
+* ` + "`server.retries.min_wait_interval` `(duration : 200ms)`" + ` - Minimum back-off between retries.
+* ` + "`server.retries.max_wait_interval` `(duration : 30s)`" + ` - Maximum back-off between retries.
+* ` + "`options.parallelism` `(int : 25)`" + ` - Default concurrency level for I/O operations (upload, download, etc.).
+* ` + "`metastore.type` `(string : \"\"" + `` + ")`" + ` - Metastore integration: ` + "`hive`" + ` or ` + "`glue`" + ` (leave empty to disable).
   * Hive
-    * ` + "`metastore.hive.uri` `(string : \"\"" + `` + ")`" + ` – Hive metastore Thrift URI.
-    * ` + "`metastore.hive.db_location_uri` `(string : /user/hive/warehouse/" + ")`" + `– Default database location.
+    * ` + "`metastore.hive.uri` `(string : \"\"" + `` + ")`" + ` - Hive metastore Thrift URI.
+    * ` + "`metastore.hive.db_location_uri` `(string : /user/hive/warehouse/" + ")`" + `- Default database location.
   * Glue
-    * ` + "`metastore.glue.profile` `(string : \"\"" + `` + ")`" + ` – AWS SDK profile name.
-    * ` + "`metastore.glue.credentials_file` `(string : \"\"" + `` + ")`" + ` – Path to an AWS credentials file.
-    * ` + "`metastore.glue.region` `(string : \"\"" + `` + ")`" + ` – AWS region for the Glue catalog.
-    * ` + "`metastore.glue.catalog_id` `(string : \"\"" + `` + ")`" + ` – Glue catalog ID.
-    * ` + "`metastore.glue.db_location_uri` `(string : \"\"" + `` + ")`" + ` – Default database location.
-    * ` + "`metastore.glue.credentials.access_key_id` `(string : \"\"" + `` + ")`" + ` – Static AWS credentials (optional).
+    * ` + "`metastore.glue.profile` `(string : \"\"" + `` + ")`" + ` - AWS SDK profile name.
+    * ` + "`metastore.glue.credentials_file` `(string : \"\"" + `` + ")`" + ` - Path to an AWS credentials file.
+    * ` + "`metastore.glue.region` `(string : \"\"" + `` + ")`" + ` - AWS region for the Glue catalog.
+    * ` + "`metastore.glue.catalog_id` `(string : \"\"" + `` + ")`" + ` - Glue catalog ID.
+    * ` + "`metastore.glue.db_location_uri` `(string : \"\"" + `` + ")`" + ` - Default database location.
+    * ` + "`metastore.glue.credentials.access_key_id` `(string : \"\"" + `` + ")`" + ` - Static AWS credentials (optional).
     * ` + "`metastore.glue.credentials.access_secret_key` `(string : \"\"" + `` + ")`" + `
     * ` + "`metastore.glue.credentials.session_token` `(string : \"\"" + `` + ")`" + `
-  * ` + "`metastore.fix_spark_placeholder` `(bool : false)`" + ` – Replace Spark placeholders when copying tables.
-* ` + "`local.skip_non_regular_files` `(bool : false)`" + ` – When true, symbolic links and other non-regular files are skipped during ` + "`lakectl local`" + ` operations instead of causing an error.
-* ` + "`experimental.local.posix_permissions.enabled` `(bool : false)`" + ` – Preserve POSIX permissions when syncing files.
-  * ` + "`experimental.local.posix_permissions.include_uid` `(bool : false)`" + ` – Include UID in the stored metadata.
-  * ` + "`experimental.local.posix_permissions.include_gid` `(bool : false)`" + ` – Include GID in the stored metadata.
+* ` + "`local.skip_non_regular_files` `(bool : false)`" + ` - When true, symbolic links and other non-regular files are skipped during ` + "`lakectl local`" + ` operations instead of causing an error.
+* ` + "`experimental.local.posix_permissions.enabled` `(bool : false)`" + ` - Preserve POSIX permissions when syncing files.
+  * ` + "`experimental.local.posix_permissions.include_uid` `(bool : false)`" + ` - Include UID in the stored metadata.
+  * ` + "`experimental.local.posix_permissions.include_gid` `(bool : false)`" + ` - Include GID in the stored metadata.
 
 
 ## Running lakectl from Docker
