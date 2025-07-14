@@ -7,7 +7,7 @@ description: Webhooks reference
 
 A Webhook is a Hook type that sends an HTTP POST request to the configured URL.
 Any non `2XX` response by the responding endpoint will fail the Hook, cancel the execution of the following Hooks
-under the same Action. For `pre-*` hooks, the triggering operation will also be aborted. On the other hand, `post-*`
+under the same Action. For `pre-*` hooks, the triggering operation will also be aborted. Conversely, `post-*`
 hooks run asynchronously, and their failure will not affect the operation that triggered them.
 
 !!! warning
