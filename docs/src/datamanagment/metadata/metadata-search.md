@@ -20,6 +20,7 @@ versioning to search. This enables reproducible queries which are essential in c
 where data evolves constantly and metadata is key to making informed decisions. 
 
 With Metadata Search, you can query both:
+
 * **System metadata**: Automatically captured properties such as object path, size, last modified time, and committer.
 * **User-defined metadata**: Custom labels, annotations, or tags stored as lakeFS object metadata — typically added during
 ingestion, processing, or curation.
