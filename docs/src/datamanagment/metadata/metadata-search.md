@@ -10,7 +10,7 @@ status: enterprise
     Available in **lakeFS Enterprise**
 
 !!! tip
-    lakeFS Metadata search is currently in private preview for [lakeFS Enterprise](../enterprise/index.md) customers.
+    lakeFS Metadata search is currently in private preview for [lakeFS Enterprise](../../enterprise/index.md) customers.
     [Contact us](https://lakefs.io/contact-sales/) to get started!
 
 ## Overview
@@ -24,7 +24,7 @@ With Metadata Search, you can query both:
 * **User-defined metadata**: Custom labels, annotations, or tags stored as lakeFS object metadata — typically added during
 ingestion, processing, or curation.
 
-![metadata search](../assets/img/mds/mds_how_it_works.png)
+![metadata search](../../assets/img/mds/mds_how_it_works.png)
 
 To enable simple and scalable search, lakeFS exposes object metadata as versioned Iceberg tables, fully compatible with
 clients like DuckDB, PyIceberg, Spark, Trino, and others - enabling fast, expressive queries across any lakeFS version. 
@@ -47,7 +47,7 @@ debug pipeline issues, and understand how data was created or modified - all wit
 
 ## How it Works
 
-lakeFS Metadata Search is built on top of [lakeFS Iceberg support](../integrations/iceberg.md#what-is-lakefs-iceberg-rest-catalog),
+lakeFS Metadata Search is built on top of [lakeFS Iceberg support](../../integrations/iceberg.md#what-is-lakefs-iceberg-rest-catalog),
 nd uses catalog-level system tables to manage and expose versioned object metadata for querying.
 
 For every searchable repository and branch (see [configuration](#configuring-metadata-search) for more info), lakeFS 
@@ -102,7 +102,7 @@ keeping performance consistent and predictable.
 
 ## Getting Started
 
-This section assumes that you are already using lakeFS [object metadata](../understand/glossary.md#object-metadata). 
+This section assumes that you are already using lakeFS [object metadata](../../understand/glossary.md#object-metadata). 
 
 ## Configuring Metadata Search
 
@@ -122,13 +122,13 @@ DuckDB, Trino, Spark, PyIceberg, or else.
 !!! tip
     Query performance depends heavily on the engine you use. For example, Trino typically delivers better performance than PyIceberg.
 
-If you're using DuckDB, note the Iceberg REST Catalog [guide](../integrations/iceberg.md#relative-namespace-support) for 
+If you're using DuckDB, note the Iceberg REST Catalog [guide](../../integrations/iceberg.md#relative-namespace-support) for 
 details on how to reference `object_metadata` tables.
 
 #### Search Steps
 
 To run a metadata search query:
-1. [Initialize](../integrations/iceberg.md#catalog-initialization-example-using-pyiceberg) lakeFS Iceberg catalog, and authenticate.
+1. [Initialize](../../integrations/iceberg.md#catalog-initialization-example-using-pyiceberg) lakeFS Iceberg catalog, and authenticate.
 2. Load the object metadata table that represents the reference you would like to query.
 3. Use SQL to search by system or user-defined metadata.
 
@@ -168,8 +168,8 @@ When you search metadata on a branch, the results reflect the state of the branc
 the metadata has been ingested (eventual consistency applies). However, since a branch’s HEAD is mutable, it moves forward
 as new commits are added. Therefore, queries using branch names are not reproducible over time.
 
-To make queries reproducible, you must use immutable references, such as lakeFS [commits](../understand/glossary.md#commit)
-or [tags](../understand/glossary.md#tag), which always point to a specific snapshot of your data.
+To make queries reproducible, you must use immutable references, such as lakeFS [commits](../../understand/glossary.md#commit)
+or [tags](../../understand/glossary.md#tag), which always point to a specific snapshot of your data.
 
 Let’s walk through a concrete example:
 Assume your main branch has the following commit history: `c0 → c1`
