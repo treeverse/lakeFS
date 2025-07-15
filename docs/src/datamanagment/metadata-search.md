@@ -106,9 +106,9 @@ keeping performance consistent and predictable.
 ## Configuring Metadata Search
 
 TODO
-* Data repo vs. Meatadata Search repo
 * metadata server configurations 
-* Iceberg catalog configurations
+* Iceberg catalog configurations?
+* Searchable repos and branches configurations.
 
 ## How to Search by Metadata
 
