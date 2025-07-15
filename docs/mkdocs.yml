@@ -143,6 +143,8 @@ nav:
     - Work with Data locally: howto/local-checkouts.md
     - Sizing Guide: howto/sizing-guide.md
   - Data Management:
+    - Metadata:
+        - Metadata search: datamanagment/metadata/metadata-search.md
     - Git-Like Versioning:
       - Pull Requests: howto/pull-requests.md
       - Branch Protection: howto/protect-branches.md
@@ -154,7 +156,6 @@ nav:
       - Copying data to/from lakeFS: howto/copying.md
       - Data Catalogs Exports: howto/catalog_exports.md
     - lakeFS Mount: reference/mount.md
-    - Metadata search: datamanagment/metadata/metadata-search.md
     - Actions and Hooks:
       - Overview: howto/hooks/index.md
       - Airflow Hooks: howto/hooks/airflow.md
