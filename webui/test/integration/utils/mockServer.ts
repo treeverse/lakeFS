@@ -73,9 +73,9 @@ export class MockServer {
       const mockResponse = this.apiMocks.get(requestPath);
 
       this.validateMockResponse(mockResponse, requestPath);
-      
+
       const headers = this.buildResponseHeaders(mockResponse);
-      
+
       res.writeHead(mockResponse.status, headers);
       res.end(mockResponse.body);
     } catch (error) {
@@ -138,20 +138,23 @@ export class MockServer {
         return;
       }
 
-      // Use URL constructor to properly parse the request URL
-      const url = new URL(req.url, `http://${this.hostname}:${this.port}`);
-      let filePath = url.pathname;
-      
-      // Default to index.html for root path
-      if (filePath === '/') {
+      let filePath = req.url === '/' ? '/index.html' : req.url;
+      if (filePath?.includes('?')) {
+        filePath = filePath.split('?')[0];
+      }
+
+      if (!filePath || filePath === '/') {
         filePath = '/index.html';
       }
-      
+
       const fullPath = join(process.cwd(), 'dist', filePath);
       const content = readFileSync(fullPath);
-      
+
+      console.log("fullPath: ", fullPath)
+      console.log("filePath: ", filePath)
+
       const contentType = this.getContentType(filePath);
-      
+
       res.writeHead(200, { 'Content-Type': contentType });
       res.end(content);
     } catch (error) {
