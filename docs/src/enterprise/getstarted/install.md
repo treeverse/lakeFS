@@ -3,15 +3,15 @@ title: Install
 description: lakeFS Enterprise Installation Guide
 ---
 
-# **Install**
+# Install
 
 For production deployments of lakeFS Enterprise, follow this guide.
 
-## **lakeFS Enterprise Architecture**
+## lakeFS Enterprise Architecture
 
 We recommend to review the [lakeFS Enterprise architecture][lakefs-enterprise-architecture] to understand the components you will be deploying.
 
-## **Deploy lakeFS Enterprise on Kubernetes**
+## Deploy lakeFS Enterprise on Kubernetes
 
 The guide is using the [lakeFS Helm Chart](https://github.com/treeverse/charts/tree/master/charts/lakefs) to deploy a fully functional lakeFS Enterprise.
 
@@ -23,7 +23,7 @@ The guide includes example configurations, follow the steps below and adjust the
 
 ---
 
-### **Prerequisites**
+### Prerequisites
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
 1. [Helm](https://helm.sh/docs/intro/install/) is installed
@@ -40,7 +40,10 @@ Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-ent
 
 ---
 
-### **lakeFS Enterprise License**
+### lakeFS Enterprise License
+
+!!! warning
+    Working with lakeFS Enterprise requires a valid license.
 
 ??? info "Overview"
     - lakeFS Enterprise requires a valid license to run.
@@ -71,9 +74,6 @@ You will receive a license token that contains:
       ```
 
       > **Note**: Instead of configuring the license token path via the lakeFS Enterprise configuration file, you can set it via the environment variable: `LAKEFS_LICENSE_PATH`.
-   
-!!! warning 
-    After the license expires, lakeFS Enterprise server shuts down and fails to start due to a license expiry error.
 
 ??? info "Licensed Features"
     The following lakeFS Enterprise features must be included in the lakeFS Enterprise license in order to be available:
@@ -220,7 +220,7 @@ You will receive a license token that contains:
         If you encounter an issue not covered here, contact our support team at [support@treeverse.io](mailto:support@treeverse.io).
 ---
 
-### **Add the lakeFS Helm Chart**
+### Add the lakeFS Helm Chart
 
 * Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
 * The chart contains a values.yaml file you can customize to suit your needs as you follow this guide. Use `helm show values lakefs/lakefs` to see the default values.
@@ -228,7 +228,7 @@ You will receive a license token that contains:
 
 ---
 
-### **Authentication Configuration**
+### Authentication Configuration
 
 Authentication in lakeFS Enterprise is handled by the Fluffy SSO service which runs side-by-side to lakeFS. This section explains
 what Fluffy configurations are required for configuring the SSO service. See [this][fluffy-configuration] configuration reference for additional Fluffy configurations.
@@ -324,7 +324,7 @@ replace with your IdP details.
     !!! tip
         The full SAML configurations explained [here][lakefs-sso-enterprise-spec-saml].
 
-    #### **Azure App Configuration**
+    #### Azure App Configuration
 
     1. Create an Enterprise Application with SAML toolkit - see [Azure quickstart](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal)
     1. Add users: **App > Users and groups**: Attach users and roles from their existing AD users
@@ -335,7 +335,7 @@ replace with your IdP details.
       1. Sign on URL: lakefs-url/sso/login-saml (e.g. https://lakefs.acme.com/sso/login-saml)
       1. Relay State (Optional, controls where to redirect after login): /
 
-    #### **SAML Configuration**
+    #### SAML Configuration
 
     1. Configure SAML application in your IdP (i.e Azure AD) and replace the required parameters into the `values.yaml` below.
     2. To generate certificates keypair use: `openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.acme.com" -
@@ -480,7 +480,7 @@ See [additional examples on GitHub](https://github.com/treeverse/charts/tree/mas
 
 ---
 
-### **Database Configuration**
+### Database Configuration
 
 In this section, you will learn how to configure lakeFS Enterprise to work with the KV Database you created (see [prerequisites](#prerequisites).
 
@@ -556,18 +556,18 @@ The database configuration structure between lakeFS and fluffy can be set direct
 
 ---
 
-### **Install the lakeFS Helm Chart**
+### Install the lakeFS Helm Chart
 
 After populating your values.yaml file with the relevant configuration, in the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
 
 ---
 
-### **Access the lakeFS UI**
+### Access the lakeFS UI
 
-In your browser go to the to the Ingress host to access lakeFS UI.
+In your browser go to the Ingress host to access lakeFS UI.
 
 
-## **Log Collection**
+## Log Collection
 
 The recommended practice for collecting logs would be sending them to the container std (default configuration)
 and letting an external service to collect them to a sink. An example for logs collector would be [fluentbit](https://fluentbit.io/)
@@ -578,7 +578,7 @@ and audit_logs that are describing a user action (i.e create branch).
 The distinction between regular logs and audit_logs is in the boolean field log_audit.
 lakeFS and fluffy share the same configuration structure under logging.* section in the config.
 
-## **Advanced Deployment Configurations**
+## Advanced Deployment Configurations
 
 The following example demonstrates a scenario where you need to configure an HTTP proxy for lakeFS and Fluffy, TLS certificates for the Ingress and extending the K8S manifests without forking the Helm chart.
 
