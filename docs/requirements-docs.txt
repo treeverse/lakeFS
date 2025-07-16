@@ -5,3 +5,4 @@ mkdocs-redirects==1.2.2
 mkdocs==1.6.1
 mkdocs-render-swagger-plugin==0.1.2
 pymdown-extensions==10.15
+mkdocs-glightbox==0.4.0

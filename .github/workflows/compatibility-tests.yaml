@@ -27,7 +27,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "18.17.0"
+          node-version: "22.17.x"
 
       - uses: actions/setup-java@v3
         with:
@@ -73,7 +73,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: "18.17.0"
+          node-version: "22.17.x"
 
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -191,6 +191,8 @@ jobs:
           - 1.59.0
           - 1.60.0
           - 1.61.0
+          - 1.62.0
+          - 1.63.0
     runs-on: ubuntu-22.04
     env:
       TAG: ${{ matrix.lakefs_version }}

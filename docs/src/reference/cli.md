@@ -40,9 +40,34 @@ This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoi
 When setting up a new installation and creating initial credentials (see [Quickstart](../quickstart/index.md)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
-`lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
-*LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
-controls `server.endpoint_url`.
+## lakectl Configuration
+
+`lakectl` reads its configuration from a YAML file (default path `~/.lakectl.yaml`, overridable with `--config` or `LAKECTL_CONFIG_FILE`) and/or from environment variables.
+
+* Every configuration key can be supplied through an environment variable using the pattern `LAKECTL_<UPPERCASE_KEY_WITH_DOTS_REPLACED_BY_UNDERSCORES>`.
+* Any value given on the command-line flags overrides the value in the configuration file, which in turn overrides the value supplied through the environment.
+
+### Reference
+
+* `credentials.access_key_id` `(string : required)` - Access-key ID used to authenticate against lakeFS.
+* `credentials.secret_access_key` `(string : required)`  - Secret access key paired with the access key ID.
+* `credentials.provider.type` `(string : "")` - Enterprise only. Set to `aws_iam` to obtain temporary credentials from AWS IAM; empty for static credentials (default).
+  * `credentials.provider.aws_iam.token_ttl_seconds` `(duration : 6h)` - Lifetime of the generated lakeFS token.
+  * `credentials.provider.aws_iam.url_presign_ttl_seconds` `(duration : 1m)` - TTL of pre-signed URLs created by lakectl.
+  * `credentials.provider.aws_iam.refresh_interval` `(duration : 5m)` - How often lakectl refreshes the IAM credentials.
+  * `credentials.provider.aws_iam.token_request_headers` `(map[string]string : {})` - Extra HTTP headers to include when requesting the token.
+* `network.http2.enabled` `(bool : true)` - Enable HTTP/2 for the API client.
+* `server.endpoint_url` `(string : ` http://127.0.0.1:8000 `) - Base URL of the lakeFS server.
+* `server.retries.enabled` `(bool : true)` - Whether lakectl tries more than once.
+* `server.retries.max_attempts` `(uint : 4)` - Maximum number of attempts per request.
+* `server.retries.min_wait_interval` `(duration : 200ms)` - Minimum back-off between retries.
+* `server.retries.max_wait_interval` `(duration : 30s)` - Maximum back-off between retries.
+* `options.parallelism` `(int : 25)` - Default concurrency level for I/O operations (upload, download, etc.).
+* `local.skip_non_regular_files` `(bool : false)` - When true, symbolic links and other non-regular files are skipped during `lakectl local` operations instead of causing an error.
+* `experimental.local.posix_permissions.enabled` `(bool : false)` - Preserve POSIX permissions when syncing files.
+  * `experimental.local.posix_permissions.include_uid` `(bool : false)` - Include UID in the stored metadata.
+  * `experimental.local.posix_permissions.include_gid` `(bool : false)` - Include GID in the stored metadata.
+
 
 ## Running lakectl from Docker
 
@@ -69,7 +94,9 @@ A cli tool to explore manage and work with lakeFS
 
 <h4>Synopsis</h4>
 
-lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
+lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment.
+
+It can be extended with plugins; see 'lakectl plugin --help' for more information.
 
 ```
 lakectl [flags]
@@ -2411,6 +2438,93 @@ lakectl metastore import-all [flags]
       --table-filter string       filter for tables to copy in metastore pattern (default ".*")
       --to-address string         destination metastore address
       --to-client-type string     metastore type [hive, glue]
+```
+
+
+
+### lakectl plugin
+
+Manage lakectl plugins
+
+<h4>Synopsis</h4>
+
+Provides utilities for managing lakectl plugins.
+
+Plugins are standalone executable files that extend lakectl's functionality.
+lakectl discovers plugins by looking for executables in your PATH
+that are named with the prefix "lakectl-".
+
+For example, an executable named "lakectl-myfeature" can be invoked as
+"lakectl myfeature [args...]".
+
+Plugin Naming:
+  - The executable must start with "lakectl-".
+  - The part after "lakectl-" becomes the command name users type.
+    (e.g., "lakectl-foo" -> "lakectl foo")
+  - The plugin name is used exactly as-is in the command.
+    (e.g., "lakectl-foo-bar" -> "lakectl foo-bar")
+
+Installation:
+  - Place your "lakectl-..." executable file (which may be any executable,
+    e.g. a Python application) in a directory listed in your PATH.
+  - Ensure the file has execute permissions.
+
+Execution:
+  - When you run "lakectl some-plugin arg1 --flag", lakectl searches for
+    "lakectl-some-plugin" in PATH.
+  - If found and executable, it runs the plugin, passing "arg1 --flag" as arguments.
+  - The plugin inherits environment variables from lakectl.
+  - Standard output, standard error, and the exit code of the plugin are propagated.
+  - Built-in lakectl commands always take precedence over plugins.
+
+Use "lakectl plugin list" to see all detected plugins and any warnings.
+
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for plugin
+```
+
+
+
+### lakectl plugin help
+
+Help about any command
+
+<h4>Synopsis</h4>
+
+Help provides help for any command in the application.
+Simply type plugin help [path to command] for full details.
+
+```
+lakectl plugin help [command] [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl plugin list
+
+List available lakectl plugins
+
+<h4>Synopsis</h4>
+
+Scans the PATH for executables named "lakectl-*" and lists the detected plugins.
+
+```
+lakectl plugin list [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for list
 ```
 
 

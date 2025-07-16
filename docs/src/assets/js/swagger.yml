@@ -308,6 +308,25 @@ components:
             type: string
             description: Object path
 
+    DiffObjectStat:
+      type: object
+      required:
+        - checksum
+        - mtime
+        - content_type
+      properties:
+        checksum:
+          type: string
+        mtime:
+          type: integer
+          format: int64
+          description: Unix Epoch in seconds
+        content_type:
+          type: string
+          description: Object media type
+        metadata:
+          $ref: "#/components/schemas/ObjectUserMetadata"
+
     ObjectStats:
       type: object
       required:
@@ -475,6 +494,9 @@ components:
           type: integer
           description: represents the size of the added/changed/deleted entry
           format: int64
+        right:
+          $ref: "#/components/schemas/DiffObjectStat"
+          description: ObjectStats of the right side of the diff.
 
     DiffList:
       type: object
@@ -4259,6 +4281,13 @@ paths:
           type: string
           enum: [two_dot, three_dot]
           default: three_dot
+      - in: query
+        name: include_right_stats
+        description: If set to true, the diff will include right-side object stats. *EXPERIMENTAL*
+        required: false
+        schema:
+          type: boolean
+          default: false
 
     get:
       tags:
