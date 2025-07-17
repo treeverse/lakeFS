@@ -226,25 +226,37 @@ system metadata fields in powerful, version-aware searches.
 
 ### Writing Reproducible Queries
 
-When you search metadata on a branch, the results reflect the state of the branch’s HEAD commit at query time, provided 
-the metadata has been ingested (within [consistency](#consistency-) constraints). However, since a branch’s HEAD is mutable, it moves forward
-as new commits are added. Therefore, queries using branch names are not reproducible over time.
+In collaborative environments or during iterative development, it's important to ensure that metadata queries return consistent,
+reproducible results. To achieve this, you should query object metadata tables using commit IDs, which are immutable references,
+instead of branch names.
 
-To make queries reproducible, you must use immutable references, such as lakeFS [commits](../understand/glossary.md#commit)
-, which always point to a specific snapshot of your data.
+**Why not use Branch names?**
 
-Let’s walk through a concrete example:
-Assume your main branch has the following commit history: `c0 → c1`
+Querying metadata tables using a branch name, e.g., `repo-metadata.main.system.object_metadata` return results based on
+the state of the branch’s HEAD commit at the time of the query, assuming the metadata has already been ingested (within 
+[eventual consistency](#consistency-) constraints). However, because branch heads are mutable and advance with each new
+commit, the results of such queries can change over time.
 
-#### Using Branch Names
+**Use commit IDs for stability**
 
-Querying the table: `repo-metadata.main.system.object_metadata` will return metadata reflecting the current HEAD of
-main (provided the metadata has been ingested - in this case, commit `c1`). As new commits are added, the results may change.
+To ensure stability and reproducibility, use lakeFS commit IDs in your queries. Each commit ID made to the **data repository** 
+references a specific, fixed snapshot of the repository state, including its metadata. This guarantees that the same query
+always returns the same results, regardless of subsequent changes to the branch.
 
-#### Using Commit IDs
+**How to query using commit IDs?**  
 
-To query metadata for a specific historical snapshot (e.g., commit `c0`), prefix the **full** commit SHA with `commit-`.
-For example, to query metadata at commit `c0`, use the table: `repo-metadata.commit-c0.system.object_metadata`.
+1. Identify the relevant **full** commit ID from the data repository (e.g., `c12` on branch `dev` in repo `my-repo`). 
+2. Query the object metadata table using the following pattern: `<repo>-metadata.commit-<commit_id>.system.object_metadata`,
+or `my-repo-metadata.commit-c12.system.object_metadata` in our example. 
+
+This accesses the metadata corresponding to commit c12.
+
+!!! note
+    Use the full commit SHA when querying by commit. Shortened commit IDs are not supported at this time.  
+
+!!! tip
+    For full reproducibility and version control, include the commit ID directly in your queries and store those 
+    queries in Git.   
 
 ### Example Queries
 
