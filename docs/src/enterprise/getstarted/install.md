@@ -5,8 +5,7 @@ description: lakeFS Enterprise Installation Guide
 
 # Install
 
-!!! info
-    For production deployments of lakeFS Enterprise, follow this guide.
+For production deployments of lakeFS Enterprise, follow this guide.
 
 ## lakeFS Enterprise Architecture
 
@@ -25,6 +24,8 @@ The guide includes example configurations, follow the steps below and adjust the
 * Type of KV store you use
 * Your SSO IdP and protocol
 
+---
+
 ### Prerequisites
 
 1. You have a Kubernetes cluster running in one of the platforms [supported by lakeFS](../../howto/deploy/index.md#deployment-and-setup-details).
@@ -40,11 +41,189 @@ Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-ent
 !!! info
     You can install lakeFS Enterprise without configuring SSO and still benefit from all other lakeFS Enterprise features.
 
+---
+
+### lakeFS Enterprise License
+
+**Using lakeFS Enterprise requires a valid license.** This license is a JSON Web Token (JWT) that provides access to the 
+lakeFS Enterprise server and paid features. A license is tied to a specific installation via an installation ID, and to 
+a specific organization via an organization ID.
+
+#### Licensed Features
+The following lakeFS Enterprise features must be included in the lakeFS Enterprise license in order to be available:
+
+##### Authentication & Authorization
+
+- [SSO (Single Sign-On)](../../security/sso.md)
+- [RBAC (Role-Based Access Control)](../../security/rbac.md)
+- [SCIM (System for Cross-domain Identity Management)](../../howto/scim.md)
+- [IAM (Identity and Access Management) Role Authentication](../../security/external-principals-aws.md)
+
+##### Advanced Functionality
+
+- [Mount](../../reference/mount.md)
+- [Metadata Search](https://info.lakefs.io/metadata-search)
+- [MSB (Multiple Storage Backends)](../../howto/multiple-storage-backends.md)
+- [Transactional Mirroring](../../howto/mirroring.md)
+- [Sparkless GC (Garbage Collection)](../../howto/garbage-collection/standalone-gc.md)
+
+!!! warning 
+    Without a license for these features, they will be disabled, and any attempt to access them will result in a 'feature not licensed' error.
+
+#### License Configuration in lakeFS Enterprise
+
+1. <u>Contact Support for a License</u>  
+📧 Email: [support@treeverse.io](mailto:support@treeverse.io)
+
+2. <u>Receive Your License Token</u>  
+You will receive a license token that contains:  
+    - Organization ID  
+    - Installation ID  
+    - Issue date  
+    - Expiry date  
+    - Enabled features  
+    - Feature limitations  
+
+3. <u>Configure lakeFS Enterprise Server</u>  
+    1. Save the license token to a file.  
+    2. Provide the file path in the lakeFS Enterprise configuration file:
+      ```yaml
+      license:
+        path: "/path/to/your/license.txt"
+      ```
+
+    !!! tip
+        Instead of configuring the license token path via the lakeFS Enterprise configuration file, you can set it via the environment variable: `LAKEFS_LICENSE_PATH`.
+
+??? tip "Reading a Currently Installed License Token via API"    
+    **Request:**
+    ```bash
+    GET https://your-lakefs-server/api/v1/license
+    ```
+
+    **Response:**
+    ```json
+    {
+      "token": "eyJhbGciOiJSUzI1NiIs..."
+    }
+    ```
+
+    The returned token can be decoded using any JWT decoding tool to view the license information.
+
+#### License Monitoring & Updates
+##### Updating Your License
+
+1. Replace the content of your license file with the new license token.  
+2. lakeFS Enterprise will automatically detect and reload the new license within 1 minute.  
+
+!!! warning
+    You cannot change the file path itself to point to a new file while the server is running.
+
+##### Automatic Monitoring
+
+- <u>Validation and Expiry Check:</u> Occurs periodically to verify license validity and expiry.
+- <u>File Monitoring:</u> The server checks periodically to detect license file changes so that when the license token gets updated in the file, there is no need to restart the server and the license updates automatically.
+
+#### Troubleshooting
+##### Server Won't Start
+```
+Error: no valid license found for this lakeFS Enterprise Server
+```
+<u>Solution:</u> Ensure you have configured the `license.path` in the lakeFS Enterprise configuration file or environment variables.
+
+---
+
+##### License Signature Verification Failed
+```
+Error: token signature did not match any known public key: token signature is invalid: crypto/rsa
+```
+<u>Solutions:</u>  
+    1. Re-download your license token from the original source.  
+    2. Verify the license file contains only the license token with no extra characters or line breaks.  
+    3. Contact [support@treeverse.io](mailto:support@treeverse.io) to get a valid license token.  
+
+---
+
+##### License Has Expired
+```
+Error: license has expired. Please contact support immediately: invalid license found
+```
+```
+Error: license expired: invalid expiry date
+```
+<u>Solutions:</u>    
+    1. If recently renewed, ensure you've updated the license file with the new token.  
+    2. Contact [support@treeverse.io](mailto:support@treeverse.io) immediately for license renewal.  
+
+---
+
+##### License File Not Found
+```
+Error: open /path/to/license/file/you/provided: no such file or directory
+```
+<u>Solutions:</u>  
+    1. Verify the exact path and filename in your `license.path` configuration.  
+    2. Check for typos in filename.  
+    3. Check that license file wasn't moved or removed after configuration.  
+    4. Check that the license file exists at the specified location.  
+    5. Ensure the file extension is included.  
+    6. Use absolute paths instead of relative paths.  
+
+---
+
+##### License File Permission Denied
+```
+Error: open /path/to/license/file/you/provided: permission denied
+```
+<u>Solutions:</u>  
+    1. Check file permissions and set appropriate permissions.  
+    2. Ensure lakeFS Enterprise process has permission to read the file and access parent directories.  
+
+---
+
+##### Installation ID Mismatch
+```
+Error: license belongs to installation ID X (current installation ID: Y)
+```
+<u>Solutions:</u>  
+    1. Check if you have the correct license file for this specific installation.  
+    2. Check that your installation ID didn't change.  
+    3. Contact [support@treeverse.io](mailto:support@treeverse.io) to get a correct new license.  
+
+---
+
+##### Malformed or Empty License Token
+```
+Error: parsing token: token is malformed: token contains an invalid number of segments
+```
+```
+Error: license has invalid expiry (no license?): invalid license found
+```
+<u>Solutions:</u>  
+    1. Verify the license file contains the complete license token.  
+    2. Remove any extra whitespace, newlines, or characters from the license file.  
+    3. Re-copy the license token from the original source.  
+    4. Ensure the file contains only the license token and nothing else.  
+
+---
+
+##### Feature Not Available
+```
+Error: feature not licensed - to enable, contact support@treeverse.io
+```
+<u>Solution:</u> Your current license doesn't include this feature. Contact [support@treeverse.io](mailto:support@treeverse.io) to upgrade your license.
+
+!!! tip "Need Help?"
+    If you encounter an issue not covered here, contact our support team at [support@treeverse.io](mailto:support@treeverse.io).
+---
+
 ### Add the lakeFS Helm Chart
 
 * Add the lakeFS Helm repository with `helm repo add lakefs https://charts.lakefs.io`
 * The chart contains a values.yaml file you can customize to suit your needs as you follow this guide. Use `helm show values lakefs/lakefs` to see the default values.
 * Configure `image.privateRegistry.secretToken` with the Docker Hub token you received.
+
+---
 
 ### Authentication Configuration
 
@@ -252,6 +431,8 @@ The examples below include example configuration for each of the supported SSO p
 
 See [additional examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc, saml, ldap, rbac, external AWS IAM).
 
+---
+
 ### Database Configuration
 
 In this section, you will learn how to configure lakeFS Enterprise to work with the KV Database you created (see [prerequisites](#prerequisites)).
@@ -303,9 +484,13 @@ The database configuration can be set directly via `lakefsConfig`, via K8S Secre
         type: postgres
     ```
 
+---
+
 ### Install the lakeFS Helm Chart
 
 After populating your values.yaml file with the relevant configuration, in the desired K8S namespace run `helm install lakefs lakefs/lakefs -f values.yaml`
+
+---
 
 ### Access the lakeFS UI
 
