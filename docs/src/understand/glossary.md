@@ -69,6 +69,7 @@ lakeFS merge command, similar to the Git merge functionality, allows you to merg
 ## Object Metadata
 
 In lakeFS, each object can have two types of metadata:
+
 * **System metadata**: Automatically captured attributes such as object path, size, last modified time, and the committer who made the change.
 * **User-defined metadata**: Custom key-value pairs (e.g., labels, annotations, tags) added during data ingestion, processing, or curation to
 enrich context.
