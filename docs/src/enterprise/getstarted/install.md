@@ -45,83 +45,68 @@ Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-ent
 
 ### lakeFS Enterprise License
 
-!!! warning
-    Working with lakeFS Enterprise requires a valid license.
+**Using lakeFS Enterprise requires a valid license.** This license is a JSON Web Token (JWT) that provides access to the 
+lakeFS Enterprise server and paid features. A license is tied to a specific installation via an installation ID, and to 
+a specific organization via an organization ID.
 
-??? info "Overview"
-    - lakeFS Enterprise requires a valid license to run.
-    - The license is a JSON Web Token (JWT) that provides access to the lakeFS Enterprise server and paid features.
-    - A license is tied to a specific installation via an installation ID, and to a specific organization via an organization ID.
+<br>
+
+#### **Licensed Features**
+The following lakeFS Enterprise features must be included in the lakeFS Enterprise license in order to be available:
+
+<u>Authentication & Authorization</u>
+
+- [SSO (Single Sign-On)](../../security/sso.md)
+- [RBAC (Role-Based Access Control)](../../security/rbac.md)
+- [SCIM (System for Cross-domain Identity Management)](../../howto/scim.md)
+- [IAM (Identity and Access Management) Role Authentication](../../security/external-principals-aws.md)
+
+<u>Advanced Functionality</u>
+
+- [Mount](../../reference/mount.md)
+- [Metadata Search](https://info.lakefs.io/metadata-search)
+- [MSB (Multiple Storage Backends)](../../howto/multiple-storage-backends.md)
+- [Transactional Mirroring](../../howto/mirroring.md)
+- [Sparkless GC (Garbage Collection)](../../howto/garbage-collection/standalone-gc.md)
+
+!!! warning 
+    Without a license for these features, they will be disabled, and any attempt to access them will result in a 'feature not licensed' error.
+
+<br>
 
 #### **License Configuration in lakeFS Enterprise**
 
-1. **Contact Support for a License**  
-📧 **Email**: [support@treeverse.io](mailto:support@treeverse.io)
+1. <u>Contact Support for a License</u>  
+📧 Email: [support@treeverse.io](mailto:support@treeverse.io)
 
-2. **Receive Your License Token**  
+2. <u>Receive Your License Token</u>  
 You will receive a license token that contains:  
-&nbsp;- Organization ID  
-&nbsp;- Installation ID  
-&nbsp;- Issue date  
-&nbsp;- Expiry date  
-&nbsp;- Enabled features  
-&nbsp;- Feature limitations  
+    - Organization ID  
+    - Installation ID  
+    - Issue date  
+    - Expiry date  
+    - Enabled features  
+    - Feature limitations  
 
-3. **Configure lakeFS Enterprise Server**  
-   &nbsp;1. Save the license token to a file.  
-   &nbsp;2. Provide the file path in the lakeFS Enterprise configuration file:
+3. <u>Configure lakeFS Enterprise Server</u>  
+    1. Save the license token to a file.  
+    2. Provide the file path in the lakeFS Enterprise configuration file:
 
       ```yaml
       license:
         path: "/path/to/your/license.txt"
       ```
 
-      > **Note**: Instead of configuring the license token path via the lakeFS Enterprise configuration file, you can set it via the environment variable: `LAKEFS_LICENSE_PATH`.
+    !!! tip
+        Instead of configuring the license token path via the lakeFS Enterprise configuration file, you can set it via the environment variable: `LAKEFS_LICENSE_PATH`.
 
-??? info "Licensed Features"
-    The following lakeFS Enterprise features must be included in the lakeFS Enterprise license in order to be available:
-
-    **Authentication & Authorization**
-
-    - **[SSO (Single Sign-On)](../../security/sso.md)**
-    - **[RBAC (Role-Based Access Control)](../../security/rbac.md)**
-    - **[SCIM (System for Cross-domain Identity Management)](../../howto/scim.md)**
-    - **[IAM (Identity and Access Management) Role Authentication](../../security/external-principals-aws.md)**
-
-    **Advanced Functionality**
-
-    - **[Mount](../../reference/mount.md)**
-    - **[Metadata Search](https://info.lakefs.io/metadata-search)**
-    - **[MSB (Multiple Storage Backends)](../../howto/multiple-storage-backends.md)**
-    - **[Transactional Mirroring](../../howto/mirroring.md)**
-    - **[Sparkless GC (Garbage Collection)](../../howto/garbage-collection/standalone-gc.md)**
-
-    !!! warning 
-        Without a license for these features, they will be disabled, and any attempt to access them will result in a 'feature not licensed' error.
-
-??? info "License Monitoring & Updates"
-    **Updating Your License**
-
-    1. Replace the content of your license file with the new license token.  
-    2. lakeFS Enterprise will automatically detect and reload the new license within 1 minute.  
-    
-    !!! warning
-        You cannot change the file path itself to point to a new file while the server is running.
-
-    **Automatic Monitoring**
-
-    - **Validation and Expiry Check**: Occurs periodically to verify license validity and expiry.
-    - **File Monitoring**: The server checks periodically to detect license file changes so that when the license token gets updated in the file, there is no need to restart the server and the license updates automatically.
-    
-
-??? info "Reading License Token via API"
-
+??? tip "Reading a Currently Installed License Token via API"    
     **Request:**
     ```bash
     GET https://your-lakefs-server/api/v1/license
     ```
 
-    **Response:**  
+    **Response:**
     ```json
     {
       "token": "eyJhbGciOiJSUzI1NiIs..."
@@ -130,97 +115,115 @@ You will receive a license token that contains:
 
     > **Note**: The token can be decoded using any JWT decoding tool to view the license information.
 
-??? question "Troubleshooting"
-    - **Server Won't Start**
-    ```
-    Error: no valid license found for this lakeFS Enterprise Server
-    ```
-    **Solution:** Ensure you have configured the `license.path` in the lakeFS Enterprise configuration file or environment variables.
-    
-    ---
+<br>
 
-    - **License Signature Verification Failed**
-    ```
-    Error: token signature did not match any known public key: token signature is invalid: crypto/rsa
-    ```
-    **Solutions:**  
-    &nbsp;1. Re-download your license token from the original source.  
-    &nbsp;2. Verify the license file contains only the license token with no extra characters or line breaks.  
-    &nbsp;3. Contact [support@treeverse.io](mailto:support@treeverse.io) to get a valid license token.  
+#### **License Monitoring & Updates**
+<u>Updating Your License</u>
 
-    ---
+1. Replace the content of your license file with the new license token.  
+2. lakeFS Enterprise will automatically detect and reload the new license within 1 minute.  
 
-    - **License Has Expired**
-    ```
-    Error: license has expired. Please contact support immediately: invalid license found
-    ```
-    ```
-    Error: license expired: invalid expiry date
-    ```
-    **Solutions:**  
-    &nbsp;1. If recently renewed, ensure you've updated the license file with the new token.  
-    &nbsp;2. Contact [support@treeverse.io](mailto:support@treeverse.io) immediately for license renewal.  
+!!! warning
+    You cannot change the file path itself to point to a new file while the server is running.
 
-    ---
+<u>Automatic Monitoring</u>
 
-    - **License File Not Found**
-    ```
-    Error: open /path/to/license/file/you/provided: no such file or directory
-    ```
-    **Solutions:**  
-    &nbsp;1. Verify the exact path and filename in your `license.path` configuration.  
-    &nbsp;2. Check for typos in filename.  
-    &nbsp;3. Check that license file wasn't moved or removed after configuration.  
-    &nbsp;4. Check that the license file exists at the specified location.  
-    &nbsp;5. Ensure the file extension is included.  
-    &nbsp;6. Use absolute paths instead of relative paths.  
+- **Validation and Expiry Check:** Occurs periodically to verify license validity and expiry.
+- **File Monitoring:** The server checks periodically to detect license file changes so that when the license token gets updated in the file, there is no need to restart the server and the license updates automatically.
 
-    ---
+<br>
 
-    - **License File Permission Denied**
-    ```
-    Error: open /path/to/license/file/you/provided: permission denied
-    ```
-    **Solutions:**  
-    &nbsp;1. Check file permissions and set appropriate permissions.  
-    &nbsp;2. Ensure lakeFS Enterprise process has permission to read the file and access parent directories.  
+#### **Troubleshooting**
+##### Server Won't Start
+```
+Error: no valid license found for this lakeFS Enterprise Server
+```
+<u>Solution:</u> Ensure you have configured the `license.path` in the lakeFS Enterprise configuration file or environment variables.
 
-    ---
+---
 
-    - **Installation ID Mismatch**
-    ```
-    Error: license belongs to installation ID X (current installation ID: Y)
-    ```
-    **Solutions:**  
-    &nbsp;1. Check if you have the correct license file for this specific installation.  
-    &nbsp;2. Check that your installation ID didn't change.  
-    &nbsp;3. Contact [support@treeverse.io](mailto:support@treeverse.io) to get a correct new license.  
+##### License Signature Verification Failed
+```
+Error: token signature did not match any known public key: token signature is invalid: crypto/rsa
+```
+<u>Solutions:</u>  
+    1. Re-download your license token from the original source.  
+    2. Verify the license file contains only the license token with no extra characters or line breaks.  
+    3. Contact [support@treeverse.io](mailto:support@treeverse.io) to get a valid license token.  
 
-    ---
+---
 
-    - **Malformed or Empty License Token**
-    ```
-    Error: parsing token: token is malformed: token contains an invalid number of segments
-    ```
-    ```
-    Error: license has invalid expiry (no license?): invalid license found
-    ```
-    **Solutions:**  
-    &nbsp;1. Verify the license file contains the complete license token.  
-    &nbsp;2. Remove any extra whitespace, newlines, or characters from the license file.  
-    &nbsp;3. Re-copy the license token from the original source.  
-    &nbsp;4. Ensure the file contains only the license token and nothing else.  
+##### License Has Expired
+```
+Error: license has expired. Please contact support immediately: invalid license found
+```
+```
+Error: license expired: invalid expiry date
+```
+<u>Solutions:</u>    
+    1. If recently renewed, ensure you've updated the license file with the new token.  
+    2. Contact [support@treeverse.io](mailto:support@treeverse.io) immediately for license renewal.  
 
-    ---
+---
 
-    - **Feature Not Available**
-    ```
-    Error: feature not licensed - to enable, contact support@treeverse.io
-    ```
-    **Solution:** Your current license doesn't include this feature. Contact [support@treeverse.io](mailto:support@treeverse.io) to upgrade your license.
+##### License File Not Found
+```
+Error: open /path/to/license/file/you/provided: no such file or directory
+```
+<u>Solutions:</u>  
+    1. Verify the exact path and filename in your `license.path` configuration.  
+    2. Check for typos in filename.  
+    3. Check that license file wasn't moved or removed after configuration.  
+    4. Check that the license file exists at the specified location.  
+    5. Ensure the file extension is included.  
+    6. Use absolute paths instead of relative paths.  
 
-    !!! tip "Need Help?"
-        If you encounter an issue not covered here, contact our support team at [support@treeverse.io](mailto:support@treeverse.io).
+---
+
+##### License File Permission Denied
+```
+Error: open /path/to/license/file/you/provided: permission denied
+```
+<u>Solutions:</u>  
+    1. Check file permissions and set appropriate permissions.  
+    2. Ensure lakeFS Enterprise process has permission to read the file and access parent directories.  
+
+---
+
+##### Installation ID Mismatch
+```
+Error: license belongs to installation ID X (current installation ID: Y)
+```
+<u>Solutions:</u>  
+    1. Check if you have the correct license file for this specific installation.  
+    2. Check that your installation ID didn't change.  
+    3. Contact [support@treeverse.io](mailto:support@treeverse.io) to get a correct new license.  
+
+---
+
+##### Malformed or Empty License Token
+```
+Error: parsing token: token is malformed: token contains an invalid number of segments
+```
+```
+Error: license has invalid expiry (no license?): invalid license found
+```
+<u>Solutions:</u>  
+    1. Verify the license file contains the complete license token.  
+    2. Remove any extra whitespace, newlines, or characters from the license file.  
+    3. Re-copy the license token from the original source.  
+    4. Ensure the file contains only the license token and nothing else.  
+
+---
+
+##### Feature Not Available
+```
+Error: feature not licensed - to enable, contact support@treeverse.io
+```
+<u>Solution:</u> Your current license doesn't include this feature. Contact [support@treeverse.io](mailto:support@treeverse.io) to upgrade your license.
+
+!!! tip "Need Help?"
+    If you encounter an issue not covered here, contact our support team at [support@treeverse.io](mailto:support@treeverse.io).
 ---
 
 ### Add the lakeFS Helm Chart
