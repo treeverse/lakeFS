@@ -124,7 +124,8 @@ The Metadata Search service requires:
 * **Metadata-specific settings**: to control how metadata is captured and which repositories and branches are searchable.
 
 **Metadata Settings**
-* `metadata_settings.since_epoch` `(string : "")`- ISO 8601 timestamp (e.g., "2024-01-01T00:00:00Z") that sets the earliest
+
+* `metadata_settings.since_epoch` `(string : "")`- ISO 8601 timestamp (e.g., `2ș24-01-01T00:00:00Z`) that sets the earliest
 point in time from which to process commits for metadata extraction. If omitted, metadata will be captured from the time 
 the branch was created.
 * `metadata_settings.max_commits` `(int : 0)` - The maximum number of commits to process per searchable branch.
@@ -157,7 +158,7 @@ search should be enabled. You can specify full branch names or use branch prefix
               - "dev"
             "example-repo-2":
               - "main"
-              - "feature-*"  
+              - "feature-*"
         ```
 
 ## How to Search by Metadata
