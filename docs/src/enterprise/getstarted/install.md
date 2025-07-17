@@ -128,8 +128,8 @@ You will receive a license token that contains:
 
 <u>Automatic Monitoring</u>
 
-- **Validation and Expiry Check:** Occurs periodically to verify license validity and expiry.
-- **File Monitoring:** The server checks periodically to detect license file changes so that when the license token gets updated in the file, there is no need to restart the server and the license updates automatically.
+- <u>Validation and Expiry Check:</u> Occurs periodically to verify license validity and expiry.
+- <u>File Monitoring:</u> The server checks periodically to detect license file changes so that when the license token gets updated in the file, there is no need to restart the server and the license updates automatically.
 
 <br>
 
