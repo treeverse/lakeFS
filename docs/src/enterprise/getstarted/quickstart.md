@@ -42,7 +42,7 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 3. With the token you've been granted, login locally to Docker Hub with `docker login -u externallakefs -p <TOKEN>`.
 
 <br>
-The quickstart docker-compose files below create a lakeFS server that's connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore) and spin up the following containers:
+The quickstart docker-compose file below creates a lakeFS server that's connected to a [local blockstore](../../howto/deploy/onprem.md#local-blockstore) and spin up the following containers:
 
 * lakeFS Enterprise
 * Postgres: used by lakeFS as a KV store
@@ -157,7 +157,6 @@ You can choose from the following options:
           - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET}
           - LAKEFS_AUTH_PROVIDERS_OIDC_CALLBACK_BASE_URL=http://localhost:8000
           - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
-          - LAKEFS_ENTERPRISE_LICENSE_SERVER_URL=https://license.lakefs.io
           - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS}
           - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
           - LAKEFS_DATABASE_TYPE=postgres

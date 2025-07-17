@@ -34,7 +34,6 @@ To migrate from fluffy to lakeFS Enterprise, follow the steps below:
 
 ## Configuration Changes
 
-
 ### Authentication configuration
 
 Most Fluffy `auth.*` settings migrate directly to lakeFS Enterprise with the same structure. Below are the differences between the configurations.
@@ -355,13 +354,47 @@ If you're overriding the image in your values.yaml, update it to use lakeFS Ente
 ```yaml
 image:
   repository: treeverse/lakefs-enterprise
-  tag: (TODO: specify the version tag, e.g., 1.5.0)@ItamarYuran
+  tag: 1.6.0
   privateRegistry:
     enabled: true
     secretToken: <your-dockerhub-token>
 ```
 
 **Note**: If you're not overriding the image, the chart will automatically use the correct Enterprise image.
+
+#### *Step 3.5: License Configuration
+
+!!! note
+    You can proceed without this step at the moment. However, licensing enforcement will be introduced soon.
+    Contact [support](mailto:support@treeverse.io) to receive your installation license.
+
+lakeFS Enterprise requires a valid license to work.
+In the helm chart the license is provided as a JWT token either from an existing secret or explicitly.
+The following demonstrates how to configure the license in the `values` file:
+
+=== "License with token provided in secrets"
+
+    ```yaml
+    enterprise:
+      enabled: true
+
+    secrets:
+    licenseContents: <Your licese JWT token>
+    ```
+
+=== "License with token provided from existing secret"
+
+    ```yaml
+    enterprise:
+      enabled: true
+
+    # Name of existing secret to use
+    existingSecret: <Name of existing secret>
+
+    secretKeys:
+    # Use to fetch license token from an existing secret:
+    licenseContentsKey: <Name of license contents key from existing secret>
+    ```
 
 #### Step 4: Migrate Your Authentication Configuration
 
