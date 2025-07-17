@@ -11,7 +11,7 @@ status: enterprise
 
 !!! tip
     lakeFS Metadata search is currently in private preview for [lakeFS Enterprise](../../enterprise/index.md) customers.
-    [Contact us](https://lakefs.io/contact-sales/) to get started!
+    [Contact us](https://lakefs.io/lp/metadata-search/) to get started!
 
 ## Overview
 
@@ -109,7 +109,7 @@ This section assumes that you are already using lakeFS [object metadata](../../u
 lakeFS Metadata Search runs as a separate service that integrates with your lakeFS server.  
 
 If you are self-hosting lakeFS Enterprise:
-1. [Contact us](https://lakefs.io/contact-sales/) to enable the feature.  
+1. [Contact us](https://lakefs.io/lp/metadata-search/) to enable the feature.  
 2. Add the configuration below to your Helm values file.
 3. Install or upgrade the Helm chart with the updated configuration.
 
