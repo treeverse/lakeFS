@@ -109,11 +109,13 @@ This section assumes that you are already using lakeFS [object metadata](../../u
 lakeFS Metadata Search runs as a separate service that integrates with your lakeFS server.  
 
 If you are self-hosting lakeFS Enterprise:
+
 1. [Contact us](https://lakefs.io/lp/metadata-search/) to enable the feature.  
 2. Add the configuration below to your Helm values file.
 3. Install or upgrade the Helm chart with the updated configuration.
 
 If you are using lakeFS cloud:
+
 Contact us to enable the feature. We’ll request the information included in the sample configuration below.
 
 #### Configuration Reference
@@ -129,9 +131,7 @@ The Metadata Search service requires:
 point in time from which to process commits for metadata extraction. If omitted, metadata will be captured from the time 
 the branch was created.
 * `metadata_settings.max_commits` `(int : 0)` - The maximum number of commits to process per searchable branch.
-  Uses 0 by default that disables the limit. 
-* only metadata from the time the service is enabled will be captured. Note: Setting this to a very early date may 
-  increase processing time.
+  Uses 0 by default that disables the limit.
 * `metadata_settings.repositories` `(map[string]string[] : {)` - A mapping of repositories and the branches in each where metadata 
 search should be enabled. You can specify full branch names or use branch prefixes for flexibility.
 
