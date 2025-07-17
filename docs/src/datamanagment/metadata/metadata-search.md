@@ -73,18 +73,17 @@ Because object metadata tables are versioned by lakeFS, they reflect the current
 at most one row per object, ensuring that the number of records matches the number of objects present on that branch, 
 keeping performance consistent and predictable. 
 
-| Column name        | Required| Data Type           | Description                                                                                                                                          |
-|--------------------|---------|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| repository         | yes     | string              | The name of the repository where the object is **stored**.                                                                                               |
-| path               | yes     | string              | The unique path identifying the object within the repository.                                                                                        | 
-| commit_id          | yes     | string              | The **latest commit ID** where the object was added or modified.                                                                                     |
-| size               | yes     | Long                | The object's size in bytes.                                                                                                                          |
-| last_modified_date | yes     | Timestamp           | The time the object was last modified.                                                                                                                   |
-| etag               | yes     | string              | The object’s ETag (content hash). This reflects changes to the object's content only, not its metadata.                   |
-| user_metadata      | no      | Map<string, string> | User-defined metadata (e.g., annotations, tags). If none exists, an empty map is stored. |
-| committer          | yes     | string              | The user who committed the object’s latest change.                                                                                                     |
-| content_type       | no      | string              | The MIME type of the object (e.g., `application/json`, `image/png`).                                                                                                                                                     |
-| creation_date      | yes     | Timestamp           | The original creation timestamp of the object in the repository.                                                                                                                             |
+| Column name   | Required| Data Type           | Description                                                                                                                                          |
+|---------------|---------|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| repository    | yes     | string              | The name of the repository where the object is **stored**.                                                                                               |
+| path          | yes     | string              | The unique path identifying the object within the repository.                                                                                        | 
+| commit_id     | yes     | string              | The **latest commit ID** where the object was added or modified.                                                                                     |
+| size          | yes     | Long                | The object's size in bytes.                                                                                                                          |
+| last_modified | yes     | Timestamp           | The time the object was last modified.                                                                                                                   |
+| etag          | yes     | string              | The object’s ETag (content hash). This reflects changes to the object's content only, not its metadata.                   |
+| user_metadata | no      | Map<string, string> | User-defined metadata (e.g., annotations, tags). If none exists, an empty map is stored. |
+| committer     | yes     | string              | The user who committed the object’s latest change.                                                                                                     |
+| content_type  | no      | string              | The MIME type of the object (e.g., `application/json`, `image/png`).                                                                                                                                                     |
 
 !!! info
     lakeFS object metadata tables are eventually consistent, which means it may take up to a few minutes for newly committed 
@@ -105,13 +104,61 @@ keeping performance consistent and predictable.
 
 This section assumes that you are already using lakeFS [object metadata](../../understand/glossary.md#object-metadata). 
 
-## Configuring Metadata Search
+## Configuration
 
-TODO
-* metadata server configurations
-  * lakeFS server
-  * Searchable repos and branches
-* Iceberg catalog configurations?
+lakeFS Metadata Search runs as a separate service that integrates with your lakeFS server.  
+
+If you are self-hosting lakeFS Enterprise:
+1. [Contact us](https://lakefs.io/contact-sales/) to enable the feature.  
+2. Add the configuration below to your Helm values file.
+3. Install or upgrade the Helm chart with the updated configuration.
+
+If you are using lakeFS cloud:
+Contact us to enable the feature. We’ll request the information included in the sample configuration below.
+
+### Configuration Reference
+
+The Metadata Search service requires:
+
+* **lakeFS server connection settings**: so the service can communicate with your lakeFS instance.
+* **Metadata-specific settings**: to control how metadata is captured and which repositories and branches are searchable.
+
+* `metadata_settings.since_epoch` `(int : ?)`- ISO 8601 timestamp indicating the earliest time to process commits for metadata.
+  If omitted, only metadata from the time the service is enabled will be captured. 
+!!! warn
+  Setting this to a very early date may increase processing time. 
+* `metadata_settings.repositories` `(string : "")` - A mapping of repositories and the branches in each where metadata 
+search should be enabled. You can specify full branch names or use branch prefixes for flexibility.
+
+!!! note
+    Metadata search is disabled by default. You must explicitly configure which repositories and branches to include.
+
+!!! tip
+    Use branch name prefixes (e.g., "feature-*") to reduce the need for manual updates when new branches are added.
+
+### Sample Configuration
+
+    !!! example
+        ```yaml
+        # lakeFS server configurations
+        lakefs:
+          endpoint: "https://example.lakefs.io"
+          access_key_id: "AKIAIOSFOLEXAMPLE"
+          secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        metadata_settings:
+          # The timestamp (ISO 8601 format) from which to start processing commits.
+          # If null, processes all commits from the beginning of time.
+          since_epoch: "2024-01-01T00:00:00Z"
+          # Repositories and branches to track for metadata export
+          # The key is the repository name, and the value is a list of branch names.
+          repositories:
+            "example-repo-1":
+              - "main"
+              - "dev"
+            "example-repo-2":
+              - "main"
+              - "feature-*"  
+        ```
 
 ## How to Search by Metadata
 
