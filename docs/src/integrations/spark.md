@@ -542,6 +542,7 @@ For example, to configure only `example-repo` to use lakeFS, set the following c
             <value>true</value>
         </property>
     </configuration>
+    ```
 
 === "EMR"
     Use the below configuration when creating the cluster. You may delete any app configuration that is not suitable for your use case:
