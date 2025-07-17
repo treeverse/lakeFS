@@ -49,19 +49,17 @@ Access to configure your SSO IdP [supported by lakeFS Enterprise][lakefs-sso-ent
 lakeFS Enterprise server and paid features. A license is tied to a specific installation via an installation ID, and to 
 a specific organization via an organization ID.
 
-<br>
-
-#### **Licensed Features**
+#### Licensed Features
 The following lakeFS Enterprise features must be included in the lakeFS Enterprise license in order to be available:
 
-<u>Authentication & Authorization</u>
+##### Authentication & Authorization
 
 - [SSO (Single Sign-On)](../../security/sso.md)
 - [RBAC (Role-Based Access Control)](../../security/rbac.md)
 - [SCIM (System for Cross-domain Identity Management)](../../howto/scim.md)
 - [IAM (Identity and Access Management) Role Authentication](../../security/external-principals-aws.md)
 
-<u>Advanced Functionality</u>
+##### Advanced Functionality
 
 - [Mount](../../reference/mount.md)
 - [Metadata Search](https://info.lakefs.io/metadata-search)
@@ -72,9 +70,7 @@ The following lakeFS Enterprise features must be included in the lakeFS Enterpri
 !!! warning 
     Without a license for these features, they will be disabled, and any attempt to access them will result in a 'feature not licensed' error.
 
-<br>
-
-#### **License Configuration in lakeFS Enterprise**
+#### License Configuration in lakeFS Enterprise
 
 1. <u>Contact Support for a License</u>  
 📧 Email: [support@treeverse.io](mailto:support@treeverse.io)
@@ -91,7 +87,6 @@ You will receive a license token that contains:
 3. <u>Configure lakeFS Enterprise Server</u>  
     1. Save the license token to a file.  
     2. Provide the file path in the lakeFS Enterprise configuration file:
-
       ```yaml
       license:
         path: "/path/to/your/license.txt"
@@ -113,12 +108,10 @@ You will receive a license token that contains:
     }
     ```
 
-    > **Note**: The token can be decoded using any JWT decoding tool to view the license information.
+    The returned token can be decoded using any JWT decoding tool to view the license information.
 
-<br>
-
-#### **License Monitoring & Updates**
-<u>Updating Your License</u>
+#### License Monitoring & Updates
+##### Updating Your License
 
 1. Replace the content of your license file with the new license token.  
 2. lakeFS Enterprise will automatically detect and reload the new license within 1 minute.  
@@ -126,14 +119,12 @@ You will receive a license token that contains:
 !!! warning
     You cannot change the file path itself to point to a new file while the server is running.
 
-<u>Automatic Monitoring</u>
+##### Automatic Monitoring
 
 - <u>Validation and Expiry Check:</u> Occurs periodically to verify license validity and expiry.
 - <u>File Monitoring:</u> The server checks periodically to detect license file changes so that when the license token gets updated in the file, there is no need to restart the server and the license updates automatically.
 
-<br>
-
-#### **Troubleshooting**
+#### Troubleshooting
 ##### Server Won't Start
 ```
 Error: no valid license found for this lakeFS Enterprise Server
