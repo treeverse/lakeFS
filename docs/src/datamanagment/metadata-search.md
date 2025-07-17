@@ -25,7 +25,7 @@ With Metadata Search, you can query object metadataboth:
 * **User-defined metadata**: Custom labels, annotations, or tags stored as lakeFS object metadata — typically added during
 ingestion, processing, or curation.
 
-![metadata search](../assets/img/mds/mds_img.svg)
+![metadata search](../assets/img/mds/mds_diagram.svg)
 
 To enable simple and scalable search, lakeFS exposes object metadata as versioned Iceberg tables, fully compatible with
 clients like DuckDB, PyIceberg, Spark, Trino, and others - enabling fast, expressive queries across any lakeFS version. 
@@ -56,8 +56,8 @@ Once you configure which repositories and branches should be searchable (see [Co
 * Creates a metadata repository for each tracked data repo, following the naming pattern: `<repo>-metadata`. 
 * Mirrors searchable branches from the data repo into the corresponding metadata repo. For example, if `dev` is searchable
 in `my-repo`, lakeFS creates `dev` in `my-repo-metadata`.
-* Generates Iceberg tables on each metadata branch under the location:
-`<repository_id>-metadata.<branch>.system.object_metadata`. These tables hold the latest object metadata, are versioned 
+* Generates Iceberg tables on each metadata branch in the metadata repository, under the location:
+`<repo>-metadata.<branch>.system.object_metadata`. These tables hold the latest object metadata, are versioned 
 by lakeFS, and optimized for efficient querying.
 * Runs a background processing pipeline that keeps these tables [eventually consistent](#consistency-) with changes made to the branch.
 
