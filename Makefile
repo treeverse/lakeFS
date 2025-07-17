@@ -88,7 +88,7 @@ docs/src/assets/js/authorization.yml: api/authorization.yml
 docs: docs/src/assets/js/swagger.yml docs/src/assets/js/authorization.yml
 
 docs-serve: ### Serve local docs
-	cd docs; mkdocs serve --dev-addr 127.0.0.1:4000
+	$(DOCKER) run --rm -it -p 4000:4000 -v ./docs:/docs --entrypoint /bin/sh squidfunk/mkdocs-material:9 -c "cd /docs && pip install -r requirements-docs.txt && mkdocs serve --dev-addr=0.0.0.0:4000"
 
 gen-docs: ## Generate CLI docs automatically
 	$(GOCMD) run cmd/lakectl/main.go docs > docs/src/reference/cli.md
