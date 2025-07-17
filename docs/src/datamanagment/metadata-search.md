@@ -19,10 +19,10 @@ lakeFS Metadata Search makes large-scale data lakes easily searchable by [object
 while adding the power of versioning to search. This enables reproducible queries which are essential in collaborative 
 and ML-driven environments where data evolves constantly and metadata is key to making informed decisions. 
 
-With Metadata Search, you can query object metadataboth:
+With Metadata Search, you can query object metadata by both:
 
 * **System metadata**: Automatically captured properties such as object path, size, last modified time, and committer.
-* **User-defined metadata**: Custom labels, annotations, or tags stored as lakeFS object metadata — typically added during
+* **User-defined metadata**: Custom labels, annotations, or tags stored as lakeFS object metadata, typically added during
 ingestion, processing, or curation.
 
 ![metadata search](../assets/img/mds/mds_diagram.svg)
@@ -49,25 +49,27 @@ debug pipeline issues, and understand how data was created or modified - all wit
 ## How it Works
 
 lakeFS Metadata Search is built on top of [lakeFS Iceberg support](../integrations/iceberg.md#lakefs-iceberg-rest-catalog),
-and uses catalog-level system tables to manage and expose versioned object metadata for querying.
+leveraging catalog-level system tables to manage and expose versioned object metadata for querying.
 
-Once you configure which repositories and branches should be searchable (see [Configuration](#configuration)), lakeFS automatically:
+To use Metadata Search, you must explicitly configure which repositories and branches should be searchable (see 
+[Configuration](#configuration)). Once configured, lakeFS automatically:
 
-* Creates a metadata repository for each tracked data repo, following the naming pattern: `<repo>-metadata`. 
-* Mirrors searchable branches from the data repo into the corresponding metadata repo. For example, if `dev` is searchable
-in `my-repo`, lakeFS creates `dev` in `my-repo-metadata`.
-* Generates Iceberg tables on each metadata branch in the metadata repository, under the location:
-`<repo>-metadata.<branch>.system.object_metadata`. These tables hold the latest object metadata, are versioned 
-by lakeFS, and optimized for efficient querying.
-* Runs a background processing pipeline that keeps these tables [eventually consistent](#consistency-) with changes made to the branch.
+1. Creates a **metadata repository** for each selected **data repository**, following the naming convention: `<repo>-metadata`.
+2. Mirrors searchable branches from the data repository into the corresponding metadata repository. For example, a `dev`
+branch in `my-repo`, will have a corresponding `dev` branch in `my-repo-metadata`.
+3. Maintains a versioned Iceberg object metadata table on each mirrored branch in the metadata repository at:
+`<repo>-metadata.<branch>.system.object_metadata`. These tables store the latest metadata for each object and are optimized 
+for efficient querying.
+4. Continuously syncs metadata via a background processing pipeline that keeps the object metadata tables
+   [eventually consistent](#consistency-) with changes in the corresponding data repository branches.
 
-To search metadata, use the lakeFS Iceberg REST catalog, which provides standard compatibility with query engines like Trino,
-DuckDB, and Spark.
+To query object metadata, use the lakeFS Iceberg REST catalog, which offers full compatibility with standard query 
+engines like Trino, DuckDB, Spark, PyIceberg, and others.
 
 !!! info
-    You can use Metadata Search even if you’re not licensed for full lakeFS Iceberg support.
-    If you're already using another Iceberg REST catalog, you don’t need to switch — metadata search will still work using 
-    the lakeFS-managed catalog, which operates independently.
+    You can use Metadata Search even without a license for full Iceberg support in lakeFS.
+    The feature relies on the lakeFS-managed Iceberg REST catalog for querying object metadata, but it can work 
+    side-by-side with other catalog you use for managing other Iceberg tables. 
 
 ### Object Metadata Table Schema
 
@@ -90,8 +92,8 @@ branch. The table contains at most one row per object, ensuring that query perfo
 
 lakeFS object metadata tables are eventually consistent, which means it may take up to a few minutes for newly committed 
 objects to become searchable. Metadata becomes searchable **atomically** — either all object metadata from the commit 
-is available, or none of it is. Commits are processed in sequence; a child commit will not be processed until its parent 
-has been completed.  
+is available, or none of it is. Commits are processed sequentially: a child commit will only be processed after its parent
+has been fully ingested.
 
 !!! tip 
     To check whether the most recent state of your branch is available for metadata search queries, check if the following 
@@ -120,15 +122,16 @@ If you are using **lakeFS cloud**:
 [Contact us](https://lakefs.io/lp/metadata-search/) to enable the feature. We’ll request the information included in the 
 sample configuration below.
 
-#### Configuration Reference
-
 The Metadata Search service requires:
 
 * **lakeFS server connection settings**: so the service can communicate with your lakeFS instance.
 * **Metadata-specific settings**: to control how metadata is captured and which repositories and branches are searchable.
 
-**Metadata Settings**
+#### Configuration Reference
 
+* `lakefs.endpoint` `(string : "")`- the lakeFS server endpoint
+* `lakefs.access_key_id` `(string : "")`- a lakeFS access key 
+* `lakefs.secret_access_key` `(string : "")`- a lakeFS secret access key
 * `metadata_settings.since_epoch` `(string : "")`- ISO 8601 timestamp (e.g., `2ș24-01-01T00:00:00Z`) that sets the earliest
 point in time from which to process commits for metadata extraction. If omitted, metadata will be captured from the time 
 the branch was created.
@@ -165,22 +168,30 @@ search should be enabled. You can specify full branch names or use branch prefix
 
 ## How to Search by Metadata
 
-To search by object metadata in lakeFS, you query the Iceberg object metadata tables lakeFS creates and manages.
-
-Object metadata is stored in Iceberg table, meaning, you can query it using any Iceberg-compatible engine, including
-DuckDB, Trino, Spark, PyIceberg, or others.
+To search by object metadata in lakeFS, query the Iceberg `object_metadata` tables that lakeFS automatically creates and
+manages. Because metadata is stored as standard Iceberg tables, you can use any Iceberg-compatible engine, such as DuckDB,
+Trino, Spark, PyIceberg, or others.
 
 If you're using DuckDB, note the Iceberg REST Catalog [guide](../integrations/iceberg.md#relative-namespace-support) for 
 details on how to reference `object_metadata` tables.
 
-#### Search Steps
+!!! requirements 
+    Your Iceberg client must meet the [authorization requirements](../integrations/iceberg.md#authorization) of the lakeFS
+    Iceberg REST catalog. 
+    To perform metadata search queries, ensure users have access to the appropriate metadata repository (see 
+    [How it Works](#how-it-works)). 
 
-To run a metadata search query:
+#### Search Steps
+ 
 1. [Initialize](../integrations/iceberg.md#catalog-initialization-example-using-pyiceberg) lakeFS Iceberg catalog, and authenticate.
 2. Load the object metadata table that represents the reference you would like to query.
 3. Use SQL to search by system or user-defined metadata.
 
-Here’s an example using PyIceberg and DuckDB: 
+Here’s an example using PyIceberg and DuckDB:
+
+!!! requirements 
+    This requires duckdb to be installed. 
+
 ```python
 from pyiceberg.catalog import load_catalog
 from datetime import datetime, timedelta
@@ -202,7 +213,7 @@ query = f"""
 SELECT path   
 FROM object_metadata
 WHERE user_metadata['animal'] = 'cat' 
-  AND creation_date > TIMESTAMP '{one_week_ago}' 
+  AND last_modified > TIMESTAMP '{one_week_ago}' 
 """
 
 df = con.execute(query).df()
@@ -276,9 +287,9 @@ This section showcases how to use lakeFS Metadata Search to answer different typ
 For simplicity and readability, the examples are written in Trino SQL. If you're using another engine (e.g., DuckDB, 
 Spark, or PyIceberg), you may need to adjust the syntax accordingly.
 
-#### Object Annotation and Labeling
+<h4>Object Annotation and Labeling</h4> 
 
-##### Filter by Object Labels
+<h5>Filter by Object Labels</h5>
 
 The following example returns images labeled as dogs that are not in a sitting position:
 ```sql
@@ -290,7 +301,7 @@ WHERE path LIKE `%.jpg`
   AND user_metadata['position'] != 'sitting';
 ```
 
-##### Filter by Object Labels on past commit 
+<h5>Filter by Object Labels on past commit</h5>
 
 This example demonstrates how to write reproducible queries by referencing a specific lakeFS commit.
 It returns images labeled as dogs that are not sitting, based on the metadata state at that commit:
@@ -304,7 +315,7 @@ WHERE path LIKE `%.jpg`
   AND user_metadata['position'] != 'sitting';
 ```
 
-##### View Metadata from AI-Powered Annotators
+<h5>View Metadata from AI-Powered Annotators</h5>
 
 Assume that any object annotated by an AI-powered tool includes the object metadata key-value pair `source: autolabel` to 
 indicate its origin. The following example returns all such AI-annotated objects: 
@@ -317,9 +328,9 @@ FROM object_metadata
 WHERE user_metadata['source'] = 'autolabel';
 ```
 
-#### File Properties and Storage
+<h4>File Properties and Storage</h4>
 
-##### Filter by File Extension & Size
+<h5>Filter by File Extension & Size</h5>
 
 Find all `.png` files larger than 2MB.
 
@@ -332,7 +343,7 @@ WHERE path LIKE '%.png'
   AND size::INT > 2000000;
 ```
 
-#### Filter objects by addition Time
+<h5>Filter objects by addition Time</h5>
 
 This example finds all objects added in the last 7 days.
 
@@ -341,12 +352,12 @@ USE "repo-metadata.main.system";
 
 SELECT *
 FROM object_metadata
-WHERE creation_date >= current_timestamp - interval '7' day;
+WHERE last_modified >= current_timestamp - interval '7' day;
 ```
 
-#### Audit and Governance
+<h4>Audit and Governance</h4>
 
-##### Detect Errors in Sensitive Data Tagging
+<h5>Detect Errors in Sensitive Data Tagging</h5>
 
 Assume all objects under `customers/` must have user metadata `PII=true`. 
 This example returns objects where `PII=false`, or PII key is missing. 
