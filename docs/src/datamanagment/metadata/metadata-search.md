@@ -104,7 +104,7 @@ keeping performance consistent and predictable.
 
 This section assumes that you are already using lakeFS [object metadata](../../understand/glossary.md#object-metadata). 
 
-## Configuration
+### Configuration
 
 lakeFS Metadata Search runs as a separate service that integrates with your lakeFS server.  
 
@@ -116,41 +116,41 @@ If you are self-hosting lakeFS Enterprise:
 If you are using lakeFS cloud:
 Contact us to enable the feature. We’ll request the information included in the sample configuration below.
 
-### Configuration Reference
+#### Configuration Reference
 
 The Metadata Search service requires:
 
 * **lakeFS server connection settings**: so the service can communicate with your lakeFS instance.
 * **Metadata-specific settings**: to control how metadata is captured and which repositories and branches are searchable.
 
-* `metadata_settings.since_epoch` `(int : ?)`- ISO 8601 timestamp indicating the earliest time to process commits for metadata.
-  If omitted, only metadata from the time the service is enabled will be captured. 
-!!! warn
-  Setting this to a very early date may increase processing time. 
-* `metadata_settings.repositories` `(string : "")` - A mapping of repositories and the branches in each where metadata 
+**Metadata Settings**
+* `metadata_settings.since_epoch` `(string : "")`- ISO 8601 timestamp (e.g., "2024-01-01T00:00:00Z") that sets the earliest
+point in time from which to process commits for metadata extraction. If omitted, metadata will be captured from the time 
+the branch was created.
+* `metadata_settings.max_commits` `(int : 0)` - The maximum number of commits to process per searchable branch.
+  Uses 0 by default that disables the limit. 
+* only metadata from the time the service is enabled will be captured. Note: Setting this to a very early date may 
+  increase processing time.
+* `metadata_settings.repositories` `(map[string]string[] : {)` - A mapping of repositories and the branches in each where metadata 
 search should be enabled. You can specify full branch names or use branch prefixes for flexibility.
 
 !!! note
     Metadata search is disabled by default. You must explicitly configure which repositories and branches to include.
 
 !!! tip
-    Use branch name prefixes (e.g., "feature-*") to reduce the need for manual updates when new branches are added.
+    Use branch name prefixes (e.g., `feature-*`) to reduce the need for manual updates when new branches are added.
 
-### Sample Configuration
+#### Sample Configuration
 
     !!! example
         ```yaml
-        # lakeFS server configurations
         lakefs:
           endpoint: "https://example.lakefs.io"
           access_key_id: "AKIAIOSFOLEXAMPLE"
           secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
         metadata_settings:
-          # The timestamp (ISO 8601 format) from which to start processing commits.
-          # If null, processes all commits from the beginning of time.
           since_epoch: "2024-01-01T00:00:00Z"
-          # Repositories and branches to track for metadata export
-          # The key is the repository name, and the value is a list of branch names.
+          max_commits: 100
           repositories:
             "example-repo-1":
               - "main"
