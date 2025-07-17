@@ -25,7 +25,7 @@ With Metadata Search, you can query object metadataboth:
 * **User-defined metadata**: Custom labels, annotations, or tags stored as lakeFS object metadata — typically added during
 ingestion, processing, or curation.
 
-![metadata search](../assets/img/mds/mds_how_it_works.png)
+![metadata search](../assets/img/mds/mds_img.svg)
 
 To enable simple and scalable search, lakeFS exposes object metadata as versioned Iceberg tables, fully compatible with
 clients like DuckDB, PyIceberg, Spark, Trino, and others - enabling fast, expressive queries across any lakeFS version. 
