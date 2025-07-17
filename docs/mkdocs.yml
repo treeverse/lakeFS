@@ -214,7 +214,44 @@ nav:
       - Apache Airflow: integrations/airflow.md
       - Airbyte: integrations/airbyte.md
     - Dev & Tools:
-      - Python: integrations/python.md
+      - Python:
+        - Overview: integrations/python/index.md
+        - Getting Started: integrations/python/getting-started.md
+        - High-Level SDK:
+          - Overview: integrations/python/high-level-sdk/index.md
+          - Quickstart: integrations/python/high-level-sdk/quickstart.md
+          - Repositories: integrations/python/high-level-sdk/repositories.md
+          - Branches & Commits: integrations/python/high-level-sdk/branches-and-commits.md
+          - Objects & I/O: integrations/python/high-level-sdk/objects-and-io.md
+          - Imports & Exports: integrations/python/high-level-sdk/imports-and-exports.md
+          - Transactions: integrations/python/high-level-sdk/transactions.md
+          - Advanced Features: integrations/python/high-level-sdk/advanced.md
+        - Generated SDK:
+          - Overview: integrations/python/generated-sdk/index.md
+          - API Reference: integrations/python/generated-sdk/api-reference.md
+          - Examples: integrations/python/generated-sdk/examples.md
+          - Direct Access: integrations/python/generated-sdk/direct-access.md
+        - lakefs-spec:
+          - Overview: integrations/python/lakefs-spec/index.md
+          - Filesystem API: integrations/python/lakefs-spec/filesystem-api.md
+          - Integrations: integrations/python/lakefs-spec/integrations.md
+          - Transactions: integrations/python/lakefs-spec/transactions.md
+        - Boto3:
+          - Overview: integrations/python/boto3/index.md
+          - Configuration: integrations/python/boto3/configuration.md
+          - S3 Operations: integrations/python/boto3/s3-operations.md
+          - S3 Router: integrations/python/boto3/s3-router.md
+        - Tutorials:
+          - Overview: integrations/python/tutorials/index.md
+          - Data Science Workflow: integrations/python/tutorials/data-science-workflow.md
+          - ETL Pipeline: integrations/python/tutorials/etl-pipeline.md
+          - ML Experiment Tracking: integrations/python/tutorials/ml-experiment-tracking.md
+        - Reference:
+          - Overview: integrations/python/reference/index.md
+          - API Comparison: integrations/python/reference/api-comparison.md
+          - Best Practices: integrations/python/reference/best-practices.md
+          - Troubleshooting: integrations/python/reference/troubleshooting.md
+          - Changelog: integrations/python/reference/changelog.md
       - AWS CLI: integrations/aws_cli.md
       - Git: integrations/git.md
       - R: integrations/r.md
