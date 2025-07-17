@@ -143,8 +143,6 @@ nav:
     - Work with Data locally: howto/local-checkouts.md
     - Sizing Guide: howto/sizing-guide.md
   - Data Management:
-    - Metadata:
-        - Metadata search: datamanagment/metadata/metadata-search.md
     - Git-Like Versioning:
       - Pull Requests: howto/pull-requests.md
       - Branch Protection: howto/protect-branches.md
@@ -165,6 +163,7 @@ nav:
       - Overview: howto/garbage-collection/gc.md
       - Managed Garbage Collection: howto/garbage-collection/managed-gc.md
       - Standalone Garbage Collection: howto/garbage-collection/standalone-gc.md
+    - Metadata search: datamanagment/metadata-search.md
     - Multiple Storage Backends: howto/multiple-storage-backends.md
     - Transactional Mirroring: howto/mirroring.md
     - Backup and Restore: howto/backup-and-restore.md
