@@ -143,23 +143,23 @@ search should be enabled. You can specify full branch names or use branch prefix
 
 #### Sample Configuration
 
-    !!! example
-        ```yaml
-        lakefs:
-          endpoint: "https://example.lakefs.io"
-          access_key_id: "AKIAIOSFOLEXAMPLE"
-          secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-        metadata_settings:
-          since_epoch: "2024-01-01T00:00:00Z"
-          max_commits: 100
-          repositories:
-            "example-repo-1":
-              - "main"
-              - "dev"
-            "example-repo-2":
-              - "main"
-              - "feature-*"
-        ```
+!!! example
+    ```yaml
+    lakefs:
+      endpoint: "https://example.lakefs.io"
+      access_key_id: "AKIAIOSFOLEXAMPLE"
+      secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+    metadata_settings:
+      since_epoch: "2024-01-01T00:00:00Z"
+      max_commits: 100
+      repositories:
+        "example-repo-1":
+          - "main"
+          - "dev"
+        "example-repo-2":
+          - "main"
+          - "feature-*"
+    ```
 
 ## How to Search by Metadata
 
