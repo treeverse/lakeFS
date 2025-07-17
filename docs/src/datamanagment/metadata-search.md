@@ -194,9 +194,6 @@ Here’s an example using PyIceberg and DuckDB:
 
 ```python
 from pyiceberg.catalog import load_catalog
-from datetime import datetime, timedelta
-
-one_week_ago = (datetime.now() - timedelta(weeks=1)).isoformat()
 
 # Initialize the catalog
 catalog = RestCatalog(name = "my_catalog", **{
@@ -213,7 +210,7 @@ query = f"""
 SELECT path   
 FROM object_metadata
 WHERE user_metadata['animal'] = 'cat' 
-  AND last_modified > TIMESTAMP '{one_week_ago}' 
+  AND last_modified > (now() - INTERVAL '20 days') 
 """
 
 df = con.execute(query).df()
