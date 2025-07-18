@@ -46,7 +46,11 @@ object GarbageCollection {
 
     val configMapper = new ConfigMapper(
       sc.broadcast(
-        HadoopUtils.getHadoopConfigurationValues(sc.hadoopConfiguration, "fs.", "lakefs.")
+        HadoopUtils.getHadoopConfigurationValues(sc.hadoopConfiguration,
+                                                 "fs.",
+                                                 "lakefs.",
+                                                 "google.cloud."
+                                                )
       )
     )
     // Read objects from data path (new repository structure)
@@ -65,7 +69,6 @@ object GarbageCollection {
       .withColumn("address", col("base_address"))
       .filter(!col("address").isin(excludeFromOldData: _*))
     dataDF = dataDF.union(oldDataDF).filter(col("last_modified") < before.getTime)
-
     dataDF
   }
 
@@ -210,7 +213,7 @@ object GarbageCollection {
 
         val storageNSForSdkClient = getStorageNSForSdkClient(apiClient: ApiClient, repo)
         val hcValues = spark.sparkContext.broadcast(
-          HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.")
+          HadoopUtils.getHadoopConfigurationValues(hc, "fs.", "lakefs.", "google.cloud.")
         )
         val configMapper = new ConfigMapper(hcValues)
         bulkRemove(configMapper, markedAddresses, storageNSForSdkClient, region, storageType)

@@ -7,9 +7,12 @@ import com.azure.storage.blob.batch.{BlobBatchClient, BlobBatchClientBuilder}
 import com.azure.storage.blob.{BlobServiceClient, BlobServiceClientBuilder}
 import com.azure.storage.common.StorageSharedKeyCredential
 import com.azure.storage.common.policy.RequestRetryOptions
+import com.google.auth.oauth2.ServiceAccountCredentials
+import com.google.cloud.storage.{Storage, StorageOptions}
 import io.treeverse.clients.StorageUtils.AzureBlob._
-import io.treeverse.clients.StorageUtils.{S3, StorageTypeAzure, StorageTypeS3}
+import io.treeverse.clients.StorageUtils.{S3, StorageTypeAzure, StorageTypeGCS, StorageTypeS3}
 
+import java.io.FileInputStream
 import java.net.URI
 
 trait StorageClient {}
@@ -77,6 +80,17 @@ object StorageClients {
     }
   }
 
+  // GCS Client is global and relies on given credentials; therefore, we don't need to pass the namespace to it
+  class GCS(config: ConfigMapper) extends StorageClient with Serializable {
+    private val credJson =
+      config.configuration.get("google.cloud.auth.service.account.json.keyfile")
+    @transient lazy val gcsClient: Storage = StorageOptions
+      .newBuilder()
+      .setCredentials(ServiceAccountCredentials.fromStream(new FileInputStream(credJson)))
+      .build()
+      .getService
+  }
+
   def apply(
       storageType: String,
       configMapper: ConfigMapper,
@@ -88,6 +102,8 @@ object StorageClients {
         new S3(storageNamespace, region, S3.S3NumRetries, configMapper)
       case StorageTypeAzure =>
         new Azure(configMapper, storageNamespace)
+      case StorageTypeGCS =>
+        new GCS(configMapper)
       case _ => throw new IllegalArgumentException("Invalid argument.")
     }
   }

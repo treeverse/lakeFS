@@ -15,8 +15,7 @@ import io.lakefs.clients.sdk.ConfigApi
 import io.lakefs.clients.sdk.model._
 import io.treeverse.clients.ApiClient.TIMEOUT_NOT_SET
 import io.treeverse.clients.StorageClientType.StorageClientType
-import io.treeverse.clients.StorageUtils.StorageTypeAzure
-import io.treeverse.clients.StorageUtils.StorageTypeS3
+import io.treeverse.clients.StorageUtils.{StorageTypeAzure, StorageTypeS3}
 
 import java.net.URI
 import java.time.Duration
