@@ -61,7 +61,7 @@ branch in data repository `my-repo`, will have a corresponding `dev` branch in `
 3. **Maintains a versioned Iceberg object metadata table** on each matching branch in the metadata repository at:
 `<repo>-metadata.<branch>.system.object_metadata`.
 4. **Continuously syncs metadata** via a background processing pipeline that keeps the object metadata tables
-   [eventually consistent](#consistency-) with changes in the corresponding data repository branches.
+   [eventually consistent](#consistency) with changes in the corresponding data repository branches.
 
 Once metadata tables are in place, you can run queries against them in two ways:
 
@@ -195,7 +195,7 @@ details on how to reference `object_metadata` tables.
 Here’s an example using PyIceberg and DuckDB:
 
 !!! requirements 
-    This requires duckdb to be installed. 
+    This requires duckdb to be [installed](https://duckdb.org/docs/installation/?version=stable&environment=python). 
 
 ```python
 from pyiceberg.catalog import load_catalog
@@ -234,7 +234,7 @@ instead of branch names.
 
 Querying metadata tables using a branch name, e.g., `repo-metadata.main.system.object_metadata` return results based on
 the state of the branch’s HEAD commit at the time of the query, assuming the metadata has already been ingested (within 
-[eventual consistency](#consistency-) constraints). However, because branch heads are mutable and advance with each new
+[eventual consistency](#consistency) constraints). However, because branch heads are mutable and advance with each new
 commit, the results of such queries can change over time.
 
 **Use commit IDs for stability**
@@ -249,7 +249,7 @@ always returns the same results, regardless of subsequent changes to the branch.
 2. Query the object metadata table using the following pattern: `<repo>-metadata.commit-<commit_id>.system.object_metadata`,
 or `my-repo-metadata.commit-c12.system.object_metadata` in our example. 
 
-This accesses the metadata corresponding to commit c12.
+This accesses the metadata corresponding to commit `c12`.
 
 !!! note
     Use the full commit SHA when querying by commit. Shortened commit IDs are not supported at this time.  
