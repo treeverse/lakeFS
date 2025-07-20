@@ -42,7 +42,7 @@ auth:
 ```
 
 !!! info
-    **lakeFS OSS** uses a single user: only the admin user created during initialization exists. When using Remote Authenticator with OSS, authentication is limited to this admin user. Successful authentication is only possible if the Remote Authenticator returns an `external_user_identifier` that matches the admin user created at setup.
+    **lakeFS OSS** uses a single user: only the admin user created during initialization exists. When using Remote Authenticator with OSS, authentication is limited to this admin user. Successful authentication is only possible if the Remote Authenticator returns an `external_user_identifier` that matches the admin user name created at setup.
 
     **lakeFS Enterprise** supports multiple users. With Remote Authenticator enabled, both existing and new users authenticated by the Remote Authenticator can log in to lakeFS and will be associated with the configured default user group (if specified). This allows organizations to manage access for multiple users and leverage their existing identity infrastructure.
 
