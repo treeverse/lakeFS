@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **path** | **str** |  | 
 **path_type** | **str** |  | 
 **size_bytes** | **int** | represents the size of the added/changed/deleted entry | [optional] 
+**right** | [**DiffObjectStat**](DiffObjectStat.md) |  | [optional] 
 
 ## Example
 

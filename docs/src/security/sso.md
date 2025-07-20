@@ -14,7 +14,7 @@ search:
 
 ## SSO for lakeFS Cloud
 
-lakeFS Cloud uses Auth0 for authentication and thus support the same identity providers as Auth0 including Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML, and Azure Active Directory.
+lakeFS Cloud uses Auth0 for authentication and thus supports the same identity providers as Auth0 including Active Directory/LDAP, ADFS, Azure Active Directory Native, Google Workspace, OpenID Connect, Okta, PingFederate, SAML, and Azure Active Directory.
 
 === "Okta"
 
@@ -131,268 +131,309 @@ lakeFS Cloud uses Auth0 for authentication and thus support the same identity pr
 
 ## SSO for lakeFS Enterprise
 
-Authentication in lakeFS Enterprise is handled by a secondary service which runs side-by-side with lakeFS. With a nod to Hogwarts and their security system, we've named this service _Fluffy_. Details for configuring the supported identity providers with Fluffy are shown below. In addition, please review the necessary [Helm configuration](#helm) to configure Fluffy.
+Starting from v1.63.0, authentication in lakeFS Enterprise is handled directly by the lakeFS Enterprise service. lakeFS Enterprise supports the following identity providers:
 
 * Active Directory Federation Services (AD FS) (using SAML)
 * OpenID Connect
 * LDAP
+* External AWS Authentication (using IAM)
 
-If you're using an authentication provider that is not listed please [contact us](https://lakefs.io/contact-us/) for further assistance.
+If you're using an authentication provider that is not listed, please [contact us](https://lakefs.io/contact-us/) for further assistance.
 
 === "Active Directory Federation Services (AD FS) (using SAML)"
 
     !!! note
-        AD FS integration uses certificates to sign & encrypt requests going out from Fluffy and decrypt incoming requests from AD FS server.
+        AD FS integration uses certificates to sign and encrypt requests going out from lakeFS Enterprise and decrypt incoming requests from AD FS server.
 
-    In order for Fluffy to work, the following values must be configured. Update (or override) the following attributes in the chart's `values.yaml` file.
-
-    1. Replace `fluffy.saml_rsa_public_cert` and `fluffy.saml_rsa_private_key` with real certificate values
-    2. Replace `fluffyConfig.auth.saml.idp_metadata_url` with the metadata URL of the AD FS provider (e.g `adfs-auth.company.com`)
-    3. Replace `fluffyConfig.auth.saml.external_user_id_claim_name` with the claim name representing user id name in AD FS
-    4. Replace `lakefs.company.com` with your lakeFS server URL.
-
-    If you'd like to generate the certificates using OpenSSL, you can take a look at the following example:
+    If you'd like to generate a self-signed certificates using OpenSSL:
 
     ```sh
-    openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.company.com" -
+    openssl req -x509 -newkey rsa:2048 -keyout myservice.key -out myservice.cert -days 365 -nodes -subj "/CN=lakefs.company.com"
     ```
-
-    lakeFS Server Configuration (Update in helm's `values.yaml` file):
+    In order for SAML authentication to work, configure the following values in your chart's `values.yaml` file:
 
     ```yaml
-    auth:
-    cookie_auth_verification:
-        auth_source: saml
-        friendly_name_claim_name: displayName
-        persist_friendly_name: true
-        external_user_id_claim_name: samName
-        default_initial_groups:
-        - "Developers"
-    logout_redirect_url: "https://lakefs.company.com/logout-saml"
-    encrypt:
-        secret_key: shared-secrey-key
-    ui_config:
-        login_url: "https://lakefs.company.com/sso/login-saml"
-        logout_url: "https://lakefs.company.com/sso/logout-saml"
-        login_cookie_names:
-        - internal_auth_session
-        - saml_auth_session
+    ingress:
+      enabled: true
+      ingressClassName: <class-name>
+      hosts:
+        - host: <lakefs.ingress.domain>
+          paths: 
+            - /
+
+    enterprise:
+      enabled: true
+      auth:
+        saml:
+          enabled: true
+          createCertificateSecret: true  # NEW: Auto-creates secret
+          certificate:
+            samlRsaPublicCert: |           # RENAMED: from saml_rsa_public_cert
+              -----BEGIN CERTIFICATE-----
+              ...
+              -----END CERTIFICATE-----
+            samlRsaPrivateKey: |           # RENAMED: from saml_rsa_private_key
+              -----BEGIN PRIVATE KEY-----
+              ...
+              -----END PRIVATE KEY-----
+
+    image:
+      privateRegistry:
+        enabled: true
+        secretToken: <dockerhub-token>
+
+    lakefsConfig: |
+      blockstore:
+        type: local
+      auth:
+        logout_redirect_url: https://<lakefs.ingress.domain> 
+        cookie_auth_verification:
+          auth_source: saml
+          # claim name to display user in the UI
+          friendly_name_claim_name: displayName
+          # claim name from IDP to use as the unique user name
+          external_user_id_claim_name: samName
+          default_initial_groups:
+            - "Developers"
+        providers:
+          saml:
+            post_login_redirect_url: https://<lakefs.ingress.domain>
+            sp_root_url: https://<lakefs.ingress.domain>
+            sp_sign_request: true 
+            # depends on IDP
+            sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+            # url to the metadata of the IDP
+            idp_metadata_url: "https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml"
+            # IDP SAML claims format default unspecified
+            idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
+            # depending on IDP setup, if CA certs are self signed and not trusted by a known CA
+            #idp_skip_verify_tls_cert: true
     ```
 
-    Fluffy Configuration (Update in helm's `values.yaml` file):
-
-    ```yaml
-    logging:
-    format: "json"
-    level: "INFO"
-    audit_log_level: "INFO"
-    output: "="
-    auth:  
-    encrypt:
-        secret_key: shared-secrey-key    
-    logout_redirect_url: https://lakefs.company.com
-    post_login_redirect_url: https://lakefs.company.com
-    saml:
-        enabled: true 
-        sp_root_url: https://lakefs.company.com
-        sp_x509_key_path: '/etc/saml_certs/rsa_saml_private.cert'
-        sp_x509_cert_path: '/etc/saml_certs/rsa_saml_public.pem'
-        sp_sign_request: true
-        sp_signature_method: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
-        idp_metadata_url: "https://adfs-auth.company.com/federationmetadata/2007-06/federationmetadata.xml"
-        # idp_authn_name_id_format: "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"
-        external_user_id_claim_name: samName
-        # idp_metadata_file_path: 
-        # idp_skip_verify_tls_cert: true
-    ```
-  
 === "OpenID Connect"
 
-    In order for Fluffy to work, the following values must be configured. Update (or override) the following attributes in the chart's `values.yaml` file.
-
-    1. Replace `lakefsConfig.friendly_name_claim_name` with the right claim name.
-    1. Replace `lakefsConfig.default_initial_groups` with desired claim name (See [pre-configured][rbac-preconfigured] groups for enterprise)
-    2. Replace `fluffyConfig.auth.logout_redirect_url` with your full OIDC logout URL (e.g `https://oidc-provider-url.com/logout/path`)
-    3. Replace `fluffyConfig.auth.oidc.url` with your OIDC provider URL (e.g `https://oidc-provider-url.com`)
-    4. Replace `fluffyConfig.auth.oidc.logout_endpoint_query_parameters` with parameters you'd like to pass to the OIDC provider for logout.
-    5. Replace `fluffyConfig.auth.oidc.client_id` and `fluffyConfig.auth.oidc.client_secret` with the client ID & secret for OIDC.
-    6. Replace `fluffyConfig.auth.oidc.logout_client_id_query_parameter` with the query parameter that represent the client_id, note that it should match the the key/query param that represents the client id and required by the specific OIDC provider.
-    7. Replace `lakefs.company.com` with the lakeFS server URL.
-
-    lakeFS Server Configuration (Update in helm's `values.yaml` file):
+    In order for OIDC to work, configure the following values in your chart's `values.yaml` file:
 
     ```yaml
-    # Important: make sure to include the rest of your lakeFS Configuration here!
-    auth:
-    encrypt:
-        secret_key: shared-secrey-key
-    oidc:
-        friendly_name_claim_name: "name"
-        persist_friendly_name: true
-        default_initial_groups: ["Developers"]
-    ui_config:
-        login_url: /oidc/login
-        logout_url: /oidc/logout
-        login_cookie_names:
-        - internal_auth_session
-        - oidc_auth_session
-    ```
+    ingress:
+      enabled: true
+      ingressClassName: <class-name>
+      hosts:
+        - host: <lakefs.ingress.domain>
+          paths: 
+            - /
 
-    Fluffy Configuration (Update in helm's `values.yaml` file):
+    enterprise:
+      enabled: true
+      auth:
+        oidc:
+          enabled: true
+          # secret given by the OIDC provider (e.g auth0, Okta, etc)
+          client_secret: <oidc-client-secret>
 
-    ```yaml
-    logging:
-    format: "json"
-    level: "INFO"
-    audit_log_level: "INFO"
-    output: "="
-    installation:
-    fixed_id: fluffy-authenticator
-    auth:
-    post_login_redirect_url: /
-    logout_redirect_url: https://oidc-provider-url.com/logout/url
-    oidc:
+    image:
+      privateRegistry:
         enabled: true
-        url: https://oidc-provider-url.com/
-        client_id: <oidc-client-id>
-        client_secret: <oidc-client-secret>
-        callback_base_url: https://lakefs.company.com
-        is_default_login: true
-        logout_client_id_query_parameter: client_id
-        logout_endpoint_query_parameters:
-        - returnTo 
-        - https://lakefs.company.com/oidc/login
-    encrypt:
-        secret_key: shared-secrey-key
+        secretToken: <dockerhub-token>
+
+    lakefsConfig: |
+      blockstore:
+        type: local
+      auth:
+        logout_redirect_url: https://oidc-provider-url.com/logout/example 
+        oidc:
+          friendly_name_claim_name: <some-oidc-provider-claim-name>
+          default_initial_groups: ["Developers"]
+        providers:
+          oidc:
+            post_login_redirect_url: /
+            url: https://oidc-provider-url.com/ 
+            client_id: <oidc-client-id>         
+            callback_base_url: https://<lakefs.ingress.domain>
+            # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
+            logout_client_id_query_parameter: client_id
+            # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
+            logout_endpoint_query_parameters:
+              - returnTo
+              - https://<lakefs.ingress.domain>/oidc/login
     ```
 
 === "LDAP"
 
-    Fluffy is incharge of providing LDAP authentication for lakeFS Enterprise. 
-    The authentication works by querying the LDAP server for user information and authenticating the user based on the provided credentials.
+    lakeFS Enterprise provides direct LDAP authentication by querying the LDAP server for user information and authenticating the user based on the provided credentials.
 
-    **Important:** An administrative bind user must be configured. It should have search permissions for the LDAP server that will be used to query the LDAP server for user information.
-
-    **For Helm:** set the following attributes in the Helm chart values, for lakeFS `lakefsConfig.*` and `fluffyConfig.*` for fluffy. 
-
-    **No Helm:** If not using Helm use the YAML below to directly update the configuration file for each service.
-
-    **lakeFS Configuration:**
-
-    1. Replace `auth.remote_authenticator.enabled` with `true`
-    2. Replace `auth.remote_authenticator.endpoint` with the fluffy authentication server URL combined with the `api/v1/ldap/login` suffix (e.g `http://lakefs.company.com/api/v1/ldap/login`)
-
-    **fluffy Configuration:**
-
-    See [Fluffy configuration][fluffy-configuration] reference.
-
-    1. Replace `auth.ldap.remote_authenticator.server_endpoint` with your LDAP server endpoint  (e.g `ldaps://ldap.ldap-address.com:636`)
-    2. Replace `auth.ldap.remote_authenticator.bind_dn` with the LDAP bind user/permissions to query your LDAP server.
-    3. Replace `auth.ldap.remote_authenticator.user_base_dn` with the user base to search users in.
-
-    **lakeFS Server Configuration file:**
-
-    `$lakefs run -c ./lakefs.yaml`
+    **Important:** An administrative bind user must be configured. It should have search permissions for the LDAP server.
 
     ```yaml
-    # Important: make sure to include the rest of your lakeFS Configuration here!
+    ingress:
+      enabled: true
+      ingressClassName: <class-name>
+      hosts:
+        - host: <lakefs.ingress.domain>
+          paths:
+            - /
 
-    auth:
-    remote_authenticator:
+    enterprise:
+      enabled: true
+      auth:
+        ldap:
+          enabled: true
+          bindPassword: <ldap bind password>
+
+    image:
+      privateRegistry:
         enabled: true
-        endpoint: http://<Fluffy URL>:<Fluffy http port>/api/v1/ldap/login
-        default_user_group: "Developers" # Value needs to correspond with an existing group in lakeFS
-    ui_config:
-        logout_url: /logout
-        login_cookie_names:
-        - internal_auth_session
+        secretToken: <dockerhub-token>
+
+    lakefsConfig: |
+      blockstore:
+        type: local
+      auth:
+        providers:
+          ldap:
+            server_endpoint: ldaps://ldap.company.com:636
+            bind_dn: uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com 
+            username_attribute: uid
+            user_base_dn: ou=Users,o=<org-id>,dc=<company>,dc=com  
+            user_filter: (objectClass=inetOrgPerson)
+            connection_timeout_seconds: 15
+            request_timeout_seconds: 7
+            # RBAC group for first time users
+            default_user_group: "Developers"
     ```
 
-    Fluffy Configuration file:
+    ### Troubleshooting LDAP issues
 
-    `$fluffy run -c ./fluffy.yaml`
+    #### Inspecting Logs
 
-    ```yaml
-    logging:
-    format: "json"
-    level: "INFO"
-    audit_log_level: "INFO"
-    output: "="
-    installation:
-    fixed_id: fluffy-authenticator
-    auth:
-    post_login_redirect_url: /
-    ldap: 
-        server_endpoint: 'ldaps://ldap.company.com:636'
-        bind_dn: uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
-        bind_password: '<ldap pwd>'
-        username_attribute: uid
-        user_base_dn: ou=<some-ou>,o=<org-id>,dc=<company>,dc=com
-        user_filter: (objectClass=inetOrgPerson)
-        connection_timeout_seconds: 15
-        request_timeout_seconds: 7
-    ```
+    If you encounter LDAP connection errors, inspect the lakeFS container logs to get more information.
 
-    <h3>Troubleshooting LDAP issues<h3>
-
-    <h4>Inspecting Logs</h4>
-
-    If you encounter LDAP connection errors, you should inspect the **fluffy container** logs to get more information.
-
-    <h4>Authentication issues</h4>
+    #### Authentication issues
 
     Auth issues (e.g. user not found, invalid credentials) can be debugged with the `ldapwhoami` CLI tool. 
 
-    The Examples are based on the fluffy config above:
+    The examples are based on the configuration above:
 
     To verify that the main bind user can connect:
     
     ```sh 
-    ldapwhoami -H ldap://ldap.company.com:636 -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
+    ldapwhoami -H ldaps://ldap.company.com:636 -D "uid=bind-user-name,ou=Users,o=org-id,dc=company,dc=com" -x -W
     ```
 
     To verify that a specific lakeFS user `dev-user` can connect:
 
     ```sh 
-    ldapwhoami -H ldap://ldap.company.com:636 -D "uid=dev-user,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -x -W
+    ldapwhoami -H ldaps://ldap.company.com:636 -D "uid=dev-user,ou=Users,o=org-id,dc=company,dc=com" -x -W
     ```
 
-    <h4>User not found issue</h4>
+    #### User not found issue
 
-    Upon a login request in fluffy, the bind user will search for the user in the LDAP server. If the user is not found it will be presented in the logs.
+    Upon a login request, the bind user will search for the user in the LDAP server. If the user is not found it will be presented in the logs.
 
     We can search the user using [ldapsearch](https://docs.ldap.com/ldap-sdk/docs/tool-usages/ldapsearch.html) CLI tool. 
 
     Search ALL users in the base DN (no filters):
 
     !!! note
-        `-b` is the `user_base_dn`, `-D` is `bind_dn` and `-w` is `bind_password` from the fluffy configuration.
+        `-b` is the `user_base_dn`, `-D` is `bind_dn` and `-w` is `bind_password` from the lakeFS configuration.
 
     ```sh
-    ldapsearch -H ldap://ldap.company.com:636 -x -b "ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>'
+    ldapsearch -H ldaps://ldap.company.com:636 -x -b "ou=Users,o=org-id,dc=company,dc=com" -D "uid=bind-user-name,ou=Users,o=org-id,dc=company,dc=com" -w 'bind_user_pwd'
     ```
 
-    If the user is found, we should now use filters for the specific user the same way fluffy does it and expect to see the user. 
+    If the user is found, we should now use filters for the specific user the same way lakeFS does it and expect to see the user. 
 
-    For example, to repdocue the same search as fluffy does:
+    For example, to reproduce the same search as lakeFS does:
     - user `dev-user` set from `uid` attribute in LDAP 
-    - Fluffy configuration values: `user_filter: (objectClass=inetOrgPerson)` and `username_attribute: uid`
+    - Configuration values: `user_filter: (objectClass=inetOrgPerson)` and `username_attribute: uid`
 
     ```sh
-    ldapsearch -H ldap://ldap.company.com:636 -x -b "ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -D "uid=<bind-user-name>,ou=<some-ou>,o=<org-id>,dc=<company>,dc=com" -w '<bind_user_pwd>' "(&(uid=dev-user)(objectClass=inetOrgPerson))"
+    ldapsearch -H ldaps://ldap.company.com:636 -x -b "ou=Users,o=org-id,dc=company,dc=com" -D "uid=bind-user-name,ou=Users,o=org-id,dc=company,dc=com" -w 'bind_user_pwd' "(&(uid=dev-user)(objectClass=inetOrgPerson))"
     ```
 
-### Helm
+=== "External AWS Authentication"
 
-In order to use lakeFS Enterprise and Fluffy, we provided out of the box setup, see [lakeFS Helm chart configuration](https://github.com/treeverse/charts).
+    lakeFS Enterprise supports authentication using AWS IAM credentials. This allows users to authenticate using their AWS credentials via GetCallerIdentity.
 
-Notes:
+    ```yaml
+    ingress:
+      enabled: true
+      ingressClassName: <class-name>
+      hosts:
+        - host: <lakefs.ingress.domain>
+          paths:
+            - /
 
-* Check the [examples on GitHub](https://github.com/treeverse/charts/tree/master/examples/lakefs/enterprise) we provide for each authentication method (oidc/adfs/ldap + rbac).
-* The examples are provisioned with a Postgres pod for quick-start, make sure to replace that to a stable database once ready.
-* The encrypt secret key `secrets.authEncryptSecretKey` is shared between fluffy and lakeFS for authentication.
-* The lakeFS `image.tag` must be >= 1.0.0
-* The fluffy `image.tag` must be >= 0.2.7
-* Change the `ingress.hosts[0]` from `lakefs.company.com` to a real host (usually same as lakeFS), also update additional references in the file (note: URL path after host if provided should stay unchanged).
-* Update the `ingress` configuration with other optional fields if used
-* Fluffy docker image: replace the `fluffy.image.privateRegistry.secretToken` with real token to dockerhub for the fluffy docker image.
+    lakefsConfig: |
+      auth:
+        external_aws_auth:
+          enabled: true
+          # the maximum age in seconds for the GetCallerIdentity request
+          #get_caller_identity_max_age: 60
+          # headers that must be present by the client when doing login request
+          required_headers:
+            # same host as the lakeFS server ingress
+            X-LakeFS-Server-ID: <lakefs.ingress.domain>
+    ```
+
+### Common Configuration
+
+All authentication methods share some common configuration options:
+
+```yaml
+# Enable enterprise features
+enterprise:
+  enabled: true
+
+# Common lakeFS configuration
+lakefsConfig: |
+  # Basic auth configuration
+  auth:
+    encrypt:
+      secret_key: <your-encryption-secret>  # Set via secrets.authEncryptSecretKey
+    login_duration: 24h                      # Session duration
+    login_max_duration: 168h                 # Maximum session duration
+```
+
+### Secrets Management
+
+The Helm chart will automatically create Kubernetes secrets for sensitive values:
+
+```yaml
+secrets:
+  # Required: encryption key for auth cookies
+  authEncryptSecretKey: <your-random-secret-string>
+  
+  # For database connection (if using external DB)
+  databaseConnectionString: <postgres-connection-string>
+
+# Or use existing secrets
+secrets:
+  existingSecret: my-lakefs-secrets
+  # Define the keys in your secret:
+  authEncryptSecretKeyName: authEncryptSecretKey
+  databaseConnectionStringKeyName: databaseConnectionString
+```
+
+Authentication provider secrets are managed separately via the `enterprise.auth.*` configuration.
+
+### Environment Variables
+
+All configurations can also be set via environment variables:
+
+```bash
+# SAML
+LAKEFS_AUTH_PROVIDERS_SAML_SP_ROOT_URL=https://lakefs.company.com
+LAKEFS_AUTH_COOKIE_AUTH_VERIFICATION_EXTERNAL_USER_ID_CLAIM_NAME=samName
+
+# OIDC
+LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_ID=your-client-id
+LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=name
+
+# LDAP
+LAKEFS_AUTH_PROVIDERS_LDAP_SERVER_ENDPOINT=ldaps://ldap.company.com:636
+LAKEFS_AUTH_PROVIDERS_LDAP_BIND_DN=uid=bind-user,ou=Users,o=org,dc=company,dc=com
+
+# External AWS Auth
+LAKEFS_AUTH_EXTERNAL_AWS_AUTH_ENABLED=true
+```

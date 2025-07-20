@@ -132,13 +132,22 @@ func NewProgressPool() *ProgressPool {
 	}
 }
 
+type readerAtSeeker interface {
+	io.Seeker
+	io.ReaderAt
+}
+
 type fileWrapper struct {
-	file   io.Seeker
+	file   readerAtSeeker
 	reader io.Reader
 }
 
 func (f fileWrapper) Read(p []byte) (n int, err error) {
 	return f.reader.Read(p)
+}
+
+func (f fileWrapper) ReadAt(p []byte, off int64) (int, error) {
+	return f.file.ReadAt(p, off)
 }
 
 func (f fileWrapper) Seek(offset int64, whence int) (int64, error) {

@@ -597,6 +597,15 @@ func (s *StoreService) PostRevertHook(ctx context.Context, record graveler.HookR
 	return nil
 }
 
+func (s *StoreService) PreCherryPickHook(ctx context.Context, record graveler.HookRecord) error {
+	return s.Run(ctx, record)
+}
+
+func (s *StoreService) PostCherryPickHook(ctx context.Context, record graveler.HookRecord) error {
+	s.asyncRun(ctx, record)
+	return nil
+}
+
 func (s *StoreService) NewRunID() string {
 	return s.idGen.NewRunID()
 }

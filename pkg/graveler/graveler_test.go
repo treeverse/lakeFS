@@ -165,6 +165,24 @@ func (h *Hooks) PostRevertHook(_ context.Context, record graveler.HookRecord) er
 	return h.Errs["PostRevertHook"]
 }
 
+func (h *Hooks) PreCherryPickHook(_ context.Context, record graveler.HookRecord) error {
+	h.Called = append(h.Called, "PreCherryPickHook")
+	h.RepositoryID = record.Repository.RepositoryID
+	h.StorageNamespace = record.Repository.StorageNamespace
+	h.BranchID = record.BranchID
+	h.Commit = record.Commit
+	return h.Errs["PreCherryPickHook"]
+}
+
+func (h *Hooks) PostCherryPickHook(_ context.Context, record graveler.HookRecord) error {
+	h.Called = append(h.Called, "PostCherryPickHook")
+	h.RepositoryID = record.Repository.RepositoryID
+	h.BranchID = record.BranchID
+	h.CommitID = record.CommitID
+	h.Commit = record.Commit
+	return h.Errs["PostCherryPickHook"]
+}
+
 func (h *Hooks) NewRunID() string {
 	return ""
 }
@@ -3222,6 +3240,118 @@ func TestGraveler_Revert(t *testing.T) {
 
 			if got != tt.expectedVal {
 				t.Errorf("got wrong commitID, got = %v, want %v", got, tt.expectedVal)
+			}
+		})
+	}
+}
+
+func TestGraveler_CherryPickHooks(t *testing.T) {
+	// prepare graveler
+	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")
+	const expectedCommitID = graveler.CommitID("expectedCommitID")
+	const sourceCommitID = graveler.CommitID("sourceCommitID")
+	const cherryPickBranchID = graveler.BranchID("cherryPickBranchID")
+	committedManager := &testutil.CommittedFake{MetaRangeID: expectedRangeID}
+	stagingManager := &testutil.StagingFake{ValueIterator: testutil.NewValueIteratorFake(nil)}
+	refManager := &testutil.RefsFake{
+		CommitID: expectedCommitID,
+		Branch:   &graveler.Branch{CommitID: expectedCommitID, StagingToken: "st1"},
+		Commits: map[graveler.CommitID]*graveler.Commit{
+			expectedCommitID: {MetaRangeID: expectedRangeID},
+			sourceCommitID:   {MetaRangeID: expectedRangeID, Parents: graveler.CommitParents{expectedCommitID}},
+		},
+		Refs: map[graveler.Ref]*graveler.ResolvedRef{
+			graveler.Ref(sourceCommitID): {
+				Type: graveler.ReferenceTypeCommit,
+				BranchRecord: graveler.BranchRecord{
+					Branch: &graveler.Branch{
+						CommitID: sourceCommitID,
+					},
+				},
+			},
+		},
+	}
+	// tests
+	errSomethingBad := errors.New("cherry pick hook error")
+	const commitCommitter = "committer"
+	const cherryPickMessage = "cherry pick message"
+	cherryPickMetadata := graveler.Metadata{"key1": "val1"}
+	tests := []struct {
+		name         string
+		hook         bool
+		err          error
+		readOnlyRepo bool
+	}{
+		{name: "without hook", hook: false, readOnlyRepo: false},
+		{name: "hook no error", hook: true, readOnlyRepo: false},
+		{name: "hook read only repo", hook: true, readOnlyRepo: true},
+		{name: "hook error", hook: true, err: errSomethingBad, readOnlyRepo: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// setup
+			ctx := context.Background()
+			g := newGraveler(t, committedManager, stagingManager, refManager, nil, testutil.NewProtectedBranchesManagerFake())
+			h := &Hooks{Errs: map[string]error{
+				"PreCherryPickHook":  tt.err,
+				"PostCherryPickHook": tt.err,
+			}}
+			if tt.hook {
+				g.SetHooksHandler(h)
+			}
+			repo := repository
+			if tt.readOnlyRepo {
+				repo = repositoryRO
+			}
+			// call cherry pick
+			cherryPickCommitID, err := g.CherryPick(ctx, repo, cherryPickBranchID, graveler.Ref(sourceCommitID), nil, commitCommitter, &graveler.CommitOverrides{
+				Message:  cherryPickMessage,
+				Metadata: cherryPickMetadata,
+			}, graveler.WithForce(tt.readOnlyRepo))
+
+			// check err composition
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("CherryPick err=%v, expected=%v", err, tt.err)
+			}
+			var hookErr *graveler.HookAbortError
+			if err != nil && !errors.As(err, &hookErr) {
+				t.Fatalf("CherryPick err=%v, expected HookAbortError", err)
+			}
+
+			// verify that calls made until the first error
+			preCommitCalled := slices.Contains(h.Called, "PreCherryPickHook")
+			postCommitCalled := slices.Contains(h.Called, "PostCherryPickHook")
+
+			if (tt.hook && !tt.readOnlyRepo) != preCommitCalled {
+				t.Fatalf("CherryPick invalid pre-cherry-pick hook call, %v expected=%t", h.Called, tt.hook && !tt.readOnlyRepo)
+			}
+
+			// PostCherryPick should only be called if PreCherryPick succeeded and operation completed
+			if tt.hook && !tt.readOnlyRepo && tt.err == nil {
+				if !postCommitCalled {
+					t.Fatalf("CherryPick post-cherry-pick hook should be called when pre-cherry-pick succeeds, %v", h.Called)
+				}
+			} else {
+				if postCommitCalled {
+					t.Fatalf("CherryPick post-cherry-pick hook should not be called when pre-cherry-pick fails or repo is read-only, %v", h.Called)
+				}
+			}
+
+			if !preCommitCalled {
+				return
+			}
+
+			// verify hook parameters
+			require.Equal(t, repo.RepositoryID, h.RepositoryID, "Hook repository ID mismatch")
+			require.Equal(t, cherryPickBranchID, h.BranchID, "Hook branch ID mismatch")
+			require.Equal(t, cherryPickMessage, h.Commit.Message, "Hook commit message mismatch")
+			require.Equal(t, commitCommitter, h.Commit.Committer, "Hook commit committer mismatch")
+			diff := deep.Equal(h.Commit.Metadata, cherryPickMetadata)
+			require.Nil(t, diff, "Hook commit metadata diff:", diff)
+
+			// verify post-cherry-pick hook parameters if it was called
+			if postCommitCalled {
+				require.Equal(t, cherryPickCommitID, h.CommitID, "Post-cherry-pick hook commit ID mismatch")
 			}
 		})
 	}

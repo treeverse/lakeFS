@@ -294,7 +294,6 @@ func TestS3IfNoneMatch(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.Name, func(t *testing.T) {
-			t.Parallel()
 			input := &s3.PutObjectInput{
 				Bucket: aws.String(repo),
 				Key:    aws.String(tt.Path),
