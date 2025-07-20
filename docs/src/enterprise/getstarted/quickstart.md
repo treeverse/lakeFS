@@ -31,11 +31,12 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 ### Prerequisites
 
 !!! note
-    In order to use lakeFS enterprise you must have: 
-    - Access token to download binaries from Docker hub 
-    - License to run lakeFS Enterprise 
+    In order to use lakeFS enterprise you must have:
+
+    - Access token to download binaries from Docker hub
+    - License to run lakeFS Enterprise
+
     [Contact us](https://lakefs.io/contact-sales/) to gain access for both.
-	
 
 1. You have installed [Docker Compose](https://docs.docker.com/compose/install/) version `2.23.1` or higher on your machine.
 2. Access to download *treeverse/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse).
