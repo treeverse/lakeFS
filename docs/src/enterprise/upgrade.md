@@ -355,7 +355,7 @@ If you're overriding the image in your values.yaml, update it to use lakeFS Ente
 ```yaml
 image:
   repository: treeverse/lakefs-enterprise
-  tag: (TODO: specify the version tag, e.g., 1.5.0)@ItamarYuran
+  tag: 1.63.0 
   privateRegistry:
     enabled: true
     secretToken: <your-dockerhub-token>
