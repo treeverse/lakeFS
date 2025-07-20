@@ -82,7 +82,7 @@ You can choose from the following options:
           - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
           - LAKEFS_AUTH_POST_LOGIN_REDIRECT_URL=http://localhost:8000/
           - LAKEFS_FEATURES_LOCAL_RBAC=true
-          - LAKEFS_LICENSE_CONTENTS=<license token>
+          - LAKEFS_LICENSE_CONTENTS=<license token> # for production use, we recommend using LAKEFS_LICENSE_PATH instead
         configs:
           - source: lakefs.yaml
             target: /etc/lakefs/config.yaml
@@ -157,8 +157,7 @@ You can choose from the following options:
           - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET}
           - LAKEFS_AUTH_PROVIDERS_OIDC_CALLBACK_BASE_URL=http://localhost:8000
           - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
-          - LAKEFS_ENTERPRISE_LICENSE_SERVER_URL=https://license.lakefs.io
-          - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS}
+          - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS} # for production use, we recommend using LAKEFS_LICENSE_PATH instead
           - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
           - LAKEFS_DATABASE_TYPE=postgres
           - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable
