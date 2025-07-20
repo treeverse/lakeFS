@@ -125,7 +125,7 @@ You can choose from the following options:
     LAKEFS_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
     # Optional: display a friendly name in the lakeFS UI by specifying which claim from the provider to show (i.e name, nickname, email etc)
     LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
-    LAKEFS_LICENSE_CONTENTS=<license token>
+    LAKEFS_LICENSE_CONTENTS=<license token> # for production use, we recommend using LAKEFS_LICENSE_PATH instead
     ```
 
     `docker-compose.yaml`
