@@ -332,8 +332,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	metadata := map[string]string{
 		apiutil.ClientMtimeMetadataKey: mtimeString,
 	}
-	var contentReader io.ReadSeeker
-
+	var contentReader readerAtSeeker
 	handleSymlink := s.cfg.SymlinkSupport && fileStat.Mode()&os.ModeSymlink != 0
 	if handleSymlink {
 		// If symlink support is enabled, upload as symlink

@@ -134,6 +134,7 @@ func NewProgressPool() *ProgressPool {
 
 type readerAtSeeker interface {
 	io.Seeker
+	io.Reader
 	io.ReaderAt
 }
 
