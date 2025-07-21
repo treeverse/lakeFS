@@ -5,7 +5,7 @@ import os
 import shutil
 
 NAME = "lakefs"
-VERSION = "0.11.1"
+VERSION = "0.12.0"
 # To install the library, run the following
 #
 # python setup.py install
