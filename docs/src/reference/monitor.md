@@ -60,8 +60,9 @@ In addition, lakeFS exposes the following metrics to help monitor your deploymen
     when using Prometheus functions like [rate](https://prometheus.io/docs/prometheus/latest/querying/functions/#rate){: target="_blank"} or [increase](https://prometheus.io/docs/prometheus/latest/querying/functions/#increase){: target="_blank"}, results are extrapolated and may not be exact.
 
 !!! example "99th percentile of API request latencies"
+    
     ```
-sum by (operation)(histogram_quantile(0.99, rate(api_request_duration_seconds_bucket[1m])))
+    sum by (operation)(histogram_quantile(0.99, rate(api_request_duration_seconds_bucket[1m])))
     ```
 
 !!! example "50th percentile of S3-compatible API latencies"

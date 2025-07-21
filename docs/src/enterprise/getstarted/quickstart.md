@@ -32,10 +32,11 @@ Checkout the [RBAC demo](https://github.com/treeverse/lakeFS-samples/blob/main/0
 
 !!! note
     In order to use lakeFS enterprise you must have:
+
     - Access token to download binaries from Docker hub
     - License to run lakeFS Enterprise
+
     [Contact us](https://lakefs.io/contact-sales/) to gain access for both.
-	
 
 1. You have installed [Docker Compose](https://docs.docker.com/compose/install/) version `2.23.1` or higher on your machine.
 2. Access to download *treeverse/lakefs-enterprise* from [Docker Hub](https://hub.docker.com/u/treeverse).
@@ -82,7 +83,7 @@ You can choose from the following options:
           - LAKEFS_BLOCKSTORE_LOCAL_IMPORT_ENABLED=true
           - LAKEFS_AUTH_POST_LOGIN_REDIRECT_URL=http://localhost:8000/
           - LAKEFS_FEATURES_LOCAL_RBAC=true
-          - LAKEFS_LICENSE_CONTENTS=<license token>
+          - LAKEFS_LICENSE_CONTENTS=<license token> # for production use, we recommend using LAKEFS_LICENSE_PATH instead
         configs:
           - source: lakefs.yaml
             target: /etc/lakefs/config.yaml
@@ -125,7 +126,7 @@ You can choose from the following options:
     LAKEFS_AUTH_LOGOUT_REDIRECT_URL=https://my-sso.com/logout
     # Optional: display a friendly name in the lakeFS UI by specifying which claim from the provider to show (i.e name, nickname, email etc)
     LAKEFS_AUTH_OIDC_FRIENDLY_NAME_CLAIM_NAME=
-    LAKEFS_LICENSE_CONTENTS=<license token>
+    LAKEFS_LICENSE_CONTENTS=<license token> # for production use, we recommend using LAKEFS_LICENSE_PATH instead
     ```
 
     `docker-compose.yaml`
@@ -157,8 +158,7 @@ You can choose from the following options:
           - LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET=${LAKEFS_AUTH_PROVIDERS_OIDC_CLIENT_SECRET}
           - LAKEFS_AUTH_PROVIDERS_OIDC_CALLBACK_BASE_URL=http://localhost:8000
           - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
-          - LAKEFS_ENTERPRISE_LICENSE_SERVER_URL=https://license.lakefs.io
-          - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS}
+          - LAKEFS_LICENSE_CONTENTS=${LAKEFS_LICENSE_CONTENTS} # for production use, we recommend using LAKEFS_LICENSE_PATH instead
           - LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER=${LAKEFS_AUTH_PROVIDERS_OIDC_LOGOUT_CLIENT_ID_QUERY_PARAMETER}
           - LAKEFS_DATABASE_TYPE=postgres
           - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres:5432/postgres?sslmode=disable

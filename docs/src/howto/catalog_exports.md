@@ -33,7 +33,7 @@ which does not require copying the data outside of lakeFS.
 
 These are metadata representations and can be applied automatically through hooks.
 
-### Table Decleration 
+### Table Declaration 
 
 After creating a lakeFS repository, configure tables as table descriptor objects on the repository on the path `_lakefs_tables/TABLE.yaml`.
 Note: the Glue exporter can currently only export tables of `type: hive`.  We expect to add more.

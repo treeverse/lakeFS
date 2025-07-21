@@ -40,9 +40,34 @@ This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoi
 When setting up a new installation and creating initial credentials (see [Quickstart](../quickstart/index.md)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
-`lakectl` configuration items can each be controlled by an environment variable. The variable name will have a prefix of
-*LAKECTL_*, followed by the name of the configuration, replacing every '.' with a '_'. Example: `LAKECTL_SERVER_ENDPOINT_URL` 
-controls `server.endpoint_url`.
+## lakectl Configuration
+
+`lakectl` reads its configuration from a YAML file (default path `~/.lakectl.yaml`, overridable with `--config` or `LAKECTL_CONFIG_FILE`) and/or from environment variables.
+
+* Every configuration key can be supplied through an environment variable using the pattern `LAKECTL_<UPPERCASE_KEY_WITH_DOTS_REPLACED_BY_UNDERSCORES>`.
+* Any value given on the command-line flags overrides the value in the configuration file, which in turn overrides the value supplied through the environment.
+
+### Reference
+
+* `credentials.access_key_id` `(string : required)` - Access-key ID used to authenticate against lakeFS.
+* `credentials.secret_access_key` `(string : required)`  - Secret access key paired with the access key ID.
+* `credentials.provider.type` `(string : "")` - Enterprise only. Set to `aws_iam` to obtain temporary credentials from AWS IAM; empty for static credentials (default).
+  * `credentials.provider.aws_iam.token_ttl_seconds` `(duration : 6h)` - Lifetime of the generated lakeFS token.
+  * `credentials.provider.aws_iam.url_presign_ttl_seconds` `(duration : 1m)` - TTL of pre-signed URLs created by lakectl.
+  * `credentials.provider.aws_iam.refresh_interval` `(duration : 5m)` - How often lakectl refreshes the IAM credentials.
+  * `credentials.provider.aws_iam.token_request_headers` `(map[string]string : {})` - Extra HTTP headers to include when requesting the token.
+* `network.http2.enabled` `(bool : true)` - Enable HTTP/2 for the API client.
+* `server.endpoint_url` `(string : ` http://127.0.0.1:8000 `) - Base URL of the lakeFS server.
+* `server.retries.enabled` `(bool : true)` - Whether lakectl tries more than once.
+* `server.retries.max_attempts` `(uint : 4)` - Maximum number of attempts per request.
+* `server.retries.min_wait_interval` `(duration : 200ms)` - Minimum back-off between retries.
+* `server.retries.max_wait_interval` `(duration : 30s)` - Maximum back-off between retries.
+* `options.parallelism` `(int : 25)` - Default concurrency level for I/O operations (upload, download, etc.).
+* `local.skip_non_regular_files` `(bool : false)` - When true, symbolic links and other non-regular files are skipped during `lakectl local` operations instead of causing an error.
+* `experimental.local.posix_permissions.enabled` `(bool : false)` - Preserve POSIX permissions when syncing files.
+  * `experimental.local.posix_permissions.include_uid` `(bool : false)` - Include UID in the stored metadata.
+  * `experimental.local.posix_permissions.include_gid` `(bool : false)` - Include GID in the stored metadata.
+
 
 ## Running lakectl from Docker
 
@@ -69,7 +94,9 @@ A cli tool to explore manage and work with lakeFS
 
 <h4>Synopsis</h4>
 
-lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
+lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment.
+
+It can be extended with plugins; see 'lakectl plugin --help' for more information.
 
 ```
 lakectl [flags]
@@ -2204,173 +2231,63 @@ lakectl merge <source ref> <destination ref> [flags]
 
 
 
-### lakectl metastore
+### lakectl plugin
 
-Manage metastore commands
-
-<h4>Options</h4>
-
-```
-  -h, --help   help for metastore
-```
-
-
-
-### lakectl metastore copy
-
-Copy or merge table
+Manage lakectl plugins
 
 <h4>Synopsis</h4>
 
-Copy or merge table. the destination table will point to the selected branch
+Provides utilities for managing lakectl plugins.
 
-```
-lakectl metastore copy [flags]
-```
+Plugins are standalone executable files that extend lakectl's functionality.
+lakectl discovers plugins by looking for executables in your PATH
+that are named with the prefix "lakectl-".
+
+For example, an executable named "lakectl-myfeature" can be invoked as
+"lakectl myfeature [args...]".
+
+Plugin Naming:
+  - The executable must start with "lakectl-".
+  - The part after "lakectl-" becomes the command name users type.
+    (e.g., "lakectl-foo" -> "lakectl foo")
+  - The plugin name is used exactly as-is in the command.
+    (e.g., "lakectl-foo-bar" -> "lakectl foo-bar")
+
+Installation:
+  - Place your "lakectl-..." executable file (which may be any executable,
+    e.g. a Python application) in a directory listed in your PATH.
+  - Ensure the file has execute permissions.
+
+Execution:
+  - When you run "lakectl some-plugin arg1 --flag", lakectl searches for
+    "lakectl-some-plugin" in PATH.
+  - If found and executable, it runs the plugin, passing "arg1 --flag" as arguments.
+  - The plugin inherits environment variables from lakectl.
+  - Standard output, standard error, and the exit code of the plugin are propagated.
+  - Built-in lakectl commands always take precedence over plugins.
+
+Use "lakectl plugin list" to see all detected plugins and any warnings.
+
 
 <h4>Options</h4>
 
 ```
-      --catalog-id string         Glue catalog ID
-      --dbfs-root dbfs:/          dbfs location root will replace dbfs:/ in the location before transforming
-      --from-client-type string   metastore type [hive, glue]
-      --from-schema string        source schema name
-      --from-table string         source table name
-  -h, --help                      help for copy
-      --metastore-uri string      Hive metastore URI
-  -p, --partition strings         partition to copy
-      --serde string              serde to set copy to  [default is  to-table]
-      --to-branch string          lakeFS branch name
-      --to-client-type string     metastore type [hive, glue]
-      --to-schema string          destination schema name [default is from-branch]
-      --to-table string           destination table name [default is  from-table] 
+  -h, --help   help for plugin
 ```
 
 
 
-### lakectl metastore copy-all
-
-Copy from one metastore to another
-
-<h4>Synopsis</h4>
-
-copy or merge requested tables between hive metastores. the destination tables will point to the selected branch
-
-```
-lakectl metastore copy-all [flags]
-```
-
-<h4>Options</h4>
-
-```
-      --branch string             lakeFS branch name
-      --continue-on-error         prevent copy-all from failing when a single table fails
-      --dbfs-root dbfs:/          dbfs location root will replace dbfs:/ in the location before transforming
-      --from-address string       source metastore address
-      --from-client-type string   metastore type [hive, glue]
-  -h, --help                      help for copy-all
-      --schema-filter string      filter for schemas to copy in metastore pattern (default ".*")
-      --table-filter string       filter for tables to copy in metastore pattern (default ".*")
-      --to-address string         destination metastore address
-      --to-client-type string     metastore type [hive, glue]
-```
-
-
-
-### lakectl metastore copy-schema
-
-Copy schema
-
-<h4>Synopsis</h4>
-
-Copy schema (without tables). the destination schema will point to the selected branch
-
-```
-lakectl metastore copy-schema [flags]
-```
-
-<h4>Options</h4>
-
-```
-      --catalog-id string         Glue catalog ID
-      --dbfs-root dbfs:/          dbfs location root will replace dbfs:/ in the location before transforming
-      --from-client-type string   metastore type [hive, glue]
-      --from-schema string        source schema name
-  -h, --help                      help for copy-schema
-      --metastore-uri string      Hive metastore URI
-      --to-branch string          lakeFS branch name
-      --to-client-type string     metastore type [hive, glue]
-      --to-schema string          destination schema name [default is from-branch]
-```
-
-
-
-### lakectl metastore create-symlink
-
-Create symlink table and data
-
-<h4>Synopsis</h4>
-
-create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)
-
-```
-lakectl metastore create-symlink [flags]
-```
-
-<h4>Options</h4>
-
-```
-      --branch string             lakeFS branch name
-      --catalog-id string         Glue catalog ID
-      --from-client-type string   metastore type [hive, glue]
-      --from-schema string        source schema name
-      --from-table string         source table name
-  -h, --help                      help for create-symlink
-      --path string               path to table on lakeFS
-      --repo string               lakeFS repository name
-      --to-schema string          destination schema name
-      --to-table string           destination table name
-```
-
-
-
-### lakectl metastore diff
-
-Show column and partition differences between two tables
-
-```
-lakectl metastore diff [flags]
-```
-
-<h4>Options</h4>
-
-```
-      --catalog-id string         Glue catalog ID
-      --from-address string       source metastore address
-      --from-client-type string   metastore type [hive, glue]
-      --from-schema string        source schema name
-      --from-table string         source table name
-  -h, --help                      help for diff
-      --metastore-uri string      Hive metastore URI
-      --to-address string         destination metastore address
-      --to-client-type string     metastore type [hive, glue]
-      --to-schema string          destination schema name 
-      --to-table string           destination table name [default is from-table]
-```
-
-
-
-### lakectl metastore help
+### lakectl plugin help
 
 Help about any command
 
 <h4>Synopsis</h4>
 
 Help provides help for any command in the application.
-Simply type metastore help [path to command] for full details.
+Simply type plugin help [path to command] for full details.
 
 ```
-lakectl metastore help [command] [flags]
+lakectl plugin help [command] [flags]
 ```
 
 <h4>Options</h4>
@@ -2381,36 +2298,22 @@ lakectl metastore help [command] [flags]
 
 
 
-### lakectl metastore import-all
+### lakectl plugin list
 
-Import from one metastore to another
+List available lakectl plugins
 
 <h4>Synopsis</h4>
 
-
-import requested tables between hive metastores. the destination tables will point to the selected repository and branch
-table with location s3://my-s3-bucket/path/to/table 
-will be transformed to location s3://repo-param/bucket-param/path/to/table
-	
+Scans the PATH for executables named "lakectl-*" and lists the detected plugins.
 
 ```
-lakectl metastore import-all [flags]
+lakectl plugin list [flags]
 ```
 
 <h4>Options</h4>
 
 ```
-      --branch string             lakeFS branch name
-      --continue-on-error         prevent import-all from failing when a single table fails
-      --dbfs-root dbfs:/          dbfs location root will replace dbfs:/ in the location before transforming
-      --from-address string       source metastore address
-      --from-client-type string   metastore type [hive, glue]
-  -h, --help                      help for import-all
-      --repo string               lakeFS repo name
-      --schema-filter string      filter for schemas to copy in metastore pattern (default ".*")
-      --table-filter string       filter for tables to copy in metastore pattern (default ".*")
-      --to-address string         destination metastore address
-      --to-client-type string     metastore type [hive, glue]
+  -h, --help   help for list
 ```
 
 

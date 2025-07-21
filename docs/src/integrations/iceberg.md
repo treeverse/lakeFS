@@ -253,6 +253,8 @@ main_table = catalog.load_table('repo.main.inventory.books')
 lakeFS provides an OAuth2 token endpoint at `/catalog/iceberg/v1/oauth/tokens` that clients need to configure. 
 To authenticate, clients must provide their lakeFS access key and secret in the format `access_key:secret` as the credential.
 
+### Authorization
+
 The authorization requirements are managed at the lakeFS level, meaning:
 
 - Users need appropriate lakeFS permissions to access repositories and branches
