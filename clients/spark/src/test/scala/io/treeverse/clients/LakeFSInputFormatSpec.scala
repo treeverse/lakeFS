@@ -13,14 +13,12 @@ import scala.collection.JavaConverters._
 
 import scala.collection.mutable
 import org.scalatest.OneInstancePerTest
-import org.checkerframework.checker.units.qual.m
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.LocatedFileStatus
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.BlockLocation
 import org.apache.hadoop.fs.FileStatus
 import org.apache.hadoop.fs.RemoteIterator
-import org.apache.hadoop.fs.BatchedRemoteIterator
 
 object LakeFSInputFormatSpec {
   def getItem(rangeID: String): Item[RangeData] = new Item(
