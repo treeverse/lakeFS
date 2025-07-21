@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.12.0
+
+:new: What's new:
+
+- Relax dependency constraints to run on Python 3.13 (#9209)
+
 ## v0.11.1
 
 :bug: Bugs fixed:
