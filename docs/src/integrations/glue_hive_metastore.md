@@ -27,15 +27,4 @@ If you're using Hive Metastore directly, refer to the [Data Catalog Exports docu
 - Symlink exporter for Hive-compatible formats
 - Hook configuration for automated exports
 
-## Query Examples
-
-Once configured, you can query your data using branch names as schemas:
-
-```sql
-USE main;              -- Query main branch
-USE feature_branch;    -- Query specific branch  
-USE v2_1_0;           -- Query tagged version
-
-SELECT * FROM my_table;
-```
 
