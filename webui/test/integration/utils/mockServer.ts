@@ -100,6 +100,19 @@ export class MockServer {
     this.customMocks.set(key, response);
   }
 
+  clearMocks() {
+    this.customMocks.clear();
+  }
+
+  removeMock(path: string, method = 'GET') {
+    const key = `${method.toUpperCase()} ${path}`;
+    return this.customMocks.delete(key);
+  }
+
+  getServerUrl(): string {
+    return this.serverUrl;
+  }
+
   /**
    * Routes incoming HTTP requests to appropriate handlers based on URL path and method:
    * 1. OPTIONS requests → handleCorsPreflightRequest() for CORS preflight handling
@@ -125,7 +138,7 @@ export class MockServer {
       }
 
       if (requestedPath.startsWith('/api/v1')) {
-        return this.handleApiRequest(res, requestedPath, method);
+        return this.handleApiRequest(res, requestedPath, method, req.headers);
       }
 
       return this.handleStaticFileRequest(res, requestedPath);
@@ -181,7 +194,7 @@ export class MockServer {
    * Handle an /api/v1/* request using the Prism client, which generates a mock response for the endpoint based on
    * the swagger.yml structure.
    */
-  private async handleApiRequest(res: any, requestedPath: string, httpMethod: string) {
+  private async handleApiRequest(res: any, requestedPath: string, httpMethod: string, requestHeaders?: any) {
     res.setHeader('Access-Control-Allow-Origin',  '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization');
@@ -191,7 +204,22 @@ export class MockServer {
       const prismPath = requestedPath.startsWith('/api/v1') ? requestedPath.slice('/api/v1'.length) || '/' : requestedPath;
       const method = httpMethod.toLowerCase() as any;
 
-      const prismRes= await this.client.request(`${prismPath}`, { method });
+      // Check if request has prefer header and use it for Prism config override
+      let configOverride = {};
+      if (requestHeaders) {
+        const preferValue = requestHeaders.prefer || requestHeaders['prefer'];
+        if (preferValue && typeof preferValue === 'string') {
+          // Parse prefer header for status code (e.g., "code=401")
+          const codeMatch = preferValue.match(/code=(\d+)/);
+          if (codeMatch) {
+            const statusCode = parseInt(codeMatch[1], 10);
+            configOverride = { mock: { code: statusCode } };
+            console.log('🎯 Using Prism config override for status:', statusCode);
+          }
+        }
+      }
+
+      const prismRes = await this.client.request(`${prismPath}`, { method }, configOverride);
       const { status, headers, data } = prismRes;
       const body =
           typeof data === 'string' || Buffer.isBuffer(data)
@@ -356,6 +384,4 @@ export class MockServer {
     });
     res.end(JSON.stringify({ message: 'Internal server error' }));
   }
-
-
 }
