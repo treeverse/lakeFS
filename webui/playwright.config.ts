@@ -9,7 +9,7 @@ import { COMMON_STORAGE_STATE_PATH } from "./test/e2e/consts";
 const BASE_URL = process.env.BASE_URL || "http://localhost:8000";
 
 export default defineConfig({
-  testDir: "test/e2e",
+  testDir: "test",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
@@ -53,5 +53,12 @@ export default defineConfig({
       testMatch: "test/e2e/common/**/quickstart.spec.ts",
       testIgnore: "test/e2e/common/setup.spec.ts",
     },
+    {
+      name: "integration",
+      use: {
+          ...devices["Desktop Chrome"],
+      },
+      testMatch: "test/integration/**/*.spec.ts",
+  },
   ],
 });
