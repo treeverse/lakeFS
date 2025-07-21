@@ -19,6 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.lakefs.clients.sdk.model.DiffObjectStat;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -167,6 +168,10 @@ public class Diff {
   @SerializedName(SERIALIZED_NAME_SIZE_BYTES)
   private Long sizeBytes;
 
+  public static final String SERIALIZED_NAME_RIGHT = "right";
+  @SerializedName(SERIALIZED_NAME_RIGHT)
+  private DiffObjectStat right;
+
   public Diff() {
   }
 
@@ -253,6 +258,27 @@ public class Diff {
     this.sizeBytes = sizeBytes;
   }
 
+
+  public Diff right(DiffObjectStat right) {
+    
+    this.right = right;
+    return this;
+  }
+
+   /**
+   * Get right
+   * @return right
+  **/
+  @javax.annotation.Nullable
+  public DiffObjectStat getRight() {
+    return right;
+  }
+
+
+  public void setRight(DiffObjectStat right) {
+    this.right = right;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -311,13 +337,14 @@ public class Diff {
     return Objects.equals(this.type, diff.type) &&
         Objects.equals(this.path, diff.path) &&
         Objects.equals(this.pathType, diff.pathType) &&
-        Objects.equals(this.sizeBytes, diff.sizeBytes)&&
+        Objects.equals(this.sizeBytes, diff.sizeBytes) &&
+        Objects.equals(this.right, diff.right)&&
         Objects.equals(this.additionalProperties, diff.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, path, pathType, sizeBytes, additionalProperties);
+    return Objects.hash(type, path, pathType, sizeBytes, right, additionalProperties);
   }
 
   @Override
@@ -328,6 +355,7 @@ public class Diff {
     sb.append("    path: ").append(toIndentedString(path)).append("\n");
     sb.append("    pathType: ").append(toIndentedString(pathType)).append("\n");
     sb.append("    sizeBytes: ").append(toIndentedString(sizeBytes)).append("\n");
+    sb.append("    right: ").append(toIndentedString(right)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -355,6 +383,7 @@ public class Diff {
     openapiFields.add("path");
     openapiFields.add("path_type");
     openapiFields.add("size_bytes");
+    openapiFields.add("right");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -391,6 +420,10 @@ public class Diff {
       }
       if (!jsonObj.get("path_type").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `path_type` to be a primitive type in the JSON string but got `%s`", jsonObj.get("path_type").toString()));
+      }
+      // validate the optional field `right`
+      if (jsonObj.get("right") != null && !jsonObj.get("right").isJsonNull()) {
+        DiffObjectStat.validateJsonElement(jsonObj.get("right"));
       }
   }
 

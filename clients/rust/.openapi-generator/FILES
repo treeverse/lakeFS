@@ -33,6 +33,7 @@ docs/CredentialsWithSecret.md
 docs/CurrentUser.md
 docs/Diff.md
 docs/DiffList.md
+docs/DiffObjectStat.md
 docs/Error.md
 docs/ErrorNoAcl.md
 docs/ExperimentalApi.md
@@ -178,6 +179,7 @@ src/models/credentials_with_secret.rs
 src/models/current_user.rs
 src/models/diff.rs
 src/models/diff_list.rs
+src/models/diff_object_stat.rs
 src/models/error.rs
 src/models/error_no_acl.rs
 src/models/external_login_information.rs

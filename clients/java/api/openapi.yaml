@@ -4236,6 +4236,16 @@ paths:
           - three_dot
           type: string
         style: form
+      - description: "If set to true, the diff will include right-side object stats.\
+          \ *EXPERIMENTAL*"
+        explode: true
+        in: query
+        name: include_right_stats
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
       responses:
         "200":
           content:
@@ -7946,6 +7956,32 @@ components:
       required:
       - paths
       type: object
+    DiffObjectStat:
+      example:
+        metadata:
+          key: metadata
+        content_type: content_type
+        checksum: checksum
+        mtime: 6
+      properties:
+        checksum:
+          type: string
+        mtime:
+          description: Unix Epoch in seconds
+          format: int64
+          type: integer
+        content_type:
+          description: Object media type
+          type: string
+        metadata:
+          additionalProperties:
+            type: string
+          type: object
+      required:
+      - checksum
+      - content_type
+      - mtime
+      type: object
     ObjectStats:
       example:
         physical_address: physical_address
@@ -8168,6 +8204,12 @@ components:
         path: path
         size_bytes: 0
         path_type: common_prefix
+        right:
+          metadata:
+            key: metadata
+          content_type: content_type
+          checksum: checksum
+          mtime: 6
         type: added
       properties:
         type:
@@ -8189,6 +8231,8 @@ components:
           description: represents the size of the added/changed/deleted entry
           format: int64
           type: integer
+        right:
+          $ref: '#/components/schemas/DiffObjectStat'
       required:
       - path
       - path_type
@@ -8205,10 +8249,22 @@ components:
         - path: path
           size_bytes: 0
           path_type: common_prefix
+          right:
+            metadata:
+              key: metadata
+            content_type: content_type
+            checksum: checksum
+            mtime: 6
           type: added
         - path: path
           size_bytes: 0
           path_type: common_prefix
+          right:
+            metadata:
+              key: metadata
+            content_type: content_type
+            checksum: checksum
+            mtime: 6
           type: added
       properties:
         pagination:

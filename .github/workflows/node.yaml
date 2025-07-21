@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "18.17.0"
+          node-version: "22.17.x"
           cache: "npm"
           cache-dependency-path: webui/package-lock.json
       - name: install UI dependencies
