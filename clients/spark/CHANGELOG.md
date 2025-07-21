@@ -1,9 +1,12 @@
 # Changelog
 
-## v0.14.3 - 2024-28-05
+## v0.15.0 - 2025-07-21
+* GC: Add support for GCP (#9305)
+
+## v0.14.3 - 2025-05-28
 * Metaclient: Skip unknown files when scanning metadata prefix (#9119)
 
-## v0.14.2 - 2024-30-04
+## v0.14.2 - 2025-04-30
 * Spark Client StorageID support (#8918)
 
 ## v0.14.1 - 2024-07-04

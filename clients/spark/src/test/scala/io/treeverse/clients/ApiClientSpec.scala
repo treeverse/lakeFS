@@ -55,5 +55,13 @@ class ApiClientSpec extends AnyFunSpec with Matchers {
         )
       }
     }
+    describe("GCS") {
+      val pathUri = "gs://bucket/path/to/blob"
+      val translate =
+        (u: String) => ApiClient.translateURI(new URI(u), StorageUtils.StorageTypeGCS).toString
+      it("should return the same URI") {
+        translate(pathUri) should be(pathUri)
+      }
+    }
   }
 }
