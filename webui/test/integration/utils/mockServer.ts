@@ -204,7 +204,7 @@ export class MockServer {
       const prismPath = requestedPath.startsWith('/api/v1') ? requestedPath.slice('/api/v1'.length) || '/' : requestedPath;
       const method = httpMethod.toLowerCase() as any;
 
-      // Check if request has prefer header and use it for Prism config override
+      // Check if request has "prefer" header and use it for Prism config override
       let configOverride = {};
       if (requestHeaders) {
         const preferValue = requestHeaders.prefer || requestHeaders['prefer'];
@@ -214,7 +214,6 @@ export class MockServer {
           if (codeMatch) {
             const statusCode = parseInt(codeMatch[1], 10);
             configOverride = { mock: { code: statusCode } };
-            console.log('🎯 Using Prism config override for status:', statusCode);
           }
         }
       }

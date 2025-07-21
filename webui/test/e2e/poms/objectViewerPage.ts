@@ -18,7 +18,6 @@ export class ObjectViewerPage {
     await this.page.getByRole("button", { name: "Execute" }).click();
     await this.page.getByRole("button", { name: "Execute" }).isDisabled();
     await this.page.getByRole("button", { name: "Execute" }).isEnabled();
-    await this.page.waitForTimeout(5000);
   }
 
   async getResultRowCount(): Promise<number> {
