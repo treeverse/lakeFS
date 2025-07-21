@@ -91,29 +91,6 @@ type Configuration struct {
 	Options struct {
 		Parallelism int `mapstructure:"parallelism"`
 	} `mapstructure:"options"`
-	Metastore struct {
-		Type lakefsconfig.OnlyString `mapstructure:"type"`
-		Hive struct {
-			URI           lakefsconfig.OnlyString `mapstructure:"uri"`
-			DBLocationURI lakefsconfig.OnlyString `mapstructure:"db_location_uri"`
-		} `mapstructure:"hive"`
-		Glue struct {
-			// TODO(ariels): Refactor credentials to share with server side.
-			Profile         lakefsconfig.OnlyString `mapstructure:"profile"`
-			CredentialsFile lakefsconfig.OnlyString `mapstructure:"credentials_file"`
-			DBLocationURI   lakefsconfig.OnlyString `mapstructure:"db_location_uri"`
-			Credentials     *struct {
-				AccessKeyID     lakefsconfig.OnlyString `mapstructure:"access_key_id"`
-				AccessSecretKey lakefsconfig.OnlyString `mapstructure:"access_secret_key"`
-				SessionToken    lakefsconfig.OnlyString `mapstructure:"session_token"`
-			} `mapstructure:"credentials"`
-
-			Region    lakefsconfig.OnlyString `mapstructure:"region"`
-			CatalogID lakefsconfig.OnlyString `mapstructure:"catalog_id"`
-		} `mapstructure:"glue"`
-		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
-		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
-	}
 	Local struct {
 		// SkipNonRegularFiles - By default lakectl local fails if local directory contains a symbolic link. When set, lakectl will ignore the symbolic links instead.
 		SkipNonRegularFiles bool `mapstructure:"skip_non_regular_files"`
@@ -775,7 +752,6 @@ func initConfig() {
 	}
 
 	// set defaults
-	viper.SetDefault("metastore.hive.db_location_uri", "file:/user/hive/warehouse/")
 	viper.SetDefault("server.endpoint_url", "http://127.0.0.1:8000")
 	viper.SetDefault("server.retries.enabled", true)
 	viper.SetDefault("server.retries.max_attempts", defaultMaxAttempts)

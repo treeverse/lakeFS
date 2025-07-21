@@ -63,63 +63,13 @@ In file `hive-site.xml` add to the configuration:
 ```
  
 
-## Examples
 
-Here are some examples based on examples from the [Presto Hive connector examples](https://prestodb.io/docs/current/connector/hive.html#examples){:target="_blank"} and [Trino Hive connector examples](https://trino.io/docs/current/connector/hive.html#examples){:target="_blank"}
+## Integration with lakeFS Data Catalogs
 
-### Example with schema
+For advanced integration with lakeFS that supports querying different branches as schemas, see the [Data Catalog Exports documentation](../howto/catalog_exports.md). This approach allows you to:
 
-Create a new schema named `main` that will store tables in a lakeFS repository named `example` branch: `master`:
+- Query data from specific lakeFS branches using branch names as schemas
+- Automate table metadata synchronization through hooks
+- Support multiple table formats (Hive, Delta Lake, etc.)
 
-```sql
-CREATE SCHEMA main
-WITH (location = 's3a://example/main')
-```
-
-Create a new Hive table named `page_views` in the `web` schema stored using the ORC file format,
- partitioned by date and country, and bucketed by user into `50` buckets (note that Hive requires the partition columns to be the last columns in the table):
-
-```sql
-CREATE TABLE main.page_views (
-  view_time timestamp,
-  user_id bigint,
-  page_url varchar,
-  ds date,
-  country varchar
-)
-WITH (
-  format = 'ORC',
-  partitioned_by = ARRAY['ds', 'country'],
-  bucketed_by = ARRAY['user_id'],
-  bucket_count = 50
-)
-```
-
-### Example with External table
-
-Create an external Hive table named `request_logs` that points at existing data in lakeFS:
-
-```sql
-CREATE TABLE main.request_logs (
-  request_time timestamp,
-  url varchar,
-  ip varchar,
-  user_agent varchar
-)
-WITH (
-  format = 'TEXTFILE',
-  external_location = 's3a://example/main/data/logs/'
-)
-```
-
-### Example of copying a table with [metastore tools](./glue_hive_metastore.md):
-
-!!! warning "Deprecated Feature"
-    Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
-    You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
-
-Copy the created table `page_views` on schema `main` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
-
-```shell
-lakectl metastore copy --from-schema main --from-table page_views --to-branch example_branch 
-```
+For AWS Glue users, see the detailed [Glue Data Catalog integration guide](./glue_metastore.md) which provides step-by-step instructions for setting up automated exports.
