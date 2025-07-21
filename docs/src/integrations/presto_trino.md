@@ -112,14 +112,12 @@ WITH (
 )
 ```
 
-### Example of copying a table with [metastore tools](./glue_hive_metastore.md):
+## Integration with lakeFS Data Catalogs
 
-!!! warning "Deprecated Feature"
-    Having heard the feedback from the community, we are planning to replace the below manual steps with an automated process.
-    You can read more about it [here](https://github.com/treeverse/lakeFS/issues/6461).
+For advanced integration with lakeFS that supports querying different branches as schemas, see the [Data Catalog Exports documentation](../howto/catalog_exports.md). This approach allows you to:
 
-Copy the created table `page_views` on schema `main` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
+- Query data from specific lakeFS branches using branch names as schemas
+- Automate table metadata synchronization through hooks
+- Support multiple table formats (Hive, Delta Lake, etc.)
 
-```shell
-lakectl metastore copy --from-schema main --from-table page_views --to-branch example_branch 
-```
+For AWS Glue users, see the detailed [Glue Data Catalog integration guide](./glue_metastore.md) which provides step-by-step instructions for setting up automated exports.
