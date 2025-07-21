@@ -9,7 +9,7 @@ description: This section shows how you can start querying data from lakeFS usin
 
 ## Integration Overview
 
-To query lakeFS data from Athena, you'll use the automated [Data Catalog Exports](../howto/catalog_exports.md) feature. This allows you to:
+To query lakeFS data from Athena, you'll need to first export data to AWS Glue, and then use Athena to query it directly. To do that, use the automated [Data Catalog Exports](../howto/catalog_exports.md) feature, which allows you to:
 
 - Query data directly from lakeFS branches and commits
 - Access tables using branch names as schemas
