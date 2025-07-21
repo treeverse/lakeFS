@@ -42,6 +42,14 @@ buildInfoPackage := "io.treeverse.clients"
 
 enablePlugins(S3Plugin, BuildInfoPlugin)
 
+// Required for scala 2.12.12 compatibility
+dependencyOverrides ++= Seq(
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.12.7",
+  "com.fasterxml.jackson.core" % "jackson-core" % "2.12.7",
+  "com.fasterxml.jackson.core" % "jackson-annotations" % "2.12.7",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.7"
+)
+
 libraryDependencies ++= Seq(
   "io.lakefs" % "sdk" % "1.53.1",
   "org.apache.spark" %% "spark-sql" % "3.1.2" % "provided",
@@ -56,6 +64,8 @@ libraryDependencies ++= Seq(
   "com.azure" % "azure-storage-blob-batch" % "12.7.0",
   "com.azure" % "azure-identity" % "1.2.0",
   "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
+  "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.18",
+  "com.google.cloud" % "google-cloud-storage" % "2.35.0",
   // Snappy is JNI :-(.  However it does claim to work with
   // ClassLoaders, and (even more importantly!) using a preloaded JNI
   // version will probably continue to work because the C language API
@@ -72,8 +82,6 @@ libraryDependencies ++= Seq(
   "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.10" % "test",
   "com.lihaoyi" %% "upickle" % "1.4.0" % "test",
   "com.lihaoyi" %% "os-lib" % "0.7.8" % "test",
-  // Test with an up-to-date fasterxml.
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.14.2" % "test",
   "com.storm-enroute" %% "scalameter" % "0.19" % "test"
 )
 

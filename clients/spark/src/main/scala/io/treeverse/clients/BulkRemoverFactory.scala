@@ -4,8 +4,10 @@ import com.amazonaws.services.s3.model
 import com.amazonaws.services.s3.model.MultiObjectDeleteException
 import com.azure.core.http.rest.Response
 import com.azure.storage.blob.models.DeleteSnapshotsOptionType
-import io.treeverse.clients.StorageClients.{Azure, S3}
+import com.google.cloud.storage.BlobId
+import io.treeverse.clients.StorageClients.{Azure, GCS, S3}
 import io.treeverse.clients.StorageUtils.AzureBlob._
+import io.treeverse.clients.StorageUtils.GCS._
 import io.treeverse.clients.StorageUtils.S3._
 
 import java.net.URI
@@ -149,8 +151,59 @@ object BulkRemoverFactory {
       }
     }
 
-    override def getMaxBulkSize(): Int = {
+    override def getMaxBulkSize: Int = {
       AzureBlobMaxBulkSize
+    }
+  }
+
+  private class GCSBulkRemover(storageNamespace: String, client: StorageClients.GCS)
+      extends BulkRemover {
+    private val uri = new URI(storageNamespace)
+    private val bucket = uri.getHost
+
+    override def deleteObjects(keys: Seq[String], storageNamespace: String): Seq[String] = {
+      val gcsClient = client.gcsClient
+
+      val removeKeyNames = constructRemoveKeyNames(keys,
+                                                   storageNamespace,
+                                                   keepNsSchemeAndHost = false,
+                                                   applyUTF8Encoding = false
+                                                  )
+      logger.info(s"Remove keys from $bucket: ${removeKeyNames.take(100).mkString(", ")}")
+
+      // Convert keys to BlobIds
+      val blobIds: Seq[BlobId] = removeKeyNames.map(key => BlobId.of(bucket, key))
+
+      try {
+        val results: java.util.List[java.lang.Boolean] = gcsClient.delete(blobIds: _*)
+
+        // Count how many objects actually got deleted (true means deleted)
+        val deletedCount = results.toArray.count(_.asInstanceOf[Boolean])
+
+        logger.info(s"Successfully deleted $deletedCount objects out of ${keys.size}")
+        // Pair keys with their delete result
+        val deletionResults = keys.zip(results.toArray.map(_.asInstanceOf[Boolean]))
+
+        // Separate successes and failures
+        val (deletedKeys, failedKeys) = deletionResults.partition(_._2)
+
+        if (failedKeys.nonEmpty) {
+          logger.error(s"Failed to delete keys: ${failedKeys.map(_._1).mkString(", ")}")
+        } else {
+          logger.info(s"Successfully deleted all ${keys.size} objects.")
+        }
+
+        // Return only the list of keys that were deleted successfully
+        deletedKeys.map(_._1)
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          Seq.empty
+      }
+    }
+
+    override def getMaxBulkSize: Int = {
+      GCSMaxBulkSize
     }
   }
 
@@ -160,7 +213,10 @@ object BulkRemoverFactory {
         new S3BulkRemover(storageNamespace, s3)
       case azure: Azure =>
         new AzureBlobBulkRemover(azure)
+      case gcs: GCS =>
+        new GCSBulkRemover(storageNamespace, gcs)
       case _ => throw new IllegalArgumentException("Invalid argument.")
+
     }
   }
 }
