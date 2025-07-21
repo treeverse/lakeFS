@@ -1,7 +1,7 @@
 ---
 title: Python Integration Overview
 description: Comprehensive guide to using Python with lakeFS - SDK comparison and getting started
-sdk_types: ["high-level", "generated", "lakefs-spec", "boto3"]
+sdk_types: ["high-level", "generated", "lakefs-spec"]
 difficulty: "beginner"
 use_cases: ["general", "decision-making", "getting-started"]
 topics: ["overview", "comparison", "selection"]
@@ -25,41 +25,36 @@ graph TD
     A[Your Application] --> B[High-Level SDK]
     A --> C[Generated SDK]
     A --> D[lakefs-spec]
-    A --> E[Boto3]
     
     B --> C
     C --> F[lakeFS API]
     D --> F
-    E --> G[lakeFS S3 Gateway]
-    G --> F
     
     style B fill:#e1f5fe
     style C fill:#f3e5f5
     style D fill:#e8f5e8
-    style E fill:#fff3e0
 ```
 
 - **High-Level SDK** is built on top of the **Generated SDK**, providing simplified interfaces while maintaining access to the underlying client
 - **Generated SDK** provides direct access to all lakeFS API endpoints based on the OpenAPI specification
 - **lakefs-spec** offers a filesystem-like interface compatible with the fsspec ecosystem
-- **Boto3** integrates through lakeFS's S3-compatible gateway
 
 ## Comprehensive SDK Comparison
 
-| Feature | High-Level SDK | Generated SDK | lakefs-spec | Boto3 |
-|---------|----------------|---------------|-------------|-------|
-| **Installation** | `pip install lakefs` | `pip install lakefs-sdk` | `pip install lakefs-spec` | `pip install boto3` |
-| **API Style** | Object-oriented, simplified | Direct API mapping | Filesystem-like | S3-compatible |
-| **Learning Curve** | Easy | Moderate | Easy | Easy (if familiar with S3) |
-| **Repository Management** | ✅ Full support | ✅ Full support | ❌ Not supported | ❌ Not supported |
-| **Branch Operations** | ✅ Simplified interface | ✅ Full API access | ❌ Limited | ❌ Not supported |
-| **Object Operations** | ✅ Streaming I/O | ✅ Manual handling | ✅ File-like operations | ✅ S3-style operations |
-| **Transactions** | ✅ Built-in support | ⚠️ Manual implementation | ✅ Context managers | ❌ Not supported |
-| **Data Science Integration** | ⚠️ Via file-like objects | ❌ Manual integration | ✅ Native pandas/dask support | ⚠️ Via S3 compatibility |
-| **Async Support** | ❌ Sync only | ⚠️ Limited | ❌ Sync only | ⚠️ Via aioboto3 |
-| **Error Handling** | ✅ Pythonic exceptions | ✅ API-level exceptions | ✅ Filesystem exceptions | ✅ Boto3 exceptions |
-| **Performance** | Good | Best (direct API) | Good | Good |
-| **Maintenance** | lakeFS team | Auto-generated | Third-party | AWS/Community |
+| Feature | High-Level SDK | Generated SDK | lakefs-spec |
+|---------|----------------|---------------|-------------|
+| **Installation** | `pip install lakefs` | `pip install lakefs-sdk` | `pip install lakefs-spec` |
+| **API Style** | Object-oriented, simplified | Direct API mapping | Filesystem-like |
+| **Learning Curve** | Easy | Moderate | Easy |
+| **Repository Management** | ✅ Full support | ✅ Full support | ❌ Not supported |
+| **Branch Operations** | ✅ Simplified interface | ✅ Full API access | ❌ Limited |
+| **Object Operations** | ✅ Streaming I/O | ✅ Manual handling | ✅ File-like operations |
+| **Transactions** | ✅ Built-in support | ⚠️ Manual implementation | ✅ Context managers |
+| **Data Science Integration** | ⚠️ Via file-like objects | ❌ Manual integration | ✅ Native pandas/dask support |
+| **Async Support** | ❌ Sync only | ⚠️ Limited | ❌ Sync only |
+| **Error Handling** | ✅ Pythonic exceptions | ✅ API-level exceptions | ✅ Filesystem exceptions |
+| **Performance** | Good | Best (direct API) | Good |
+| **Maintenance** | lakeFS team | Auto-generated | Third-party |
 
 ### SDK Strengths and Use Cases
 
@@ -123,25 +118,7 @@ graph TD
 - Data exploration in notebooks
 - Integration with existing data science stacks
 
-#### Boto3
-**Strengths:**
-- Familiar S3-compatible interface
-- Minimal code changes from existing S3 workflows
-- Extensive documentation and community support
-- Integration with AWS ecosystem tools
-- Support for multipart uploads and presigned URLs
 
-**Best for:**
-- Migrating existing S3-based applications
-- Teams familiar with AWS S3
-- Applications using S3-compatible tools
-- Hybrid S3/lakeFS deployments
-
-**Example use cases:**
-- S3 application migration
-- Backup and archival workflows
-- Integration with S3-compatible tools
-- Gradual lakeFS adoption
 
 ## SDK Selection Decision Matrix
 
@@ -164,10 +141,7 @@ Use this decision tree to choose the right SDK for your needs:
 - **Need full API control?** → [Generated SDK](generated-sdk/)
 - **Integrating with existing systems?** → [Generated SDK](generated-sdk/)
 
-#### 🔄 Migration from S3
-- **Existing S3 codebase?** → [Boto3](boto3/)
-- **Using S3-compatible tools?** → [Boto3](boto3/)
-- **Gradual migration strategy?** → [Boto3](boto3/) + [Boto S3 Router](boto3/s3-router.md)
+
 
 ### 🎯 Feature-Based Selection
 
@@ -176,7 +150,6 @@ Use this decision tree to choose the right SDK for your needs:
 | **Simplest API** | High-Level SDK | Pythonic, intuitive interface |
 | **Complete API access** | Generated SDK | All endpoints available |
 | **Pandas integration** | lakefs-spec | Native fsspec support |
-| **S3 compatibility** | Boto3 | Familiar S3 interface |
 | **Transaction support** | High-Level SDK or lakefs-spec | Built-in context managers |
 | **Streaming large files** | High-Level SDK | Optimized I/O operations |
 | **Custom tooling** | Generated SDK | Full control and flexibility |
@@ -195,9 +168,9 @@ Use this decision tree to choose the right SDK for your needs:
 - Check [best practices](reference/best-practices.md) for optimization
 
 #### Migrating from S3
-1. Review [Boto3 configuration](boto3/configuration.md)
-2. Consider [Boto S3 Router](boto3/s3-router.md) for hybrid setups
-3. Plan gradual migration with [migration guide](boto3/migration-guide.md)
+1. Review [S3 Gateway documentation](../../understand/architecture.md#s3-gateway) for S3-compatible access
+2. Consider gradual migration strategies
+3. Plan integration with existing S3-based workflows
 
 ## Quick Start
 
@@ -211,7 +184,7 @@ Use this decision tree to choose the right SDK for your needs:
 - **[High-Level SDK](high-level-sdk/)** - Comprehensive SDK documentation
 - **[Generated SDK](generated-sdk/)** - Direct API access patterns
 - **[lakefs-spec](lakefs-spec/)** - Filesystem API and data science integrations
-- **[Boto3](boto3/)** - S3-compatible operations
+
 - **[Tutorials](tutorials/)** - Real-world examples and workflows
 - **[Reference](reference/)** - API comparison, best practices, and troubleshooting
 
@@ -231,7 +204,6 @@ Use this decision tree to choose the right SDK for your needs:
 - [High-Level SDK Overview](high-level-sdk/index.md) - Simplified Python interface
 - [Generated SDK Overview](generated-sdk/index.md) - Direct API access
 - [lakefs-spec Overview](lakefs-spec/index.md) - Filesystem operations
-- [Boto3 Integration](boto3/index.md) - S3-compatible interface
 
 **Learning Resources:**
 - [Real-World Tutorials](tutorials/index.md) - End-to-end examples and workflows

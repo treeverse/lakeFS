@@ -1,7 +1,7 @@
 ---
 title: API Comparison
 description: Comprehensive feature comparison across all Python SDK options
-sdk_types: ["high-level", "generated", "lakefs-spec", "boto3"]
+sdk_types: ["high-level", "generated", "lakefs-spec"]
 difficulty: "intermediate"
 use_cases: ["general", "decision-making"]
 ---
@@ -16,7 +16,6 @@ This comprehensive comparison helps you choose the right Python SDK for your spe
 |----------|----------------|-------------|
 | **Data Science & Analytics** | lakefs-spec | High-Level SDK |
 | **Production ETL Pipelines** | High-Level SDK | Generated SDK |
-| **Existing S3 Workflows** | Boto3 | High-Level SDK |
 | **Custom API Operations** | Generated SDK | High-Level SDK |
 | **Jupyter Notebooks** | lakefs-spec | High-Level SDK |
 | **ML Experiment Tracking** | High-Level SDK | lakefs-spec |
@@ -27,93 +26,89 @@ This comprehensive comparison helps you choose the right Python SDK for your spe
 
 ### Core Repository Operations
 
-| Feature | High-Level SDK | Generated SDK | lakefs-spec | Boto3 |
-|---------|----------------|---------------|-------------|-------|
+| Feature | High-Level SDK | Generated SDK | lakefs-spec |
+|---------|----------------|---------------|-------------|
 | **Repository Management** |
-| Create Repository | ✅ Full | ✅ Full | ❌ None | ❌ None |
-| Delete Repository | ✅ Full | ✅ Full | ❌ None | ❌ None |
-| List Repositories | ✅ Full | ✅ Full | ❌ None | ❌ None |
-| Repository Metadata | ✅ Full | ✅ Full | ❌ None | ❌ None |
+| Create Repository | ✅ Full | ✅ Full | ❌ None |
+| Delete Repository | ✅ Full | ✅ Full | ❌ None |
+| List Repositories | ✅ Full | ✅ Full | ❌ None |
+| Repository Metadata | ✅ Full | ✅ Full | ❌ None |
 | **Branch Operations** |
-| Create Branch | ✅ Full | ✅ Full | ✅ Limited | ❌ None |
-| Delete Branch | ✅ Full | ✅ Full | ✅ Limited | ❌ None |
-| List Branches | ✅ Full | ✅ Full | ✅ Limited | ❌ None |
-| Branch Protection | ✅ Full | ✅ Full | ❌ None | ❌ None |
+| Create Branch | ✅ Full | ✅ Full | ✅ Limited |
+| Delete Branch | ✅ Full | ✅ Full | ✅ Limited |
+| List Branches | ✅ Full | ✅ Full | ✅ Limited |
+| Branch Protection | ✅ Full | ✅ Full | ❌ None |
 | **Commit Operations** |
-| Create Commit | ✅ Full | ✅ Full | ✅ Full | ❌ None |
-| List Commits | ✅ Full | ✅ Full | ✅ Limited | ❌ None |
-| Commit Metadata | ✅ Full | ✅ Full | ✅ Limited | ❌ None |
-| Cherry Pick | ✅ Full | ✅ Full | ❌ None | ❌ None |
+| Create Commit | ✅ Full | ✅ Full | ✅ Full |
+| List Commits | ✅ Full | ✅ Full | ✅ Limited |
+| Commit Metadata | ✅ Full | ✅ Full | ✅ Limited |
+| Cherry Pick | ✅ Full | ✅ Full | ❌ None |
 
 ### Object Operations
 
-| Feature | High-Level SDK | Generated SDK | lakefs-spec | Boto3 |
-|---------|----------------|---------------|-------------|-------|
+| Feature | High-Level SDK | Generated SDK | lakefs-spec |
+|---------|----------------|---------------|-------------|
 | **Basic Operations** |
-| Upload Object | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
-| Download Object | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
-| Delete Object | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
-| List Objects | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
+| Upload Object | ✅ Full | ✅ Full | ✅ Full |
+| Download Object | ✅ Full | ✅ Full | ✅ Full |
+| Delete Object | ✅ Full | ✅ Full | ✅ Full |
+| List Objects | ✅ Full | ✅ Full | ✅ Full |
 | **Advanced Operations** |
-| Streaming I/O | ✅ Full | 🔶 Manual | ✅ Full | ✅ Full |
-| Batch Operations | ✅ Full | 🔶 Manual | ✅ Full | ✅ Full |
-| Object Metadata | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
-| Presigned URLs | ✅ Full | ✅ Full | ❌ None | ✅ Full |
-| Multipart Upload | ✅ Full | ✅ Full | ✅ Full | ✅ Full |
+| Streaming I/O | ✅ Full | 🔶 Manual | ✅ Full |
+| Batch Operations | ✅ Full | 🔶 Manual | ✅ Full |
+| Object Metadata | ✅ Full | ✅ Full | ✅ Full |
+| Presigned URLs | ✅ Full | ✅ Full | ❌ None |
+| Multipart Upload | ✅ Full | ✅ Full | ✅ Full |
 
 ### Data Management Features
 
-| Feature | High-Level SDK | Generated SDK | lakefs-spec | Boto3 |
-|---------|----------------|---------------|-------------|-------|
+| Feature | High-Level SDK | Generated SDK | lakefs-spec |
+|---------|----------------|---------------|-------------|
 | **Transactions** |
-| Atomic Operations | ✅ Full | 🔶 Manual | ✅ Full | ❌ None |
-| Rollback Support | ✅ Full | 🔶 Manual | ✅ Full | ❌ None |
-| Context Managers | ✅ Full | ❌ None | ✅ Full | ❌ None |
+| Atomic Operations | ✅ Full | 🔶 Manual | ✅ Full |
+| Rollback Support | ✅ Full | 🔶 Manual | ✅ Full |
+| Context Managers | ✅ Full | ❌ None | ✅ Full |
 | **Import/Export** |
-| Data Import | ✅ Full | ✅ Full | ❌ None | ❌ None |
-| Import Status | ✅ Full | ✅ Full | ❌ None | ❌ None |
-| Export Operations | ✅ Full | ✅ Full | ❌ None | ❌ None |
+| Data Import | ✅ Full | ✅ Full | ❌ None |
+| Import Status | ✅ Full | ✅ Full | ❌ None |
+| Export Operations | ✅ Full | ✅ Full | ❌ None |
 | **Merge Operations** |
-| Branch Merging | ✅ Full | ✅ Full | ❌ None | ❌ None |
-| Conflict Resolution | ✅ Full | ✅ Full | ❌ None | ❌ None |
-| Merge Strategies | ✅ Full | ✅ Full | ❌ None | ❌ None |
+| Branch Merging | ✅ Full | ✅ Full | ❌ None |
+| Conflict Resolution | ✅ Full | ✅ Full | ❌ None |
+| Merge Strategies | ✅ Full | ✅ Full | ❌ None |
 
 ### Integration Capabilities
 
-| Feature | High-Level SDK | Generated SDK | lakefs-spec | Boto3 |
-|---------|----------------|---------------|-------------|-------|
+| Feature | High-Level SDK | Generated SDK | lakefs-spec |
+|---------|----------------|---------------|-------------|
 | **Data Science Libraries** |
-| Pandas Integration | ✅ Full | 🔶 Manual | ✅ Native | 🔶 Manual |
-| Dask Integration | ✅ Full | 🔶 Manual | ✅ Native | 🔶 Manual |
-| PyArrow Integration | ✅ Full | 🔶 Manual | ✅ Native | 🔶 Manual |
+| Pandas Integration | ✅ Full | 🔶 Manual | ✅ Native |
+| Dask Integration | ✅ Full | 🔶 Manual | ✅ Native |
+| PyArrow Integration | ✅ Full | 🔶 Manual | ✅ Native |
 | **File System Interface** |
-| fsspec Compatibility | 🔶 Limited | ❌ None | ✅ Native | 🔶 Limited |
-| Path-like Operations | ✅ Full | 🔶 Manual | ✅ Native | 🔶 Limited |
-| Glob Patterns | ✅ Full | 🔶 Manual | ✅ Native | 🔶 Limited |
-| **S3 Compatibility** |
-| S3 API Compatibility | ❌ None | ❌ None | ❌ None | ✅ Full |
-| Existing S3 Code | ❌ None | ❌ None | ❌ None | ✅ Full |
-| S3 Tools Integration | ❌ None | ❌ None | ❌ None | ✅ Full |
+| fsspec Compatibility | 🔶 Limited | ❌ None | ✅ Native |
+| Path-like Operations | ✅ Full | 🔶 Manual | ✅ Native |
+| Glob Patterns | ✅ Full | 🔶 Manual | ✅ Native |
 
 ## Performance Characteristics
 
 ### Throughput Comparison
 
-| Operation Type | High-Level SDK | Generated SDK | lakefs-spec | Boto3 |
-|----------------|----------------|---------------|-------------|-------|
+| Operation Type | High-Level SDK | Generated SDK | lakefs-spec |
+|----------------|----------------|---------------|-------------|
 | **Small Files (< 1MB)** |
-| Single Upload | Good | Good | Excellent | Good |
-| Batch Upload | Excellent | Good | Excellent | Good |
-| Single Download | Good | Good | Excellent | Good |
-| Batch Download | Excellent | Good | Excellent | Good |
+| Single Upload | Good | Good | Excellent |
+| Batch Upload | Excellent | Good | Excellent |
+| Single Download | Good | Good | Excellent |
+| Batch Download | Excellent | Good | Excellent |
 | **Large Files (> 100MB)** |
-| Streaming Upload | Excellent | Good | Excellent | Excellent |
-| Streaming Download | Excellent | Good | Excellent | Excellent |
-| Multipart Upload | Excellent | Good | Excellent | Excellent |
+| Streaming Upload | Excellent | Good | Excellent |
+| Streaming Download | Excellent | Good | Excellent |
+| Multipart Upload | Excellent | Good | Excellent |
 | **Metadata Operations** |
-| List Objects | Good | Good | Excellent | Good |
-| Object Stats | Good | Good | Excellent | Good |
-| Branch Operations | Excellent | Good | Good | N/A |
+| List Objects | Good | Good | Excellent |
+| Object Stats | Good | Good | Excellent |
+| Branch Operations | Excellent | Good | Good |
 
 ### Memory Usage
 
@@ -122,17 +117,16 @@ This comprehensive comparison helps you choose the right Python SDK for your spe
 | **High-Level SDK** | Good | Optimized for common patterns, connection pooling |
 | **Generated SDK** | Fair | Direct API access, manual optimization needed |
 | **lakefs-spec** | Excellent | Designed for large datasets, streaming-first |
-| **Boto3** | Good | Mature S3 optimizations, configurable buffering |
 
 ### Latency Characteristics
 
-| Operation | High-Level SDK | Generated SDK | lakefs-spec | Boto3 |
-|-----------|----------------|---------------|-------------|-------|
-| **Connection Setup** | Fast | Fast | Fast | Fast |
-| **Authentication** | Fast | Fast | Fast | Fast |
-| **First Request** | Medium | Medium | Fast | Medium |
-| **Subsequent Requests** | Fast | Fast | Fast | Fast |
-| **Batch Operations** | Fast | Medium | Fast | Fast |
+| Operation | High-Level SDK | Generated SDK | lakefs-spec |
+|-----------|----------------|---------------|-------------|
+| **Connection Setup** | Fast | Fast | Fast |
+| **Authentication** | Fast | Fast | Fast |
+| **First Request** | Medium | Medium | Fast |
+| **Subsequent Requests** | Fast | Fast | Fast |
+| **Batch Operations** | Fast | Medium | Fast |
 
 ## Trade-offs Analysis
 
@@ -199,26 +193,7 @@ This comprehensive comparison helps you choose the right Python SDK for your spe
 - Integration with existing fsspec-based tools
 - Teams familiar with filesystem interfaces
 
-### Boto3
 
-**Strengths:**
-- Full S3 API compatibility
-- Seamless migration from existing S3 workflows
-- Mature ecosystem and tooling support
-- Excellent performance for object operations
-- Familiar interface for AWS users
-
-**Weaknesses:**
-- No access to lakeFS-specific features (branches, commits, etc.)
-- Limited to object operations only
-- Requires S3 Gateway configuration
-- No transaction support
-
-**Best For:**
-- Migrating existing S3-based applications
-- Teams with strong AWS/S3 expertise
-- Applications requiring S3 tool compatibility
-- Simple object storage use cases
 
 ## Decision Guidelines
 
@@ -286,33 +261,9 @@ processed_df = df.groupby("category").sum()
 processed_df.to_parquet("lakefs://repo/branch/results/summary.parquet")
 ```
 
-### Choose Boto3 When:
 
-- Migrating existing S3-based applications
-- Need S3 tool compatibility
-- Simple object storage requirements
-- Team has strong AWS expertise
-- Using S3-compatible tools and libraries
-
-```python
-# Example: S3-compatible operations
-import boto3
-
-s3 = boto3.client('s3', endpoint_url='http://localhost:8000')
-s3.put_object(
-    Bucket='repo',
-    Key='branch/path/to/file.txt',
-    Body=data
-)
-```
 
 ## Migration Paths
-
-### From S3 to lakeFS
-
-1. **Start with Boto3**: Minimal code changes, immediate compatibility
-2. **Add lakefs-spec**: For data science workflows requiring filesystem interface
-3. **Upgrade to High-Level SDK**: For advanced lakeFS features and better integration
 
 ### From File Systems to lakeFS
 
@@ -341,15 +292,12 @@ s3.put_object(
 - [Generated SDK Examples](../generated-sdk/examples.md) - Common usage patterns
 - [lakefs-spec Overview](../lakefs-spec/index.md) - Filesystem interface documentation
 - [lakefs-spec Integrations](../lakefs-spec/integrations.md) - Data science library examples
-- [Boto3 Integration](../boto3/index.md) - S3-compatible operations
-- [Boto3 Configuration](../boto3/configuration.md) - Setup and authentication
 
 **Feature-Specific Guides:**
 - [Transaction Patterns](../high-level-sdk/transactions.md) - Atomic operations across SDKs
 - [Object I/O Operations](../high-level-sdk/objects-and-io.md) - File handling patterns
 - [Data Import/Export](../high-level-sdk/imports-and-exports.md) - Bulk data operations
 - [Filesystem Operations](../lakefs-spec/filesystem-api.md) - File-like operations
-- [S3 Operations](../boto3/s3-operations.md) - S3-compatible patterns
 
 **Learning Resources:**
 - [Data Science Tutorial](../tutorials/data-science-workflow.md) - End-to-end workflow examples
@@ -363,7 +311,6 @@ s3.put_object(
 - [Error Handling Patterns](troubleshooting.md#error-handling) - Exception handling strategies
 
 **Migration Guides:**
-- [S3 Migration Patterns](../boto3/s3-operations.md#migration-patterns) - Convert S3 code to lakeFS
 - [SDK Migration Strategies](best-practices.md#sdk-migration) - Moving between SDKs
 - [Legacy Integration](best-practices.md#legacy-integration) - Integrate with existing systems
 
@@ -371,4 +318,3 @@ s3.put_object(
 - [High-Level SDK API Reference](https://pydocs-lakefs.lakefs.io){:target="_blank"} - Complete API documentation
 - [Generated SDK API Reference](https://pydocs-sdk.lakefs.io){:target="_blank"} - Auto-generated API docs
 - [lakefs-spec Documentation](https://lakefs-spec.org/){:target="_blank"} - Third-party filesystem interface
-- [Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html){:target="_blank"} - Official Boto3 documentation
