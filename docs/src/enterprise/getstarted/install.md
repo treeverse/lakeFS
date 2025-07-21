@@ -63,7 +63,7 @@ The following demonstrates how to configure the license in the `values` file:
       enabled: true
 
     secrets:
-    licenseContents: <Your licese JWT token>
+        licenseContents: <Your licese JWT token>
     ```
 
 === "License with token provided from existing secret"
@@ -76,8 +76,8 @@ The following demonstrates how to configure the license in the `values` file:
     existingSecret: <Name of existing secret>
 
     secretKeys:
-    # Use to fetch license token from an existing secret:
-    licenseContentsKey: <Name of license contents key from existing secret>
+      # Use to fetch license token from an existing secret:
+       licenseContentsKey: <Name of license contents key from existing secret>
     ```
 
 
