@@ -176,7 +176,7 @@ func VerifyNoSymlinksInPath(path, root string) error {
 	// Ensure path is absolute
 	dirPath, err := filepath.Abs(path)
 	if err != nil {
-		return fmt.Errorf("failed to get absolute path for %s: %w", path, err)
+		return fmt.Errorf("get absolute path for %s: %w", path, err)
 	}
 
 	// Check each directory level from the path up to the root
