@@ -225,6 +225,41 @@ Error: feature not licensed - to enable, contact support@treeverse.io
 
 ---
 
+### License Configuration
+
+!!! note 
+    You can proceed without this step at the moment. However, licensing enforcement will be introduced soon. 
+    Contact [support](mailto:support@treeverse.io) to receive your installation license.
+
+lakeFS Enterprise requires a valid license to work.
+In the helm chart the license is provided as a JWT token either from an existing secret or explicitly.
+The following demonstrates how to configure the license in the `values` file:
+
+=== "License with token provided in secrets"
+
+    ```yaml
+    enterprise:
+      enabled: true
+
+    secrets:
+        licenseContents: <Your licese JWT token>
+    ```
+
+=== "License with token provided from existing secret"
+
+    ```yaml
+    enterprise:
+      enabled: true
+
+    # Name of existing secret to use
+    existingSecret: <Name of existing secret>
+
+    secretKeys:
+      # Use to fetch license token from an existing secret:
+       licenseContentsKey: <Name of license contents key from existing secret>
+    ```
+
+
 ### Authentication Configuration
 
 Authentication in lakeFS Enterprise is handled directly by the lakeFS Enterprise service. This section explains the configurations required for setting up SSO.
