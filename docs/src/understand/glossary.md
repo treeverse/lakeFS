@@ -66,6 +66,17 @@ Where there is data, there is also metadata. lakeFS uses metadata to define sche
 ## Merge
 lakeFS merge command, similar to the Git merge functionality, allows you to merge data branches. Once you commit data, you can review it and then merge the committed data into the target branch. A merge generates a commit on the target branch with all your changes. lakeFS guarantees atomic merges that are fast, given they don’t involve copying data. [Read More][merge].
 
+## Object Metadata
+
+In lakeFS, each object can have two types of metadata:
+
+* **System metadata**: Automatically captured attributes such as object path, size, last modified time, and the committer who made the change.
+* **User-defined metadata**: Custom key-value pairs (e.g., labels, annotations, tags) added during data ingestion, processing, or curation to
+enrich context.
+
+Like data itself, object metadata is versioned in lakeFS. This means metadata evolves alongside your data and can be easily
+managed, queried, and reproduced.
+
 ## Repository
 
 In lakeFS, a _repository_ is a set of related objects (or collections of objects). [Read More][repository].

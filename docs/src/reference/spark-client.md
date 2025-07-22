@@ -26,11 +26,11 @@ can work for other Spark versions and higher Hadoop versions.
     Start Spark Shell / PySpark with the `--packages` flag, for instance:
 
     ```bash
-    spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.14.3
+    spark-shell --packages io.lakefs:lakefs-spark-client_2.12:0.15.0
     ```
 
     Alternatively use the assembled jar (an "Überjar") on S3, from
-    `s3://treeverse-clients-us-east/lakefs-spark-client/0.14.3/lakefs-spark-client-assembly-0.14.3.jar`
+    `s3://treeverse-clients-us-east/lakefs-spark-client/0.15.0/lakefs-spark-client-assembly-0.15.0.jar`
     by passing its path to `--jars`.
 
     The assembled jar is larger but shades several common libraries.  Use it if Spark
@@ -38,7 +38,7 @@ can work for other Spark versions and higher Hadoop versions.
 
 === "Databricks"
     Include this assembled jar (an "Überjar") from S3, from
-    `s3://treeverse-clients-us-east/lakefs-spark-client/0.14.3/lakefs-spark-client-assembly-0.14.3.jar`.
+    `s3://treeverse-clients-us-east/lakefs-spark-client/0.15.0/lakefs-spark-client-assembly-0.15.0.jar`.
 
 
 ## Configuration
@@ -70,43 +70,5 @@ To read metadata from lakeFS, the client should be configured with your lakeFS e
     |     file_3 |f6089c25029240578...|32e2f296cb3867d57...|2021-03-07 13:43:19|  36|
     |     file_4 |bef38ef97883445c8...|e920efe2bc220ffbb...|2021-03-07 13:43:11|  13|
     +------------+--------------------+--------------------+-------------------+----+
-    */
-    ```
-
-!!! example "Run SQL queries on your metadata"
-
-    ```scala
-    df.createOrReplaceTempView("files")
-    spark.sql("SELECT DATE(last_modified), COUNT(*) FROM files GROUP BY 1 ORDER BY 1")
-    /* output example:
-    +----------+--------+
-    |        dt|count(1)|
-    +----------+--------+
-    |2021-03-05|       2|
-    |2021-03-07|       2|
-    +----------+--------+
-    */
-    ```
-
-!!! example "Search by user metadata"
-
-    ```scala
-    import io.treeverse.clients.LakeFSContext
-
-    val namespace = "s3://bucket/repo/path/"
-    val df = LakeFSContext.newDF(spark, namespace)
-
-    val key = "SomeKey"
-    val searchedValue = "val3"
-    df.select("key", "user_metadata")
-    .filter(_.getMap[String, String](1).toMap.get(s"X-Amz-Meta-${key}").getOrElse("") == searchedValue)
-    .show()
-    /* output example:
-    +---------+-----------------------------------------------------+
-    |key      |user_metadata                                        |
-    +---------+-----------------------------------------------------+
-    |file1.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> blue} |
-    |file8.txt|{X-Amz-Meta-SomeKey -> val3, X-Amz-Meta-Tag -> green}|
-    +---------+-----------------------------------------------------+
     */
     ```

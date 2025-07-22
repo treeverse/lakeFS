@@ -5,7 +5,7 @@ import os
 import shutil
 
 NAME = "lakefs"
-VERSION = "0.11.1"
+VERSION = "0.12.0"
 # To install the library, run the following
 #
 # python setup.py install
@@ -21,9 +21,9 @@ REQUIRES = [
 TEST_REQUIRES = [
     "pytest ~= 7.4.3",
     "pytest-datafiles ~= 3.0.0",
-    "pandas ~= 2.1.4",
-    "pyarrow ~= 14.0.1",
-    "pillow ~= 10.3.0"
+    "pandas >= 2.1.4,<3",
+    "pyarrow >= 14.0.1,<20",
+    "pillow >= 10.3.0,<12"
 ]
 
 with open('README.md') as f:

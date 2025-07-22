@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
 object StorageUtils {
   val StorageTypeS3 = "s3"
   val StorageTypeAzure = "azure"
+  val StorageTypeGCS = "gs"
 
   /** Constructs object paths in a storage namespace.
    *
@@ -156,6 +157,11 @@ object StorageUtils {
       val bucketRegion = client.getBucketLocation(request)
       Region.fromValue(bucketRegion).toAWSRegion().getName()
     }
+  }
+
+  object GCS {
+    val GCSMaxBulkSize =
+      500 // 1000 is the max size, 500 is the recommended size to avoid timeouts or hitting HTTP size limits
   }
 }
 
