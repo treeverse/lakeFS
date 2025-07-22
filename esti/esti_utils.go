@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -32,6 +33,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
+	"github.com/treeverse/lakefs/pkg/block/local"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler/sstable"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -69,6 +71,8 @@ const (
 	minHTTPErrorStatusCode   = 400
 	ViperStorageNamespaceKey = "storage_namespace"
 	ViperBlockstoreType      = "blockstore_type"
+
+	windowsOSStr = "windows"
 )
 
 var (
@@ -281,6 +285,14 @@ func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	}
 }
 
+// skipOnWindows skips the test when running on Windows
+func skipOnWindows(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == windowsOSStr {
+		t.Skip("Skipping test on Windows")
+	}
+}
+
 // VerifyResponse returns an error based on failed if resp failed to perform action.  It uses
 // body in errors.
 func VerifyResponse(resp *http.Response, body []byte) error {
@@ -334,11 +346,28 @@ func GenerateUniqueRepositoryName() string {
 }
 
 func GenerateUniqueStorageNamespace(repoName string) string {
-	ns := viper.GetString("storage_namespace")
-	if !strings.HasSuffix(ns, "/") {
-		ns += "/"
+	ns := viper.GetString(ViperStorageNamespaceKey)
+
+	// Determine the correct path separator for URI construction
+	pathSeparator := "/" // Default to forward slash for URIs
+
+	// Only use Windows backslashes for local:// scheme on Windows
+	if runtime.GOOS == windowsOSStr && strings.HasPrefix(ns, local.DefaultNamespacePrefix) {
+		pathSeparator = string(filepath.Separator) // Use backslash on Windows
+
+		// Fix the base namespace if Git Bash converted backslashes to forward slashes
+		// Convert patterns like "local://D:/temp/path" to "local://D:\temp\path"
+		if _, pathPart, found := strings.Cut(ns, local.DefaultNamespacePrefix); found {
+			// Convert all forward slashes to backslashes in the path part
+			pathPart = strings.ReplaceAll(pathPart, "/", "\\")
+			ns = local.DefaultNamespacePrefix + pathPart
+		}
 	}
-	return ns + xid.New().String() + "/" + repoName
+
+	if !strings.HasSuffix(ns, pathSeparator) {
+		ns += pathSeparator
+	}
+	return ns + xid.New().String() + pathSeparator + repoName
 }
 
 func createRepository(ctx context.Context, t testing.TB, name string, repoStorage string, isReadOnly bool) {

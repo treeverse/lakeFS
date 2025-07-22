@@ -1424,3 +1424,218 @@ jobs:
           if docker compose ps -q postgres; then
             docker compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://esti-system-testing/${{ github.run_number }}/${{ steps.unique.outputs.value }}/dump.gz
           fi
+
+  run-lakectl-windows-tests:
+    name: Test lakectl on Windows (Native)
+    needs: [gen-code]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      LAKEFS_DATABASE_TYPE: local
+      LAKEFS_BLOCKSTORE_TYPE: local
+      LAKEFS_BLOCKSTORE_LOCAL_PATH: D:\temp\lakefs-data
+      LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+      LAKEFS_STATS_ENABLED: false
+      LAKEFS_USAGE_REPORT_ENABLED: false
+      LAKEFS_LOGGING_LEVEL: DEBUG
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.24
+        id: go
+
+      - name: Retrieve generated code
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: generated-code
+          path: D:/temp/
+
+      - name: Unpack generated code
+        shell: bash
+        run: tar -xzvf /d/temp/generated.tar.gz
+
+      - name: Build Windows binaries
+        shell: bash
+        run: |
+          echo "Building Windows binaries..."
+          export GOOS=windows
+          export GOARCH=amd64
+          make build-binaries VERSION=${{ needs.gen-code.outputs.tag }}
+          
+          echo "Checking what binaries were created..."
+          ls -la lakefs* lakectl* || echo "No binaries found with expected names"
+          
+          # Rename binaries to .exe if they don't have the extension
+          if [ -f "lakefs" ] && [ ! -f "lakefs.exe" ]; then
+            mv lakefs lakefs.exe
+            echo "Renamed lakefs to lakefs.exe"
+          fi
+          if [ -f "lakectl" ] && [ ! -f "lakectl.exe" ]; then
+            mv lakectl lakectl.exe
+            echo "Renamed lakectl to lakectl.exe"
+          fi
+          
+          echo "Verifying Windows binaries..."
+          ls -la lakefs.exe lakectl.exe
+          file lakefs.exe lakectl.exe
+          echo "Windows binaries built successfully"
+
+      - name: Setup test environment
+        shell: powershell
+        run: |
+          Write-Host "Setting up test environment..."
+          New-Item -Type Directory -Path "D:\temp\lakefs-data" -Force
+          Write-Host "Created data directory: D:\temp\lakefs-data"
+          if (!(Test-Path "lakefs.exe")) {
+            Write-Error "lakefs.exe not found"
+            exit 1
+          }
+          if (!(Test-Path "lakectl.exe")) {
+            Write-Error "lakectl.exe not found"
+            exit 1
+          }
+          Write-Host "Binaries verified successfully"
+
+      - name: Start lakeFS server
+        shell: powershell
+        run: |
+          Write-Host "Starting lakeFS server..."
+          $lakeFSProcess = Start-Process -FilePath ".\lakefs.exe" -ArgumentList "run" -PassThru -WindowStyle Hidden
+          Write-Host "Started lakeFS process with PID: $($lakeFSProcess.Id)"
+          $lakeFSProcess.Id | Out-File -FilePath "lakefs-pid.txt"
+          
+          $timeout = 60
+          $count = 0
+          $serverReady = $false
+          
+          Write-Host "Waiting for lakeFS server to be ready..."
+          do {
+            Start-Sleep -Seconds 2
+            $count += 2
+            try {
+              $response = Invoke-WebRequest -Uri "http://localhost:8000/_health" -UseBasicParsing -ErrorAction SilentlyContinue -TimeoutSec 5
+              if ($response.StatusCode -eq 200) {
+                $serverReady = $true
+                break
+              }
+            } catch {
+              Write-Host "Attempt $count/$timeout - Server not ready yet..."
+            }
+          } while ($count -lt $timeout)
+          
+          if (-not $serverReady) {
+            Write-Error "lakeFS server failed to start within $timeout seconds"
+            Get-Process -Name "lakefs" -ErrorAction SilentlyContinue | Format-Table
+            exit 1
+          }
+          Write-Host "lakeFS server is ready and responding to health checks"
+
+      - name: Setup lakectl test environment
+        shell: bash
+        run: |
+          echo "Setting up lakectl test environment..."
+          export ESTI_ENDPOINT_URL="http://localhost:8000"
+          export ESTI_BINARIES_DIR="$(pwd)"
+          export ESTI_SETUP_LAKEFS="true"
+          export ESTI_STORAGE_NAMESPACE="local://D:\\temp\\lakefs-data\\test-storage"
+          
+          # Print environment for debugging
+          echo "=== Test Environment ==="
+          echo "ESTI_ENDPOINT_URL=$ESTI_ENDPOINT_URL"
+          echo "ESTI_BINARIES_DIR=$ESTI_BINARIES_DIR"
+          echo "ESTI_SETUP_LAKEFS=$ESTI_SETUP_LAKEFS"
+          echo "ESTI_STORAGE_NAMESPACE=$ESTI_STORAGE_NAMESPACE"
+          
+          # Verify lakectl can communicate with server
+          echo "=== Testing lakectl connectivity ==="
+          ./lakectl.exe --help
+          
+          # Test basic server connectivity
+          curl -f http://localhost:8000/_health || (echo "Server health check failed" && exit 1)
+          echo "Server connectivity verified"
+
+      - name: Run lakectl Windows tests
+        shell: bash
+        run: |
+          echo "Running lakectl tests on Windows..."
+          
+          export ESTI_ENDPOINT_URL="http://localhost:8000"
+          export ESTI_BINARIES_DIR="$(pwd)"
+          export ESTI_SETUP_LAKEFS="true"
+          export ESTI_STORAGE_NAMESPACE="local://D:\\temp\\lakefs-data\\test-storage"
+          
+          # Run lakectl tests
+          echo "=== Running lakectl tests ==="
+          go test -v ./esti \
+            -run="^TestLakectl" \
+            -timeout=30m \
+            --args --system-tests
+
+      - name: Debug on failure
+        if: failure()
+        continue-on-error: true
+        shell: powershell
+        run: |
+          Write-Host "=== Debug Information ==="
+          Write-Host "=== Process List ==="
+          Get-Process | Where-Object {$_.ProcessName -like "*lakefs*" -or $_.ProcessName -like "*lakectl*"} | Format-Table
+          
+          Write-Host "=== Network Connections ==="
+          netstat -an | findstr 8000
+          
+          Write-Host "=== Directory Contents ==="
+          Get-ChildItem -Path . | Format-Table
+          
+          Write-Host "=== lakeFS Data Directory ==="
+          if (Test-Path "D:\temp\lakefs-data") {
+            Get-ChildItem -Path "D:\temp\lakefs-data" -Recurse | Format-Table
+          } else {
+            Write-Host "lakeFS data directory does not exist"
+          }
+          
+          Write-Host "=== Environment Variables ==="
+          Get-ChildItem Env: | Where-Object {$_.Name -like "*ESTI*" -or $_.Name -like "*LAKEFS*"} | Format-Table
+
+      - name: Stop lakeFS server
+        if: always()
+        shell: powershell
+        run: |
+          Write-Host "Stopping lakeFS server..."
+          
+          # Try to stop using stored PID first
+          if (Test-Path "lakefs-pid.txt") {
+            $lakefsPid = Get-Content "lakefs-pid.txt"
+            try {
+              Stop-Process -Id $lakefsPid -Force -ErrorAction SilentlyContinue
+              Write-Host "Stopped lakeFS process with PID: $lakefsPid"
+            } catch {
+              Write-Host "Could not stop process with stored PID: $lakefsPid"
+            }
+          }
+          
+          # Also try to stop any remaining lakefs processes
+          Get-Process -Name "lakefs" -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "Stopping remaining lakeFS process with PID: $($_.Id)"
+            Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+          }
+          
+          Write-Host "lakeFS server cleanup completed"
+
+      - name: Cleanup test data
+        if: always()
+        shell: powershell
+        run: |
+          Write-Host "Cleaning up test data..."
+          if (Test-Path "D:\temp\lakefs-data") {
+            Remove-Item -Path "D:\temp\lakefs-data" -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Host "Removed test data directory"
+          }
+          if (Test-Path "lakefs-pid.txt") {
+            Remove-Item -Path "lakefs-pid.txt" -Force -ErrorAction SilentlyContinue
+            Write-Host "Removed PID file"
+          }
+          Write-Host "Cleanup completed"

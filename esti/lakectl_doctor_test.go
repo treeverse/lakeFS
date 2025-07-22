@@ -23,7 +23,7 @@ func TestLakectlDoctor(t *testing.T) {
 	}
 
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL)+" doctor", false, "lakectl_doctor_ok", vars)
-	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c not_exits.yaml", false, "lakectl_doctor_not_exists_file", vars)
+	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c not_exists.yaml", false, "lakectl_doctor_not_exists_file", vars)
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL+"1")+" doctor", false, "lakectl_doctor_wrong_endpoint", vars)
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, "wrong_uri")+" doctor", false, "lakectl_doctor_wrong_uri_format_endpoint", vars)
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams("AKIAJZZZZZZZZZZZZZZQ", secretAccessKey, endPointURL)+" doctor", false, "lakectl_doctor_with_wrong_credentials", vars)
@@ -32,7 +32,7 @@ func TestLakectlDoctor(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, "TQG5JcovOozCGJnIRmIKH7Flq1tLxnuByi9/WmJ!", endPointURL)+" doctor", false, "lakectl_doctor_with_suspicious_secret_access_key", vars)
 
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL)+" doctor --verbose", false, "lakectl_doctor_ok_verbose", vars)
-	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c not_exits.yaml --verbose", false, "lakectl_doctor_not_exists_file", vars)
+	RunCmdAndVerifyFailureWithFile(t, lakectlLocation()+" doctor -c not_exists.yaml --verbose", false, "lakectl_doctor_not_exists_file", vars)
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, endPointURL+"1")+" doctor --verbose", false, "lakectl_doctor_wrong_endpoint_verbose", vars)
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams(accessKeyID, secretAccessKey, "wrong_uri")+" doctor --verbose", false, "lakectl_doctor_wrong_uri_format_endpoint_verbose", vars)
 	RunCmdAndVerifySuccessWithFile(t, LakectlWithParams("AKIAJZZZZZZZZZZZZZZQ", secretAccessKey, endPointURL)+" doctor --verbose", false, "lakectl_doctor_with_wrong_credentials_verbose", vars)
