@@ -230,6 +230,13 @@ func TestVerifyNoSymlinksInPath(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, f.Close())
 
+	// Create a bad directory and symdir symlink under dir1
+	badDir := filepath.Join(root, "bad")
+	require.NoError(t, os.MkdirAll(badDir, fileutil.DefaultDirectoryMask))
+
+	symdirPath := filepath.Join(root, "dir1", "symdir")
+	require.NoError(t, os.Symlink(badDir, symdirPath))
+
 	t.Run("no_symlinks", func(t *testing.T) {
 		err := fileutil.VerifyNoSymlinksInPath(testFile, root)
 		require.NoError(t, err)
@@ -277,5 +284,11 @@ func TestVerifyNoSymlinksInPath(t *testing.T) {
 		relPath := filepath.Join("dir1", "dir2", "dir3", "test.txt")
 		err = fileutil.VerifyNoSymlinksInPath(relPath, root)
 		require.NoError(t, err)
+	})
+
+	t.Run("symlink_at_second_level", func(t *testing.T) {
+		symdirIncludedPath := filepath.Join(root, "dir1", "symdir", "dir3")
+		err := fileutil.VerifyNoSymlinksInPath(symdirIncludedPath, root)
+		require.Error(t, err)
 	})
 }
