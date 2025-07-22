@@ -989,6 +989,37 @@ func TestController_CommitHandler(t *testing.T) {
 			t.Fatalf("Commit to protected branch should be forbidden (403), got %s", resp.Status())
 		}
 	})
+
+	t.Run("protected branch delete", func(t *testing.T) {
+		repo := testUniqueRepoName()
+		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
+		testutil.MustDo(t, "create repository", err)
+
+		// Create a test branch
+		_, err = deps.catalog.CreateBranch(ctx, repo, "test-branch", "main")
+		testutil.MustDo(t, "create test branch", err)
+
+		// Set protection rules to block deletion
+		rules := map[string]*graveler.BranchProtectionBlockedActions{
+			"test-branch": {
+				Value: []graveler.BranchProtectionBlockedAction{
+					graveler.BranchProtectionBlockedAction_DELETE,
+				},
+			},
+		}
+		err = deps.catalog.SetBranchProtectionRules(ctx, repo, &graveler.BranchProtectionRules{
+			BranchPatternToBlockedActions: rules,
+		}, swag.String(""))
+		testutil.MustDo(t, "protection rule", err)
+
+		// Try to delete the protected branch - should fail
+		resp, err := clt.DeleteBranchWithResponse(ctx, repo, "test-branch", &apigen.DeleteBranchParams{})
+		testutil.Must(t, err)
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("Delete protected branch should be forbidden (403), got %s", resp.Status())
+		}
+	})
+
 	t.Run("read only repo", func(t *testing.T) {
 		repo := testUniqueRepoName()
 		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", true)

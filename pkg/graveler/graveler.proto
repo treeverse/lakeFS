@@ -54,6 +54,7 @@ message GarbageCollectionRules {
 enum BranchProtectionBlockedAction {
   STAGING_WRITE = 0;
   COMMIT = 1;
+  DELETE = 2;
 }
 
 message BranchProtectionBlockedActions {

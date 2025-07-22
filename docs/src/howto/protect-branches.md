@@ -13,10 +13,13 @@ You can create rules for a specific branch or any branch that matches a name pat
 
 ## How it works
 
-When at least one protection rule applies to a branch, the branch is protected. The following operations will fail on protected branches:
+When at least one protection rule applies to a branch, the branch is protected. You can configure which operations are blocked for protected branches:
 
-1. Object write operations: **upload** and **delete** objects.
-1. Branch operations: **commit** and **reset uncommitted changes**.
+1. **Object write operations**: **upload** and **delete** objects.
+1. **Branch operations**: **commit** and **reset uncommitted changes**.
+1. **Branch deletion**: **delete** the branch entirely.
+
+You can selectively enable or disable each type of protection when creating or updating a protection rule. By default, new rules block object writes and commits, but allow branch deletion.
 
 To operate on a protected branch, merge commits from other branches into
 it. Use pre-merge [hooks][data-quality-gates] to validate the changes before
@@ -38,7 +41,16 @@ This section explains how to use the lakeFS UI to manage rules. You can also use
 
 ### Adding a rule
 
-To add a new rule, click the _Add_ button. In the dialog, enter the branch name pattern and then click _Create_.
+To add a new rule, click the _Add_ button. In the dialog:
+
+1. Enter the branch name pattern using [glob](https://en.wikipedia.org/wiki/Glob_(programming)) syntax (supporting `?` and `*` wildcards).
+2. Select which actions to block:
+   - **Block staging area writes**: Prevents uploading and deleting objects on the branch
+   - **Block commits**: Prevents creating new commits on the branch  
+   - **Block branch deletion**: Prevents deleting the branch entirely
+3. Click _Create_ to save the rule.
+
+By default, new rules block staging writes and commits, but allow branch deletion.
 
 ![Adding a branch protection rule](../assets/img/add_branch_protection_rule.png)
 

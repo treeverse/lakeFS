@@ -2494,10 +2494,28 @@ func (c *Controller) GetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 		return
 	}
 	resp := make([]*apigen.BranchProtectionRule, 0, len(rules.BranchPatternToBlockedActions))
-	for pattern := range rules.BranchPatternToBlockedActions {
-		resp = append(resp, &apigen.BranchProtectionRule{
+	for pattern, blockedActions := range rules.BranchPatternToBlockedActions {
+		rule := &apigen.BranchProtectionRule{
 			Pattern: pattern,
-		})
+		}
+
+		// Convert protobuf blocked actions back to string slice
+		if blockedActions != nil && len(blockedActions.Value) > 0 {
+			actions := make([]string, 0, len(blockedActions.Value))
+			for _, action := range blockedActions.Value {
+				switch action {
+				case graveler.BranchProtectionBlockedAction_STAGING_WRITE:
+					actions = append(actions, "staging_write")
+				case graveler.BranchProtectionBlockedAction_COMMIT:
+					actions = append(actions, "commit")
+				case graveler.BranchProtectionBlockedAction_DELETE:
+					actions = append(actions, "delete")
+				}
+			}
+			rule.BlockedActions = &actions
+		}
+
+		resp = append(resp, rule)
 	}
 	w.Header().Set("ETag", swag.StringValue(eTag))
 	writeResponse(w, r, http.StatusOK, resp)
@@ -2515,14 +2533,17 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	c.LogAction(ctx, "create_branch_protection_rule", r, repository, "", "")
 
-	// For now, all protected branches use the same default set of blocked actions. In the future this set will be user configurable.
-	blockedActions := []graveler.BranchProtectionBlockedAction{graveler.BranchProtectionBlockedAction_STAGING_WRITE, graveler.BranchProtectionBlockedAction_COMMIT}
-
 	rules := &graveler.BranchProtectionRules{
 		BranchPatternToBlockedActions: make(map[string]*graveler.BranchProtectionBlockedActions),
 	}
-	for _, r := range body {
-		rules.BranchPatternToBlockedActions[r.Pattern] = &graveler.BranchProtectionBlockedActions{
+	for _, rule := range body {
+		// Convert string actions to protobuf enum values
+		blockedActions, err := c.convertToBlockedActions(rule.BlockedActions)
+		if err != nil {
+			writeError(w, r, http.StatusBadRequest, err)
+			return
+		}
+		rules.BranchPatternToBlockedActions[rule.Pattern] = &graveler.BranchProtectionBlockedActions{
 			Value: blockedActions,
 		}
 	}
@@ -2531,6 +2552,32 @@ func (c *Controller) SetBranchProtectionRules(w http.ResponseWriter, r *http.Req
 		return
 	}
 	writeResponse(w, r, http.StatusNoContent, nil)
+}
+
+// convertToBlockedActions converts string action names to protobuf enum values
+func (c *Controller) convertToBlockedActions(actions *[]string) ([]graveler.BranchProtectionBlockedAction, error) {
+	// Default actions if none specified (backward compatibility)
+	if actions == nil {
+		return []graveler.BranchProtectionBlockedAction{
+			graveler.BranchProtectionBlockedAction_STAGING_WRITE,
+			graveler.BranchProtectionBlockedAction_COMMIT,
+		}, nil
+	}
+
+	var blockedActions []graveler.BranchProtectionBlockedAction
+	for _, action := range *actions {
+		switch action {
+		case "staging_write":
+			blockedActions = append(blockedActions, graveler.BranchProtectionBlockedAction_STAGING_WRITE)
+		case "commit":
+			blockedActions = append(blockedActions, graveler.BranchProtectionBlockedAction_COMMIT)
+		case "delete":
+			blockedActions = append(blockedActions, graveler.BranchProtectionBlockedAction_DELETE)
+		default:
+			return nil, fmt.Errorf("invalid blocked action: %s", action)
+		}
+	}
+	return blockedActions, nil
 }
 
 func (c *Controller) DeleteGCRules(w http.ResponseWriter, r *http.Request, repository string) {

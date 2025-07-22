@@ -1580,6 +1580,16 @@ func (g *Graveler) DeleteBranch(ctx context.Context, repository *RepositoryRecor
 	if repository.DefaultBranchID == branchID {
 		return ErrDeleteDefaultBranch
 	}
+
+	// Check if branch is protected from deletion
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_DELETE)
+	if err != nil {
+		return err
+	}
+	if isProtected {
+		return ErrDeleteProtectedBranch
+	}
+
 	branch, err := g.RefManager.GetBranch(ctx, repository, branchID)
 	if err != nil {
 		return err

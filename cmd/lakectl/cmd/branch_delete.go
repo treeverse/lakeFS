@@ -15,12 +15,17 @@ var branchDeleteCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
-		confirmation, err := Confirm(cmd.Flags(), "Are you sure you want to delete branch")
-		if err != nil || !confirmation {
-			Die("Delete branch aborted", 1)
-		}
 		client := getClient()
 		u := MustParseBranchURI("branch URI", args[0])
+
+		confirmation, err := Confirm(cmd.Flags(), fmt.Sprintf("Are you sure you want to delete branch '%s'", u.Ref))
+		if err != nil {
+			Die("Error getting confirmation", 1)
+		}
+		if !confirmation {
+			Die("Delete branch cancelled by user", 1)
+		}
+
 		fmt.Println("Branch:", u)
 		resp, err := client.DeleteBranchWithResponse(cmd.Context(), u.Repository, u.Ref, &apigen.DeleteBranchParams{})
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusNoContent)

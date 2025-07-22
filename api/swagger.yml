@@ -1537,6 +1537,13 @@ components:
           description: fnmatch pattern for the branch name, supporting * and ? wildcards
           example: "stable_*"
           minLength: 1
+        blocked_actions:
+          type: array
+          description: List of actions to block on protected branches. If not specified, defaults to ["staging_write", "commit"]
+          items:
+            type: string
+            enum: ["staging_write", "commit", "delete"]
+          example: ["staging_write", "commit"]
       required:
         - pattern
 

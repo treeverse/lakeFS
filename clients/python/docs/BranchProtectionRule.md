@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **pattern** | **str** | fnmatch pattern for the branch name, supporting * and ? wildcards | 
+**blocked_actions** | **List[str]** | List of actions to block on protected branches. If not specified, defaults to [\&quot;staging_write\&quot;, \&quot;commit\&quot;] | [optional] 
 
 ## Example
 

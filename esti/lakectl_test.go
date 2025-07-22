@@ -1065,6 +1065,109 @@ func TestLakectlBranchProtection(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch-protect list lakefs://"+repoName, false, "lakectl_branch_protection_list.term", vars)
 }
 
+func TestLakectlBranchProtection_Delete(t *testing.T) {
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	testBranch := "test-delete-protection"
+	vars := map[string]string{
+		"REPO":        repoName,
+		"STORAGE":     storage,
+		"BRANCH":      mainBranch,
+		"TEST_BRANCH": testBranch,
+	}
+
+	// Create repository and test branch
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+testBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", vars)
+
+	// Test 1: Delete should work without protection
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "lakectl_branch_delete", vars)
+
+	// Recreate the test branch for protection testing
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+testBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", vars)
+
+	// Test 2: Add delete protection and verify it blocks deletion
+	runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+" "+testBranch+" --block-deletion", false, false, vars)
+	time.Sleep(branchProtectTimeout) // Wait for protection to take effect
+
+	// Verify the protection rule was created
+	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+repoName, false, testBranch, vars)
+
+	// Test 3: Verify deletion is now blocked
+	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "cannot delete protected branch\n403 Forbidden\n", vars)
+
+	// Test 4: Verify branch still exists after failed deletion
+	RunCmdAndVerifyContainsText(t, Lakectl()+" branch list lakefs://"+repoName, false, testBranch, vars)
+
+	// Test 5: Remove protection and verify deletion works again
+	runCmd(t, Lakectl()+" branch-protect delete lakefs://"+repoName+" "+testBranch, false, false, vars)
+	time.Sleep(branchProtectTimeout) // Wait for protection removal to take effect
+
+	// Now deletion should work
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "lakectl_branch_delete", vars)
+}
+
+func TestLakectlBranchProtection_DeleteWithOtherActions(t *testing.T) {
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	testBranch := "test-combined-protection"
+	vars := map[string]string{
+		"REPO":        repoName,
+		"STORAGE":     storage,
+		"BRANCH":      mainBranch,
+		"TEST_BRANCH": testBranch,
+		"FILE_PATH":   "test-file.txt",
+	}
+
+	// Create repository and test branch
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+testBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", vars)
+
+	// Add protection with staging, commit, and delete blocked
+	runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+" "+testBranch+" --block-deletion", false, false, vars)
+	time.Sleep(branchProtectTimeout)
+
+	// Test that all protections work
+	// 1. Staging writes should be blocked (default behavior)
+	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+testBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "cannot write to protected branch\n403 Forbidden\n", vars)
+
+	// 2. Delete should be blocked (our new feature)
+	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "cannot delete protected branch\n403 Forbidden\n", vars)
+
+	// 3. Verify branch still exists
+	RunCmdAndVerifyContainsText(t, Lakectl()+" branch list lakefs://"+repoName, false, testBranch, vars)
+}
+
+func TestLakectlBranchProtection_DeleteOnly(t *testing.T) {
+	repoName := GenerateUniqueRepositoryName()
+	storage := GenerateUniqueStorageNamespace(repoName)
+	testBranch := "test-delete-only"
+	vars := map[string]string{
+		"REPO":        repoName,
+		"STORAGE":     storage,
+		"BRANCH":      mainBranch,
+		"TEST_BRANCH": testBranch,
+		"FILE_PATH":   "test-file.txt",
+	}
+
+	// Create repository and test branch
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" repo create lakefs://"+repoName+" "+storage, false, "lakectl_repo_create", vars)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" branch create lakefs://"+repoName+"/"+testBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, "lakectl_branch_create", vars)
+
+	// Add protection with ONLY delete blocked (disable default staging and commit protection)
+	runCmd(t, Lakectl()+" branch-protect add lakefs://"+repoName+" "+testBranch+" --no-block-staging-writes --no-block-commits --block-deletion", false, false, vars)
+	time.Sleep(branchProtectTimeout)
+
+	// Test 1: Staging writes should work (not protected)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+testBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
+
+	// Test 2: Commits should work (not protected)
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+testBranch+" -m 'test commit'", false, "lakectl_commit", vars)
+
+	// Test 3: But delete should still be blocked
+	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "cannot delete protected branch\n403 Forbidden\n", vars)
+}
+
 // TestLakectlAbuse runs a series of abuse commands to test the functionality of lakectl abuse (not in order to test how lakeFS handles abuse)
 func TestLakectlAbuse(t *testing.T) {
 	repoName := GenerateUniqueRepositoryName()

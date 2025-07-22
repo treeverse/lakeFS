@@ -19,18 +19,30 @@ import re  # noqa: F401
 import json
 
 
-
+from typing import List, Optional
 try:
-    from pydantic.v1 import BaseModel, Field, constr
+    from pydantic.v1 import BaseModel, Field, StrictStr, conlist, constr, validator
 except ImportError:
-    from pydantic import BaseModel, Field, constr
+    from pydantic import BaseModel, Field, StrictStr, conlist, constr, validator
 
 class BranchProtectionRule(BaseModel):
     """
     BranchProtectionRule
     """
     pattern: constr(strict=True, min_length=1) = Field(..., description="fnmatch pattern for the branch name, supporting * and ? wildcards")
-    __properties = ["pattern"]
+    blocked_actions: Optional[conlist(StrictStr)] = Field(None, description="List of actions to block on protected branches. If not specified, defaults to [\"staging_write\", \"commit\"]")
+    __properties = ["pattern", "blocked_actions"]
+
+    @validator('blocked_actions')
+    def blocked_actions_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        for i in value:
+            if i not in ('staging_write', 'commit', 'delete'):
+                raise ValueError("each list item must be one of ('staging_write', 'commit', 'delete')")
+        return value
 
     class Config:
         """Pydantic configuration"""
@@ -68,7 +80,8 @@ class BranchProtectionRule(BaseModel):
             return BranchProtectionRule.parse_obj(obj)
 
         _obj = BranchProtectionRule.parse_obj({
-            "pattern": obj.get("pattern")
+            "pattern": obj.get("pattern"),
+            "blocked_actions": obj.get("blocked_actions")
         })
         return _obj
 

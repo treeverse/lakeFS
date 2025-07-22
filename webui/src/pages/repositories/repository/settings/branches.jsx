@@ -89,6 +89,11 @@ const SettingsContainer = () => {
 const CreateRuleModal = ({show, hideFn, onSuccess, repoID, currentRulesResponse}) => {
     const [error, setError] = useState(null);
     const [createButtonDisabled, setCreateButtonDisabled] = useState(true);
+    const [blockedActions, setBlockedActions] = useState({
+        staging_write: true,
+        commit: true,
+        delete: false
+    });
     const patternField = useRef(null);
 
     const createRule = (pattern) => {
@@ -99,12 +104,27 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID, currentRulesResponse}
         setCreateButtonDisabled(true)
         let updatedRules = [...currentRulesResponse['rules']]
         let lastKnownChecksum = currentRulesResponse['checksum']
-        updatedRules.push({pattern})
+        
+        // Build the blocked actions array from the selected checkboxes
+        const selectedActions = Object.keys(blockedActions).filter(action => blockedActions[action]);
+        const rule = { pattern };
+        if (selectedActions.length > 0) {
+            rule.blocked_actions = selectedActions;
+        }
+        
+        updatedRules.push(rule)
         branchProtectionRules.setRules(repoID, updatedRules, lastKnownChecksum).then(onSuccess).catch(err => {
             setError(err)
             setCreateButtonDisabled(false)
         })
     }
+
+    const handleActionChange = (action) => {
+        setBlockedActions(prev => ({
+            ...prev,
+            [action]: !prev[action]
+        }));
+    };
     return <Modal show={show} onHide={() => {
         setCreateButtonDisabled(true)
         setError(null)
@@ -124,6 +144,33 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID, currentRulesResponse}
                     <Col>
                         <Form.Control sm={8} type="text" autoFocus ref={patternField}
                                       onChange={() => setCreateButtonDisabled(!patternField.current || !patternField.current.value)}/>
+                    </Col>
+                </Form.Group>
+                
+                <Form.Group as={Row} controlId="blocked-actions">
+                    <Form.Label column sm={4}>Block actions</Form.Label>
+                    <Col>
+                        <Form.Check
+                            type="checkbox"
+                            id="staging-write-check"
+                            label="Block staging area writes (upload, delete objects)"
+                            checked={blockedActions.staging_write}
+                            onChange={() => handleActionChange('staging_write')}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="commit-check"
+                            label="Block commits"
+                            checked={blockedActions.commit}
+                            onChange={() => handleActionChange('commit')}
+                        />
+                        <Form.Check
+                            type="checkbox"
+                            id="delete-check"
+                            label="Block branch deletion"
+                            checked={blockedActions.delete}
+                            onChange={() => handleActionChange('delete')}
+                        />
                     </Col>
                 </Form.Group>
             </Form>

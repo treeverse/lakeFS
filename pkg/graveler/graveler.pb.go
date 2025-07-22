@@ -73,6 +73,7 @@ type BranchProtectionBlockedAction int32
 const (
 	BranchProtectionBlockedAction_STAGING_WRITE BranchProtectionBlockedAction = 0
 	BranchProtectionBlockedAction_COMMIT        BranchProtectionBlockedAction = 1
+	BranchProtectionBlockedAction_DELETE        BranchProtectionBlockedAction = 2
 )
 
 // Enum value maps for BranchProtectionBlockedAction.
@@ -80,10 +81,12 @@ var (
 	BranchProtectionBlockedAction_name = map[int32]string{
 		0: "STAGING_WRITE",
 		1: "COMMIT",
+		2: "DELETE",
 	}
 	BranchProtectionBlockedAction_value = map[string]int32{
 		"STAGING_WRITE": 0,
 		"COMMIT":        1,
+		"DELETE":        2,
 	}
 )
 
@@ -1093,11 +1096,13 @@ const file_graveler_graveler_proto_rawDesc = "" +
 	"\x0fRepositoryState\x12\n" +
 	"\n" +
 	"\x06ACTIVE\x10\x00\x12\x0f\n" +
-	"\vIN_DELETION\x10\x01*>\n" +
+	"\vIN_DELETION\x10\x01*J\n" +
 	"\x1dBranchProtectionBlockedAction\x12\x11\n" +
 	"\rSTAGING_WRITE\x10\x00\x12\n" +
 	"\n" +
-	"\x06COMMIT\x10\x01*5\n" +
+	"\x06COMMIT\x10\x01\x12\n" +
+	"\n" +
+	"\x06DELETE\x10\x02*5\n" +
 	"\x11PullRequestStatus\x12\b\n" +
 	"\x04OPEN\x10\x00\x12\n" +
 	"\n" +

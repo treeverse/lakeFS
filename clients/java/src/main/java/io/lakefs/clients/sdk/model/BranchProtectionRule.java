@@ -20,7 +20,9 @@ import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -55,6 +57,59 @@ public class BranchProtectionRule {
   @SerializedName(SERIALIZED_NAME_PATTERN)
   private String pattern;
 
+  /**
+   * Gets or Sets blockedActions
+   */
+  @JsonAdapter(BlockedActionsEnum.Adapter.class)
+  public enum BlockedActionsEnum {
+    STAGING_WRITE("staging_write"),
+    
+    COMMIT("commit"),
+    
+    DELETE("delete");
+
+    private String value;
+
+    BlockedActionsEnum(String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return String.valueOf(value);
+    }
+
+    public static BlockedActionsEnum fromValue(String value) {
+      for (BlockedActionsEnum b : BlockedActionsEnum.values()) {
+        if (b.value.equals(value)) {
+          return b;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
+
+    public static class Adapter extends TypeAdapter<BlockedActionsEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final BlockedActionsEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public BlockedActionsEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return BlockedActionsEnum.fromValue(value);
+      }
+    }
+  }
+
+  public static final String SERIALIZED_NAME_BLOCKED_ACTIONS = "blocked_actions";
+  @SerializedName(SERIALIZED_NAME_BLOCKED_ACTIONS)
+  private List<BlockedActionsEnum> blockedActions;
+
   public BranchProtectionRule() {
   }
 
@@ -76,6 +131,35 @@ public class BranchProtectionRule {
 
   public void setPattern(String pattern) {
     this.pattern = pattern;
+  }
+
+
+  public BranchProtectionRule blockedActions(List<BlockedActionsEnum> blockedActions) {
+    
+    this.blockedActions = blockedActions;
+    return this;
+  }
+
+  public BranchProtectionRule addBlockedActionsItem(BlockedActionsEnum blockedActionsItem) {
+    if (this.blockedActions == null) {
+      this.blockedActions = new ArrayList<>();
+    }
+    this.blockedActions.add(blockedActionsItem);
+    return this;
+  }
+
+   /**
+   * List of actions to block on protected branches. If not specified, defaults to [\&quot;staging_write\&quot;, \&quot;commit\&quot;]
+   * @return blockedActions
+  **/
+  @javax.annotation.Nullable
+  public List<BlockedActionsEnum> getBlockedActions() {
+    return blockedActions;
+  }
+
+
+  public void setBlockedActions(List<BlockedActionsEnum> blockedActions) {
+    this.blockedActions = blockedActions;
   }
 
   /**
@@ -133,13 +217,14 @@ public class BranchProtectionRule {
       return false;
     }
     BranchProtectionRule branchProtectionRule = (BranchProtectionRule) o;
-    return Objects.equals(this.pattern, branchProtectionRule.pattern)&&
+    return Objects.equals(this.pattern, branchProtectionRule.pattern) &&
+        Objects.equals(this.blockedActions, branchProtectionRule.blockedActions)&&
         Objects.equals(this.additionalProperties, branchProtectionRule.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(pattern, additionalProperties);
+    return Objects.hash(pattern, blockedActions, additionalProperties);
   }
 
   @Override
@@ -147,6 +232,7 @@ public class BranchProtectionRule {
     StringBuilder sb = new StringBuilder();
     sb.append("class BranchProtectionRule {\n");
     sb.append("    pattern: ").append(toIndentedString(pattern)).append("\n");
+    sb.append("    blockedActions: ").append(toIndentedString(blockedActions)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -171,6 +257,7 @@ public class BranchProtectionRule {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("pattern");
+    openapiFields.add("blocked_actions");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -199,6 +286,10 @@ public class BranchProtectionRule {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if (!jsonObj.get("pattern").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `pattern` to be a primitive type in the JSON string but got `%s`", jsonObj.get("pattern").toString()));
+      }
+      // ensure the optional json data is an array if present
+      if (jsonObj.get("blocked_actions") != null && !jsonObj.get("blocked_actions").isJsonNull() && !jsonObj.get("blocked_actions").isJsonArray()) {
+        throw new IllegalArgumentException(String.format("Expected the field `blocked_actions` to be an array in the JSON string but got `%s`", jsonObj.get("blocked_actions").toString()));
       }
   }
 

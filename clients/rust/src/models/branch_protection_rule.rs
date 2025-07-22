@@ -15,13 +15,33 @@ pub struct BranchProtectionRule {
     /// fnmatch pattern for the branch name, supporting * and ? wildcards
     #[serde(rename = "pattern")]
     pub pattern: String,
+    /// List of actions to block on protected branches. If not specified, defaults to [\"staging_write\", \"commit\"]
+    #[serde(rename = "blocked_actions", skip_serializing_if = "Option::is_none")]
+    pub blocked_actions: Option<Vec<BlockedActions>>,
 }
 
 impl BranchProtectionRule {
     pub fn new(pattern: String) -> BranchProtectionRule {
         BranchProtectionRule {
             pattern,
+            blocked_actions: None,
         }
+    }
+}
+/// List of actions to block on protected branches. If not specified, defaults to [\"staging_write\", \"commit\"]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub enum BlockedActions {
+    #[serde(rename = "staging_write")]
+    StagingWrite,
+    #[serde(rename = "commit")]
+    Commit,
+    #[serde(rename = "delete")]
+    Delete,
+}
+
+impl Default for BlockedActions {
+    fn default() -> BlockedActions {
+        Self::StagingWrite
     }
 }
 

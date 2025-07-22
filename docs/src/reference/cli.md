@@ -1318,7 +1318,10 @@ Add a branch protection rule
 
 <h4>Synopsis</h4>
 
-Add a branch protection rule for a given branch name pattern
+Add a branch protection rule for a given branch name pattern.
+
+You can configure which operations to block using the flags below.
+By default, staging writes and commits are blocked, but branch deletion is allowed.
 
 ```
 lakectl branch-protect add <repository URI> <pattern> [flags]
@@ -1328,12 +1331,19 @@ lakectl branch-protect add <repository URI> <pattern> [flags]
 
 ```
 lakectl branch-protect add lakefs://my-repo 'stable_*'
+lakectl branch-protect add lakefs://my-repo 'main' --block-deletion
+lakectl branch-protect add lakefs://my-repo 'dev_*' --no-block-staging-writes --block-deletion
 ```
 
 <h4>Options</h4>
 
 ```
-  -h, --help   help for add
+      --block-commits             Block commits (default true)
+      --block-deletion            Block branch deletion
+      --block-staging-writes      Block staging area writes (upload, delete objects) (default true)
+  -h, --help                      help for add
+      --no-block-commits          Disable blocking of commits
+      --no-block-staging-writes   Disable blocking of staging area writes
 ```
 
 

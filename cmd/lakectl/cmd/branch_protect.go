@@ -34,22 +34,37 @@ var branchProtectListCmd = &cobra.Command{
 		if resp.JSON200 == nil {
 			Die("Bad response from server", 1)
 		}
-		patterns := make([][]interface{}, len(*resp.JSON200))
+		rows := make([][]interface{}, len(*resp.JSON200))
 		for i, rule := range *resp.JSON200 {
-			patterns[i] = []interface{}{rule.Pattern}
+			blockedActions := "staging_write, commit" // default if not specified
+			if rule.BlockedActions != nil && len(*rule.BlockedActions) > 0 {
+				blockedActions = ""
+				for j, action := range *rule.BlockedActions {
+					if j > 0 {
+						blockedActions += ", "
+					}
+					blockedActions += action
+				}
+			}
+			rows[i] = []interface{}{rule.Pattern, blockedActions}
 		}
-		PrintTable(patterns, []interface{}{"Branch Name Pattern"}, &apigen.Pagination{
+		PrintTable(rows, []interface{}{"Branch Name Pattern", "Blocked Actions"}, &apigen.Pagination{
 			HasMore: false,
-			Results: len(patterns),
-		}, len(patterns))
+			Results: len(rows),
+		}, len(rows))
 	},
 }
 
 var branchProtectAddCmd = &cobra.Command{
-	Use:               "add <repository URI> <pattern>",
-	Short:             "Add a branch protection rule",
-	Long:              "Add a branch protection rule for a given branch name pattern",
-	Example:           "lakectl branch-protect add " + myRepoExample + " 'stable_*'",
+	Use:   "add <repository URI> <pattern>",
+	Short: "Add a branch protection rule",
+	Long: `Add a branch protection rule for a given branch name pattern.
+
+You can configure which operations to block using the flags below.
+By default, staging writes and commits are blocked, but branch deletion is allowed.`,
+	Example: `lakectl branch-protect add ` + myRepoExample + ` 'stable_*'
+lakectl branch-protect add ` + myRepoExample + ` 'main' --block-deletion
+lakectl branch-protect add ` + myRepoExample + ` 'dev_*' --no-block-staging-writes --block-deletion`,
 	Args:              cobra.ExactArgs(branchProtectAddCmdArgs),
 	ValidArgsFunction: ValidArgsRepository,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -59,9 +74,39 @@ var branchProtectAddCmd = &cobra.Command{
 
 		DieOnErrorOrUnexpectedStatusCode(resp, err, http.StatusOK)
 		rules := *resp.JSON200
-		rules = append(rules, apigen.BranchProtectionRule{
+
+		// Build blocked actions based on flags
+		var blockedActions []string
+
+		// Check for explicit disable flags first
+		noBlockStagingWrites, _ := cmd.Flags().GetBool("no-block-staging-writes")
+		noBlockCommits, _ := cmd.Flags().GetBool("no-block-commits")
+
+		// Get positive flags with defaults
+		blockStagingWrites, _ := cmd.Flags().GetBool("block-staging-writes")
+		blockCommits, _ := cmd.Flags().GetBool("block-commits")
+		blockDeletion, _ := cmd.Flags().GetBool("block-deletion")
+
+		// Apply logic: default true unless explicitly disabled
+		if blockStagingWrites && !noBlockStagingWrites {
+			blockedActions = append(blockedActions, "staging_write")
+		}
+		if blockCommits && !noBlockCommits {
+			blockedActions = append(blockedActions, "commit")
+		}
+		if blockDeletion {
+			blockedActions = append(blockedActions, "delete")
+		}
+
+		// Create the rule with blocked actions
+		rule := apigen.BranchProtectionRule{
 			Pattern: args[1],
-		})
+		}
+		if len(blockedActions) > 0 {
+			rule.BlockedActions = &blockedActions
+		}
+
+		rules = append(rules, rule)
 		params := &apigen.SetBranchProtectionRulesParams{}
 		etag := swag.String(resp.HTTPResponse.Header.Get("ETag"))
 		if etag != nil && *etag != "" {
@@ -104,6 +149,15 @@ var branchProtectDeleteCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
+	// Add flags for branch protection rule configuration
+	branchProtectAddCmd.Flags().Bool("block-staging-writes", true, "Block staging area writes (upload, delete objects)")
+	branchProtectAddCmd.Flags().Bool("block-commits", true, "Block commits")
+	branchProtectAddCmd.Flags().Bool("block-deletion", false, "Block branch deletion")
+
+	// Allow users to disable default protections
+	branchProtectAddCmd.Flags().Bool("no-block-staging-writes", false, "Disable blocking of staging area writes")
+	branchProtectAddCmd.Flags().Bool("no-block-commits", false, "Disable blocking of commits")
+
 	rootCmd.AddCommand(branchProtectCmd)
 	branchProtectCmd.AddCommand(branchProtectAddCmd)
 	branchProtectCmd.AddCommand(branchProtectListCmd)

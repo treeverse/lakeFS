@@ -19,6 +19,7 @@ var (
 	ErrWriteToProtectedBranch       = wrapError(ErrProtectedBranch, "cannot write to protected branch")
 	ErrReadingFromStore             = errors.New("cannot read from store")
 	ErrCommitToProtectedBranch      = wrapError(ErrProtectedBranch, "cannot commit to protected branch")
+	ErrDeleteProtectedBranch        = wrapError(ErrProtectedBranch, "cannot delete protected branch")
 	ErrInvalidValue                 = fmt.Errorf("invalid value: %w", ErrInvalid)
 	ErrInvalidMergeBase             = fmt.Errorf("only 2 commits allowed in FindMergeBase: %w", ErrInvalidValue)
 	ErrNoCommitGeneration           = errors.New("no commit generation")

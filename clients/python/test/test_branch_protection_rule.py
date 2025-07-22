@@ -37,7 +37,8 @@ class TestBranchProtectionRule(unittest.TestCase):
         model = BranchProtectionRule()  # noqa: E501
         if include_optional:
             return BranchProtectionRule(
-                pattern = 'stable_*'
+                pattern = 'stable_*',
+                blocked_actions = ["staging_write","commit"]
             )
         else:
             return BranchProtectionRule(

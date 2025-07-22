@@ -9751,6 +9751,9 @@ components:
       type: object
     BranchProtectionRule:
       example:
+        blocked_actions:
+        - staging_write
+        - commit
         pattern: stable_*
       properties:
         pattern:
@@ -9758,6 +9761,19 @@ components:
           example: stable_*
           minLength: 1
           type: string
+        blocked_actions:
+          description: "List of actions to block on protected branches. If not specified,\
+            \ defaults to [\"staging_write\", \"commit\"]"
+          example:
+          - staging_write
+          - commit
+          items:
+            enum:
+            - staging_write
+            - commit
+            - delete
+            type: string
+          type: array
       required:
       - pattern
       type: object
