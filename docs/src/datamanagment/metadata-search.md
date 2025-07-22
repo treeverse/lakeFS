@@ -144,7 +144,8 @@ the branch was created.
 * `metadata_settings.max_commits` `(int : 0)` - The maximum number of commits to process per searchable branch.
   Uses 0 by default that disables the limit.
 * `metadata_settings.repositories` `(map[string]branches:string[] : {})` - A mapping of repositories and the branches in each where metadata 
-search should be enabled. You can specify full branch names or use branch prefixes for flexibility.
+search should be enabled. You can specify full branch names or use branch prefixes for flexibility. Prefixes should be expressed using a trailing
+asterisk, e.g., `dev-*`.  
 
 !!! note
     Metadata search is disabled by default. You must explicitly configure which repositories and branches to include.
