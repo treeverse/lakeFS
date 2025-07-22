@@ -332,7 +332,7 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 	metadata := map[string]string{
 		apiutil.ClientMtimeMetadataKey: mtimeString,
 	}
-	var contentReader readerAtSeeker
+	var readerWrapper fileWrapper
 	handleSymlink := s.cfg.SymlinkSupport && fileStat.Mode()&os.ModeSymlink != 0
 	if handleSymlink {
 		// If symlink support is enabled, upload as symlink
@@ -342,7 +342,9 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		}
 		metadata[apiutil.SymlinkMetadataKey] = target
 		contentSize = 0
-		contentReader = bytes.NewReader([]byte{})
+		content := bytes.NewReader([]byte{})
+		readerWrapper.file = content
+		readerWrapper.reader = content
 	} else {
 		// Regular file
 		f, err := os.Open(source)
@@ -351,7 +353,8 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 		}
 		defer func() { _ = f.Close() }()
 		contentSize = fileStat.Size()
-		contentReader = f
+		readerWrapper.file = f
+		readerWrapper.reader = f
 	}
 
 	b := s.progressBar.AddReader("upload "+path, contentSize)
@@ -363,11 +366,9 @@ func (s *SyncManager) upload(ctx context.Context, rootPath string, remote *uri.U
 			b.Done()
 		}
 	}()
+	// Wrap the reader inside the readerWrapper with the progress bar
+	readerWrapper.reader = b.Reader(readerWrapper.reader)
 
-	readerWrapper := fileWrapper{
-		file:   contentReader,
-		reader: b.Reader(contentReader),
-	}
 	// Include permissions only for regular files or directories
 	if s.cfg.IncludePerm && !handleSymlink {
 		if strings.HasSuffix(path, uri.PathSeparator) { // Create a 0 byte reader for directories
