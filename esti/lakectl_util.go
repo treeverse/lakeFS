@@ -104,23 +104,29 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 // "VAR1=value1 VAR2=value2 command args"
 // and returns the environment variables and the actual command
 func extractUnixEnvVars(command string) ([]string, string) {
-	parts := strings.Fields(command)
-	var envVars []string
-	var commandStart int
+	// Find the lakectl binary in the command
+	lakectlPath := lakectlLocation()
+	parts := strings.SplitN(command, lakectlPath, 2)
 
-	for i, part := range parts {
-		if strings.Contains(part, "=") && !strings.HasPrefix(part, "/") && !strings.HasPrefix(part, ".") && !strings.Contains(part, " ") {
-			// This looks like an environment variable (contains = but not a path)
-			envVars = append(envVars, part)
-		} else {
-			// This is the start of the actual command
-			commandStart = i
-			break
+	if len(parts) != 2 {
+		// If we can't find the lakectl binary, return the command as-is
+		return []string{}, command
+	}
+
+	// Extract environment variables from the first part
+	envPart := strings.TrimSpace(parts[0])
+	var envVars []string
+	if envPart != "" {
+		envTokens := strings.Fields(envPart)
+		for _, token := range envTokens {
+			if strings.Contains(token, "=") {
+				envVars = append(envVars, token)
+			}
 		}
 	}
 
-	// Join the remaining parts as the actual command
-	actualCommand := strings.Join(parts[commandStart:], " ")
+	// Return the lakectl binary + arguments intact
+	actualCommand := lakectlPath + parts[1]
 
 	return envVars, actualCommand
 }
