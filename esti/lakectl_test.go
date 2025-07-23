@@ -1154,6 +1154,7 @@ func TestLakectlBranchProtection_DeleteOnly(t *testing.T) {
 		"FILE_PATH":     "test-file.txt",
 		"SOURCE_BRANCH": mainBranch,
 		"DEST_BRANCH":   testBranch,
+		"MESSAGE":       "test commit",
 	}
 
 	// Create repository and test branch
