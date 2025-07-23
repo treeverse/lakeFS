@@ -1169,7 +1169,12 @@ func TestLakectlBranchProtection_DeleteOnly(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+testBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
 
 	// Test 2: Commits should work (not protected)
-	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+testBranch+" -m 'test commit'", false, "lakectl_commit", vars)
+	commitVars := make(map[string]string)
+	for k, v := range vars {
+		commitVars[k] = v
+	}
+	commitVars["BRANCH"] = testBranch // Override BRANCH to match actual branch
+	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+testBranch+" -m 'test commit'", false, "lakectl_commit", commitVars)
 
 	// Test 3: But delete should still be blocked
 	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "Branch: lakefs://"+repoName+"/"+testBranch+"\ncannot delete protected branch\n403 Forbidden\n", vars)
