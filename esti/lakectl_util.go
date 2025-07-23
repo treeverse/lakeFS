@@ -84,7 +84,7 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 	if runtime.GOOS == windowsOSStr {
 		// On Windows, extract environment variables from Unix-style command and set them directly
 		envVars, actualCommand := extractUnixEnvVars(command)
-		cmd = exec.Command("cmd.exe", "/c", actualCommand)
+		cmd = exec.Command("powershell.exe", "-Command", actualCommand)
 		additionalEnvVars = envVars
 	} else {
 		cmd = exec.Command("/bin/sh", "-c", command)
