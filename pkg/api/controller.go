@@ -3070,8 +3070,7 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 func (c *Controller) HardResetBranch(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.HardResetBranchParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
-			// TODO(ozkatz): Can we have another action here?
-			Action:   permissions.RevertBranchAction,
+			Action:   permissions.HardResetBranchAction,
 			Resource: permissions.BranchArn(repository, branch),
 		},
 	}) {
