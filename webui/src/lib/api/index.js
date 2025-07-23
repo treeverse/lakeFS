@@ -725,7 +725,6 @@ export const uploadWithProgress = (url, file, method = 'POST', onProgress = null
 };
 
 class Objects {
-
     async list(repoId, ref, tree, after = "", presign = false, amount = DEFAULT_LISTING_AMOUNT, delimiter = "/") {
         const query = qs({prefix: tree, amount, after, delimiter, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects/ls?` + query);
@@ -800,33 +799,65 @@ class Objects {
         }
     }
 
+    async fetchObjectsBatch(repoId, branchId, prefix, after = "") {
+        const BATCH_SIZE = 100;
+        const query = qs({ prefix, after, amount: BATCH_SIZE });
+        const response = await apiRequest(
+            `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(branchId)}/objects/ls?${query}`
+        );
+        if (response.status !== 200) throw new Error(await extractError(response));
+        return response.json();
+    }
+
+    async deleteObjectsBatch(repoId, branchId, objectsToDelete) {
+        const deletePromises = objectsToDelete
+            .filter(obj => obj.path_type === "object")
+            .map(object =>
+                this.delete(repoId, branchId, object.path)  // Use this.delete since we're in the Objects class
+                    .catch(error => ({ path: object.path, error }))
+            );
+
+        const results = await Promise.allSettled(deletePromises);
+
+        return results
+            .map(result => {
+                if (result.status === 'fulfilled' && result.value && 'error' in result.value) {
+                    return result.value;
+                }
+                if (result.status === 'rejected') {
+                    return { path: 'unknown', error: result.reason };
+                }
+                return null;
+            })
+            .filter(Boolean);
+    }
+
+
     async deletePrefix(repoId, branchId, prefix) {
         let errors = [];
-        let accumulator = [];
+        try {
+            let hasMore = true;
+            let after = "";
 
-        // --------------------------- Get all objects recursively --------------------------------
-        const iterator = this.listAll(repoId, branchId, prefix);
-        let finished = false;
-        while (!finished) {
-            const {page, done} = await iterator.next();
-            accumulator = accumulator.concat(page);
-            if (done) finished = true;
-        }
-        // ----------------------------------------------------------------------------------------
+            while (hasMore) {
+                const response = await this.fetchObjectsBatch(repoId, branchId, prefix, after);
+                const batchErrors = await this.deleteObjectsBatch(repoId, branchId, response.results);
+                errors = errors.concat(batchErrors);
 
-        // Delete all objects in parallel
-        await Promise.all(accumulator.map(async (object) => {
-            try {
-                if (object.path_type === "object") {
-                    await this.delete(repoId, branchId, object.path);
-                }
-            } catch (error) {
-                errors.push({ path: object.path, error });
+                hasMore = response.pagination.has_more;
+                after = hasMore ? response.pagination.next_offset : "";
             }
-        }));
 
-        if (errors.length > 0) {
-            throw new Error(`Failed to delete some objects under prefix ${prefix}: ${errors.map(e => e.path).join(', ')}`);
+            if (errors.length > 0) {
+                throw new Error(
+                    `Failed to delete some objects under prefix ${prefix}. ` +
+                    `Failed: ${errors.length} objects. ` +
+                    `Failed paths: ${errors.map(e => e.path).join(', ')}`
+                );
+            }
+        } catch (error) {
+            if (error instanceof NotFoundError) throw error;
+            throw new Error(`Failed to delete prefix ${prefix}: ${error.message}`);
         }
     }
 
