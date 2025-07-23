@@ -27,16 +27,12 @@ var fsUploadCmd = &cobra.Command{
 		source := Must(cmd.Flags().GetString("source"))
 		contentType := Must(cmd.Flags().GetString("content-type"))
 		recursive := Must(cmd.Flags().GetBool(recursiveFlagName))
-		remotePath := pathURI.GetPath()
 		ctx := cmd.Context()
 
 		ctx, stop := signal.NotifyContext(ctx, os.Interrupt, os.Kill)
 		defer stop()
 
 		if !recursive || isFileOrStdin(source) {
-			if strings.HasSuffix(remotePath, uri.PathSeparator) {
-				Die("target path is not a valid URI", 1)
-			}
 			stat, err := upload(ctx, client, source, pathURI, contentType, syncFlags)
 			if err != nil {
 				DieErr(err)
