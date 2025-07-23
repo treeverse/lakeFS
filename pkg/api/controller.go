@@ -81,6 +81,11 @@ const (
 	passwordPlaceholder = "Password"
 )
 
+var (
+	// ErrInvalidBlockedAction is returned when an unknown blocked action is specified
+	ErrInvalidBlockedAction = errors.New("invalid blocked action")
+)
+
 type actionsHandler interface {
 	GetRunResult(ctx context.Context, repositoryID, runID string) (*actions.RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID, runID, hookRunID string) (*actions.TaskResult, error)
@@ -2574,7 +2579,7 @@ func (c *Controller) convertToBlockedActions(actions *[]string) ([]graveler.Bran
 		case "delete":
 			blockedActions = append(blockedActions, graveler.BranchProtectionBlockedAction_DELETE)
 		default:
-			return nil, fmt.Errorf("invalid blocked action: %s", action)
+			return nil, fmt.Errorf("%w: %s", ErrInvalidBlockedAction, action)
 		}
 	}
 	return blockedActions, nil

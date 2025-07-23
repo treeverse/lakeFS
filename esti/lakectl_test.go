@@ -1096,7 +1096,7 @@ func TestLakectlBranchProtection_Delete(t *testing.T) {
 	RunCmdAndVerifyContainsText(t, Lakectl()+" branch-protect list lakefs://"+repoName, false, testBranch, vars)
 
 	// Test 3: Verify deletion is now blocked
-	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "cannot delete protected branch\n403 Forbidden\n", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "Branch: lakefs://"+repoName+"/"+testBranch+"\ncannot delete protected branch\n403 Forbidden\n", vars)
 
 	// Test 4: Verify branch still exists after failed deletion
 	RunCmdAndVerifyContainsText(t, Lakectl()+" branch list lakefs://"+repoName, false, testBranch, vars)
@@ -1136,7 +1136,7 @@ func TestLakectlBranchProtection_DeleteWithOtherActions(t *testing.T) {
 	RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+testBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "cannot write to protected branch\n403 Forbidden\n", vars)
 
 	// 2. Delete should be blocked (our new feature)
-	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "cannot delete protected branch\n403 Forbidden\n", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "Branch: lakefs://"+repoName+"/"+testBranch+"\ncannot delete protected branch\n403 Forbidden\n", vars)
 
 	// 3. Verify branch still exists
 	RunCmdAndVerifyContainsText(t, Lakectl()+" branch list lakefs://"+repoName, false, testBranch, vars)
@@ -1171,7 +1171,7 @@ func TestLakectlBranchProtection_DeleteOnly(t *testing.T) {
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" commit lakefs://"+repoName+"/"+testBranch+" -m 'test commit'", false, "lakectl_commit", vars)
 
 	// Test 3: But delete should still be blocked
-	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "cannot delete protected branch\n403 Forbidden\n", vars)
+	RunCmdAndVerifyFailure(t, Lakectl()+" branch delete lakefs://"+repoName+"/"+testBranch+" --yes", false, "Branch: lakefs://"+repoName+"/"+testBranch+"\ncannot delete protected branch\n403 Forbidden\n", vars)
 }
 
 // TestLakectlAbuse runs a series of abuse commands to test the functionality of lakectl abuse (not in order to test how lakeFS handles abuse)
