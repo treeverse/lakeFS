@@ -813,7 +813,7 @@ class Objects {
         const deletePromises = objectsToDelete
             .filter(obj => obj.path_type === "object")
             .map(object =>
-                this.delete(repoId, branchId, object.path)  // Use this.delete since we're in the Objects class
+                this.delete(repoId, branchId, object.path)
                     .catch(error => ({ path: object.path, error }))
             );
 
