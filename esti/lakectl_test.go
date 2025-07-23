@@ -718,6 +718,11 @@ func TestLakectlFsUpload(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
 	})
 	t.Run("single_file_with_separator", func(t *testing.T) {
+		// First upload the file without separator
+		vars["FILE_PATH"] = "data/ro/ro_1k.0_sep"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
+		
+		// Then upload the prefix with separator
 		vars["FILE_PATH"] = "data/ro/ro_1k.0_sep/"
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
 	})
