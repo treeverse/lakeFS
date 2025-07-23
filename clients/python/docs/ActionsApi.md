@@ -8,6 +8,7 @@ Method | HTTP request | Description
 [**get_run_hook_output**](ActionsApi.md#get_run_hook_output) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output | get run hook output
 [**list_repository_runs**](ActionsApi.md#list_repository_runs) | **GET** /repositories/{repository}/actions/runs | list runs
 [**list_run_hooks**](ActionsApi.md#list_run_hooks) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks | list run hooks
+[**trigger_action**](ActionsApi.md#trigger_action) | **POST** /repositories/{repository}/refs/{ref}/actions/{action}/triggers | manually trigger an action
 
 
 # **get_run**
@@ -465,6 +466,119 @@ Name | Type | Description  | Notes
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
 **429** | too many requests |  -  |
+**0** | Internal Server Error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **trigger_action**
+> trigger_action(repository, ref, action)
+
+manually trigger an action
+
+### Example
+
+* Basic Authentication (basic_auth):
+* Api Key Authentication (cookie_auth):
+* Api Key Authentication (oidc_auth):
+* Api Key Authentication (saml_auth):
+* Bearer (JWT) Authentication (jwt_token):
+
+```python
+import time
+import os
+import lakefs_sdk
+from lakefs_sdk.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api/v1
+# See configuration.py for a list of all supported configuration parameters.
+configuration = lakefs_sdk.Configuration(
+    host = "/api/v1"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure HTTP basic authorization: basic_auth
+configuration = lakefs_sdk.Configuration(
+    username = os.environ["USERNAME"],
+    password = os.environ["PASSWORD"]
+)
+
+# Configure API key authorization: cookie_auth
+configuration.api_key['cookie_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['cookie_auth'] = 'Bearer'
+
+# Configure API key authorization: oidc_auth
+configuration.api_key['oidc_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['oidc_auth'] = 'Bearer'
+
+# Configure API key authorization: saml_auth
+configuration.api_key['saml_auth'] = os.environ["API_KEY"]
+
+# Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+# configuration.api_key_prefix['saml_auth'] = 'Bearer'
+
+# Configure Bearer authorization (JWT): jwt_token
+configuration = lakefs_sdk.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with lakefs_sdk.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = lakefs_sdk.ActionsApi(api_client)
+    repository = 'repository_example' # str | 
+    ref = 'ref_example' # str | 
+    action = 'action_example' # str | 
+
+    try:
+        # manually trigger an action
+        api_instance.trigger_action(repository, ref, action)
+    except Exception as e:
+        print("Exception when calling ActionsApi->trigger_action: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **repository** | **str**|  | 
+ **ref** | **str**|  | 
+ **action** | **str**|  | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**202** | action accepted for background execution |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**403** | Forbidden |  -  |
+**404** | Resource Not Found |  -  |
+**420** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

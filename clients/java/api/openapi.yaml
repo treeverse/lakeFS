@@ -6468,6 +6468,70 @@ paths:
       tags:
       - actions
       x-accepts: application/json
+  /repositories/{repository}/refs/{ref}/actions/{action}/triggers:
+    post:
+      operationId: triggerAction
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: ref
+        required: true
+        schema:
+          type: string
+        style: simple
+      - explode: false
+        in: path
+        name: action
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "202":
+          description: action accepted for background execution
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "420":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: manually trigger an action
+      tags:
+      - actions
+      x-accepts: application/json
   /repositories/{repository}/metadata/object/{type}/{object_id}:
     get:
       operationId: getMetadataObject
