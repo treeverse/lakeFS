@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -16,9 +18,15 @@ var branchMoveToCommitCmd = &cobra.Command{
 	Example:           "lakectl branch move-to-commit lakefs://example-repo/my-branch 1234567890abcdef",
 	Args:              cobra.ExactArgs(2),
 	ValidArgsFunction: ValidArgsRepository,
+	Hidden:            true,
 	Run: func(cmd *cobra.Command, args []string) {
-		branchURI := args[0]
-		commitRef := args[1]
+		branchURI := strings.TrimSpace(args[0])
+		commitRef := strings.TrimSpace(args[1])
+
+		// Input validation and sanitization
+		if err := validateInputs(branchURI, commitRef); err != nil {
+			DieFmt("Invalid input: %s", err)
+		}
 
 		// Parse and validate branch URI
 		u := MustParseBranchURI("branch URI", branchURI)
@@ -29,14 +37,35 @@ var branchMoveToCommitCmd = &cobra.Command{
 
 		// Check if branch exists and get current state
 		branchResp, err := client.GetBranchWithResponse(ctx, u.Repository, u.Ref)
+		if err != nil {
+			DieFmt("Failed to access branch '%s': %s", u.Ref, err)
+		}
+		if branchResp.StatusCode() == http.StatusNotFound {
+			DieFmt("Branch '%s' not found in repository '%s'", u.Ref, u.Repository)
+		}
+		if branchResp.StatusCode() == http.StatusForbidden {
+			DieFmt("Access denied: insufficient permissions to access branch '%s'", u.Ref)
+		}
 		DieOnErrorOrUnexpectedStatusCode(branchResp, err, http.StatusOK)
 
 		// Check if target commit exists
 		commitResp, err := client.GetCommitWithResponse(ctx, u.Repository, commitRef)
+		if err != nil {
+			DieFmt("Failed to access commit '%s': %s", commitRef, err)
+		}
+		if commitResp.StatusCode() == http.StatusNotFound {
+			DieFmt("Commit '%s' not found in repository '%s'", commitRef, u.Repository)
+		}
+		if commitResp.StatusCode() == http.StatusForbidden {
+			DieFmt("Access denied: insufficient permissions to access commit '%s'", commitRef)
+		}
 		DieOnErrorOrUnexpectedStatusCode(commitResp, err, http.StatusOK)
 
 		// Check for uncommitted changes
 		diffResp, err := client.DiffBranchWithResponse(ctx, u.Repository, u.Ref, &apigen.DiffBranchParams{})
+		if err != nil {
+			DieFmt("Failed to check for uncommitted changes on branch '%s': %s", u.Ref, err)
+		}
 		DieOnErrorOrUnexpectedStatusCode(diffResp, err, http.StatusOK)
 
 		hasUncommittedChanges := len(diffResp.JSON200.Results) > 0
@@ -76,11 +105,69 @@ var branchMoveToCommitCmd = &cobra.Command{
 
 		// Execute hard reset
 		resetResp, err := client.HardResetBranchWithResponse(ctx, u.Repository, u.Ref, params)
+		if err != nil {
+			DieFmt("Failed to move branch '%s' to commit '%s': %s", u.Ref, commitRef, err)
+		}
+		if resetResp.StatusCode() == http.StatusForbidden {
+			DieFmt("Access denied: insufficient permissions to move branch '%s'. Required permission: HardResetBranch", u.Ref)
+		}
+		if resetResp.StatusCode() == http.StatusConflict {
+			DieFmt("Branch '%s' has uncommitted changes. Use --force to proceed and discard them.", u.Ref)
+		}
+		if resetResp.StatusCode() == http.StatusPreconditionFailed {
+			DieFmt("Branch '%s' is protected and cannot be moved", u.Ref)
+		}
 		DieOnErrorOrUnexpectedStatusCode(resetResp, err, http.StatusNoContent)
 
 		// Success message
 		fmt.Printf("Successfully moved branch '%s' to commit '%s'\n", u.Ref, commitRef)
 	},
+}
+
+// validateInputs performs comprehensive input validation and sanitization
+func validateInputs(branchURI, commitRef string) error {
+	// Check for empty inputs
+	if branchURI == "" {
+		return fmt.Errorf("branch URI cannot be empty")
+	}
+	if commitRef == "" {
+		return fmt.Errorf("commit reference cannot be empty")
+	}
+
+	// Validate branch URI format (basic checks before parsing)
+	if !strings.HasPrefix(branchURI, "lakefs://") {
+		return fmt.Errorf("branch URI must start with 'lakefs://'")
+	}
+
+	// Check for suspicious characters that might indicate injection attempts
+	suspiciousChars := []string{"\n", "\r", "\t", "\x00", "\x1f"}
+	for _, char := range suspiciousChars {
+		if strings.Contains(branchURI, char) {
+			return fmt.Errorf("branch URI contains invalid characters")
+		}
+		if strings.Contains(commitRef, char) {
+			return fmt.Errorf("commit reference contains invalid characters")
+		}
+	}
+
+	// Validate commit reference format (Git commit hash or branch name)
+	// Allow: alphanumeric, hyphens, underscores, slashes, dots, tildes (~)
+	commitRefPattern := regexp.MustCompile(`^[a-zA-Z0-9._/~-]+$`)
+	if !commitRefPattern.MatchString(commitRef) {
+		return fmt.Errorf("commit reference contains invalid characters (allowed: alphanumeric, ., _, /, ~, -)")
+	}
+
+	// Check reasonable length limits to prevent DoS
+	const maxBranchURILength = 1000
+	const maxCommitRefLength = 500
+	if len(branchURI) > maxBranchURILength {
+		return fmt.Errorf("branch URI too long (max %d characters)", maxBranchURILength)
+	}
+	if len(commitRef) > maxCommitRefLength {
+		return fmt.Errorf("commit reference too long (max %d characters)", maxCommitRefLength)
+	}
+
+	return nil
 }
 
 //nolint:gochecknoinits
