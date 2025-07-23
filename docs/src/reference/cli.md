@@ -1210,6 +1210,34 @@ lakectl branch list lakefs://my-repo
 
 
 
+### lakectl branch move-to-commit
+
+Move branch pointer to a specific commit
+
+<h4>Synopsis</h4>
+
+Move a branch pointer to reference a specific commit. This operation is destructive and cannot be undone.
+
+```
+lakectl branch move-to-commit <branch-uri> <commit-ref> [flags]
+```
+
+<h4>Examples</h4>
+
+```
+lakectl branch move-to-commit lakefs://example-repo/my-branch 1234567890abcdef
+```
+
+<h4>Options</h4>
+
+```
+  -f, --force   Force the operation even if the branch has uncommitted changes
+  -h, --help    help for move-to-commit
+  -y, --yes     Automatically say yes to all confirmations
+```
+
+
+
 ### lakectl branch reset
 
 Reset uncommitted changes - all of them, or by path
