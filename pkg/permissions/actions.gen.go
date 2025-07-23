@@ -22,6 +22,7 @@ var Actions = []string{
 	"fs:DeleteBranch",
 	"fs:ReadBranch",
 	"fs:RevertBranch",
+	"fs:HardResetBranch",
 	"fs:ListBranches",
 	"fs:CreateTag",
 	"fs:DeleteTag",

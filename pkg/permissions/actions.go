@@ -33,6 +33,7 @@ const (
 	DeleteBranchAction           = "fs:DeleteBranch"
 	ReadBranchAction             = "fs:ReadBranch"
 	RevertBranchAction           = "fs:RevertBranch"
+	HardResetBranchAction        = "fs:HardResetBranch"
 	ListBranchesAction           = "fs:ListBranches"
 	CreateTagAction              = "fs:CreateTag"
 	DeleteTagAction              = "fs:DeleteTag"
