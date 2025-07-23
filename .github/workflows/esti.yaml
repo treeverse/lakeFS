@@ -1439,6 +1439,7 @@ jobs:
       LAKEFS_STATS_ENABLED: false
       LAKEFS_USAGE_REPORT_ENABLED: false
       LAKEFS_LOGGING_LEVEL: DEBUG
+      LAKECTL_SUPPRESS_CASE_INSENSITIVE_WARNING: "true"
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
