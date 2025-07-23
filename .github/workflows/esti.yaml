@@ -1432,8 +1432,9 @@ jobs:
     timeout-minutes: 30
     env:
       LAKEFS_DATABASE_TYPE: local
-      LAKEFS_BLOCKSTORE_TYPE: local
-      LAKEFS_BLOCKSTORE_LOCAL_PATH: D:\temp\lakefs-data
+      LAKEFS_BLOCKSTORE_TYPE: s3
+      LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
+      LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
       LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
       LAKEFS_STATS_ENABLED: false
       LAKEFS_USAGE_REPORT_ENABLED: false
@@ -1447,6 +1448,10 @@ jobs:
         with:
           go-version: 1.24
         id: go
+
+      - name: Generate unique ID
+        id: unique
+        run: echo "value=${{ github.run_number }}-$(date +%s)" >> $GITHUB_OUTPUT
 
       - name: Retrieve generated code
         uses: actions/download-artifact@v4.1.8
@@ -1488,8 +1493,6 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Setting up test environment..."
-          New-Item -Type Directory -Path "D:\temp\lakefs-data" -Force
-          Write-Host "Created data directory: D:\temp\lakefs-data"
           if (!(Test-Path "lakefs.exe")) {
             Write-Error "lakefs.exe not found"
             exit 1
@@ -1511,7 +1514,6 @@ jobs:
           $timeout = 60
           $count = 0
           $serverReady = $false
-          
           Write-Host "Waiting for lakeFS server to be ready..."
           do {
             Start-Sleep -Seconds 2
@@ -1522,8 +1524,8 @@ jobs:
                 $serverReady = $true
                 break
               }
-            } catch {
-              Write-Host "Attempt $count/$timeout - Server not ready yet..."
+            } catch { 
+              Write-Host "Attempt $count/$timeout - Server not ready yet..." 
             }
           } while ($count -lt $timeout)
           
@@ -1541,7 +1543,7 @@ jobs:
           export ESTI_ENDPOINT_URL="http://localhost:8000"
           export ESTI_BINARIES_DIR="$(pwd)"
           export ESTI_SETUP_LAKEFS="true"
-          export ESTI_STORAGE_NAMESPACE="local://D:\\temp\\lakefs-data\\test-storage"
+          export ESTI_STORAGE_NAMESPACE="s3://esti-system-testing/${{ github.run_number }}/windows-tests/${{ steps.unique.outputs.value }}"
           
           # Print environment for debugging
           echo "=== Test Environment ==="
@@ -1566,7 +1568,7 @@ jobs:
           export ESTI_ENDPOINT_URL="http://localhost:8000"
           export ESTI_BINARIES_DIR="$(pwd)"
           export ESTI_SETUP_LAKEFS="true"
-          export ESTI_STORAGE_NAMESPACE="local://D:\\temp\\lakefs-data\\test-storage"
+          export ESTI_STORAGE_NAMESPACE="s3://esti-system-testing/${{ github.run_number }}/windows-tests/${{ steps.unique.outputs.value }}"
           
           # Run lakectl tests
           echo "=== Running lakectl tests ==="
@@ -1590,15 +1592,8 @@ jobs:
           Write-Host "=== Directory Contents ==="
           Get-ChildItem -Path . | Format-Table
           
-          Write-Host "=== lakeFS Data Directory ==="
-          if (Test-Path "D:\temp\lakefs-data") {
-            Get-ChildItem -Path "D:\temp\lakefs-data" -Recurse | Format-Table
-          } else {
-            Write-Host "lakeFS data directory does not exist"
-          }
-          
           Write-Host "=== Environment Variables ==="
-          Get-ChildItem Env: | Where-Object {$_.Name -like "*ESTI*" -or $_.Name -like "*LAKEFS*"} | Format-Table
+          Get-ChildItem Env: | Where-Object {$_.Name -like "*ESTI*" -or $_.Name -like "*LAKEFS*" -or $_.Name -like "*AWS*"} | Format-Table
 
       - name: Stop lakeFS server
         if: always()
@@ -1630,10 +1625,6 @@ jobs:
         shell: powershell
         run: |
           Write-Host "Cleaning up test data..."
-          if (Test-Path "D:\temp\lakefs-data") {
-            Remove-Item -Path "D:\temp\lakefs-data" -Recurse -Force -ErrorAction SilentlyContinue
-            Write-Host "Removed test data directory"
-          }
           if (Test-Path "lakefs-pid.txt") {
             Remove-Item -Path "lakefs-pid.txt" -Force -ErrorAction SilentlyContinue
             Write-Host "Removed PID file"
