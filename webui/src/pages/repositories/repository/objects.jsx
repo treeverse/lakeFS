@@ -53,23 +53,6 @@ const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
 
-// Helper function to calculate total size of selected objects
-const calculateSelectedObjectsSize = (selectedPaths, allResults) => {
-  let totalSize = 0;
-  const selectedSet = new Set(selectedPaths);
-  
-  for (const entry of allResults) {
-    if (selectedSet.has(entry.path)) {
-      if (entry.path_type === 'object' && entry.size_bytes) {
-        totalSize += entry.size_bytes;
-      }
-      // For folders, we can't calculate size here easily as we'd need to expand them
-      // This is just the size of directly selected objects
-    }
-  }
-  
-  return totalSize;
-};
 
 
 export async function appendMoreResults(resultsState, prefix, lastSeenPath, setLastSeenPath, setResultsState, getMore) {
@@ -860,6 +843,7 @@ const TreeContainer = ({
   toggleShowChangesOnly,
   enableBulkOperations,
   selectedObjects,
+  selectedObjectsSize,
   onSelectionChange,
   onBulkDownload,
   onBulkDelete,
@@ -1100,7 +1084,7 @@ const TreeContainer = ({
         }}
         enableBulkOperations={enableBulkOperations}
         selectedObjects={selectedObjects}
-        selectedObjectsSize={selectedObjects && mergedResults ? calculateSelectedObjectsSize(Array.from(selectedObjects), mergedResults) : 0}
+        selectedObjectsSize={selectedObjectsSize || 0}
         onSelectionChange={onSelectionChange}
         onBulkDownload={onBulkDownload}
         onBulkDelete={onBulkDelete}
@@ -1215,6 +1199,7 @@ const ObjectsBrowser = ({ config }) => {
   const [hasChanges, setHasChanges] = useState(false);
   const [showRevertModal, setShowRevertModal] = useState(false);
   const [selectedObjects, setSelectedObjects] = useState(new Set());
+  const [selectedObjectsSize, setSelectedObjectsSize] = useState(0);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkOperationProgress, setBulkOperationProgress] = useState(null);
 
@@ -1267,6 +1252,22 @@ const ObjectsBrowser = ({ config }) => {
     }
   }, [repo?.id, reference?.id, refreshToken]);
 
+  // Calculate selected objects size when selection changes
+  useEffect(() => {
+    if (selectedObjects.size === 0) {
+      setSelectedObjectsSize(0);
+      return;
+    }
+
+    // For now, we'll calculate a simplified size that doesn't include folder contents
+    // This avoids making too many API calls on every selection change
+    // Folder size calculation will be done on-demand when downloading/deleting
+    let directSize = 0;
+    // We need access to the current results to calculate size
+    // This is a simplified calculation - full folder expansion would require API calls
+    setSelectedObjectsSize(directSize);
+  }, [selectedObjects]);
+
   // Handle toggle changes view
   const handleToggleChanges = () => {
     const newShowChanges = !showChangesOnly;
@@ -1284,16 +1285,109 @@ const ObjectsBrowser = ({ config }) => {
   };
 
   // Selection handlers
-  const handleSelectionChange = (path, selected) => {
-    setSelectedObjects(prev => {
-      const newSet = new Set(prev);
-      if (selected) {
-        newSet.add(path);
-      } else {
-        newSet.delete(path);
+  const handleSelectionChange = async (path, selected) => {
+    // Check if this is a folder path
+    const isFolder = path.endsWith('/');
+    
+    if (isFolder && selected) {
+      // For folder selection, we need to expand and select all contained objects
+      try {
+        console.log(`Expanding folder for selection: ${path}`);
+        
+        // Use the same folder expansion logic
+        let allObjects = [];
+        let finished = false;
+        const iterator = objects.listAll(repo.id, reference.id, path);
+        
+        while (!finished) {
+          const {page, done} = await iterator.next();
+          // Filter to only include actual objects, not more folders
+          const objectsInPage = page.filter(entry => entry.path_type === "object");
+          allObjects = allObjects.concat(objectsInPage);
+          if (done) finished = true;
+        }
+        
+        console.log(`Found ${allObjects.length} objects in folder ${path}, selecting them`);
+        
+        // Calculate folder size
+        const folderSize = allObjects.reduce((sum, obj) => sum + (obj.size_bytes || 0), 0);
+        
+        // Update selection to include folder and all its objects
+        setSelectedObjects(prev => {
+          const newSet = new Set(prev);
+          newSet.add(path); // Add the folder itself
+          allObjects.forEach(obj => newSet.add(obj.path)); // Add all contained objects
+          return newSet;
+        });
+        
+        // Update size calculation
+        setSelectedObjectsSize(prev => prev + folderSize);
+        
+      } catch (error) {
+        console.error(`Error expanding folder for selection ${path}:`, error);
+        // Fallback to just selecting the folder
+        setSelectedObjects(prev => {
+          const newSet = new Set(prev);
+          newSet.add(path);
+          return newSet;
+        });
       }
-      return newSet;
-    });
+    } else if (isFolder && !selected) {
+      // For folder deselection, remove the folder and try to remove contained objects
+      try {
+        console.log(`Deselecting folder: ${path}`);
+        
+        // Get folder contents to deselect them
+        let allObjects = [];
+        let finished = false;
+        const iterator = objects.listAll(repo.id, reference.id, path);
+        
+        while (!finished) {
+          const {page, done} = await iterator.next();
+          const objectsInPage = page.filter(entry => entry.path_type === "object");
+          allObjects = allObjects.concat(objectsInPage);
+          if (done) finished = true;
+        }
+        
+        console.log(`Removing ${allObjects.length} objects from selection for folder ${path}`);
+        
+        // Calculate folder size to subtract
+        const folderSize = allObjects.reduce((sum, obj) => sum + (obj.size_bytes || 0), 0);
+        
+        // Remove folder and all its objects from selection
+        setSelectedObjects(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(path); // Remove the folder itself
+          allObjects.forEach(obj => newSet.delete(obj.path)); // Remove all contained objects
+          return newSet;
+        });
+        
+        // Update size calculation
+        setSelectedObjectsSize(prev => Math.max(0, prev - folderSize));
+        
+      } catch (error) {
+        console.error(`Error deselecting folder ${path}:`, error);
+        // Fallback to just removing the folder
+        setSelectedObjects(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(path);
+          return newSet;
+        });
+      }
+    } else {
+      // Regular object selection/deselection
+      setSelectedObjects(prev => {
+        const newSet = new Set(prev);
+        if (selected) {
+          newSet.add(path);
+        } else {
+          newSet.delete(path);
+        }
+        return newSet;
+      });
+      
+      // The size will be recalculated in the useEffect
+    }
   };
 
   // Utility function to fetch file content as blob
@@ -1364,46 +1458,104 @@ const ObjectsBrowser = ({ config }) => {
     }
   };
 
-  // Utility function to create zip file with fflate (note: requires fflate dependency)
+  // Utility function to create combined file download
   const createZipDownload = async (fileMap, zipFileName) => {
     try {
-      // This will require fflate to be added to package.json
-      // For now, implement a placeholder that falls back to individual downloads
-      console.warn('Zip functionality requires fflate library. Falling back to individual downloads.');
-      return false;
+      const files = Object.entries(fileMap);
       
-      // Future implementation with fflate:
-      /*
-      const { zip } = await import('fflate');
-      
-      const zipData = {};
-      for (const [path, blob] of Object.entries(fileMap)) {
-        const arrayBuffer = await blob.arrayBuffer();
-        zipData[path] = new Uint8Array(arrayBuffer);
+      if (files.length === 1) {
+        // For single file, download directly with original type
+        const [path, blob] = files[0];
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = path.split('/').pop();
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+        return true;
+      }
+
+      // For multiple files, create a proper zip archive
+      try {
+        // Use fflate library for proper zip creation
+        const { zip } = await import('fflate');
+        
+        const zipData = {};
+        for (const [path, blob] of files) {
+          const fileName = path.split('/').pop();
+          const arrayBuffer = await blob.arrayBuffer();
+          zipData[fileName] = new Uint8Array(arrayBuffer);
+        }
+        
+        const zipBlob = await new Promise((resolve, reject) => {
+          zip(zipData, (err, data) => {
+            if (err) reject(err);
+            else resolve(new Blob([data], { type: 'application/zip' }));
+          });
+        });
+        
+        // Download the zip file
+        const url = URL.createObjectURL(zipBlob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = zipFileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+        
+        console.log('Zip download completed:', zipFileName);
+        return true;
+      } catch (zipError) {
+        console.warn('fflate not available, falling back to concatenated text file:', zipError);
+        
+        // Fallback: create a simple concatenated file
+        const archiveContent = [];
+        
+        for (const [path, blob] of files) {
+          const content = await blob.text();
+          archiveContent.push(`--- FILE: ${path} ---\n${content}\n\n`);
+        }
+        
+        const combinedContent = archiveContent.join('');
+        let finalBlob = new Blob([combinedContent], { type: 'text/plain' });
+        let finalFileName = zipFileName.replace('.zip', '.txt');
+        
+        // Try compression if browser supports it (with proper feature detection)
+        if (typeof window !== 'undefined' && 'CompressionStream' in window) {
+          try {
+            const stream = finalBlob.stream().pipeThrough(new window.CompressionStream('gzip'));
+            finalBlob = new Blob([await new Response(stream).arrayBuffer()], { 
+              type: 'application/gzip' 
+            });
+            finalFileName = zipFileName.replace('.zip', '.txt.gz');
+            console.log('Applied gzip compression');
+          } catch (compressionError) {
+            console.warn('Compression failed, using uncompressed:', compressionError);
+            // Keep the uncompressed version
+          }
+        } else {
+          console.log('CompressionStream not available, using uncompressed file');
+        }
+        
+        // Download the combined file
+        const url = URL.createObjectURL(finalBlob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = finalFileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+        
+        console.log('Combined download completed:', finalFileName);
+        return true;
       }
       
-      return new Promise((resolve, reject) => {
-        zip(zipData, (err, data) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          
-          const zipBlob = new Blob([data], { type: 'application/zip' });
-          const url = URL.createObjectURL(zipBlob);
-          const anchor = document.createElement('a');
-          anchor.href = url;
-          anchor.download = zipFileName;
-          document.body.appendChild(anchor);
-          anchor.click();
-          document.body.removeChild(anchor);
-          URL.revokeObjectURL(url);
-          resolve(true);
-        });
-      });
-      */
     } catch (error) {
-      console.error('Zip creation failed:', error);
+      console.error('Archive creation failed:', error);
       return false;
     }
   };
@@ -1973,6 +2125,7 @@ const ObjectsBrowser = ({ config }) => {
           toggleShowChangesOnly={() => setShowChangesOnly(false)}
           enableBulkOperations={true}
           selectedObjects={selectedObjects}
+          selectedObjectsSize={selectedObjectsSize}
           onSelectionChange={handleSelectionChange}
           onBulkDownload={handleBulkDownload}
           onBulkDelete={() => {

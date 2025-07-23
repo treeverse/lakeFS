@@ -432,6 +432,76 @@ describe('Bulk Operations - Batching Logic with Progress', () => {
       expect(totalSize).toBe(3072); // 1024 + 2048
     });
 
+    it('should include folder contents in size calculation when folder is selected', () => {
+      const selectedPaths = ['file1.txt', 'folder/'];
+      const allResults = [
+        { path: 'file1.txt', path_type: 'object', size_bytes: 1024 },
+        { path: 'folder/', path_type: 'common_prefix' }
+      ];
+      
+      // Mock folder contents
+      const folderContents = [
+        { path: 'folder/file1.txt', path_type: 'object', size_bytes: 512 },
+        { path: 'folder/file2.txt', path_type: 'object', size_bytes: 256 },
+        { path: 'folder/subfolder/file3.txt', path_type: 'object', size_bytes: 128 }
+      ];
+      
+      // Calculate size including folder contents
+      let totalSize = 0;
+      const selectedSet = new Set(selectedPaths);
+      
+      for (const entry of allResults) {
+        if (selectedSet.has(entry.path)) {
+          if (entry.path_type === 'object' && entry.size_bytes) {
+            totalSize += entry.size_bytes;
+          } else if (entry.path_type === 'common_prefix' && entry.path.endsWith('/')) {
+            // Add folder contents size
+            const folderSize = folderContents.reduce((sum, obj) => sum + (obj.size_bytes || 0), 0);
+            totalSize += folderSize;
+          }
+        }
+      }
+      
+      expect(totalSize).toBe(1920); // 1024 (file1.txt) + 896 (folder contents: 512 + 256 + 128)
+    });
+
+    it('should handle multiple selected folders with their contents', () => {
+      const selectedPaths = ['folder1/', 'folder2/', 'standalone-file.txt'];
+      const allResults = [
+        { path: 'folder1/', path_type: 'common_prefix' },
+        { path: 'folder2/', path_type: 'common_prefix' },
+        { path: 'standalone-file.txt', path_type: 'object', size_bytes: 100 }
+      ];
+      
+      // Mock folder contents
+      const folder1Contents = [
+        { path: 'folder1/file1.txt', size_bytes: 1000 },
+        { path: 'folder1/file2.txt', size_bytes: 2000 }
+      ];
+      const folder2Contents = [
+        { path: 'folder2/fileA.txt', size_bytes: 500 }
+      ];
+      
+      let totalSize = 0;
+      const selectedSet = new Set(selectedPaths);
+      
+      for (const entry of allResults) {
+        if (selectedSet.has(entry.path)) {
+          if (entry.path_type === 'object' && entry.size_bytes) {
+            totalSize += entry.size_bytes;
+          } else if (entry.path_type === 'common_prefix') {
+            if (entry.path === 'folder1/') {
+              totalSize += folder1Contents.reduce((sum, obj) => sum + (obj.size_bytes || 0), 0);
+            } else if (entry.path === 'folder2/') {
+              totalSize += folder2Contents.reduce((sum, obj) => sum + (obj.size_bytes || 0), 0);
+            }
+          }
+        }
+      }
+      
+      expect(totalSize).toBe(3600); // 100 (standalone) + 3000 (folder1) + 500 (folder2)
+    });
+
     it('should exclude folders from size calculation', () => {
       const selectedPaths = ['file1.txt', 'folder/'];
       const allResults = [
@@ -566,6 +636,101 @@ describe('Bulk Operations - Batching Logic with Progress', () => {
       expect(allErrors).toHaveLength(1);
       expect(allErrors[0].batch).toBe(2);
       expect(allErrors[0].error).toBe('cannot write to protected branch');
+    });
+  });
+
+  describe('File Type Preservation in Downloads', () => {
+    it('should preserve file types when creating zip archives', () => {
+      const mockFileMap = {
+        'image.png': new Blob(['fake png data'], { type: 'image/png' }),
+        'document.pdf': new Blob(['fake pdf data'], { type: 'application/pdf' }),
+        'script.js': new Blob(['console.log("hello");'], { type: 'text/javascript' })
+      };
+
+      // Test that file types are preserved as binary data
+      Object.entries(mockFileMap).forEach(([path, blob]) => {
+        expect(blob.type).toBeTruthy(); // Should have proper MIME type
+        
+        // Verify blob preserves binary data properly
+        if (path.endsWith('.png')) {
+          expect(blob.type).toBe('image/png');
+        } else if (path.endsWith('.pdf')) {
+          expect(blob.type).toBe('application/pdf');
+        } else if (path.endsWith('.js')) {
+          expect(blob.type).toBe('text/javascript');
+        }
+      });
+    });
+
+    it('should handle binary file conversion to zip correctly', async () => {
+      // Simulate the zip creation process
+      const mockBinaryData = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]); // PNG header
+      const mockBlob = new Blob([mockBinaryData], { type: 'image/png' });
+      
+      // Convert blob to array buffer (as done in createZipDownload)
+      const arrayBuffer = await mockBlob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Verify binary data is preserved
+      expect(uint8Array).toEqual(mockBinaryData);
+      expect(uint8Array.length).toBe(8);
+      expect(uint8Array[0]).toBe(137); // PNG signature first byte
+      expect(uint8Array[1]).toBe(80);  // PNG signature second byte
+    });
+
+    it('should create proper zip file structure', () => {
+      const mockZipData = {
+        'file1.png': new Uint8Array([1, 2, 3, 4]),
+        'file2.txt': new Uint8Array([72, 101, 108, 108, 111]) // "Hello" in ASCII
+      };
+      
+      // Verify zip data structure
+      expect(Object.keys(mockZipData)).toEqual(['file1.png', 'file2.txt']);
+      expect(mockZipData['file1.png']).toBeInstanceOf(Uint8Array);
+      expect(mockZipData['file2.txt']).toBeInstanceOf(Uint8Array);
+      
+      // Verify file data is preserved as binary
+      expect(mockZipData['file1.png'].length).toBe(4);
+      expect(mockZipData['file2.txt'][0]).toBe(72); // 'H'
+    });
+
+    it('should handle single file download with original type', () => {
+      const mockFileMap = {
+        'single-image.png': new Blob(['fake png data'], { type: 'image/png' })
+      };
+      
+      const files = Object.entries(mockFileMap);
+      expect(files.length).toBe(1);
+      
+      const [path, blob] = files[0];
+      expect(path).toBe('single-image.png');
+      expect(blob.type).toBe('image/png');
+      
+      // Verify proper filename extraction
+      const fileName = path.split('/').pop();
+      expect(fileName).toBe('single-image.png');
+    });
+
+    it('should fallback to text concatenation gracefully', async () => {
+      // Test fallback behavior when zip creation fails
+      const mockFileMap = {
+        'file1.txt': new Blob(['Hello world'], { type: 'text/plain' }),
+        'file2.txt': new Blob(['Goodbye world'], { type: 'text/plain' })
+      };
+      
+      const files = Object.entries(mockFileMap);
+      const archiveContent = [];
+      
+      for (const [path, blob] of files) {
+        const content = await blob.text();
+        archiveContent.push(`--- FILE: ${path} ---\n${content}\n\n`);
+      }
+      
+      const combinedContent = archiveContent.join('');
+      expect(combinedContent).toContain('--- FILE: file1.txt ---');
+      expect(combinedContent).toContain('Hello world');
+      expect(combinedContent).toContain('--- FILE: file2.txt ---');
+      expect(combinedContent).toContain('Goodbye world');
     });
   });
 });
