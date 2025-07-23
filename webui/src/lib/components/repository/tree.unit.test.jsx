@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { Tree } from './tree.jsx';
 import { RefTypeBranch } from '../../../constants';
 import * as matchers from '@testing-library/jest-dom/matchers';
+import { useBranchProtection } from '../../hooks/useBranchProtection';
 
 expect.extend(matchers);
 
@@ -43,6 +44,16 @@ vi.mock('dayjs', () => {
   }));
   return { default: mockDayjs };
 });
+
+// Mock the branch protection hook
+vi.mock('../../hooks/useBranchProtection', () => ({
+  useBranchProtection: vi.fn(() => ({
+    isProtected: false,
+    loading: false,
+    error: null,
+    rules: []
+  }))
+}));
 
 // Helper to render component with router context
 const renderWithRouter = (component) => {
@@ -107,6 +118,13 @@ describe('Tree Component - Bulk Operations UI', () => {
     vi.clearAllMocks();
     // Clear any leftover DOM elements from previous tests
     document.body.innerHTML = '';
+    // Reset branch protection mock to default
+    vi.mocked(useBranchProtection).mockReturnValue({
+      isProtected: false,
+      loading: false,
+      error: null,
+      rules: []
+    });
   });
 
   describe('Bulk Operations Disabled', () => {
@@ -388,6 +406,138 @@ describe('Tree Component - Bulk Operations UI', () => {
       const checkboxes = screen.getAllByRole('checkbox');
       // Should have checkboxes for selectable objects only (not removed ones)
       expect(checkboxes.length).toBeGreaterThanOrEqual(3);
+    });
+  });
+
+  describe('Branch Protection', () => {
+    const branchProtectionProps = {
+      ...baseProps,
+      enableBulkOperations: true,
+      selectedObjects: new Set(['file1.txt']),
+      onSelectionChange: vi.fn(),
+      onBulkDownload: vi.fn(),
+      onBulkDelete: vi.fn(),
+    };
+
+    it('should disable bulk delete button when branch is protected', () => {
+      // Mock the hook to return protected branch
+      vi.mocked(useBranchProtection).mockReturnValue({
+        isProtected: true,
+        loading: false,
+        error: null,
+        rules: [{ pattern: 'main' }]
+      });
+
+      renderWithRouter(<Tree {...branchProtectionProps} />);
+
+      const deleteButtons = screen.getAllByText(/Delete/);
+      const bulkDeleteButton = deleteButtons.find(btn => 
+        btn.closest('button')?.className?.includes('btn-outline-danger')
+      )?.closest('button');
+      
+      expect(bulkDeleteButton).toBeInTheDocument();
+      expect(bulkDeleteButton).toBeDisabled();
+      expect(bulkDeleteButton).toHaveAttribute('title', 'Cannot delete objects from protected branch');
+    });
+
+    it('should enable bulk delete button when branch is not protected', () => {
+      // Mock the hook to return unprotected branch
+      vi.mocked(useBranchProtection).mockReturnValue({
+        isProtected: false,
+        loading: false,
+        error: null,
+        rules: []
+      });
+
+      renderWithRouter(<Tree {...branchProtectionProps} />);
+
+      const deleteButtons = screen.getAllByText(/Delete/);
+      const bulkDeleteButton = deleteButtons.find(btn => 
+        btn.closest('button')?.className?.includes('btn-outline-danger')
+      )?.closest('button');
+      
+      expect(bulkDeleteButton).toBeInTheDocument();
+      expect(bulkDeleteButton).not.toBeDisabled();
+    });
+
+    it('should disable individual delete menu items when branch is protected', () => {
+      // Mock the hook to return protected branch
+      vi.mocked(useBranchProtection).mockReturnValue({
+        isProtected: true,
+        loading: false,
+        error: null,
+        rules: [{ pattern: 'main' }]
+      });
+
+      const propsWithActions = {
+        ...branchProtectionProps,
+        showActions: true,
+      };
+
+      renderWithRouter(<Tree {...propsWithActions} />);
+
+      // Find and click the gear icon to open the dropdown
+      const gearButtons = screen.getAllByRole('button');
+      const gearButton = gearButtons.find(btn => 
+        btn.querySelector('svg')?.getAttribute('data-testid') === 'gear-icon' ||
+        btn.textContent === '' && btn.className?.includes('dropdown-toggle')
+      );
+      
+      if (gearButton) {
+        fireEvent.click(gearButton);
+
+        // Look for delete menu items that should be disabled
+        const deleteMenuItems = screen.getAllByText(/Delete/);
+        const individualDeleteItem = deleteMenuItems.find(item => 
+          item.closest('[role="menuitem"]') || item.closest('.dropdown-item')
+        );
+
+        if (individualDeleteItem) {
+          const menuItem = individualDeleteItem.closest('.dropdown-item');
+          expect(menuItem).toHaveClass('text-muted');
+          expect(menuItem).toHaveAttribute('title', 'Cannot delete objects from protected branch');
+        }
+      }
+    });
+
+    it('should enable individual delete menu items when branch is not protected', () => {
+      // Mock the hook to return unprotected branch
+      vi.mocked(useBranchProtection).mockReturnValue({
+        isProtected: false,
+        loading: false,
+        error: null,
+        rules: []
+      });
+
+      const propsWithActions = {
+        ...branchProtectionProps,
+        showActions: true,
+      };
+
+      renderWithRouter(<Tree {...propsWithActions} />);
+
+      // Find and click the gear icon to open the dropdown
+      const gearButtons = screen.getAllByRole('button');
+      const gearButton = gearButtons.find(btn => 
+        btn.querySelector('svg')?.getAttribute('data-testid') === 'gear-icon' ||
+        btn.textContent === '' && btn.className?.includes('dropdown-toggle')
+      );
+      
+      if (gearButton) {
+        fireEvent.click(gearButton);
+
+        // Look for delete menu items that should be enabled
+        const deleteMenuItems = screen.getAllByText(/Delete/);
+        const individualDeleteItem = deleteMenuItems.find(item => 
+          item.closest('[role="menuitem"]') || item.closest('.dropdown-item')
+        );
+
+        if (individualDeleteItem) {
+          const menuItem = individualDeleteItem.closest('.dropdown-item');
+          expect(menuItem).not.toHaveClass('text-muted');
+          expect(menuItem).not.toHaveAttribute('disabled');
+        }
+      }
     });
   });
 });

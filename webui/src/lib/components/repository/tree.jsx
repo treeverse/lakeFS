@@ -34,6 +34,7 @@ import { Link } from "../nav";
 import { RefTypeBranch, RefTypeCommit } from "../../../constants";
 import {ClipboardButton, copyTextToClipboard, AlertError, Loading} from "../controls";
 import { useAPI } from "../../hooks/api";
+import { useBranchProtection } from "../../hooks/useBranchProtection";
 import noop from "lodash/noop";
 import {CommitInfoCard} from "./commits";
 
@@ -48,7 +49,7 @@ export const humanSize = (bytes) => {
 
 const Na = () => <span>&mdash;</span>;
 
-const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui = false }) => {
+const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui = false, isBranchProtected = false }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
   const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
@@ -151,8 +152,13 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
               <Dropdown.Item
                 onClick={(e) => {
                   e.preventDefault();
-                  handleShowDeleteConfirmation();
+                  if (!isBranchProtected) {
+                    handleShowDeleteConfirmation();
+                  }
                 }}
+                disabled={isBranchProtected}
+                title={isBranchProtected ? "Cannot delete objects from protected branch" : ""}
+                className={isBranchProtected ? "text-muted" : ""}
               >
                 <TrashIcon /> Delete
               </Dropdown.Item>
@@ -455,7 +461,7 @@ const PathLink = ({ repoId, reference, path, children, presign = false, as = nul
   return React.createElement(as, { href: link, download: name }, children);
 };
 
-const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions, isSelected, onSelectionChange, enableSelection }) => {
+const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions, isSelected, onSelectionChange, enableSelection, isBranchProtected = false }) => {
   let rowClass = "change-entry-row ";
   switch (entry.diff_type) {
     case "changed":
@@ -589,6 +595,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions,
         onDelete={onDelete}
         presign={config.config.pre_sign_support}
         presign_ui={config.config.pre_sign_support_ui}
+        isBranchProtected={isBranchProtected}
       />
     );
   }
@@ -858,6 +865,11 @@ export const Tree = ({
   onBulkDownload,
   onBulkDelete,
 }) => {
+  // Check if current branch is protected
+  const { isProtected: isBranchProtected } = useBranchProtection(
+    repo?.id, 
+    reference?.type === RefTypeBranch ? reference?.id : null
+  );
   let body;
   if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
     // empty state!
@@ -911,7 +923,8 @@ export const Tree = ({
                     variant="outline-danger"
                     size="sm"
                     onClick={onBulkDelete}
-                    disabled={selectedObjects.size === 0}
+                    disabled={selectedObjects.size === 0 || isBranchProtected}
+                    title={isBranchProtected ? "Cannot delete objects from protected branch" : ""}
                   >
                     <TrashIcon size={16} className="me-1" /> Delete
                   </Button>
@@ -957,6 +970,7 @@ export const Tree = ({
                 enableSelection={enableBulkOperations}
                 isSelected={selectedObjects.has(entry.path)}
                 onSelectionChange={onSelectionChange}
+                isBranchProtected={isBranchProtected}
               />
             ))}
           </tbody>

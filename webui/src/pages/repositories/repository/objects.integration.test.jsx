@@ -2,6 +2,9 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { RefTypeBranch } from '../../../constants';
+import * as matchers from '@testing-library/jest-dom/matchers';
+
+expect.extend(matchers);
 
 // Mock the actual ObjectsBrowser component by importing and mocking its dependencies
 vi.mock('../../../lib/hooks/repo', () => ({
@@ -167,6 +170,8 @@ describe('Objects Page - Bulk Operations Integration', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    // Clear any leftover DOM elements from previous tests
+    document.body.innerHTML = '';
     
     // Create a wrapper that uses our mock TreeContainer
     ObjectsBrowser = () => {
@@ -244,22 +249,27 @@ describe('Objects Page - Bulk Operations Integration', () => {
     it('should enable bulk operations by default', () => {
       render(<ObjectsBrowser config={{}} />);
 
-      expect(screen.getByTestId('bulk-enabled')).toHaveTextContent('true');
-      expect(screen.getByTestId('selected-count')).toHaveTextContent('0');
+      const bulkEnabledElements = screen.getAllByTestId('bulk-enabled');
+      const selectedCountElements = screen.getAllByTestId('selected-count');
+      
+      expect(bulkEnabledElements[0]).toHaveTextContent('true');
+      expect(selectedCountElements[0]).toHaveTextContent('0');
     });
 
     it('should handle object selection', async () => {
       render(<ObjectsBrowser config={{}} />);
 
-      const selectButton = screen.getByTestId('select-object');
-      fireEvent.click(selectButton);
+      const selectButtons = screen.getAllByTestId('select-object');
+      fireEvent.click(selectButtons[0]);
 
       await waitFor(() => {
-        expect(screen.getByTestId('selected-count')).toHaveTextContent('1');
+        const countElements = screen.getAllByTestId('selected-count');
+        expect(countElements[0]).toHaveTextContent('1');
       });
 
       // Should show bulk actions when objects are selected
-      expect(screen.getByTestId('bulk-actions')).toBeInTheDocument();
+      const bulkActionsElements = screen.getAllByTestId('bulk-actions');
+      expect(bulkActionsElements[0]).toBeInTheDocument();
     });
 
     it('should handle successful bulk delete', async () => {
@@ -268,10 +278,10 @@ describe('Objects Page - Bulk Operations Integration', () => {
       render(<ObjectsBrowser config={{}} />);
 
       // Select an object
-      fireEvent.click(screen.getByTestId('select-object'));
+      fireEvent.click(screen.getAllByTestId('select-object')[0]);
 
       await waitFor(() => {
-        expect(screen.getByTestId('bulk-actions')).toBeInTheDocument();
+        expect(screen.getAllByTestId('bulk-actions')[0]).toBeInTheDocument();
       });
 
       // Trigger bulk delete

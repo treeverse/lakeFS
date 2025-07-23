@@ -9,7 +9,7 @@ export default ({ command }) => {
   const baseConfig = {
     test: {
       environment: 'happy-dom',
-      exclude: ["./test/e2e/**/*", "./node_modules/**/*"],
+      exclude: ["./test/e2e/**/*", "./tests/**/*", "./node_modules/**/*"],
     },
     plugins: [
       replace({
