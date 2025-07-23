@@ -4,9 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"path"
 	"regexp"
 	"strings"
+	"sync"
+
+	"bytes"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/graveler"
@@ -179,38 +183,92 @@ func ParseAction(data []byte) (*Action, error) {
 	return &act, nil
 }
 
+// ParseActions parses multiple actions from a single YAML file that may contain multiple documents separated by ---
+func ParseActions(data []byte) ([]*Action, error) {
+	var actions []*Action
+	var errs []error
+
+	// Use yaml.Decoder to handle multiple YAML documents separated by ---
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+
+	for {
+		var action Action
+		err := decoder.Decode(&action)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, fmt.Errorf("failed to decode YAML document: %w", err)
+		}
+
+		// Skip empty documents (documents with no content)
+		if action.Name == "" && len(action.On) == 0 && len(action.Hooks) == 0 {
+			continue
+		}
+
+		// Validate the action
+		if err := action.Validate(); err != nil {
+			errs = append(errs, fmt.Errorf("invalid action '%s': %w", action.Name, err))
+			continue // Continue parsing other actions even if one fails
+		}
+
+		actions = append(actions, &action)
+	}
+
+	// If we have parsing errors, return them along with any successfully parsed actions
+	if len(errs) > 0 {
+		var multiErr error
+		for _, err := range errs {
+			multiErr = multierror.Append(multiErr, err)
+		}
+		return actions, multiErr
+	}
+
+	return actions, nil
+}
+
 func LoadActions(ctx context.Context, source Source, record graveler.HookRecord) ([]*Action, error) {
 	hooksAddresses, err := source.List(ctx, record)
 	if err != nil {
 		return nil, fmt.Errorf("list actions from commit: %w", err)
 	}
 
-	actions := make([]*Action, len(hooksAddresses))
+	var allActions []*Action
+	var actionsMutex sync.Mutex
 	var errGroup multierror.Group
-	for i := range hooksAddresses {
-		// pin i for embedded func
-		ii := i
+
+	for _, addr := range hooksAddresses {
+		// pin addr for embedded func
+		fileAddr := addr
 		errGroup.Go(func() error {
-			addr := hooksAddresses[ii]
-			bytes, err := source.Load(ctx, record, addr)
+			bytes, err := source.Load(ctx, record, fileAddr)
 			if err != nil {
-				return fmt.Errorf("loading file %s: %w", addr, err)
+				return fmt.Errorf("loading file %s: %w", fileAddr, err)
 			}
-			action, err := ParseAction(bytes)
+
+			// Parse actions (handles both single and multiple actions)
+			actions, err := ParseActions(bytes)
 			if err != nil {
-				return fmt.Errorf("parsing file %s: %w", addr, err)
+				return fmt.Errorf("parsing file %s: %w", fileAddr, err)
 			}
-			actions[ii] = action
+
+			// Thread-safe append to allActions
+			actionsMutex.Lock()
+			allActions = append(allActions, actions...)
+			actionsMutex.Unlock()
+
 			return nil
 		})
 	}
+
 	if err := errGroup.Wait(); err != nil {
 		return nil, err
 	}
-	if err := validateActions(actions); err != nil {
+
+	if err := validateActions(allActions); err != nil {
 		return nil, err
 	}
-	return actions, nil
+	return allActions, nil
 }
 
 // validateActions verify we do not two actions with the same name

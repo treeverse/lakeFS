@@ -469,3 +469,292 @@ func TestMatchedActions(t *testing.T) {
 		})
 	}
 }
+
+func TestParseActions(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     string
+		want     []*actions.Action
+		wantErr  bool
+		errStr   string
+		validate func(*testing.T, []*actions.Action)
+	}{
+		{
+			name: "single action - backward compatibility",
+			data: `name: test action
+on:
+  pre-commit:
+hooks:
+  - id: test_hook
+    type: lua
+    properties:
+      script: print("test")`,
+			want: []*actions.Action{
+				{
+					Name: "test action",
+					On: map[graveler.EventType]*actions.ActionOn{
+						graveler.EventTypePreCommit: nil,
+					},
+					Hooks: []actions.ActionHook{
+						{
+							ID:   "test_hook",
+							Type: "lua",
+							Properties: actions.Properties{
+								"script": "print(\"test\")",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple actions with --- separators",
+			data: `---
+name: first action
+on:
+  pre-commit:
+hooks:
+  - id: first_hook
+    type: lua
+    properties:
+      script: print("first")
+---
+name: second action
+on:
+  post-commit:
+hooks:
+  - id: second_hook
+    type: webhook
+    properties:
+      url: "http://example.com"`,
+			want: []*actions.Action{
+				{
+					Name: "first action",
+					On: map[graveler.EventType]*actions.ActionOn{
+						graveler.EventTypePreCommit: nil,
+					},
+					Hooks: []actions.ActionHook{
+						{
+							ID:   "first_hook",
+							Type: "lua",
+							Properties: actions.Properties{
+								"script": "print(\"first\")",
+							},
+						},
+					},
+				},
+				{
+					Name: "second action",
+					On: map[graveler.EventType]*actions.ActionOn{
+						graveler.EventTypePostCommit: nil,
+					},
+					Hooks: []actions.ActionHook{
+						{
+							ID:   "second_hook",
+							Type: "webhook",
+							Properties: actions.Properties{
+								"url": "http://example.com",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid YAML",
+			data: `name: test action
+on:
+  pre-commit:
+  invalid: [`,
+			wantErr: true,
+			errStr:  "failed to decode YAML document",
+		},
+		{
+			name: "one valid, one invalid action",
+			data: `---
+name: valid action
+on:
+  pre-commit:
+hooks:
+  - id: valid_hook
+    type: lua
+    properties:
+      script: print("valid")
+---
+name: invalid action
+on:
+  pre-commit:
+hooks:
+  - id: invalid_hook
+    type: invalid_type`,
+			wantErr: true,
+			errStr:  "invalid action 'invalid action'",
+			validate: func(t *testing.T, actions []*actions.Action) {
+				// Should still return the valid action even if one is invalid
+				require.Len(t, actions, 1)
+				require.Equal(t, "valid action", actions[0].Name)
+			},
+		},
+		{
+			name:    "empty file",
+			data:    "",
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "only --- separators",
+			data: `---
+---
+---`,
+			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "three actions with mixed event types",
+			data: `---
+name: pre action
+on:
+  pre-commit:
+hooks:
+  - id: pre_hook
+    type: lua
+    properties:
+      script: print("pre")
+---
+name: post action
+on:
+  post-commit:
+hooks:
+  - id: post_hook
+    type: webhook
+    properties:
+      url: "http://post.example.com"
+---
+name: merge action
+on:
+  pre-merge:
+hooks:
+  - id: merge_hook
+    type: lua
+    properties:
+      script: print("merge")`,
+			wantErr: false,
+			validate: func(t *testing.T, actions []*actions.Action) {
+				require.Len(t, actions, 3)
+
+				// Check first action
+				require.Equal(t, "pre action", actions[0].Name)
+				require.Contains(t, actions[0].On, graveler.EventTypePreCommit)
+
+				// Check second action
+				require.Equal(t, "post action", actions[1].Name)
+				require.Contains(t, actions[1].On, graveler.EventTypePostCommit)
+
+				// Check third action
+				require.Equal(t, "merge action", actions[2].Name)
+				require.Contains(t, actions[2].On, graveler.EventTypePreMerge)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := actions.ParseActions([]byte(tt.data))
+
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errStr != "" {
+					require.Contains(t, err.Error(), tt.errStr)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+
+			if tt.validate != nil {
+				tt.validate(t, got)
+			} else if !tt.wantErr {
+				if diff := deep.Equal(got, tt.want); diff != nil {
+					t.Error("ParseActions() found diff", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestLoadActionsWithUnifiedFiles(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockSource := mock.NewMockSource(ctrl)
+
+	// Test data for unified file
+	unifiedFileData := `---
+name: unified action 1
+on:
+  pre-commit:
+hooks:
+  - id: hook1
+    type: lua
+    properties:
+      script: print("unified1")
+---
+name: unified action 2
+on:
+  post-commit:
+hooks:
+  - id: hook2
+    type: webhook
+    properties:
+      url: "http://example.com"`
+
+	// Test data for single action file
+	singleFileData := `name: single action
+on:
+  pre-merge:
+hooks:
+  - id: single_hook
+    type: lua
+    properties:
+      script: print("single")`
+
+	record := graveler.HookRecord{}
+
+	t.Run("mixed files - unified and single", func(t *testing.T) {
+		mockSource.EXPECT().List(gomock.Any(), record).Return([]string{"unified.yaml", "single.yaml"}, nil)
+		mockSource.EXPECT().Load(gomock.Any(), record, "unified.yaml").Return([]byte(unifiedFileData), nil)
+		mockSource.EXPECT().Load(gomock.Any(), record, "single.yaml").Return([]byte(singleFileData), nil)
+
+		actions, err := actions.LoadActions(context.Background(), mockSource, record)
+		require.NoError(t, err)
+		require.Len(t, actions, 3)
+
+		// Check that all actions are loaded
+		actionNames := make(map[string]bool)
+		for _, action := range actions {
+			actionNames[action.Name] = true
+		}
+
+		require.True(t, actionNames["unified action 1"])
+		require.True(t, actionNames["unified action 2"])
+		require.True(t, actionNames["single action"])
+	})
+
+	t.Run("only unified file", func(t *testing.T) {
+		mockSource.EXPECT().List(gomock.Any(), record).Return([]string{"unified.yaml"}, nil)
+		mockSource.EXPECT().Load(gomock.Any(), record, "unified.yaml").Return([]byte(unifiedFileData), nil)
+
+		actions, err := actions.LoadActions(context.Background(), mockSource, record)
+		require.NoError(t, err)
+		require.Len(t, actions, 2)
+
+		actionNames := make(map[string]bool)
+		for _, action := range actions {
+			actionNames[action.Name] = true
+		}
+
+		require.True(t, actionNames["unified action 1"])
+		require.True(t, actionNames["unified action 2"])
+	})
+}

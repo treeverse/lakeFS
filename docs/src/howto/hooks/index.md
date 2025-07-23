@@ -48,6 +48,8 @@ Before each hook execution the `if` boolean expression is evaluated. The express
 
 By default, when `if` is empty or omitted, the step will run only if no error occurred (the same as `success()`).
 
+You can define multiple actions in a single file by separating them with `---` delimiters. This allows you to organize related actions together while maintaining the same functionality as individual action files.
+
 #### Action File schema
 
 | Property             | Description                                                                                                                                                                                                              | Data Type  | Required | Default Value                                                           |
