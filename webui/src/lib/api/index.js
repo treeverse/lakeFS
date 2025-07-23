@@ -799,53 +799,48 @@ class Objects {
         }
     }
 
-    async fetchObjectsBatch(repoId, branchId, prefix, after = "") {
-        const BATCH_SIZE = 100;
-        const query = qs({ prefix, after, amount: BATCH_SIZE });
-        const response = await apiRequest(
-            `/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(branchId)}/objects/ls?${query}`
-        );
-        if (response.status !== 200) throw new Error(await extractError(response));
-        return response.json();
-    }
-
-    async deleteObjectsBatch(repoId, branchId, objectsToDelete) {
-        const deletePromises = objectsToDelete
+    async deleteObjectsBatch(repoId, branchId, objectsList) {
+        const pathsToDelete = objectsList
             .filter(obj => obj.path_type === "object")
-            .map(object =>
-                this.delete(repoId, branchId, object.path)
-                    .catch(error => ({ path: object.path, error }))
+            .map(obj => obj.path);
+
+        if (!pathsToDelete.length) return [];
+
+        try {
+            const response = await apiRequest(
+                `/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects/delete`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify({ paths: pathsToDelete }),
+                    headers: { 'Content-Type': 'application/json' }
+                }
             );
 
-        const results = await Promise.allSettled(deletePromises);
-
-        return results
-            .map(result => {
-                if (result.status === 'fulfilled' && result.value && 'error' in result.value) {
-                    return result.value;
-                }
-                if (result.status === 'rejected') {
-                    return { path: 'unknown', error: result.reason };
-                }
-                return null;
-            })
-            .filter(Boolean);
+            return response.status === 200
+                ? (await response.json()).errors || []
+                : Promise.reject(new Error(await extractError(response)));
+        } catch (error) {
+            console.error('Batch deletion failed:', error);
+            return pathsToDelete.map(path => ({
+                path,
+                error: error.message || 'Failed to delete object'
+            }));
+        }
     }
 
-
     async deletePrefix(repoId, branchId, prefix) {
-        let errors = [];
+        const errors = [];
         try {
-            let hasMore = true;
-            let after = "";
+            const iterator = this.listAll(repoId, branchId, prefix);
+            let done = false;
 
-            while (hasMore) {
-                const response = await this.fetchObjectsBatch(repoId, branchId, prefix, after);
-                const batchErrors = await this.deleteObjectsBatch(repoId, branchId, response.results);
-                errors = errors.concat(batchErrors);
-
-                hasMore = response.pagination.has_more;
-                after = hasMore ? response.pagination.next_offset : "";
+            while (!done) {
+                const {page, done: iterDone} = await iterator.next();
+                if (page.length > 0) {
+                    const batchErrors = await this.deleteObjectsBatch(repoId, branchId, page);
+                    if (batchErrors?.length) errors.push(...batchErrors);
+                }
+                done = iterDone;
             }
 
             if (errors.length > 0) {
