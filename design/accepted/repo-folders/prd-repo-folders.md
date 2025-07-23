@@ -111,12 +111,10 @@ To minimize impact on the existing system, this feature will be implemented with
 
 ### API Requirements
 
-The folder structure is implicitly defined by a `folder` attribute on the Repository entity. This attribute holds the
-full path of the folder the repository resides in.
-
 #### Folder and Repository Models
 
-- **Folder**: A folder is not a distinct entity but is represented by a `path` string (e.g., "parent-1/folder-1").
+- **Folder**: A new folder entity will be added, with a single attribute:
+    - `path` string (e.g., "parent-1/folder-1", where "folder-1" is the folder name, and "parent-1" is its parent).
 - **Repository**: The Repository entity will have a new optional attribute:
     - `folder` (string, optional): The full path of the folder containing the repository.
 
