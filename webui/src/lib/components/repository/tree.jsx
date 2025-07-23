@@ -455,7 +455,7 @@ const PathLink = ({ repoId, reference, path, children, presign = false, as = nul
   return React.createElement(as, { href: link, download: name }, children);
 };
 
-const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions }) => {
+const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions, isSelected, onSelectionChange, enableSelection }) => {
   let rowClass = "change-entry-row ";
   switch (entry.diff_type) {
     case "changed":
@@ -593,9 +593,31 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions 
     );
   }
 
+  const handleSelectionChange = (e) => {
+    if (onSelectionChange) {
+      onSelectionChange(entry.path, e.target.checked);
+    }
+  };
+
   return (
     <>
       <tr className={rowClass}>
+        {enableSelection && (entry.path_type === "object" || entry.path_type === "common_prefix") && entry.diff_type !== "removed" && (
+          <td className="selection-checkbox">
+            <input
+              type="checkbox"
+              checked={isSelected || false}
+              onChange={handleSelectionChange}
+              className="form-check-input"
+            />
+          </td>
+        )}
+        {enableSelection && entry.path_type !== "object" && entry.path_type !== "common_prefix" && (
+          <td className="selection-checkbox"></td>
+        )}
+        {enableSelection && entry.diff_type === "removed" && (
+          <td className="selection-checkbox"></td>
+        )}
         <td className="diff-indicator">{diffIndicator || ""}</td>
         <td className="tree-path">
           {entry.path_type === "common_prefix" ? (
@@ -829,6 +851,12 @@ export const Tree = ({
   onDelete,
   showActions = false,
   path = "",
+  enableBulkOperations = false,
+  selectedObjects = new Set(),
+  selectedObjectsSize = 0,
+  onSelectionChange,
+  onBulkDownload,
+  onBulkDelete,
 }) => {
   let body;
   if (results.length === 0 && path === "" && reference.type === RefTypeBranch) {
@@ -837,9 +865,84 @@ export const Tree = ({
       <GetStarted config={config} onUpload={onUpload} onImport={onImport} readOnly={repo.readOnly} />
     );
   } else {
+    const selectableObjects = results.filter(entry => (entry.path_type === "object" || entry.path_type === "common_prefix") && entry.diff_type !== "removed");
+    const allSelectableSelected = selectableObjects.length > 0 && selectableObjects.every(entry => selectedObjects.has(entry.path));
+    const someSelected = selectableObjects.some(entry => selectedObjects.has(entry.path));
+    
+    const handleSelectAll = () => {
+      if (allSelectableSelected) {
+        // Deselect all
+        selectableObjects.forEach(entry => {
+          if (onSelectionChange) onSelectionChange(entry.path, false);
+        });
+      } else {
+        // Select all
+        selectableObjects.forEach(entry => {
+          if (onSelectionChange) onSelectionChange(entry.path, true);
+        });
+      }
+    };
+
     body = (
       <>
+        {enableBulkOperations && selectedObjects.size > 0 && (
+          <div className="bulk-actions-toolbar p-3 bg-light border-bottom">
+            <div className="d-flex align-items-center justify-content-between">
+              <span className="fw-bold">
+                {selectedObjects.size} object{selectedObjects.size !== 1 ? 's' : ''} selected
+                {selectedObjectsSize > 0 && (
+                  <span className="text-muted ms-2">
+                    ({humanSize(selectedObjectsSize)})
+                  </span>
+                )}
+              </span>
+              <div>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  className="me-2"
+                  onClick={onBulkDownload}
+                  disabled={selectedObjects.size === 0}
+                >
+                  <DownloadIcon size={16} className="me-1" /> Download
+                </Button>
+                {reference.type === RefTypeBranch && (
+                  <Button
+                    variant="outline-danger"
+                    size="sm"
+                    onClick={onBulkDelete}
+                    disabled={selectedObjects.size === 0}
+                  >
+                    <TrashIcon size={16} className="me-1" /> Delete
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         <Table borderless size="sm">
+          {enableBulkOperations && (
+            <thead>
+              <tr>
+                <th style={{ width: "40px" }}>
+                  <input
+                    type="checkbox"
+                    checked={allSelectableSelected}
+                    ref={input => {
+                      if (input) input.indeterminate = someSelected && !allSelectableSelected;
+                    }}
+                    onChange={handleSelectAll}
+                    className="form-check-input"
+                  />
+                </th>
+                <th></th>
+                <th>Name</th>
+                <th>Size</th>
+                <th>Modified</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+          )}
           <tbody>
             {results.map((entry) => (
               <EntryRow
@@ -851,6 +954,9 @@ export const Tree = ({
                 reference={reference}
                 showActions={showActions}
                 onDelete={onDelete}
+                enableSelection={enableBulkOperations}
+                isSelected={selectedObjects.has(entry.path)}
+                onSelectionChange={onSelectionChange}
               />
             ))}
           </tbody>

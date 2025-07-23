@@ -21,7 +21,7 @@ import Dropdown from "react-bootstrap/Dropdown";
 import { BsCloudArrowUp } from "react-icons/bs";
 
 import {humanSize, Tree, URINavigator} from "../../../lib/components/repository/tree";
-import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders, branches, commits, refs} from "../../../lib/api";
+import {objects, staging, retention, repositories, imports, NotFoundError, uploadWithProgress, parseRawHeaders, branches, commits, refs, linkToPath} from "../../../lib/api";
 import {useAPI, useAPIWithPagination} from "../../../lib/hooks/api";
 import {useRefs} from "../../../lib/hooks/repo";
 import {useRouter} from "../../../lib/hooks/router";
@@ -52,6 +52,24 @@ import Card from "react-bootstrap/Card";
 const README_FILE_NAME = "README.md";
 const REPOSITORY_AGE_BEFORE_GC = 14;
 const MAX_PARALLEL_UPLOADS = 5;
+
+// Helper function to calculate total size of selected objects
+const calculateSelectedObjectsSize = (selectedPaths, allResults) => {
+  let totalSize = 0;
+  const selectedSet = new Set(selectedPaths);
+  
+  for (const entry of allResults) {
+    if (selectedSet.has(entry.path)) {
+      if (entry.path_type === 'object' && entry.size_bytes) {
+        totalSize += entry.size_bytes;
+      }
+      // For folders, we can't calculate size here easily as we'd need to expand them
+      // This is just the size of directly selected objects
+    }
+  }
+  
+  return totalSize;
+};
 
 
 export async function appendMoreResults(resultsState, prefix, lastSeenPath, setLastSeenPath, setResultsState, getMore) {
@@ -840,6 +858,11 @@ const TreeContainer = ({
   refreshToken,
   showChangesOnly,
   toggleShowChangesOnly,
+  enableBulkOperations,
+  selectedObjects,
+  onSelectionChange,
+  onBulkDownload,
+  onBulkDelete,
 }) => {
   const [actionError, setActionError] = useState(null);
   const [internalRefresh, setInternalRefresh] = useState(true);
@@ -1075,6 +1098,12 @@ const TreeContainer = ({
             })
             .then(onRefresh)
         }}
+        enableBulkOperations={enableBulkOperations}
+        selectedObjects={selectedObjects}
+        selectedObjectsSize={selectedObjects && mergedResults ? calculateSelectedObjectsSize(Array.from(selectedObjects), mergedResults) : 0}
+        onSelectionChange={onSelectionChange}
+        onBulkDownload={onBulkDownload}
+        onBulkDelete={onBulkDelete}
       />
     </>
   );
@@ -1185,6 +1214,9 @@ const ObjectsBrowser = ({ config }) => {
   const [actionError, setActionError] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [showRevertModal, setShowRevertModal] = useState(false);
+  const [selectedObjects, setSelectedObjects] = useState(new Set());
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [bulkOperationProgress, setBulkOperationProgress] = useState(null);
 
   const refresh = () => {
     setRefreshToken(!refreshToken);
@@ -1249,6 +1281,398 @@ const ObjectsBrowser = ({ config }) => {
       query,
       params: { repoId: repo.id },
     });
+  };
+
+  // Selection handlers
+  const handleSelectionChange = (path, selected) => {
+    setSelectedObjects(prev => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(path);
+      } else {
+        newSet.delete(path);
+      }
+      return newSet;
+    });
+  };
+
+  // Utility function to fetch file content as blob
+  const fetchFileBlob = async (path) => {
+    const link = linkToPath(repo.id, reference.id, path, false);
+    const response = await fetch(link);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${path}: ${response.statusText}`);
+    }
+    return await response.blob();
+  };
+
+  // Utility function for individual file downloads (fallback)
+  const downloadIndividualFiles = async (paths, totalObjects) => {
+    const BATCH_SIZE = 1000;
+    let processedCount = 0;
+    
+    // Process in batches
+    for (let i = 0; i < paths.length; i += BATCH_SIZE) {
+      const batch = paths.slice(i, i + BATCH_SIZE);
+      const currentBatch = Math.floor(i / BATCH_SIZE) + 1;
+      
+      console.log(`Processing download batch ${currentBatch}/${Math.ceil(totalObjects / BATCH_SIZE)}, objects ${i + 1}-${Math.min(i + BATCH_SIZE, totalObjects)}`);
+      
+      // Update progress for current batch
+      setBulkOperationProgress({
+        operation: 'download',
+        current: processedCount,
+        total: totalObjects,
+        currentBatch: currentBatch,
+        totalBatches: Math.ceil(totalObjects / BATCH_SIZE),
+        currentBatchProgress: 0,
+        currentBatchTotal: batch.length
+      });
+      
+      // Download each file in the batch
+      for (let j = 0; j < batch.length; j++) {
+        const path = batch[j];
+        const link = linkToPath(repo.id, reference.id, path, false);
+        const anchor = document.createElement('a');
+        anchor.href = link;
+        anchor.download = path.split('/').pop();
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        
+        processedCount++;
+        
+        // Update progress
+        setBulkOperationProgress({
+          operation: 'download',
+          current: processedCount,
+          total: totalObjects,
+          currentBatch: currentBatch,
+          totalBatches: Math.ceil(totalObjects / BATCH_SIZE),
+          currentBatchProgress: j + 1,
+          currentBatchTotal: batch.length
+        });
+        
+        // Small delay between downloads to avoid overwhelming the browser
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      
+      // Small delay between batches
+      if (i + BATCH_SIZE < paths.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+  };
+
+  // Utility function to create zip file with fflate (note: requires fflate dependency)
+  const createZipDownload = async (fileMap, zipFileName) => {
+    try {
+      // This will require fflate to be added to package.json
+      // For now, implement a placeholder that falls back to individual downloads
+      console.warn('Zip functionality requires fflate library. Falling back to individual downloads.');
+      return false;
+      
+      // Future implementation with fflate:
+      /*
+      const { zip } = await import('fflate');
+      
+      const zipData = {};
+      for (const [path, blob] of Object.entries(fileMap)) {
+        const arrayBuffer = await blob.arrayBuffer();
+        zipData[path] = new Uint8Array(arrayBuffer);
+      }
+      
+      return new Promise((resolve, reject) => {
+        zip(zipData, (err, data) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          
+          const zipBlob = new Blob([data], { type: 'application/zip' });
+          const url = URL.createObjectURL(zipBlob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = zipFileName;
+          document.body.appendChild(anchor);
+          anchor.click();
+          document.body.removeChild(anchor);
+          URL.revokeObjectURL(url);
+          resolve(true);
+        });
+      });
+      */
+    } catch (error) {
+      console.error('Zip creation failed:', error);
+      return false;
+    }
+  };
+
+  // Bulk download handler
+  const handleBulkDownload = async () => {
+    const selectedPaths = Array.from(selectedObjects);
+    console.log('Starting bulk download for paths:', selectedPaths);
+    
+    try {
+      // First, expand any folder paths to their contained objects
+      const expandedPaths = await expandFoldersToObjects(selectedPaths);
+      console.log('Expanded download paths:', expandedPaths);
+      
+      const totalObjects = expandedPaths.length;
+      
+      setBulkOperationProgress({
+        operation: 'download',
+        current: 0,
+        total: totalObjects,
+        currentBatch: 1,
+        totalBatches: 1
+      });
+      
+      // For multiple files, try to create a zip download
+      if (expandedPaths.length > 1) {
+        console.log('Attempting zip download for multiple files');
+        
+        try {
+          const fileMap = {};
+          let processedCount = 0;
+          
+          // Fetch all files
+          for (const path of expandedPaths) {
+            setBulkOperationProgress({
+              operation: 'download',
+              current: processedCount,
+              total: totalObjects,
+              currentBatch: 1,
+              totalBatches: 1,
+              status: `Fetching ${path}...`
+            });
+            
+            const blob = await fetchFileBlob(path);
+            fileMap[path] = blob;
+            processedCount++;
+            
+            setBulkOperationProgress({
+              operation: 'download',
+              current: processedCount,
+              total: totalObjects,
+              currentBatch: 1,
+              totalBatches: 1,
+              status: `Fetched ${processedCount}/${totalObjects} files`
+            });
+            
+            // Small delay to avoid overwhelming the server
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+          // Create zip file name
+          const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+          const zipFileName = selectedPaths.length === 1 && selectedPaths[0].endsWith('/') 
+            ? `${selectedPaths[0].replace('/', '')}-${timestamp}.zip`
+            : `lakefs-download-${timestamp}.zip`;
+          
+          setBulkOperationProgress({
+            operation: 'download',
+            current: totalObjects,
+            total: totalObjects,
+            currentBatch: 1,
+            totalBatches: 1,
+            status: 'Creating zip file...'
+          });
+          
+          const zipCreated = await createZipDownload(fileMap, zipFileName);
+          
+          if (!zipCreated) {
+            throw new Error('Zip creation not available');
+          }
+          
+          console.log('Zip download completed');
+        } catch (zipError) {
+          console.warn('Zip download failed, falling back to individual downloads:', zipError);
+          // Fall back to individual downloads
+          await downloadIndividualFiles(expandedPaths, totalObjects);
+        }
+      } else {
+        // Single file - download directly
+        await downloadIndividualFiles(expandedPaths, totalObjects);
+      }
+      
+      console.log('Bulk download completed');
+    } catch (error) {
+      console.error('Bulk download error:', error);
+      setActionError(`Failed to download selected objects: ${error.message || error.toString()}`);
+    } finally {
+      // Clear progress after completion
+      setTimeout(() => {
+        setBulkOperationProgress(null);
+      }, 2000);
+    }
+  };
+
+  // Bulk delete handler
+
+  // Helper function to expand folders to their contained objects
+  const expandFoldersToObjects = async (paths) => {
+    const expandedPaths = [];
+    
+    for (const path of paths) {
+      // Check if this is a folder path
+      if (path.endsWith('/')) {
+        console.log(`Expanding folder: ${path}`);
+        try {
+          // List all objects under this folder prefix
+          let allObjects = [];
+          let finished = false;
+          const iterator = objects.listAll(repo.id, reference.id, path);
+          
+          while (!finished) {
+            const {page, done} = await iterator.next();
+            // Filter to only include actual objects, not more folders
+            const objectsInPage = page.filter(entry => entry.path_type === "object");
+            allObjects = allObjects.concat(objectsInPage.map(obj => obj.path));
+            if (done) finished = true;
+          }
+          
+          console.log(`Found ${allObjects.length} objects in folder ${path}`);
+          expandedPaths.push(...allObjects);
+        } catch (error) {
+          console.error(`Error expanding folder ${path}:`, error);
+          throw new Error(`Failed to list objects in folder "${path}": ${error.message}`);
+        }
+      } else {
+        // Regular object path
+        expandedPaths.push(path);
+      }
+    }
+    
+    return expandedPaths;
+  };
+
+  const handleBulkDelete = async () => {
+    if (reference.type !== RefTypeBranch) {
+      console.log('Not a branch, bulk delete not allowed');
+      return;
+    }
+    
+    const selectedPaths = Array.from(selectedObjects);
+    console.log('Starting bulk delete for paths:', selectedPaths);
+    
+    try {
+      // First, expand any folder paths to their contained objects
+      const expandedPaths = await expandFoldersToObjects(selectedPaths);
+      console.log('Expanded paths:', expandedPaths);
+      
+      const BATCH_SIZE = 1000;
+      const allErrors = [];
+      const totalObjects = expandedPaths.length;
+      const totalBatches = Math.ceil(totalObjects / BATCH_SIZE);
+      
+      // Initialize progress
+      setBulkOperationProgress({
+        operation: 'delete',
+        current: 0,
+        total: totalObjects,
+        currentBatch: 0,
+        totalBatches: totalBatches
+      });
+      
+      // Process in batches of 1000
+      for (let i = 0; i < expandedPaths.length; i += BATCH_SIZE) {
+        const batch = expandedPaths.slice(i, i + BATCH_SIZE);
+        const currentBatch = Math.floor(i / BATCH_SIZE) + 1;
+        
+        console.log(`Processing delete batch ${currentBatch}/${totalBatches}, objects ${i + 1}-${Math.min(i + BATCH_SIZE, expandedPaths.length)}`);
+        
+        // Update progress for current batch
+        setBulkOperationProgress({
+          operation: 'delete',
+          current: i,
+          total: totalObjects,
+          currentBatch: currentBatch,
+          totalBatches: totalBatches,
+          currentBatchProgress: 0,
+          currentBatchTotal: batch.length
+        });
+        
+        try {
+          await objects.deleteObjects(repo.id, reference.id, batch);
+          
+          // Update progress after successful batch
+          setBulkOperationProgress({
+            operation: 'delete',
+            current: Math.min(i + BATCH_SIZE, totalObjects),
+            total: totalObjects,
+            currentBatch: currentBatch,
+            totalBatches: totalBatches,
+            currentBatchProgress: batch.length,
+            currentBatchTotal: batch.length
+          });
+          
+        } catch (error) {
+          // Collect errors from each batch
+          console.error(`Batch ${currentBatch} error:`, error);
+          allErrors.push({
+            batch: currentBatch,
+            error: error.message || error.toString(),
+            paths: batch
+          });
+          
+          // Update progress even on error
+          setBulkOperationProgress({
+            operation: 'delete',
+            current: Math.min(i + BATCH_SIZE, totalObjects),
+            total: totalObjects,
+            currentBatch: currentBatch,
+            totalBatches: totalBatches,
+            currentBatchProgress: batch.length,
+            currentBatchTotal: batch.length,
+            hasError: true
+          });
+        }
+        
+        // Small delay between batches
+        if (i + BATCH_SIZE < selectedPaths.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      // If there were any errors, show them
+      if (allErrors.length > 0) {
+        let errorMessage;
+        if (allErrors.length === 1) {
+          // Single batch failed
+          errorMessage = allErrors[0].error;
+        } else {
+          // Multiple batches failed
+          const batchNumbers = allErrors.map(e => e.batch).join(', ');
+          errorMessage = `Failed to delete objects in batch(es): ${batchNumbers}. First error: ${allErrors[0].error}`;
+        }
+        setActionError(errorMessage);
+      }
+      
+      console.log('Bulk delete processing completed');
+      setSelectedObjects(new Set());
+      setShowBulkDeleteModal(false);
+      refresh();
+      
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      
+      // Extract the error message properly
+      const errorMessage = error.message || error.toString() || 'Failed to delete selected objects';
+      console.log('Setting actionError to:', errorMessage);
+      setActionError(errorMessage);
+      setShowBulkDeleteModal(false);
+      
+      // Force a re-render to ensure the error is shown
+      setTimeout(() => {
+        console.log('Current actionError state should be:', errorMessage);
+      }, 100);
+    } finally {
+      // Clear progress after completion
+      setTimeout(() => {
+        setBulkOperationProgress(null);
+      }, 2000);
+    }
   };
 
   if (loading) return <Loading />;
@@ -1461,7 +1885,53 @@ const ObjectsBrowser = ({ config }) => {
         </ActionGroup>
       </ActionsBar>
       
-      {actionError && <AlertError error={actionError} onDismiss={() => setActionError(null)}/>}
+      {actionError && (
+        <AlertError error={actionError} onDismiss={() => setActionError(null)}/>
+      )}
+
+      {bulkOperationProgress && (
+        <div className="bulk-operation-progress mb-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <span className="fw-bold">
+              {bulkOperationProgress.operation === 'download' ? 'Downloading' : 'Deleting'} {bulkOperationProgress.total} objects
+              {bulkOperationProgress.totalBatches > 1 && (
+                <span className="text-muted">
+                  {' '}(Batch {bulkOperationProgress.currentBatch} of {bulkOperationProgress.totalBatches})
+                </span>
+              )}
+            </span>
+            <span className="text-muted">
+              {bulkOperationProgress.current} / {bulkOperationProgress.total}
+            </span>
+          </div>
+          
+          <div className="progress mb-2" style={{ height: '20px' }}>
+            <div 
+              className={`progress-bar ${bulkOperationProgress.hasError ? 'bg-warning' : 'bg-primary'}`}
+              role="progressbar" 
+              style={{ width: `${(bulkOperationProgress.current / bulkOperationProgress.total) * 100}%` }}
+              aria-valuenow={bulkOperationProgress.current}
+              aria-valuemin="0"
+              aria-valuemax={bulkOperationProgress.total}
+            >
+              {Math.round((bulkOperationProgress.current / bulkOperationProgress.total) * 100)}%
+            </div>
+          </div>
+          
+          {bulkOperationProgress.totalBatches > 1 && bulkOperationProgress.currentBatchProgress !== undefined && (
+            <div className="small text-muted">
+              Current batch: {bulkOperationProgress.currentBatchProgress} / {bulkOperationProgress.currentBatchTotal} objects
+              <div className="progress mt-1" style={{ height: '8px' }}>
+                <div 
+                  className="progress-bar bg-secondary"
+                  role="progressbar" 
+                  style={{ width: `${(bulkOperationProgress.currentBatchProgress / bulkOperationProgress.currentBatchTotal) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <NoGCRulesWarning repoId={repo.id} />
 
@@ -1501,6 +1971,14 @@ const ObjectsBrowser = ({ config }) => {
           onRefresh={refresh}
           showChangesOnly={showChangesOnly}
           toggleShowChangesOnly={() => setShowChangesOnly(false)}
+          enableBulkOperations={true}
+          selectedObjects={selectedObjects}
+          onSelectionChange={handleSelectionChange}
+          onBulkDownload={handleBulkDownload}
+          onBulkDelete={() => {
+            console.log('Bulk delete button clicked, showing modal');
+            setShowBulkDeleteModal(true);
+          }}
         />
 
         <ReadmeContainer
@@ -1511,6 +1989,16 @@ const ObjectsBrowser = ({ config }) => {
           refreshDep={refreshToken}
         />
       </Box>
+
+      <ConfirmationModal
+        show={showBulkDeleteModal}
+        onHide={() => setShowBulkDeleteModal(false)}
+        msg={`Are you sure you want to delete ${selectedObjects.size} selected object${selectedObjects.size !== 1 ? 's' : ''}?${selectedObjects.size > 1000 ? ` (Objects will be processed in batches of 1000)` : ''}`}
+        onConfirm={() => {
+          console.log('Bulk delete confirmation clicked');
+          handleBulkDelete();
+        }}
+      />
     </>
   );
 };
@@ -1532,4 +2020,5 @@ const RepositoryObjectsPage = () => {
     return <ObjectsBrowser config={storageConfig}/>;
 };
 
+export { ObjectsBrowser };
 export default RepositoryObjectsPage;

@@ -800,6 +800,59 @@ class Objects {
         }
     }
 
+    async deleteObjects(repoId, branchId, paths) {
+        console.log('deleteObjects called with:', { repoId, branchId, paths });
+        
+        try {
+            const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/objects/delete`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    paths: paths
+                }),
+            });
+            
+            console.log('deleteObjects response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok
+            });
+            
+            if (response.status !== 200 && response.status !== 204) {
+                const errorMessage = await extractError(response);
+                console.log('deleteObjects HTTP error message:', errorMessage);
+                throw new Error(errorMessage);
+            }
+            
+            // Parse the response body to check for object-level errors
+            const result = response.status === 204 ? null : await response.json();
+            console.log('deleteObjects result:', result);
+            
+            // Check if there are errors in the ObjectErrorList
+            if (result && result.errors && result.errors.length > 0) {
+                console.log('Found object errors:', result.errors);
+                
+                // Check if all objects failed with the same error
+                const uniqueErrors = [...new Set(result.errors.map(err => err.message))];
+                
+                if (uniqueErrors.length === 1 && result.errors.length === paths.length) {
+                    // All objects failed with the same error
+                    throw new Error(uniqueErrors[0]);
+                } else {
+                    // Different errors for different objects, create detailed message
+                    const errorDetails = result.errors.map(err => `"${err.path}": ${err.message}`).join('\n');
+                    const errorMessage = `Failed to delete some objects:\n${errorDetails}`;
+                    throw new Error(errorMessage);
+                }
+            }
+            
+            return result;
+            
+        } catch (error) {
+            console.log('deleteObjects caught error:', error);
+            throw error;
+        }
+    }
+
     async get(repoId, ref, path, presign = false) {
         const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
