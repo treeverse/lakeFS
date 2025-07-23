@@ -1070,10 +1070,12 @@ func TestLakectlBranchProtection_Delete(t *testing.T) {
 	storage := GenerateUniqueStorageNamespace(repoName)
 	testBranch := "test-delete-protection"
 	vars := map[string]string{
-		"REPO":        repoName,
-		"STORAGE":     storage,
-		"BRANCH":      mainBranch,
-		"TEST_BRANCH": testBranch,
+		"REPO":          repoName,
+		"STORAGE":       storage,
+		"BRANCH":        mainBranch,
+		"TEST_BRANCH":   testBranch,
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   testBranch,
 	}
 
 	// Create repository and test branch
@@ -1112,11 +1114,13 @@ func TestLakectlBranchProtection_DeleteWithOtherActions(t *testing.T) {
 	storage := GenerateUniqueStorageNamespace(repoName)
 	testBranch := "test-combined-protection"
 	vars := map[string]string{
-		"REPO":        repoName,
-		"STORAGE":     storage,
-		"BRANCH":      mainBranch,
-		"TEST_BRANCH": testBranch,
-		"FILE_PATH":   "test-file.txt",
+		"REPO":          repoName,
+		"STORAGE":       storage,
+		"BRANCH":        mainBranch,
+		"TEST_BRANCH":   testBranch,
+		"FILE_PATH":     "test-file.txt",
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   testBranch,
 	}
 
 	// Create repository and test branch
@@ -1143,11 +1147,13 @@ func TestLakectlBranchProtection_DeleteOnly(t *testing.T) {
 	storage := GenerateUniqueStorageNamespace(repoName)
 	testBranch := "test-delete-only"
 	vars := map[string]string{
-		"REPO":        repoName,
-		"STORAGE":     storage,
-		"BRANCH":      mainBranch,
-		"TEST_BRANCH": testBranch,
-		"FILE_PATH":   "test-file.txt",
+		"REPO":          repoName,
+		"STORAGE":       storage,
+		"BRANCH":        mainBranch,
+		"TEST_BRANCH":   testBranch,
+		"FILE_PATH":     "test-file.txt",
+		"SOURCE_BRANCH": mainBranch,
+		"DEST_BRANCH":   testBranch,
 	}
 
 	// Create repository and test branch
