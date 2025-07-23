@@ -29,11 +29,11 @@ const BranchProtectionRulesList = ({ rulesResponse, deleteButtonDisabled, onDele
     const getActionDisplayName = (action) => {
         switch (action) {
             case 'staging_write':
-                return 'Staging Writes';
+                return 'Staging';
             case 'commit':
                 return 'Commits';
             case 'delete':
-                return 'Branch Deletion';
+                return 'Deletion';
             default:
                 return action;
         }
@@ -52,13 +52,14 @@ const BranchProtectionRulesList = ({ rulesResponse, deleteButtonDisabled, onDele
                                         <strong>Pattern: </strong>
                                         <code className="bg-light px-2 py-1 rounded">{r.pattern}</code>
                                     </div>
-                                    <div className="d-flex flex-wrap align-items-center">
+                                    <div className="d-flex flex-wrap align-items-baseline">
                                         <small className="text-muted me-2">Blocked actions:</small>
-                                        {blockedActions.map((action, index) => (
+                                        {blockedActions.map((action) => (
                                             <Badge 
                                                 key={action} 
                                                 bg={getActionBadgeVariant(action)}
-                                                className={`me-1 ${index < blockedActions.length - 1 ? 'mb-1' : ''}`}
+                                                className="me-1"
+                                                style={{ verticalAlign: 'baseline' }}
                                             >
                                                 {getActionDisplayName(action)}
                                             </Badge>
