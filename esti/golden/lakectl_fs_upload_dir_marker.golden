@@ -1,0 +1,7 @@
+Path: ${FILE_PATH}
+Modified Time: <DATE> <TIME> <TZ>
+Size: 0 bytes
+Human Size: 0 B
+Physical Address: ${STORAGE}/<OBJECT_KEY>
+Checksum: <CHECKSUM>
+Content-Type: application/octet-stream

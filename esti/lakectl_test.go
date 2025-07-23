@@ -760,7 +760,7 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 	t.Run("directory_marker_with_trailing_slash", func(t *testing.T) {
 		vars["FILE_PATH"] = "dir-with-marker/"
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s /dev/null lakefs://"+repoName+"/"+mainBranch+"/dir-with-marker/", false, "lakectl_fs_upload", vars)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s /dev/null lakefs://"+repoName+"/"+mainBranch+"/dir-with-marker/", false, "lakectl_fs_upload_dir_marker", vars)
 	})
 }
 
