@@ -1537,45 +1537,52 @@ jobs:
           Write-Host "lakeFS server is ready and responding to health checks"
 
       - name: Setup lakectl test environment
-        shell: bash
+        shell: powershell
         run: |
-          echo "Setting up lakectl test environment..."
-          export ESTI_ENDPOINT_URL="http://localhost:8000"
-          export ESTI_BINARIES_DIR="$(pwd)"
-          export ESTI_SETUP_LAKEFS="true"
-          export ESTI_STORAGE_NAMESPACE="s3://esti-system-testing/${{ github.run_number }}/windows-tests/${{ steps.unique.outputs.value }}"
+          Write-Host "Setting up lakectl test environment..."
+          $env:ESTI_ENDPOINT_URL = "http://localhost:8000"
+          $env:ESTI_BINARIES_DIR = (Get-Location).Path
+          $env:ESTI_SETUP_LAKEFS = "true"
+          $env:ESTI_STORAGE_NAMESPACE = "s3://esti-system-testing/${{ github.run_number }}/windows-tests/${{ steps.unique.outputs.value }}"
           
           # Print environment for debugging
-          echo "=== Test Environment ==="
-          echo "ESTI_ENDPOINT_URL=$ESTI_ENDPOINT_URL"
-          echo "ESTI_BINARIES_DIR=$ESTI_BINARIES_DIR"
-          echo "ESTI_SETUP_LAKEFS=$ESTI_SETUP_LAKEFS"
-          echo "ESTI_STORAGE_NAMESPACE=$ESTI_STORAGE_NAMESPACE"
+          Write-Host "=== Test Environment ==="
+          Write-Host "ESTI_ENDPOINT_URL=$env:ESTI_ENDPOINT_URL"
+          Write-Host "ESTI_BINARIES_DIR=$env:ESTI_BINARIES_DIR"
+          Write-Host "ESTI_SETUP_LAKEFS=$env:ESTI_SETUP_LAKEFS"
+          Write-Host "ESTI_STORAGE_NAMESPACE=$env:ESTI_STORAGE_NAMESPACE"
           
           # Verify lakectl can communicate with server
-          echo "=== Testing lakectl connectivity ==="
-          ./lakectl.exe --help
+          Write-Host "=== Testing lakectl connectivity ==="
+          .\lakectl.exe --help
           
           # Test basic server connectivity
-          curl -f http://localhost:8000/_health || (echo "Server health check failed" && exit 1)
-          echo "Server connectivity verified"
+          try {
+            $response = Invoke-WebRequest -Uri "http://localhost:8000/_health" -UseBasicParsing
+            if ($response.StatusCode -eq 200) {
+              Write-Host "Server connectivity verified"
+            } else {
+              Write-Error "Server health check failed with status: $($response.StatusCode)"
+              exit 1
+            }
+          } catch {
+            Write-Error "Server health check failed: $($_.Exception.Message)"
+            exit 1
+          }
 
       - name: Run lakectl Windows tests
-        shell: bash
+        shell: powershell
         run: |
-          echo "Running lakectl tests on Windows..."
+          Write-Host "Running lakectl tests on Windows..."
           
-          export ESTI_ENDPOINT_URL="http://localhost:8000"
-          export ESTI_BINARIES_DIR="$(pwd)"
-          export ESTI_SETUP_LAKEFS="true"
-          export ESTI_STORAGE_NAMESPACE="s3://esti-system-testing/${{ github.run_number }}/windows-tests/${{ steps.unique.outputs.value }}"
+          $env:ESTI_ENDPOINT_URL = "http://localhost:8000"
+          $env:ESTI_BINARIES_DIR = (Get-Location).Path
+          $env:ESTI_SETUP_LAKEFS = "true"
+          $env:ESTI_STORAGE_NAMESPACE = "s3://esti-system-testing/${{ github.run_number }}/windows-tests/${{ steps.unique.outputs.value }}"
           
           # Run lakectl tests
-          echo "=== Running lakectl tests ==="
-          go test -v ./esti \
-            -run="^TestLakectl" \
-            -timeout=30m \
-            --args --system-tests
+          Write-Host "=== Running lakectl tests ==="
+          go test -v ./esti -run="^TestLakectl" -timeout=30m --args --system-tests
 
       - name: Debug on failure
         if: failure()
