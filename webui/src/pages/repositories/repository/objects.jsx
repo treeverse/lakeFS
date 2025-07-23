@@ -1252,21 +1252,6 @@ const ObjectsBrowser = ({ config }) => {
     }
   }, [repo?.id, reference?.id, refreshToken]);
 
-  // Calculate selected objects size when selection changes
-  useEffect(() => {
-    if (selectedObjects.size === 0) {
-      setSelectedObjectsSize(0);
-      return;
-    }
-
-    // For now, we'll calculate a simplified size that doesn't include folder contents
-    // This avoids making too many API calls on every selection change
-    // Folder size calculation will be done on-demand when downloading/deleting
-    let directSize = 0;
-    // We need access to the current results to calculate size
-    // This is a simplified calculation - full folder expansion would require API calls
-    setSelectedObjectsSize(directSize);
-  }, [selectedObjects]);
 
   // Handle toggle changes view
   const handleToggleChanges = () => {
@@ -1285,7 +1270,7 @@ const ObjectsBrowser = ({ config }) => {
   };
 
   // Selection handlers
-  const handleSelectionChange = async (path, selected) => {
+  const handleSelectionChange = async (path, selected, entry = null) => {
     // Check if this is a folder path
     const isFolder = path.endsWith('/');
     
@@ -1386,7 +1371,16 @@ const ObjectsBrowser = ({ config }) => {
         return newSet;
       });
       
-      // The size will be recalculated in the useEffect
+      // Update size calculation for regular objects
+      if (entry && entry.path_type === 'object' && entry.size_bytes) {
+        setSelectedObjectsSize(prev => {
+          if (selected) {
+            return prev + entry.size_bytes;
+          } else {
+            return Math.max(0, prev - entry.size_bytes);
+          }
+        });
+      }
     }
   };
 

@@ -595,7 +595,7 @@ const EntryRow = ({ config, repo, reference, path, entry, onDelete, showActions,
 
   const handleSelectionChange = (e) => {
     if (onSelectionChange) {
-      onSelectionChange(entry.path, e.target.checked);
+      onSelectionChange(entry.path, e.target.checked, entry);
     }
   };
 
@@ -873,12 +873,12 @@ export const Tree = ({
       if (allSelectableSelected) {
         // Deselect all
         selectableObjects.forEach(entry => {
-          if (onSelectionChange) onSelectionChange(entry.path, false);
+          if (onSelectionChange) onSelectionChange(entry.path, false, entry);
         });
       } else {
         // Select all
         selectableObjects.forEach(entry => {
-          if (onSelectionChange) onSelectionChange(entry.path, true);
+          if (onSelectionChange) onSelectionChange(entry.path, true, entry);
         });
       }
     };
