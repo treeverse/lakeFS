@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -11,12 +12,27 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
+const (
+	requiredArgsCount = 2
+)
+
+var (
+	errBranchURIEmpty          = errors.New("branch URI cannot be empty")
+	errCommitReferenceEmpty    = errors.New("commit reference cannot be empty")
+	errBranchURIInvalidScheme  = errors.New("branch URI must start with 'lakefs://'")
+	errBranchURIInvalidChars   = errors.New("branch URI contains invalid characters")
+	errCommitRefInvalidChars   = errors.New("commit reference contains invalid characters")
+	errCommitRefInvalidFormat  = errors.New("commit reference contains invalid characters (allowed: alphanumeric, ., _, /, ~, -)")
+	errBranchURITooLong        = errors.New("branch URI too long")
+	errCommitRefTooLong        = errors.New("commit reference too long")
+)
+
 var branchMoveToCommitCmd = &cobra.Command{
 	Use:               "move-to-commit <branch-uri> <commit-ref>",
 	Short:             "Move branch pointer to a specific commit",
 	Long:              `Move a branch pointer to reference a specific commit. This operation is destructive and cannot be undone.`,
 	Example:           "lakectl branch move-to-commit lakefs://example-repo/my-branch 1234567890abcdef",
-	Args:              cobra.ExactArgs(2),
+	Args:              cobra.ExactArgs(requiredArgsCount),
 	ValidArgsFunction: ValidArgsRepository,
 	Hidden:            true,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -128,25 +144,25 @@ var branchMoveToCommitCmd = &cobra.Command{
 func validateInputs(branchURI, commitRef string) error {
 	// Check for empty inputs
 	if branchURI == "" {
-		return fmt.Errorf("branch URI cannot be empty")
+		return errBranchURIEmpty
 	}
 	if commitRef == "" {
-		return fmt.Errorf("commit reference cannot be empty")
+		return errCommitReferenceEmpty
 	}
 
 	// Validate branch URI format (basic checks before parsing)
 	if !strings.HasPrefix(branchURI, "lakefs://") {
-		return fmt.Errorf("branch URI must start with 'lakefs://'")
+		return errBranchURIInvalidScheme
 	}
 
 	// Check for suspicious characters that might indicate injection attempts
 	suspiciousChars := []string{"\n", "\r", "\t", "\x00", "\x1f"}
 	for _, char := range suspiciousChars {
 		if strings.Contains(branchURI, char) {
-			return fmt.Errorf("branch URI contains invalid characters")
+			return errBranchURIInvalidChars
 		}
 		if strings.Contains(commitRef, char) {
-			return fmt.Errorf("commit reference contains invalid characters")
+			return errCommitRefInvalidChars
 		}
 	}
 
@@ -154,17 +170,17 @@ func validateInputs(branchURI, commitRef string) error {
 	// Allow: alphanumeric, hyphens, underscores, slashes, dots, tildes (~)
 	commitRefPattern := regexp.MustCompile(`^[a-zA-Z0-9._/~-]+$`)
 	if !commitRefPattern.MatchString(commitRef) {
-		return fmt.Errorf("commit reference contains invalid characters (allowed: alphanumeric, ., _, /, ~, -)")
+		return errCommitRefInvalidFormat
 	}
 
 	// Check reasonable length limits to prevent DoS
 	const maxBranchURILength = 1000
 	const maxCommitRefLength = 500
 	if len(branchURI) > maxBranchURILength {
-		return fmt.Errorf("branch URI too long (max %d characters)", maxBranchURILength)
+		return fmt.Errorf("%w (max %d characters)", errBranchURITooLong, maxBranchURILength)
 	}
 	if len(commitRef) > maxCommitRefLength {
-		return fmt.Errorf("commit reference too long (max %d characters)", maxCommitRefLength)
+		return fmt.Errorf("%w (max %d characters)", errCommitRefTooLong, maxCommitRefLength)
 	}
 
 	return nil
