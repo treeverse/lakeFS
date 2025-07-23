@@ -91,8 +91,8 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                             tooltip="delete branch"
                             onConfirm={() => {
                                 branches.delete(repo.id, branch.id)
-                                    .catch(err => alert(err))
                                     .then(() => onDelete(branch.id))
+                                    .catch(err => alert(err))
                             }}
                         >
                             <TrashIcon/>

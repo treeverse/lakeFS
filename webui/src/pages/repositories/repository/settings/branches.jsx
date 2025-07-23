@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from "react";
 import { useOutletContext } from "react-router-dom";
 import {AlertError, Loading, RefreshButton} from "../../../../lib/components/controls";
 import {useRefs} from "../../../../lib/hooks/repo";
-import {Button, ListGroup, Row} from "react-bootstrap";
+import {Button, ListGroup, Row, Badge} from "react-bootstrap";
 import Col from "react-bootstrap/Col";
 import {useAPI} from "../../../../lib/hooks/api";
 import {branchProtectionRules} from "../../../../lib/api";
@@ -13,14 +13,68 @@ import Alert from "react-bootstrap/Alert";
 const BranchProtectionRulesList = ({ rulesResponse, deleteButtonDisabled, onDeleteRule }) => {
     if (!rulesResponse) return null;
     
+    const getActionBadgeVariant = (action) => {
+        switch (action) {
+            case 'delete':
+                return 'danger';
+            case 'commit':
+                return 'warning';
+            case 'staging_write':
+                return 'info';
+            default:
+                return 'secondary';
+        }
+    };
+
+    const getActionDisplayName = (action) => {
+        switch (action) {
+            case 'staging_write':
+                return 'Staging Writes';
+            case 'commit':
+                return 'Commits';
+            case 'delete':
+                return 'Branch Deletion';
+            default:
+                return action;
+        }
+    };
+    
     return (
         <div className="row mt-3 ms-1 pr-5">
             <ListGroup>
                 {rulesResponse['rules'].length > 0 ? rulesResponse['rules'].map((r) => {
+                    const blockedActions = r.blocked_actions || ['staging_write', 'commit']; // Default if not specified
                     return <ListGroup.Item key={r.pattern}>
-                        <div className="d-flex">
-                            <code>{r.pattern}</code>
-                            <Button disabled={deleteButtonDisabled} className="ms-auto" size="sm" variant="secondary" onClick={() => onDeleteRule(r.pattern)}>Delete</Button>
+                        <div className="d-flex flex-column">
+                            <div className="d-flex align-items-center justify-content-between">
+                                <div className="d-flex flex-column">
+                                    <div className="mb-2">
+                                        <strong>Pattern: </strong>
+                                        <code className="bg-light px-2 py-1 rounded">{r.pattern}</code>
+                                    </div>
+                                    <div className="d-flex flex-wrap align-items-center">
+                                        <small className="text-muted me-2">Blocked actions:</small>
+                                        {blockedActions.map((action, index) => (
+                                            <Badge 
+                                                key={action} 
+                                                bg={getActionBadgeVariant(action)}
+                                                className={`me-1 ${index < blockedActions.length - 1 ? 'mb-1' : ''}`}
+                                            >
+                                                {getActionDisplayName(action)}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                                <Button 
+                                    disabled={deleteButtonDisabled} 
+                                    className="ms-auto" 
+                                    size="sm" 
+                                    variant="outline-danger" 
+                                    onClick={() => onDeleteRule(r.pattern)}
+                                >
+                                    Delete
+                                </Button>
+                            </div>
                         </div>
                     </ListGroup.Item>
                 }) : <Alert variant="info">There aren&apos;t any rules yet.</Alert>}
