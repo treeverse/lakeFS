@@ -49,6 +49,50 @@ describe('Objects API - deleteObjects with ObjectErrorList', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should handle deletion of non-existent objects as success', async () => {
+      // In lakeFS, deleting non-existent objects is idempotent and returns success
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({ success: true }),
+      };
+      fetch.mockResolvedValue(mockResponse);
+
+      const result = await objects.deleteObjects('test-repo', 'main', ['non-existent-file.txt']);
+
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/v1/repositories/test-repo/branches/main/objects/delete',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            paths: ['non-existent-file.txt']
+          }),
+        })
+      );
+
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should handle mixed deletion of existing and non-existent objects as success', async () => {
+      // When some objects exist and some don't, lakeFS still returns success for the overall operation
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        json: vi.fn().mockResolvedValue({ 
+          success: true,
+          deleted: ['existing-file.txt'] // Only lists actually deleted objects
+        }),
+      };
+      fetch.mockResolvedValue(mockResponse);
+
+      const result = await objects.deleteObjects('test-repo', 'main', ['existing-file.txt', 'non-existent-file.txt']);
+
+      expect(result).toEqual({ 
+        success: true,
+        deleted: ['existing-file.txt']
+      });
+    });
   });
 
   describe('ObjectErrorList Handling', () => {
