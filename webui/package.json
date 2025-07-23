@@ -66,6 +66,7 @@
     "@stoplight/prism-cli": "^5.14.2",
     "@stoplight/prism-core": "^5.8.0",
     "@stoplight/prism-http-server": "^5.12.2",
+    "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@types/bootstrap": "^5.2.10",
     "@types/js-yaml": "^4.0.9",

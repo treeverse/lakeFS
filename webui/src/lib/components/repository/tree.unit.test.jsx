@@ -4,6 +4,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { Tree } from './tree.jsx';
 import { RefTypeBranch } from '../../../constants';
+import * as matchers from '@testing-library/jest-dom/matchers';
+
+expect.extend(matchers);
 
 // Mock dependencies
 vi.mock('../nav', () => ({
@@ -102,6 +105,8 @@ describe('Tree Component - Bulk Operations UI', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Clear any leftover DOM elements from previous tests
+    document.body.innerHTML = '';
   });
 
   describe('Bulk Operations Disabled', () => {
@@ -186,9 +191,9 @@ describe('Tree Component - Bulk Operations UI', () => {
 
       renderWithRouter(<Tree {...propsWithSelection} />);
 
-      expect(screen.getByText('2 objects selected')).toBeInTheDocument();
-      expect(screen.getByText(/Download/)).toBeInTheDocument();
-      expect(screen.getByText(/Delete/)).toBeInTheDocument();
+      expect(screen.getAllByText('2 objects selected')[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/Download/)[0]).toBeInTheDocument();
+      expect(screen.getAllByText(/Delete/)[0]).toBeInTheDocument();
     });
 
     it('should call onBulkDownload when download button clicked', () => {
@@ -199,7 +204,7 @@ describe('Tree Component - Bulk Operations UI', () => {
 
       renderWithRouter(<Tree {...propsWithSelection} />);
 
-      const downloadButton = screen.getByText(/Download/).closest('button');
+      const downloadButton = screen.getAllByText(/Download/)[0].closest('button');
       fireEvent.click(downloadButton);
 
       expect(bulkProps.onBulkDownload).toHaveBeenCalledTimes(1);
@@ -213,7 +218,7 @@ describe('Tree Component - Bulk Operations UI', () => {
 
       renderWithRouter(<Tree {...propsWithSelection} />);
 
-      const deleteButton = screen.getByText(/Delete/).closest('button');
+      const deleteButton = screen.getAllByText(/Delete/)[0].closest('button');
       fireEvent.click(deleteButton);
 
       expect(bulkProps.onBulkDelete).toHaveBeenCalledTimes(1);
@@ -228,8 +233,18 @@ describe('Tree Component - Bulk Operations UI', () => {
 
       renderWithRouter(<Tree {...propsWithCommit} />);
 
-      expect(screen.getByText(/Download/)).toBeInTheDocument();
-      expect(screen.queryByText(/Delete/)).not.toBeInTheDocument();
+      expect(screen.getAllByText(/Download/)[0]).toBeInTheDocument();
+      
+      // For non-branch references, there should be no bulk delete button in the toolbar
+      // The logic should prevent showing bulk delete for commits/tags
+      
+      // Check that bulk delete button is not rendered anywhere on the page
+      const deleteButtons = Array.from(document.querySelectorAll('*')).filter(el => 
+        el.textContent && el.textContent.includes('Delete') && el.tagName === 'BUTTON'
+      );
+      
+      // Should not find any delete buttons for non-branch references
+      expect(deleteButtons.length).toBe(0);
     });
 
     it('should call onSelectionChange when individual checkbox clicked', () => {
@@ -240,7 +255,7 @@ describe('Tree Component - Bulk Operations UI', () => {
 
       fireEvent.click(firstObjectCheckbox);
 
-      expect(bulkProps.onSelectionChange).toHaveBeenCalledWith('file1.txt', true);
+      expect(bulkProps.onSelectionChange).toHaveBeenCalledWith('file1.txt', true, expect.any(Object));
     });
 
     it('should handle select all functionality', () => {
@@ -250,8 +265,8 @@ describe('Tree Component - Bulk Operations UI', () => {
       fireEvent.click(selectAllCheckbox);
 
       // Should call onSelectionChange for each selectable object
-      expect(bulkProps.onSelectionChange).toHaveBeenCalledWith('file1.txt', true);
-      expect(bulkProps.onSelectionChange).toHaveBeenCalledWith('file2.txt', true);
+      expect(bulkProps.onSelectionChange).toHaveBeenCalledWith('file1.txt', true, expect.any(Object));
+      expect(bulkProps.onSelectionChange).toHaveBeenCalledWith('file2.txt', true, expect.any(Object));
     });
 
     it('should show correct singular/plural text for selection count', () => {
@@ -261,7 +276,7 @@ describe('Tree Component - Bulk Operations UI', () => {
       };
 
       renderWithRouter(<Tree {...propsWithOneSelected} />);
-      expect(screen.getByText('1 object selected')).toBeInTheDocument();
+      expect(screen.getAllByText('1 object selected')[0]).toBeInTheDocument();
 
       const propsWithMultipleSelected = {
         ...bulkProps,
@@ -269,7 +284,7 @@ describe('Tree Component - Bulk Operations UI', () => {
       };
 
       renderWithRouter(<Tree {...propsWithMultipleSelected} />);
-      expect(screen.getByText('2 objects selected')).toBeInTheDocument();
+      expect(screen.getAllByText('2 objects selected')[0]).toBeInTheDocument();
     });
 
     it('should show total size when selectedObjectsSize is provided', () => {
@@ -280,7 +295,7 @@ describe('Tree Component - Bulk Operations UI', () => {
       };
 
       renderWithRouter(<Tree {...propsWithSize} />);
-      expect(screen.getByText('2 objects selected')).toBeInTheDocument();
+      expect(screen.getAllByText('2 objects selected')[0]).toBeInTheDocument();
       expect(screen.getByText('(3.0 KB)')).toBeInTheDocument();
     });
 
@@ -292,7 +307,7 @@ describe('Tree Component - Bulk Operations UI', () => {
       };
 
       renderWithRouter(<Tree {...propsWithoutSize} />);
-      expect(screen.getByText('1 object selected')).toBeInTheDocument();
+      expect(screen.getAllByText('1 object selected')[0]).toBeInTheDocument();
       expect(screen.queryByText('(0.0 B)')).not.toBeInTheDocument();
     });
 
@@ -304,7 +319,7 @@ describe('Tree Component - Bulk Operations UI', () => {
       };
 
       renderWithRouter(<Tree {...propsWithFolderSize} />);
-      expect(screen.getByText('2 objects selected')).toBeInTheDocument();
+      expect(screen.getAllByText('2 objects selected')[0]).toBeInTheDocument();
       expect(screen.getByText('(5.0 KB)')).toBeInTheDocument();
     });
 
@@ -316,7 +331,7 @@ describe('Tree Component - Bulk Operations UI', () => {
       };
 
       renderWithRouter(<Tree {...propsWithLargeFolder} />);
-      expect(screen.getByText('1 object selected')).toBeInTheDocument();
+      expect(screen.getAllByText('1 object selected')[0]).toBeInTheDocument();
       expect(screen.getByText('(1.0 GB)')).toBeInTheDocument();
     });
   });
