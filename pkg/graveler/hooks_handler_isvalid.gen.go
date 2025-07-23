@@ -20,7 +20,8 @@ func (v EventType) IsValid() bool {
 		EventTypePreRevert,
 		EventTypePostRevert,
 		EventTypePreCherryPick,
-		EventTypePostCherryPick:
+		EventTypePostCherryPick,
+		EventTypeManualTrigger:
 		return true
 	default:
 		return false

@@ -87,6 +87,7 @@ type actionsHandler interface {
 	GetTaskResult(ctx context.Context, repositoryID, runID, hookRunID string) (*actions.TaskResult, error)
 	ListRunResults(ctx context.Context, repositoryID, branchID, commitID, after string) (actions.RunResultIterator, error)
 	ListRunTaskResults(ctx context.Context, repositoryID, runID, after string) (actions.TaskResultIterator, error)
+	TriggerAction(ctx context.Context, repository *catalog.Repository, ref, actionName string) (string, error)
 }
 
 type Migrator interface {
@@ -2737,6 +2738,34 @@ func (c *Controller) GetRun(w http.ResponseWriter, r *http.Request, repository, 
 	writeResponse(w, r, http.StatusOK, response)
 }
 
+func (c *Controller) TriggerAction(w http.ResponseWriter, r *http.Request, repository, refParam, action string) {
+	if !c.authorize(w, r, permissions.Node{
+		Permission: permissions.Permission{
+			Action:   permissions.TriggerActionsAction,
+			Resource: permissions.RepoArn(repository),
+		},
+	}) {
+		return
+	}
+	ctx := r.Context()
+	c.LogAction(ctx, "actions_trigger", r, repository, refParam, "")
+
+	// Get repository information
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// Trigger the action
+	_, err = c.Actions.TriggerAction(ctx, repo, refParam, action)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// For async execution, just return 202 Accepted
+	writeResponse(w, r, http.StatusAccepted, nil)
+}
+
 func (c *Controller) ListRunHooks(w http.ResponseWriter, r *http.Request, repository, runID string, params apigen.ListRunHooksParams) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
@@ -2986,7 +3015,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, block.ErrForbidden),
 		errors.Is(err, graveler.ErrProtectedBranch),
 		errors.Is(err, graveler.ErrReadOnlyRepository),
-		errors.Is(err, graveler.ErrDeleteDefaultBranch):
+		errors.Is(err, graveler.ErrDeleteDefaultBranch),
+		errors.Is(err, actions.ErrActionsDisabled):
 		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, authentication.ErrSessionExpired):

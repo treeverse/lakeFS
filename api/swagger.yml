@@ -5750,6 +5750,44 @@ paths:
         default:
           $ref: "#/components/responses/ServerError"
 
+  /repositories/{repository}/refs/{ref}/actions/{action}/triggers:
+    post:
+      tags:
+        - actions
+      operationId: triggerAction
+      summary: manually trigger an action
+      parameters:
+        - in: path
+          name: repository
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: ref
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: action
+          required: true
+          schema:
+            type: string
+      responses:
+        202:
+          description: action accepted for background execution
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        420:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
   /repositories/{repository}/metadata/object/{type}/{object_id}:
     parameters:
       - in: path

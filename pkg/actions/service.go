@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/treeverse/lakefs/pkg/actions/lua/hook"
 	"github.com/treeverse/lakefs/pkg/auth"
+	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -210,6 +211,7 @@ type Service interface {
 	GetTaskResult(ctx context.Context, repositoryID string, runID string, hookRunID string) (*TaskResult, error)
 	ListRunResults(ctx context.Context, repositoryID string, branchID, commitID string, after string) (RunResultIterator, error)
 	ListRunTaskResults(ctx context.Context, repositoryID string, runID string, after string) (TaskResultIterator, error)
+	TriggerAction(ctx context.Context, repository *catalog.Repository, ref string, actionName string) (string, error)
 	graveler.HooksHandler
 }
 
@@ -303,7 +305,23 @@ func (s *StoreService) loadMatchedActions(ctx context.Context, record graveler.H
 	if err != nil {
 		return nil, err
 	}
-	return MatchedActions(actions, spec)
+
+	// First filter by event type and branch
+	matchedActions, err := MatchedActions(actions, spec)
+	if err != nil {
+		return nil, err
+	}
+
+	// If ActionName is specified in the record, filter by it
+	if record.ActionName != "" {
+		for _, action := range matchedActions {
+			if action.Name == record.ActionName {
+				return []*Action{action}, nil
+			}
+		}
+		return nil, ErrNotFound
+	}
+	return matchedActions, nil
 }
 
 func (s *StoreService) allocateTasks(runID string, actions []*Action) ([][]*Task, error) {
@@ -604,6 +622,52 @@ func (s *StoreService) PreCherryPickHook(ctx context.Context, record graveler.Ho
 func (s *StoreService) PostCherryPickHook(ctx context.Context, record graveler.HookRecord) error {
 	s.asyncRun(ctx, record)
 	return nil
+}
+
+func (s *StoreService) TriggerAction(ctx context.Context, repository *catalog.Repository, ref string, actionName string) (string, error) {
+	if !s.cfg.Enabled {
+		logging.FromContext(ctx).WithField("repository", repository.Name).Debug("Hooks are disabled, skipping manual trigger")
+		return "", ErrActionsDisabled
+	}
+
+	// Construct graveler.RepositoryRecord from catalog.Repository
+	repoRecord := &graveler.RepositoryRecord{
+		RepositoryID: graveler.RepositoryID(repository.Name),
+		Repository: &graveler.Repository{
+			StorageID:        graveler.StorageID(repository.StorageID),
+			StorageNamespace: graveler.StorageNamespace(repository.StorageNamespace),
+			CreationDate:     repository.CreationDate,
+			DefaultBranchID:  graveler.BranchID(repository.DefaultBranch),
+			State:            graveler.RepositoryState_ACTIVE,
+			InstanceUID:      "", // Not available from catalog API
+			ReadOnly:         repository.ReadOnly,
+		},
+	}
+
+	runID := s.NewRunID()
+
+	// Create hook record for manual trigger with all required fields
+	record := graveler.HookRecord{
+		RunID:      runID,
+		EventType:  graveler.EventTypeManualTrigger,
+		Repository: repoRecord,
+		SourceRef:  graveler.Ref(ref),
+		BranchID:   graveler.BranchID(ref), // For manual triggers, we use the ref as branch
+		ActionName: actionName,
+	}
+
+	// verify that the action exists before scheduling the run
+	spec := MatchSpec{
+		EventType: record.EventType,
+		BranchID:  record.BranchID,
+	}
+	_, err := s.loadMatchedActions(ctx, record, spec)
+	if err != nil {
+		return "", ErrNotFound
+	}
+	// Run the action asynchronously
+	s.asyncRun(ctx, record)
+	return runID, nil
 }
 
 func (s *StoreService) NewRunID() string {
