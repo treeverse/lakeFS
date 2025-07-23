@@ -52,7 +52,9 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const handleCloseDeleteConfirmation = () => setShowDeleteConfirmation(false);
   const handleShowDeleteConfirmation = () => setShowDeleteConfirmation(true);
-  const deleteConfirmMsg = `are you sure you wish to delete object "${entry.path}"?`;
+  const deleteConfirmMsg = entry.path_type === "common_prefix"
+      ? `Are you sure you wish to delete folder "${entry.path}" and all its contents?`
+      : `Are you sure you wish to delete object "${entry.path}"?`;
   const onSubmitDeletion = () => {
     onDelete(entry);
     setShowDeleteConfirmation(false);
@@ -163,6 +165,20 @@ const EntryRowActions = ({ repo, reference, entry, onDelete, presign, presign_ui
             <Dropdown.Item onClick={handleShowPrefixSize}>
               <BeakerIcon /> Calculate Size
             </Dropdown.Item>
+          )}
+
+          {entry.path_type === "common_prefix" && reference.type === RefTypeBranch && (
+              <>
+                <Dropdown.Divider />
+                <Dropdown.Item
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleShowDeleteConfirmation();
+                    }}
+                >
+                  <TrashIcon /> Delete
+                </Dropdown.Item>
+              </>
           )}
 
         </Dropdown.Menu>

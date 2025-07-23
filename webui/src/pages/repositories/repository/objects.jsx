@@ -1067,13 +1067,16 @@ const TreeContainer = ({
         onUpload={onUpload}
         onImport={onImport}
         onDelete={entry => {
-          objects
-            .delete(repo.id, reference.id, entry.path)
-            .catch(error => {
-              setDeleteState({...initialState, error: error})
-              throw error
-            })
-            .then(onRefresh)
+            const deleteOperation = entry.path_type === "common_prefix"
+                ? objects.deletePrefix(repo.id, reference.id, entry.path)
+                : objects.delete(repo.id, reference.id, entry.path);
+
+            deleteOperation
+                .catch(error => {
+                    setDeleteState({...initialState, error: error})
+                    throw error
+                })
+                .then(onRefresh)
         }}
       />
     </>

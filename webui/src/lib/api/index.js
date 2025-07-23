@@ -800,6 +800,36 @@ class Objects {
         }
     }
 
+    async deletePrefix(repoId, branchId, prefix) {
+        let errors = [];
+        let accumulator = [];
+
+        // --------------------------- Get all objects recursively --------------------------------
+        const iterator = this.listAll(repoId, branchId, prefix);
+        let finished = false;
+        while (!finished) {
+            const {page, done} = await iterator.next();
+            accumulator = accumulator.concat(page);
+            if (done) finished = true;
+        }
+        // ----------------------------------------------------------------------------------------
+
+        // Delete all objects in parallel
+        await Promise.all(accumulator.map(async (object) => {
+            try {
+                if (object.path_type === "object") {
+                    await this.delete(repoId, branchId, object.path);
+                }
+            } catch (error) {
+                errors.push({ path: object.path, error });
+            }
+        }));
+
+        if (errors.length > 0) {
+            throw new Error(`Failed to delete some objects under prefix ${prefix}: ${errors.map(e => e.path).join(', ')}`);
+        }
+    }
+
     async get(repoId, ref, path, presign = false) {
         const query = qs({path, presign});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
