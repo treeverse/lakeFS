@@ -138,13 +138,14 @@ The Metadata Search service requires:
 * `lakefs.endpoint` `(string : "")`- the lakeFS server endpoint
 * `lakefs.access_key_id` `(string : "")`- a lakeFS access key 
 * `lakefs.secret_access_key` `(string : "")`- a lakeFS secret access key
-* `metadata_settings.since_epoch` `(string : "")`- ISO 8601 timestamp (e.g., `2ș24-01-01T00:00:00Z`) that sets the earliest
+* `metadata_settings.since` `(string : "")`- ISO 8601 timestamp (e.g., `2025-07-15T00:00:00+00`) that sets the earliest
 point in time from which to process commits for metadata extraction. If omitted, metadata will be captured from the time 
 the branch was created.
 * `metadata_settings.max_commits` `(int : 0)` - The maximum number of commits to process per searchable branch.
   Uses 0 by default that disables the limit.
-* `metadata_settings.repositories` `(map[string]string[] : {)` - A mapping of repositories and the branches in each where metadata 
-search should be enabled. You can specify full branch names or use branch prefixes for flexibility.
+* `metadata_settings.repositories` `(map[string]branches:string[] : {})` - A mapping of repositories and the branches in each where metadata 
+search should be enabled. You can specify full branch names or use branch prefixes for flexibility. Prefixes should be expressed using a trailing
+asterisk, e.g., `dev-*`.  
 
 !!! note
     Metadata search is disabled by default. You must explicitly configure which repositories and branches to include.
@@ -161,15 +162,17 @@ search should be enabled. You can specify full branch names or use branch prefix
       access_key_id: "AKIAIOSFOLEXAMPLE"
       secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
     metadata_settings:
-      since_epoch: "2024-01-01T00:00:00Z"
+      since: "2025-07-15T00:00:00+00"
       max_commits: 100
       repositories:
         "example-repo-1":
-          - "main"
-          - "dev"
+           branches:
+             - "main"
+             - "dev"
         "example-repo-2":
-          - "main"
-          - "feature-*"
+           branches:  
+             - "main"
+             - "feature-*"
     ```
 
 ## How to Search by Metadata
