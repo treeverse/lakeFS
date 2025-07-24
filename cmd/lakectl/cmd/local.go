@@ -126,6 +126,11 @@ Use "lakectl local checkout..." to sync with the remote or run "lakectl local cl
 }
 
 func warnOnCaseInsensitiveDirectory(path string) {
+	// Check if case-insensitive warnings are disabled
+	if _, found := os.LookupEnv("LAKECTL_SUPPRESS_CASE_INSENSITIVE_WARNING"); found {
+		return
+	}
+
 	isCaseInsensitive, err := fileutil.IsCaseInsensitiveLocation(fileutil.OSFS{}, path, Warning)
 	if err != nil {
 		Warning(fmt.Sprintf("Check whether directory '%s' is case-insensitive: %s", path, err))

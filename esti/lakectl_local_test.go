@@ -259,6 +259,8 @@ func TestLakectlLocal_clone(t *testing.T) {
 }
 
 func TestLakectlLocal_posix_permissions(t *testing.T) {
+	skipOnWindows(t)
+
 	tmpDir := t.TempDir()
 	fd, err := os.CreateTemp(tmpDir, "")
 	require.NoError(t, err)
