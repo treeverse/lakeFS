@@ -578,7 +578,7 @@ class ObjectWriter(LakeFSIOBase):
                                                                              staging_metadata=staging_metadata,
                                                                              if_none_match=if_none_match)
         except lakefs_sdk.ApiException as e:
-            if self._mode.startswith("x") and e.status == http.HTTPStatus.PRECONDITION_FAILED:
+            if if_none_match and e.status == http.HTTPStatus.PRECONDITION_FAILED:
                 raise ObjectExistsException(e.status, e.reason, e.body) from e
             raise
 
