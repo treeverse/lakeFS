@@ -500,6 +500,24 @@ func UploadContent(ctx context.Context, repo, branch, objPath, objContent string
 	}, w.FormDataContentType(), &b)
 }
 
+// UploadContentWithMetadata uploads content with metadata headers, useful for creating symlinks
+func UploadContentWithMetadata(ctx context.Context, client apigen.ClientWithResponsesInterface, repo, branch, path string, metadata map[string]string, contentType string, content io.Reader) (*apigen.UploadObjectResponse, error) {
+	return client.UploadObjectWithBodyWithResponse(ctx, repo, branch, &apigen.UploadObjectParams{
+		Path: path,
+	}, contentType, content, func(ctx context.Context, req *http.Request) error {
+		var metaKey string
+		for k, v := range metadata {
+			if strings.HasPrefix(k, apiutil.LakeFSMetadataPrefix) {
+				metaKey = apiutil.LakeFSHeaderInternalPrefix + k[len(apiutil.LakeFSMetadataPrefix):]
+			} else {
+				metaKey = apiutil.LakeFSHeaderMetadataPrefix + k
+			}
+			req.Header.Set(metaKey, v)
+		}
+		return nil
+	})
+}
+
 func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, clt apigen.ClientWithResponsesInterface) (checksum, content string) {
 	checksum, content, err := UploadFileRandomDataAndReport(ctx, repo, branch, objPath, false, clt)
 	require.NoError(t, err, "failed to upload file", repo, branch, objPath)

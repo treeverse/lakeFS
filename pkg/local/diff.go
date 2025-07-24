@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/uri"
@@ -195,7 +196,7 @@ func Undo(c Changes) Changes {
 // the directory or "path separator" is also taken into account when providing the listing in a lexicographical order.
 func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error) error) error {
 	var stringHeap StringHeap
-	var dirsInfo = make(map[string]os.FileInfo)
+	dirsInfo := make(map[string]os.FileInfo)
 
 	fpWalkErr := filepath.Walk(root, func(p string, info fs.FileInfo, walkErr error) error {
 		if walkErr != nil {
@@ -235,11 +236,7 @@ func WalkS3(root string, callbackFunc func(p string, info fs.FileInfo, err error
 		}
 
 		// Process the file after we finished processing all the dirs that precede it
-		if err := callbackFunc(p, info, nil); err != nil {
-			return err
-		}
-
-		return nil
+		return callbackFunc(p, info, nil)
 	})
 	if fpWalkErr != nil {
 		return fpWalkErr
@@ -282,19 +279,15 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, cfg Con
 		}
 
 		includeFile, err := includeLocalFileInDiff(info, cfg)
-		if err != nil {
+		if err != nil || !includeFile {
+			// if we can't include the file, we skip it, return the error if any
 			return err
-		}
-		if !includeFile {
-			return nil
 		}
 
 		localPath := strings.TrimPrefix(p, rightPath)
 		localPath = strings.TrimPrefix(localPath, string(filepath.Separator))
 		localPath = filepath.ToSlash(localPath) // normalize to use "/" always
 
-		localBytes := info.Size()
-		localMtime := info.ModTime().Unix()
 		for {
 			if currentRemoteFile.Path == "" {
 				if currentRemoteFile, hasMore = <-left; !hasMore {
@@ -310,17 +303,11 @@ func DiffLocalWithHead(left <-chan apigen.ObjectStats, rightPath string, cfg Con
 				}
 				currentRemoteFile.Path = ""
 			case currentRemoteFile.Path == localPath:
-				remoteMtime, err := getMtimeFromStats(currentRemoteFile)
+				changed, err := hasLocalChange(p, info, currentRemoteFile, cfg)
 				if err != nil {
 					return err
 				}
-
-				// dirs might have different sizes on different operating systems
-				sizeChanged := !info.IsDir() && localBytes != swag.Int64Value(currentRemoteFile.SizeBytes)
-				mtimeChanged := localMtime != remoteMtime
-				permissionsChanged := isPermissionsChanged(info, currentRemoteFile, cfg)
-				if sizeChanged || mtimeChanged || permissionsChanged {
-					// we made a change!
+				if changed {
 					changes = append(changes, &Change{ChangeSourceLocal, localPath, ChangeTypeModified})
 				}
 				currentRemoteFile.Path = ""
@@ -397,18 +384,91 @@ var ignoreFileList = []string{
 }
 
 func includeLocalFileInDiff(info fs.FileInfo, cfg Config) (bool, error) {
+	// Handle directories
 	if info.IsDir() {
 		return cfg.IncludePerm, nil
 	}
-	if !info.Mode().IsRegular() {
-		if !cfg.SkipNonRegularFiles {
-			return false, fmt.Errorf("%s: %w", info.Name(), fileutil.ErrNotARegularFile)
-		}
+
+	// Skip ignored files
+	if slices.Contains(ignoreFileList, info.Name()) {
 		return false, nil
 	}
-	return !slices.Contains(ignoreFileList, info.Name()), nil
+
+	// Handle non-regular files (including symlinks)
+	if !info.Mode().IsRegular() {
+		if cfg.SkipNonRegularFiles {
+			return false, nil
+		}
+		// Check symlink support for non-regular files
+		if cfg.SymlinkSupport && info.Mode()&fs.ModeSymlink != 0 {
+			return true, nil
+		}
+		return false, fmt.Errorf("%s: %w", info.Name(), fileutil.ErrNotARegularFile)
+	}
+
+	// Regular files are included
+	return true, nil
 }
 
 func includeRemoteFileInDiff(currentRemoteFile apigen.ObjectStats, cfg Config) bool {
 	return cfg.IncludePerm || !strings.HasSuffix(currentRemoteFile.Path, uri.PathSeparator)
+}
+
+// hasLocalChange detects whether the local file at `p` differs from the remote
+func hasLocalChange(p string, info os.FileInfo, remote apigen.ObjectStats, cfg Config) (bool, error) {
+	// 1. symlink target change always wins
+	if cfg.SymlinkSupport && info.Mode()&fs.ModeSymlink != 0 {
+		return isSymlinkTargetChanged(p, info, remote), nil
+	}
+
+	// 2. size changed? (exclude directories))
+	if !info.IsDir() {
+		localSize := info.Size()
+		if localSize != swag.Int64Value(remote.SizeBytes) {
+			return true, nil
+		}
+	}
+
+	// 3. mtime changed?
+	remoteMtime, err := getMtimeFromStats(remote)
+	if err != nil {
+		return false, err
+	}
+	localMtime := info.ModTime().Unix()
+	if localMtime != remoteMtime {
+		return true, nil
+	}
+
+	// 4. permissions changed?
+	if isPermissionsChanged(info, remote, cfg) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+// isSymlinkTargetChanged checks if the symlink target has changed between local and remote
+func isSymlinkTargetChanged(p string, info fs.FileInfo, remoteFileStats apigen.ObjectStats) bool {
+	if info.Mode()&fs.ModeSymlink == 0 {
+		return false
+	}
+
+	// Get local symlink target
+	localTarget, err := os.Readlink(p)
+	if err != nil {
+		// If we can't read the local symlink target, consider it changed
+		return true
+	}
+
+	// Get remote symlink target from metadata
+	if remoteFileStats.Metadata == nil {
+		return true
+	}
+
+	remoteTarget, ok := remoteFileStats.Metadata.Get(apiutil.SymlinkMetadataKey)
+	if !ok {
+		return true
+	}
+
+	return localTarget != remoteTarget
 }

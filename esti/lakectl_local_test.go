@@ -1,9 +1,11 @@
 package esti
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/fs"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/fileutil"
 	"github.com/treeverse/lakefs/pkg/local"
@@ -149,6 +152,31 @@ func TestLakectlLocal_init(t *testing.T) {
 	vars["REF"] = featureBranch
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local init lakefs://"+repoName+"/"+featureBranch+"/ "+tmpDir+" --force", false, "lakectl_local_init", vars)
 	RunCmdAndVerifySuccessWithFile(t, Lakectl()+" local list "+tmpDir, false, "lakectl_local_list", vars)
+
+	// Test init with symlinks present locally
+	t.Run("init with symlinks", func(t *testing.T) {
+		symlinkDir, err := os.MkdirTemp(tmpDir, "symlink_test")
+		require.NoError(t, err)
+
+		// Create a regular file and a symlink
+		regularFile := filepath.Join(symlinkDir, "regular.txt")
+		require.NoError(t, os.WriteFile(regularFile, []byte("content"), os.ModePerm))
+		symlinkFile := filepath.Join(symlinkDir, "symlink.txt")
+		require.NoError(t, os.Symlink(regularFile, symlinkFile))
+
+		vars["LOCAL_DIR"] = symlinkDir
+		vars["REF"] = mainBranch
+		vars["PREFIX"] = "symlink_test/"
+
+		// Test with symlink support enabled
+		lakectlWithSymlinks := "LAKECTL_LOCAL_SYMLINK_SUPPORT=true " + Lakectl()
+		RunCmdAndVerifySuccessWithFile(t, lakectlWithSymlinks+" local init lakefs://"+repoName+"/"+mainBranch+"/symlink_test "+symlinkDir, false, "lakectl_local_init_symlink", vars)
+
+		// Verify both files are detected
+		result := runCmd(t, lakectlWithSymlinks+" local status "+symlinkDir, false, false, vars)
+		require.Contains(t, result, "regular.txt")
+		require.Contains(t, result, "symlink.txt")
+	})
 }
 
 func TestLakectlLocal_clone(t *testing.T) {
@@ -255,6 +283,58 @@ func TestLakectlLocal_clone(t *testing.T) {
 		require.Contains(t, sanitizedResult, "test1.txt")
 		require.Contains(t, sanitizedResult, vars["PREFIX"]+"test2.txt")
 		require.NotContains(t, sanitizedResult, vars["PREFIX"]+"nodiff.txt")
+	})
+
+	t.Run("clone with symlinks", func(t *testing.T) {
+		symlinkBranch := "symlink_clone_test"
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+symlinkBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+		// Create files with symlinks on remote
+		regularFile := "target_file.txt"
+		vars["FILE_PATH"] = regularFile
+		vars["BRANCH"] = symlinkBranch
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+symlinkBranch+"/"+regularFile, false, "lakectl_fs_upload_symlink", vars)
+
+		// Create symlink using metadata
+		symlinkFile := "symlink_to_target.txt"
+		content := ""
+		_, err := UploadContentWithMetadata(context.Background(), client, repoName, symlinkBranch, symlinkFile, map[string]string{
+			apiutil.SymlinkMetadataKey: "target_file.txt",
+		}, "text/plain", strings.NewReader(content))
+		require.NoError(t, err)
+
+		runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+symlinkBranch+" -m 'add files with symlinks'", false, false, vars)
+
+		// Clone with symlink support enabled
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		vars["LOCAL_DIR"] = dataDir
+		vars["BRANCH"] = symlinkBranch
+		vars["REF"] = symlinkBranch
+		vars["PREFIX"] = ""
+
+		lakectlWithSymlinks := "LAKECTL_LOCAL_SYMLINK_SUPPORT=true " + Lakectl()
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local clone lakefs://"+repoName+"/"+symlinkBranch+"/ "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
+
+		// Verify files exist
+		regularFilePath := filepath.Join(dataDir, regularFile)
+		require.FileExists(t, regularFilePath)
+
+		symlinkFilePath := filepath.Join(dataDir, symlinkFile)
+		require.FileExists(t, symlinkFilePath)
+
+		// Check if it's a symlink
+		info, err := os.Lstat(symlinkFilePath)
+		require.NoError(t, err)
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(symlinkFilePath)
+			require.NoError(t, err)
+			require.Equal(t, "target_file.txt", target)
+		}
+
+		// Verify no changes after clone
+		result := runCmd(t, lakectlWithSymlinks+" local status "+dataDir, false, false, vars)
+		require.Contains(t, result, "No diff found")
 	})
 }
 
@@ -485,6 +565,65 @@ func TestLakectlLocal_pull(t *testing.T) {
 			localVerifyDirContents(t, dataDir, expected)
 		})
 	}
+
+	// Test pull with symlinks
+	t.Run("pull with symlinks", func(t *testing.T) {
+		symlinkBranch := "symlink_pull_test"
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+symlinkBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+
+		vars["LOCAL_DIR"] = dataDir
+		vars["BRANCH"] = symlinkBranch
+		vars["REF"] = symlinkBranch
+
+		lakectlWithSymlinks := "LAKECTL_LOCAL_SYMLINK_SUPPORT=true " + Lakectl()
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local clone lakefs://"+repoName+"/"+symlinkBranch+"/ "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/ to ${LOCAL_DIR}.", vars)
+
+		// Add files with symlinks to remote
+		const regularFile = "target_file.txt"
+		vars["FILE_PATH"] = regularFile
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s files/ro_1k lakefs://"+repoName+"/"+symlinkBranch+"/"+regularFile, false, "lakectl_fs_upload_symlink", vars)
+
+		// Create symlink using metadata
+		const symlinkFile = "symlink_to_target.txt"
+		metadata := map[string]string{
+			apiutil.SymlinkMetadataKey: "target_file.txt",
+		}
+		ctx := context.Background()
+		uploadResponse, err := UploadContentWithMetadata(ctx, client, repoName, symlinkBranch, symlinkFile, metadata, "text/plain", bytes.NewReader([]byte{}))
+		require.NoError(t, err)
+		require.Equal(t, uploadResponse.StatusCode(), http.StatusCreated)
+
+		// Commit changes with symlinks
+		runCmd(t, Lakectl()+" commit lakefs://"+repoName+"/"+symlinkBranch+" -m 'add files with symlinks'", false, false, vars)
+
+		// Pull changes with symlinks
+		result := runCmd(t, lakectlWithSymlinks+" local pull "+dataDir, false, false, vars)
+		require.Contains(t, result, "download target_file.txt")
+		require.Contains(t, result, "download symlink_to_target.txt")
+
+		// Verify files exist
+		regularFilePath := filepath.Join(dataDir, regularFile)
+		require.FileExists(t, regularFilePath)
+
+		symlinkFilePath := filepath.Join(dataDir, symlinkFile)
+		require.FileExists(t, symlinkFilePath)
+
+		// Check if symlink was created properly
+		info, err := os.Lstat(symlinkFilePath)
+		require.NoError(t, err)
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(symlinkFilePath)
+			require.NoError(t, err)
+			require.Equal(t, "target_file.txt", target)
+		}
+
+		// Verify no diff after pull
+		result = runCmd(t, lakectlWithSymlinks+" local status "+dataDir, false, false, vars)
+		require.Contains(t, result, "No diff found")
+	})
 }
 
 func TestLakectlLocal_commitProtectedBranch(t *testing.T) {
@@ -668,6 +807,58 @@ func TestLakectlLocal_commit(t *testing.T) {
 			RunCmdAndVerifyContainsText(t, Lakectl()+" local status "+dataDir, false, "No diff found", vars)
 		})
 	}
+
+	// Test commit with symlink support
+	t.Run("commit with symlink support", func(t *testing.T) {
+		symlinkBranch := "symlink_commit_test"
+		runCmd(t, Lakectl()+" branch create lakefs://"+repoName+"/"+symlinkBranch+" --source lakefs://"+repoName+"/"+mainBranch, false, false, vars)
+
+		dataDir, err := os.MkdirTemp(tmpDir, "")
+		require.NoError(t, err)
+		deleted := prefix + "/subdir/deleted.png"
+
+		localCreateTestData(t, vars, append(objects, deleted))
+
+		vars["LOCAL_DIR"] = dataDir
+		vars["PREFIX"] = ""
+		vars["BRANCH"] = symlinkBranch
+		vars["REF"] = symlinkBranch
+		lakectlWithSymlinks := "LAKECTL_LOCAL_SYMLINK_SUPPORT=true " + Lakectl()
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local clone lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, "Successfully cloned lakefs://${REPO}/${REF}/${PREFIX} to ${LOCAL_DIR}.", vars)
+
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local status "+dataDir, false, "No diff found", vars)
+
+		// Create local files including symlinks
+		require.NoError(t, os.MkdirAll(filepath.Join(dataDir, "subdir"), os.ModePerm))
+		regularFile := filepath.Join(dataDir, "test.txt")
+		fd, err = os.Create(regularFile)
+		require.NoError(t, err)
+		require.NoError(t, fd.Close())
+
+		symlinkFile := filepath.Join(dataDir, "link_to_test.txt")
+		require.NoError(t, os.Symlink(regularFile, symlinkFile))
+
+		subRegularFile := filepath.Join(dataDir, "subdir", "test.txt")
+		fd, err = os.Create(subRegularFile)
+		require.NoError(t, err)
+		require.NoError(t, fd.Close())
+
+		subSymlinkFile := filepath.Join(dataDir, "subdir", "link_to_test.txt")
+		require.NoError(t, os.Symlink(subRegularFile, subSymlinkFile))
+
+		require.NoError(t, os.Remove(filepath.Join(dataDir, deleted)))
+
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local status "+dataDir, false, "local  ║ added   ║ test.txt", vars)
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local status "+dataDir, false, "local  ║ added   ║ link_to_test.txt", vars)
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local status "+dataDir, false, "local  ║ added   ║ subdir/test.txt", vars)
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local status "+dataDir, false, "local  ║ added   ║ subdir/link_to_test.txt", vars)
+
+		// Commit changes to branch
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local commit -m test "+dataDir, false, "Commit for branch \"${BRANCH}\" completed", vars)
+
+		// Check no diff after commit
+		RunCmdAndVerifyContainsText(t, lakectlWithSymlinks+" local status "+dataDir, false, "No diff found", vars)
+	})
 }
 
 func TestLakectlLocal_commit_symlink(t *testing.T) {
@@ -691,8 +882,9 @@ func TestLakectlLocal_commit_symlink(t *testing.T) {
 	runCmd(t, Lakectl()+" log lakefs://"+repoName+"/"+mainBranch, false, false, vars)
 
 	tests := []struct {
-		name        string
-		skipSymlink bool
+		name           string
+		skipSymlink    bool
+		symlinkSupport bool
 	}{
 		{
 			name:        "skip-symlink",
@@ -701,6 +893,10 @@ func TestLakectlLocal_commit_symlink(t *testing.T) {
 		{
 			name:        "fail-on-symlink",
 			skipSymlink: false,
+		},
+		{
+			name:           "support-symlink",
+			symlinkSupport: true,
 		},
 	}
 	for _, tt := range tests {
@@ -721,23 +917,28 @@ func TestLakectlLocal_commit_symlink(t *testing.T) {
 			lakectlCmd := Lakectl()
 			if tt.skipSymlink {
 				lakectlCmd = "LAKECTL_LOCAL_SKIP_NON_REGULAR_FILES=true " + lakectlCmd
+			} else if tt.symlinkSupport {
+				lakectlCmd = "LAKECTL_LOCAL_SYMLINK_SUPPORT=true " + lakectlCmd
 			}
 			runCmd(t, lakectlCmd+" local init lakefs://"+repoName+"/"+vars["BRANCH"]+"/"+vars["PREFIX"]+" "+dataDir, false, false, vars)
 			if tt.skipSymlink {
 				RunCmdAndVerifyContainsText(t, lakectlCmd+" local status "+dataDir, false, "local  ║ added  ║ file1.txt", vars)
+			} else if tt.symlinkSupport {
+				RunCmdAndVerifyContainsText(t, lakectlCmd+" local status "+dataDir, false, "local  ║ added  ║ file1.txt", vars)
+				RunCmdAndVerifyContainsText(t, lakectlCmd+" local status "+dataDir, false, "local  ║ added  ║ link_file1.txt", vars)
 			} else {
 				RunCmdAndVerifyFailureContainsText(t, lakectlCmd+" local status "+dataDir, false, "link_file1.txt: not a regular file", vars)
 			}
 
 			// Commit changes to branch
-			if tt.skipSymlink {
+			if tt.skipSymlink || tt.symlinkSupport {
 				RunCmdAndVerifyContainsText(t, lakectlCmd+" local commit -m test "+dataDir, false, "Commit for branch \"${BRANCH}\" completed", vars)
 			} else {
 				RunCmdAndVerifyFailureContainsText(t, lakectlCmd+" local commit -m test "+dataDir, false, "link_file1.txt: not a regular file", vars)
 			}
 
 			// Check diff after commit
-			if tt.skipSymlink {
+			if tt.skipSymlink || tt.symlinkSupport {
 				RunCmdAndVerifyContainsText(t, lakectlCmd+" local status "+dataDir, false, "No diff found", vars)
 			} else {
 				RunCmdAndVerifyFailureContainsText(t, lakectlCmd+" local status "+dataDir, false, "link_file1.txt: not a regular file", vars)
