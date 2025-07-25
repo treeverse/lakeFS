@@ -1,22 +1,20 @@
 import React from "react";
 import useUser from '../hooks/user'
-import {auth, config} from "../api";
+import {auth} from "../api";
 import {useRouter} from "../hooks/router";
 import {Link} from "./nav";
 import DarkModeToggle from "./darkModeToggle";
-import {useAPI} from "../hooks/api";
 import {Navbar, Nav, NavDropdown} from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
+import {useConfigContext} from "../hooks/configProvider";
 
 const NavUserInfo = () => {
     const { user, loading, error } = useUser();
     const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
-    const { response: configData, loading: versionLoading, error: versionError } = useAPI(() => {
-        return config.getConfig();
-    }, []);
-    const versionConfig = configData?.versionConfig || {};
+    const {config, error: versionError, loading: versionLoading} = useConfigContext();
+    const versionConfig = config?.versionConfig || {};
 
     if (loading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);

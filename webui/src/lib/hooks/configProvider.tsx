@@ -6,8 +6,12 @@ import useUser from "./user";
 type StorageConfigContextType = {
     error: Error | null;
     loading: boolean;
-    configs: [StorageConfigType] | null;
+    config: ConfigType | null;
 };
+
+type ConfigType = {
+    storages: [StorageConfigType] | null;
+}
 
 type StorageConfigType = {
     blockstore_namespace_ValidityRegex: string | null;
@@ -23,23 +27,23 @@ type StorageConfigType = {
 const storageConfigInitialState: StorageConfigContextType = {
     error: null,
     loading: true,
-    configs: null,
+    config: null,
 };
 
 const StorageConfigContext = createContext<StorageConfigContextType>(storageConfigInitialState);
 
-const useStorageConfigs = () => useContext(StorageConfigContext);
+const useConfigContext = () => useContext(StorageConfigContext);
 
-const StorageConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
+const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     const {user} = useUser();
     const [storageConfig, setStorageConfig] = useState<StorageConfigContextType>(storageConfigInitialState);
 
     useEffect(() => {
         config.getConfig()
             .then(configData =>
-                setStorageConfig({configs: configData?.storages, loading: false, error: null}))
+                setStorageConfig({config: configData, loading: false, error: null}))
             .catch((error) =>
-                setStorageConfig({configs: null, loading: false, error}));
+                setStorageConfig({config: null, loading: false, error}));
     }, [user]);
 
     return (
@@ -49,4 +53,4 @@ const StorageConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     );
 };
 
-export { StorageConfigProvider, useStorageConfigs };
+export { ConfigProvider, useConfigContext };
