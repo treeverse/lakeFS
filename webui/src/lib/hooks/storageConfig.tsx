@@ -35,9 +35,9 @@ const StorageConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     const [storageConfig, setStorageConfig] = useState<StorageConfigContextType>(storageConfigInitialState);
 
     useEffect(() => {
-        config.getStorageConfigs()
-            .then(configs =>
-                setStorageConfig({configs, loading: false, error: null}))
+        config.getConfig()
+            .then(configData =>
+                setStorageConfig({configs: configData?.storages, loading: false, error: null}))
             .catch((error) =>
                 setStorageConfig({configs: null, loading: false, error}));
     }, [user]);

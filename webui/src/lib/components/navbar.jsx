@@ -13,13 +13,14 @@ import {FeedPersonIcon} from "@primer/octicons-react";
 const NavUserInfo = () => {
     const { user, loading, error } = useUser();
     const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
-    const { response: versionResponse, loading: versionLoading, error: versionError } = useAPI(() => {
-        return config.getLakeFSVersion()
-    }, [])
+    const { response: configData, loading: versionLoading, error: versionError } = useAPI(() => {
+        return config.getConfig();
+    }, []);
+    const versionConfig = configData?.versionConfig || {};
 
     if (loading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
-    const notifyNewVersion = !versionLoading && !versionError && versionResponse.upgrade_recommended
+    const notifyNewVersion = !versionLoading && !versionError && versionConfig.upgrade_recommended
     const NavBarTitle = () => {
         return (
         <>
@@ -31,7 +32,7 @@ const NavUserInfo = () => {
     return (
         <NavDropdown title={<NavBarTitle />} className="navbar-username" align="end">
             {notifyNewVersion && <>
-            <NavDropdown.Item href={versionResponse.upgrade_url}>
+            <NavDropdown.Item href={versionConfig.upgrade_url}>
                     <>
                     <div className="menu-item-notification-indicator"></div>
                     New lakeFS version is available!
@@ -47,7 +48,7 @@ const NavUserInfo = () => {
             <NavDropdown.Divider/>
             {!versionLoading && !versionError && <>
             <NavDropdown.Item disabled={true}>
-                {`${versionResponse.version_context} ${versionResponse.version}`}
+                {`${versionConfig.version_context} ${versionConfig.version}`}
             </NavDropdown.Item></>}
         </NavDropdown>
     );

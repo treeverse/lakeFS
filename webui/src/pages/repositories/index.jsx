@@ -55,7 +55,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
 
     const [formValid, setFormValid] = useState(false);
 
-    const {response: storageConfigs, error: err, loading} = useAPI(() => config.getStorageConfigs());
+    const {response: configData, error: err, loading} = useAPI(() => config.getConfig());
 
     const buttonContent = inProgress ? (
         <>
@@ -80,7 +80,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
             <Modal.Body>
                 {repoCreationFormPlugin.build({
                     formID: "repository-create-form",
-                    configs: storageConfigs,
+                    configs: configData?.storages,
                     error: showError,
                     formValid,
                     setFormValid,
@@ -266,7 +266,8 @@ const RepositoriesPage = () => {
         (search) => router.push({pathname: `/repositories`, query: {search}})
     );
 
-    const { response: storageConfigs, error: err, loading } = useAPI(() => config.getStorageConfigs());
+    const { response: configData, error: err, loading } = useAPI(() => config.getConfig());
+    const storageConfigs = configData?.storages;
 
     const createRepo = async (repo, presentRepo = true) => {
         try {
