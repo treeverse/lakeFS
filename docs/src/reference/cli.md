@@ -2318,6 +2318,93 @@ lakectl plugin list [flags]
 
 
 
+### lakectl plugin
+
+Manage lakectl plugins
+
+<h4>Synopsis</h4>
+
+Provides utilities for managing lakectl plugins.
+
+Plugins are standalone executable files that extend lakectl's functionality.
+lakectl discovers plugins by looking for executables in your PATH
+that are named with the prefix "lakectl-".
+
+For example, an executable named "lakectl-myfeature" can be invoked as
+"lakectl myfeature [args...]".
+
+Plugin Naming:
+  - The executable must start with "lakectl-".
+  - The part after "lakectl-" becomes the command name users type.
+    (e.g., "lakectl-foo" -> "lakectl foo")
+  - The plugin name is used exactly as-is in the command.
+    (e.g., "lakectl-foo-bar" -> "lakectl foo-bar")
+
+Installation:
+  - Place your "lakectl-..." executable file (which may be any executable,
+    e.g. a Python application) in a directory listed in your PATH.
+  - Ensure the file has execute permissions.
+
+Execution:
+  - When you run "lakectl some-plugin arg1 --flag", lakectl searches for
+    "lakectl-some-plugin" in PATH.
+  - If found and executable, it runs the plugin, passing "arg1 --flag" as arguments.
+  - The plugin inherits environment variables from lakectl.
+  - Standard output, standard error, and the exit code of the plugin are propagated.
+  - Built-in lakectl commands always take precedence over plugins.
+
+Use "lakectl plugin list" to see all detected plugins and any warnings.
+
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for plugin
+```
+
+
+
+### lakectl plugin help
+
+Help about any command
+
+<h4>Synopsis</h4>
+
+Help provides help for any command in the application.
+Simply type plugin help [path to command] for full details.
+
+```
+lakectl plugin help [command] [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for help
+```
+
+
+
+### lakectl plugin list
+
+List available lakectl plugins
+
+<h4>Synopsis</h4>
+
+Scans the PATH for executables named "lakectl-*" and lists the detected plugins.
+
+```
+lakectl plugin list [flags]
+```
+
+<h4>Options</h4>
+
+```
+  -h, --help   help for list
+```
+
+
+
 ### lakectl repo
 
 Manage and explore repos

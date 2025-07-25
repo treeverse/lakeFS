@@ -10,6 +10,7 @@
 |**versionConfig** | [**VersionConfig**](VersionConfig.md) |  |  [optional] |
 |**storageConfig** | [**StorageConfig**](StorageConfig.md) |  |  [optional] |
 |**storageConfigList** | [**List&lt;StorageConfig&gt;**](StorageConfig.md) |  |  [optional] |
+|**customization** | **Object** | unstructured json for extended abilities |  [optional] |
 
 
 

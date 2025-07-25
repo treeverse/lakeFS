@@ -1311,6 +1311,9 @@ components:
           $ref: "#/components/schemas/StorageConfig"
         storage_config_list:
           $ref: "#/components/schemas/StorageConfigList"
+        customization:
+          type: object
+          description: unstructured json for extended abilities
     VersionConfig:
       type: object
       properties:
