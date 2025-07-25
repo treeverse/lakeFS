@@ -14,12 +14,13 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 
 import {ActionsBar, AlertError, Loading, useDebouncedState} from "../../lib/components/controls";
-import {config, repositories} from '../../lib/api';
-import {useAPI, useAPIWithPagination} from "../../lib/hooks/api";
+import {repositories} from '../../lib/api';
+import {useAPIWithPagination} from "../../lib/hooks/api";
 import {Paginator} from "../../lib/components/pagination";
 import Container from "react-bootstrap/Container";
 import {Link} from "../../lib/components/nav";
 import {useRouter} from "../../lib/hooks/router";
+import {useConfigContext} from "../../lib/hooks/configProvider";
 import {ReadOnlyBadge} from "../../lib/components/badges";
 
 import Button from "react-bootstrap/Button";
@@ -55,7 +56,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
 
     const [formValid, setFormValid] = useState(false);
 
-    const {response: storageConfigs, error: err, loading} = useAPI(() => config.getStorageConfigs());
+    const {config, error: err, loading} = useConfigContext();
 
     const buttonContent = inProgress ? (
         <>
@@ -80,7 +81,7 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel, inProgress}) =>
             <Modal.Body>
                 {repoCreationFormPlugin.build({
                     formID: "repository-create-form",
-                    configs: storageConfigs,
+                    configs: config?.storages,
                     error: showError,
                     formValid,
                     setFormValid,
@@ -266,7 +267,8 @@ const RepositoriesPage = () => {
         (search) => router.push({pathname: `/repositories`, query: {search}})
     );
 
-    const { response: storageConfigs, error: err, loading } = useAPI(() => config.getStorageConfigs());
+    const {config, error: err, loading} = useConfigContext();
+    const storageConfigs = config?.storages;
 
     const createRepo = async (repo, presentRepo = true) => {
         try {

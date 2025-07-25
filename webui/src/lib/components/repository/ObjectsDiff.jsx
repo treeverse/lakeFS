@@ -7,7 +7,7 @@ import {humanSize} from "./tree";
 import Alert from "react-bootstrap/Alert";
 import Card from "react-bootstrap/Card";
 import {InfoIcon} from "@primer/octicons-react";
-import {useStorageConfigs} from "../../hooks/storageConfig";
+import {useConfigContext} from "../../hooks/configProvider";
 import {AppContext} from "../../hooks/appContext";
 import {useRefs} from "../../hooks/repo";
 import {getRepoStorageConfig} from "../../../pages/repositories/repository/utils";
@@ -19,9 +19,9 @@ const imageExtensions = ["png", "jpg", "jpeg", "gif", "bmp", "webp"];
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const {state} = useContext(AppContext);
     const {repo, error: refsError, loading: refsLoading} = useRefs();
-    const {configs: storageConfigs, error: configsError, loading: storageConfigsLoading} = useStorageConfigs();
-    const {storageConfig, error: storageConfigError} = getRepoStorageConfig(storageConfigs, repo);
-    const hooksLoading = refsLoading || storageConfigsLoading;
+    const {config, error: configsError, loading: configLoading} = useConfigContext();
+    const {storageConfig, error: storageConfigError} = getRepoStorageConfig(config?.storages, repo);
+    const hooksLoading = refsLoading || configLoading;
     const hooksError = hooksLoading ? null : refsError || configsError || storageConfigError;
 
     if (hooksError) return <AlertError error={hooksError}/>;
