@@ -2036,7 +2036,14 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 
 	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
-	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageCfgList})
+	customizationConfig := c.Config.CustomizationConfig()
+	customization := (*map[string]interface{})(customizationConfig)
+	writeResponse(w, r, http.StatusOK, apigen.Config{
+		StorageConfig:     storageCfg,
+		VersionConfig:     &versionConfig,
+		StorageConfigList: &storageCfgList,
+		Customization:     customization,
+	})
 }
 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {

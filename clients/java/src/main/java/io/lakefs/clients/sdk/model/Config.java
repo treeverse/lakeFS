@@ -67,6 +67,10 @@ public class Config {
   @SerializedName(SERIALIZED_NAME_STORAGE_CONFIG_LIST)
   private List<StorageConfig> storageConfigList;
 
+  public static final String SERIALIZED_NAME_CUSTOMIZATION = "customization";
+  @SerializedName(SERIALIZED_NAME_CUSTOMIZATION)
+  private Object customization;
+
   public Config() {
   }
 
@@ -140,6 +144,27 @@ public class Config {
     this.storageConfigList = storageConfigList;
   }
 
+
+  public Config customization(Object customization) {
+    
+    this.customization = customization;
+    return this;
+  }
+
+   /**
+   * unstructured json for extended abilities
+   * @return customization
+  **/
+  @javax.annotation.Nullable
+  public Object getCustomization() {
+    return customization;
+  }
+
+
+  public void setCustomization(Object customization) {
+    this.customization = customization;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -197,13 +222,14 @@ public class Config {
     Config config = (Config) o;
     return Objects.equals(this.versionConfig, config.versionConfig) &&
         Objects.equals(this.storageConfig, config.storageConfig) &&
-        Objects.equals(this.storageConfigList, config.storageConfigList)&&
+        Objects.equals(this.storageConfigList, config.storageConfigList) &&
+        Objects.equals(this.customization, config.customization)&&
         Objects.equals(this.additionalProperties, config.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(versionConfig, storageConfig, storageConfigList, additionalProperties);
+    return Objects.hash(versionConfig, storageConfig, storageConfigList, customization, additionalProperties);
   }
 
   @Override
@@ -213,6 +239,7 @@ public class Config {
     sb.append("    versionConfig: ").append(toIndentedString(versionConfig)).append("\n");
     sb.append("    storageConfig: ").append(toIndentedString(storageConfig)).append("\n");
     sb.append("    storageConfigList: ").append(toIndentedString(storageConfigList)).append("\n");
+    sb.append("    customization: ").append(toIndentedString(customization)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -239,6 +266,7 @@ public class Config {
     openapiFields.add("version_config");
     openapiFields.add("storage_config");
     openapiFields.add("storage_config_list");
+    openapiFields.add("customization");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

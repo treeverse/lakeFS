@@ -365,7 +365,7 @@ func (b *Blockstore) SigningKey() SecureString {
 	return b.Signing.SecretKey
 }
 
-// getActualStorageID - This returns the actual storageID of the storage
+// GetActualStorageID - This returns the actual storageID of the storage
 func GetActualStorageID(storageConfig StorageConfig, storageID string) string {
 	if storageID == SingleBlockstoreID {
 		if storage := storageConfig.GetStorageByID(SingleBlockstoreID); storage != nil {
@@ -379,6 +379,7 @@ type Config interface {
 	GetBaseConfig() *BaseConfig
 	StorageConfig() StorageConfig
 	AuthConfig() *Auth
+	CustomizationConfig() *CustomizationConfig
 	Validate() error
 	GetVersionContext() string
 }
@@ -388,6 +389,9 @@ type StorageConfig interface {
 	GetStorageIDs() []string
 	SigningKey() SecureString
 }
+
+// CustomizationConfig unstructured configuration for customizations
+type CustomizationConfig map[string]interface{}
 
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
@@ -606,6 +610,10 @@ func (c *BaseConfig) GetBaseConfig() *BaseConfig {
 
 func (c *BaseConfig) StorageConfig() StorageConfig {
 	return &c.Blockstore
+}
+
+func (c *BaseConfig) CustomizationConfig() *CustomizationConfig {
+	return nil
 }
 
 func (c *BaseConfig) Validate() error {

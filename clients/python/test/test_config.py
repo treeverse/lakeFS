@@ -68,7 +68,8 @@ class TestConfig(unittest.TestCase):
                         pre_sign_multipart_upload = True, 
                         blockstore_id = '', 
                         blockstore_description = '', )
-                    ]
+                    ],
+                customization = None
             )
         else:
             return Config(

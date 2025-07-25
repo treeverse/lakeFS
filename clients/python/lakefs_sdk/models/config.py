@@ -19,11 +19,11 @@ import re  # noqa: F401
 import json
 
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 try:
-    from pydantic.v1 import BaseModel, conlist
+    from pydantic.v1 import BaseModel, Field, conlist
 except ImportError:
-    from pydantic import BaseModel, conlist
+    from pydantic import BaseModel, Field, conlist
 from lakefs_sdk.models.storage_config import StorageConfig
 from lakefs_sdk.models.version_config import VersionConfig
 
@@ -34,7 +34,8 @@ class Config(BaseModel):
     version_config: Optional[VersionConfig] = None
     storage_config: Optional[StorageConfig] = None
     storage_config_list: Optional[conlist(StorageConfig)] = None
-    __properties = ["version_config", "storage_config", "storage_config_list"]
+    customization: Optional[Dict[str, Any]] = Field(None, description="unstructured json for extended abilities")
+    __properties = ["version_config", "storage_config", "storage_config_list", "customization"]
 
     class Config:
         """Pydantic configuration"""
@@ -87,7 +88,8 @@ class Config(BaseModel):
         _obj = Config.parse_obj({
             "version_config": VersionConfig.from_dict(obj.get("version_config")) if obj.get("version_config") is not None else None,
             "storage_config": StorageConfig.from_dict(obj.get("storage_config")) if obj.get("storage_config") is not None else None,
-            "storage_config_list": [StorageConfig.from_dict(_item) for _item in obj.get("storage_config_list")] if obj.get("storage_config_list") is not None else None
+            "storage_config_list": [StorageConfig.from_dict(_item) for _item in obj.get("storage_config_list")] if obj.get("storage_config_list") is not None else None,
+            "customization": obj.get("customization")
         })
         return _obj
 

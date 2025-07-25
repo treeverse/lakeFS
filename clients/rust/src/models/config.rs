@@ -18,6 +18,9 @@ pub struct Config {
     pub storage_config: Option<Box<models::StorageConfig>>,
     #[serde(rename = "storage_config_list", skip_serializing_if = "Option::is_none")]
     pub storage_config_list: Option<Vec<models::StorageConfig>>,
+    /// unstructured json for extended abilities
+    #[serde(rename = "customization", skip_serializing_if = "Option::is_none")]
+    pub customization: Option<serde_json::Value>,
 }
 
 impl Config {
@@ -26,6 +29,7 @@ impl Config {
             version_config: None,
             storage_config: None,
             storage_config_list: None,
+            customization: None,
         }
     }
 }

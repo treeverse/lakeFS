@@ -65,4 +65,12 @@ public class ConfigTest {
         // TODO: test storageConfigList
     }
 
+    /**
+     * Test the property 'customization'
+     */
+    @Test
+    public void customizationTest() {
+        // TODO: test customization
+    }
+
 }

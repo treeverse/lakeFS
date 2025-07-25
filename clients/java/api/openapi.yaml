@@ -9406,6 +9406,7 @@ components:
           import_validity_regex: import_validity_regex
           default_namespace_prefix: default_namespace_prefix
           pre_sign_support: true
+        customization: "{}"
         storage_config:
           blockstore_description: blockstore_description
           pre_sign_multipart_upload: true
@@ -9433,6 +9434,9 @@ components:
           items:
             $ref: '#/components/schemas/StorageConfig'
           type: array
+        customization:
+          description: unstructured json for extended abilities
+          type: object
       type: object
     VersionConfig:
       example:
