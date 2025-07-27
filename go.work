@@ -7,6 +7,7 @@ use (
 	./modules/authentication/factory
 	./modules/block/factory
 	./modules/config/factory
+	./modules/gateway/factory
 	./modules/license/factory
 	./webui
 )
