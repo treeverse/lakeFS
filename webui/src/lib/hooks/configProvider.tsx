@@ -10,7 +10,7 @@ type StorageConfigContextType = {
 };
 
 type ConfigType = {
-    storages: [StorageConfigType] | null;
+    storages: StorageConfigType[] | null;
 }
 
 type StorageConfigType = {
