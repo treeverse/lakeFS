@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"context"
+
 	"net/http"
 	"os"
 	"testing"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/spf13/viper"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
+	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/auth/model"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -65,7 +67,13 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	_, err = c.CreateRepository(ctx, repoName, "", storageNamespace, "main", false)
 	testutil.Must(t, err)
 
-	handler := gateway.NewHandler(authService.Region, c, multipartTracker, blockAdapter, authService, []string{authService.BareDomain}, &stats.NullCollector{}, upload.DefaultPathProvider, nil, config.DefaultLoggingAuditLogLevel, true, false, false)
+	logger := logging.Dummy()
+	middlewareFactory, err := gatewayfactory.BuildMiddleware(ctx, cfg, logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to create gateway middleware")
+	}
+
+	handler := gateway.NewHandler(authService.Region, c, multipartTracker, blockAdapter, authService, []string{authService.BareDomain}, &stats.NullCollector{}, upload.DefaultPathProvider, nil, config.DefaultLoggingAuditLogLevel, true, false, false, middlewareFactory.Build())
 
 	return handler, &Dependencies{
 		blocks:  blockAdapter,
