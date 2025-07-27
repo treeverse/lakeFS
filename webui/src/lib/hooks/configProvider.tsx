@@ -3,7 +3,7 @@ import React, { createContext, FC, useContext, useEffect, useState, } from "reac
 import { config } from "../api";
 import useUser from "./user";
 
-type StorageConfigContextType = {
+type ConfigContextType = {
     error: Error | null;
     loading: boolean;
     config: ConfigType | null;
@@ -11,6 +11,7 @@ type StorageConfigContextType = {
 
 type ConfigType = {
     storages: StorageConfigType[] | null;
+    versionConfig?: VersionConfig;
 }
 
 type StorageConfigType = {
@@ -24,32 +25,38 @@ type StorageConfigType = {
     pre_sign_support_ui: boolean;
 };
 
-const storageConfigInitialState: StorageConfigContextType = {
+type VersionConfig = {
+    upgrade_url?: string;
+    version_context?: string;
+    version?: string;
+};
+
+const configInitialState: ConfigContextType = {
     error: null,
     loading: true,
     config: null,
 };
 
-const StorageConfigContext = createContext<StorageConfigContextType>(storageConfigInitialState);
+const configContext = createContext<ConfigContextType>(configInitialState);
 
-const useConfigContext = () => useContext(StorageConfigContext);
+const useConfigContext = () => useContext(configContext);
 
 const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     const {user} = useUser();
-    const [storageConfig, setStorageConfig] = useState<StorageConfigContextType>(storageConfigInitialState);
+    const [storageConfig, setConfig] = useState<ConfigContextType>(configInitialState);
 
     useEffect(() => {
         config.getConfig()
             .then(configData =>
-                setStorageConfig({config: configData, loading: false, error: null}))
+                setConfig({config: configData, loading: false, error: null}))
             .catch((error) =>
-                setStorageConfig({config: null, loading: false, error}));
+                setConfig({config: null, loading: false, error}));
     }, [user]);
 
     return (
-        <StorageConfigContext.Provider value={storageConfig}>
+        <configContext.Provider value={storageConfig}>
             {children}
-        </StorageConfigContext.Provider>
+        </configContext.Provider>
     );
 };
 
