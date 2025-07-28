@@ -62,7 +62,7 @@ type ServerContext struct {
 	verifyUnsupported bool
 }
 
-func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool) http.Handler {
+func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multipart.Tracker, blockStore block.Adapter, authService auth.GatewayService, bareDomains []string, stats stats.Collector, pathProvider upload.PathProvider, fallbackURL *url.URL, auditLogLevel string, traceRequestHeaders bool, verifyUnsupported bool, isAdvancedAuth bool, middleware func(http.Handler) http.Handler) http.Handler {
 	var fallbackHandler http.Handler
 	if fallbackURL != nil {
 		fallbackProxy := gohttputil.NewSingleHostReverseProxy(fallbackURL)
@@ -115,14 +115,17 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 		traceRequestHeaders,
 		isAdvancedAuth)
 
-	h = loggingMiddleware(h)
+	h = OperationLookupHandler(loggingMiddleware(h))
+
+	if middleware != nil {
+		h = middleware(h)
+	}
 
 	h = EnrichWithOperation(sc,
 		MetricsMiddleware(
 			AuthenticationHandler(authService, EnrichWithParts(bareDomains,
-				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
-					OperationLookupHandler(
-						h))))))
+				EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler, h)))))
+
 	logging.ContextUnavailable().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomains,
 		"s3_region":      region,
