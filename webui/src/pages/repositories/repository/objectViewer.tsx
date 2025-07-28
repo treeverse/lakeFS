@@ -12,7 +12,7 @@ import { AlertError } from "../../../lib/components/controls";
 import { URINavigator } from "../../../lib/components/repository/tree";
 import { RefTypeBranch } from "../../../constants";
 import { RefContextProvider, useRefs } from "../../../lib/hooks/repo";
-import { useStorageConfigs } from "../../../lib/hooks/storageConfig";
+import { useConfigContext } from "../../../lib/hooks/configProvider";
 import { linkToPath } from "../../../lib/api";
 import { getRepoStorageConfig } from "./utils";
 
@@ -58,8 +58,8 @@ export const getContentType = (headers: Headers): string | null => {
 
 const FileObjectsViewerPage = () => {
   const {repo} = useRefs();
-  const {configs: storageConfigs, error: configsError, loading: storageConfigsLoading} = useStorageConfigs();
-  const {storageConfig, error: storageConfigError} = getRepoStorageConfig(storageConfigs, repo);
+  const {config, error: configsError, loading: configLoading} = useConfigContext();
+  const {storageConfig, error: storageConfigError} = getRepoStorageConfig(config?.storages, repo);
 
   const { repoId } = useParams<ObjectViewerPathParams>();
   const queryString = useQuery<ObjectViewerQueryString>();
@@ -68,7 +68,7 @@ const FileObjectsViewerPage = () => {
   const { response, error: apiError, loading: apiLoading } = useAPI(() => {
     return objects.head(repoId, refId, path);
   }, [repoId, refId, path]);
-  const loading = apiLoading || storageConfigsLoading;
+  const loading = apiLoading || configLoading;
   const error = loading ? null : apiError || configsError || storageConfigError;
 
   let content;

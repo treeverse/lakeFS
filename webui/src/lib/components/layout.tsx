@@ -1,12 +1,12 @@
-import React, {FC, useContext, useState} from "react";
+import React, { FC, useContext, useState } from "react";
 import { Outlet, useOutletContext } from "react-router-dom";
-import { StorageConfigProvider } from "../hooks/storageConfig";
+import { ConfigProvider } from "../hooks/configProvider";
 import TopNav from './navbar';
 import { AppContext } from "../hooks/appContext";
 
 type LayoutOutletContext = [(isLoggedIn: boolean) => void];
 
-const Layout: FC<{logged: boolean}> = ({ logged }) => {
+const Layout: FC<{logged: boolean}> = ({logged}) => {
     const [isLogged, setIsLogged] = useState(logged ?? true);
 
     // handle global dark mode here
@@ -14,14 +14,12 @@ const Layout: FC<{logged: boolean}> = ({ logged }) => {
     document.documentElement.setAttribute('data-bs-theme', state.settings.darkMode ? 'dark' : 'light')
 
     return (
-        <>
+        <ConfigProvider>
             <TopNav logged={isLogged}/>
             <div className="main-app">
-                <StorageConfigProvider>
-                    <Outlet context={[setIsLogged] satisfies LayoutOutletContext}/>
-                </StorageConfigProvider>
+                <Outlet context={[setIsLogged] satisfies LayoutOutletContext}/>
             </div>
-        </>
+        </ConfigProvider>
     );
 };
 
