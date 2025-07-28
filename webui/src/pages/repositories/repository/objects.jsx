@@ -39,7 +39,7 @@ import { RepoError } from "./error";
 import { getContentType, getFileExtension, FileContents } from "./objectViewer";
 import {ProgressBar} from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
-import { useStorageConfigs } from "../../../lib/hooks/storageConfig";
+import { useConfigContext } from "../../../lib/hooks/configProvider";
 import { getRepoStorageConfig } from "./utils";
 import {useDropzone} from "react-dropzone";
 import pMap from "p-map";
@@ -1517,7 +1517,7 @@ const ObjectsBrowser = ({ config }) => {
 
 const RepositoryObjectsPage = () => {
     const {repo} = useRefs();
-    const {configs: storageConfigs, loading: configsLoading, error: configsError} = useStorageConfigs();
+    const {config, loading: configsLoading, error: configsError} = useConfigContext();
 
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage("objects"), [setActivePage]);
@@ -1525,7 +1525,7 @@ const RepositoryObjectsPage = () => {
     if (configsLoading) return <Loading/>;
     if (configsError) return <RepoError error={configsError}/>;
 
-    const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(storageConfigs, repo);
+    const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(config?.storages, repo);
     if (configLoading) return <Loading/>;
     if (configError) return <RepoError error={configError}/>;
 
