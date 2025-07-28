@@ -2036,13 +2036,12 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 
 	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
-	customizationConfig := c.Config.CustomizationConfig()
-	customization := (*map[string]interface{})(customizationConfig)
+	customizationConfig := c.getCustomizationConfig()
 	writeResponse(w, r, http.StatusOK, apigen.Config{
 		StorageConfig:     storageCfg,
 		VersionConfig:     &versionConfig,
 		StorageConfigList: &storageCfgList,
-		Customization:     customization,
+		Customization:     customizationConfig,
 	})
 }
 
@@ -5478,6 +5477,31 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
 		VersionContext:     swag.String(c.Config.GetVersionContext()),
+	}
+}
+
+func (c *Controller) getCustomizationConfig() *apigen.CustomizationConfig {
+	customizationConfig := c.Config.CustomizationConfig()
+	if customizationConfig == nil || customizationConfig.UI == nil {
+		return nil
+	}
+
+	var customViewers []apigen.CustomViewer
+	if customizationConfig.UI.CustomViewers != nil {
+		for _, viewer := range customizationConfig.UI.CustomViewers {
+			customViewers = append(customViewers, apigen.CustomViewer{
+				Name:         viewer.Name,
+				Url:          viewer.URL,
+				Extensions:   &viewer.Extensions,
+				ContentTypes: &viewer.ContentTypes,
+			})
+		}
+	}
+
+	return &apigen.CustomizationConfig{
+		Ui: &apigen.UICustomizationConfig{
+			CustomViewers: &customViewers,
+		},
 	}
 }
 

@@ -390,9 +390,6 @@ type StorageConfig interface {
 	SigningKey() SecureString
 }
 
-// CustomizationConfig unstructured configuration for customizations
-type CustomizationConfig map[string]interface{}
-
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
@@ -506,6 +503,7 @@ type BaseConfig struct {
 			ID   string `mapstructure:"id"`
 			Code string `mapstructure:"code"`
 		} `mapstructure:"snippets"`
+		CustomViewers []CustomViewer `mapstructure:"custom_viewers" json:"custom_viewers"`
 	} `mapstructure:"ui"`
 	UsageReport struct {
 		Enabled       bool          `mapstructure:"enabled"`
@@ -750,4 +748,20 @@ func (c *Auth) UseUILoginPlaceholders() bool {
 
 func (c *Auth) IsAdvancedAuth() bool {
 	return c.UIConfig.RBAC == AuthRBACExternal || c.UIConfig.RBAC == AuthRBACInternal
+}
+
+type CustomizationConfig struct {
+	UI *UICustomizationConfig `mapstructure:"ui"`
+}
+
+type UICustomizationConfig struct {
+	CustomViewers []CustomViewer `mapstructure:"custom_viewers"`
+}
+
+// CustomViewer holds configuration for a custom file viewer in the WebUI
+type CustomViewer struct {
+	Name         string   `mapstructure:"name" validate:"required"`
+	URL          string   `mapstructure:"url" validate:"required"`
+	Extensions   []string `mapstructure:"extensions"`
+	ContentTypes []string `mapstructure:"content_types"`
 }

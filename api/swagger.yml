@@ -1312,8 +1312,7 @@ components:
         storage_config_list:
           $ref: "#/components/schemas/StorageConfigList"
         customization:
-          type: object
-          description: unstructured json for extended abilities
+          $ref: "#/components/schemas/CustomizationConfig"
     VersionConfig:
       type: object
       properties:
@@ -1967,6 +1966,43 @@ components:
         token:
           type: string
           description: The license JWT token
+
+    CustomizationConfig:
+      type: object
+      properties:
+        ui:
+          $ref: "#/components/schemas/UICustomizationConfig"
+
+    UICustomizationConfig:
+      type: object
+      properties:
+        custom_viewers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomViewer"
+
+    CustomViewer:
+      type: object
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+          description: Name of the custom viewer
+        url:
+          type: string
+          description: URL of the custom viewer
+        extensions:
+          type: array
+          items:
+            type: string
+          description: File extensions this viewer can handle
+        content_types:
+          type: array
+          items:
+            type: string
+          description: MIME content types this viewer can handle
 
 paths:
   /setup_comm_prefs:
