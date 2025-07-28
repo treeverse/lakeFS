@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	"reflect"
 	"sort"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
-	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -381,12 +381,47 @@ type Config interface {
 	AuthConfig() *Auth
 	Validate() error
 	GetVersionContext() string
+	UIConfig() UIConfig
 }
 
 type StorageConfig interface {
 	GetStorageByID(storageID string) AdapterConfig
 	GetStorageIDs() []string
 	SigningKey() SecureString
+}
+
+type UIConfig interface {
+	IsEnabled() bool
+	GetCustomViewers() map[string]string
+	UISnippets() []apiparams.CodeSnippet
+}
+
+type UI struct {
+	// Enabled - control serving of embedded UI
+	Enabled  bool `mapstructure:"enabled"`
+	Snippets []struct {
+		ID   string `mapstructure:"id"`
+		Code string `mapstructure:"code"`
+	} `mapstructure:"snippets"`
+}
+
+func (u UI) GetCustomViewers() map[string]string {
+	return nil
+}
+
+func (u UI) UISnippets() []apiparams.CodeSnippet {
+	snippets := make([]apiparams.CodeSnippet, 0, len(u.Snippets))
+	for _, item := range u.Snippets {
+		snippets = append(snippets, apiparams.CodeSnippet{
+			ID:   item.ID,
+			Code: item.Code,
+		})
+	}
+	return snippets
+}
+
+func (u UI) IsEnabled() bool {
+	return u.Enabled
 }
 
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
@@ -495,14 +530,6 @@ type BaseConfig struct {
 		AuditCheckInterval      time.Duration `mapstructure:"audit_check_interval"`
 		AuditCheckURL           string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
-	UI struct {
-		// Enabled - control serving of embedded UI
-		Enabled  bool `mapstructure:"enabled"`
-		Snippets []struct {
-			ID   string `mapstructure:"id"`
-			Code string `mapstructure:"code"`
-		} `mapstructure:"snippets"`
-	} `mapstructure:"ui"`
 	UsageReport struct {
 		Enabled       bool          `mapstructure:"enabled"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`
@@ -619,17 +646,6 @@ func (c *BaseConfig) Validate() error {
 const (
 	gcpAESKeyLength = 32
 )
-
-func (c *BaseConfig) UISnippets() []apiparams.CodeSnippet {
-	snippets := make([]apiparams.CodeSnippet, 0, len(c.UI.Snippets))
-	for _, item := range c.UI.Snippets {
-		snippets = append(snippets, apiparams.CodeSnippet{
-			ID:   item.ID,
-			Code: item.Code,
-		})
-	}
-	return snippets
-}
 
 type Auth struct {
 	Cache struct {
