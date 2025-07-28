@@ -129,7 +129,6 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 
 func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_mpu_part", o.Principal, o.Repository.Name, o.Reference)
-
 	query := req.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
 	partNumberStr := query.Get(QueryParamPartNumber)
