@@ -66,7 +66,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	_, err = c.CreateRepository(ctx, repoName, "", storageNamespace, "main", false)
 	testutil.Must(t, err)
 
-	logger := logging.Dummy()
+	logger := logging.ContextUnavailable().WithField("test", t.Name())
 	middlewareFactory, err := gatewayfactory.BuildMiddleware(ctx, cfg, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create gateway middleware")
