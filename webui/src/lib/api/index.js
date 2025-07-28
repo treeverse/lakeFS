@@ -301,10 +301,12 @@ class Auth {
     }
 
     async createGroup(groupName, groupDescription) {
-        const response = await apiRequest(`/auth/groups`, {method: 'POST', body: JSON.stringify({
+        const response = await apiRequest(`/auth/groups`, {
+            method: 'POST', body: JSON.stringify({
                 id: groupName,
                 description: groupDescription
-        })});
+            })
+        });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
@@ -1067,12 +1069,12 @@ class Setup {
 }
 
 class Config {
-    async getStorageConfigs() {
+    async getConfig() {
         const response = await apiRequest('/config', {
             method: 'GET',
         });
 
-        const parseBlockstoreConfig = (storageCfg) => {
+        const parseBlockstoreConfig = storageCfg => {
             storageCfg.warnings = []
             if (storageCfg.blockstore_type === 'mem') {
                 storageCfg.warnings.push(`Block adapter ${storageCfg.blockstore_type} not usable in production`)
@@ -1080,33 +1082,25 @@ class Config {
             return storageCfg;
         };
 
+        const buildStoragesConfigs = cfg => {
+            const storageCfgList = cfg['storage_config_list'];
+            if (storageCfgList?.length > 1) {
+                return storageCfgList.map(storageCfg => parseBlockstoreConfig(storageCfg));
+            } else {
+                const storageCfg = cfg['storage_config']
+                return [parseBlockstoreConfig(storageCfg)];
+            }
+        };
+
         switch (response.status) {
             case 200: {
                 const cfg = await response.json();
-                const storageCfgList = cfg['storage_config_list'];
-                if (storageCfgList?.length > 1) {
-                    return storageCfgList.map(storageCfg => parseBlockstoreConfig(storageCfg));
-                } else {
-                    const storageCfg = cfg['storage_config']
-                    return [parseBlockstoreConfig(storageCfg)];
-                }
+                const storages = buildStoragesConfigs(cfg);
+                const versionConfig = cfg['version_config'];
+                return {storages, versionConfig};
             }
             case 409:
                 throw new Error('Conflict');
-            default:
-                throw new Error('Unknown');
-        }
-    }
-
-    async getLakeFSVersion() {
-        const response = await apiRequest('/config', {
-            method: 'GET',
-        });
-        let cfg;
-        switch (response.status) {
-            case 200:
-                cfg = await response.json();
-                return cfg.version_config
             default:
                 throw new Error('Unknown');
         }
