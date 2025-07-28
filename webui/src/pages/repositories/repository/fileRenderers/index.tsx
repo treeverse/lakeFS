@@ -181,7 +181,7 @@ export function guessType(contentType: string | null, fileExtension: string | nu
 export const ObjectRenderer: FC<RendererComponent> = (props: RendererComponent) => {
     const pluginManager = usePluginManager();
 
-    const customRenderer = pluginManager.customObjectRenderers?.get(props.contentType, props.fileExtension)
+    const customRenderer = pluginManager.customObjectRenderers.get(props.contentType, props.fileExtension)
     if (customRenderer) {
         return customRenderer(props)
     }
