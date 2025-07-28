@@ -37,10 +37,6 @@ func (rvi *iterator) loadIt() bool {
 		rvi.err = fmt.Errorf("open range %s: %w", rvi.rng.ID, err)
 		return false
 	}
-	if rvi.it != nil {
-		fmt.Printf("[DEBUG] Closing iterator for range %s\n", rvi.rng.ID)
-		rvi.it.Close()
-	}
 	rvi.it = NewUnmarshalIterator(it)
 	return true
 }
