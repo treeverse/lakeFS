@@ -27,6 +27,11 @@ const (
 	QueryParamPartNumber  = "partNumber"
 )
 
+// IsUploadPartRequest checks if the request is for uploading a multipart part
+func IsUploadPartRequest(query url.Values) bool {
+	return query.Has(QueryParamUploadID)
+}
+
 type PutObject struct{}
 
 func (controller *PutObject) RequiredPermissions(req *http.Request, repoID, _, destPath string) (permissions.Node, error) {
@@ -124,6 +129,7 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 
 func handleUploadPart(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_mpu_part", o.Principal, o.Repository.Name, o.Reference)
+
 	query := req.URL.Query()
 	uploadID := query.Get(QueryParamUploadID)
 	partNumberStr := query.Get(QueryParamPartNumber)
@@ -275,7 +281,7 @@ func (controller *PutObject) Handle(w http.ResponseWriter, req *http.Request, o 
 	query := req.URL.Query()
 
 	// check if this is a multipart upload creation call
-	if query.Has(QueryParamUploadID) {
+	if IsUploadPartRequest(query) {
 		handleUploadPart(w, req, o)
 		return
 	}
