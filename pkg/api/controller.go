@@ -2036,12 +2036,12 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 
 	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
-	customizationConfig := c.getCustomizationConfig()
+	uiConfig := c.getUIConfig()
 	writeResponse(w, r, http.StatusOK, apigen.Config{
 		StorageConfig:     storageCfg,
 		VersionConfig:     &versionConfig,
 		StorageConfigList: &storageCfgList,
-		Customization:     customizationConfig,
+		UiConfig:          uiConfig,
 	})
 }
 
@@ -5480,7 +5480,7 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 	}
 }
 
-func (c *Controller) getCustomizationConfig() *apigen.CustomizationConfig {
+func (c *Controller) getUIConfig() *apigen.UIConfig {
 	customizationConfig := c.Config.CustomizationConfig()
 	if customizationConfig == nil || customizationConfig.UI == nil {
 		return nil
@@ -5498,10 +5498,8 @@ func (c *Controller) getCustomizationConfig() *apigen.CustomizationConfig {
 		}
 	}
 
-	return &apigen.CustomizationConfig{
-		Ui: &apigen.UICustomizationConfig{
-			CustomViewers: &customViewers,
-		},
+	return &apigen.UIConfig{
+		CustomViewers: &customViewers,
 	}
 }
 
