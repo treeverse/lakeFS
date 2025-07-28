@@ -11,7 +11,7 @@ export class PluginManager {
         this._repoCreationForm = pluginRepoCreationForm;
     }
 
-    get repoCreationForm(): PluginRepoCreationForm | null {
+    get repoCreationForm(): PluginRepoCreationForm {
         return this._repoCreationForm;
     }
 
@@ -19,7 +19,7 @@ export class PluginManager {
         this._customObjectRenderers = pluginCustomObjectRenderers;
     }
 
-    get customObjectRenderers(): PluginCustomObjectRenderers | null {
+    get customObjectRenderers(): PluginCustomObjectRenderers {
         return this._customObjectRenderers;
     }
 }
