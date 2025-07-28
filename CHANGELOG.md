@@ -1,6 +1,7 @@
 # Changelog
 
 # v1.64.0
+
 :new: What's new:
 
 - lakectl configurable symlink support (#9212)
@@ -10,7 +11,7 @@
 - Fixed the image overflow in the diff view in the UI (#9346)
 - Allow trailing slash in lakectl fs upload (#9337)
 - Log failed audit check in debug level (#9348)
-- 
+
 # v1.63.0
 
 :new: What's new:
