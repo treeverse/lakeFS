@@ -379,7 +379,7 @@ type Config interface {
 	GetBaseConfig() *BaseConfig
 	StorageConfig() StorageConfig
 	AuthConfig() *Auth
-	CustomizationConfig() *CustomizationConfig
+	UIConfig() *UI
 	Validate() error
 	GetVersionContext() string
 }
@@ -388,6 +388,16 @@ type StorageConfig interface {
 	GetStorageByID(storageID string) AdapterConfig
 	GetStorageIDs() []string
 	SigningKey() SecureString
+}
+
+type UI struct {
+	// Enabled - control serving of embedded UI
+	Enabled  bool `mapstructure:"enabled"`
+	Snippets []struct {
+		ID   string `mapstructure:"id"`
+		Code string `mapstructure:"code"`
+	} `mapstructure:"snippets"`
+	CustomViewers []CustomViewer `mapstructure:"custom_viewers" json:"custom_viewers"`
 }
 
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
@@ -496,15 +506,7 @@ type BaseConfig struct {
 		AuditCheckInterval      time.Duration `mapstructure:"audit_check_interval"`
 		AuditCheckURL           string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
-	UI struct {
-		// Enabled - control serving of embedded UI
-		Enabled  bool `mapstructure:"enabled"`
-		Snippets []struct {
-			ID   string `mapstructure:"id"`
-			Code string `mapstructure:"code"`
-		} `mapstructure:"snippets"`
-		CustomViewers []CustomViewer `mapstructure:"custom_viewers" json:"custom_viewers"`
-	} `mapstructure:"ui"`
+	UI          UI `mapstructure:"ui"`
 	UsageReport struct {
 		Enabled       bool          `mapstructure:"enabled"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`
@@ -610,7 +612,7 @@ func (c *BaseConfig) StorageConfig() StorageConfig {
 	return &c.Blockstore
 }
 
-func (c *BaseConfig) CustomizationConfig() *CustomizationConfig {
+func (c *BaseConfig) UIConfig() *UI {
 	return nil
 }
 
@@ -748,14 +750,6 @@ func (c *Auth) UseUILoginPlaceholders() bool {
 
 func (c *Auth) IsAdvancedAuth() bool {
 	return c.UIConfig.RBAC == AuthRBACExternal || c.UIConfig.RBAC == AuthRBACInternal
-}
-
-type CustomizationConfig struct {
-	UI *UICustomizationConfig `mapstructure:"ui"`
-}
-
-type UICustomizationConfig struct {
-	CustomViewers []CustomViewer `mapstructure:"custom_viewers"`
 }
 
 // CustomViewer holds configuration for a custom file viewer in the WebUI

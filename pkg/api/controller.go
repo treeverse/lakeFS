@@ -5481,14 +5481,14 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 }
 
 func (c *Controller) getUIConfig() *apigen.UIConfig {
-	customizationConfig := c.Config.CustomizationConfig()
-	if customizationConfig == nil || customizationConfig.UI == nil {
+	uiConfig := c.Config.UIConfig()
+	if uiConfig == nil {
 		return nil
 	}
 
 	var customViewers []apigen.CustomViewer
-	if customizationConfig.UI.CustomViewers != nil {
-		for _, viewer := range customizationConfig.UI.CustomViewers {
+	if uiConfig.CustomViewers != nil {
+		for _, viewer := range uiConfig.CustomViewers {
 			customViewers = append(customViewers, apigen.CustomViewer{
 				Name:         viewer.Name,
 				Url:          viewer.URL,
