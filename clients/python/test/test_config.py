@@ -69,7 +69,18 @@ class TestConfig(unittest.TestCase):
                         blockstore_id = '', 
                         blockstore_description = '', )
                     ],
-                customization = None
+                ui_config = lakefs_sdk.models.ui_config.UIConfig(
+                    custom_viewers = [
+                        lakefs_sdk.models.custom_viewer.CustomViewer(
+                            name = '', 
+                            url = '', 
+                            extensions = [
+                                ''
+                                ], 
+                            content_types = [
+                                ''
+                                ], )
+                        ], )
             )
         else:
             return Config(
