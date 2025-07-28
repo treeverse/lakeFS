@@ -55,15 +55,15 @@ The resource segment of the ARN supports wildcards: use `*` to match 0 or more c
 
 Here are a some **examples** of valid ARNs within lakeFS and their meaning:
 
-| ARN                        | Meaning                             |
-|------------------------------------|---------------------------------------------|
-| `arn:lakefs:auth:::user/jane.doe`                  | A specific user                       
-| `arn:lakefs:auth:::user/*`                  | All users | 
-| `arn:lakefs:fs:::repository/myrepo/*`                  | All resources under `myrepo` | 
-| `arn:lakefs:fs:::repository/myrepo/object/foo/bar/baz`                  | A single object ARN | 
-| `arn:lakefs:fs:::repository/myrepo/object/*`                  | All objects in `myrepo` | 
-| `arn:lakefs:fs:::repository/*`                  | All repositories| 
-| `arn:lakefs:fs:::*`                  | All resources under the fs ARN prefix |
+| ARN                                                    | Meaning                               |
+|--------------------------------------------------------|---------------------------------------|
+| `arn:lakefs:auth:::user/jane.doe`                      | A specific user                       |
+| `arn:lakefs:auth:::user/*`                             | All users                             | 
+| `arn:lakefs:fs:::repository/myrepo/*`                  | All resources under `myrepo`          | 
+| `arn:lakefs:fs:::repository/myrepo/object/foo/bar/baz` | A single object ARN                   | 
+| `arn:lakefs:fs:::repository/myrepo/object/*`           | All objects in `myrepo`               | 
+| `arn:lakefs:fs:::repository/*`                         | All repositories                      | 
+| `arn:lakefs:fs:::*`                                    | All resources under the fs ARN prefix |
 
 Additionally, the current user's ID is interpolated in runtime into the ARN using the `${user}` placeholder.
 
@@ -74,89 +74,89 @@ See below for a full reference of ARNs and actions.
 
 ## Actions and Permissions
 
-For the full list of actions and their required permissions see the following table:
+For the full list of actions and their required permissions, see the following table:
 
-| Action name                                      | required action                             | Resource                                                                 | API endpoint                                                                        | S3 gateway operation                                                  |
-|--------------------------------------------------|---------------------------------------------|--------------------------------------------------------------------------|-------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| List Repositories                                | `fs:ListRepositories`                       | `*`                                                                      | GET `/repositories`                                                                   | ListBuckets                                                           |
-| Get Repository                                   | `fs:ReadRepository`                         | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}`                                                    | HeadBucket                                                            |
-| Get Commit                                       | `fs:ReadCommit`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/commits/{commitId}`                                 | -                                                                     |
-| Create Commit                                    | `fs:CreateCommit`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | POST `/repositories/{repositoryId}/branches/{branchId}/commits`                       | -                                                                     |
-| Get Commit log                                   | `fs:ReadBranch`                             | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | GET `/repositories/{repositoryId}/branches/{branchId}/commits`                        | -                                                                     |
-| Create Repository                                | `fs:CreateRepository`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories`                                                                  | -                                                                     |
-| Namespace Attach to Repository                   | `fs:AttachStorageNamespace`                 | `arn:lakefs:fs:::namespace/{storageNamespace}`                           | POST `/repositories`                                                                  | -                                                                     |
-| Import From Source                               | `fs:ImportFromStorage`                      | `arn:lakefs:fs:::namespace/{storageNamespace}`                           | POST `/repositories/{repositoryId}/branches/{branchId}/import`                        | -                                                                     |
-| Cancel Import                                    | `fs:ImportCancel`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | DELETE `/repositories/{repositoryId}/branches/{branchId}/import`                      | -                                                                     |
-| Delete Repository                                | `fs:DeleteRepository`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | DELETE `/repositories/{repositoryId}`                                                 | -                                                                     |
-| List Branches                                    | `fs:ListBranches`                           | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/branches`                                           | ListObjects/ListObjectsV2 (with delimiter = `/` and empty` prefix)    |
-| Get Branch                                       | `fs:ReadBranch`                             | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | GET `/repositories/{repositoryId}/branches/{branchId}`                                | -                                                                     |
-| Create Branch                                    | `fs:CreateBranch`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | POST `/repositories/{repositoryId}/branches`                                          | -                                                                     |
-| Delete Branch                                    | `fs:DeleteBranch`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | DELETE `/repositories/{repositoryId}/branches/{branchId}`                             | -                                                                     |
-| Merge branches                                   | `fs:CreateCommit`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{destinationBranchId}` | POST `/repositories/{repositoryId}/refs/{sourceBranchId}/merge/{destinationBranchId}` | -                                                                     |
-| Diff branch uncommitted changes                  | `fs:ListObjects`                            | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/branches/{branchId}/diff`                           | -                                                                     |
-| Diff refs                                        | `fs:ListObjects`                            | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/refs/{leftRef}/diff/{rightRef}`                     | -                                                                     |
-| Stat object                                      | `fs:ReadObject`                             | `arn:lakefs:fs:::repository/{repositoryId}/object/{objectKey}`           | GET `/repositories/{repositoryId}/refs/{ref}/objects/stat`                            | HeadObject                                                            |
-| Get Object                                       | `fs:ReadObject`                             | `arn:lakefs:fs:::repository/{repositoryId}/object/{objectKey}`           | GET `/repositories/{repositoryId}/refs/{ref}/objects`                                 | GetObject                                                             |
+| Action name                                      | required action                             | Resource                                                                 | API endpoint                                                                          | S3 gateway operation                                                   |
+|--------------------------------------------------|---------------------------------------------|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+| List Repositories                                | `fs:ListRepositories`                       | `*`                                                                      | GET `/repositories`                                                                   | ListBuckets                                                            |
+| Get Repository                                   | `fs:ReadRepository`                         | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}`                                                    | HeadBucket                                                             |
+| Get Commit                                       | `fs:ReadCommit`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/commits/{commitId}`                                 | -                                                                      |
+| Create Commit                                    | `fs:CreateCommit`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | POST `/repositories/{repositoryId}/branches/{branchId}/commits`                       | -                                                                      |
+| Get Commit log                                   | `fs:ReadBranch`                             | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | GET `/repositories/{repositoryId}/branches/{branchId}/commits`                        | -                                                                      |
+| Create Repository                                | `fs:CreateRepository`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories`                                                                  | -                                                                      |
+| Namespace Attach to Repository                   | `fs:AttachStorageNamespace`                 | `arn:lakefs:fs:::namespace/{storageNamespace}`                           | POST `/repositories`                                                                  | -                                                                      |
+| Import From Source                               | `fs:ImportFromStorage`                      | `arn:lakefs:fs:::namespace/{storageNamespace}`                           | POST `/repositories/{repositoryId}/branches/{branchId}/import`                        | -                                                                      |
+| Cancel Import                                    | `fs:ImportCancel`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | DELETE `/repositories/{repositoryId}/branches/{branchId}/import`                      | -                                                                      |
+| Delete Repository                                | `fs:DeleteRepository`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | DELETE `/repositories/{repositoryId}`                                                 | -                                                                      |
+| List Branches                                    | `fs:ListBranches`                           | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/branches`                                           | ListObjects/ListObjectsV2 (with delimiter = `/` and empty` prefix)     |
+| Get Branch                                       | `fs:ReadBranch`                             | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | GET `/repositories/{repositoryId}/branches/{branchId}`                                | -                                                                      |
+| Create Branch                                    | `fs:CreateBranch`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | POST `/repositories/{repositoryId}/branches`                                          | -                                                                      |
+| Delete Branch                                    | `fs:DeleteBranch`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | DELETE `/repositories/{repositoryId}/branches/{branchId}`                             | -                                                                      |
+| Merge branches                                   | `fs:CreateCommit`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{destinationBranchId}` | POST `/repositories/{repositoryId}/refs/{sourceBranchId}/merge/{destinationBranchId}` | -                                                                      |
+| Diff branch uncommitted changes                  | `fs:ListObjects`                            | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/branches/{branchId}/diff`                           | -                                                                      |
+| Diff refs                                        | `fs:ListObjects`                            | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/refs/{leftRef}/diff/{rightRef}`                     | -                                                                      |
+| Stat object                                      | `fs:ReadObject`                             | `arn:lakefs:fs:::repository/{repositoryId}/object/{objectKey}`           | GET `/repositories/{repositoryId}/refs/{ref}/objects/stat`                            | HeadObject                                                             |
+| Get Object                                       | `fs:ReadObject`                             | `arn:lakefs:fs:::repository/{repositoryId}/object/{objectKey}`           | GET `/repositories/{repositoryId}/refs/{ref}/objects`                                 | GetObject                                                              |
 | List Objects                                     | `fs:ListObjects`                            | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/refs/{ref}/objects/ls`                              | ListObjects, ListObjectsV2 (no delimiter, or "/" + non-empty` prefix)  |
 | Upload Object                                    | `fs:WriteObject`                            | `arn:lakefs:fs:::repository/{repositoryId}/object/{objectKey}`           | POST `/repositories/{repositoryId}/branches/{branchId}/objects`                       | PutObject, CreateMultipartUpload, UploadPart`, CompleteMultipartUpload |
 | Delete Object                                    | `fs:DeleteObject`                           | `arn:lakefs:fs:::repository/{repositoryId}/object/{objectKey}`           | DELETE `/repositories/{repositoryId}/branches/{branchId}/objects`                     | DeleteObject, DeleteObjects`, AbortMultipartUpload                     |
-| Revert Branch                                    | `fs:RevertBranch`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | PUT `/repositories/{repositoryId}/branches/{branchId}`                                | -                                                                     |
-| Get Branch Protection Rules                      | `branches:GetBranchProtectionRules`         | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/branch_protection`                                    | -                                                                     |
-| Set Branch Protection Rules                      | `branches:SetBranchProtectionRules`         | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories/{repository}/branch_protection`                                   | -                                                                     |
-| Delete Branch Protection Rules                   | `branches:SetBranchProtectionRules`         | `arn:lakefs:fs:::repository/{repositoryId}`                              | DELETE `/repositories/{repository}/branch_protection`                                 | -                                                                     |
-| Create User                                      | `auth:CreateUser`                           | `arn:lakefs:auth:::user/{userId}`                                        | POST `/auth/users`                                                                    | -                                                                     |
-| List Users                                       | `auth:ListUsers`                            | `*`                                                                      | GET `/auth/users`                                                                     | -                                                                     |
-| Get User                                         | `auth:ReadUser`                             | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}`                                                            | -                                                                     |
-| Delete User                                      | `auth:DeleteUser`                           | `arn:lakefs:auth:::user/{userId}`                                        | DELETE `/auth/users/{userId}`                                                         | -                                                                     |
-| Get Group                                        | `auth:ReadGroup`                            | `arn:lakefs:auth:::group/{groupId}`                                      | GET `/auth/groups/{groupId}`                                                          | -                                                                     |
-| List Groups                                      | `auth:ListGroups`                           | `*`                                                                      | GET `/auth/groups`                                                                    | -                                                                     |
-| Create Group                                     | `auth:CreateGroup`                          | `arn:lakefs:auth:::group/{groupId}`                                      | POST `/auth/groups`                                                                   | -                                                                     |
-| Delete Group                                     | `auth:DeleteGroup`                          | `arn:lakefs:auth:::group/{groupId}`                                      | DELETE `/auth/groups/{groupId}`                                                       | -                                                                     |
-| List Policies                                    | `auth:ListPolicies`                         | `*`                                                                      | GET `/auth/policies`                                                                  | -                                                                     |
-| Create Policy                                    | `auth:CreatePolicy`                         | `arn:lakefs:auth:::policy/{policyId}`                                    | POST `/auth/policies`                                                                 | -                                                                     |
-| Update Policy                                    | `auth:UpdatePolicy`                         | `arn:lakefs:auth:::policy/{policyId}`                                    | POST `/auth/policies`                                                                 | -                                                                     |
-| Delete Policy                                    | `auth:DeletePolicy`                         | `arn:lakefs:auth:::policy/{policyId}`                                    | DELETE `/auth/policies/{policyId}`                                                    | -                                                                     |
-| Get Policy                                       | `auth:ReadPolicy`                           | `arn:lakefs:auth:::policy/{policyId}`                                    | GET `/auth/policies/{policyId}`                                                       | -                                                                     |
-| List Group Members                               | `auth:ReadGroup`                            | `arn:lakefs:auth:::group/{groupId}`                                      | GET `/auth/groups/{groupId}/members`                                                  | -                                                                     |
-| Add Group Member                                 | `auth:AddGroupMember`                       | `arn:lakefs:auth:::group/{groupId}`                                      | PUT `/auth/groups/{groupId}/members/{userId}`                                         | -                                                                     |
-| Remove Group Member                              | `auth:RemoveGroupMember`                    | `arn:lakefs:auth:::group/{groupId}`                                      | DELETE `/auth/groups/{groupId}/members/{userId}`                                      | -                                                                     |
-| List User Credentials                            | `auth:ListCredentials`                      | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}/credentials`                                                | -                                                                     |
-| Create User Credentials                          | `auth:CreateCredentials`                    | `arn:lakefs:auth:::user/{userId}`                                        | POST `/auth/users/{userId}/credentials`                                               | -                                                                     |
-| Delete User Credentials                          | `auth:DeleteCredentials`                    | `arn:lakefs:auth:::user/{userId}`                                        | DELETE `/auth/users/{userId}/credentials/{accessKeyId}`                               | -                                                                     |
-| Get User Credentials                             | `auth:ReadCredentials`                      | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}/credentials/{accessKeyId}`                                  | -                                                                     |
-| List User Groups                                 | `auth:ReadUser`                             | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}/groups`                                                     | -                                                                     |
-| List User Policies                               | `auth:ReadUser`                             | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}/policies`                                                   | -                                                                     |
-| Attach Policy To User                            | `auth:AttachPolicy`                         | `arn:lakefs:auth:::user/{userId}`                                        | PUT `/auth/users/{userId}/policies/{policyId}`                                        | -                                                                     |
-| Detach Policy From User                          | `auth:DetachPolicy`                         | `arn:lakefs:auth:::user/{userId}`                                        | DELETE `/auth/users/{userId}/policies/{policyId}`                                     | -                                                                     |
-| List Group Policies                              | `auth:ReadGroup`                            | `arn:lakefs:auth:::group/{groupId}`                                      | GET `/auth/groups/{groupId}/policies`                                                 | -                                                                     |
-| Attach Policy To Group                           | `auth:AttachPolicy`                         | `arn:lakefs:auth:::group/{groupId}`                                      | PUT `/auth/groups/{groupId}/policies/{policyId}`                                      | -                                                                     |
-| Detach Policy From Group                         | `auth:DetachPolicy`                         | `arn:lakefs:auth:::group/{groupId}`                                      | DELETE `/auth/groups/{groupId}/policies/{policyId}`                                   | -                                                                     |
-| Attach External Principal to a User              | `auth:CreateUserExternalPrincipal`          | `arn:lakefs:auth:::user/{userId}`                                        | POST `/auth/users/{userId}/external/principals`                                       | -                                                                     |
-| Delete External Principal Attachment from a User | `auth:DeleteUserExternalPrincipal`          | `arn:lakefs:auth:::user/{userId}`                                        | DELETE `/auth/users/{userId}/external/principals`                                     | -                                                                     |
-| Get the User attached to an External Principal   | `auth:ReadExternalPrincipal`                | `arn:lakefs:auth:::externalPrincipal/{principalId}`                      | GET `/auth/external/principals`                                                       | -                                                                     |
-| Read Storage Config                              | `fs:ReadConfig`                             | `*`                                                                      | GET `/config/storage`                                                                 | -                                                                     |
-| Get Garbage Collection Rules                     | `retention:GetGarbageCollectionRules`       | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/gc/rules`                                           | -                                                                     |
-| Set Garbage Collection Rules                     | `retention:SetGarbageCollectionRules`       | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories/{repositoryId}/gc/rules`                                          | -                                                                     |
-| Prepare Garbage Collection Commits               | `retention:PrepareGarbageCollectionCommits` | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories/{repositoryId}/gc/prepare_commits`                                | -                                                                     |
-| List Repository Action Runs                      | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/actions/runs`                                         | -                                                                     |
-| Get Action Run                                   | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/actions/runs/{run_id}`                                | -                                                                     |
-| List Action Run Hooks                            | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/actions/runs/{run_id}/hooks`                          | -                                                                     |
-| Get Action Run Hook Output                       | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output`     | -                                                                     |
-| Get Pull Request                                 | `pr:ReadPullRequest`                        | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/pulls/{pull_request}`                                 | -                                                                     |
-| Create Pull Request                              | `pr:WritePullRequest`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories/{repository}/pulls`                                               | -                                                                     |
-| Update Pull Request                              | `pr:WritePullRequest`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | PATCH `/repositories/{repository}/pulls/{pull_request}`                               | -                                                                     |
-| Merge Pull Request                               | `pr:WritePullRequest` + Merge Branches      | `arn:lakefs:fs:::repository/{repositoryId}`                              | PUT `/repositories/{repository}/pulls/{pull_request}/merge`                           | -                                                                     |
-| List Pull Requests                               | `pr:ListPullRequests`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/pulls`                                                | -                                                                     |
+| Revert Branch                                    | `fs:RevertBranch`                           | `arn:lakefs:fs:::repository/{repositoryId}/branch/{branchId}`            | PUT `/repositories/{repositoryId}/branches/{branchId}`                                | -                                                                      |
+| Get Branch Protection Rules                      | `branches:GetBranchProtectionRules`         | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/branch_protection`                                    | -                                                                      |
+| Set Branch Protection Rules                      | `branches:SetBranchProtectionRules`         | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories/{repository}/branch_protection`                                   | -                                                                      |
+| Delete Branch Protection Rules                   | `branches:SetBranchProtectionRules`         | `arn:lakefs:fs:::repository/{repositoryId}`                              | DELETE `/repositories/{repository}/branch_protection`                                 | -                                                                      |
+| Create User                                      | `auth:CreateUser`                           | `arn:lakefs:auth:::user/{userId}`                                        | POST `/auth/users`                                                                    | -                                                                      |
+| List Users                                       | `auth:ListUsers`                            | `*`                                                                      | GET `/auth/users`                                                                     | -                                                                      |
+| Get User                                         | `auth:ReadUser`                             | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}`                                                            | -                                                                      |
+| Delete User                                      | `auth:DeleteUser`                           | `arn:lakefs:auth:::user/{userId}`                                        | DELETE `/auth/users/{userId}`                                                         | -                                                                      |
+| Get Group                                        | `auth:ReadGroup`                            | `arn:lakefs:auth:::group/{groupId}`                                      | GET `/auth/groups/{groupId}`                                                          | -                                                                      |
+| List Groups                                      | `auth:ListGroups`                           | `*`                                                                      | GET `/auth/groups`                                                                    | -                                                                      |
+| Create Group                                     | `auth:CreateGroup`                          | `arn:lakefs:auth:::group/{groupId}`                                      | POST `/auth/groups`                                                                   | -                                                                      |
+| Delete Group                                     | `auth:DeleteGroup`                          | `arn:lakefs:auth:::group/{groupId}`                                      | DELETE `/auth/groups/{groupId}`                                                       | -                                                                      |
+| List Policies                                    | `auth:ListPolicies`                         | `*`                                                                      | GET `/auth/policies`                                                                  | -                                                                      |
+| Create Policy                                    | `auth:CreatePolicy`                         | `arn:lakefs:auth:::policy/{policyId}`                                    | POST `/auth/policies`                                                                 | -                                                                      |
+| Update Policy                                    | `auth:UpdatePolicy`                         | `arn:lakefs:auth:::policy/{policyId}`                                    | POST `/auth/policies`                                                                 | -                                                                      |
+| Delete Policy                                    | `auth:DeletePolicy`                         | `arn:lakefs:auth:::policy/{policyId}`                                    | DELETE `/auth/policies/{policyId}`                                                    | -                                                                      |
+| Get Policy                                       | `auth:ReadPolicy`                           | `arn:lakefs:auth:::policy/{policyId}`                                    | GET `/auth/policies/{policyId}`                                                       | -                                                                      |
+| List Group Members                               | `auth:ReadGroup`                            | `arn:lakefs:auth:::group/{groupId}`                                      | GET `/auth/groups/{groupId}/members`                                                  | -                                                                      |
+| Add Group Member                                 | `auth:AddGroupMember`                       | `arn:lakefs:auth:::group/{groupId}`                                      | PUT `/auth/groups/{groupId}/members/{userId}`                                         | -                                                                      |
+| Remove Group Member                              | `auth:RemoveGroupMember`                    | `arn:lakefs:auth:::group/{groupId}`                                      | DELETE `/auth/groups/{groupId}/members/{userId}`                                      | -                                                                      |
+| List User Credentials                            | `auth:ListCredentials`                      | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}/credentials`                                                | -                                                                      |
+| Create User Credentials                          | `auth:CreateCredentials`                    | `arn:lakefs:auth:::user/{userId}`                                        | POST `/auth/users/{userId}/credentials`                                               | -                                                                      |
+| Delete User Credentials                          | `auth:DeleteCredentials`                    | `arn:lakefs:auth:::user/{userId}`                                        | DELETE `/auth/users/{userId}/credentials/{accessKeyId}`                               | -                                                                      |
+| Get User Credentials                             | `auth:ReadCredentials`                      | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}/credentials/{accessKeyId}`                                  | -                                                                      |
+| List User Groups                                 | `auth:ReadUser`                             | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}/groups`                                                     | -                                                                      |
+| List User Policies                               | `auth:ReadUser`                             | `arn:lakefs:auth:::user/{userId}`                                        | GET `/auth/users/{userId}/policies`                                                   | -                                                                      |
+| Attach Policy To User                            | `auth:AttachPolicy`                         | `arn:lakefs:auth:::user/{userId}`                                        | PUT `/auth/users/{userId}/policies/{policyId}`                                        | -                                                                      |
+| Detach Policy From User                          | `auth:DetachPolicy`                         | `arn:lakefs:auth:::user/{userId}`                                        | DELETE `/auth/users/{userId}/policies/{policyId}`                                     | -                                                                      |
+| List Group Policies                              | `auth:ReadGroup`                            | `arn:lakefs:auth:::group/{groupId}`                                      | GET `/auth/groups/{groupId}/policies`                                                 | -                                                                      |
+| Attach Policy To Group                           | `auth:AttachPolicy`                         | `arn:lakefs:auth:::group/{groupId}`                                      | PUT `/auth/groups/{groupId}/policies/{policyId}`                                      | -                                                                      |
+| Detach Policy From Group                         | `auth:DetachPolicy`                         | `arn:lakefs:auth:::group/{groupId}`                                      | DELETE `/auth/groups/{groupId}/policies/{policyId}`                                   | -                                                                      |
+| Attach External Principal to a User              | `auth:CreateUserExternalPrincipal`          | `arn:lakefs:auth:::user/{userId}`                                        | POST `/auth/users/{userId}/external/principals`                                       | -                                                                      |
+| Delete External Principal Attachment from a User | `auth:DeleteUserExternalPrincipal`          | `arn:lakefs:auth:::user/{userId}`                                        | DELETE `/auth/users/{userId}/external/principals`                                     | -                                                                      |
+| Get the User attached to an External Principal   | `auth:ReadExternalPrincipal`                | `arn:lakefs:auth:::externalPrincipal/{principalId}`                      | GET `/auth/external/principals`                                                       | -                                                                      |
+| Read Storage Config                              | `fs:ReadConfig`                             | `*`                                                                      | GET `/config/storage`                                                                 | -                                                                      |
+| Get Garbage Collection Rules                     | `retention:GetGarbageCollectionRules`       | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repositoryId}/gc/rules`                                           | -                                                                      |
+| Set Garbage Collection Rules                     | `retention:SetGarbageCollectionRules`       | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories/{repositoryId}/gc/rules`                                          | -                                                                      |
+| Prepare Garbage Collection Commits               | `retention:PrepareGarbageCollectionCommits` | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories/{repositoryId}/gc/prepare_commits`                                | -                                                                      |
+| List Repository Action Runs                      | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/actions/runs`                                         | -                                                                      |
+| Get Action Run                                   | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/actions/runs/{run_id}`                                | -                                                                      |
+| List Action Run Hooks                            | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/actions/runs/{run_id}/hooks`                          | -                                                                      |
+| Get Action Run Hook Output                       | `ci:ReadAction`                             | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output`     | -                                                                      |
+| Get Pull Request                                 | `pr:ReadPullRequest`                        | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/pulls/{pull_request}`                                 | -                                                                      |
+| Create Pull Request                              | `pr:WritePullRequest`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | POST `/repositories/{repository}/pulls`                                               | -                                                                      |
+| Update Pull Request                              | `pr:WritePullRequest`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | PATCH `/repositories/{repository}/pulls/{pull_request}`                               | -                                                                      |
+| Merge Pull Request                               | `pr:WritePullRequest` + Merge Branches      | `arn:lakefs:fs:::repository/{repositoryId}`                              | PUT `/repositories/{repository}/pulls/{pull_request}/merge`                           | -                                                                      |
+| List Pull Requests                               | `pr:ListPullRequests`                       | `arn:lakefs:fs:::repository/{repositoryId}`                              | GET `/repositories/{repository}/pulls`                                                | -                                                                      |
+| Login as Organization Admin _(Cloud only)_       | `admin:Login`                               | `*`                                                                      | POST `/admin/login` _(part of lakefs cloud, not lakefs endpoint)_                     | -                                                                      | 
 
 
-Some APIs may require more than one action.For instance, in order to
-create a repository (`POST /repositories`), you need permission to
-`fs:CreateRepository` for the _name_ of the repository and also
+Some APIs may require more than one action.  For instance, to create a repository (`POST /repositories`), 
+you need permission to `fs:CreateRepository` for the _name_ of the repository and also
 `fs:AttachStorageNamespace` for the _storage namespace_ used.
 
 ## Preconfigured Policies
 
-The following Policies are created during initial setup:
+The following `Policies` are created during initial setup:
 
 ### FSFullAccess
 
@@ -273,6 +273,7 @@ The following Policies are created during initial setup:
     ]
 }
 ```
+
 ### RepoManagementReadAll
 
 ```json
@@ -296,9 +297,28 @@ The following Policies are created during initial setup:
 }
 ```
 
+### AdminFullAccess (lakeFS Cloud only)
+
+```json
+{
+  "statement": [
+    {
+      "action": [
+        "admin:*"
+      ],
+      "effect": "allow",
+      "resource": "*"
+    }
+  ]
+}
+```
+
 ## Additional Policies
 
-You can create additional policies to further limit user access. Use the web UI or the [lakectl auth](../reference/cli.md#lakectl-auth-policies-create) command to create policies. Here is an example to define read/write access for a specific repository:
+You can create additional policies to further limit user access. Use the web UI or
+the [lakectl auth](../reference/cli.md#lakectl-auth-policies-create) command to create policies.
+
+Here is an example to define read/write access for a specific repository:
 
 ```json
 {
@@ -352,10 +372,11 @@ You can create additional policies to further limit user access. Use the web UI 
     ]
 }
 ```
+
 ## Multiple Resources Statements
 
 lakeFS supports specifying multiple resources in a single RBAC statement. This is available on lakeFS Cloud, or on lakeFS Enterprise if starting at version lakeFS v1.54.0 and Fluffy v0.12.0
-In addition to a single resource, the resource field can contain a string representing a JSON-encoded list of resources.
+In addition to a single resource. The resource field can contain a string representing a JSON-encoded list of resources.
 
 ```json
 {
@@ -370,7 +391,9 @@ In addition to a single resource, the resource field can contain a string repres
     ]
 }
 ```
-The list must be properly encoded as a JSON string: quote each resource, and escape those quotes as shown. Otherwise, the policy cannot be parsed.
+
+The list must be properly encoded as a JSON string: quote each resource, and escape those quotes as shown.
+Otherwise, the policy cannot be parsed.
 
 ### Multi-Resource Policy Creation Using Python SDK
 
@@ -401,7 +424,6 @@ clt.auth_api.create_policy(
 )
 ```
 
-
 ## Preconfigured Groups
 
 lakeFS has four preconfigured groups:
@@ -422,6 +444,7 @@ They have the following policies granted to them:
 | [`RepoManagementReadAll`](#repomanagementreadall)       |        | ✅          | ✅          |         |
 | [`FSReadWriteAll`](#fsreadwriteall)                     |        |            | ✅          |         |
 | [`FSReadAll`](#fsreadall)                               |        |            |            | ✅       |
+| [`AdminFullAccess` (_Cloud only)_](#adminfullaccess)    | ✅      |            |            |         |
 
 ## Pluggable Authentication and Authorization
 
