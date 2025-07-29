@@ -413,7 +413,7 @@ class ExperimentalApi:
             '401': "Error",
             '404': "Error",
             '409': "StagingLocation",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -581,7 +581,7 @@ class ExperimentalApi:
             '400': "Error",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -740,7 +740,7 @@ class ExperimentalApi:
             '403': "Error",
             '404': "Error",
             '409': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1193,7 +1193,7 @@ class ExperimentalApi:
             '401': "Error",
             '403': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1334,7 +1334,7 @@ class ExperimentalApi:
             '200': "ExternalPrincipal",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1618,7 +1618,7 @@ class ExperimentalApi:
             '400': "Error",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1953,7 +1953,7 @@ class ExperimentalApi:
             '200': "PullRequestsList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -2118,7 +2118,7 @@ class ExperimentalApi:
             '200': "ExternalPrincipalList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -2271,7 +2271,7 @@ class ExperimentalApi:
             '404': "Error",
             '409': "MergeResult",
             '412': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -2418,7 +2418,7 @@ class ExperimentalApi:
         _response_types_map = {
             '200': "AuthenticationToken",
             '401': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -2934,7 +2934,7 @@ class ExperimentalApi:
             '200': "UploadTo",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
