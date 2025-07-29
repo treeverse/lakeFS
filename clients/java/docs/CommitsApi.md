@@ -109,7 +109,7 @@ public class Example {
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
 | **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getCommit"></a>
@@ -204,6 +204,6 @@ public class Example {
 | **200** | commit |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

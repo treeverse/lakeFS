@@ -124,7 +124,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createCommitRecord"></a>
@@ -220,7 +220,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createSymlinkFile"></a>
@@ -318,7 +318,7 @@ public class Example {
 | **201** | location created |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteRepositoryMetadata"></a>
@@ -413,7 +413,7 @@ null (empty response body)
 |-------------|-------------|------------------|
 | **204** | repository metadata keys deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="dumpRefs"></a>
@@ -507,7 +507,7 @@ public class Example {
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getAuthCapabilities"></a>
@@ -566,7 +566,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | auth capabilities |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getGarbageCollectionConfig"></a>
@@ -843,7 +843,7 @@ public class Example {
 | **302** | Redirect to a pre-signed URL for the object |  * Location - redirect to S3 <br>  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getSetupState"></a>
@@ -902,7 +902,7 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | lakeFS setup state |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getStorageConfig"></a>
@@ -1080,7 +1080,7 @@ This endpoint does not need any parameter.
 | **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="internalCreateBranchProtectionRule"></a>
@@ -1174,7 +1174,7 @@ null (empty response body)
 | **204** | branch protection rule created successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="internalDeleteBranchProtectionRule"></a>
@@ -1268,7 +1268,7 @@ null (empty response body)
 | **204** | branch protection rule deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="internalDeleteGarbageCollectionRules"></a>
@@ -1362,7 +1362,7 @@ null (empty response body)
 | **204** | deleted garbage collection rules successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="internalGetBranchProtectionRules"></a>
@@ -1455,7 +1455,7 @@ public class Example {
 | **200** | branch protection rules |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="internalGetGarbageCollectionRules"></a>
@@ -1550,7 +1550,7 @@ public class Example {
 | **200** | gc rule list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="internalSetGarbageCollectionRules"></a>
@@ -1646,7 +1646,7 @@ null (empty response body)
 | **204** | set garbage collection rules successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="postStatsEvents"></a>
@@ -1738,7 +1738,7 @@ null (empty response body)
 | **204** | reported successfully |  -  |
 | **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="prepareGarbageCollectionCommits"></a>
@@ -1832,7 +1832,7 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="prepareGarbageCollectionUncommitted"></a>
@@ -1930,7 +1930,7 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="restoreRefs"></a>
@@ -2025,7 +2025,7 @@ null (empty response body)
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setGarbageCollectionRulesPreflight"></a>
@@ -2117,7 +2117,7 @@ null (empty response body)
 | **204** | User has permissions to set garbage collection rules on this repository |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setRepositoryMetadata"></a>
@@ -2213,7 +2213,7 @@ null (empty response body)
 | **204** | repository metadata set successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setup"></a>
@@ -2278,7 +2278,7 @@ No authorization required
 | **200** | user created successfully |  -  |
 | **400** | Bad Request |  -  |
 | **409** | setup was already called |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setupCommPrefs"></a>
@@ -2342,7 +2342,7 @@ No authorization required
 | **200** | communication preferences saved successfully |  -  |
 | **409** | setup was already completed |  -  |
 | **412** | wrong setup state for this operation |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="stageObject"></a>
@@ -2443,7 +2443,7 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="uploadObjectPreflight"></a>
@@ -2540,6 +2540,6 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

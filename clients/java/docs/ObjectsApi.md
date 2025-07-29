@@ -114,7 +114,7 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteObject"></a>
@@ -214,7 +214,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteObjects"></a>
@@ -315,7 +315,7 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getObject"></a>
@@ -427,7 +427,7 @@ public class Example {
 | **404** | Resource Not Found |  -  |
 | **410** | object expired |  -  |
 | **416** | Requested Range Not Satisfiable |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getUnderlyingProperties"></a>
@@ -524,7 +524,7 @@ public class Example {
 | **200** | object metadata on underlying storage |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="headObject"></a>
@@ -627,7 +627,7 @@ null (empty response body)
 | **404** | object not found |  -  |
 | **410** | object expired |  -  |
 | **416** | Requested Range Not Satisfiable |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | internal server error |  -  |
 
 <a id="listObjects"></a>
@@ -740,7 +740,7 @@ public class Example {
 | **200** | object listing |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="statObject"></a>
@@ -845,7 +845,7 @@ public class Example {
 | **404** | Resource Not Found |  -  |
 | **400** | Bad Request |  -  |
 | **410** | object gone (but partial metadata may be available) |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="updateObjectUserMetadata"></a>
@@ -944,7 +944,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **400** | Bad Request |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="uploadObject"></a>
@@ -1056,6 +1056,6 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **412** | Precondition Failed |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

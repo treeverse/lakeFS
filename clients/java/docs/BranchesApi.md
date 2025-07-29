@@ -111,7 +111,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createBranch"></a>
@@ -209,7 +209,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteBranch"></a>
@@ -307,7 +307,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="diffBranch"></a>
@@ -414,7 +414,7 @@ public class Example {
 | **200** | diff of branch uncommitted changes |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getBranch"></a>
@@ -509,7 +509,7 @@ public class Example {
 | **200** | branch |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listBranches"></a>
@@ -614,7 +614,7 @@ public class Example {
 | **200** | branch list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="resetBranch"></a>
@@ -712,7 +712,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="revertBranch"></a>
@@ -811,6 +811,6 @@ null (empty response body)
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

@@ -188,7 +188,7 @@ public class ExternalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -206,7 +206,7 @@ public class ExternalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -225,7 +225,7 @@ public class ExternalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -245,7 +245,7 @@ public class ExternalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -267,7 +267,7 @@ public class ExternalApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -372,7 +372,7 @@ public class ExternalApi {
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -389,7 +389,7 @@ public class ExternalApi {
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -407,7 +407,7 @@ public class ExternalApi {
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -426,7 +426,7 @@ public class ExternalApi {
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -447,7 +447,7 @@ public class ExternalApi {
         <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -549,7 +549,7 @@ public class ExternalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -569,7 +569,7 @@ public class ExternalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -590,7 +590,7 @@ public class ExternalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -611,7 +611,7 @@ public class ExternalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -632,7 +632,7 @@ public class ExternalApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -731,7 +731,7 @@ public class ExternalApi {
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -749,7 +749,7 @@ public class ExternalApi {
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -768,7 +768,7 @@ public class ExternalApi {
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -787,7 +787,7 @@ public class ExternalApi {
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -807,7 +807,7 @@ public class ExternalApi {
         <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -948,7 +948,7 @@ public class ExternalApi {
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -966,7 +966,7 @@ public class ExternalApi {
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -985,7 +985,7 @@ public class ExternalApi {
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1004,7 +1004,7 @@ public class ExternalApi {
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1024,7 +1024,7 @@ public class ExternalApi {
         <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */

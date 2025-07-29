@@ -489,7 +489,7 @@ class ExternalApi:
             '401': "Error",
             '403': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -630,7 +630,7 @@ class ExternalApi:
             '200': "ExternalPrincipal",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -795,7 +795,7 @@ class ExternalApi:
             '200': "ExternalPrincipalList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
