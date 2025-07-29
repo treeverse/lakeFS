@@ -121,7 +121,7 @@ Name | Type | Description  | Notes
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
 **409** | Resource Conflicts With Target |  -  |
-**420** | too many requests |  -  |
+**429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -233,7 +233,7 @@ void (empty response body)
 **401** | Unauthorized |  -  |
 **403** | Forbidden |  -  |
 **404** | Resource Not Found |  -  |
-**420** | too many requests |  -  |
+**429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -345,7 +345,7 @@ Name | Type | Description  | Notes
 **200** | tag |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
-**420** | too many requests |  -  |
+**429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -461,7 +461,7 @@ Name | Type | Description  | Notes
 **200** | tag list |  -  |
 **401** | Unauthorized |  -  |
 **404** | Resource Not Found |  -  |
-**420** | too many requests |  -  |
+**429** | too many requests |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

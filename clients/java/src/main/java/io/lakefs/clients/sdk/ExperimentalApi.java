@@ -221,7 +221,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -239,7 +239,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -258,7 +258,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -278,7 +278,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -302,7 +302,7 @@ public class ExperimentalApi {
         <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -439,7 +439,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -459,7 +459,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -480,7 +480,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -501,7 +501,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -526,7 +526,7 @@ public class ExperimentalApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -657,7 +657,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -676,7 +676,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -696,7 +696,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -716,7 +716,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -739,7 +739,7 @@ public class ExperimentalApi {
         <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -846,7 +846,7 @@ public class ExperimentalApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -867,7 +867,7 @@ public class ExperimentalApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -889,7 +889,7 @@ public class ExperimentalApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -911,7 +911,7 @@ public class ExperimentalApi {
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -935,7 +935,7 @@ public class ExperimentalApi {
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -1053,7 +1053,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1071,7 +1071,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1090,7 +1090,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1110,7 +1110,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1132,7 +1132,7 @@ public class ExperimentalApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -1237,7 +1237,7 @@ public class ExperimentalApi {
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1254,7 +1254,7 @@ public class ExperimentalApi {
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1272,7 +1272,7 @@ public class ExperimentalApi {
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1291,7 +1291,7 @@ public class ExperimentalApi {
             <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1312,7 +1312,7 @@ public class ExperimentalApi {
         <tr><td> 204 </td><td> external principal detached successfully </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -1414,7 +1414,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1434,7 +1434,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1455,7 +1455,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1476,7 +1476,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1497,7 +1497,7 @@ public class ExperimentalApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -1596,7 +1596,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1614,7 +1614,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1633,7 +1633,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1652,7 +1652,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1672,7 +1672,7 @@ public class ExperimentalApi {
         <tr><td> 200 </td><td> external principal </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -1935,7 +1935,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1954,7 +1954,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1974,7 +1974,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -1994,7 +1994,7 @@ public class ExperimentalApi {
             <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2016,7 +2016,7 @@ public class ExperimentalApi {
         <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -2146,8 +2146,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2166,8 +2165,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2187,8 +2185,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2209,8 +2206,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2234,8 +2230,7 @@ public class ExperimentalApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-        <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -2391,7 +2386,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> list of pull requests </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2409,7 +2404,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> list of pull requests </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2428,7 +2423,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> list of pull requests </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2447,7 +2442,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> list of pull requests </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2467,7 +2462,7 @@ public class ExperimentalApi {
         <tr><td> 200 </td><td> list of pull requests </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -2608,7 +2603,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2626,7 +2621,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2645,7 +2640,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2664,7 +2659,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2684,7 +2679,7 @@ public class ExperimentalApi {
         <tr><td> 200 </td><td> external principals list </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -2792,7 +2787,7 @@ public class ExperimentalApi {
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Deprecated: content schema will return Error format and not an empty MergeResult  </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2814,7 +2809,7 @@ public class ExperimentalApi {
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Deprecated: content schema will return Error format and not an empty MergeResult  </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2837,7 +2832,7 @@ public class ExperimentalApi {
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Deprecated: content schema will return Error format and not an empty MergeResult  </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2860,7 +2855,7 @@ public class ExperimentalApi {
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> Conflict Deprecated: content schema will return Error format and not an empty MergeResult  </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2885,7 +2880,7 @@ public class ExperimentalApi {
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> Conflict Deprecated: content schema will return Error format and not an empty MergeResult  </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> precondition failed (e.g. a pre-merge hook returned a failure) </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -2980,7 +2975,7 @@ public class ExperimentalApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -2997,7 +2992,7 @@ public class ExperimentalApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3015,7 +3010,7 @@ public class ExperimentalApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3033,7 +3028,7 @@ public class ExperimentalApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3052,7 +3047,7 @@ public class ExperimentalApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> successful STS login </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -3174,8 +3169,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3193,8 +3187,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3213,8 +3206,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3234,8 +3226,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3259,8 +3250,7 @@ public class ExperimentalApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
-        <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -3372,7 +3362,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3391,7 +3381,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3411,7 +3401,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3432,7 +3422,7 @@ public class ExperimentalApi {
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3456,7 +3446,7 @@ public class ExperimentalApi {
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -3595,7 +3585,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3613,7 +3603,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3632,7 +3622,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3651,7 +3641,7 @@ public class ExperimentalApi {
             <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3676,7 +3666,7 @@ public class ExperimentalApi {
         <tr><td> 200 </td><td> presigned URL to use for upload </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -3813,7 +3803,7 @@ public class ExperimentalApi {
             <tr><td> 204 </td><td> part copied </td><td>  * ETag -  <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3830,7 +3820,7 @@ public class ExperimentalApi {
             <tr><td> 204 </td><td> part copied </td><td>  * ETag -  <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3848,7 +3838,7 @@ public class ExperimentalApi {
             <tr><td> 204 </td><td> part copied </td><td>  * ETag -  <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3867,7 +3857,7 @@ public class ExperimentalApi {
             <tr><td> 204 </td><td> part copied </td><td>  * ETag -  <br>  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -3892,7 +3882,7 @@ public class ExperimentalApi {
         <tr><td> 204 </td><td> part copied </td><td>  * ETag -  <br>  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */

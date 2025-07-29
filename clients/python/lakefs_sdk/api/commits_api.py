@@ -209,8 +209,7 @@ class CommitsApi:
             '404': "Error",
             '409': "Error",
             '412': "Error",
-            '420': None,
-            '423': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -359,7 +358,7 @@ class CommitsApi:
             '200': "Commit",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
