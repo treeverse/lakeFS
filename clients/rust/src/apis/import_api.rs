@@ -24,6 +24,7 @@ pub enum ImportCancelError {
     Status404(models::Error),
     Status409(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -37,6 +38,7 @@ pub enum ImportStartError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

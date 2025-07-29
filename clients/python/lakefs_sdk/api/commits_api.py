@@ -210,6 +210,7 @@ class CommitsApi:
             '409': "Error",
             '412': "Error",
             '420': None,
+            '423': None,
         }
 
         return self.api_client.call_api(

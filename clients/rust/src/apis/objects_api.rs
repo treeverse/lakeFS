@@ -24,6 +24,7 @@ pub enum CopyObjectError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -36,6 +37,7 @@ pub enum DeleteObjectError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -48,6 +50,7 @@ pub enum DeleteObjectsError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -123,6 +126,7 @@ pub enum UpdateObjectUserMetadataError {
     Status404(models::Error),
     Status400(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -137,6 +141,7 @@ pub enum UploadObjectError {
     Status404(models::Error),
     Status412(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

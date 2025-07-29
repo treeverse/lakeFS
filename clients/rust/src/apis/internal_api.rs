@@ -36,6 +36,7 @@ pub enum CreateCommitRecordError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -57,6 +58,7 @@ pub enum CreateSymlinkFileError {
 pub enum DeleteRepositoryMetadataError {
     Status401(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -69,6 +71,7 @@ pub enum DumpRefsError {
     Status401(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -200,6 +203,7 @@ pub enum InternalSetGarbageCollectionRulesError {
     Status401(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -223,6 +227,7 @@ pub enum PrepareGarbageCollectionCommitsError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -236,6 +241,7 @@ pub enum PrepareGarbageCollectionUncommittedError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -248,6 +254,7 @@ pub enum RestoreRefsError {
     Status401(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -270,6 +277,7 @@ pub enum SetRepositoryMetadataError {
     Status401(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -305,6 +313,7 @@ pub enum StageObjectError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

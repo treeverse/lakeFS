@@ -115,6 +115,7 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **409** | Resource Conflicts With Target |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteGCRules"></a>
@@ -303,6 +304,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="dumpStatus"></a>
@@ -492,6 +494,7 @@ public class Example {
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getBranchProtectionRules"></a>
@@ -1158,6 +1161,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setBranchProtectionRules"></a>
@@ -1258,6 +1262,7 @@ null (empty response body)
 | **404** | Resource Not Found |  -  |
 | **412** | Precondition Failed |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setGCRules"></a>

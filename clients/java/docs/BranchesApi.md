@@ -112,6 +112,7 @@ public class Example {
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createBranch"></a>
@@ -210,6 +211,7 @@ public class Example {
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteBranch"></a>
@@ -308,6 +310,7 @@ null (empty response body)
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="diffBranch"></a>
@@ -713,6 +716,7 @@ null (empty response body)
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="revertBranch"></a>
@@ -812,5 +816,6 @@ null (empty response body)
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 

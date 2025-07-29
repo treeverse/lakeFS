@@ -25,6 +25,7 @@ pub enum CherryPickError {
     Status404(models::Error),
     Status409(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -39,6 +40,7 @@ pub enum CreateBranchError {
     Status404(models::Error),
     Status409(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -51,6 +53,7 @@ pub enum DeleteBranchError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -97,6 +100,7 @@ pub enum ResetBranchError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -111,6 +115,7 @@ pub enum RevertBranchError {
     Status404(models::Error),
     Status409(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

@@ -23,6 +23,7 @@ pub enum CreateRepositoryError {
     Status401(models::Error),
     Status409(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -46,6 +47,7 @@ pub enum DeleteRepositoryError {
     Status401(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -69,6 +71,7 @@ pub enum DumpSubmitError {
     Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -147,6 +150,7 @@ pub enum RestoreSubmitError {
     Status403(models::Error),
     Status401(models::Error),
     Status404(models::Error),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -161,6 +165,7 @@ pub enum SetBranchProtectionRulesError {
     Status404(models::Error),
     Status412(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

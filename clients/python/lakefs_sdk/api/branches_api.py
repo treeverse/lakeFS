@@ -207,6 +207,7 @@ class BranchesApi:
             '404': "Error",
             '409': "Error",
             '420': None,
+            '423': None,
         }
 
         return self.api_client.call_api(
@@ -366,6 +367,7 @@ class BranchesApi:
             '404': "Error",
             '409': "Error",
             '420': None,
+            '423': None,
         }
 
         return self.api_client.call_api(

@@ -115,6 +115,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteObject"></a>
@@ -215,6 +216,7 @@ null (empty response body)
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteObjects"></a>
@@ -316,6 +318,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getObject"></a>
@@ -945,6 +948,7 @@ null (empty response body)
 | **404** | Resource Not Found |  -  |
 | **400** | Bad Request |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="uploadObject"></a>
@@ -1057,5 +1061,6 @@ public class Example {
 | **404** | Resource Not Found |  -  |
 | **412** | Precondition Failed |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 

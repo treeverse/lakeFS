@@ -110,6 +110,7 @@ public class Example {
 | **409** | Resource Conflicts With Target |  -  |
 | **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getCommit"></a>

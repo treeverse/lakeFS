@@ -26,6 +26,7 @@ pub enum CommitError {
     Status409(models::Error),
     Status412(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

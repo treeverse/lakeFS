@@ -144,6 +144,7 @@ pub enum HardResetBranchError {
     Status403(models::Error),
     Status404(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -203,6 +204,7 @@ pub enum UpdateObjectUserMetadataError {
     Status404(models::Error),
     Status400(models::Error),
     Status420(),
+    Status423(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

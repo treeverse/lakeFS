@@ -221,6 +221,7 @@ null (empty response body)
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createSymlinkFile"></a>
@@ -414,6 +415,7 @@ null (empty response body)
 | **204** | repository metadata keys deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="dumpRefs"></a>
@@ -508,6 +510,7 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getAuthCapabilities"></a>
@@ -1647,6 +1650,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="postStatsEvents"></a>
@@ -1833,6 +1837,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="prepareGarbageCollectionUncommitted"></a>
@@ -1931,6 +1936,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="restoreRefs"></a>
@@ -2026,6 +2032,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setGarbageCollectionRulesPreflight"></a>
@@ -2214,6 +2221,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setup"></a>
@@ -2444,6 +2452,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **420** | too many requests |  -  |
+| **423** | locked, try again later |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="uploadObjectPreflight"></a>

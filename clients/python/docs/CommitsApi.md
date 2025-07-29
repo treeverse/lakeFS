@@ -125,6 +125,7 @@ Name | Type | Description  | Notes
 **409** | Resource Conflicts With Target |  -  |
 **412** | Precondition Failed (e.g. a pre-commit hook returned a failure) |  -  |
 **420** | too many requests |  -  |
+**423** | locked, try again later |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

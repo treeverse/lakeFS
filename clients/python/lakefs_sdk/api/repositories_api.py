@@ -198,6 +198,7 @@ class RepositoriesApi:
             '401': "Error",
             '409': "Error",
             '420': None,
+            '423': None,
         }
 
         return self.api_client.call_api(
@@ -769,6 +770,7 @@ class RepositoriesApi:
             '400': "Error",
             '401': "Error",
             '404': "Error",
+            '423': None,
         }
 
         return self.api_client.call_api(
@@ -1804,6 +1806,7 @@ class RepositoriesApi:
             '403': "Error",
             '401': "Error",
             '404': "Error",
+            '423': None,
         }
 
         return self.api_client.call_api(

@@ -3092,6 +3092,8 @@ paths:
           $ref: "#/components/responses/Conflict"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3143,6 +3145,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3195,6 +3199,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -3217,6 +3223,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3357,6 +3365,8 @@ paths:
           $ref: "#/components/responses/PreconditionFailed"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3389,6 +3399,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3423,6 +3435,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3451,6 +3465,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
     get:
@@ -3515,6 +3531,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         404:
           $ref: "#/components/responses/NotFound"
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
     get:
@@ -3735,6 +3753,8 @@ paths:
           $ref: "#/components/responses/Conflict"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3866,6 +3886,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3900,6 +3922,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -3958,6 +3982,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
     put:
@@ -3984,6 +4010,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4032,6 +4060,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4077,6 +4107,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4126,6 +4158,8 @@ paths:
                 $ref: "#/components/schemas/Error"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -4926,6 +4960,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -4953,6 +4989,8 @@ paths:
           $ref: "#/components/responses/Conflict"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5039,6 +5077,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5096,6 +5136,8 @@ paths:
           $ref: "#/components/responses/PreconditionFailed"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -5121,6 +5163,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5168,6 +5212,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5218,6 +5264,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5318,6 +5366,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5805,6 +5855,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
     delete:
@@ -5852,6 +5904,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5889,6 +5943,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         420:
           description: too many requests
+        423:
+          description: locked, try again later
         default:
           $ref: "#/components/responses/ServerError"
 

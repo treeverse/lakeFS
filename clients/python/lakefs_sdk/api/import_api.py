@@ -351,6 +351,7 @@ class ImportApi:
             '403': "Error",
             '404': "Error",
             '420': None,
+            '423': None,
         }
 
         return self.api_client.call_api(

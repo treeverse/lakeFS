@@ -213,6 +213,7 @@ class ObjectsApi:
             '403': "Error",
             '404': "Error",
             '420': None,
+            '423': None,
         }
 
         return self.api_client.call_api(
@@ -546,6 +547,7 @@ class ObjectsApi:
             '403': "Error",
             '404': "Error",
             '420': None,
+            '423': None,
         }
 
         return self.api_client.call_api(
@@ -1784,6 +1786,7 @@ class ObjectsApi:
             '404': "Error",
             '412': "Error",
             '420': None,
+            '423': None,
         }
 
         return self.api_client.call_api(

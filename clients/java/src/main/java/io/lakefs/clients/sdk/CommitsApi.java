@@ -199,6 +199,7 @@ public class CommitsApi {
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -221,6 +222,7 @@ public class CommitsApi {
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -244,6 +246,7 @@ public class CommitsApi {
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -267,6 +270,7 @@ public class CommitsApi {
             <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
             <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -293,6 +297,7 @@ public class CommitsApi {
         <tr><td> 409 </td><td> Resource Conflicts With Target </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> Precondition Failed (e.g. a pre-commit hook returned a failure) </td><td>  -  </td></tr>
         <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 423 </td><td> locked, try again later </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
