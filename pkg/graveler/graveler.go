@@ -2220,7 +2220,12 @@ func (g *Graveler) Commit(ctx context.Context, repository *RepositoryRecord, bra
 		} else {
 			changes, err := g.sealedTokensIterator(ctx, branch, 0)
 			if err != nil {
-				return nil, err
+				// in case we allow empty commits, we need to pass empty iterator to the commit manager
+				if errors.Is(err, ErrNoChanges) && params.AllowEmpty {
+					changes = NewEmptyValueIterator()
+				} else {
+					return nil, err
+				}
 			}
 			defer changes.Close()
 			// returns err if the commit is empty (no changes)
