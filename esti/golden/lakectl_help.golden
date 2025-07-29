@@ -1,4 +1,6 @@
-lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment
+lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment.
+
+It can be extended with plugins; see 'lakectl plugin --help' for more information.
 
 Usage:
   lakectl [flags]
@@ -24,6 +26,7 @@ Available Commands:
   local           Sync local directories with lakeFS paths
   log             Show log of commits
   merge           Merge & commit changes from source branch into destination branch
+  plugin          Manage lakectl plugins
   repo            Manage and explore repos
   show            See detailed information about an entity
   tag             Create and manage tags within a repository

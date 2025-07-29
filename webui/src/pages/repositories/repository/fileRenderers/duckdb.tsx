@@ -81,7 +81,7 @@ export async function runDuckDBQuery(sql: string):  Promise<arrow.Table<any>> {
         // real authentication is done using the existing swagger cookie or token
         await conn.query(`SET s3_access_key_id='use_swagger_credentials';`)
         await conn.query(`SET s3_secret_access_key='these_are_meaningless_but_must_be_set';`)
-        await conn.query(`SET s3_endpoint='${document.location.protocol}//${document.location.host}'`)
+        await conn.query(`SET s3_endpoint='${document.location.protocol}//${document.location.host}';`)
 
         // register lakefs uri-ed files as s3 files
         const fileMap = await extractFiles(conn, sql)

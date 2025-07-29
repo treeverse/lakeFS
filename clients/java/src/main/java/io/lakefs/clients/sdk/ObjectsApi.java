@@ -866,6 +866,7 @@ public class ObjectsApi {
             <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
             <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 304 </td><td> Content not modified </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -889,6 +890,7 @@ public class ObjectsApi {
             <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
             <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 304 </td><td> Content not modified </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -913,6 +915,7 @@ public class ObjectsApi {
             <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
             <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 304 </td><td> Content not modified </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -937,6 +940,7 @@ public class ObjectsApi {
             <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
             <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
             <tr><td> 304 </td><td> Content not modified </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
             <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -964,6 +968,7 @@ public class ObjectsApi {
         <tr><td> 206 </td><td> partial object content </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 302 </td><td> Redirect to a pre-signed URL for the object </td><td>  * Location - redirect to S3 <br>  </td></tr>
         <tr><td> 304 </td><td> Content not modified </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -1287,6 +1292,7 @@ public class ObjectsApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> object exists </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
             <tr><td> 206 </td><td> partial object content info </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> object not found </td><td>  -  </td></tr>
             <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -1307,6 +1313,7 @@ public class ObjectsApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> object exists </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
             <tr><td> 206 </td><td> partial object content info </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> object not found </td><td>  -  </td></tr>
             <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -1328,6 +1335,7 @@ public class ObjectsApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> object exists </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
             <tr><td> 206 </td><td> partial object content info </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> object not found </td><td>  -  </td></tr>
             <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -1350,6 +1358,7 @@ public class ObjectsApi {
             <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
             <tr><td> 200 </td><td> object exists </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
             <tr><td> 206 </td><td> partial object content info </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
+            <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> object not found </td><td>  -  </td></tr>
             <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>
@@ -1375,6 +1384,7 @@ public class ObjectsApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 200 </td><td> object exists </td><td>  * Content-Length -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
         <tr><td> 206 </td><td> partial object content info </td><td>  * Content-Length -  <br>  * Content-Range -  <br>  * Last-Modified -  <br>  * ETag -  <br>  </td></tr>
+        <tr><td> 400 </td><td> Bad Request </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> object not found </td><td>  -  </td></tr>
         <tr><td> 410 </td><td> object expired </td><td>  -  </td></tr>

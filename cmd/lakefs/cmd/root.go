@@ -103,7 +103,7 @@ func newConfig() (config.Config, error) {
 	return cfg, nil
 }
 
-func loadConfig() config.Config {
+func LoadConfig() config.Config {
 	log := logging.ContextUnavailable().WithField("phase", "startup")
 	initOnce.Do(func() {
 		initConfig(log)

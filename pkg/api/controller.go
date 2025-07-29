@@ -1764,6 +1764,7 @@ func (c *Controller) GetUser(w http.ResponseWriter, r *http.Request, userID stri
 		CreationDate: u.CreatedAt.Unix(),
 		Email:        u.Email,
 		Id:           u.Username,
+		FriendlyName: u.FriendlyName,
 	}
 	writeResponse(w, r, http.StatusOK, response)
 }
@@ -2933,14 +2934,6 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	log := c.Logger.WithContext(ctx).WithError(err)
 
-	// Handle Hook Errors
-	var hookAbortErr *graveler.HookAbortError
-	if errors.As(err, &hookAbortErr) {
-		log.WithField("run_id", hookAbortErr.RunID).Warn("aborted by hooks")
-		cb(w, r, http.StatusPreconditionFailed, hookAbortErr.Unwrap())
-		return true
-	}
-
 	// order of case is important, more specific errors should be first
 	switch {
 	case errors.Is(err, graveler.ErrLinkAddressInvalid),
@@ -3026,6 +3019,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
 		cb(w, r, http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+	case errors.Is(err, actions.ErrActionFailed):
+		log.WithError(err).Debug("Precondition failed, aborted by action failure")
+		cb(w, r, http.StatusPreconditionFailed, err)
 	default:
 		c.Logger.WithContext(ctx).WithError(err).Error("API call returned status internal server error")
 		cb(w, r, http.StatusInternalServerError, err)
@@ -4507,6 +4503,16 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 		}
 		if !d.CommonLevel {
 			diff.SizeBytes = swag.Int64(d.Size)
+			if apiutil.Value(params.IncludeRightStats) {
+				diff.Right = &apigen.DiffObjectStat{
+					Checksum:    d.Checksum,
+					ContentType: d.ContentType,
+					Mtime:       d.CreationDate.Unix(),
+					Metadata: &apigen.ObjectUserMetadata{
+						AdditionalProperties: d.Metadata,
+					},
+				}
+			}
 		}
 		results = append(results, diff)
 	}
@@ -5333,8 +5339,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	} else {
 		cred, err = setup.CreateInitialAdminUserWithKeys(ctx, c.Auth, c.Config, c.MetadataManager, body.Username, &body.Key.AccessKeyId, &body.Key.SecretAccessKey)
 	}
-	if err != nil {
-		writeError(w, r, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
 
@@ -5465,6 +5470,7 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		UpgradeUrl:         upgradeURL,
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
+		VersionContext:     swag.String(c.Config.GetVersionContext()),
 	}
 }
 
@@ -5688,6 +5694,8 @@ func (c *Controller) MergePullRequest(w http.ResponseWriter, r *http.Request, re
 	}) {
 		return
 	}
+
+	c.LogAction(ctx, "merge_pull_request", r, repository, "", "")
 
 	if pr.Status != graveler.PullRequestStatus_OPEN {
 		c.Logger.WithError(err).WithField("pr_status", pr.Status.String()).Error("pull request is not open")
@@ -6156,4 +6164,8 @@ func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeResponse(w, r, http.StatusOK, apigen.License{Token: token})
+}
+
+func (c *Controller) OauthCallback(w http.ResponseWriter, r *http.Request) {
+	c.Authentication.OauthCallback(w, r, c.sessionStore)
 }

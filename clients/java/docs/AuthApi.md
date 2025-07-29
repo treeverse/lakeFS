@@ -38,6 +38,7 @@ All URIs are relative to */api/v1*
 | [**listUserPolicies**](AuthApi.md#listUserPolicies) | **GET** /auth/users/{userId}/policies | list user policies |
 | [**listUsers**](AuthApi.md#listUsers) | **GET** /auth/users | list users |
 | [**login**](AuthApi.md#login) | **POST** /auth/login | perform a login |
+| [**oauthCallback**](AuthApi.md#oauthCallback) | **GET** /oidc/callback |  |
 | [**setGroupACL**](AuthApi.md#setGroupACL) | **POST** /auth/groups/{groupId}/acl | set ACL of group |
 | [**updatePolicy**](AuthApi.md#updatePolicy) | **PUT** /auth/policies/{policyId} | update policy |
 
@@ -3231,6 +3232,65 @@ No authorization required
 | **200** | successful login |  * Set-Cookie -  <br>  |
 | **401** | Unauthorized |  -  |
 | **420** | too many requests |  -  |
+| **0** | Internal Server Error |  -  |
+
+<a id="oauthCallback"></a>
+# **oauthCallback**
+> Error oauthCallback().execute();
+
+
+
+### Example
+```java
+// Import classes:
+import io.lakefs.clients.sdk.ApiClient;
+import io.lakefs.clients.sdk.ApiException;
+import io.lakefs.clients.sdk.Configuration;
+import io.lakefs.clients.sdk.models.*;
+import io.lakefs.clients.sdk.AuthApi;
+
+public class Example {
+  public static void main(String[] args) {
+    ApiClient defaultClient = Configuration.getDefaultApiClient();
+    defaultClient.setBasePath("/api/v1");
+
+    AuthApi apiInstance = new AuthApi(defaultClient);
+    try {
+      Error result = apiInstance.oauthCallback()
+            .execute();
+      System.out.println(result);
+    } catch (ApiException e) {
+      System.err.println("Exception when calling AuthApi#oauthCallback");
+      System.err.println("Status code: " + e.getCode());
+      System.err.println("Reason: " + e.getResponseBody());
+      System.err.println("Response headers: " + e.getResponseHeaders());
+      e.printStackTrace();
+    }
+  }
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**Error**](Error.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **302** | successfully got token |  -  |
+| **401** | failed to exchange authorization code for token |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="setGroupACL"></a>

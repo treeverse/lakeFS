@@ -11,6 +11,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
 )
@@ -22,10 +23,12 @@ const (
 )
 
 type Downloader struct {
-	Client     *apigen.ClientWithResponses
-	PreSign    bool
-	HTTPClient *http.Client
-	PartSize   int64
+	Client              *apigen.ClientWithResponses
+	PreSign             bool
+	HTTPClient          *http.Client
+	PartSize            int64
+	SkipNonRegularFiles bool
+	SymlinkSupport      bool
 }
 
 type downloadPart struct {
@@ -43,24 +46,66 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 	}
 
 	return &Downloader{
-		Client:     client,
-		PreSign:    preSign,
-		HTTPClient: httpClient,
-		PartSize:   DefaultDownloadPartSize,
+		Client:              client,
+		PreSign:             preSign,
+		HTTPClient:          httpClient,
+		PartSize:            DefaultDownloadPartSize,
+		SkipNonRegularFiles: false,
+		SymlinkSupport:      false,
 	}
 }
 
 // Download downloads an object from lakeFS to a local file, create the destination directory if needed.
 func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {
+	// delete destination file if it exists
+	if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove existing destination file '%s': %w", dst, err)
+	}
+
 	// create destination dir if needed
 	dir := filepath.Dir(dst)
 	_ = os.MkdirAll(dir, os.ModePerm)
 
+	// Check if we need to call StatObjectWithResponse (for symlinks or presign multipart)
+	var objectStat *apigen.ObjectStats
+	if d.SymlinkSupport || d.PreSign {
+		statResp, err := d.Client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
+			Path:         apiutil.Value(src.Path),
+			UserMetadata: swag.Bool(d.SymlinkSupport), // Only request metadata if symlink support is enabled
+			Presign:      swag.Bool(d.PreSign),        // Only presign if needed
+		})
+		if err != nil {
+			return fmt.Errorf("download failed: %w", err)
+		}
+		if statResp.JSON200 == nil {
+			return fmt.Errorf("download failed: %w: %s", ErrRequestFailed, statResp.Status())
+		}
+		objectStat = statResp.JSON200
+	}
+
+	// If symlink support is enabled, check if the object is a symlink and create it if so
+	if d.SymlinkSupport {
+		symlinkTarget, found := objectStat.Metadata.Get(apiutil.SymlinkMetadataKey)
+		if found && symlinkTarget != "" {
+			if tracker != nil {
+				tracker.UpdateTotal(0)
+				tracker.MarkAsDone()
+			}
+			// Skip non-regular files
+			if d.SkipNonRegularFiles {
+				return nil
+			}
+			// Create symlink instead of downloading file content
+			return os.Symlink(symlinkTarget, dst)
+		}
+		// fallthrough to download the object
+	}
+
 	// download object
 	var err error
-	if d.PreSign {
+	if d.PreSign && objectStat.SizeBytes != nil {
 		// download using presigned multipart download, it will fall back to presign single object download if needed
-		err = d.downloadPresignMultipart(ctx, src, dst, tracker)
+		err = d.downloadPresignMultipart(ctx, src, dst, tracker, objectStat)
 	} else {
 		err = d.downloadObject(ctx, src, dst, tracker)
 	}
@@ -70,23 +115,11 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 	return nil
 }
 
-func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) (err error) {
-	// get object metadata for size and physical address (presigned)
-	statResp, err := d.Client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
-		Path:    *src.Path,
-		Presign: swag.Bool(true),
-	})
-	if err != nil {
-		return err
-	}
-
-	// fallback to download if missing size
-	if statResp.JSON200 == nil || statResp.JSON200.SizeBytes == nil {
-		return d.downloadObject(ctx, src, dst, tracker)
-	}
+func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker, objectStat *apigen.ObjectStats) (err error) {
+	// Use provided  stat response object metadata for size and physical address (presigned)
 
 	// check if the object is small enough to download in one request
-	size := swag.Int64Value(statResp.JSON200.SizeBytes)
+	size := swag.Int64Value(objectStat.SizeBytes)
 	if tracker != nil {
 		tracker.UpdateTotal(size)
 	}
@@ -108,7 +141,7 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	}
 
 	// download the file using ranges and concurrency
-	physicalAddress := statResp.JSON200.PhysicalAddress
+	physicalAddress := objectStat.PhysicalAddress
 
 	ch := make(chan downloadPart, DefaultDownloadConcurrency)
 	// start download workers

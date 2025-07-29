@@ -12,5 +12,5 @@ var (
 )
 
 func IsVersionUnreleased() bool {
-	return strings.HasPrefix(Version, UnreleasedVersion)
+	return strings.HasPrefix(Version, UnreleasedVersion) || strings.HasPrefix(Version, "sha-")
 }

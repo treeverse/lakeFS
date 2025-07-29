@@ -1,7 +1,11 @@
-from setuptools import setup, find_packages
+from typing import Any
+
+from setuptools import setup, find_packages, Command, Distribution, glob
+import os
+import shutil
 
 NAME = "lakefs"
-VERSION = "0.10.0"
+VERSION = "0.12.0"
 # To install the library, run the following
 #
 # python setup.py install
@@ -17,14 +21,13 @@ REQUIRES = [
 TEST_REQUIRES = [
     "pytest ~= 7.4.3",
     "pytest-datafiles ~= 3.0.0",
-    "pandas ~= 2.1.4",
-    "pyarrow ~= 14.0.1",
-    "pillow ~= 10.3.0"
+    "pandas >= 2.1.4,<3",
+    "pyarrow >= 14.0.1,<20",
+    "pillow >= 10.3.0,<12"
 ]
 
 with open('README.md') as f:
     long_description = f.read()
-
 setup(
     name=NAME,
     version=VERSION,
@@ -42,7 +45,9 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     extras_require={
+        # Install using: `pip install "lakefs-<version>-py3-none-any.whl[all,aws-iam]"`
         "all": ["boto3 >= 1.26.0"],
         "aws-iam": ["boto3 >= 1.26.0"],
     },
+    package_data={"lakefs": ["py.typed"]},
 )

@@ -1,0 +1,201 @@
+/* Layout: Breadcrumb */
+.main-app .breadcrumb {
+  padding: var(--spacing-sm) var(--spacing-md)
+}
+
+/* Navbar */
+.navbar {
+  background-color: var(--surface);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-bottom: 1px solid var(--border);
+  position: fixed;      /* Make navbar fixed */
+  top: 0;               /* Position at the top */
+  left: 0;              /* Align to the left */
+  right: 0;             /* Stretch to the right */
+  z-index: 1050;        /* Ensure it stays on top */
+}
+
+.navbar-brand {
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  height: 30px;
+}
+
+.navbar a.dropdown-toggle {
+  color: var(--text);
+}
+
+.navbar a.dropdown-toggle:hover {
+  color: var(--primary);
+}
+
+/* Fix for dark navbar with dark text */
+.navbar-dark .navbar-nav .nav-link,
+.bg-dark .nav-link,
+.bg-dark .dropdown-toggle {
+  color: white !important;
+}
+
+/* Tabs - Modern Style */
+.nav-tabs {
+  border-bottom: none;
+  margin-bottom: 0;
+  margin-left: var(--spacing-md);
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.nav-tabs .nav-link {
+  margin-bottom: 0;
+  border: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  color: var(--text-light);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  transition: all var(--transition), 
+              transform var(--transition-fast), 
+              box-shadow var(--transition),
+              scale var(--transition-fast);
+  position: relative;
+  font-weight: 500;
+  background-color: transparent;
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--primary);
+  background-color: rgba(59, 130, 246, 0.05);
+  transform: translateY(-2px);
+  scale: 1.03;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--primary);
+  background-color: var(--background-alt);
+  font-weight: 600;
+  border-bottom: 2px solid var(--primary);
+  transform: translateY(-2px);
+  position: relative;
+  scale: 1.05;
+}
+
+.nav-tabs .nav-link.active::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary);
+  opacity: 0.7;
+  transition: opacity var(--transition);
+}
+
+.nav-tabs .nav-link.active::after {
+  content: none; /* Remove the after pseudo-element since we're using border-bottom now */
+}
+
+
+/* Nav pills styling */
+.nav-pills {
+  --bs-nav-pills-link-active-bg: var(--primary);
+  --bs-nav-pills-link-active-color: white;
+  --bs-nav-link-color: var(--primary);
+  --bs-nav-link-hover-color: var(--primary-dark);
+}
+
+
+/* Repository tabs specific styling */
+.repository-tabs .nav-tabs,
+.nav-tabs[role="tablist"] {
+  background-color: var(--background-alt);
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm);
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+  position: relative;
+}
+
+/* Add transition for the border-bottom */
+.nav-tabs .nav-link {
+  border-bottom: 2px solid transparent;
+  transition: color var(--transition), 
+              background-color var(--transition), 
+              transform var(--transition-fast), 
+              box-shadow var(--transition),
+              border-bottom-color var(--transition);
+}
+
+/* Full-width border for repository navigation */
+.nav-tabs-container {
+  position: relative;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Add this class to the parent element of nav-tabs */
+.full-width-tabs-border {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.full-width-tabs-border::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -100vw;
+  right: -100vw;
+  height: 1px;
+  background-color: var(--border);
+  z-index: 1;
+}
+
+.full-width-tabs-border .nav-item a {
+  border: 0;
+  border-bottom: 0;
+  padding-bottom: var(--spacing-sm);
+  transition: color var(--transition), 
+              background-color var(--transition), 
+              transform var(--transition-fast), 
+              box-shadow var(--transition);
+}
+
+.full-width-tabs-border .nav-item a:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.full-width-tabs-border .nav-item a.active {
+  background-color: var(--background-alt);
+  position: relative;
+  z-index: 2; /* Ensure active tab appears above the border */
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Pagination */
+.pagination-group {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Fix branch selector width */
+.dropdown-menu {
+  min-width: 250px !important;
+  width: auto !important;
+  z-index: 1050 !important; /* Ensure dropdowns appear above other elements */
+}
+
+/* Branch selector specific styles */
+[class*="branch"] .dropdown-menu,
+.dropdown-menu[aria-labelledby*="branch"],
+div[class*="branch-selector"] .dropdown-menu {
+  min-width: 500px !important;
+  width: auto !important;
+} 

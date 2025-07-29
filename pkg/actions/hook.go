@@ -3,7 +3,6 @@ package actions
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -38,8 +37,6 @@ var hooks = map[HookType]NewHookFunc{
 	HookTypeAirflow: NewAirflowHook,
 	HookTypeLua:     NewLuaHook,
 }
-
-var ErrUnknownHookType = errors.New("unknown hook type")
 
 func NewHook(hook ActionHook, action *Action, cfg Config, server *http.Server, serverAddress string, collector stats.Collector) (Hook, error) {
 	f := hooks[hook.Type]

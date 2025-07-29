@@ -1,7 +1,7 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import { useOutletContext } from "react-router-dom";
 import dayjs from "dayjs";
-import {BrowserIcon, LinkIcon, PackageIcon, PlayIcon} from "@primer/octicons-react";
+import {BrowserIcon, LinkIcon, PlayIcon} from "@primer/octicons-react";
 
 import {commits} from "../../../../lib/api";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
@@ -24,17 +24,15 @@ import RefDropdown from "../../../../lib/components/repository/refDropdown";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
 import {RepoError} from "../error";
-import {AppContext} from "../../../../lib/hooks/appContext";
 
 
 const CommitWidget = ({ repo, commit }) => {
-    const {state} = useContext(AppContext);
-    const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
+    const buttonVariant = "light";
 
     return (
         <ListGroup.Item>
             <div className="clearfix">
-                <div className="float-start w-100">
+                <div className="float-start">
                     <h6>
                         <Link href={{
                             pathname: '/repositories/:repoId/commits/:commitId',
@@ -50,7 +48,7 @@ const CommitWidget = ({ repo, commit }) => {
                     </p>
                 </div>
                 <div className="float-end">
-                    <ButtonGroup className="commit-actions">
+                    <ButtonGroup className="commit-actions mt-1">
                         <LinkButton
                             buttonVariant={buttonVariant}
                             href={{
@@ -65,9 +63,7 @@ const CommitWidget = ({ repo, commit }) => {
                             tooltip="View Commit Action runs">
                             <PlayIcon/>
                         </LinkButton>
-                        <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="Copy ID to clipboard"/>
                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}/${commit.id}`} tooltip="Copy URI to clipboard" icon={<LinkIcon/>}/>
-                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="Copy S3 URI to clipboard" icon={<PackageIcon/>}/>
                         <LinkButton
                             buttonVariant={buttonVariant}
                             href={{pathname: '/repositories/:repoId/objects', params: {repoId: repo.id}, query: {ref: commit.id}}}

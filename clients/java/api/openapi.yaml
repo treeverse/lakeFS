@@ -292,7 +292,8 @@ paths:
     get:
       operationId: listUsers
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -300,7 +301,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -472,7 +474,8 @@ paths:
     get:
       operationId: listGroups
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -480,7 +483,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -646,7 +650,8 @@ paths:
     get:
       operationId: listPolicies
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -654,7 +659,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -888,7 +894,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -896,7 +903,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1040,7 +1048,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1048,7 +1057,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1243,7 +1253,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1251,7 +1262,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1312,7 +1324,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1320,7 +1333,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1586,7 +1600,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1594,7 +1609,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1701,7 +1717,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1709,7 +1726,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1938,7 +1956,8 @@ paths:
     get:
       operationId: listRepositories
       parameters:
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -1946,7 +1965,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -1965,7 +1985,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: string for searching relevant entries
+      - allowEmptyValue: true
+        description: string for searching relevant entries
         explode: true
         in: query
         name: search
@@ -2855,7 +2876,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -2863,7 +2885,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -3096,7 +3119,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -3104,7 +3128,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -3247,7 +3272,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -3304,7 +3330,8 @@ paths:
         schema:
           type: boolean
         style: form
-      - description: "Show commits more recent than a specific date-time. In case\
+      - allowEmptyValue: true
+        description: "Show commits more recent than a specific date-time. In case\
           \ used with stop_at parameter, will stop at the first commit that meets\
           \ any of the conditions."
         explode: true
@@ -3315,7 +3342,8 @@ paths:
           format: date-time
           type: string
         style: form
-      - description: "A reference to stop at. In case used with since parameter, will\
+      - allowEmptyValue: true
+        description: "A reference to stop at. In case used with since parameter, will\
           \ stop at the first commit that meets any of the conditions."
         explode: true
         in: query
@@ -4048,7 +4076,8 @@ paths:
     get:
       operationId: diffBranch
       parameters:
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -4067,7 +4096,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -4075,7 +4105,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: delimiter used to group common prefixes by
+      - allowEmptyValue: true
+        description: delimiter used to group common prefixes by
         explode: true
         in: query
         name: delimiter
@@ -4156,7 +4187,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -4175,7 +4207,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -4183,7 +4216,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: delimiter used to group common prefixes by
+      - allowEmptyValue: true
+        description: delimiter used to group common prefixes by
         explode: true
         in: query
         name: delimiter
@@ -4201,6 +4235,16 @@ paths:
           - two_dot
           - three_dot
           type: string
+        style: form
+      - description: "If set to true, the diff will include right-side object stats.\
+          \ *EXPERIMENTAL*"
+        explode: true
+        in: query
+        name: include_right_stats
+        required: false
+        schema:
+          default: false
+          type: boolean
         style: form
       responses:
         "200":
@@ -4401,6 +4445,12 @@ paths:
               style: simple
         "304":
           description: Content not modified
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad Request
         "401":
           content:
             application/json:
@@ -4518,6 +4568,8 @@ paths:
               schema:
                 type: string
               style: simple
+        "400":
+          description: Bad Request
         "401":
           description: Unauthorized
         "404":
@@ -5981,7 +6033,8 @@ paths:
         schema:
           type: boolean
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -6000,7 +6053,8 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - description: delimiter used to group common prefixes by
+      - allowEmptyValue: true
+        description: delimiter used to group common prefixes by
         explode: true
         in: query
         name: delimiter
@@ -6008,7 +6062,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -6115,7 +6170,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -6134,14 +6190,16 @@ paths:
           minimum: -1
           type: integer
         style: form
-      - explode: true
+      - allowEmptyValue: true
+        explode: true
         in: query
         name: branch
         required: false
         schema:
           type: string
         style: form
-      - explode: true
+      - allowEmptyValue: true
+        explode: true
         in: query
         name: commit
         required: false
@@ -6246,7 +6304,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -7007,7 +7066,8 @@ paths:
         schema:
           type: string
         style: simple
-      - description: return items prefixed with this value
+      - allowEmptyValue: true
+        description: return items prefixed with this value
         explode: true
         in: query
         name: prefix
@@ -7015,7 +7075,8 @@ paths:
         schema:
           type: string
         style: form
-      - description: return items after this value
+      - allowEmptyValue: true
+        description: return items after this value
         explode: true
         in: query
         name: after
@@ -7551,9 +7612,28 @@ paths:
       - license
       - experimental
       x-accepts: application/json
+  /oidc/callback:
+    get:
+      operationId: oauthCallback
+      responses:
+        "302":
+          description: successfully got token
+        "401":
+          description: failed to exchange authorization code for token
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      security: []
+      tags:
+      - auth
+      x-accepts: application/json
 components:
   parameters:
     PaginationPrefix:
+      allowEmptyValue: true
       description: return items prefixed with this value
       explode: true
       in: query
@@ -7563,6 +7643,7 @@ components:
         type: string
       style: form
     PaginationAfter:
+      allowEmptyValue: true
       description: return items after this value
       explode: true
       in: query
@@ -7584,6 +7665,7 @@ components:
         type: integer
       style: form
     PaginationDelimiter:
+      allowEmptyValue: true
       description: delimiter used to group common prefixes by
       explode: true
       in: query
@@ -7593,6 +7675,7 @@ components:
         type: string
       style: form
     SearchString:
+      allowEmptyValue: true
       description: string for searching relevant entries
       explode: true
       in: query
@@ -7873,6 +7956,32 @@ components:
       required:
       - paths
       type: object
+    DiffObjectStat:
+      example:
+        metadata:
+          key: metadata
+        content_type: content_type
+        checksum: checksum
+        mtime: 6
+      properties:
+        checksum:
+          type: string
+        mtime:
+          description: Unix Epoch in seconds
+          format: int64
+          type: integer
+        content_type:
+          description: Object media type
+          type: string
+        metadata:
+          additionalProperties:
+            type: string
+          type: object
+      required:
+      - checksum
+      - content_type
+      - mtime
+      type: object
     ObjectStats:
       example:
         physical_address: physical_address
@@ -8095,6 +8204,12 @@ components:
         path: path
         size_bytes: 0
         path_type: common_prefix
+        right:
+          metadata:
+            key: metadata
+          content_type: content_type
+          checksum: checksum
+          mtime: 6
         type: added
       properties:
         type:
@@ -8116,6 +8231,8 @@ components:
           description: represents the size of the added/changed/deleted entry
           format: int64
           type: integer
+        right:
+          $ref: '#/components/schemas/DiffObjectStat'
       required:
       - path
       - path_type
@@ -8132,10 +8249,22 @@ components:
         - path: path
           size_bytes: 0
           path_type: common_prefix
+          right:
+            metadata:
+              key: metadata
+            content_type: content_type
+            checksum: checksum
+            mtime: 6
           type: added
         - path: path
           size_bytes: 0
           path_type: common_prefix
+          right:
+            metadata:
+              key: metadata
+            content_type: content_type
+            checksum: checksum
+            mtime: 6
           type: added
       properties:
         pagination:
@@ -9291,6 +9420,7 @@ components:
           pre_sign_support: true
         version_config:
           latest_version: latest_version
+          version_context: version_context
           version: version
           upgrade_recommended: true
           upgrade_url: upgrade_url
@@ -9307,11 +9437,14 @@ components:
     VersionConfig:
       example:
         latest_version: latest_version
+        version_context: version_context
         version: version
         upgrade_recommended: true
         upgrade_url: upgrade_url
       properties:
         version:
+          type: string
+        version_context:
           type: string
         latest_version:
           type: string
@@ -9655,6 +9788,8 @@ components:
       type: object
     ImportCreation:
       example:
+        commit:
+          message: Importing collections from S3
         paths:
         - path: s3://my-bucket/production/collections/
           destination: collections/

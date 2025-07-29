@@ -2016,6 +2016,61 @@ func TestController_DiffRefsHandler(t *testing.T) {
 		if results[0].Type != "prefix_changed" {
 			t.Fatalf("wrong diff type: %s", results[0].Type)
 		}
+		if results[0].Right != nil {
+			t.Fatalf("expected no right info in diff result for prefix, got: %+v", results[0].Right)
+		}
+	})
+
+	t.Run("diff refs with object stats", func(t *testing.T) {
+		repoName := testUniqueRepoName()
+		const newBranchName = "main2"
+		_, err := deps.catalog.CreateRepository(ctx, repoName, "", onBlock(deps, "foo1"), "main", false)
+		testutil.Must(t, err)
+
+		resp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{
+			Name:   newBranchName,
+			Source: "main",
+		})
+		verifyResponseOK(t, resp, err)
+		reference := string(resp.Body)
+		if len(reference) == 0 {
+			t.Fatalf("branch %s creation got no reference", newBranchName)
+		}
+		const objPath = "path"
+		const content = "hello world!"
+
+		uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(content), repoName, newBranchName)
+		verifyResponseOK(t, uploadResp, err)
+
+		if _, err := deps.catalog.Commit(ctx, repoName, newBranchName, "commit 1", "some_user", nil, nil, nil, false); err != nil {
+			t.Fatalf("failed to commit 'repo1': %s", err)
+		}
+
+		resp2, err := clt.DiffRefsWithResponse(ctx, repoName, "main", newBranchName, &apigen.DiffRefsParams{IncludeRightStats: apiutil.Ptr(true)})
+		verifyResponseOK(t, resp2, err)
+		results := resp2.JSON200.Results
+		if len(results) != 1 {
+			t.Fatalf("unexpected length of results: %d", len(results))
+		}
+		if results[0].Path != objPath {
+			t.Fatalf("wrong result: %s", results[0].Path)
+		}
+		if results[0].Type != "added" {
+			t.Fatalf("wrong diff type: %s", results[0].Type)
+		}
+		if results[0].Right == nil {
+			t.Fatal("expected right info in diff result")
+		}
+		rightStats := results[0].Right
+		if rightStats.Checksum == "" {
+			t.Error("expected right info checksum in diff result")
+		}
+		if rightStats.ContentType == "" {
+			t.Error("expected right info content type in diff result")
+		}
+		if rightStats.Mtime == 0 {
+			t.Error("expected right info mtime in diff result")
+		}
 	})
 }
 
@@ -2647,6 +2702,18 @@ func TestController_ObjectsHeadObjectHandler(t *testing.T) {
 		require.Empty(t, string(resp.Body))
 	})
 
+	t.Run("head object not found", func(t *testing.T) {
+		resp, err := clt.HeadObjectWithResponse(ctx, repo, "main", &apigen.HeadObjectParams{Path: "foo/bar_not_found"})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusNotFound, resp.HTTPResponse.StatusCode)
+	})
+
+	t.Run("head object bad request", func(t *testing.T) {
+		resp, err := clt.HeadObjectWithResponse(ctx, repo, "invalid ref", &apigen.HeadObjectParams{Path: "foo/bar"})
+		require.Nil(t, err)
+		require.Equal(t, http.StatusBadRequest, resp.HTTPResponse.StatusCode)
+	})
+
 	t.Run("head object byte range", func(t *testing.T) {
 		rng := "bytes=0-9"
 		resp, err := clt.HeadObjectWithResponse(ctx, repo, "main", &apigen.HeadObjectParams{
@@ -2740,6 +2807,28 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("get object not found", func(t *testing.T) {
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{Path: "foo/bar_not_found"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedCode = http.StatusNotFound
+		if resp.HTTPResponse.StatusCode != expectedCode {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, expectedCode)
+		}
+	})
+
+	t.Run("get object bad request", func(t *testing.T) {
+		resp, err := clt.GetObjectWithResponse(ctx, repo, "invalid ref", &apigen.GetObjectParams{Path: "foo/bar"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		const expectedCode = http.StatusBadRequest
+		if resp.HTTPResponse.StatusCode != expectedCode {
+			t.Errorf("GetObject() status code %d, expected %d", resp.HTTPResponse.StatusCode, expectedCode)
+		}
+	})
+
 	t.Run("get object byte range", func(t *testing.T) {
 		rng := "bytes=0-9"
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
@@ -2827,6 +2916,7 @@ func TestController_ObjectsGetObjectHandler(t *testing.T) {
 		require.Equal(t, int64(37), resp.HTTPResponse.ContentLength)
 		require.Equal(t, "\"\"", resp.HTTPResponse.Header.Get("ETag"))
 	})
+
 	t.Run("get object with if-none-match returns expected response for empty etag", func(t *testing.T) {
 		eTagInput := "\"\""
 		resp, err := clt.GetObjectWithResponse(ctx, repo, "main", &apigen.GetObjectParams{
@@ -6529,12 +6619,12 @@ func pollRestoreStatus(t *testing.T, clt apigen.ClientWithResponsesInterface, re
 }
 
 func TestController_GetLicense(t *testing.T) {
-	clt, _ := setupClientWithAdmin(t)
 	ctx := context.Background()
-
-	t.Run("Get license", func(t *testing.T) {
+	t.Run("not_implemented", func(t *testing.T) {
+		clt, _ := setupClientWithAdmin(t)
 		resp, err := clt.GetLicenseWithResponse(ctx)
 		require.NoError(t, err)
-		require.NotNil(t, resp.JSON501, "expected 501 (not implemented) got %v", resp.StatusCode)
+		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected status Not Implemented")
+		require.NotNil(t, resp.JSON501, "expected HTTP-501 response, got %v", resp.StatusCode())
 	})
 }

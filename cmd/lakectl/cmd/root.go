@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -14,8 +15,8 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/mitchellh/go-homedir"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -57,7 +58,7 @@ Get the latest release {{ .UpgradeURL|blue }}
 
 type RetriesCfg struct {
 	Enabled         bool          `mapstructure:"enabled"`
-	MaxAttempts     int           `mapstructure:"max_attempts"`      // MaxAttempts is the maximum number of attempts
+	MaxAttempts     uint32        `mapstructure:"max_attempts"`      // MaxAttempts is the maximum number of attempts
 	MinWaitInterval time.Duration `mapstructure:"min_wait_interval"` // MinWaitInterval is the minimum amount of time to wait between retries
 	MaxWaitInterval time.Duration `mapstructure:"max_wait_interval"` // MaxWaitInterval is the maximum amount of time to wait between retries
 }
@@ -90,32 +91,11 @@ type Configuration struct {
 	Options struct {
 		Parallelism int `mapstructure:"parallelism"`
 	} `mapstructure:"options"`
-	Metastore struct {
-		Type lakefsconfig.OnlyString `mapstructure:"type"`
-		Hive struct {
-			URI           lakefsconfig.OnlyString `mapstructure:"uri"`
-			DBLocationURI lakefsconfig.OnlyString `mapstructure:"db_location_uri"`
-		} `mapstructure:"hive"`
-		Glue struct {
-			// TODO(ariels): Refactor credentials to share with server side.
-			Profile         lakefsconfig.OnlyString `mapstructure:"profile"`
-			CredentialsFile lakefsconfig.OnlyString `mapstructure:"credentials_file"`
-			DBLocationURI   lakefsconfig.OnlyString `mapstructure:"db_location_uri"`
-			Credentials     *struct {
-				AccessKeyID     lakefsconfig.OnlyString `mapstructure:"access_key_id"`
-				AccessSecretKey lakefsconfig.OnlyString `mapstructure:"access_secret_key"`
-				SessionToken    lakefsconfig.OnlyString `mapstructure:"session_token"`
-			} `mapstructure:"credentials"`
-
-			Region    lakefsconfig.OnlyString `mapstructure:"region"`
-			CatalogID lakefsconfig.OnlyString `mapstructure:"catalog_id"`
-		} `mapstructure:"glue"`
-		// setting FixSparkPlaceholder to true will change spark placeholder with the actual location. for more information see https://github.com/treeverse/lakeFS/issues/2213
-		FixSparkPlaceholder bool `mapstructure:"fix_spark_placeholder"`
-	}
 	Local struct {
 		// SkipNonRegularFiles - By default lakectl local fails if local directory contains a symbolic link. When set, lakectl will ignore the symbolic links instead.
 		SkipNonRegularFiles bool `mapstructure:"skip_non_regular_files"`
+		// SymlinkSupport controls whether symlinks are supported (default: false). Support for symlinks store and restore the state of the symlink itself, not the target.
+		SymlinkSupport bool `mapstructure:"symlink_support"`
 	} `mapstructure:"local"`
 	// Experimental - Use caution when enabling experimental features. It should only be used after consulting with the lakeFS team!
 	Experimental struct {
@@ -422,7 +402,11 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 var rootCmd = &cobra.Command{
 	Use:   "lakectl",
 	Short: "A cli tool to explore manage and work with lakeFS",
-	Long:  `lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment`,
+	Long: `lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environment.
+
+It can be extended with plugins; see 'lakectl plugin --help' for more information.`,
+	SilenceErrors: true, // We handle error printing ourselves to avoid "unknown command" for valid plugins
+	SilenceUsage:  true, // We handle usage printing ourselves as well
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		preRunCmd(cmd)
 		sendStats(cmd, "")
@@ -504,13 +488,12 @@ func preRunCmd(cmd *cobra.Command) {
 	logging.ContextUnavailable().
 		WithField("file", viper.ConfigFileUsed()).
 		Debug("loaded configuration from file")
-	err = viper.UnmarshalExact(&cfg, viper.DecodeHook(
+	if err := viper.UnmarshalExact(&cfg, viper.DecodeHook(
 		mapstructure.ComposeDecodeHookFunc(
 			lakefsconfig.DecodeOnlyString,
 			mapstructure.StringToTimeDurationHookFunc(),
 			lakefsconfig.DecodeStringToMap(),
-		)))
-	if err != nil {
+		))); err != nil {
 		DieFmt("error unmarshal configuration: %v", err)
 	}
 }
@@ -603,13 +586,117 @@ func getClient() *apigen.ClientWithResponses {
 	return client
 }
 
+// isUnknownCommandError checks if the error from ExecuteC is an unknown command error.
+// Cobra doesn't expose a specific error type for this, so we check the message.
+func isUnknownCommandError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// This is based on the error message format from cobra.findSuggestions
+	// It might be brittle if Cobra changes its error messages.
+	return strings.HasPrefix(err.Error(), "unknown command ")
+}
+
+// handlePluginCommand attempts to find and execute a lakectl plugin (based on basename).
+// It returns true if a plugin was found and executed (or an attempt was made),
+// and false otherwise.
+func handlePluginCommand(cmd *cobra.Command, args []string) bool {
+	if len(args) == 0 {
+		return false // No command to interpret as a plugin
+	}
+
+	// Prepare and execute the plugin command
+	pluginCmdName := args[0]
+	pluginExecName := "lakectl-" + pluginCmdName
+	pluginArgs := args[1:]
+	externalCmd := exec.Command(pluginExecName, pluginArgs...)
+	externalCmd.Stdout = cmd.OutOrStdout()
+	externalCmd.Stderr = cmd.ErrOrStderr()
+	externalCmd.Stdin = cmd.InOrStdin()
+	externalCmd.Env = os.Environ() // Pass parent environment
+
+	// Run the command
+	if err := externalCmd.Run(); err != nil {
+		// If plugin not found, return false.
+		// Cloud be a genuine unknown command for lakectl itself.
+		if errors.Is(err, exec.ErrNotFound) {
+			return false
+		}
+
+		// use the process exit code if available
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
+			os.Exit(exitError.ExitCode())
+		}
+		// Other errors (e.g., failed to start, I/O errors not related to exit status)
+		DieFmt("failed to run plugin %s: %s", pluginExecName, err)
+	}
+	return true
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
+// It handles unknown commands by checking and running plugins if available.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		DieErr(err)
+	executedCmd, err := rootCmd.ExecuteC()
+	if !pluginExecute(executedCmd, err) {
+		os.Exit(1)
 	}
+}
+
+// pluginExecute attempts to handle unknown commands as plugin commands.
+//
+// Parameters:
+//
+//	cmd: The root Cobra command that was executed.
+//	err: The error returned from executing the command.
+//
+// Behavior:
+//
+//   - If err is nil, returns true (no error, nothing to handle).
+//
+//   - If err is not an unknown command error, prints the error and returns false.
+//
+//   - If err is an unknown command error, attempts to interpret the first non-flag argument as a plugin command.
+//     If a plugin command is found and executed, returns true.
+//     Otherwise, returns false, signaling the main application to exit with an error.
+//
+//     It is expected to force exit with error in case we return true
+func pluginExecute(cmd *cobra.Command, err error) bool {
+	if err == nil {
+		// No error, no need to handle plugins
+		return true
+	}
+	if !isUnknownCommandError(err) {
+		// For other errors, print them ourselves since we have SilenceErrors=true
+		cmd.PrintErrf("Error: %s\n", err)
+		return false
+	}
+
+	pluginCandidateArgs := cmd.Flags().Args()
+
+	// If pluginCandidateArgs is empty, we need to extract from os.Args
+	// This happens when Cobra fails to parse the unknown command into Args()
+	if len(pluginCandidateArgs) == 0 && len(os.Args) > 1 {
+		// Find the first non-flag argument which should be the plugin command
+		for i := 1; i < len(os.Args); i++ {
+			arg := os.Args[i]
+			if !strings.HasPrefix(arg, "-") {
+				// Found the first non-flag argument, assume it's the plugin command
+				pluginCandidateArgs = os.Args[i:]
+				break
+			}
+		}
+	}
+
+	// Execute the plugin command if it exists
+	if !handlePluginCommand(cmd, pluginCandidateArgs) {
+		// No plugin found, print the error and help ourselves since we silenced Cobra's output
+		cmd.PrintErrf("Error: %s\n", err)
+		cmd.PrintErrf("Run '%s --help' for usage.\n", rootCmd.Name())
+		return false
+	}
+	return true
 }
 
 //nolint:gochecknoinits
@@ -666,7 +753,6 @@ func initConfig() {
 	}
 
 	// set defaults
-	viper.SetDefault("metastore.hive.db_location_uri", "file:/user/hive/warehouse/")
 	viper.SetDefault("server.endpoint_url", "http://127.0.0.1:8000")
 	viper.SetDefault("server.retries.enabled", true)
 	viper.SetDefault("server.retries.max_attempts", defaultMaxAttempts)
@@ -675,5 +761,6 @@ func initConfig() {
 	viper.SetDefault("server.retries.min_wait_interval", defaultMinRetryInterval)
 	viper.SetDefault("experimental.local.posix_permissions.enabled", false)
 	viper.SetDefault("local.skip_non_regular_files", false)
+	viper.SetDefault("local.symlink_support", false)
 	cfgErr = viper.ReadInConfig()
 }

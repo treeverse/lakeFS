@@ -37,7 +37,7 @@ func extractSecurityRequirements(router routers.Router, r *http.Request) (openap
 		return nil, err
 	}
 	if route.Operation.Security == nil {
-		return route.Swagger.Security, nil
+		return route.Spec.Security, nil
 	}
 	return *route.Operation.Security, nil
 }
@@ -82,7 +82,7 @@ func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticat
 	}, nil
 }
 
-func AuthMiddleware(logger logging.Logger, swagger *openapi3.Swagger, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) func(next http.Handler) http.Handler {
+func AuthMiddleware(logger logging.Logger, swagger *openapi3.T, authenticator auth.Authenticator, authService auth.Service, sessionStore sessions.Store, oidcConfig *OIDCConfig, cookieAuthConfig *CookieAuthConfig) func(next http.Handler) http.Handler {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)

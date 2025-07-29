@@ -727,6 +727,7 @@ class ObjectsApi:
             '206': "bytearray",
             '302': None,
             '304': None,
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '410': "Error",

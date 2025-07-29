@@ -2,7 +2,7 @@
 ARG VERSION=dev
 
 ARG BUILD_REPO=golang
-ARG BUILD_TAG=1.23-alpine
+ARG BUILD_TAG=1.24-alpine
 ARG BUILD_PACKAGES="build-base ca-certificates"
 
 ARG IMAGE_REPO=alpine

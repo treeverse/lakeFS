@@ -107,17 +107,15 @@ func (a *AuditChecker) CheckAndLog(ctx context.Context, log logging.Logger) {
 		Err:           err,
 	})
 	if err != nil {
+		// Don't log an error in the Error level,
+		// the user may not have a connection to our service.
 		log.WithFields(logging.Fields{
 			"version":   a.Version,
 			"check_url": a.CheckURL,
-		}).WithError(err).Error("Audit check failed")
+		}).WithError(err).Debug("Audit check failed")
 		return
 	}
 	if len(resp.Alerts) == 0 {
-		log.WithFields(logging.Fields{
-			"version":   a.Version,
-			"check_url": a.CheckURL,
-		}).Debug("No alerts found on audit check")
 		return
 	}
 	for _, alert := range resp.Alerts {

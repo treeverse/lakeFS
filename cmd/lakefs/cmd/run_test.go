@@ -18,7 +18,7 @@ func TestGetAuthService(t *testing.T) {
 		cfg.Auth.UIConfig.RBAC = config.AuthRBACInternal
 		cfg.Auth.API.Endpoint = "http://localhost:8000"
 		cfg.Auth.API.SkipHealthCheck = true
-		service := authfactory.NewAuthService(context.Background(), cfg, logging.ContextUnavailable(), nil, nil)
+		service, _ := authfactory.NewAuthService(context.Background(), cfg, logging.ContextUnavailable(), nil, nil)
 		_, ok := service.(auth.EmailInviter)
 		if !ok {
 			t.Fatalf("expected Service to be of type EmailInviter")
@@ -29,7 +29,7 @@ func TestGetAuthService(t *testing.T) {
 		kvStore := kvtest.GetStore(context.Background(), t)
 		meta := auth.NewKVMetadataManager("serve_test", cfg.Installation.FixedID, cfg.Database.Type, kvStore)
 		cfg.Auth.UIConfig.RBAC = config.AuthRBACNone
-		service := authfactory.NewAuthService(context.Background(), cfg, logging.ContextUnavailable(), kvStore, meta)
+		service, _ := authfactory.NewAuthService(context.Background(), cfg, logging.ContextUnavailable(), kvStore, meta)
 		_, ok := service.(auth.EmailInviter)
 		if ok {
 			t.Fatalf("expected Service to not be of type EmailInviter")

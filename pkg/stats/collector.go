@@ -219,7 +219,7 @@ func NewBufferedCollector(installationID string, cfg Config, opts ...BufferedCol
 		if cfg.Enabled {
 			s.sender = NewHTTPSender(cfg.Address, s.log)
 		} else {
-			s.sender = &dummySender{Logger: s.log}
+			s.sender = &DummySender{Logger: s.log}
 		}
 	}
 	return s

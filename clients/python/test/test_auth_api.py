@@ -265,6 +265,12 @@ class TestAuthApi(unittest.TestCase):
         """
         pass
 
+    def test_oauth_callback(self) -> None:
+        """Test case for oauth_callback
+
+        """
+        pass
+
     def test_set_group_acl(self) -> None:
         """Test case for set_group_acl
 

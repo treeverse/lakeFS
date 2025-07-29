@@ -21,7 +21,7 @@ func GetSwaggerSpecReader() (io.Reader, error) {
 
 // GetSwagger returns the Swagger specification corresponding to the generated code
 // in this file.
-func GetSwagger() (*openapi3.Swagger, error) {
+func GetSwagger() (*openapi3.T, error) {
 	zr, err := GetSwaggerSpecReader()
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func GetSwagger() (*openapi3.Swagger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error decompressing spec: %s", err)
 	}
-	swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromData(buf.Bytes())
+	swagger, err := openapi3.NewLoader().LoadFromData(buf.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("error loading Swagger: %s", err)
 	}

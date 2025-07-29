@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **version** | Option<**String**> |  | [optional]
+**version_context** | Option<**String**> |  | [optional]
 **latest_version** | Option<**String**> |  | [optional]
 **upgrade_recommended** | Option<**bool**> |  | [optional]
 **upgrade_url** | Option<**String**> |  | [optional]

@@ -46,6 +46,14 @@ public class VersionConfigTest {
     }
 
     /**
+     * Test the property 'versionContext'
+     */
+    @Test
+    public void versionContextTest() {
+        // TODO: test versionContext
+    }
+
+    /**
      * Test the property 'latestVersion'
      */
     @Test

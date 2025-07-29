@@ -1,5 +1,86 @@
 # Changelog
 
+# v1.64.0
+
+:new: What's new:
+
+- lakectl configurable symlink support (#9212)
+
+:bug: Bugs fixed:
+
+- Fixed the image overflow in the diff view in the UI (#9346)
+- Allow trailing slash in lakectl fs upload (#9337)
+- Log failed audit check in debug level (#9348)
+
+# v1.63.0
+
+:new: What's new:
+
+- Implement Pre/Post Cherry-Pick Hooks (#9263)
+- Support multipart for lakectl presigned uploads (#9283)
+- Add gauge metrics for API, Gateway and Blockstore endpoints (#9260)
+
+# v1.62.0
+
+:new: What's new:
+
+- Basic plugin support for lakectl (#9242)
+- UI: Image content diff view (#9246)
+- UI: Improved empty states for actions, tags (#9230)
+- Support right object info in commit diff (#9248)
+
+:bug: Bugs fixed:
+
+- Clean temp cache files (#9250)
+- UI: Fix some dark mode elements (#9237)
+
+# v1.61.0
+
+:new: What's new:
+
+- UI: Unify uncommitted changes tab into objects (#9181)
+- lakectl: Add retries to sync download (#9191)
+- lakectl log: Support all refs  (#9170)
+
+:bug: Bugs fixed:
+
+- Fix web ui action menu dropdown position (#9198)
+
+# v1.60.0
+
+:new: What's new:
+
+- Actions: Distinguish client and internal errors in actions responses (#9162)
+- Update kin-openapi package with changes related to request validation (#9167)
+- Sample repository: remove unused images (#9156)
+
+:bug: Bugs fixed:
+
+- Fix: laktectl progress bar panic (#9148)
+- Fix issue with not showing marker icons in GeoJSON preview map (#9140)
+
+# v1.59.0
+
+:new: What's new:
+
+- UI: Overhaul lakeFS look & feel (#9022)
+
+:bug: Bugs fixed:
+
+- Fix lakefs superuser command using external authorization (#9127)
+- Fix missing BadRequest(400) in the API spec for get/head object (#9130)
+
+# v1.58.0
+
+🏢 Includes only changes for Enterprise.
+
+# v1.57.0
+
+:new: What's new:
+
+- UI: turn off hive partitioning while select parquet using DuckDB (#9056)
+- Add friendly name to GetUser API response (#9065)
+
 # v1.56.1
 
 :bug: Bugs fixed:

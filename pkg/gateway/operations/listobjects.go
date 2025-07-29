@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayerrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -470,10 +470,10 @@ func handleListMultipartUploads(w http.ResponseWriter, req *http.Request, o *Rep
 	resp := &serde.ListMultipartUploadsOutput{
 		Bucket:             o.Repository.Name,
 		Uploads:            uploads,
-		NextKeyMarker:      aws.StringValue(mpuResp.NextKeyMarker),
-		NextUploadIDMarker: aws.StringValue(mpuResp.NextUploadIDMarker),
+		NextKeyMarker:      aws.ToString(mpuResp.NextKeyMarker),
+		NextUploadIDMarker: aws.ToString(mpuResp.NextUploadIDMarker),
 		IsTruncated:        mpuResp.IsTruncated,
-		MaxUploads:         aws.Int32Value(mpuResp.MaxUploads),
+		MaxUploads:         aws.ToInt32(mpuResp.MaxUploads),
 	}
 	o.EncodeResponse(w, req, resp, http.StatusOK)
 }

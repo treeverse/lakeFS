@@ -20,7 +20,9 @@ var (
 
 	// ErrRequestFailed is an error returned for failing lakeFS server replies.
 	ErrRequestFailed = errors.New("request failed")
-	ErrConflict      = errors.New("conflict")
+	// ErrNotFound is returned when something is not found remotely.
+	ErrNotFound = errors.New("not found")
+	ErrConflict = errors.New("conflict")
 )
 
 const minHTTPErrorStatusCode = 400
@@ -150,6 +152,19 @@ func ResponseAsError(response interface{}) error {
 	}
 }
 
+// httpStatusCodeToError returns an error that an application can use for
+// statusCode
+func httpStatusCodeToError(statusCode int) error {
+	switch {
+	case statusCode == http.StatusNotFound:
+		return ErrNotFound
+	case isOK(statusCode):
+		return nil
+	default:
+		return ErrRequestFailed
+	}
+}
+
 func HTTPResponseAsError(httpResponse *http.Response) error {
 	if httpResponse == nil || isOK(httpResponse.StatusCode) {
 		return nil
@@ -168,7 +183,7 @@ func HTTPResponseAsError(httpResponse *http.Response) error {
 		}
 	}
 	return UserVisibleAPIError{
-		Err: ErrRequestFailed,
+		Err: httpStatusCodeToError(statusCode),
 		APIFields: APIFields{
 			StatusCode: statusCode,
 			Status:     statusText,

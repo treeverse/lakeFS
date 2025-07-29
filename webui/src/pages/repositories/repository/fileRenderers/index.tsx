@@ -57,6 +57,18 @@ export const Renderers: {[fileType in FileType] : FC<RendererComponent> } = {
 }
 
 export const guessLanguage =  (extension: string | null, contentType: string | null) => {
+    switch (extension) {
+        case 'py':
+            extension = 'python'
+            break;
+        case 'ts':
+            extension = 'typescript'
+            break;
+        case 'js':
+        case 'jsx':
+            extension = 'javascript'
+            break;
+    }
     if (extension && SyntaxHighlighter.supportedLanguages.includes(extension)) {
         return extension;
     }
@@ -121,6 +133,8 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'image/png':
         case 'image/gif':
         case 'image/webm':
+        case 'image/bmp':
+        case 'image/webp':
             return FileType.IMAGE
         case 'application/pdf':
         case 'application/x-pdf':
@@ -141,12 +155,15 @@ export function guessType(contentType: string | null, fileExtension: string | nu
         case 'jpg':
         case 'webm':
         case 'gif':
+        case 'bmp':
+        case 'webp':
             return FileType.IMAGE
         case 'pdf':
             return FileType.PDF
         case 'txt':
         case 'text':
         case 'yaml':
+        case 'py':
         case 'yml':
         case 'json':
         case 'jsonl':

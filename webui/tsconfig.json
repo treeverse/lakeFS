@@ -15,5 +15,5 @@
         "alwaysStrict": true,
         "types": ["node"]
     },
-    "include": ["./src/**/*", "./playwright.config.ts", "./test/e2e/**/*.ts"],
+    "include": ["./src/**/*", "./playwright.config.ts", "./test/e2e/**/*.ts", "./test/integration/**/*.ts"],
 }

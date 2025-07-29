@@ -18,14 +18,15 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
 	"github.com/treeverse/lakefs/pkg/auth"
-	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -62,7 +63,7 @@ var runCmd = &cobra.Command{
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.ContextUnavailable()
-		cfg := loadConfig()
+		cfg := LoadConfig()
 		baseCfg := cfg.GetBaseConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
@@ -117,17 +118,14 @@ var runCmd = &cobra.Command{
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, installationID, baseCfg.Database.Type, kvStore)
 		idGen := &actions.DecreasingIDGenerator{}
 
-		authService := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
-		// initialize authentication service
-		var authenticationService authentication.Service
-		authCfg := cfg.AuthConfig()
-		if authCfg.IsAuthenticationTypeAPI() {
-			authenticationService, err = authentication.NewAPIService(authCfg.AuthenticationAPI.Endpoint, authCfg.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), authCfg.AuthenticationAPI.ExternalPrincipalsEnabled)
-			if err != nil {
-				logger.WithError(err).Fatal("failed to create authentication service")
-			}
-		} else {
-			authenticationService = authentication.NewDummyService()
+		authService, err := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create authorization service")
+		}
+
+		authenticationService, err := authenticationfactory.NewAuthenticationService(ctx, cfg, logger)
+		if err != nil {
+			logger.WithError(err).Fatal("failed to create authentication service")
 		}
 
 		blockstoreType := baseCfg.Blockstore.Type
@@ -257,6 +255,7 @@ var runCmd = &cobra.Command{
 		}
 
 		// setup authenticator for s3 gateway to also support swagger auth
+		authCfg := cfg.AuthConfig()
 		oidcConfig := api.OIDCConfig(authCfg.OIDC)
 		cookieAuthConfig := api.CookieAuthConfig(authCfg.CookieAuthVerification)
 		apiAuthenticator, err := api.GenericAuthMiddleware(
@@ -268,6 +267,11 @@ var runCmd = &cobra.Command{
 		)
 		if err != nil {
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
+		}
+
+		middlewareFactory, err := gatewayfactory.BuildMiddleware(ctx, cfg, logger)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create gateway middleware")
 		}
 
 		s3gatewayHandler := gateway.NewHandler(
@@ -284,6 +288,7 @@ var runCmd = &cobra.Command{
 			baseCfg.Logging.TraceRequestHeaders,
 			baseCfg.Gateways.S3.VerifyUnsupported,
 			authService.IsAdvancedAuth(),
+			middlewareFactory.Build(),
 		)
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
@@ -311,6 +316,21 @@ var runCmd = &cobra.Command{
 		}
 
 		actionsService.SetEndpoint(server)
+
+		// register additional API services
+		err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
+			Config:                cfg,
+			Authenticator:         middlewareAuthenticator,
+			AuthService:           authService,
+			AuthenticationService: authenticationService,
+			BlockAdapter:          blockStore,
+			Collector:             bufferedCollector,
+			Logger:                logger,
+			LicenseManager:        licenseManager,
+		}, apiHandler)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to register services on router")
+		}
 
 		go func() {
 			var err error

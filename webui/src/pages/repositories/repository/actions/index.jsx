@@ -20,9 +20,8 @@ import {Paginator} from "../../../../lib/components/pagination";
 import {ActionStatusIcon} from "../../../../lib/components/repository/actions";
 import {Link} from "../../../../lib/components/nav";
 import {useRouter} from "../../../../lib/hooks/router";
-import Alert from "react-bootstrap/Alert";
 import {RepoError} from "../error";
-
+import { EmptyActionsState } from "./empty";
 
 const RunRow = ({ repo, run, onFilterBranch, onFilterCommit }) => {
     return (
@@ -124,7 +123,7 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
     if (error) content = <AlertError error={error}/>
 
     else if (loading) content = <Loading/>
-    else if (results.length === 0 && !nextPage) content = <Alert variant="info" className={"mt-3"}>No action runs have been logged yet.</Alert>
+    else if (results.length === 0 && !nextPage) content = <EmptyActionsState />
     else content = (
             <RunTable
                 repo={repo}
@@ -161,10 +160,12 @@ const ActionsList = ({ repo, after, onPaginate, branch, commit, onFilterBranch, 
                 </ActionGroup>
             </ActionsBar>
             {content}
-            <div>
-                {/* eslint-disable-next-line react/jsx-no-target-blank */}
-                Actions can be configured to run when predefined events occur. <a href="https://docs.lakefs.io/howto/hooks/" target="_blank">Learn more.</a>
-            </div>
+            {results.length > 0 && (
+                <div>
+                    {/* eslint-disable-next-line react/jsx-no-target-blank */}
+                    Actions can be configured to run when predefined events occur. <a href="https://docs.lakefs.io/howto/hooks/" target="_blank">Learn more.</a>
+                </div>
+            )}
         </div>
     )
 }

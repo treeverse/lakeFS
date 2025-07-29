@@ -35,7 +35,7 @@ class RowAction {
 const ChangeRowActions = ({actions}) => <>
     {
         actions.map(action => (
-            <><OverlayTrigger placement="bottom" overlay={<Tooltip hidden={!action.tooltip}>{action.tooltip}</Tooltip>}>
+            <OverlayTrigger key={action.text} placement="bottom" overlay={<Tooltip hidden={!action.tooltip}>{action.tooltip}</Tooltip>}>
                 <Button variant="link" disabled={false}
                         onClick={(e) => {
                             e.preventDefault();
@@ -45,7 +45,7 @@ const ChangeRowActions = ({actions}) => <>
                         ? action.icon
                         : action.text}
                 </Button>
-            </OverlayTrigger>&#160;&#160;</>
+            </OverlayTrigger>
         ))}
 </>;
 
@@ -97,7 +97,7 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
     );
 };
 const PrefixExpansionSection = ({dirExpanded, onClick}) => {
-    return (<span onClick={onClick}>
+    return (<span onClick={onClick} className="prefix-expand-icon">
                 {dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
             </span>)
 }

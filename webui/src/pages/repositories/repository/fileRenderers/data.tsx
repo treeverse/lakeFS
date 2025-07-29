@@ -19,7 +19,7 @@ export const DataLoader: FC = () => {
 }
 
 export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, fileExtension }) => {
-    let initialQuery = `SELECT * FROM READ_PARQUET('lakefs://${repoId}/${refId}/${path}') LIMIT 20`;
+    let initialQuery = `SELECT * FROM READ_PARQUET('lakefs://${repoId}/${refId}/${path}', hive_partitioning=false) LIMIT 20`;
     if (fileExtension === 'csv') {
         initialQuery = `SELECT *  FROM READ_CSV('lakefs://${repoId}/${refId}/${path}', AUTO_DETECT = TRUE) LIMIT 20`
     } else if (fileExtension === 'tsv') {
@@ -98,14 +98,15 @@ export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, file
                         <small>{`Showing only the first ${res.numRows.toLocaleString()} rows (out of ${data.numRows.toLocaleString()})`}</small>
                     }
                     <div className="object-viewer-sql-results">
-                        <Table striped bordered hover size={"sm"} responsive={true}>
+                        <Table bordered hover responsive={true}>
                             <thead className="table-dark">
                             <tr>
                                 {fields.map((field, i) =>
                                     <th key={i}>
-                                        {field.name}
-                                        <br/>
-                                        <small>{field.type.toString()}</small>
+                                        <div className="d-flex flex-column">
+                                            <span>{field.name}</span>
+                                            <small>{field.type.toString()}</small>
+                                        </div>
                                     </th>
                                 )}
                             </tr>
@@ -117,7 +118,6 @@ export const DuckDBRenderer: FC<RendererComponent> = ({repoId, refId, path, file
                                         return (
                                             <DataRow key={`col-${i}-${j}`} value={v[1]}/>
                                         )
-
                                     })}
                                 </tr>
                             ))}
@@ -174,18 +174,16 @@ const DataRow: FC<{ value: any }> = ({ value }) => {
     }
 
     if (dataType === 'string') {
-        return <td>{value}</td>
+        return <td className="string-cell">{value}</td>
     }
 
     if (dataType === 'date') {
-        return <td>{dayjs(value).format()}</td>
+        return <td className="date-cell">{dayjs(value).format()}</td>
     }
 
     if (dataType === 'number') {
-        return <td>{value.toLocaleString("en-US")}</td>
+        return <td className="number-cell">{value.toLocaleString("en-US")}</td>
     }
 
     return <td>{""  + value}</td>;
 }
-
-

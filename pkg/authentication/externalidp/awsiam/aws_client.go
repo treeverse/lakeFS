@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 var ErrInvalidCredentialsFormat = errors.New("missing required parts in query param X-Amz-Credential")
@@ -90,6 +91,16 @@ func WithTokenRequestHeaders(tokenRequestHeaders map[string]string) IAMAuthParam
 		params.TokenRequestHeaders = tokenRequestHeaders
 	}
 }
+func NewPresignClientLoggerOption(logger logging.Logger, logMode aws.ClientLogMode) func(opts *sts.PresignOptions) {
+	return func(opts *sts.PresignOptions) {
+		opts.ClientOptions = append(opts.ClientOptions, func(o *sts.Options) {
+			o.Logger = &logging.AWSAdapter{
+				Logger: logger.WithField("sdk", "aws_sts_presign_client"),
+			}
+			o.ClientLogMode = logMode
+		})
+	}
+}
 
 func NewIAMAuthParams(lakeFSHost string, opts ...IAMAuthParamsOptions) *IAMAuthParams {
 	headers := map[string]string{
@@ -107,8 +118,8 @@ func NewIAMAuthParams(lakeFSHost string, opts ...IAMAuthParamsOptions) *IAMAuthP
 	return p
 }
 
-func GenerateIdentityTokenInfo(ctx context.Context, params *IAMAuthParams, stsClient *sts.Client) (*AWSIdentityTokenInfo, error) {
-	url, err := PresignGetCallerIdentityFromAuthParams(ctx, params, stsClient)
+func GenerateIdentityTokenInfo(ctx context.Context, params *IAMAuthParams, stsClient *sts.Client, presignClientOpts ...func(*sts.PresignOptions)) (*AWSIdentityTokenInfo, error) {
+	url, err := PresignGetCallerIdentityFromAuthParams(ctx, params, stsClient, presignClientOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("generating sts presigned url: %w", err)
 	}
@@ -149,7 +160,7 @@ func ParsePresignedURL(presignedURL string) (*AWSIdentityTokenInfo, error) {
 	}, nil
 }
 
-func PresignGetCallerIdentityFromAuthParams(ctx context.Context, params *IAMAuthParams, stsClient *sts.Client) (string, error) {
+func PresignGetCallerIdentityFromAuthParams(ctx context.Context, params *IAMAuthParams, stsClient *sts.Client, presignClientOpts ...func(*sts.PresignOptions)) (string, error) {
 	setHTTPHeaders := func(requestHeaders map[string]string, ttl time.Duration) func(*middleware.Stack) error {
 		middlewareName := "AddHeaders"
 		return func(stack *middleware.Stack) error {
@@ -172,11 +183,7 @@ func PresignGetCallerIdentityFromAuthParams(ctx context.Context, params *IAMAuth
 		}
 	}
 
-	stsPresignClient := sts.NewPresignClient(stsClient, func(o *sts.PresignOptions) {
-		o.ClientOptions = append(o.ClientOptions, func(opts *sts.Options) {
-			opts.ClientLogMode = aws.LogSigning
-		})
-	})
+	stsPresignClient := sts.NewPresignClient(stsClient, presignClientOpts...)
 
 	presign, err := stsPresignClient.PresignGetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{},
 		sts.WithPresignClientFromClientOptions(sts.WithAPIOptions(setHTTPHeaders(params.TokenRequestHeaders, params.URLPresignTTL))),

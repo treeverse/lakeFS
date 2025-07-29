@@ -13,7 +13,7 @@ test.describe("Setup Page", () => {
         await page.waitForURL(/.*\/setup/);
     });
 
-    test("username has a defualt value of 'admin'", async ({ page }) => {
+    test("username has a default value of 'admin'", async ({ page }) => {
         const setupPage = new SetupPage(page);
         await setupPage.goto();
         const usernameInput = setupPage.usernameInputLocator;

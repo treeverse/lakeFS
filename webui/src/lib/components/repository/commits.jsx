@@ -6,13 +6,10 @@ import {MetadataRow, MetadataUIButton} from "../../../pages/repositories/reposit
 import {Link} from "../nav";
 import dayjs from "dayjs";
 import Card from "react-bootstrap/Card";
-import React, {useContext} from "react";
-import {AppContext} from "../../hooks/appContext";
-
+import React from "react";
 
 const CommitActions = ({ repo, commit }) => {
-  const {state} = useContext(AppContext);
-  const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
+  const buttonVariant = "light";
 
   return (
     <div>

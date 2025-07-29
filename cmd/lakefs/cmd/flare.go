@@ -39,7 +39,7 @@ var flareCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		flare.SetBaselinePermissions(flare.FlareUmask)
 		now := strings.ReplaceAll(time.Now().String(), " ", "")
-		cfg := loadConfig().GetBaseConfig()
+		cfg := LoadConfig().GetBaseConfig()
 		envVarBlacklist := addAppEnvVarPrefix(config.GetSecureStringKeyPaths(cfg))
 		flr, err := flare.NewFlare(flare.WithEnvVarBlacklist(envVarBlacklist))
 		if err != nil {

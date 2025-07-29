@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // Strings is a []string that mapstructure can deserialize from a single string or from a list

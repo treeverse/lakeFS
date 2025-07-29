@@ -1,12 +1,11 @@
 import React from "react";
 
 import Nav from "react-bootstrap/Nav";
-import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitPullRequestIcon, GitCompareIcon, PlayIcon, GearIcon, TagIcon} from "@primer/octicons-react";
+import {GitCommitIcon, DatabaseIcon, GitBranchIcon, GitPullRequestIcon, GitCompareIcon, PlayIcon, GearIcon, TagIcon} from "@primer/octicons-react";
 
 import {useRefs} from "../../hooks/repo";
 import {Link, NavItem} from "../nav";
 import {useRouter} from "../../hooks/router";
-import {RefTypeBranch} from "../../../constants";
 
 export const RepositoryNavTabs = ({ active }) => {
     const { reference } = useRefs();
@@ -32,21 +31,12 @@ export const RepositoryNavTabs = ({ active }) => {
         return url;
     };
 
-    const withBranchContext = (url) => {
-        const params = new URLSearchParams();
-        if (!!reference && reference.type === RefTypeBranch) params.append('ref', reference.id);
-        if (params.toString())
-            return `${url}?${params.toString()}`;
-        return url;
-    };
+
 
     return (
         <Nav variant="tabs" >
             <Link active={active === 'objects'} href={withRefContext(`/repositories/${repoId}/objects`)} component={NavItem}>
                 <DatabaseIcon/> Objects
-            </Link>
-            <Link active={active === 'changes'} href={withBranchContext(`/repositories/${repoId}/changes`)} component={NavItem}>
-                <FileDiffIcon/> Uncommitted Changes
             </Link>
             <Link active={active === 'commits'} href={withRefContext(`/repositories/${repoId}/commits`)} component={NavItem}>
                 <GitCommitIcon/> Commits

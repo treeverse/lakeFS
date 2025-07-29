@@ -9,7 +9,7 @@ import (
 	"github.com/go-openapi/swag"
 
 	"github.com/go-test/deep"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/testutil"
 )

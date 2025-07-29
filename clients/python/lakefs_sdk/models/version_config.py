@@ -30,10 +30,11 @@ class VersionConfig(BaseModel):
     VersionConfig
     """
     version: Optional[StrictStr] = None
+    version_context: Optional[StrictStr] = None
     latest_version: Optional[StrictStr] = None
     upgrade_recommended: Optional[StrictBool] = None
     upgrade_url: Optional[StrictStr] = None
-    __properties = ["version", "latest_version", "upgrade_recommended", "upgrade_url"]
+    __properties = ["version", "version_context", "latest_version", "upgrade_recommended", "upgrade_url"]
 
     class Config:
         """Pydantic configuration"""
@@ -72,6 +73,7 @@ class VersionConfig(BaseModel):
 
         _obj = VersionConfig.parse_obj({
             "version": obj.get("version"),
+            "version_context": obj.get("version_context"),
             "latest_version": obj.get("latest_version"),
             "upgrade_recommended": obj.get("upgrade_recommended"),
             "upgrade_url": obj.get("upgrade_url")

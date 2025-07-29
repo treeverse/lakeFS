@@ -18,7 +18,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   esti:
-    image: "golang:1.23-alpine"
+    image: "golang:1.24-alpine"
     links:
       - lakefs:s3.local.lakefs.io
       - lakefs:testmultipartupload.s3.local.lakefs.io
@@ -26,6 +26,8 @@ services:
       - lakefs:testdeleteobjects.s3.local.lakefs.io
       - lakefs:testmigrate-testpremigratemultipart.s3.local.lakefs.io
       - lakefs:migrate.s3.local.lakefs.io
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - CGO_ENABLED=0
       - AWS_ACCESS_KEY_ID

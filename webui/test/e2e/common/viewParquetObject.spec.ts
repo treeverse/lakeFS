@@ -22,7 +22,7 @@ test.describe("Object Viewer - Parquet File", () => {
 
         const repositoryPage = new RepositoryPage(page);
         await repositoryPage.clickObject(PARQUET_OBJECT_NAME);
-        await expect(page.getByText("Loading...")).not.toBeVisible();
+        await expect(page.getByRole("button", { name: "Execute" })).toBeVisible();
     });
 
     test("view parquet object w/ logout and login", async ({page}) => {

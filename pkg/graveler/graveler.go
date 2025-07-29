@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -501,6 +502,18 @@ type Branch struct {
 	// CompactedBaseMetaRangeID - the MetaRangeID of the last compaction's
 	CompactedBaseMetaRangeID MetaRangeID
 	Hidden                   bool
+}
+
+// Clone creates a deep copy of the Branch
+func (b *Branch) Clone() *Branch {
+	clone := &Branch{
+		CommitID:                 b.CommitID,
+		StagingToken:             b.StagingToken,
+		SealedTokens:             slices.Clone(b.SealedTokens),
+		CompactedBaseMetaRangeID: b.CompactedBaseMetaRangeID,
+		Hidden:                   b.Hidden,
+	}
+	return clone
 }
 
 // BranchRecord holds BranchID with the associated Branch data
@@ -2848,8 +2861,12 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 		parentMetaRangeID = parentCommit.MetaRangeID
 	}
 
-	var commitID CommitID
-	var tokensToDrop []StagingToken
+	var (
+		preRunID     string
+		commit       Commit
+		commitID     CommitID
+		tokensToDrop []StagingToken
+	)
 	err = g.RefManager.BranchUpdate(ctx, repository, branchID, func(branch *Branch) (*Branch, error) {
 		if empty, err := g.isSealedEmpty(ctx, repository, branch); err != nil {
 			return nil, err
@@ -2869,7 +2886,7 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 			}
 			return nil, err
 		}
-		commit := NewCommit()
+		commit = NewCommit()
 		commit.Committer = committer
 		commit.Message = commitRecord.Message
 		commit.MetaRangeID = metaRangeID
@@ -2888,6 +2905,25 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 		commit.Metadata["cherry-pick-origin"] = string(commitRecord.CommitID)
 		commit.Metadata["cherry-pick-committer"] = commitRecord.Committer
 
+		if !repository.ReadOnly {
+			preRunID = g.hooks.NewRunID()
+			err = g.hooks.PreCherryPickHook(ctx, HookRecord{
+				RunID:      preRunID,
+				EventType:  EventTypePreCherryPick,
+				SourceRef:  branchID.Ref(),
+				Repository: repository,
+				BranchID:   branchID,
+				Commit:     commit,
+			})
+			if err != nil {
+				return nil, &HookAbortError{
+					EventType: EventTypePreCherryPick,
+					RunID:     preRunID,
+					Err:       err,
+				}
+			}
+		}
+
 		commitID, err = g.RefManager.AddCommit(ctx, repository, commit)
 		if err != nil {
 			return nil, fmt.Errorf("add commit: %w", err)
@@ -2903,6 +2939,27 @@ func (g *Graveler) CherryPick(ctx context.Context, repository *RepositoryRecord,
 	}
 
 	g.dropTokens(ctx, tokensToDrop...)
+
+	if !repository.ReadOnly {
+		postRunID := g.hooks.NewRunID()
+		err = g.hooks.PostCherryPickHook(ctx, HookRecord{
+			EventType:  EventTypePostCherryPick,
+			RunID:      postRunID,
+			Repository: repository,
+			SourceRef:  commitID.Ref(),
+			BranchID:   branchID,
+			Commit:     commit,
+			CommitID:   commitID,
+			PreRunID:   preRunID,
+		})
+		if err != nil {
+			g.log(ctx).WithError(err).
+				WithField("run_id", postRunID).
+				WithField("pre_run_id", preRunID).
+				Error("Post-cherry-pick hook failed")
+		}
+	}
+
 	return commitID, nil
 }
 

@@ -62,7 +62,7 @@ const BranchWidget = ({ repo, branch, onDelete }) => {
                     title={branch.id}
                     className="flex-grow-1 text-nowrap overflow-hidden text-truncate align-middle"
                 >
-                    <h6 style={{marginBottom: 0}}>
+                    <h6 className="mb-0">
                         <Link href={{
                             pathname: '/repositories/:repoId/objects',
                             params: {repoId: repo.id},

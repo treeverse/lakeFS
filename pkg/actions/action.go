@@ -66,9 +66,6 @@ type MatchSpec struct {
 var (
 	reName   = regexp.MustCompile(`^\w[\w\-. ]+$`)
 	reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
-
-	ErrInvalidAction         = errors.New("invalid action")
-	ErrInvalidEventParameter = errors.New("invalid event parameter")
 )
 
 func isEventSupported(event graveler.EventType) bool {
