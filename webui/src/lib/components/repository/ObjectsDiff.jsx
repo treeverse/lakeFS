@@ -18,11 +18,11 @@ const imageExtensions = ["png", "jpg", "jpeg", "gif", "bmp", "webp"];
 
 export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     const {state} = useContext(AppContext);
-    const {repo, error: refsError, loading: refsLoading} = useRefs();
+    const {repo, error: repoError, loading: repoLoading} = useRefs();
     const {config, error: configsError, loading: configLoading} = useConfigContext();
     const {storageConfig, error: storageConfigError} = getRepoStorageConfig(config?.storages, repo);
-    const hooksLoading = refsLoading || configLoading;
-    const hooksError = hooksLoading ? null : refsError || configsError || storageConfigError;
+    const hooksLoading = repoLoading || configLoading;
+    const hooksError = hooksLoading ? null : repoError || configsError || storageConfigError;
 
     if (hooksError) return <AlertError error={hooksError}/>;
 
