@@ -57,7 +57,7 @@ export const getContentType = (headers: Headers): string | null => {
 };
 
 const FileObjectsViewerPage = () => {
-  const {repo} = useRefs();
+  const {repo, loading: repoLoading, error: repoError} = useRefs();
   const {config, error: configsError, loading: configLoading} = useConfigContext();
   const {storageConfig, error: storageConfigError} = getRepoStorageConfig(config?.storages, repo);
 
@@ -68,8 +68,8 @@ const FileObjectsViewerPage = () => {
   const { response, error: apiError, loading: apiLoading } = useAPI(() => {
     return objects.head(repoId, refId, path);
   }, [repoId, refId, path]);
-  const loading = apiLoading || configLoading;
-  const error = loading ? null : apiError || configsError || storageConfigError;
+  const loading = apiLoading || repoLoading || configLoading;
+  const error = loading ? null : apiError || repoError || configsError || storageConfigError;
 
   let content;
   if (loading) {
