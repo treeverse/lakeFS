@@ -1096,9 +1096,9 @@ class Config {
             case 200: {
                 const cfg = await response.json();
                 const storages = buildStoragesConfigs(cfg);
-                const customization = cfg['customization'];
+                const uiConfig = cfg['ui_config'];
                 const versionConfig = cfg['version_config'];
-                return {storages, customization, versionConfig};
+                return {storages, uiConfig, versionConfig};
             }
             case 409:
                 throw new Error('Conflict');

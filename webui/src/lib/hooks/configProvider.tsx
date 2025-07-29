@@ -11,8 +11,8 @@ type ConfigContextType = {
 };
 
 type ConfigType = {
-    storages: StorageConfigType[] | null;
-    customization: CustomizationType | null;
+    storages?: StorageConfigType[];
+    uiConfig?: UIConfigType;
     versionConfig?: VersionConfig;
 };
 
@@ -27,19 +27,15 @@ type StorageConfigType = {
     pre_sign_support_ui: boolean;
 };
 
-type CustomizationType = {
-    ui: UiCustomizationType | null;
-};
-
-type UiCustomizationType = {
-    custom_viewers: Array<CustomViewerConfig> | null;
+type UIConfigType = {
+    custom_viewers?: Array<CustomViewerConfig>;
 };
 
 type CustomViewerConfig = {
     name: string;
     url: string;
-    content_types: Array<string> | null;
-    extensions: Array<string> | null;
+    content_types?: Array<string>;
+    extensions?: Array<string>;
 };
 
 type VersionConfig = {
