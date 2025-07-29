@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -501,6 +502,18 @@ type Branch struct {
 	// CompactedBaseMetaRangeID - the MetaRangeID of the last compaction's
 	CompactedBaseMetaRangeID MetaRangeID
 	Hidden                   bool
+}
+
+// Clone creates a deep copy of the Branch
+func (b *Branch) Clone() *Branch {
+	clone := &Branch{
+		CommitID:                 b.CommitID,
+		StagingToken:             b.StagingToken,
+		SealedTokens:             slices.Clone(b.SealedTokens),
+		CompactedBaseMetaRangeID: b.CompactedBaseMetaRangeID,
+		Hidden:                   b.Hidden,
+	}
+	return clone
 }
 
 // BranchRecord holds BranchID with the associated Branch data
