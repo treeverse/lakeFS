@@ -357,7 +357,6 @@ WHERE path LIKE 'customers/%'
 
 ## Limitations
 
-* Applies only to objects added or modified after the feature was enabled. Existing objects before that point are not indexed. 
 * Querying by [tags](../understand/glossary.md#tag) is unsupported, and is in our roadmap.  
 * Querying by commit is only supported by using the pattern described [here](#using-commit-ids).
   
