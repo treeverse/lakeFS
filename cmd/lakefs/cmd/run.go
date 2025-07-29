@@ -22,6 +22,7 @@ import (
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api"
@@ -268,6 +269,11 @@ var runCmd = &cobra.Command{
 			logger.WithError(err).Fatal("could not initialize authenticator for S3 gateway")
 		}
 
+		middlewareFactory, err := gatewayfactory.BuildMiddleware(ctx, cfg, logger)
+		if err != nil {
+			logger.WithError(err).Fatal("Failed to create gateway middleware")
+		}
+
 		s3gatewayHandler := gateway.NewHandler(
 			baseCfg.Gateways.S3.Region,
 			c,
@@ -282,6 +288,7 @@ var runCmd = &cobra.Command{
 			baseCfg.Logging.TraceRequestHeaders,
 			baseCfg.Gateways.S3.VerifyUnsupported,
 			authService.IsAdvancedAuth(),
+			middlewareFactory.Build(),
 		)
 		s3gatewayHandler = apiAuthenticator(s3gatewayHandler)
 
