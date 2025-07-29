@@ -1,5 +1,13 @@
 # Changelog
 
+# v1.64.1
+
+:bug: Bugs fixed:
+
+- Fix race while update branch returned from ref manager branch update (#9360)
+- WebUI: Fix loading state when fetching repository data (#9366)
+- API: update API spec from status code 423 (locked) to 429 (too many requests) (#9367)
+
 # v1.64.0
 
 :new: What's new:
