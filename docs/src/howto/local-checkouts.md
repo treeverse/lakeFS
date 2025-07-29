@@ -7,44 +7,41 @@ description: How to work with lakeFS data locally
 
 lakeFS is a scalable data version control system designed to scale to billions of objects. The larger the data, the less
 feasible it becomes to consume it from a single machine. lakeFS addresses this challenge by enabling efficient management
-of large-scale data stored remotely. 
+of large-scale data stored remotely.
 
 In addition to its capability to manage large datasets, lakeFS offers the flexibility
 to work with versioned data by exposing it as a local filesystem directory.  
 
 This page explains [lakeFS Mount](../reference/mount.md) and `lakectl local`: two common ways of exposing lakeFS data locally, with different performance characteristics.  
 
-
-## Use cases 
+## Use cases
 
 ### Local development of ML models
 
-The development of machine learning models is a dynamic and iterative process, including experimentation with various data versions, 
-transformations, algorithms, and hyperparameters. To optimize this iterative workflow, experiments must be conducted with speed, 
-ease of tracking, and reproducibility in mind. Localizing the model data during development enhances the development process. 
-It **accelerates the development process** by enabling interactive and offline development and reducing data access latency. 
-
+The development of machine learning models is a dynamic and iterative process, including experimentation with various data versions,
+transformations, algorithms, and hyperparameters. To optimize this iterative workflow, experiments must be conducted with speed,
+ease of tracking, and reproducibility in mind. Localizing the model data during development enhances the development process.
+It **accelerates the development process** by enabling interactive and offline development and reducing data access latency.
 
 The local availability of data is required to **seamlessly integrate data version control systems and source control systems**
-like Git. This integration is vital for achieving model reproducibility, allowing for a more efficient and collaborative 
+like Git. This integration is vital for achieving model reproducibility, allowing for a more efficient and collaborative
 model development environment.
 
 ### Data Locality for Optimized GPU Utilization
 
 Training Deep Learning models requires expensive GPUs. In the context of running such programs, the goal is to optimize
 GPU usage and prevent them from sitting idle. Many deep learning tasks involve accessing images, and in some cases, the
-same images are accessed multiple times. Localizing the data can eliminate redundant round trip times to access remote 
+same images are accessed multiple times. Localizing the data can eliminate redundant round trip times to access remote
 storage, resulting in cost savings.
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/afgQnmesLZM"></iframe>
 
 ## **lakeFS Mount**: Efficiently expose lakeFS Data as a local directory
 
-!!! info 
+!!! info
     Mount requires no installation, please [contact us](https://info.lakefs.io/thanks-lakefs-mounts) to get access.
 
-
-#### Prerequisites:
+#### Prerequisites
 
 - A working lakeFS Server running either [lakeFS Enterprise](../enterprise/index.md) or [lakeFS Cloud](../cloud/index.md)
 - You’ve installed the [`lakectl`](../reference/cli.md) command line utility: this is the official lakeFS command line interface, on top of which lakeFS Mount is built.
@@ -52,7 +49,7 @@ storage, resulting in cost savings.
 
 ### Mounting a lakeFS reference as a local directory
 
-lakeFS Mount works by exposing a virtual mountpoint on the host computer. 
+lakeFS Mount works by exposing a virtual mountpoint on the host computer.
 
 This "acts" as a local directory, allowing applications to read write and interact with data as it is all local to the machine, while lakeFS Mount optimizes this behind the scenes by lazily fetching data as requested, caching accessed objects and efficiently managing metadata to ensure best in class performance. [Read more about how lakeFS Mount optimizes performance](../reference/mount.md)
 
@@ -77,7 +74,6 @@ Which should return the listing of the mounted path.
 
 Reading from a lakeFS Mount requires no special tools, integrations or SDKs! Simply point your code to the directory and read from it as if it was in fact local:
 
-
 ```python
 #!/usr/bin/env python
 import glob
@@ -85,7 +81,6 @@ import glob
 for image_path in glob.glob('./my_local_dir/*.png'):
     with open(image_path, 'rb') as f:
         process(f)
-
 ```
 
 ### Unmounting
@@ -98,33 +93,55 @@ everest umount ./my_local_dir
 
 This will unmount the lakeFS Mount, cleaning up background tasks
 
-
-## **lakectl local**: Sync lakeFS data with a local directory   
+## **lakectl local**: Sync lakeFS data with a local directory
 
 The _local_ command of lakeFS' CLI _lakectl_ enables working with lakeFS data locally by copying the data onto the host machine.
-It allows syncing local directories with remote lakeFS locations, 
+It allows syncing local directories with remote lakeFS locations,
 and to [seamlessly integrate lakeFS with Git](#example-using-lakectl-local-in-tandem-with-git).
 
-Here are the available _lakectl local_ commands: 
+Here are the available _lakectl local_ commands:
 
 | Command                                  | What it does                                                                                                                                        | Notes                                                                                                                                                                                                                     |
 |:-----------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **[init](../reference/cli.md#lakectl-local-init)**                                 | Connects between a local directory and a lakeFS remote URI to enable data sync                                                                      | To undo a directory init, delete the .lakefs_ref.yaml file created in the initialized directory                                                                                                                           |
 | **[clone](../reference/cli.md#lakectl-local-clone)**                                | Clones lakeFS data from a path into an empty local directory and initializes the directory                                                          | A directory can only track a single lakeFS remote location. i.e., you cannot clone data into an already initialized directory                                                                                             |
-| **[list](../reference/cli.md#lakectl-local-list)**                                 | Lists directories that are synced with lakeFS | It is recommended to follow any _init_ or _clone_ command with a list command to verify its success |                                                                                                                                                                                                                           | 
-| **[status](../reference/cli.md#lakectl-local-status)**                               | Shows remote and local changes to the directory and the remote location it tracks                                                                   |                                                                                                                                                                                                                           | 
-| **[commit](../reference/cli.md#lakectl-local-commit)**                               | Commits changes from local directory to the lakeFS branch it tracks                                                                                 | Uncommitted changes to directories connected to lakeFS remote locations will not reflect in lakeFS until after doing lakectl local _commit_.                                                                              | 
+| **[list](../reference/cli.md#lakectl-local-list)**                                 | Lists directories that are synced with lakeFS | It is recommended to follow any _init_ or _clone_ command with a list command to verify its success |                                                                                                                                                                                                                           |
+| **[status](../reference/cli.md#lakectl-local-status)**                               | Shows remote and local changes to the directory and the remote location it tracks                                                                   |                                                                                                                                                                                                                           |
+| **[commit](../reference/cli.md#lakectl-local-commit)**                               | Commits changes from local directory to the lakeFS branch it tracks                                                                                 | Uncommitted changes to directories connected to lakeFS remote locations will not reflect in lakeFS until after doing lakectl local _commit_.                                                                              |
 | **[pull](../reference/cli.md#lakectl-local-pull)**                                 | Fetches latest changes from a lakeFS remote location into a connected local directory                                                               |                                                                                                                                                                                                                           |
 | **[checkout](../reference/cli.md#lakectl-local-checkout)**                             | Syncs a local directory with the state of a lakeFS ref                                                                                              |                                                                                                                                                                                                                           |
-
 
 !!! warning
     The data size you work with locally should be reasonable for smooth operation on a local machine which is typically no larger than 15 GB.  
 
+### Configuration
 
-## Example: Using _lakectl local_ in tandem with Git 
+The `lakectl local` commands can be configured through the lakectl configuration file to handle special cases like symbolic links. The following configuration options are available under the `local` section:
 
-We are going to develop an ML model that predicts whether an image is an Alpaca or not. Our goal is to improve the input 
+| Configuration Option       | Description                                                                                                       | Default |
+|:---------------------------|:------------------------------------------------------------------------------------------------------------------|:--------|
+| `skip_non_regular_files`   | By default, lakectl local fails if a local directory contains non regular files. When set to `true`, lakectl will ignore them instead of failing. | `false` |
+| `symlink_support`          | Controls whether symlinks are supported and processed by lakectl local commands.                                  | `false` |
+
+Example configuration:
+
+```yaml
+local:
+  symlink_support: true
+```
+
+When `symlink_support` is enabled, `lakectl local` commands will store and restore the state of the symlinks by creating special metadata objects that specify the symlink target. Metadata objects representing symlinks are created during data uploads. In contrast, during data downloads, `lakectl` will recreate the symbolic links in the local directory based on these metadata objects. This allows for a seamless integration of symlinks within your data management workflow. However, if the feature is turned off, any previously created symlinks will be treated as empty objects, meaning their targets will not be preserved or recreated during sync operations. It is crucial to enable this feature if your workflow relies on symbolic links to ensure data integrity and consistency.
+
+!!! note
+    When `skip_non_regular_files` is enabled, symbolic links in your local directory will be ignored during sync operations. If you need to work with symbolic links, consider using `symlink_support` instead, though this feature may have different behavior and limitations.
+
+!!! warning
+    Using symbolic links can be potentially dangerous as they can point to any file on your system.
+    When `symlink_support` is enabled, lakeFS will not download data to a target which is a symlink, to prevent any unexpected behavior.
+
+## Example: Using _lakectl local_ in tandem with Git
+
+We are going to develop an ML model that predicts whether an image is an Alpaca or not. Our goal is to improve the input
 for the model. The code for the model is versioned by Git while the model dataset is versioned by lakeFS. We will
 be using lakectl local to tie code versions to data versions to achieve model reproducibility.  
 
@@ -133,19 +150,18 @@ be using lakectl local to tie code versions to data versions to achieve model re
 To get start with, we have initialized a Git repo called `is_alpaca` that includes the model code:
 ![Git repo](../assets/img/lakectl-local/code_repo.png)
 
-We also created a lakeFS repository and uploaded the _is_alpaca_ train [dataset](https://www.kaggle.com/datasets/sayedmahmoud/alpaca-dataset) 
+We also created a lakeFS repository and uploaded the _is_alpaca_ train [dataset](https://www.kaggle.com/datasets/sayedmahmoud/alpaca-dataset)
 by Kaggel into it:
 ![lakeFS repo](../assets/img/lakectl-local/lakefs-repo-with-train-dataset.png)
 
 ### Create an Isolated Environment for Experiments
 
-Our goal is to improve the model predictions. To meet our goal, we will experiment with editing the training dataset. 
-We will run our experiments in isolation to not change anything until after we are certain the data is improved and ready.    
+Our goal is to improve the model predictions. To meet our goal, we will experiment with editing the training dataset.
+We will run our experiments in isolation to not change anything until after we are certain the data is improved and ready.
 
-Let's create a new lakeFS branch called `experiment-1`. Our _is_alpaca_ dataset is accessible on that branch, 
+Let's create a new lakeFS branch called `experiment-1`. Our _is_alpaca_ dataset is accessible on that branch,
 and we will interact with the data from that branch only.
 ![experiment-1-branch](../assets/img/lakectl-local/experiment-branch.png)
-
 
 On the code side, we will create a Git branch also called `experiment-1` to not pollute our main branch with a dataset
 which is under tuning.
@@ -189,13 +205,14 @@ model.save(model_location)
 ```
 
 This means that to be able to locally develop our model and experiment with it we need to have the _is_alpaca_ dataset managed
-by lakeFS available locally on that path. To do that, we will use the [`lakectl local clone`](../reference/cli.md#lakectl-local-clone) 
+by lakeFS available locally on that path. To do that, we will use the [`lakectl local clone`](../reference/cli.md#lakectl-local-clone)
 command from our local Git repository root:
 
 ```shell
 lakectl local clone lakefs://is-alpaca/experiment-1/dataset/train/ input
 ```
-This command will do a diff between out local input directory (that did not exist until now) and the provided lakeFS path 
+
+This command will do a diff between out local input directory (that did not exist until now) and the provided lakeFS path
 and identify that there are files to be downloaded from lakeFS.
 
 ```shell
@@ -208,8 +225,8 @@ Uploaded: 0
 Removed: 0
 ```
 
-Running [`lakectl local list`](../reference/cli.md#lakectl-local-list) from our Git repository root will show that the 
-`input` directory is now in sync with a lakeFS prefix (Remote URI), and what lakeFS version of the data (Synced Commit) 
+Running [`lakectl local list`](../reference/cli.md#lakectl-local-list) from our Git repository root will show that the
+`input` directory is now in sync with a lakeFS prefix (Remote URI), and what lakeFS version of the data (Synced Commit)
 the is it tracking:
 
 ```shell
@@ -221,8 +238,7 @@ the is it tracking:
 +-----------+------------------------------------------------+------------------------------------------------------------------+
 ```
 
-### Tie Code Version and Data Version 
-
+### Tie Code Version and Data Version
 
 Now let's tell Git to stage the dataset we've added and inspect our Git branch status:
 
@@ -232,15 +248,15 @@ is_alpaca % git status
 On branch experiment-1
 Changes to be committed:
   (use "git restore --staged <file>..." to unstage)
-	new file:   input/.lakefs_ref.yaml
+ new file:   input/.lakefs_ref.yaml
 
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	modified:   .gitignore
+ modified:   .gitignore
 ```
 
-We can see that the `.gitignore` file changed, and that the files we cloned from lakeFS into the `input` directory are not 
+We can see that the `.gitignore` file changed, and that the files we cloned from lakeFS into the `input` directory are not
 tracked by git. This is intentional - remember that **lakeFS is the one managing the data**. But wait, what is this special
 `input/.lakefs_ref.yaml` file that Git does track?  
 
@@ -250,6 +266,7 @@ is_alpaca % cat input/.lakefs_ref.yaml
 src: lakefs://is-alpaca/experiment-1/dataset/train/s
 at_head: 589f87704418c6bac80c5a6fc1b52c245af347b9ad1ea8d06597e4437fae4ca3
 ```
+
 This file includes the lakeFS version of the **data** that the Git repository is currently pointing to.
 
 Let's commit the changes to Git with:
@@ -257,6 +274,7 @@ Let's commit the changes to Git with:
 ```shell
 git commit -m "added is_alpaca dataset" 
 ```
+
 By committing to Git, we tie the current code version of the model to the dataset version in lakeFS as it appears in
 `input/.lakefs_ref.yaml`.
 
@@ -274,8 +292,9 @@ Here are the (surprising) results:
 is_alpaca % ./predict.py ~/axolotl1.jpeg
 {'alpaca': 0.32112, 'not alpaca': 0.07260383}
 ```
+
 We expected the model to provide a more concise prediction, so let's try to improve it. To do that, we will add additional
-images of axolotls to the model input directory: 
+images of axolotls to the model input directory:
 
 ```shell
 is_alpaca % cp ~/axolotls_images/* input/not_alpaca
@@ -291,14 +310,14 @@ diff 'lakefs://is-alpaca/589f87704418c6bac80c5a6fc1b52c245af347b9ad1ea8d06597e44
 ╔════════╦════════╦════════════════════════════╗
 ║ SOURCE ║ CHANGE ║ PATH                       ║
 ╠════════╬════════╬════════════════════════════╣
-║ local  ║ added  ║ not_alpaca/axolotl2.jpeg ║
-║ local  ║ added  ║ not_alpaca/axolotl3.png  ║
-║ local  ║ added  ║ not_alpaca/axolotl4.jpeg ║
+║ local  ║ added  ║ not_alpaca/axolotl2.jpeg   ║
+║ local  ║ added  ║ not_alpaca/axolotl3.png    ║
+║ local  ║ added  ║ not_alpaca/axolotl4.jpeg   ║
 ╚════════╩════════╩════════════════════════════╝
 ```
 
 At this point, the dataset changes are not yet tracked by lakeFS. We will validate that by looking at the uncommitted changes
-area of our experiment branch and verifying it is empty. 
+area of our experiment branch and verifying it is empty.
 
 To commit these changes to lakeFS we will use [lakectl local commit](../reference/cli.md#lakectl-local-commit):
 
@@ -327,27 +346,28 @@ Timestamp: 2024-02-08 17:41:20 +0200 IST
 Parents: 589f87704418c6bac80c5a6fc1b52c245af347b9ad1ea8d06597e4437fae4ca3
 ```
 
-Looking at the lakeFS UI we can see that the lakeFS commit includes metadata that tells us what was the code version of 
+Looking at the lakeFS UI we can see that the lakeFS commit includes metadata that tells us what was the code version of
 the linked Git repository at the time of the commit.
 ![git metadata in lakeFS](../assets/img/lakectl-local/lakefs-commit-git-commit-id.png)
 
 Inspecting the Git repository, we can see that the input/.lakefs_ref.yaml is pointing to the latest lakeFS commit `0b376f01b925a075851bbaffacf104a80de04a43ed7e56054bf54c42d2c8cce6`.  
 
-We will now re-train our model with the modified dataset and give a try to predict whether an axolotl is an alpaca: 
+We will now re-train our model with the modified dataset and give a try to predict whether an axolotl is an alpaca:
 
 ```shell
 is_alpaca % ./predict.py ~/axolotl1.jpeg
 {'alpaca': 0.12443, 'not alpaca': 0.47260383}
 ```
+
 Results are indeed more accurate.
 
 ### Sync a Local Directory with lakeFS  
 
 Now that we think that the latest version of our model generates reliable predictions, let's validate it against a test dataset
-rather than against a single picture. We will use the test dataset provided by [Kaggel](https://www.kaggle.com/datasets/sayedmahmoud/alpaca-dataset). 
-Let's create a local `testDataset` directory in our git repository and populate it with the test dataset. 
+rather than against a single picture. We will use the test dataset provided by [Kaggel](https://www.kaggle.com/datasets/sayedmahmoud/alpaca-dataset).
+Let's create a local `testDataset` directory in our git repository and populate it with the test dataset.
 
-Now, we will use  [lakectl local init](../reference/cli.md#lakectl-local-init) to sync the `testDataset` directory with our lakeFS repository: 
+Now, we will use  [lakectl local init](../reference/cli.md#lakectl-local-init) to sync the `testDataset` directory with our lakeFS repository:
 
 ```shell
 is_alpaca % lakectl local init lakefs://is-alpaca/main/dataset/test/ testDataset 
@@ -355,7 +375,7 @@ Location added to /is_alpaca/.gitignore
 Successfully linked local directory '/is_alpaca/testDataset' with remote 'lakefs://is-alpaca/main/dataset/test/'
 ```
 
-And validate that the directory was linked successfully: 
+And validate that the directory was linked successfully:
 
 ```shell
 is_alpaca % lakectl local list                                                           
@@ -367,10 +387,10 @@ is_alpaca % lakectl local list
 +-------------+-------------------------------------------------+------------------------------------------------------------------+
 ```
 
-Now we will tell Git to track the `testDataset` directory with `git add testDataset`, and as we saw earlier Git will only track the `testDataset/.lakefs_ref.yaml` 
+Now we will tell Git to track the `testDataset` directory with `git add testDataset`, and as we saw earlier Git will only track the `testDataset/.lakefs_ref.yaml`
 for that directory rather than its content.  
 
-To see the difference between our local `testDataset` directory and its lakeFS location `lakefs://is-alpaca/main/dataset/test/` 
+To see the difference between our local `testDataset` directory and its lakeFS location `lakefs://is-alpaca/main/dataset/test/`
 we will use [lakectl local status](../reference/cli.md#lakectl-local-status):
 
 ```shell
@@ -393,7 +413,7 @@ diff 'lakefs://is-alpaca/0b376f01b925a075851bbaffacf104a80de04a43ed7e56054bf54c4
 
 We can see that multiple files were locally added to the synced directory.  
 
-To apply these changes to lakeFS we will commit them: 
+To apply these changes to lakeFS we will commit them:
 
 ```shell
 is_alpaca % lakectl local commit testDataset -m "add is_alpaca test dataset to lakeFS" 
@@ -428,14 +448,14 @@ Looking at the lakFS UI we see that our test data is now available at lakeFS:
 Finally, we will Git commit the local changes to link between the Git and lakeFS repositories state.
 
 !!! tip
-    While syncing a local directory with a lakeF prefix, it is recommended to first commit the data to lakeFS and then 
+    While syncing a local directory with a lakeF prefix, it is recommended to first commit the data to lakeFS and then
     do a Git commit that will include the changes done to the `.lakefs_ref.yaml` for the synced directory. Reasoning is that
-    only after committing the data to lakeFS, the `.lakefs_ref.yaml` file points to a lakeFS commit that includes the added 
+    only after committing the data to lakeFS, the `.lakefs_ref.yaml` file points to a lakeFS commit that includes the added
     content from the directory.
 
 ### Reproduce Model Results  
 
-What if we wanted to re-run the model that predicted that an axolotl is more likely to be an alpaca? 
+What if we wanted to re-run the model that predicted that an axolotl is more likely to be an alpaca?
 This question translates into the question: "How do I roll back my code and data to the time before we optimized the train dataset?"
 Which translates to: "What was the Git commit ID at this point?"
 
@@ -447,6 +467,6 @@ commit 5403ec29903942b692aabef404598b8dd3577f8a
     added is_alpaca dataset
 ```
 
-So, all we have to do now is `git checkout 5403ec29903942b692aabef404598b8dd3577f8a` and we are good to reproduce the model results! 
+So, all we have to do now is `git checkout 5403ec29903942b692aabef404598b8dd3577f8a` and we are good to reproduce the model results!
 
-Checkout our article about [ML Data Version Control and Reproducibility at Scale](https://lakefs.io/blog/scalable-ml-data-version-control-and-reproducibility/) to get another example for how lakeFS and Git work seamlessly together.     
+Checkout our article about [ML Data Version Control and Reproducibility at Scale](https://lakefs.io/blog/scalable-ml-data-version-control-and-reproducibility/) to get another example for how lakeFS and Git work seamlessly together.

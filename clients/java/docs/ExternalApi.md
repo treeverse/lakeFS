@@ -106,7 +106,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteUserExternalPrincipal"></a>
@@ -200,7 +200,7 @@ null (empty response body)
 | **204** | external principal detached successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="externalPrincipalLogin"></a>
@@ -268,7 +268,7 @@ No authorization required
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getExternalPrincipal"></a>
@@ -361,7 +361,7 @@ public class Example {
 | **200** | external principal |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listUserExternalPrincipals"></a>
@@ -463,6 +463,6 @@ public class Example {
 | **200** | external principals list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

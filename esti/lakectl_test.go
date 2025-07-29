@@ -718,8 +718,13 @@ func TestLakectlFsUpload(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
 	})
 	t.Run("single_file_with_separator", func(t *testing.T) {
+		// First upload the file without separator
+		vars["FILE_PATH"] = "data/ro/ro_1k.0_sep"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
+
+		// Then upload the prefix with separator
 		vars["FILE_PATH"] = "data/ro/ro_1k.0_sep/"
-		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "target path is not a valid URI\nError executing command.\n", vars)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s files/ro_1k", false, "lakectl_fs_upload", vars)
 	})
 	t.Run("single_file_with_recursive", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/ro_1k.0"
@@ -747,11 +752,15 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 	t.Run("dir_without_recursive", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
-		RunCmdAndVerifyFailure(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "target path is not a valid URI\nError executing command.\n", vars)
+		RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "read files/: is a directory", vars)
 	})
 	t.Run("dir_without_recursive_to_file", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/1.txt"
 		RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "read files/: is a directory", vars)
+	})
+	t.Run("directory_marker_with_trailing_slash", func(t *testing.T) {
+		vars["FILE_PATH"] = "dir-with-marker/"
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload -s /dev/null lakefs://"+repoName+"/"+mainBranch+"/dir-with-marker/", false, "lakectl_fs_upload_dir_marker", vars)
 	})
 }
 

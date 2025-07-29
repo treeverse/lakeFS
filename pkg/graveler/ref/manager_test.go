@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -23,8 +24,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/ident"
 	"github.com/treeverse/lakefs/pkg/kv"
+	"github.com/treeverse/lakefs/pkg/kv/kvtest"
 	"github.com/treeverse/lakefs/pkg/kv/mock"
+	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/testutil"
+	"go.uber.org/ratelimit"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -545,6 +549,67 @@ func TestManager_BranchUpdate(t *testing.T) {
 			require.Equal(t, tt.expectedCommit, b.CommitID.String())
 		})
 	}
+}
+
+func TestManager_BranchUpdateRaceCondition(t *testing.T) {
+	ctx := context.Background()
+	kvStore := kvtest.GetStore(ctx, t)
+	executor := batch.NewExecutor(logging.Dummy())
+	cfg := ref.ManagerConfig{
+		Executor:              executor,
+		KVStore:               kvStore,
+		KVStoreLimited:        kv.NewStoreLimiter(kvStore, ratelimit.NewUnlimited()),
+		AddressProvider:       ident.NewHexAddressProvider(),
+		RepositoryCacheConfig: testRepoCacheConfig,
+		CommitCacheConfig:     testCommitCacheConfig,
+		MaxBatchDelay:         10 * time.Millisecond,
+	}
+	cancelCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go executor.Run(cancelCtx)
+	r := ref.NewRefManager(cfg, NewStorageConfigMock(config.SingleBlockstoreID))
+
+	const (
+		repoID   = "repo1"
+		branchID = "race-branch"
+	)
+	repository, err := r.CreateRepository(context.Background(), repoID, graveler.Repository{
+		StorageID:        "sid",
+		StorageNamespace: "s3://test-bucket",
+		CreationDate:     time.Now(),
+		DefaultBranchID:  "main",
+	})
+	testutil.Must(t, err)
+
+	// Set initial branch state
+	testutil.Must(t, r.SetBranch(ctx, repository, branchID, graveler.Branch{
+		CommitID:     "test-commit-id",
+		StagingToken: "staging1",
+	}))
+
+	// Use goroutines to create a proper race condition
+	var wg sync.WaitGroup
+
+	// Start goroutines that will modify the branch concurrently
+	const concurrentGoroutines = 5
+	wg.Add(concurrentGoroutines)
+	for i := range concurrentGoroutines {
+		go func() {
+			defer wg.Done()
+
+			_ = r.BranchUpdate(ctx, repository, branchID, func(branch *graveler.Branch) (*graveler.Branch, error) {
+				// Modify the branch information
+				branch.StagingToken = graveler.StagingToken("staging" + strconv.Itoa(i))
+				branch.SealedTokens = slices.Repeat([]graveler.StagingToken{branch.StagingToken}, i)
+				return branch, nil
+			})
+		}()
+	}
+	wg.Wait()
+
+	branch, err := r.GetBranch(ctx, repository, branchID)
+	require.NoError(t, err)
+	require.NotNil(t, branch)
 }
 
 func TestManager_DeleteBranch(t *testing.T) {

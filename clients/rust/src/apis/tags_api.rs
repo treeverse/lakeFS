@@ -24,7 +24,7 @@ pub enum CreateTagError {
     Status403(models::Error),
     Status404(models::Error),
     Status409(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -36,7 +36,7 @@ pub enum DeleteTagError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -47,7 +47,7 @@ pub enum DeleteTagError {
 pub enum GetTagError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -58,7 +58,7 @@ pub enum GetTagError {
 pub enum ListTagsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

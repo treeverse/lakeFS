@@ -73,6 +73,7 @@ func localDiff(ctx context.Context, client apigen.ClientWithResponsesInterface, 
 		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
 		IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeGID,
+		SymlinkSupport:      cfg.Local.SymlinkSupport,
 	})
 	if err != nil {
 		DieErr(err)
@@ -146,6 +147,7 @@ func buildLocalConfig(syncFlags local.SyncFlags, cfg *Configuration) local.Confi
 		SyncFlags:           syncFlags,
 		MaxDownloadRetries:  uint64(cfg.Server.Retries.MaxAttempts),
 		SkipNonRegularFiles: cfg.Local.SkipNonRegularFiles,
+		SymlinkSupport:      cfg.Local.SymlinkSupport,
 		IncludePerm:         cfg.Experimental.Local.POSIXPerm.Enabled,
 		IncludeUID:          cfg.Experimental.Local.POSIXPerm.IncludeUID,
 		IncludeGID:          cfg.Experimental.Local.POSIXPerm.IncludeGID,

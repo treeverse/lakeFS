@@ -456,7 +456,6 @@ func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.Reposit
 		release, err := m.branchOwnership.Own(ctx, requestID, string(branchID))
 		if err != nil {
 			logging.FromContext(ctx).
-				WithFields(logging.Fields{}).
 				WithError(err).
 				Warn("Failed to get ownership on branch; continuing but may be slow")
 		} else {
@@ -467,6 +466,10 @@ func (m *Manager) BranchUpdate(ctx context.Context, repository *graveler.Reposit
 	if err != nil {
 		return err
 	}
+
+	// clone the branch information to avoid mutating the shared result returned by batch executor
+	b = b.Clone()
+
 	newBranch, err := f(b)
 	// return on error or nothing to update
 	if err != nil || newBranch == nil {

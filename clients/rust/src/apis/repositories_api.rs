@@ -22,7 +22,7 @@ pub enum CreateRepositoryError {
     Status400(models::Error),
     Status401(models::Error),
     Status409(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -34,7 +34,7 @@ pub enum DeleteGcRulesError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -45,7 +45,7 @@ pub enum DeleteGcRulesError {
 pub enum DeleteRepositoryError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -57,7 +57,7 @@ pub enum DumpStatusError {
     Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -79,7 +79,7 @@ pub enum DumpSubmitError {
 pub enum GetBranchProtectionRulesError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -90,7 +90,7 @@ pub enum GetBranchProtectionRulesError {
 pub enum GetGcRulesError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -101,7 +101,7 @@ pub enum GetGcRulesError {
 pub enum GetRepositoryError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -112,7 +112,7 @@ pub enum GetRepositoryError {
 pub enum GetRepositoryMetadataError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -122,7 +122,7 @@ pub enum GetRepositoryMetadataError {
 #[serde(untagged)]
 pub enum ListRepositoriesError {
     Status401(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -134,7 +134,7 @@ pub enum RestoreStatusError {
     Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -160,7 +160,7 @@ pub enum SetBranchProtectionRulesError {
     Status403(models::Error),
     Status404(models::Error),
     Status412(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -172,7 +172,7 @@ pub enum SetGcRulesError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
