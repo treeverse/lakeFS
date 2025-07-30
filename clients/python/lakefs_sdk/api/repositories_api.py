@@ -197,7 +197,7 @@ class RepositoriesApi:
             '400': "Error",
             '401': "Error",
             '409': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -627,7 +627,7 @@ class RepositoriesApi:
             '400': "Error",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -909,7 +909,7 @@ class RepositoriesApi:
             '200': "List[BranchProtectionRule]",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1050,7 +1050,7 @@ class RepositoriesApi:
             '200': "GarbageCollectionRules",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1191,7 +1191,7 @@ class RepositoriesApi:
             '200': "Repository",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1332,7 +1332,7 @@ class RepositoriesApi:
             '200': "Dict[str, str]",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1496,7 +1496,7 @@ class RepositoriesApi:
         _response_types_map = {
             '200': "RepositoryList",
             '401': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1646,7 +1646,7 @@ class RepositoriesApi:
             '400': "Error",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(

@@ -206,7 +206,7 @@ class BranchesApi:
             '403': "Error",
             '404': "Error",
             '409': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -365,7 +365,7 @@ class BranchesApi:
             '403': "Error",
             '404': "Error",
             '409': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -698,7 +698,7 @@ class BranchesApi:
             '200': "DiffList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -847,7 +847,7 @@ class BranchesApi:
             '200': "Ref",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1020,7 +1020,7 @@ class BranchesApi:
             '200': "RefList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(

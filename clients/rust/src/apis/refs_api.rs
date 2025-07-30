@@ -21,7 +21,7 @@ use super::{Error, configuration};
 pub enum DiffRefsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -33,7 +33,7 @@ pub enum FindMergeBaseError {
     Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -44,7 +44,7 @@ pub enum FindMergeBaseError {
 pub enum LogCommitsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -59,7 +59,7 @@ pub enum MergeIntoBranchError {
     Status404(models::Error),
     Status409(models::MergeResult),
     Status412(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

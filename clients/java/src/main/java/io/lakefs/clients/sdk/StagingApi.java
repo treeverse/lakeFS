@@ -198,7 +198,7 @@ public class StagingApi {
             <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -216,7 +216,7 @@ public class StagingApi {
             <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -235,7 +235,7 @@ public class StagingApi {
             <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -254,7 +254,7 @@ public class StagingApi {
             <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
             <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
             <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -276,7 +276,7 @@ public class StagingApi {
         <tr><td> 200 </td><td> physical address for staging area </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */
@@ -418,7 +418,7 @@ public class StagingApi {
             <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -440,7 +440,7 @@ public class StagingApi {
             <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -463,7 +463,7 @@ public class StagingApi {
             <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -486,7 +486,7 @@ public class StagingApi {
             <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
             <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
             <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
-            <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
             <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
          </table>
          */
@@ -513,7 +513,7 @@ public class StagingApi {
         <tr><td> 404 </td><td> Internal Server Error </td><td>  -  </td></tr>
         <tr><td> 409 </td><td> conflict with a commit, try here </td><td>  -  </td></tr>
         <tr><td> 412 </td><td> Precondition Failed </td><td>  -  </td></tr>
-        <tr><td> 420 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
         <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
      </table>
      */

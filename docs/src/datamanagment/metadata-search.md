@@ -143,7 +143,7 @@ point in time from which to process commits for metadata extraction. If omitted,
 the branch was created.
 * `metadata_settings.max_commits` `(int : 0)` - The maximum number of commits to process per searchable branch.
   Uses 0 by default that disables the limit.
-* `metadata_settings.repositories` `(map[string]branches:string[] : {})` - A mapping of repositories and the branches in each where metadata 
+* `repositories` `(map[string]branches:string[] : {})` - A mapping of repositories and the branches in each where metadata 
 search should be enabled. You can specify full branch names or use branch prefixes for flexibility. Prefixes should be expressed using a trailing
 asterisk, e.g., `dev-*`.  
 
@@ -164,15 +164,15 @@ asterisk, e.g., `dev-*`.
     metadata_settings:
       since: "2025-07-15T00:00:00+00"
       max_commits: 100
-      repositories:
-        "example-repo-1":
-           branches:
-             - "main"
-             - "dev"
-        "example-repo-2":
-           branches:  
-             - "main"
-             - "feature-*"
+    repositories:
+      "example-repo-1":
+        branches:
+         - "main"
+         - "dev"
+      "example-repo-2":
+        branches:  
+         - "main"
+         - "feature-*"
     ```
 
 ## How to Search by Metadata

@@ -40,7 +40,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: wrong setup state for this operation
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -64,7 +64,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SetupState'
           description: lakeFS setup state
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -104,7 +104,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: setup was already called
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -160,7 +160,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -213,7 +213,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -251,7 +251,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -275,7 +275,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthCapabilities'
           description: auth capabilities
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -334,7 +334,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -378,7 +378,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -417,7 +417,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -458,7 +458,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -516,7 +516,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -554,7 +554,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -593,7 +593,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -634,7 +634,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -692,7 +692,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -737,7 +737,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -776,7 +776,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -817,7 +817,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -870,7 +870,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -936,7 +936,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -981,7 +981,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1025,7 +1025,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1096,7 +1096,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1137,7 +1137,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1182,7 +1182,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1230,7 +1230,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1301,7 +1301,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1382,7 +1382,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1427,7 +1427,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1471,7 +1471,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1516,7 +1516,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1574,7 +1574,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1648,7 +1648,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1692,7 +1692,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1765,7 +1765,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1810,7 +1810,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1854,7 +1854,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1896,7 +1896,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorNoACL'
           description: "Group not found, or group found but has no ACL"
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -1939,7 +1939,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2007,7 +2007,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2063,7 +2063,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2111,7 +2111,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2152,7 +2152,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2192,7 +2192,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2234,7 +2234,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2279,7 +2279,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2324,7 +2324,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2364,7 +2364,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2413,7 +2413,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2464,7 +2464,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2536,7 +2536,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Precondition Failed
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2584,7 +2584,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2636,7 +2636,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2694,7 +2694,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2795,7 +2795,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2924,7 +2924,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -2989,7 +2989,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3048,7 +3048,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3096,7 +3096,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3176,7 +3176,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3241,7 +3241,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3371,7 +3371,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3460,7 +3460,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Precondition Failed (e.g. a pre-commit hook returned a failure)
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3517,7 +3517,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3577,7 +3577,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3625,7 +3625,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3687,7 +3687,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3763,7 +3763,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3832,7 +3832,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Conflict Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3906,7 +3906,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Conflict Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -3971,7 +3971,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4059,7 +4059,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: precondition failed (e.g. a pre-merge hook returned a failure)
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4147,7 +4147,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4265,7 +4265,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4314,7 +4314,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4475,7 +4475,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Requested Range Not Satisfiable
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4578,7 +4578,7 @@ paths:
           description: object expired
         "416":
           description: Requested Range Not Satisfiable
-        "420":
+        "429":
           description: too many requests
         default:
           description: internal server error
@@ -4649,7 +4649,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4721,7 +4721,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4804,7 +4804,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StagingLocation'
           description: "conflict with a commit, try here"
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4884,7 +4884,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -4966,7 +4966,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5030,7 +5030,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5129,7 +5129,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Precondition Failed
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5195,7 +5195,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5251,7 +5251,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5317,7 +5317,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5379,7 +5379,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5445,7 +5445,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5556,7 +5556,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Precondition Failed
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5632,7 +5632,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5702,7 +5702,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5779,7 +5779,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5861,7 +5861,7 @@ paths:
           description: Bad Request
         "410":
           description: object gone (but partial metadata may be available)
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5927,7 +5927,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Bad Request
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -5987,7 +5987,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6090,7 +6090,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6147,7 +6147,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6225,7 +6225,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6274,7 +6274,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6343,7 +6343,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6400,7 +6400,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6482,7 +6482,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6538,7 +6538,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6594,7 +6594,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6633,7 +6633,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6672,7 +6672,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6714,7 +6714,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6758,7 +6758,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6806,7 +6806,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6865,7 +6865,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6911,7 +6911,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6955,7 +6955,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -6999,7 +6999,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -7043,7 +7043,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -7127,7 +7127,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -7193,7 +7193,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Conflicts With Target
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -7251,7 +7251,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -7315,7 +7315,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -7393,7 +7393,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: precondition failed (e.g. a pre-merge hook returned a failure)
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -7523,7 +7523,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Unauthorized
-        "420":
+        "429":
           description: too many requests
         default:
           content:
@@ -7567,7 +7567,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: Resource Not Found
-        "420":
+        "429":
           description: too many requests
         default:
           content:

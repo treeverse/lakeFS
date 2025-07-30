@@ -624,7 +624,7 @@ class AuthApi:
             '201': "CredentialsWithSecret",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -772,7 +772,7 @@ class AuthApi:
             '201': "Group",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -921,7 +921,7 @@ class AuthApi:
             '400': "Error",
             '401': "Error",
             '409': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1070,7 +1070,7 @@ class AuthApi:
             '400': "Error",
             '401': "Error",
             '409': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -2507,7 +2507,7 @@ class AuthApi:
             '401': "Error",
             '403': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -2656,7 +2656,7 @@ class AuthApi:
             '200': "Credentials",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -2927,7 +2927,7 @@ class AuthApi:
             '200': "ExternalPrincipal",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -3068,7 +3068,7 @@ class AuthApi:
             '200': "Group",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -3209,7 +3209,7 @@ class AuthApi:
             '200': "ACL",
             '401': "Error",
             '404': "ErrorNoACL",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -3350,7 +3350,7 @@ class AuthApi:
             '200': "Policy",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -3491,7 +3491,7 @@ class AuthApi:
             '200': "User",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -3655,7 +3655,7 @@ class AuthApi:
         _response_types_map = {
             '200': "UserList",
             '401': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -3820,7 +3820,7 @@ class AuthApi:
             '200': "PolicyList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -3976,7 +3976,7 @@ class AuthApi:
         _response_types_map = {
             '200': "GroupList",
             '401': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -4132,7 +4132,7 @@ class AuthApi:
         _response_types_map = {
             '200': "PolicyList",
             '401': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -4297,7 +4297,7 @@ class AuthApi:
             '200': "CredentialsList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -4462,7 +4462,7 @@ class AuthApi:
             '200': "ExternalPrincipalList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -4627,7 +4627,7 @@ class AuthApi:
             '200': "GroupList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -4800,7 +4800,7 @@ class AuthApi:
             '200': "PolicyList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -4956,7 +4956,7 @@ class AuthApi:
         _response_types_map = {
             '200': "UserList",
             '401': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -5103,7 +5103,7 @@ class AuthApi:
         _response_types_map = {
             '200': "AuthenticationToken",
             '401': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -5542,7 +5542,7 @@ class AuthApi:
             '400': "Error",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(

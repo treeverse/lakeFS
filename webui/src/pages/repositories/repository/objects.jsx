@@ -1516,14 +1516,14 @@ const ObjectsBrowser = ({ config }) => {
 };
 
 const RepositoryObjectsPage = () => {
-    const {repo} = useRefs();
+    const {repo, loading: repoLoading, error: repoError} = useRefs();
     const {config, loading: configsLoading, error: configsError} = useConfigContext();
 
     const [setActivePage] = useOutletContext();
     useEffect(() => setActivePage("objects"), [setActivePage]);
 
-    if (configsLoading) return <Loading/>;
-    if (configsError) return <RepoError error={configsError}/>;
+    if (repoLoading || configsLoading) return <Loading/>;
+    if (repoError || configsError) return <RepoError error={repoError || configsError}/>;
 
     const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(config?.storages, repo);
     if (configLoading) return <Loading/>;

@@ -21,7 +21,7 @@ use super::{Error, configuration};
 pub enum AddGroupMembershipError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -32,7 +32,7 @@ pub enum AddGroupMembershipError {
 pub enum AttachPolicyToGroupError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -43,7 +43,7 @@ pub enum AttachPolicyToGroupError {
 pub enum AttachPolicyToUserError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -54,7 +54,7 @@ pub enum AttachPolicyToUserError {
 pub enum CreateCredentialsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -65,7 +65,7 @@ pub enum CreateCredentialsError {
 pub enum CreateGroupError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -77,7 +77,7 @@ pub enum CreatePolicyError {
     Status400(models::Error),
     Status401(models::Error),
     Status409(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -89,7 +89,7 @@ pub enum CreateUserError {
     Status400(models::Error),
     Status401(models::Error),
     Status409(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -101,7 +101,7 @@ pub enum CreateUserExternalPrincipalError {
     Status401(models::Error),
     Status404(models::Error),
     Status409(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -112,7 +112,7 @@ pub enum CreateUserExternalPrincipalError {
 pub enum DeleteCredentialsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -123,7 +123,7 @@ pub enum DeleteCredentialsError {
 pub enum DeleteGroupError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -134,7 +134,7 @@ pub enum DeleteGroupError {
 pub enum DeleteGroupMembershipError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -145,7 +145,7 @@ pub enum DeleteGroupMembershipError {
 pub enum DeletePolicyError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -156,7 +156,7 @@ pub enum DeletePolicyError {
 pub enum DeleteUserError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -167,7 +167,7 @@ pub enum DeleteUserError {
 pub enum DeleteUserExternalPrincipalError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -178,7 +178,7 @@ pub enum DeleteUserExternalPrincipalError {
 pub enum DetachPolicyFromGroupError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -189,7 +189,7 @@ pub enum DetachPolicyFromGroupError {
 pub enum DetachPolicyFromUserError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -202,7 +202,7 @@ pub enum ExternalPrincipalLoginError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -213,7 +213,7 @@ pub enum ExternalPrincipalLoginError {
 pub enum GetCredentialsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -231,7 +231,7 @@ pub enum GetCurrentUserError {
 pub enum GetExternalPrincipalError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -242,7 +242,7 @@ pub enum GetExternalPrincipalError {
 pub enum GetGroupError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -253,7 +253,7 @@ pub enum GetGroupError {
 pub enum GetGroupAclError {
     Status401(models::Error),
     Status404(models::ErrorNoAcl),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -264,7 +264,7 @@ pub enum GetGroupAclError {
 pub enum GetPolicyError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -275,7 +275,7 @@ pub enum GetPolicyError {
 pub enum GetUserError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -285,7 +285,7 @@ pub enum GetUserError {
 #[serde(untagged)]
 pub enum ListGroupMembersError {
     Status401(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -296,7 +296,7 @@ pub enum ListGroupMembersError {
 pub enum ListGroupPoliciesError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -306,7 +306,7 @@ pub enum ListGroupPoliciesError {
 #[serde(untagged)]
 pub enum ListGroupsError {
     Status401(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -316,7 +316,7 @@ pub enum ListGroupsError {
 #[serde(untagged)]
 pub enum ListPoliciesError {
     Status401(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -327,7 +327,7 @@ pub enum ListPoliciesError {
 pub enum ListUserCredentialsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -338,7 +338,7 @@ pub enum ListUserCredentialsError {
 pub enum ListUserExternalPrincipalsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -349,7 +349,7 @@ pub enum ListUserExternalPrincipalsError {
 pub enum ListUserGroupsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -360,7 +360,7 @@ pub enum ListUserGroupsError {
 pub enum ListUserPoliciesError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -370,7 +370,7 @@ pub enum ListUserPoliciesError {
 #[serde(untagged)]
 pub enum ListUsersError {
     Status401(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -380,7 +380,7 @@ pub enum ListUsersError {
 #[serde(untagged)]
 pub enum LoginError {
     Status401(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -400,7 +400,7 @@ pub enum OauthCallbackError {
 pub enum SetGroupAclError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -412,7 +412,7 @@ pub enum UpdatePolicyError {
     Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

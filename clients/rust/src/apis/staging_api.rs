@@ -21,7 +21,7 @@ use super::{Error, configuration};
 pub enum GetPhysicalAddressError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -36,7 +36,7 @@ pub enum LinkPhysicalAddressError {
     Status404(models::Error),
     Status409(models::StagingLocation),
     Status412(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

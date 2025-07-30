@@ -350,7 +350,7 @@ class ImportApi:
             '401': "Error",
             '403': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -507,7 +507,7 @@ class ImportApi:
             '200': "ImportStatus",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(

@@ -23,7 +23,7 @@ pub enum CopyObjectError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -35,7 +35,7 @@ pub enum DeleteObjectError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -47,7 +47,7 @@ pub enum DeleteObjectsError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -61,7 +61,7 @@ pub enum GetObjectError {
     Status404(models::Error),
     Status410(models::Error),
     Status416(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -72,7 +72,7 @@ pub enum GetObjectError {
 pub enum GetUnderlyingPropertiesError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -86,7 +86,7 @@ pub enum HeadObjectError {
     Status404(),
     Status410(),
     Status416(),
-    Status420(),
+    Status429(),
     DefaultResponse(),
     UnknownValue(serde_json::Value),
 }
@@ -97,7 +97,7 @@ pub enum HeadObjectError {
 pub enum ListObjectsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -110,7 +110,7 @@ pub enum StatObjectError {
     Status404(models::Error),
     Status400(models::Error),
     Status410(),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -122,7 +122,7 @@ pub enum UpdateObjectUserMetadataError {
     Status401(models::Error),
     Status404(models::Error),
     Status400(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -136,7 +136,7 @@ pub enum UploadObjectError {
     Status403(models::Error),
     Status404(models::Error),
     Status412(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

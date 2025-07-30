@@ -11,12 +11,12 @@ import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
 
 const NavUserInfo = () => {
-    const { user, loading, error } = useUser();
+    const { user, loading: userLoading, error } = useUser();
     const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
     const {config, error: versionError, loading: versionLoading} = useConfigContext();
     const versionConfig = config?.versionConfig || {};
 
-    if (loading) return <Navbar.Text>Loading...</Navbar.Text>;
+    if (userLoading || versionLoading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);
     const notifyNewVersion = !versionLoading && !versionError && versionConfig.upgrade_recommended
     const NavBarTitle = () => {
