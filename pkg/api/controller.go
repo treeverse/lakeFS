@@ -5486,18 +5486,7 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 		return nil
 	}
 
-	var customViewers []apigen.CustomViewer
-	if uiConfig.CustomViewers != nil {
-		for _, viewer := range uiConfig.CustomViewers {
-			customViewers = append(customViewers, apigen.CustomViewer{
-				Name:         viewer.Name,
-				Url:          viewer.URL,
-				Extensions:   &viewer.Extensions,
-				ContentTypes: &viewer.ContentTypes,
-			})
-		}
-	}
-
+	customViewers := uiConfig.GetCustomViewers()
 	return &apigen.UIConfig{
 		CustomViewers: &customViewers,
 	}
