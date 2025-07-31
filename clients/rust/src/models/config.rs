@@ -18,6 +18,8 @@ pub struct Config {
     pub storage_config: Option<Box<models::StorageConfig>>,
     #[serde(rename = "storage_config_list", skip_serializing_if = "Option::is_none")]
     pub storage_config_list: Option<Vec<models::StorageConfig>>,
+    #[serde(rename = "ui_config", skip_serializing_if = "Option::is_none")]
+    pub ui_config: Option<Box<models::UiConfig>>,
 }
 
 impl Config {
@@ -26,6 +28,7 @@ impl Config {
             version_config: None,
             storage_config: None,
             storage_config_list: None,
+            ui_config: None,
         }
     }
 }

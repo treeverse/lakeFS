@@ -32,6 +32,7 @@ docs/Credentials.md
 docs/CredentialsList.md
 docs/CredentialsWithSecret.md
 docs/CurrentUser.md
+docs/CustomViewer.md
 docs/Diff.md
 docs/DiffList.md
 docs/DiffObjectStat.md
@@ -121,6 +122,7 @@ docs/StsAuthRequest.md
 docs/TagCreation.md
 docs/TagsApi.md
 docs/TaskInfo.md
+docs/UIConfig.md
 docs/UnderlyingObjectProperties.md
 docs/UpdateObjectUserMetadata.md
 docs/UpdateToken.md
@@ -182,6 +184,7 @@ lakefs_sdk/models/credentials.py
 lakefs_sdk/models/credentials_list.py
 lakefs_sdk/models/credentials_with_secret.py
 lakefs_sdk/models/current_user.py
+lakefs_sdk/models/custom_viewer.py
 lakefs_sdk/models/diff.py
 lakefs_sdk/models/diff_list.py
 lakefs_sdk/models/diff_object_stat.py
@@ -258,6 +261,7 @@ lakefs_sdk/models/storage_uri.py
 lakefs_sdk/models/sts_auth_request.py
 lakefs_sdk/models/tag_creation.py
 lakefs_sdk/models/task_info.py
+lakefs_sdk/models/ui_config.py
 lakefs_sdk/models/underlying_object_properties.py
 lakefs_sdk/models/update_object_user_metadata.py
 lakefs_sdk/models/update_token.py
@@ -306,6 +310,7 @@ test/test_credentials.py
 test/test_credentials_list.py
 test/test_credentials_with_secret.py
 test/test_current_user.py
+test/test_custom_viewer.py
 test/test_diff.py
 test/test_diff_list.py
 test/test_diff_object_stat.py
@@ -395,6 +400,7 @@ test/test_sts_auth_request.py
 test/test_tag_creation.py
 test/test_tags_api.py
 test/test_task_info.py
+test/test_ui_config.py
 test/test_underlying_object_properties.py
 test/test_update_object_user_metadata.py
 test/test_update_token.py

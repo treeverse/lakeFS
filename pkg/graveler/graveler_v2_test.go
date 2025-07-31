@@ -959,6 +959,53 @@ func TestGravelerCommit_v2(t *testing.T) {
 		require.True(t, errors.Is(err, graveler.ErrTooManyTries))
 		require.Equal(t, val, graveler.CommitID(""))
 	})
+
+	t.Run("commit with allow empty when no sealed tokens", func(t *testing.T) {
+		test := testutil.InitGravelerTest(t)
+
+		// First branch update
+		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+				b := graveler.Branch{
+					CommitID:     commit1ID,
+					StagingToken: stagingToken1,
+					SealedTokens: []graveler.StagingToken{},
+				}
+				updatedBranch, err := f(&b)
+				require.NoError(t, err)
+				// The staging token should be added to sealed tokens
+				require.Equal(t, []graveler.StagingToken{stagingToken1}, updatedBranch.SealedTokens)
+				return nil
+			}).Times(1)
+
+		// Second branch update
+		test.RefManager.EXPECT().BranchUpdate(ctx, repository, branch1ID, gomock.Any()).
+			Do(func(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.BranchID, f graveler.BranchUpdateFunc) error {
+				// This branch update should have NO sealed tokens to check we will not return ErrNoChanges
+				b := graveler.Branch{
+					CommitID:     commit1ID,
+					StagingToken: "new-staging-token",
+					SealedTokens: []graveler.StagingToken{},
+				}
+				updatedBranch, err := f(&b)
+				require.NoError(t, err)
+				// After commit, sealed tokens should be cleared
+				require.Equal(t, []graveler.StagingToken{}, updatedBranch.SealedTokens)
+				return nil
+			}).Times(1)
+
+		// Set up expectations for the commit process
+		test.CommittedManager.EXPECT().Commit(ctx, repository.StorageID, repository.StorageNamespace, mr1ID, gomock.Any(), true, []graveler.SetOptionsFunc{}).Times(1).Return(graveler.MetaRangeID("new-mr"), graveler.DiffSummary{}, nil)
+		test.ProtectedBranchesManager.EXPECT().IsBlocked(ctx, repository, branch1ID, graveler.BranchProtectionBlockedAction_COMMIT).Return(false, nil)
+		test.RefManager.EXPECT().AddCommit(ctx, repository, gomock.Any()).Return(graveler.CommitID("new-commit"), nil)
+		test.RefManager.EXPECT().GetCommit(ctx, repository, commit1ID).Times(1).Return(&commit1, nil)
+
+		// Call commit with allow empty
+		val, err := test.Sut.Commit(ctx, repository, branch1ID, graveler.CommitParams{AllowEmpty: true})
+		require.NoError(t, err)
+		require.NotNil(t, val)
+		require.Equal(t, graveler.CommitID("new-commit"), val)
+	})
 }
 
 func TestGravelerCreateCommitRecord_v2(t *testing.T) {
