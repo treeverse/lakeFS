@@ -117,7 +117,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 	viper.Set("committed.sstable.memory.cache_size_bytes", 2*1024*1024)
 
 	collector := &memCollector{}
-	cfg := &configfactory.ConfigWithAuth{}
+	cfg := &configfactory.ConfigImpl{}
 	baseCfg, err := config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 	kvStore := kvtest.GetStore(ctx, t)

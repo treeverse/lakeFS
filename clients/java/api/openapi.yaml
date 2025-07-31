@@ -9424,6 +9424,24 @@ components:
           version: version
           upgrade_recommended: true
           upgrade_url: upgrade_url
+        ui_config:
+          custom_viewers:
+          - extensions:
+            - extensions
+            - extensions
+            name: name
+            content_types:
+            - content_types
+            - content_types
+            url: url
+          - extensions:
+            - extensions
+            - extensions
+            name: name
+            content_types:
+            - content_types
+            - content_types
+            url: url
       properties:
         version_config:
           $ref: '#/components/schemas/VersionConfig'
@@ -9433,6 +9451,8 @@ components:
           items:
             $ref: '#/components/schemas/StorageConfig'
           type: array
+        ui_config:
+          $ref: '#/components/schemas/UIConfig'
       type: object
     VersionConfig:
       example:
@@ -9452,6 +9472,58 @@ components:
           type: boolean
         upgrade_url:
           type: string
+      type: object
+    UIConfig:
+      example:
+        custom_viewers:
+        - extensions:
+          - extensions
+          - extensions
+          name: name
+          content_types:
+          - content_types
+          - content_types
+          url: url
+        - extensions:
+          - extensions
+          - extensions
+          name: name
+          content_types:
+          - content_types
+          - content_types
+          url: url
+      properties:
+        custom_viewers:
+          items:
+            $ref: '#/components/schemas/CustomViewer'
+          type: array
+      type: object
+    CustomViewer:
+      example:
+        extensions:
+        - extensions
+        - extensions
+        name: name
+        content_types:
+        - content_types
+        - content_types
+        url: url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        extensions:
+          items:
+            type: string
+          type: array
+        content_types:
+          items:
+            type: string
+          type: array
+      required:
+      - name
+      - url
       type: object
     GarbageCollectionConfig:
       example:

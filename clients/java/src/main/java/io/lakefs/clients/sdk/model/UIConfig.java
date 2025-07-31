@@ -19,9 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.StorageConfig;
-import io.lakefs.clients.sdk.model.UIConfig;
-import io.lakefs.clients.sdk.model.VersionConfig;
+import io.lakefs.clients.sdk.model.CustomViewer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,118 +50,43 @@ import java.util.Set;
 import io.lakefs.clients.sdk.JSON;
 
 /**
- * Config
+ * UIConfig
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
-public class Config {
-  public static final String SERIALIZED_NAME_VERSION_CONFIG = "version_config";
-  @SerializedName(SERIALIZED_NAME_VERSION_CONFIG)
-  private VersionConfig versionConfig;
+public class UIConfig {
+  public static final String SERIALIZED_NAME_CUSTOM_VIEWERS = "custom_viewers";
+  @SerializedName(SERIALIZED_NAME_CUSTOM_VIEWERS)
+  private List<CustomViewer> customViewers;
 
-  public static final String SERIALIZED_NAME_STORAGE_CONFIG = "storage_config";
-  @SerializedName(SERIALIZED_NAME_STORAGE_CONFIG)
-  private StorageConfig storageConfig;
-
-  public static final String SERIALIZED_NAME_STORAGE_CONFIG_LIST = "storage_config_list";
-  @SerializedName(SERIALIZED_NAME_STORAGE_CONFIG_LIST)
-  private List<StorageConfig> storageConfigList;
-
-  public static final String SERIALIZED_NAME_UI_CONFIG = "ui_config";
-  @SerializedName(SERIALIZED_NAME_UI_CONFIG)
-  private UIConfig uiConfig;
-
-  public Config() {
+  public UIConfig() {
   }
 
-  public Config versionConfig(VersionConfig versionConfig) {
+  public UIConfig customViewers(List<CustomViewer> customViewers) {
     
-    this.versionConfig = versionConfig;
+    this.customViewers = customViewers;
     return this;
   }
 
-   /**
-   * Get versionConfig
-   * @return versionConfig
-  **/
-  @javax.annotation.Nullable
-  public VersionConfig getVersionConfig() {
-    return versionConfig;
-  }
-
-
-  public void setVersionConfig(VersionConfig versionConfig) {
-    this.versionConfig = versionConfig;
-  }
-
-
-  public Config storageConfig(StorageConfig storageConfig) {
-    
-    this.storageConfig = storageConfig;
-    return this;
-  }
-
-   /**
-   * Get storageConfig
-   * @return storageConfig
-  **/
-  @javax.annotation.Nullable
-  public StorageConfig getStorageConfig() {
-    return storageConfig;
-  }
-
-
-  public void setStorageConfig(StorageConfig storageConfig) {
-    this.storageConfig = storageConfig;
-  }
-
-
-  public Config storageConfigList(List<StorageConfig> storageConfigList) {
-    
-    this.storageConfigList = storageConfigList;
-    return this;
-  }
-
-  public Config addStorageConfigListItem(StorageConfig storageConfigListItem) {
-    if (this.storageConfigList == null) {
-      this.storageConfigList = new ArrayList<>();
+  public UIConfig addCustomViewersItem(CustomViewer customViewersItem) {
+    if (this.customViewers == null) {
+      this.customViewers = new ArrayList<>();
     }
-    this.storageConfigList.add(storageConfigListItem);
+    this.customViewers.add(customViewersItem);
     return this;
   }
 
    /**
-   * Get storageConfigList
-   * @return storageConfigList
+   * Get customViewers
+   * @return customViewers
   **/
   @javax.annotation.Nullable
-  public List<StorageConfig> getStorageConfigList() {
-    return storageConfigList;
+  public List<CustomViewer> getCustomViewers() {
+    return customViewers;
   }
 
 
-  public void setStorageConfigList(List<StorageConfig> storageConfigList) {
-    this.storageConfigList = storageConfigList;
-  }
-
-
-  public Config uiConfig(UIConfig uiConfig) {
-    
-    this.uiConfig = uiConfig;
-    return this;
-  }
-
-   /**
-   * Get uiConfig
-   * @return uiConfig
-  **/
-  @javax.annotation.Nullable
-  public UIConfig getUiConfig() {
-    return uiConfig;
-  }
-
-
-  public void setUiConfig(UIConfig uiConfig) {
-    this.uiConfig = uiConfig;
+  public void setCustomViewers(List<CustomViewer> customViewers) {
+    this.customViewers = customViewers;
   }
 
   /**
@@ -179,9 +102,9 @@ public class Config {
    *
    * @param key name of the property
    * @param value value of the property
-   * @return the Config instance itself
+   * @return the UIConfig instance itself
    */
-  public Config putAdditionalProperty(String key, Object value) {
+  public UIConfig putAdditionalProperty(String key, Object value) {
     if (this.additionalProperties == null) {
         this.additionalProperties = new HashMap<String, Object>();
     }
@@ -220,27 +143,21 @@ public class Config {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    Config config = (Config) o;
-    return Objects.equals(this.versionConfig, config.versionConfig) &&
-        Objects.equals(this.storageConfig, config.storageConfig) &&
-        Objects.equals(this.storageConfigList, config.storageConfigList) &&
-        Objects.equals(this.uiConfig, config.uiConfig)&&
-        Objects.equals(this.additionalProperties, config.additionalProperties);
+    UIConfig uiConfig = (UIConfig) o;
+    return Objects.equals(this.customViewers, uiConfig.customViewers)&&
+        Objects.equals(this.additionalProperties, uiConfig.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(versionConfig, storageConfig, storageConfigList, uiConfig, additionalProperties);
+    return Objects.hash(customViewers, additionalProperties);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class Config {\n");
-    sb.append("    versionConfig: ").append(toIndentedString(versionConfig)).append("\n");
-    sb.append("    storageConfig: ").append(toIndentedString(storageConfig)).append("\n");
-    sb.append("    storageConfigList: ").append(toIndentedString(storageConfigList)).append("\n");
-    sb.append("    uiConfig: ").append(toIndentedString(uiConfig)).append("\n");
+    sb.append("class UIConfig {\n");
+    sb.append("    customViewers: ").append(toIndentedString(customViewers)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -264,10 +181,7 @@ public class Config {
   static {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
-    openapiFields.add("version_config");
-    openapiFields.add("storage_config");
-    openapiFields.add("storage_config_list");
-    openapiFields.add("ui_config");
+    openapiFields.add("custom_viewers");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -277,40 +191,28 @@ public class Config {
   * Validates the JSON Element and throws an exception if issues found
   *
   * @param jsonElement JSON Element
-  * @throws IOException if the JSON Element is invalid with respect to Config
+  * @throws IOException if the JSON Element is invalid with respect to UIConfig
   */
   public static void validateJsonElement(JsonElement jsonElement) throws IOException {
       if (jsonElement == null) {
-        if (!Config.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
-          throw new IllegalArgumentException(String.format("The required field(s) %s in Config is not found in the empty JSON string", Config.openapiRequiredFields.toString()));
+        if (!UIConfig.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format("The required field(s) %s in UIConfig is not found in the empty JSON string", UIConfig.openapiRequiredFields.toString()));
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
-      // validate the optional field `version_config`
-      if (jsonObj.get("version_config") != null && !jsonObj.get("version_config").isJsonNull()) {
-        VersionConfig.validateJsonElement(jsonObj.get("version_config"));
-      }
-      // validate the optional field `storage_config`
-      if (jsonObj.get("storage_config") != null && !jsonObj.get("storage_config").isJsonNull()) {
-        StorageConfig.validateJsonElement(jsonObj.get("storage_config"));
-      }
-      if (jsonObj.get("storage_config_list") != null && !jsonObj.get("storage_config_list").isJsonNull()) {
-        JsonArray jsonArraystorageConfigList = jsonObj.getAsJsonArray("storage_config_list");
-        if (jsonArraystorageConfigList != null) {
+      if (jsonObj.get("custom_viewers") != null && !jsonObj.get("custom_viewers").isJsonNull()) {
+        JsonArray jsonArraycustomViewers = jsonObj.getAsJsonArray("custom_viewers");
+        if (jsonArraycustomViewers != null) {
           // ensure the json data is an array
-          if (!jsonObj.get("storage_config_list").isJsonArray()) {
-            throw new IllegalArgumentException(String.format("Expected the field `storage_config_list` to be an array in the JSON string but got `%s`", jsonObj.get("storage_config_list").toString()));
+          if (!jsonObj.get("custom_viewers").isJsonArray()) {
+            throw new IllegalArgumentException(String.format("Expected the field `custom_viewers` to be an array in the JSON string but got `%s`", jsonObj.get("custom_viewers").toString()));
           }
 
-          // validate the optional field `storage_config_list` (array)
-          for (int i = 0; i < jsonArraystorageConfigList.size(); i++) {
-            StorageConfig.validateJsonElement(jsonArraystorageConfigList.get(i));
+          // validate the optional field `custom_viewers` (array)
+          for (int i = 0; i < jsonArraycustomViewers.size(); i++) {
+            CustomViewer.validateJsonElement(jsonArraycustomViewers.get(i));
           };
         }
-      }
-      // validate the optional field `ui_config`
-      if (jsonObj.get("ui_config") != null && !jsonObj.get("ui_config").isJsonNull()) {
-        UIConfig.validateJsonElement(jsonObj.get("ui_config"));
       }
   }
 
@@ -318,16 +220,16 @@ public class Config {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-       if (!Config.class.isAssignableFrom(type.getRawType())) {
-         return null; // this class only serializes 'Config' and its subtypes
+       if (!UIConfig.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'UIConfig' and its subtypes
        }
        final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
-       final TypeAdapter<Config> thisAdapter
-                        = gson.getDelegateAdapter(this, TypeToken.get(Config.class));
+       final TypeAdapter<UIConfig> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(UIConfig.class));
 
-       return (TypeAdapter<T>) new TypeAdapter<Config>() {
+       return (TypeAdapter<T>) new TypeAdapter<UIConfig>() {
            @Override
-           public void write(JsonWriter out, Config value) throws IOException {
+           public void write(JsonWriter out, UIConfig value) throws IOException {
              JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
              obj.remove("additionalProperties");
              // serialize additional properties
@@ -350,12 +252,12 @@ public class Config {
            }
 
            @Override
-           public Config read(JsonReader in) throws IOException {
+           public UIConfig read(JsonReader in) throws IOException {
              JsonElement jsonElement = elementAdapter.read(in);
              validateJsonElement(jsonElement);
              JsonObject jsonObj = jsonElement.getAsJsonObject();
              // store additional fields in the deserialized instance
-             Config instance = thisAdapter.fromJsonTree(jsonObj);
+             UIConfig instance = thisAdapter.fromJsonTree(jsonObj);
              for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
                if (!openapiFields.contains(entry.getKey())) {
                  if (entry.getValue().isJsonPrimitive()) { // primitive type
@@ -382,18 +284,18 @@ public class Config {
   }
 
  /**
-  * Create an instance of Config given an JSON string
+  * Create an instance of UIConfig given an JSON string
   *
   * @param jsonString JSON string
-  * @return An instance of Config
-  * @throws IOException if the JSON string is invalid with respect to Config
+  * @return An instance of UIConfig
+  * @throws IOException if the JSON string is invalid with respect to UIConfig
   */
-  public static Config fromJson(String jsonString) throws IOException {
-    return JSON.getGson().fromJson(jsonString, Config.class);
+  public static UIConfig fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, UIConfig.class);
   }
 
  /**
-  * Convert an instance of Config to an JSON string
+  * Convert an instance of UIConfig to an JSON string
   *
   * @return JSON string
   */
