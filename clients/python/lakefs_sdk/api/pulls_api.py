@@ -196,7 +196,7 @@ class PullsApi:
             '403': "Error",
             '404': "Error",
             '409': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -346,7 +346,7 @@ class PullsApi:
             '400': "Error",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -519,7 +519,7 @@ class PullsApi:
             '200': "PullRequestsList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -672,7 +672,7 @@ class PullsApi:
             '404': "Error",
             '409': "MergeResult",
             '412': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(

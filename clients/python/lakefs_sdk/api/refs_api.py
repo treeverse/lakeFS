@@ -243,7 +243,7 @@ class RefsApi:
             '200': "DiffList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -401,7 +401,7 @@ class RefsApi:
             '400': "Error",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -619,7 +619,7 @@ class RefsApi:
             '200': "CommitList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -795,7 +795,7 @@ class RefsApi:
             '404': "Error",
             '409': "MergeResult",
             '412': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(

@@ -24,7 +24,7 @@ pub enum CreatePullRequestError {
     Status403(models::Error),
     Status404(models::Error),
     Status409(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -36,7 +36,7 @@ pub enum GetPullRequestError {
     Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -47,7 +47,7 @@ pub enum GetPullRequestError {
 pub enum ListPullRequestsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -62,7 +62,7 @@ pub enum MergePullRequestError {
     Status404(models::Error),
     Status409(models::MergeResult),
     Status412(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -75,7 +75,7 @@ pub enum UpdatePullRequestError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

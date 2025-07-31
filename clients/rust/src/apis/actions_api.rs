@@ -21,7 +21,7 @@ use super::{Error, configuration};
 pub enum GetRunError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -32,7 +32,7 @@ pub enum GetRunError {
 pub enum GetRunHookOutputError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -43,7 +43,7 @@ pub enum GetRunHookOutputError {
 pub enum ListRepositoryRunsError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -54,7 +54,7 @@ pub enum ListRepositoryRunsError {
 pub enum ListRunHooksError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

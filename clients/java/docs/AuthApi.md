@@ -134,7 +134,7 @@ null (empty response body)
 | **201** | membership added successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="attachPolicyToGroup"></a>
@@ -228,7 +228,7 @@ null (empty response body)
 | **201** | policy attached successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="attachPolicyToUser"></a>
@@ -322,7 +322,7 @@ null (empty response body)
 | **201** | policy attached successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createCredentials"></a>
@@ -415,7 +415,7 @@ public class Example {
 | **201** | credentials |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createGroup"></a>
@@ -509,7 +509,7 @@ public class Example {
 | **201** | group |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createPolicy"></a>
@@ -603,7 +603,7 @@ public class Example {
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **409** | Resource Conflicts With Target |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createUser"></a>
@@ -698,7 +698,7 @@ public class Example {
 | **400** | validation error |  -  |
 | **401** | Unauthorized |  -  |
 | **409** | Resource Conflicts With Target |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createUserExternalPrincipal"></a>
@@ -796,7 +796,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteCredentials"></a>
@@ -890,7 +890,7 @@ null (empty response body)
 | **204** | credentials deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteGroup"></a>
@@ -982,7 +982,7 @@ null (empty response body)
 | **204** | group deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteGroupMembership"></a>
@@ -1076,7 +1076,7 @@ null (empty response body)
 | **204** | membership deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deletePolicy"></a>
@@ -1168,7 +1168,7 @@ null (empty response body)
 | **204** | policy deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteUser"></a>
@@ -1260,7 +1260,7 @@ null (empty response body)
 | **204** | user deleted successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteUserExternalPrincipal"></a>
@@ -1354,7 +1354,7 @@ null (empty response body)
 | **204** | external principal detached successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="detachPolicyFromGroup"></a>
@@ -1448,7 +1448,7 @@ null (empty response body)
 | **204** | policy detached successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="detachPolicyFromUser"></a>
@@ -1542,7 +1542,7 @@ null (empty response body)
 | **204** | policy detached successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="externalPrincipalLogin"></a>
@@ -1610,7 +1610,7 @@ No authorization required
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getCredentials"></a>
@@ -1705,7 +1705,7 @@ public class Example {
 | **200** | credentials |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getCurrentUser"></a>
@@ -1883,7 +1883,7 @@ public class Example {
 | **200** | external principal |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getGroup"></a>
@@ -1976,7 +1976,7 @@ public class Example {
 | **200** | group |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getGroupACL"></a>
@@ -2069,7 +2069,7 @@ public class Example {
 | **200** | ACL of group |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Group not found, or group found but has no ACL |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getPolicy"></a>
@@ -2162,7 +2162,7 @@ public class Example {
 | **200** | policy |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getUser"></a>
@@ -2255,7 +2255,7 @@ public class Example {
 | **200** | user |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listGroupMembers"></a>
@@ -2356,7 +2356,7 @@ public class Example {
 |-------------|-------------|------------------|
 | **200** | group member list |  -  |
 | **401** | Unauthorized |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listGroupPolicies"></a>
@@ -2458,7 +2458,7 @@ public class Example {
 | **200** | policy list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listGroups"></a>
@@ -2557,7 +2557,7 @@ public class Example {
 |-------------|-------------|------------------|
 | **200** | group list |  -  |
 | **401** | Unauthorized |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listPolicies"></a>
@@ -2656,7 +2656,7 @@ public class Example {
 |-------------|-------------|------------------|
 | **200** | policy list |  -  |
 | **401** | Unauthorized |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listUserCredentials"></a>
@@ -2758,7 +2758,7 @@ public class Example {
 | **200** | credential list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listUserExternalPrincipals"></a>
@@ -2860,7 +2860,7 @@ public class Example {
 | **200** | external principals list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listUserGroups"></a>
@@ -2962,7 +2962,7 @@ public class Example {
 | **200** | group list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listUserPolicies"></a>
@@ -3067,7 +3067,7 @@ public class Example {
 | **200** | policy list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listUsers"></a>
@@ -3166,7 +3166,7 @@ public class Example {
 |-------------|-------------|------------------|
 | **200** | user list |  -  |
 | **401** | Unauthorized |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="login"></a>
@@ -3231,7 +3231,7 @@ No authorization required
 |-------------|-------------|------------------|
 | **200** | successful login |  * Set-Cookie -  <br>  |
 | **401** | Unauthorized |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="oauthCallback"></a>
@@ -3384,7 +3384,7 @@ null (empty response body)
 | **201** | ACL successfully changed |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="updatePolicy"></a>
@@ -3480,6 +3480,6 @@ public class Example {
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

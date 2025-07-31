@@ -212,7 +212,7 @@ class ObjectsApi:
             '401': "Error",
             '403': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -545,7 +545,7 @@ class ObjectsApi:
             '401': "Error",
             '403': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -732,7 +732,7 @@ class ObjectsApi:
             '404': "Error",
             '410': "Error",
             '416': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -889,7 +889,7 @@ class ObjectsApi:
             '200': "UnderlyingObjectProperties",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1242,7 +1242,7 @@ class ObjectsApi:
             '200': "ObjectStatsList",
             '401': "Error",
             '404': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1417,7 +1417,7 @@ class ObjectsApi:
             '404': "Error",
             '400': "Error",
             '410': None,
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(
@@ -1783,7 +1783,7 @@ class ObjectsApi:
             '403': "Error",
             '404': "Error",
             '412': "Error",
-            '420': None,
+            '429': None,
         }
 
         return self.api_client.call_api(

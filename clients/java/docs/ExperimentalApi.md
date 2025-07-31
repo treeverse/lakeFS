@@ -126,7 +126,7 @@ null (empty response body)
 | **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="completePresignMultipartUpload"></a>
@@ -232,7 +232,7 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | conflict with a commit, try here |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createPresignMultipartUpload"></a>
@@ -335,7 +335,7 @@ public class Example {
 | **400** | Bad Request |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createPullRequest"></a>
@@ -433,7 +433,7 @@ public class Example {
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="createUserExternalPrincipal"></a>
@@ -531,7 +531,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **409** | Resource Conflicts With Target |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="deleteUserExternalPrincipal"></a>
@@ -625,7 +625,7 @@ null (empty response body)
 | **204** | external principal detached successfully |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="externalPrincipalLogin"></a>
@@ -693,7 +693,7 @@ No authorization required
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getExternalPrincipal"></a>
@@ -786,7 +786,7 @@ public class Example {
 | **200** | external principal |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="getLicense"></a>
@@ -972,7 +972,7 @@ public class Example {
 | **400** | Validation Error |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="hardResetBranch"></a>
@@ -1075,7 +1075,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listPullRequests"></a>
@@ -1180,7 +1180,7 @@ public class Example {
 | **200** | list of pull requests |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="listUserExternalPrincipals"></a>
@@ -1282,7 +1282,7 @@ public class Example {
 | **200** | external principals list |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="mergePullRequest"></a>
@@ -1381,7 +1381,7 @@ public class Example {
 | **404** | Resource Not Found |  -  |
 | **409** | Conflict Deprecated: content schema will return Error format and not an empty MergeResult  |  -  |
 | **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="stsLogin"></a>
@@ -1445,7 +1445,7 @@ No authorization required
 |-------------|-------------|------------------|
 | **200** | successful STS login |  -  |
 | **401** | Unauthorized |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="updateObjectUserMetadata"></a>
@@ -1544,7 +1544,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
 | **400** | Bad Request |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="updatePullRequest"></a>
@@ -1642,7 +1642,7 @@ null (empty response body)
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="uploadPart"></a>
@@ -1747,7 +1747,7 @@ public class Example {
 | **200** | presigned URL to use for upload |  -  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 
 <a id="uploadPartCopy"></a>
@@ -1851,6 +1851,6 @@ null (empty response body)
 | **204** | part copied |  * ETag -  <br>  |
 | **401** | Unauthorized |  -  |
 | **404** | Resource Not Found |  -  |
-| **420** | too many requests |  -  |
+| **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |
 

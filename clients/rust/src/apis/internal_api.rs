@@ -22,7 +22,7 @@ pub enum CreateBranchProtectionRulePreflightError {
     Status401(models::Error),
     Status404(models::Error),
     Status409(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -35,7 +35,7 @@ pub enum CreateCommitRecordError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -46,7 +46,7 @@ pub enum CreateCommitRecordError {
 pub enum CreateSymlinkFileError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -56,7 +56,7 @@ pub enum CreateSymlinkFileError {
 #[serde(untagged)]
 pub enum DeleteRepositoryMetadataError {
     Status401(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -68,7 +68,7 @@ pub enum DumpRefsError {
     Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -77,7 +77,7 @@ pub enum DumpRefsError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetAuthCapabilitiesError {
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -104,7 +104,7 @@ pub enum GetLakeFsVersionError {
 pub enum GetMetadataObjectError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -113,7 +113,7 @@ pub enum GetMetadataObjectError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetSetupStateError {
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -133,7 +133,7 @@ pub enum GetUsageReportSummaryError {
     Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -144,7 +144,7 @@ pub enum GetUsageReportSummaryError {
 pub enum InternalCreateBranchProtectionRuleError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -155,7 +155,7 @@ pub enum InternalCreateBranchProtectionRuleError {
 pub enum InternalDeleteBranchProtectionRuleError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -166,7 +166,7 @@ pub enum InternalDeleteBranchProtectionRuleError {
 pub enum InternalDeleteGarbageCollectionRulesError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -177,7 +177,7 @@ pub enum InternalDeleteGarbageCollectionRulesError {
 pub enum InternalGetBranchProtectionRulesError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -188,7 +188,7 @@ pub enum InternalGetBranchProtectionRulesError {
 pub enum InternalGetGarbageCollectionRulesError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -199,7 +199,7 @@ pub enum InternalGetGarbageCollectionRulesError {
 pub enum InternalSetGarbageCollectionRulesError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -210,7 +210,7 @@ pub enum InternalSetGarbageCollectionRulesError {
 pub enum PostStatsEventsError {
     Status400(models::Error),
     Status401(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -222,7 +222,7 @@ pub enum PrepareGarbageCollectionCommitsError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -235,7 +235,7 @@ pub enum PrepareGarbageCollectionUncommittedError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -247,7 +247,7 @@ pub enum RestoreRefsError {
     Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -258,7 +258,7 @@ pub enum RestoreRefsError {
 pub enum SetGarbageCollectionRulesPreflightError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -269,7 +269,7 @@ pub enum SetGarbageCollectionRulesPreflightError {
 pub enum SetRepositoryMetadataError {
     Status401(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -280,7 +280,7 @@ pub enum SetRepositoryMetadataError {
 pub enum SetupError {
     Status400(models::Error),
     Status409(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -291,7 +291,7 @@ pub enum SetupError {
 pub enum SetupCommPrefsError {
     Status409(models::Error),
     Status412(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -304,7 +304,7 @@ pub enum StageObjectError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
@@ -316,7 +316,7 @@ pub enum UploadObjectPreflightError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status420(),
+    Status429(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

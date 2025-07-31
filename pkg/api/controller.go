@@ -3011,7 +3011,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, graveler.ErrTooManyTries):
 		log.Debug("Retried too many times")
-		cb(w, r, http.StatusLocked, "Too many attempts, try again later")
+		cb(w, r, http.StatusTooManyRequests, "Too many attempts, try again later")
 	case errors.Is(err, kv.ErrSlowDown):
 		log.Debug("KV Throttling")
 		cb(w, r, http.StatusServiceUnavailable, "Throughput exceeded. Slow down and retry")
@@ -5486,18 +5486,7 @@ func (c *Controller) getUIConfig() *apigen.UIConfig {
 		return nil
 	}
 
-	var customViewers []apigen.CustomViewer
-	if uiConfig.CustomViewers != nil {
-		for _, viewer := range uiConfig.CustomViewers {
-			customViewers = append(customViewers, apigen.CustomViewer{
-				Name:         viewer.Name,
-				Url:          viewer.URL,
-				Extensions:   &viewer.Extensions,
-				ContentTypes: &viewer.ContentTypes,
-			})
-		}
-	}
-
+	customViewers := uiConfig.GetCustomViewers()
 	return &apigen.UIConfig{
 		CustomViewers: &customViewers,
 	}

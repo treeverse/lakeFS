@@ -6,16 +6,21 @@ import (
 	"github.com/treeverse/lakefs/pkg/config"
 )
 
-type ConfigWithAuth struct {
+type ConfigImpl struct {
 	config.BaseConfig `mapstructure:",squash"`
 	Auth              config.Auth `mapstructure:"auth"`
+	UI                config.UI   `mapstructure:"ui"`
 }
 
-func (c *ConfigWithAuth) AuthConfig() *config.Auth {
+func (c *ConfigImpl) AuthConfig() *config.Auth {
 	return &c.Auth
 }
 
-func (c *ConfigWithAuth) Validate() error {
+func (c *ConfigImpl) UIConfig() config.UIConfig {
+	return &c.UI
+}
+
+func (c *ConfigImpl) Validate() error {
 	missingKeys := config.ValidateMissingRequiredKeys(c, "mapstructure", "squash")
 	if len(missingKeys) > 0 {
 		return fmt.Errorf("%w: %v", config.ErrMissingRequiredKeys, missingKeys)
