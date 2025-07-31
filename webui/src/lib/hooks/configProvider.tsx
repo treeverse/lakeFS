@@ -11,12 +11,12 @@ type ConfigContextType = {
 };
 
 type ConfigType = {
-    storages?: StorageConfigType[];
-    uiConfig?: UIConfigType;
+    storages?: StorageConfig[];
+    uiConfig?: UIConfig;
     versionConfig?: VersionConfig;
 };
 
-type StorageConfigType = {
+type StorageConfig = {
     blockstore_namespace_ValidityRegex: string | null;
     blockstore_namespace_example: string | null;
     blockstore_type: string | null;
@@ -27,11 +27,11 @@ type StorageConfigType = {
     pre_sign_support_ui: boolean;
 };
 
-type UIConfigType = {
-    custom_viewers?: Array<CustomViewerConfig>;
+type UIConfig = {
+    custom_viewers?: Array<CustomViewer>;
 };
 
-type CustomViewerConfig = {
+type CustomViewer = {
     name: string;
     url: string;
     content_types?: Array<string>;
@@ -77,6 +77,6 @@ const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     );
 };
 
-export type { ConfigType, CustomViewerConfig };
+export type { ConfigType, CustomViewer };
 
 export { ConfigProvider, useConfigContext };

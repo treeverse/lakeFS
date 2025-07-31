@@ -2,8 +2,8 @@ export interface RendererComponent {
     repoId: string;
     refId: string;
     path: string;
-    fileExtension: string | null;
-    contentType: string | null;
+    fileExtension?: string;
+    contentType?: string;
     sizeBytes: number;
     presign?: boolean;
 }

@@ -57,7 +57,7 @@ export const Renderers: { [fileType in FileType]: FC<RendererComponent> } = {
     ),
 }
 
-export const guessLanguage = (extension: string | null, contentType: string | null) => {
+export const guessLanguage = (extension?: string, contentType?: string) => {
     switch (extension) {
         case 'py':
             extension = 'python'
@@ -110,7 +110,7 @@ export const guessLanguage = (extension: string | null, contentType: string | nu
 }
 
 
-export function guessType(contentType: string | null, fileExtension: string | null): FileType {
+export function guessType(contentType?: string, fileExtension?: string): FileType {
     switch (contentType) {
         case 'application/x-yaml':
         case 'application/yaml':
