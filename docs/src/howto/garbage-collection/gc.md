@@ -86,6 +86,11 @@ To define retention rules, either use the `lakectl` command, the lakeFS web UI, 
 
 To run the job, use the following `spark-submit` command (or using your preferred method of running Spark programs).
 
+!!! note EMR&nbsp;7.x requires Hadoop&nbsp;3.3.6. Build the Spark client with `-DhadoopVersion=3.3.6`
+
+and replace `--packages org.apache.hadoop:hadoop-aws:3.2.1` (or similar) with
+`--packages org.apache.hadoop:hadoop-aws:3.3.6` in the commands below.
+
 === "AWS"
     ```bash
     spark-submit --class io.treeverse.gc.GarbageCollection \
