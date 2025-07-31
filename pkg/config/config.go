@@ -608,10 +608,6 @@ func (c *BaseConfig) StorageConfig() StorageConfig {
 	return &c.Blockstore
 }
 
-func (c *BaseConfig) UIConfig() *UI {
-	return nil
-}
-
 func (c *BaseConfig) Validate() error {
 	missingKeys := ValidateMissingRequiredKeys(c, "mapstructure", "squash")
 	if len(missingKeys) > 0 {
