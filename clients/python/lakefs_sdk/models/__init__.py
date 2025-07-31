@@ -38,6 +38,7 @@ from lakefs_sdk.models.credentials import Credentials
 from lakefs_sdk.models.credentials_list import CredentialsList
 from lakefs_sdk.models.credentials_with_secret import CredentialsWithSecret
 from lakefs_sdk.models.current_user import CurrentUser
+from lakefs_sdk.models.custom_viewer import CustomViewer
 from lakefs_sdk.models.diff import Diff
 from lakefs_sdk.models.diff_list import DiffList
 from lakefs_sdk.models.diff_object_stat import DiffObjectStat
@@ -114,6 +115,7 @@ from lakefs_sdk.models.storage_uri import StorageURI
 from lakefs_sdk.models.sts_auth_request import StsAuthRequest
 from lakefs_sdk.models.tag_creation import TagCreation
 from lakefs_sdk.models.task_info import TaskInfo
+from lakefs_sdk.models.ui_config import UIConfig
 from lakefs_sdk.models.underlying_object_properties import UnderlyingObjectProperties
 from lakefs_sdk.models.update_object_user_metadata import UpdateObjectUserMetadata
 from lakefs_sdk.models.update_token import UpdateToken

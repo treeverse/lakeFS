@@ -69,7 +69,7 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 	// Configuration flag to control if the embedded UI is served
 	// or not and assign the correct handler for each case.
 	var rootHandler http.Handler
-	if cfg.GetBaseConfig().UI.Enabled {
+	if cfg.UIConfig().IsUIEnabled() {
 		// Handler which serves the embedded UI
 		// as well as handles erroneous S3 gateway requests
 		// and returns a compatible response

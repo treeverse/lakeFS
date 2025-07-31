@@ -2036,7 +2036,13 @@ func (c *Controller) GetConfig(w http.ResponseWriter, r *http.Request) {
 
 	storageCfg, storageCfgList := c.getStorageConfigs()
 	versionConfig := c.getVersionConfig()
-	writeResponse(w, r, http.StatusOK, apigen.Config{StorageConfig: storageCfg, VersionConfig: &versionConfig, StorageConfigList: &storageCfgList})
+	uiConfig := c.getUIConfig()
+	writeResponse(w, r, http.StatusOK, apigen.Config{
+		StorageConfig:     storageCfg,
+		VersionConfig:     &versionConfig,
+		StorageConfigList: &storageCfgList,
+		UiConfig:          uiConfig,
+	})
 }
 
 func (c *Controller) GetStorageConfig(w http.ResponseWriter, r *http.Request) {
@@ -5471,6 +5477,18 @@ func (c *Controller) getVersionConfig() apigen.VersionConfig {
 		Version:            swag.String(version.Version),
 		LatestVersion:      latestVersion,
 		VersionContext:     swag.String(c.Config.GetVersionContext()),
+	}
+}
+
+func (c *Controller) getUIConfig() *apigen.UIConfig {
+	uiConfig := c.Config.UIConfig()
+	if uiConfig == nil {
+		return nil
+	}
+
+	customViewers := uiConfig.GetCustomViewers()
+	return &apigen.UIConfig{
+		CustomViewers: &customViewers,
 	}
 }
 
