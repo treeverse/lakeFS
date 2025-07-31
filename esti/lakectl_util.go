@@ -104,11 +104,12 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 // "VAR1=value1 VAR2=value2 command args"
 // and returns the environment variables and the actual command
 func extractUnixEnvVars(command string) ([]string, string) {
+	const commandParts = 2
 	// Find the lakectl binary in the command
 	lakectlPath := lakectlLocation()
-	parts := strings.SplitN(command, lakectlPath, 2)
+	parts := strings.SplitN(command, lakectlPath, commandParts)
 
-	if len(parts) != 2 {
+	if len(parts) != commandParts {
 		// If we can't find the lakectl binary, return the command as-is
 		return []string{}, command
 	}

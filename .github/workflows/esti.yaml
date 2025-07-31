@@ -1490,20 +1490,6 @@ jobs:
           file lakefs.exe lakectl.exe
           echo "Windows binaries built successfully"
 
-      - name: Setup test environment
-        shell: powershell
-        run: |
-          Write-Host "Setting up test environment..."
-          if (!(Test-Path "lakefs.exe")) {
-            Write-Error "lakefs.exe not found"
-            exit 1
-          }
-          if (!(Test-Path "lakectl.exe")) {
-            Write-Error "lakectl.exe not found"
-            exit 1
-          }
-          Write-Host "Binaries verified successfully"
-
       - name: Start lakeFS server
         shell: powershell
         run: |
