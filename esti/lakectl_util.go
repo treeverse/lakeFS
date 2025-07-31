@@ -43,9 +43,13 @@ var (
 	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
 )
 
+func isWindowsOS() bool {
+	return runtime.GOOS == "windows"
+}
+
 func lakectlLocation() string {
 	binDir := viper.GetString("binaries_dir")
-	if runtime.GOOS == windowsOSStr {
+	if isWindowsOS() {
 		return filepath.Join(binDir, "lakectl.exe")
 	}
 	return filepath.Join(binDir, "lakectl")
@@ -81,19 +85,17 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 	var cmd *exec.Cmd
 	var additionalEnvVars []string
 
-	if runtime.GOOS == windowsOSStr {
+	if isWindowsOS() {
 		// On Windows, extract environment variables from Unix-style command and set them directly
 		envVars, actualCommand := extractUnixEnvVars(command)
 		cmd = exec.Command("powershell.exe", "-Command", actualCommand)
 		additionalEnvVars = envVars
+		cmd.Env = append(os.Environ(), "LAKECTL_INTERACTIVE=false")
 	} else {
 		cmd = exec.Command("/bin/sh", "-c", command)
+		cmd.Env = append(os.Environ(), "LAKECTL_INTERACTIVE="+strconv.FormatBool(isTerminal))
 	}
 
-	// Set environment variables for both platforms
-	cmd.Env = append(os.Environ(),
-		"LAKECTL_INTERACTIVE="+strconv.FormatBool(isTerminal),
-	)
 	// Add any platform-specific environment variables
 	cmd.Env = append(cmd.Env, additionalEnvVars...)
 
@@ -245,7 +247,7 @@ func runCmdAndVerifyWithFile(t *testing.T, cmd, goldenFile string, expectFail, i
 	goldenPath := filepath.Join("golden", goldenFile+".golden")
 
 	// On Windows, check for Windows-specific golden file first
-	if runtime.GOOS == windowsOSStr {
+	if isWindowsOS() {
 		windowsGoldenFile := filepath.Join("golden", goldenFile+".windows.golden")
 		if _, err := os.Stat(windowsGoldenFile); err == nil {
 			goldenPath = windowsGoldenFile
