@@ -34,7 +34,7 @@ interface FileContentsProps {
   path: string;
   loading: boolean;
   error: Error | null;
-  contentType?: string | null;
+  contentType?: string;
   fileExtension: string;
   sizeBytes: number;
   showFullNavigator?: boolean;
@@ -50,10 +50,10 @@ export const getFileExtension = (objectName: string): string => {
   return objectNameParts[objectNameParts.length - 1];
 };
 
-export const getContentType = (headers: Headers): string | null => {
-  if (!headers) return null;
+export const getContentType = (headers: Headers): string | undefined => {
+  if (!headers) return undefined;
 
-  return headers.get("Content-Type") ?? null;
+  return headers.get("Content-Type") ?? undefined;
 };
 
 const FileObjectsViewerPage = () => {
@@ -116,7 +116,7 @@ export const FileContents: FC<FileContentsProps> = ({
   path,
   loading,
   error,
-  contentType = null,
+  contentType = undefined,
   fileExtension = "",
   sizeBytes = -1,
   showFullNavigator = true,
