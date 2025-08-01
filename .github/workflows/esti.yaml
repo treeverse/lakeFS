@@ -178,7 +178,7 @@ jobs:
           LAKEFS_STATS_ENABLED: false
 
       spark:
-        image: docker.io/bitnami/spark:3.2.1
+        image: docker.io/${{ env.SPARK_BASE || 'bitnami' }}/spark:3.2.1
         options: --name spark-master
         env:
           SPARK_MODE: master
@@ -194,7 +194,7 @@ jobs:
           - '7077:7077'
 
       spark-worker:
-        image: docker.io/bitnami/spark:3.2.1
+        image: docker.io/${{ env.SPARK_BASE || 'bitnami' }}/spark:3.2.1
         env:
           SPARK_MODE: worker
           SPARK_MASTER_URL: spark://spark:7077

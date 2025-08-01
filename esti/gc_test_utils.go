@@ -24,9 +24,20 @@ func getSparkSubmitArgs(entryPoint string) []string {
 }
 
 func getDockerArgs(workingDirectory string, localJar string) []string {
+	// Support both bitnami and treeverse spark paths
+	sparkBase := os.Getenv("SPARK_BASE")
+	if sparkBase == "" {
+		sparkBase = "bitnami" // Default to bitnami for backward compatibility
+	}
+
+	sparkPath := "/opt/bitnami/spark"
+	if sparkBase == "treeverse" {
+		sparkPath = "/opt/treeverse/spark"
+	}
+
 	return []string{
 		"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
-		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
+		"-v", fmt.Sprintf("%s/ivy:%s/.ivy2", workingDirectory, sparkPath),
 		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar", localJar),
 		"--rm",
 		"-e", "AWS_ACCESS_KEY_ID",
@@ -111,7 +122,12 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", config.SparkVersion), "spark-submit")
+	// Support both bitnami and treeverse spark images
+	sparkBase := os.Getenv("SPARK_BASE")
+	if sparkBase == "" {
+		sparkBase = "bitnami" // Default to bitnami for backward compatibility
+	}
+	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/%s/spark:%s", sparkBase, config.SparkVersion), "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
 	args := dockerArgs
