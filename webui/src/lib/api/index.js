@@ -814,6 +814,18 @@ class Objects {
         return response.text()
     }
 
+    async getRange(repoId, ref, path, start, end, presign = false) {
+        const query = qs({ path, presign });
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query,
+            {method: 'GET'},
+            {'Range': `bytes=${start}-${end}`}
+        );
+        if (response.status !== 200 && response.status !== 206) {
+            throw new Error(await extractError(response));
+        }
+        return response.text();
+    }
+
     async head(repoId, ref, path) {
         const query = qs({path});
         const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/refs/${encodeURIComponent(ref)}/objects?` + query, {
@@ -878,7 +890,7 @@ class Commits {
     }
 
     async commit(repoId, branchId, message, metadata = {}) {
-        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`, {
+        const response = await apiRequest(`/repositories/${encodeURIComponent(repoId)}/branches/${encodeURIComponent(branchId)}/commits`, {
             method: 'POST',
             body: JSON.stringify({message, metadata}),
         });
@@ -1096,8 +1108,9 @@ class Config {
             case 200: {
                 const cfg = await response.json();
                 const storages = buildStoragesConfigs(cfg);
+                const uiConfig = cfg['ui_config'];
                 const versionConfig = cfg['version_config'];
-                return {storages, versionConfig};
+                return {storages, uiConfig, versionConfig};
             }
             case 409:
                 throw new Error('Conflict');
