@@ -729,11 +729,11 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 	t.Run("single_file_with_recursive", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/ro_1k.0"
-		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload --recursive -s files/ro_1k lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s "+filepath.Join("files", "ro_1k"), false, "lakectl_fs_upload", vars)
+		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload --recursive -s "+filepath.Join("files", "ro_1k")+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s "+filepath.Join("files", "ro_1k"), false, "lakectl_fs_upload", vars)
 	})
 	t.Run("dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
-		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s"+"files"+string(filepath.Separator)+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
 
 		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
 		require.Contains(t, sanitizedResult, "upload ro_1k")
@@ -746,7 +746,7 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 	t.Run("exist_dir", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
-		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s files/ lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
+		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s "+"files"+string(filepath.Separator)+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
 		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
 		require.Contains(t, sanitizedResult, "Upload Summary:")
 		require.Contains(t, sanitizedResult, "No changes")
@@ -757,7 +757,7 @@ func TestLakectlFsUpload(t *testing.T) {
 	})
 	t.Run("dir_without_recursive_to_file", func(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/1.txt"
-		RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s"+"files"+string(filepath.Separator)+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "read files/: is a directory", vars)
+		RunCmdAndVerifyFailureContainsText(t, Lakectl()+" fs upload -s "+"files"+string(filepath.Separator)+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, "read files/: is a directory", vars)
 	})
 	t.Run("directory_marker_with_trailing_slash", func(t *testing.T) {
 		vars["FILE_PATH"] = "dir-with-marker/"
