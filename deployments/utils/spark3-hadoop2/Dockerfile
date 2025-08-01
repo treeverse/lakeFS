@@ -31,20 +31,17 @@ FROM ${SPARK_BASE}/spark:3.2.3
 
 USER root
 # Support both bitnami and treeverse paths
-ARG SPARK_BASE=bitnami
 RUN if [ "$SPARK_BASE" = "treeverse" ]; then \
         rm -r /opt/treeverse/spark/jars; \
     else \
         rm -r /opt/bitnami/spark/jars; \
     fi
 ADD https://dlcdn.apache.org/spark/spark-3.2.3/spark-3.2.3-bin-hadoop2.7.tgz /tmp/
-ARG SPARK_BASE=bitnami
 RUN if [ "$SPARK_BASE" = "treeverse" ]; then \
         tar --extract --gzip --strip=1 < /tmp/spark-3.2.3-bin-hadoop2.7.tgz --directory /opt/treeverse/spark/ spark-3.2.3-bin-hadoop2.7/jars/; \
     else \
         tar --extract --gzip --strip=1 < /tmp/spark-3.2.3-bin-hadoop2.7.tgz --directory /opt/bitnami/spark/ spark-3.2.3-bin-hadoop2.7/jars/; \
     fi && rm /tmp/spark-3.2.3-bin-hadoop2.7.tgz
-ARG SPARK_BASE=bitnami
 RUN if [ "$SPARK_BASE" = "treeverse" ]; then \
         mkdir -p /opt/treeverse/spark/jars; \
     else \
