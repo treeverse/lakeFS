@@ -2898,8 +2898,11 @@ func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, reposi
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_branch", r, repository, branch, "")
-
 	err := c.Catalog.DeleteBranch(ctx, repository, branch, graveler.WithForce(swag.BoolValue(body.Force)))
+	if errors.Is(err, graveler.ErrDeleteDefaultBranch) {
+		writeError(w, r, http.StatusForbidden, err.Error())
+		return
+	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

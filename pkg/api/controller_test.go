@@ -2311,8 +2311,8 @@ func TestController_DeleteBranchHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal("DeleteBranch error:", err)
 		}
-		if resp.JSONDefault == nil {
-			t.Fatal("DeleteBranch expected error while trying to delete default branch")
+		if resp.StatusCode() != http.StatusForbidden {
+			t.Fatalf("DeleteBranch expected status code %d, but got %d", http.StatusForbidden, resp.StatusCode())
 		}
 	})
 
