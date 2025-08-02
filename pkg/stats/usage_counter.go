@@ -141,6 +141,7 @@ func (u *UsageReporter) Records(ctx context.Context) ([]*UsageRecord, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer iter.Close()
 	var records []*UsageRecord
 	for iter.Next() {
 		// parse key

@@ -1038,6 +1038,7 @@ func TestGraveler_Diff(t *testing.T) {
 			if err != nil {
 				return // err == tt.expectedErr
 			}
+			defer diff.Close()
 
 			// compare iterators
 			for diff.Next() {
