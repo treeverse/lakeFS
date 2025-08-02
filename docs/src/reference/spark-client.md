@@ -18,8 +18,10 @@ Utilize the power of Spark to interact with the metadata on lakeFS. Possible use
     Please note that Spark **2.x** is no longer supported with the lakeFS metadata client.
 
 
-The Spark metadata client is compiled for Spark 3.1.2 with Hadoop 3.2.1, but
-can work for other Spark versions and higher Hadoop versions.
+The Spark metadata client is compiled for Spark 3.1.2 with Hadoop 3.2.1 by
+default, but can work for other Spark versions and higher Hadoop versions.
+When running on EMR&nbsp;7.x you must build the client against Hadoop&nbsp;3.3.6
+by passing `-DhadoopVersion=3.3.6` to `sbt`.
 
 
 === "PySpark, spark-shell, spark-submit, spark-sql"
