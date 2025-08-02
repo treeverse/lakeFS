@@ -8,6 +8,7 @@ Method | HTTP request | Description
 [**get_run_hook_output**](ActionsApi.md#get_run_hook_output) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks/{hook_run_id}/output | get run hook output
 [**list_repository_runs**](ActionsApi.md#list_repository_runs) | **GET** /repositories/{repository}/actions/runs | list runs
 [**list_run_hooks**](ActionsApi.md#list_run_hooks) | **GET** /repositories/{repository}/actions/runs/{run_id}/hooks | list run hooks
+[**trigger_action**](ActionsApi.md#trigger_action) | **POST** /repositories/{repository}/refs/{ref}/actions/{action}/triggers | manually trigger an action
 
 
 
@@ -120,6 +121,36 @@ Name | Type | Description  | Required | Notes
 ### Return type
 
 [**models::HookRunList**](HookRunList.md)
+
+### Authorization
+
+[basic_auth](../README.md#basic_auth), [cookie_auth](../README.md#cookie_auth), [oidc_auth](../README.md#oidc_auth), [saml_auth](../README.md#saml_auth), [jwt_token](../README.md#jwt_token)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## trigger_action
+
+> trigger_action(repository, r#ref, action)
+manually trigger an action
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**repository** | **String** |  | [required] |
+**r#ref** | **String** |  | [required] |
+**action** | **String** |  | [required] |
+
+### Return type
+
+ (empty response body)
 
 ### Authorization
 
