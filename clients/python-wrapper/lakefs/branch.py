@@ -16,11 +16,12 @@ from lakefs.object import StoredObject
 from lakefs.import_manager import ImportManager
 from lakefs.reference import Reference, ReferenceType, generate_listing
 from lakefs.models import Change, Commit
+from lakefs.tag import Tag
 from lakefs.exceptions import (
     api_exception_handler,
     ConflictException,
     LakeFSException,
-    TransactionException
+    TransactionException,
 )
 
 
@@ -289,7 +290,7 @@ class Branch(_BaseBranch):
 
     @contextmanager
     def transact(self, commit_message: str = "", commit_metadata: Optional[Dict] = None,
-                 delete_branch_on_error: bool = True) -> _Transaction:
+                 delete_branch_on_error: bool = True, tag: Optional[str] = None) -> _Transaction:
         """
         Create a transaction for multiple operations.
         Transaction allows for multiple modifications to be performed atomically on a branch,
@@ -323,10 +324,11 @@ class Branch(_BaseBranch):
         :param commit_message: once the transaction is committed, a commit is created with this message
         :param commit_metadata: user metadata for the transaction commit
         :param delete_branch_on_error: Defaults to True. Ensures ephemeral branch is deleted on error.
+        :param tag: Optional tag name to create after the transaction is successfully completed
         :return: a Transaction object to perform the operations on
         """
         with Transaction(self._repo_id, self._id, commit_message, commit_metadata, delete_branch_on_error,
-                         self._client) as tx:
+                         self._client, tag) as tx:
             yield tx
 
 
@@ -336,10 +338,11 @@ class _Transaction(_BaseBranch):
         return f"tx-{uuid.uuid4()}"  # Don't rely on source branch name as this might exceed valid branch length
 
     def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
-                 commit_metadata: Optional[Dict] = None, client: Client = None):
+                 commit_metadata: Optional[Dict] = None, client: Client = None, tag: Optional[str] = None):
         self._commit_message = commit_message
         self._commit_metadata = commit_metadata
         self._source_branch = branch_id
+        self._tag = tag
 
         tx_name = self._get_tx_name()
         self._tx_branch = Branch(repository_id, tx_name, client).create(branch_id, hidden=True)
@@ -382,6 +385,21 @@ class _Transaction(_BaseBranch):
         """
         self._commit_metadata = metadata
 
+    @property
+    def tag(self) -> Optional[str]:
+        """
+        Return the tag name configured for this transaction completion
+        """
+        return self._tag
+
+    @tag.setter
+    def tag(self, tag: str) -> None:
+        """
+        Set the tag name for this transaction completion
+        :param tag: The tag name to create after the transaction is successfully completed
+        """
+        self._tag = tag
+
 
 class Transaction:
     """
@@ -393,7 +411,8 @@ class Transaction:
     """
 
     def __init__(self, repository_id: str, branch_id: str, commit_message: str = "",
-                 commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True, client: Client = None):
+                 commit_metadata: Optional[Dict] = None, delete_branch_on_error: bool = True, client: Client = None,
+                 tag: Optional[str] = None):
         self._repo_id = repository_id
         self._commit_message = commit_message
         self._commit_metadata = commit_metadata
@@ -402,10 +421,11 @@ class Transaction:
         self._tx = None
         self._tx_branch = None
         self._cleanup_branch = delete_branch_on_error
+        self._tag = tag
 
     def __enter__(self):
         self._tx = _Transaction(self._repo_id, self._source_branch, self._commit_message, self._commit_metadata,
-                                self._client)
+                                self._client, self._tag)
         self._tx_branch = Branch(self._repo_id, self._tx.id, self._client)
         return self._tx
 
@@ -417,11 +437,15 @@ class Transaction:
 
         try:
             self._tx_branch.commit(message=self._tx.commit_message, metadata=self._tx.commit_metadata)
-            self._tx_branch.merge_into(self._source_branch, message=f"Merge transaction {self._tx.id} to branch")
+            merge_commit_id = self._tx_branch.merge_into(
+                self._source_branch, message=f"Merge transaction {self._tx.id} to branch")
             self._tx_branch.delete()
-
-            return False
         except LakeFSException as e:
             if self._cleanup_branch:
                 self._tx_branch.delete()
             raise TransactionException(f"Failed committing transaction {self._tx.id}: {e}") from e
+
+        if self._tx.tag:
+            tag = Tag(self._repo_id, self._tx.tag, self._client)
+            tag.create(merge_commit_id)
+        return False
