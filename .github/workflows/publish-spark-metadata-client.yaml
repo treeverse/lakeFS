@@ -5,6 +5,9 @@ jobs:
   publish-spark-metadata-client:
     name: Publish Spark metadata client
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        hadoop-version: [ "3.2.1", "3.3.6" ]
     environment: Treeverse signing
     steps:
       - name: Check-out code
