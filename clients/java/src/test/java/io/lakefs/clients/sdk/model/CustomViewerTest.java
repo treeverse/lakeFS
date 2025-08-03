@@ -18,9 +18,6 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import io.lakefs.clients.sdk.model.StorageConfig;
-import io.lakefs.clients.sdk.model.UIConfig;
-import io.lakefs.clients.sdk.model.VersionConfig;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,49 +26,49 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
- * Model tests for Config
+ * Model tests for CustomViewer
  */
-public class ConfigTest {
-    private final Config model = new Config();
+public class CustomViewerTest {
+    private final CustomViewer model = new CustomViewer();
 
     /**
-     * Model tests for Config
+     * Model tests for CustomViewer
      */
     @Test
-    public void testConfig() {
-        // TODO: test Config
+    public void testCustomViewer() {
+        // TODO: test CustomViewer
     }
 
     /**
-     * Test the property 'versionConfig'
+     * Test the property 'name'
      */
     @Test
-    public void versionConfigTest() {
-        // TODO: test versionConfig
+    public void nameTest() {
+        // TODO: test name
     }
 
     /**
-     * Test the property 'storageConfig'
+     * Test the property 'url'
      */
     @Test
-    public void storageConfigTest() {
-        // TODO: test storageConfig
+    public void urlTest() {
+        // TODO: test url
     }
 
     /**
-     * Test the property 'storageConfigList'
+     * Test the property 'extensions'
      */
     @Test
-    public void storageConfigListTest() {
-        // TODO: test storageConfigList
+    public void extensionsTest() {
+        // TODO: test extensions
     }
 
     /**
-     * Test the property 'uiConfig'
+     * Test the property 'contentTypes'
      */
     @Test
-    public void uiConfigTest() {
-        // TODO: test uiConfig
+    public void contentTypesTest() {
+        // TODO: test contentTypes
     }
 
 }

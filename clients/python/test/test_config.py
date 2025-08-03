@@ -68,7 +68,19 @@ class TestConfig(unittest.TestCase):
                         pre_sign_multipart_upload = True, 
                         blockstore_id = '', 
                         blockstore_description = '', )
-                    ]
+                    ],
+                ui_config = lakefs_sdk.models.ui_config.UIConfig(
+                    custom_viewers = [
+                        lakefs_sdk.models.custom_viewer.CustomViewer(
+                            name = '', 
+                            url = '', 
+                            extensions = [
+                                ''
+                                ], 
+                            content_types = [
+                                ''
+                                ], )
+                        ], )
             )
         else:
             return Config(

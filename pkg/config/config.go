@@ -12,6 +12,7 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/pkg/api/apigen"
 	apiparams "github.com/treeverse/lakefs/pkg/api/params"
 	blockparams "github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -365,7 +366,7 @@ func (b *Blockstore) SigningKey() SecureString {
 	return b.Signing.SecretKey
 }
 
-// getActualStorageID - This returns the actual storageID of the storage
+// GetActualStorageID - This returns the actual storageID of the storage
 func GetActualStorageID(storageConfig StorageConfig, storageID string) string {
 	if storageID == SingleBlockstoreID {
 		if storage := storageConfig.GetStorageByID(SingleBlockstoreID); storage != nil {
@@ -379,6 +380,7 @@ type Config interface {
 	GetBaseConfig() *BaseConfig
 	StorageConfig() StorageConfig
 	AuthConfig() *Auth
+	UIConfig() UIConfig
 	Validate() error
 	GetVersionContext() string
 }
@@ -387,6 +389,12 @@ type StorageConfig interface {
 	GetStorageByID(storageID string) AdapterConfig
 	GetStorageIDs() []string
 	SigningKey() SecureString
+}
+
+type UIConfig interface {
+	IsUIEnabled() bool
+	GetSnippets() []apiparams.CodeSnippet
+	GetCustomViewers() []apigen.CustomViewer
 }
 
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
@@ -495,14 +503,6 @@ type BaseConfig struct {
 		AuditCheckInterval      time.Duration `mapstructure:"audit_check_interval"`
 		AuditCheckURL           string        `mapstructure:"audit_check_url"`
 	} `mapstructure:"security"`
-	UI struct {
-		// Enabled - control serving of embedded UI
-		Enabled  bool `mapstructure:"enabled"`
-		Snippets []struct {
-			ID   string `mapstructure:"id"`
-			Code string `mapstructure:"code"`
-		} `mapstructure:"snippets"`
-	} `mapstructure:"ui"`
 	UsageReport struct {
 		Enabled       bool          `mapstructure:"enabled"`
 		FlushInterval time.Duration `mapstructure:"flush_interval"`
@@ -620,17 +620,6 @@ const (
 	gcpAESKeyLength = 32
 )
 
-func (c *BaseConfig) UISnippets() []apiparams.CodeSnippet {
-	snippets := make([]apiparams.CodeSnippet, 0, len(c.UI.Snippets))
-	for _, item := range c.UI.Snippets {
-		snippets = append(snippets, apiparams.CodeSnippet{
-			ID:   item.ID,
-			Code: item.Code,
-		})
-	}
-	return snippets
-}
-
 type Auth struct {
 	Cache struct {
 		Enabled bool          `mapstructure:"enabled"`
@@ -742,4 +731,38 @@ func (c *Auth) UseUILoginPlaceholders() bool {
 
 func (c *Auth) IsAdvancedAuth() bool {
 	return c.UIConfig.RBAC == AuthRBACExternal || c.UIConfig.RBAC == AuthRBACInternal
+}
+
+type UI struct {
+	// Enabled - control serving of embedded UI
+	Enabled  bool        `mapstructure:"enabled"`
+	Snippets []UISnippet `mapstructure:"snippets"`
+}
+
+type UISnippet struct {
+	ID   string `mapstructure:"id"`
+	Code string `mapstructure:"code"`
+}
+
+func (u *UI) IsUIEnabled() bool {
+	return u.Enabled
+}
+
+func (u *UI) GetSnippets() []apiparams.CodeSnippet {
+	return BuildCodeSnippets(u.Snippets)
+}
+
+func BuildCodeSnippets(s []UISnippet) []apiparams.CodeSnippet {
+	snippets := make([]apiparams.CodeSnippet, 0, len(s))
+	for _, item := range s {
+		snippets = append(snippets, apiparams.CodeSnippet{
+			ID:   item.ID,
+			Code: item.Code,
+		})
+	}
+	return snippets
+}
+
+func (u *UI) GetCustomViewers() []apigen.CustomViewer {
+	return nil
 }

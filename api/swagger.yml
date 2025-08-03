@@ -1311,6 +1311,8 @@ components:
           $ref: "#/components/schemas/StorageConfig"
         storage_config_list:
           $ref: "#/components/schemas/StorageConfigList"
+        ui_config:
+          $ref: "#/components/schemas/UIConfig"
     VersionConfig:
       type: object
       properties:
@@ -1324,6 +1326,31 @@ components:
           type: boolean
         upgrade_url:
           type: string
+    UIConfig:
+      type: object
+      properties:
+        custom_viewers:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomViewer"
+    CustomViewer:
+      type: object
+      required:
+        - name
+        - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        extensions:
+          type: array
+          items:
+            type: string
+        content_types:
+          type: array
+          items:
+            type: string
     GarbageCollectionConfig:
       type: object
       properties:

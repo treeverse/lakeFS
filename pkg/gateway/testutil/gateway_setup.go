@@ -44,7 +44,7 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 
-	cfg := &configfactory.ConfigWithAuth{}
+	cfg := &configfactory.ConfigImpl{}
 	_, err = config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 
