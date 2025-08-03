@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 jobs:
   publish-spark-metadata-client:
-    name: Publish Spark metadata client
+    name: Publish Spark metadata client - hadoop version ${{ matrix.hadoop-version }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
