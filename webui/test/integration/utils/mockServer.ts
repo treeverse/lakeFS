@@ -21,17 +21,20 @@ interface MockResponse {
 export class MockServer {
   private server: any;
   private port: number;
-  private projectRoot: string;
   private operations: IHttpOperation[];
   private customMocks: Map<string, MockResponse> = new Map();
   private client: PrismHttp;
+  private lakeFSProjectRoot: string;
   private serverUrl: string;
+  private staticFilesRoot: string;
 
-  constructor(port: number = 3002) {
+  // In lakeFS OSS, static files are served from 'lakeFS/webui/dist'. But in lakeFS Enterprise, the static file path will be different.
+  constructor(staticFilesPath: string = 'webui/dist', port: number = 3002) {
     this.port = port;
     const baseUrl = process.env.BASE_URL || "http://localhost:8000";
-    this.projectRoot = resolve(__dirname, '..', '..', '..', '..');
+    this.lakeFSProjectRoot = resolve(__dirname, '..', '..', '..', '..');
     this.serverUrl = `http://${new URL(baseUrl).hostname}:${this.port}`;
+    this.staticFilesRoot = resolve(this.lakeFSProjectRoot, staticFilesPath)
   }
 
   /**
@@ -46,7 +49,7 @@ export class MockServer {
   async start(): Promise<string> {
     return new Promise(async (resolvePromise, reject) => {
       try {
-        const specPath = resolve(__dirname, '../../../../lakefs-oss/api/swagger.yml');
+        const specPath = resolve(this.lakeFSProjectRoot, 'api/swagger.yml');
         this.operations = await getHttpOperationsFromSpec(specPath);
 
         this.client = createClientFromOperations(this.operations, {
@@ -268,17 +271,16 @@ export class MockServer {
    */
   private async serveStaticFile(res: any, requestedPath: string) {
     try {
-      const staticRoot = resolve(this.projectRoot, 'webui', 'dist');
-      const safePath = this.securePath(staticRoot, requestedPath);
+      const safePathToStaticFiles = this.securePath(this.staticFilesRoot, requestedPath);
 
-      if (!safePath) {
+      if (!safePathToStaticFiles) {
         return this.serveIndexHtml(res);
       }
 
       // Check if file exists and get stats
       let stats: Stats;
       try {
-        stats = await statAsync(safePath);
+        stats = await statAsync(safePathToStaticFiles);
       } catch (error) {
         return this.serveIndexHtml(res);
       }
@@ -289,10 +291,10 @@ export class MockServer {
 
       let fileContent: Buffer;
       try {
-        fileContent = readFileSync(safePath);
+        fileContent = readFileSync(safePathToStaticFiles);
       } catch (error) {
         console.error('Error reading file:', {
-          path: safePath,
+          path: safePathToStaticFiles,
           error: error instanceof Error ? error.message : String(error)
         });
         return this.serveIndexHtml(res);
