@@ -8,7 +8,7 @@ on:
   pull_request:
 jobs:
   spark-metadata-client:
-    name: Unit test Spark metadata client
+    name: Unit test Spark metadata client (${{ matrix.hadoop-version }})
     runs-on: ubuntu-22.04
     strategy:
       matrix:
