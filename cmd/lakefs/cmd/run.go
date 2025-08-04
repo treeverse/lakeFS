@@ -138,20 +138,11 @@ var runCmd = &cobra.Command{
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, stats.Config(baseCfg.Stats),
 			stats.WithLogger(logger.WithField("service", "stats_collector")))
 
-		// init block store for API
-		apiBlockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, cfg, "api")
+		// init block store
+		blockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, cfg)
 		if err != nil {
-			logger.WithError(err).Fatal("Failed to create API block adapter")
+			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
-
-		// init block store for Gateway
-		gatewayBlockStore, err := blockfactory.BuildBlockAdapter(ctx, bufferedCollector, cfg, "gateway")
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to create Gateway block adapter")
-		}
-
-		// For backward compatibility, use the API block store as the default
-		blockStore := apiBlockStore
 
 		bufferedCollector.SetRuntimeCollector(blockStore.RuntimeStats)
 		// send metadata
@@ -240,7 +231,7 @@ var runCmd = &cobra.Command{
 			middlewareAuthenticator,
 			authService,
 			authenticationService,
-			apiBlockStore,
+			blockStore,
 			authMetadataManager,
 			migrator,
 			bufferedCollector,
@@ -287,7 +278,7 @@ var runCmd = &cobra.Command{
 			baseCfg.Gateways.S3.Region,
 			c,
 			multipartTracker,
-			gatewayBlockStore,
+			blockStore,
 			authService,
 			baseCfg.Gateways.S3.DomainNames,
 			bufferedCollector,
