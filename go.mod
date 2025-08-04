@@ -97,14 +97,6 @@ require (
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
-	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20250803114435-a5e63c09d6b6
-	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20250803114435-a5e63c09d6b6
-	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20250803114435-a5e63c09d6b6
-	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20250803114435-a5e63c09d6b6
-	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250803114435-a5e63c09d6b6
-	github.com/treeverse/lakefs/modules/gateway/factory v0.0.0-20250803114435-a5e63c09d6b6
-	github.com/treeverse/lakefs/modules/license/factory v0.0.0-20250803114435-a5e63c09d6b6
-	github.com/treeverse/lakefs/webui v0.0.0-20250803114435-a5e63c09d6b6
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )
