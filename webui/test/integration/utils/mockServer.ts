@@ -28,7 +28,7 @@ export class MockServer {
   private serverUrl: string;
   private staticFilesRoot: string;
 
-  // In lakeFS OSS, static files are served from 'lakeFS/webui/dist'. But in lakeFS Enterprise, the static file path will be different.
+  // staticFilesPath - allows specifying a custom path for serving web UI static files
   constructor(staticFilesPath: string = 'webui/dist', port: number = 3002) {
     this.port = port;
     const baseUrl = process.env.BASE_URL || "http://localhost:8000";
@@ -49,8 +49,13 @@ export class MockServer {
   async start(): Promise<string> {
     return new Promise(async (resolvePromise, reject) => {
       try {
-        const specPath = resolve(this.lakeFSProjectRoot, 'api/swagger.yml');
-        this.operations = await getHttpOperationsFromSpec(specPath);
+        const safeSpecPath = this.securePath(this.lakeFSProjectRoot, 'api/swagger.yml');
+        if (!safeSpecPath) {
+          console.error('Invalid path to swagger.yml spec file');
+          reject(new Error('Invalid path to swagger.yml spec file'));
+          return;
+        }
+        this.operations = await getHttpOperationsFromSpec(safeSpecPath);
 
         this.client = createClientFromOperations(this.operations, {
           mock: { dynamic: false },
