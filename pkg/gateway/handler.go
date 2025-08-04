@@ -123,7 +123,7 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 
 	h = EnrichWithOperation(sc,
 		AuthenticationHandler(authService, EnrichWithParts(bareDomains,
-			EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler, 
+			EnrichWithRepositoryOrFallback(catalog, authService, fallbackHandler,
 				MetricsMiddleware(h)))))
 
 	logging.ContextUnavailable().WithFields(logging.Fields{

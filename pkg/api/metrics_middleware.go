@@ -28,11 +28,11 @@ func MetricsMiddleware(swagger *openapi3.T, requestHistogram *prometheus.Histogr
 			mrw := httputil.NewMetricResponseWriter(w)
 			httputil.ConcurrentRequests.WithLabelValues("api", route.Operation.OperationID).Inc()
 			defer httputil.ConcurrentRequests.WithLabelValues("api", route.Operation.OperationID).Dec()
-			
+
 			// Set service context for blockstore operations
 			ctx := block.WithService(r.Context(), "api")
 			r = r.WithContext(ctx)
-			
+
 			next.ServeHTTP(mrw, r)
 			if err == nil {
 				requestHistogram.

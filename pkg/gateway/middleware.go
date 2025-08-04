@@ -155,11 +155,11 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 		mrw := httputil.NewMetricResponseWriter(w)
 		httputil.ConcurrentRequests.WithLabelValues("gateway", string(o.OperationID)).Inc()
 		defer httputil.ConcurrentRequests.WithLabelValues("gateway", string(o.OperationID)).Dec()
-		
+
 		// Set service context for blockstore operations
 		ctx = block.WithService(ctx, "gateway")
 		req = req.WithContext(ctx)
-		
+
 		next.ServeHTTP(mrw, req)
 		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
