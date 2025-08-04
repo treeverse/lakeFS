@@ -26,8 +26,14 @@ func MetricsMiddleware(swagger *openapi3.T, requestHistogram *prometheus.Histogr
 			route, _, err := router.FindRoute(r)
 			start := time.Now()
 			mrw := httputil.NewMetricResponseWriter(w)
-			httputil.ConcurrentRequests.WithLabelValues("api", route.Operation.OperationID).Inc()
-			defer httputil.ConcurrentRequests.WithLabelValues("api", route.Operation.OperationID).Dec()
+			
+			operationID := "unknown"
+			if err == nil && route != nil && route.Operation != nil {
+				operationID = route.Operation.OperationID
+			}
+			
+			httputil.ConcurrentRequests.WithLabelValues("api", operationID).Inc()
+			defer httputil.ConcurrentRequests.WithLabelValues("api", operationID).Dec()
 
 			// Set service context for blockstore operations
 			ctx := block.WithService(r.Context(), "api")
@@ -36,7 +42,7 @@ func MetricsMiddleware(swagger *openapi3.T, requestHistogram *prometheus.Histogr
 			next.ServeHTTP(mrw, r)
 			if err == nil {
 				requestHistogram.
-					WithLabelValues(route.Operation.OperationID, strconv.Itoa(mrw.StatusCode)).
+					WithLabelValues(operationID, strconv.Itoa(mrw.StatusCode)).
 					Observe(time.Since(start).Seconds())
 			}
 		})

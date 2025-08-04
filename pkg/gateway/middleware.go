@@ -150,18 +150,23 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
-		httputil.ConcurrentRequests.WithLabelValues("gateway", string(o.OperationID)).Inc()
-		defer httputil.ConcurrentRequests.WithLabelValues("gateway", string(o.OperationID)).Dec()
+		
+		operationID := "unknown"
+		if o, ok := ctx.Value(ContextKeyOperation).(*operations.Operation); ok && o != nil {
+			operationID = string(o.OperationID)
+		}
+		
+		httputil.ConcurrentRequests.WithLabelValues("gateway", operationID).Inc()
+		defer httputil.ConcurrentRequests.WithLabelValues("gateway", operationID).Dec()
 
 		// Set service context for blockstore operations
 		ctx = block.WithService(ctx, "gateway")
 		req = req.WithContext(ctx)
 
 		next.ServeHTTP(mrw, req)
-		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
+		requestHistograms.WithLabelValues(operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
 }
 
