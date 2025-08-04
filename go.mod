@@ -5,7 +5,7 @@ go 1.24.4
 require (
 	cloud.google.com/go v0.120.0 // indirect
 	cloud.google.com/go/storage v1.50.0
-	github.com/apache/thrift v0.19.0
+	github.com/apache/thrift v0.19.0 // indirect
 	github.com/cockroachdb/pebble v0.0.0-20230106151110-65ff304d3d7a
 	github.com/cubewise-code/go-mime v0.0.0-20200519001935-8c5762b177d8
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
@@ -97,6 +97,14 @@ require (
 	github.com/matoous/go-nanoid v1.5.0
 	github.com/minio/crc64nvme v1.0.1
 	github.com/puzpuzpuz/xsync v1.5.2
+	github.com/treeverse/lakefs/modules/api/factory v0.0.0-20250803114435-a5e63c09d6b6
+	github.com/treeverse/lakefs/modules/auth/factory v0.0.0-20250803114435-a5e63c09d6b6
+	github.com/treeverse/lakefs/modules/authentication/factory v0.0.0-20250803114435-a5e63c09d6b6
+	github.com/treeverse/lakefs/modules/block/factory v0.0.0-20250803114435-a5e63c09d6b6
+	github.com/treeverse/lakefs/modules/config/factory v0.0.0-20250803114435-a5e63c09d6b6
+	github.com/treeverse/lakefs/modules/gateway/factory v0.0.0-20250803114435-a5e63c09d6b6
+	github.com/treeverse/lakefs/modules/license/factory v0.0.0-20250803114435-a5e63c09d6b6
+	github.com/treeverse/lakefs/webui v0.0.0-20250803114435-a5e63c09d6b6
 	go.uber.org/ratelimit v0.3.0
 	gocloud.dev v0.34.1-0.20231122211418-53ccd8db26a1
 )
@@ -269,7 +277,7 @@ require (
 	go.uber.org/atomic v1.11.0
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/net v0.41.0
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/tools v0.33.0
