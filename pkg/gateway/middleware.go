@@ -152,12 +152,12 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 		ctx := req.Context()
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
-		
+
 		operationID := "unknown"
 		if o, ok := ctx.Value(ContextKeyOperation).(*operations.Operation); ok && o != nil {
 			operationID = string(o.OperationID)
 		}
-		
+
 		httputil.ConcurrentRequests.WithLabelValues("gateway", operationID).Inc()
 		defer httputil.ConcurrentRequests.WithLabelValues("gateway", operationID).Dec()
 
