@@ -131,6 +131,6 @@ assembly / assemblyMergeStrategy := {
 ThisBuild / versionScheme := Some("early-semver")
 
 // Ensure jar and artifact have the right classifier based on Hadoop version
-assembly / assemblyJarName := s"${name.value}-${version.value}-hadoop-${hadoopVersion}.jar"
+assembly / assemblyJarName := s"${name.value}-assembly-${version.value}-hadoop-${hadoopVersion}.jar"
 Compile / packageBin / artifactClassifier := Some(s"hadoop-${hadoopVersion}")
 assembly / artifactClassifier := Some(s"hadoop-${hadoopVersion}")
