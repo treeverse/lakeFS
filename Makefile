@@ -303,10 +303,9 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 publish-scala: ## sbt publish spark client jars to Maven Central and to s3 bucket
 	@echo "Publishing Spark client..."
 	@echo "Using Hadoop version: $(or $(HADOOP_VERSION),3.2.1)"
-	@echo "Using Artifact version: $(or $(ARTIFACT_VERSION),0.15.1-hadoop-3.2.1)"
 	cd clients/spark && \
 	sbt -DhadoopVersion=$(or $(HADOOP_VERSION),3.2.1) \
-	    "set version := \"$(or $(ARTIFACT_VERSION),0.15.1-hadoop-3.2.1)\"" \
+	    "set version := \"0.15.1-rc.1\"" \
 	    'assembly; publishSigned; s3Upload; sonaRelease'
 
 .PHONY: publish-lakefsfs-test

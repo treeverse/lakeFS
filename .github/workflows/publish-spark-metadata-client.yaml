@@ -8,11 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - hadoop-version: "3.2.1"
-            artifact-version: "0.15.1-hadoop-3.2.1"
-          - hadoop-version: "3.3.6"
-            artifact-version: "0.15.1-hadoop-3.3.6"
+        hadoop-version: [ "3.2.1", "3.3.6" ]
     environment: Treeverse signing
     steps:
       - name: Check-out code
@@ -62,7 +58,6 @@ jobs:
         run: make publish-scala
         env:                    # Some credentials required in this step, some in previous.
           HADOOP_VERSION: ${{ matrix.hadoop-version }}
-          ARTIFACT_VERSION: ${{ matrix.artifact-version }}
           AWS_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
