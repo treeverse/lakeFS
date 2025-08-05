@@ -30,7 +30,7 @@ This reference uses `.` to denote the nesting of values.
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
 * `logging.level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "INFO")` - Logging level to output
 * `logging.audit_log_level` `(one of ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Audit logs level to output.
-    
+
     !!! note
         In case you configure this field to be lower than the main logger level, you won't be able to get the [audit logs](./auditing.md)
 
@@ -63,7 +63,7 @@ Configuration section for the lakeFS key-value store database.
 
     * `database.dynamodb.table_name` `(string : "kvstore")` - Table used to store the data
     * `database.dynamodb.scan_limit` `(int : 1025)` - Maximal number of items per page during scan operation
-    
+
         !!! note
             Refer to the following [AWS documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html#Query.Limit) for further information
 
@@ -72,8 +72,8 @@ Configuration section for the lakeFS key-value store database.
     * `database.dynamodb.aws_profile` `(string : )` - AWS named profile to use
     * `database.dynamodb.aws_access_key_id` `(string : )` - AWS access key ID
     * `database.dynamodb.aws_secret_access_key` `(string : )` - AWS secret access key
-        
-        !!! note 
+
+        !!! note
             `endpoint` `aws_region` `aws_access_key_id` `aws_secret_access_key` are not required and used mainly for experimental purposes when working with DynamoDB with different AWS credentials.
 
     * `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
@@ -82,13 +82,13 @@ Configuration section for the lakeFS key-value store database.
 
 === "`database.cosmosdb`"
 
-    * `database.cosmosdb.key` `(string : "")` - If specified, will 
-    be used to authenticate to the CosmosDB account. Otherwise, Azure SDK 
+    * `database.cosmosdb.key` `(string : "")` - If specified, will
+    be used to authenticate to the CosmosDB account. Otherwise, Azure SDK
     default authentication (with env vars) will be used.
     * `database.cosmosdb.endpoint` `(string : "")` - CosmosDB account endpoint, e.g. `https://<account>.documents.azure.com/`.
     * `database.cosmosdb.database` `(string : "")` - CosmosDB database name.
     * `database.cosmosdb.container` `(string : "")` - CosmosDB container name.
-    * `database.cosmosdb.throughput` `(int32 : )` - CosmosDB container's RU/s. If not set - the default CosmosDB container throughput is used. 
+    * `database.cosmosdb.throughput` `(int32 : )` - CosmosDB container's RU/s. If not set - the default CosmosDB container throughput is used.
     * `database.cosmosdb.autoscale` `(bool : false)` - If set, CosmosDB container throughput is autoscaled (See CosmosDB docs for minimum throughput requirement). Otherwise, uses "Manual" mode ([Docs](https://learn.microsoft.com/en-us/azure/cosmos-db/provision-throughput-autoscale)).
 
 ===  "`database.local`"
@@ -103,12 +103,12 @@ Configuration section for the lakeFS key-value store database.
 * `auth.login_duration` `(time duration : "168h")` - The duration the login token is valid for
 * `auth.login_max_duration` `(time duration : "168h")` - The maximum duration user can ask for a login token
 * `auth.cookie_domain` `(string : "")` - [Domain attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_where_cookies_are_sent) to set the access_token cookie on (the default is an empty string which defaults to the same host that sets the cookie)
-* `auth.ui_config.rbac` `(string: "none")` - "none", "simplified", "external" or "internal" (enterprise feature). 
-    
+* `auth.ui_config.rbac` `(string: "none")` - "none", "simplified", "external" or "internal" (enterprise feature).
+
     If you have configured an external auth server you can set this to "external" to support the policy editor.
-    
+
     If you are using the enteprrise version of lakeFS, you can set this to "internal" to use the built-in policy editor.
-    
+
 * `auth.ui_config.use_login_placeholders` `(bool: false)` - If set to true, the login page will show placeholders for the _Access Key ID_ and _Secret Access Key_ (_Username_ and _Password_).
 
 #### auth.cache
@@ -205,13 +205,13 @@ Configuration section for the lakeFS key-value store database.
     * `blockstore.azure.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
     * `blockstore.azure.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
     * `blockstore.azure.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
-    * ~~`blockstore.azure.china_cloud`~~ `(bool : false)` - Enable for using lakeFS on Azure China Cloud.  
-        
+    * ~~`blockstore.azure.china_cloud`~~ `(bool : false)` - Enable for using lakeFS on Azure China Cloud.
+
         !!! warning "Deprecated"
              Please use `blockstore.azure.domain`
-    
-    * `blockstore.azure.domain` `(string : blob.core.windows.net)` - Enables support of different Azure cloud domains. 
-        
+
+    * `blockstore.azure.domain` `(string : blob.core.windows.net)` - Enables support of different Azure cloud domains.
+
         Current supported domains (in Beta stage): [`blob.core.chinacloudapi.cn`, `blob.core.usgovcloudapi.net`]
 
 === "`blockstore.gs`"
@@ -246,7 +246,7 @@ Configuration section for the lakeFS key-value store database.
 
 * `committed.block_storage_prefix` (`string` : `_lakefs`) - Prefix for metadata file storage
   in each repository's storage namespace
-* `committed.sstable.memory.cache_size_bytes` (`int` : `200_000_000`) - maximal size of
+* `committed.sstable.memory.cache_size_bytes` (`int` : `400_000_000`) - maximal size of
   in-memory cache used for each SSTable reader.
 
 #### committed.local_cache
@@ -317,7 +317,7 @@ An object describing the local (on-disk) cache of metadata from permanent storag
 
 ### installation
 
-* `installation.user_name` `(string : )` - When specified, an initial admin user will be created when the server is first run. Works only when `database.type` is set to local. Requires `installation.access_key_id` and `installation.secret_access_key`. 
+* `installation.user_name` `(string : )` - When specified, an initial admin user will be created when the server is first run. Works only when `database.type` is set to local. Requires `installation.access_key_id` and `installation.secret_access_key`.
 * `installation.access_key_id` `(string : )` - Admin's initial access key id (used once in the initial setup process)
 * `installation.secret_access_key` `(string : )` - Admin's initial secret access key (used once in the initial setup process)
 * `installation.allow_inter_region_storage` `(bool : true)` - Allow storage in a different region than the one the server is running in.
