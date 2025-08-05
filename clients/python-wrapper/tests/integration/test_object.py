@@ -83,13 +83,14 @@ def test_object_read_seek(setup_repo, pre_sign):
     fd.close()
 
 
-def test_object_upload_exists(setup_repo):
+@pytest.mark.parametrize("pre_sign", (True, False))
+def test_object_upload_exists(setup_repo, pre_sign):
     clt, repo = setup_repo
     data = b"test_data"
     obj = WriteableObject(repository_id=repo.properties.id, reference_id="main", path="test_obj", client=clt).upload(
         data=data)
     with expect_exception_context(ObjectExistsException):
-        obj.upload(data="some_other_data", mode='xb')
+        obj.upload(data="some_other_data", mode='xb', pre_sign=pre_sign)
 
     with obj.reader() as fd:
         assert fd.read() == data
