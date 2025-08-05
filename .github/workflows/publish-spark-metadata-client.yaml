@@ -25,6 +25,7 @@ jobs:
           cache: 'sbt'
 
       - name: validate format
+        working-directory: clients/spark
         run: sbt scalafmtCheck
 
       - name: validate unused
@@ -58,7 +59,6 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
       - name: SBT release (Maven Central, AWS)
-        working-directory: clients/spark
         run: make publish-scala
         env:                    # Some credentials required in this step, some in previous.
           HADOOP_VERSION: ${{ matrix.hadoop-version }}
