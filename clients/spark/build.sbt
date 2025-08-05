@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.15.1-support-emr-7.0.0"
+lazy val projectVersion = "0.15.2-test"
 version := projectVersion
 lazy val hadoopVersion = sys.props.getOrElse("hadoopVersion", "3.2.1")
 ThisBuild / isSnapshot := false
@@ -129,3 +129,8 @@ assembly / assemblyMergeStrategy := {
 }
 
 ThisBuild / versionScheme := Some("early-semver")
+
+// Ensure jar and artifact have the right classifier based on Hadoop version
+assembly / assemblyJarName := s"${name.value}-${version.value}-hadoop-${hadoopVersion}.jar"
+Compile / packageBin / artifactClassifier := Some(s"hadoop-${hadoopVersion}")
+assembly / artifactClassifier := Some(s"hadoop-${hadoopVersion}")

@@ -301,8 +301,13 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 
 .PHONY: publish-scala
 publish-scala: ## sbt publish spark client jars to Maven Central and to s3 bucket
-	cd clients/spark && sbt 'assembly; publishSigned; s3Upload; sonaRelease'
-	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
+	@echo "Publishing Spark client..."
+	@echo "Using Hadoop version: $(or $(HADOOP_VERSION),3.2.1)"
+	@echo "Using Artifact version: $(or $(ARTIFACT_VERSION),0.15.1-hadoop-3.2.1)"
+	cd clients/spark && \
+	sbt -DhadoopVersion=$(or $(HADOOP_VERSION),3.2.1) \
+	    "set version := \"$(or $(ARTIFACT_VERSION),0.15.1-hadoop-3.2.1)\"" \
+	    'assembly; publishSigned; s3Upload; sonaRelease'
 
 .PHONY: publish-lakefsfs-test
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
