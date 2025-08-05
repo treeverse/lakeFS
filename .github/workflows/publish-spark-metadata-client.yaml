@@ -25,7 +25,6 @@ jobs:
           cache: 'sbt'
 
       - name: validate format
-        working-directory: clients/spark
         run: sbt scalafmtCheck
 
       - name: validate unused
