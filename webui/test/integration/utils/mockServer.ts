@@ -31,9 +31,9 @@ export class MockServer {
   // staticFilesPath - allows specifying a custom path for serving web UI static files
   constructor(staticFilesPath: string = 'webui/dist', port: number = 3002) {
     this.port = port;
-    const baseUrl = process.env.BASE_URL || "http://localhost:8000";
+    //const baseUrl = process.env.BASE_URL || "http://localhost:8000";
     this.lakeFSProjectRoot = resolve(__dirname, '..', '..', '..', '..');
-    this.serverUrl = `http://${new URL(baseUrl).hostname}:${this.port}`;
+    //this.serverUrl = `http://${new URL(baseUrl).hostname}:${this.port}`;
     this.staticFilesRoot = resolve(this.lakeFSProjectRoot, staticFilesPath)
   }
 
@@ -69,6 +69,11 @@ export class MockServer {
 
         this.server = createServer((req, res) => this.routeRequest(req, res));
         this.server.listen(this.port, () => {
+          // Update serverUrl with the actual assigned port (important for dynamic port 0)
+          const actualPort = this.server.address()?.port || this.port;
+          const baseUrl = process.env.BASE_URL || "http://localhost:8000";
+          this.serverUrl = `http://${new URL(baseUrl).hostname}:${actualPort}`;
+
           console.log(`OpenAPI Mock server started on ${this.serverUrl}`);
           resolvePromise(`${this.serverUrl}`);
         });
