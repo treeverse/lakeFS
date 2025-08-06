@@ -9,6 +9,7 @@ import (
 
 type EventType string
 
+// EventType constants represent the different types of events that can trigger hooks.
 const (
 	EventTypePrepareCommit    EventType = "prepare-commit"
 	EventTypePreCommit        EventType = "pre-commit"
@@ -30,6 +31,31 @@ const (
 
 	UnixYear3000 = 32500915200
 )
+
+func (e EventType) Valid() bool {
+	switch e {
+	case EventTypePrepareCommit,
+		EventTypePreCommit,
+		EventTypePostCommit,
+		EventTypePreMerge,
+		EventTypePostMerge,
+		EventTypePreCreateBranch,
+		EventTypePostCreateBranch,
+		EventTypePreDeleteBranch,
+		EventTypePostDeleteBranch,
+		EventTypePreCreateTag,
+		EventTypePostCreateTag,
+		EventTypePreDeleteTag,
+		EventTypePostDeleteTag,
+		EventTypePreRevert,
+		EventTypePostRevert,
+		EventTypePreCherryPick,
+		EventTypePostCherryPick:
+		// Supported events
+		return true
+	}
+	return false
+}
 
 // HookRecord is an aggregation of all necessary fields for all event types
 type HookRecord struct {
