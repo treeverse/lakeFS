@@ -62,7 +62,7 @@ func (s *ActionsSource) list(ctx context.Context, record graveler.HookRecord) ([
 		for _, result := range res {
 			names = append(names, result.Path)
 		}
-		if !hasMore || len(res) == 0 {
+		if !hasMore {
 			break
 		}
 		after = res[len(res)-1].Path
