@@ -142,20 +142,40 @@ func EnrichWithOperation(sc *ServerContext, next http.Handler) http.Handler {
 			},
 			PathProvider: sc.pathProvider,
 		}
-		next.ServeHTTP(w, req.WithContext(context.WithValue(ctx, ContextKeyOperation, o)))
+
+		// Parse URL to determine operation ID
+		parts := ParseRequestParts(req.Host, req.URL.Path, sc.bareDomains)
+
+		switch {
+		case parts.Repository == "":
+			o.OperationID = rootBasedOperationID(req.Method)
+		case parts.Ref != "" && parts.Path != "":
+			o.OperationID = pathBasedOperationID(req.Method)
+		case parts.Ref == "" && parts.Path == "":
+			o.OperationID = repositoryBasedOperationID(req.Method)
+		default:
+			o.OperationID = operations.OperationIDOperationNotFound
+		}
+
+		ctx = context.WithValue(ctx, ContextKeyOperation, o)
+		ctx = logging.AddFields(ctx, logging.Fields{"operation_id": o.OperationID})
+		next.ServeHTTP(w, req.WithContext(ctx))
 	})
 }
 
 func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
-		httputil.ConcurrentRequests.WithLabelValues("gateway", string(o.OperationID)).Inc()
-		defer httputil.ConcurrentRequests.WithLabelValues("gateway", string(o.OperationID)).Dec()
+
+		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
+		operationID := string(o.OperationID)
+
+		httputil.ConcurrentRequests.WithLabelValues("gateway", operationID).Inc()
+		defer httputil.ConcurrentRequests.WithLabelValues("gateway", operationID).Dec()
 		next.ServeHTTP(mrw, req)
-		requestHistograms.WithLabelValues(string(o.OperationID), strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
+		requestHistograms.WithLabelValues(operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 	})
 }
 
@@ -203,31 +223,6 @@ func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.Gateway
 			return
 		}
 		req = req.WithContext(context.WithValue(ctx, ContextKeyRepository, repo))
-		next.ServeHTTP(w, req)
-	})
-}
-
-func OperationLookupHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
-		o := ctx.Value(ContextKeyOperation).(*operations.Operation)
-		repoID := ctx.Value(ContextKeyRepositoryID).(string)
-		ref := ctx.Value(ContextKeyRef).(string)
-		pth := ctx.Value(ContextKeyPath).(string)
-
-		// based on the operation level, we can determine the operation id
-		switch {
-		case repoID == "":
-			o.OperationID = rootBasedOperationID(req.Method)
-		case ref != "" && pth != "":
-			o.OperationID = pathBasedOperationID(req.Method)
-		case ref == "" && pth == "":
-			o.OperationID = repositoryBasedOperationID(req.Method)
-		default:
-			o.OperationID = operations.OperationIDOperationNotFound
-		}
-
-		req = req.WithContext(logging.AddFields(ctx, logging.Fields{"operation_id": o.OperationID}))
 		next.ServeHTTP(w, req)
 	})
 }
