@@ -479,6 +479,10 @@ class ObjectWriter(LakeFSIOBase):
         """
         self._abort()
 
+    def _upload(self) -> ObjectInfo:
+        stats = self._upload_presign() if self.pre_sign else self._upload_raw()
+        return ObjectInfo(**stats.dict())
+
     def close(self) -> None:
         """
         Write the data to the lakeFS server
@@ -486,9 +490,10 @@ class ObjectWriter(LakeFSIOBase):
         if self._fd.closed:
             return
 
-        stats = self._upload_presign() if self.pre_sign else self._upload_raw()
-        self._obj_stats = ObjectInfo(**stats.dict())
-        self._fd.close()
+        try:
+            self._obj_stats = self._upload()
+        finally:
+            self._fd.close()
 
     def _abort(self) -> None:
         """
