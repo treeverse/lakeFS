@@ -115,7 +115,7 @@ func NewHandler(region string, catalog *catalog.Catalog, multipartTracker multip
 		traceRequestHeaders,
 		isAdvancedAuth)
 
-	h = OperationLookupHandler(loggingMiddleware(h))
+	h = loggingMiddleware(h)
 
 	if middleware != nil {
 		h = middleware(h)
