@@ -2957,7 +2957,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 
 	case errors.Is(err, block.ErrForbidden),
 		errors.Is(err, graveler.ErrProtectedBranch),
-		errors.Is(err, graveler.ErrReadOnlyRepository):
+		errors.Is(err, graveler.ErrReadOnlyRepository),
+		errors.Is(err, graveler.ErrDeleteDefaultBranch):
 		cb(w, r, http.StatusForbidden, err)
 
 	case errors.Is(err, authentication.ErrSessionExpired):
