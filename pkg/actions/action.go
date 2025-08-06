@@ -68,28 +68,6 @@ var (
 	reHookID = regexp.MustCompile(`^[_a-zA-Z][\-_a-zA-Z0-9]{1,255}$`)
 )
 
-func isEventSupported(event graveler.EventType) bool {
-	switch event {
-	case graveler.EventTypePrepareCommit,
-		graveler.EventTypePreCommit,
-		graveler.EventTypePostCommit,
-		graveler.EventTypePreMerge,
-		graveler.EventTypePostMerge,
-		graveler.EventTypePreCreateBranch,
-		graveler.EventTypePostCreateBranch,
-		graveler.EventTypePreDeleteBranch,
-		graveler.EventTypePostDeleteBranch,
-		graveler.EventTypePreCreateTag,
-		graveler.EventTypePostCreateTag,
-		graveler.EventTypePreDeleteTag,
-		graveler.EventTypePostDeleteTag,
-		graveler.EventTypePreRevert,
-		graveler.EventTypePostRevert:
-		return true
-	}
-	return false
-}
-
 func (a *Action) Validate() error {
 	if a.Name == "" {
 		return fmt.Errorf("'name' is required: %w", ErrInvalidAction)
@@ -123,7 +101,7 @@ func (a *Action) Validate() error {
 }
 
 func validateEvent(event graveler.EventType, on *ActionOn) error {
-	if !isEventSupported(event) {
+	if !event.Valid() {
 		return fmt.Errorf("event '%s' is not supported: %w", event, ErrInvalidAction)
 	}
 	if on != nil {
