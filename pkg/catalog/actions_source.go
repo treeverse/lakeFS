@@ -50,19 +50,22 @@ func (s *ActionsSource) List(ctx context.Context, record graveler.HookRecord) ([
 
 func (s *ActionsSource) list(ctx context.Context, record graveler.HookRecord) ([]string, error) {
 	const amount = 1000
-	var after string
-	hasMore := true
-	var names []string
-	for hasMore {
-		var res []*DBEntry
-		var err error
-		res, hasMore, err = s.catalog.ListEntries(ctx, record.Repository.RepositoryID.String(), record.SourceRef.String(), repositoryLocation, after, DefaultPathDelimiter, amount)
+	var (
+		after string
+		names []string
+	)
+	for {
+		res, hasMore, err := s.catalog.ListEntries(ctx, record.Repository.RepositoryID.String(), record.SourceRef.String(), repositoryLocation, after, DefaultPathDelimiter, amount)
 		if err != nil {
 			return nil, fmt.Errorf("listing actions: %w", err)
 		}
 		for _, result := range res {
 			names = append(names, result.Path)
 		}
+		if !hasMore {
+			break
+		}
+		after = res[len(res)-1].Path
 	}
 	return names, nil
 }
