@@ -55,6 +55,13 @@ class TestActionsApi(unittest.TestCase):
         """
         pass
 
+    def test_trigger_action(self) -> None:
+        """Test case for trigger_action
+
+        manually trigger an action  # noqa: E501
+        """
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

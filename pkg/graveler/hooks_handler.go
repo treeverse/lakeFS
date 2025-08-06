@@ -27,6 +27,7 @@ const (
 	EventTypePostRevert       EventType = "post-revert"
 	EventTypePreCherryPick    EventType = "pre-cherry-pick"
 	EventTypePostCherryPick   EventType = "post-cherry-pick"
+	EventTypeManualTrigger    EventType = "manual-trigger"
 
 	UnixYear3000 = 32500915200
 )
@@ -52,6 +53,8 @@ type HookRecord struct {
 	TagID TagID
 	// Exists only in merge actions. Contains the requested source to merge from (branch/tag/ref) as requested in the merge request
 	MergeSource Ref
+	// Exists only in manual trigger actions. Contains the action name that was triggered
+	ActionName string
 }
 
 type HooksHandler interface {
