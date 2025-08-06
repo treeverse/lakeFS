@@ -735,7 +735,7 @@ func TestLakectlFsUpload(t *testing.T) {
 		vars["FILE_PATH"] = "data/ro/"
 		sanitizedResult := runCmd(t, Lakectl()+" fs upload --recursive -s"+"files"+string(filepath.Separator)+" lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"], false, false, vars)
 
-		require.Contains(t, sanitizedResult, "diff 'local://files/' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
+		require.Contains(t, sanitizedResult, "diff "+"'local://files"+string(filepath.Separator)+"' <--> 'lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+"'...")
 		require.Contains(t, sanitizedResult, "upload ro_1k")
 		require.Contains(t, sanitizedResult, "upload ro_1k_other")
 		require.Contains(t, sanitizedResult, "upload upload_file.txt")
