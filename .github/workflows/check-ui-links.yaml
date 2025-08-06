@@ -12,6 +12,7 @@ jobs:
   preview:
     name: Check links from UI
     runs-on: ubuntu-22.04
+    if: github.event.pull_request.head.repo.fork == false
     steps:
       - name: Check-out
         uses: actions/checkout@v4
