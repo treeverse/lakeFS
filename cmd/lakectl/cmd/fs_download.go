@@ -48,10 +48,10 @@ var fsDownloadCmd = &cobra.Command{
 		if !recursive {
 			// if dest is a directory, add the file name
 			if s, _ := os.Stat(dest); s != nil && s.IsDir() {
-				dest += uri.PathSeparator
+				dest += string(filepath.Separator) // destination is in filesystem
 			}
 			if remotePath != "" && strings.HasSuffix(dest, uri.PathSeparator) {
-				dest += filepath.Base(remotePath)
+				dest += filepath.Base(filepath.FromSlash(remotePath))
 			}
 
 			err := downloader.Download(ctx, *remote, dest, nil)
