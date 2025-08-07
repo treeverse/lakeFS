@@ -3,8 +3,6 @@ package graveler
 import (
 	"bytes"
 	"errors"
-
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // JoinedDiffIterator calculate the union diff between 2 iterators.
@@ -18,7 +16,6 @@ type JoinedDiffIterator struct {
 	// the current iterator that has the value to return (iterA or iterB)
 	currentIter DiffIterator
 	started     bool
-	log         logging.Logger
 }
 
 func NewJoinedDiffIterator(iterA DiffIterator, iterB DiffIterator) *JoinedDiffIterator {
@@ -105,7 +102,6 @@ func (c *JoinedDiffIterator) Next() bool {
 
 func (c *JoinedDiffIterator) Value() *Diff {
 	if c.currentIter == nil {
-		c.log.Errorf("current iterator is nil")
 		return nil
 	}
 	return c.currentIter.Value()

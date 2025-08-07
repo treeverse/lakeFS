@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import http
 import io
 import json
 import os
@@ -478,6 +479,10 @@ class ObjectWriter(LakeFSIOBase):
         """
         self._abort()
 
+    def _upload(self) -> ObjectInfo:
+        stats = self._upload_presign() if self.pre_sign else self._upload_raw()
+        return ObjectInfo(**stats.dict())
+
     def close(self) -> None:
         """
         Write the data to the lakeFS server
@@ -485,9 +490,10 @@ class ObjectWriter(LakeFSIOBase):
         if self._fd.closed:
             return
 
-        stats = self._upload_presign() if self.pre_sign else self._upload_raw()
-        self._obj_stats = ObjectInfo(**stats.dict())
-        self._fd.close()
+        try:
+            self._obj_stats = self._upload()
+        finally:
+            self._fd.close()
 
     def _abort(self) -> None:
         """
@@ -520,6 +526,8 @@ class ObjectWriter(LakeFSIOBase):
             "Accept": "application/json",
             "Content-Type": self.content_type if self.content_type is not None else "application/octet-stream"
         }
+        if self._mode.startswith("x"):
+            headers["If-None-Match"] = "*"
 
         # Create user metadata headers
         if self.metadata is not None:
@@ -538,6 +546,8 @@ class ObjectWriter(LakeFSIOBase):
                                                                                                headers=headers,
                                                                                                body=self._fd)
 
+        if self._mode.startswith("x") and resp.status == http.HTTPStatus.PRECONDITION_FAILED:
+            raise ObjectExistsException(resp.status, resp.reason, resp.data)
         handle_http_error(resp)
         return lakefs_sdk.ObjectStats(**json.loads(resp.data))
 
@@ -568,10 +578,17 @@ class ObjectWriter(LakeFSIOBase):
                                            checksum=etag,
                                            user_metadata=self.metadata,
                                            content_type=self.content_type)
-        return self._client.sdk_client.staging_api.link_physical_address(self._obj.repo,
-                                                                         self._obj.ref,
-                                                                         self._obj.path,
-                                                                         staging_metadata=staging_metadata)
+        if_none_match = "*" if self._mode.startswith("x") else None
+        try:
+            return self._client.sdk_client.staging_api.link_physical_address(self._obj.repo,
+                                                                             self._obj.ref,
+                                                                             self._obj.path,
+                                                                             staging_metadata=staging_metadata,
+                                                                             if_none_match=if_none_match)
+        except lakefs_sdk.ApiException as e:
+            if self._mode.startswith("x") and e.status == http.HTTPStatus.PRECONDITION_FAILED:
+                raise ObjectExistsException(e.status, e.reason, e.body) from e
+            raise
 
     def readable(self) -> bool:
         """

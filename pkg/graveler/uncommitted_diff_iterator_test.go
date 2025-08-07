@@ -1,7 +1,6 @@
 package graveler_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -106,7 +105,8 @@ func TestNewUncommittedDiffIterator(t *testing.T) {
 				}
 			}
 			fakeList := testutils.NewFakeValueIterator(uncommittedRecords)
-			diffIT := graveler.NewUncommittedDiffIterator(context.Background(), fakeCommittedList, fakeList)
+			diffIT := graveler.NewUncommittedDiffIterator(t.Context(), fakeCommittedList, fakeList)
+			defer diffIT.Close()
 
 			// diff results
 			diffRes := make([]graveler.DiffType, 0)
