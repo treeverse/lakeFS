@@ -9,7 +9,7 @@
 :bug: Bugs fixed:
 
 - Fix concurrent commits with allow-empty may fail with no-changes (#9371)
-- Fix: remove uninitialized logger from joined diff iterator (#9379)
+- Remove uninitialized logger from joined diff iterator (#9379)
 - Fix possible infinite loop while listing action files (#9390)
 - Fix metrics reports in s3 gateway (#9385)
 - Fix delete default branch error (#9377)
