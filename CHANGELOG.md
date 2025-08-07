@@ -2,10 +2,6 @@
 
 # v1.65.0
 
-:new: What's new:
-
-- Python HL SDK: use IfNoneMatch to support conditional write (aka exclusive creation) (#9309)
-
 :bug: Bugs fixed:
 
 - Fix concurrent commits with allow-empty may fail with no-changes (#9371)
