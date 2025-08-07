@@ -10,6 +10,9 @@ jobs:
   spark-metadata-client:
     name: Unit test Spark metadata client
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        hadoop-version: [ "3.2.1", "3.3.6" ]
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -26,4 +29,4 @@ jobs:
 
       - name: run tests, validate and package
         working-directory: clients/spark
-        run: sbt -Dspark.driver.bindAddress=127.0.0.1 -Dspark.driver.host=localhost test "scalafix --check" package
+        run: sbt -DhadoopVersion=${{ matrix.hadoop-version }} -Dspark.driver.bindAddress=127.0.0.1 -Dspark.driver.host=localhost test "scalafix --check" package
