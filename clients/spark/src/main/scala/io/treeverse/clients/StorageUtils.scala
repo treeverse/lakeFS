@@ -108,7 +108,12 @@ object StorageUtils {
       val initialRegion =
         if (region != null && region.nonEmpty) region else null
       val client =
-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, initialRegion)
+        initializeS3Client(configuration,
+                           credentialsProvider,
+                           awsS3ClientBuilder,
+                           endpoint,
+                           initialRegion
+                          )
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
