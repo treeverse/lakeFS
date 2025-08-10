@@ -1,6 +1,6 @@
-lazy val projectVersion = "0.15.0"
+lazy val projectVersion = "0.15.2"
 version := projectVersion
-lazy val hadoopVersion = "3.2.1"
+lazy val hadoopVersion = sys.props.getOrElse("hadoopVersion", "3.3.6")
 ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
 
@@ -63,7 +63,7 @@ libraryDependencies ++= Seq(
   "com.azure" % "azure-storage-blob" % "12.9.0",
   "com.azure" % "azure-storage-blob-batch" % "12.7.0",
   "com.azure" % "azure-identity" % "1.2.0",
-  "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.194" % "provided",
+  "com.amazonaws" % "aws-java-sdk-bundle" % "1.12.569" % "provided",
   "com.google.cloud.bigdataoss" % "gcs-connector" % "hadoop3-2.2.18",
   "com.google.cloud" % "google-cloud-storage" % "2.35.0",
   // Snappy is JNI :-(.  However it does claim to work with
