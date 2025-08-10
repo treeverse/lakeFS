@@ -105,15 +105,8 @@ object StorageUtils {
     ): AmazonS3 = {
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
-      val initialRegion =
-        if (region != null && region.nonEmpty) region else null
       val client =
-        initializeS3Client(configuration,
-                           credentialsProvider,
-                           awsS3ClientBuilder,
-                           endpoint,
-                           initialRegion
-                          )
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, region)
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
@@ -148,19 +141,24 @@ object StorageUtils {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
       val builderWithEndpoint =
-        if (endpoint != null && region != null && region.nonEmpty)
+        if (endpoint != null)
           builder.withEndpointConfiguration(
             new AwsClientBuilder.EndpointConfiguration(endpoint, region)
           )
-        else if (region != null && region.nonEmpty)
+        else if (region != null)
           builder.withRegion(region)
-        else
-          builder
+        else {
+          // Fall back to default region provider chain
+          val currentRegion = com.amazonaws.regions.Regions.getCurrentRegion
+          if (currentRegion != null) {
+            builder.withRegion(currentRegion.getName)
+          } else {
+            builder.withRegion(com.amazonaws.regions.Regions.US_EAST_1)
+          }
+        }
+
       // Check for Hadoop's assumed role configuration
       val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
-      // Pick an effective provider (fallback to default chain if none provided)
-      val effectiveProvider =
-        credentialsProvider.getOrElse(new DefaultAWSCredentialsProviderChain())
       // Apply credentials based on configuration
       val builderWithCredentials =
         if (roleArn != null && !roleArn.isEmpty) {
@@ -177,9 +175,13 @@ object StorageUtils {
               logger.info("Falling back to DefaultAWSCredentialsProviderChain")
               builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
           }
-        } else {
-          builderWithEndpoint.withCredentials(effectiveProvider)
-        }
+        } else
+          (
+            // Use standard AWSCredentialsProvider if available
+            builderWithEndpoint.withCredentials(
+              credentialsProvider.get.asInstanceOf[AWSCredentialsProvider]
+            )
+          )
       builderWithCredentials.build
     }
 
