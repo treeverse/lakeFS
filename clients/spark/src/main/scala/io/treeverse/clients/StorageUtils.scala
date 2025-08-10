@@ -159,6 +159,7 @@ object StorageUtils {
 
       // Check for Hadoop's assumed role configuration
       val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
+
       // Apply credentials based on configuration
       val builderWithCredentials =
         if (roleArn != null && !roleArn.isEmpty) {
@@ -169,6 +170,7 @@ object StorageUtils {
               new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
                 .withLongLivedCredentialsProvider(new DefaultAWSCredentialsProviderChain())
                 .build()
+
             builderWithEndpoint.withCredentials(stsProvider)
           } catch {
             case e: Exception =>
