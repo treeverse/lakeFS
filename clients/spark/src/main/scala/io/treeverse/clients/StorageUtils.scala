@@ -103,6 +103,7 @@ object StorageUtils {
         region: String,
         bucket: String
     ): AmazonS3 = {
+      logger.debug(s"Creating S3 client for bucket: $bucket, region: $region, endpoint: $endpoint")
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
       val client =
