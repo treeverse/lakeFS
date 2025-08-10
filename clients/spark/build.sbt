@@ -1,6 +1,6 @@
-lazy val projectVersion = "0.15.1-test"
+lazy val projectVersion = "0.15.2"
 version := projectVersion
-lazy val hadoopVersion = sys.props.getOrElse("hadoopVersion", "3.2.1")
+lazy val hadoopVersion = sys.props.getOrElse("hadoopVersion", "3.3.6")
 ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
 

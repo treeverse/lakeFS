@@ -31,10 +31,10 @@ object StorageUtils {
    *  @return object paths in a storage namespace
    */
   def concatKeysToStorageNamespace(
-      keys: Seq[String],
-      storageNamespace: String,
-      keepNsSchemeAndHost: Boolean = true
-  ): Seq[String] = {
+                                    keys: Seq[String],
+                                    storageNamespace: String,
+                                    keepNsSchemeAndHost: Boolean = true
+                                  ): Seq[String] = {
     var sanitizedNS = storageNamespace
     if (!keepNsSchemeAndHost) {
       val uri = new URI(storageNamespace)
@@ -96,24 +96,26 @@ object StorageUtils {
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
     def createAndValidateS3Client(
-        configuration: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
-        awsS3ClientBuilder: AmazonS3ClientBuilder,
-        endpoint: String,
-        region: String,
-        bucket: String
-    ): AmazonS3 = {
+                                   configuration: ClientConfiguration,
+                                   credentialsProvider: Option[AWSCredentialsProvider],
+                                   awsS3ClientBuilder: AmazonS3ClientBuilder,
+                                   endpoint: String,
+                                   region: String,
+                                   bucket: String
+                                 ): AmazonS3 = {
+      logger.debug(
+        s"Creating S3 client for bucket: $bucket, region: $region, endpoint: $endpoint"
+      )
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
       val client =
-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, region)
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
         } catch {
           case e: Throwable =>
             logger.info(f"Could not fetch region for bucket $bucket", e)
-            ""
         }
       if (bucketRegion == "" && region == "") {
         throw new IllegalArgumentException(
@@ -124,20 +126,20 @@ object StorageUtils {
         bucketRegion = region
       }
       initializeS3Client(configuration,
-                         credentialsProvider,
-                         awsS3ClientBuilder,
-                         endpoint,
-                         bucketRegion
-                        )
+        credentialsProvider,
+        awsS3ClientBuilder,
+        endpoint,
+        bucketRegion
+      )
     }
 
     private def initializeS3Client(
-        configuration: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
-        awsS3ClientBuilder: AmazonS3ClientBuilder,
-        endpoint: String,
-        region: String = null
-    ): AmazonS3 = {
+                                    configuration: ClientConfiguration,
+                                    credentialsProvider: Option[AWSCredentialsProvider],
+                                    awsS3ClientBuilder: AmazonS3ClientBuilder,
+                                    endpoint: String,
+                                    region: String = null
+                                  ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
       val builderWithEndpoint =
@@ -147,10 +149,19 @@ object StorageUtils {
           )
         else if (region != null)
           builder.withRegion(region)
-        else
-          builder
+        else {
+          // Fall back to default region provider chain
+          val currentRegion = com.amazonaws.regions.Regions.getCurrentRegion
+          if (currentRegion != null) {
+            builder.withRegion(currentRegion.getName)
+          } else {
+            builder.withRegion(com.amazonaws.regions.Regions.US_EAST_1)
+          }
+        }
+
       // Check for Hadoop's assumed role configuration
       val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
+
       // Apply credentials based on configuration
       val builderWithCredentials =
         if (roleArn != null && !roleArn.isEmpty) {
@@ -174,7 +185,7 @@ object StorageUtils {
             builderWithEndpoint.withCredentials(
               credentialsProvider.get.asInstanceOf[AWSCredentialsProvider]
             )
-          )
+            )
       builderWithCredentials.build
     }
 
@@ -199,10 +210,10 @@ class S3RetryDeleteObjectsCondition extends SDKDefaultRetryCondition {
   private val clock = java.time.Clock.systemDefaultZone
 
   override def shouldRetry(
-      originalRequest: AmazonWebServiceRequest,
-      exception: AmazonClientException,
-      retriesAttempted: Int
-  ): Boolean = {
+                            originalRequest: AmazonWebServiceRequest,
+                            exception: AmazonClientException,
+                            retriesAttempted: Int
+                          ): Boolean = {
     val now = clock.instant
     exception match {
       case ce: SdkClientException =>
