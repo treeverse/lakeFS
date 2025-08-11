@@ -4049,10 +4049,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MergeResult'
-          description: |
-            Conflict
-            Deprecated: content schema will return Error format and not an empty MergeResult
+                $ref: '#/components/schemas/Error'
+          description: Conflict
         "412":
           content:
             application/json:

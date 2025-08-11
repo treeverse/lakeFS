@@ -3947,6 +3947,48 @@ func TestController_MergeDiffWithParent(t *testing.T) {
 	}
 }
 
+func TestController_MergeDiffWithConflict(t *testing.T) {
+	clt, _ := setupClientWithAdmin(t)
+	ctx := context.Background()
+
+	repoName := testUniqueRepoName()
+	repoResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+		DefaultBranch:    apiutil.Ptr("main"),
+		Name:             repoName,
+		StorageNamespace: "mem://",
+	})
+	verifyResponseOK(t, repoResp, err)
+
+	// Create a branch and upload an object twice to create a conflict
+	for num := range 2 {
+		branchName := fmt.Sprintf("branch%d", num)
+		branchResp, err := clt.CreateBranchWithResponse(ctx, repoName, apigen.CreateBranchJSONRequestBody{Name: branchName, Source: "main"})
+		verifyResponseOK(t, branchResp, err)
+
+		content := fmt.Sprintf("awesome content %d", num)
+		resp, err := uploadObjectHelper(t, ctx, clt, "file1", strings.NewReader(content), repoName, branchName)
+		verifyResponseOK(t, resp, err)
+
+		msg := fmt.Sprintf("commit change on branch %s", branchName)
+		commitResp, err := clt.CommitWithResponse(ctx, repoName, branchName, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{Message: msg})
+		verifyResponseOK(t, commitResp, err)
+	}
+
+	// Merge first branch into main - should succeed
+	merge1Resp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch0", "main", apigen.MergeIntoBranchJSONRequestBody{
+		Message: apiutil.Ptr("merge work to main"),
+	})
+	verifyResponseOK(t, merge1Resp, err)
+
+	// Merge second branch into main - should conflict
+	merge2Resp, err := clt.MergeIntoBranchWithResponse(ctx, repoName, "branch1", "main", apigen.MergeIntoBranchJSONRequestBody{
+		Message: apiutil.Ptr("merge work to main"),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, merge2Resp.JSON409)
+	require.NotEmpty(t, merge2Resp.JSON409.Message)
+}
+
 func TestController_MergeIntoExplicitBranch(t *testing.T) {
 	clt, deps := setupClientWithAdmin(t)
 	ctx := context.Background()

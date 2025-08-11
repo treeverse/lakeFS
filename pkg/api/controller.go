@@ -5109,9 +5109,7 @@ func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, bod
 	)
 
 	if errors.Is(err, graveler.ErrConflictFound) {
-		writeResponse(w, r, http.StatusConflict, apigen.MergeResult{
-			Reference: reference,
-		})
+		writeError(w, r, http.StatusConflict, "merge conflict detected")
 		return
 	}
 	if c.handleAPIError(ctx, w, r, err) {

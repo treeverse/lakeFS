@@ -57,7 +57,7 @@ pub enum MergeIntoBranchError {
     Status401(models::Error),
     Status403(models::Error),
     Status404(models::Error),
-    Status409(models::MergeResult),
+    Status409(models::Error),
     Status412(models::Error),
     Status429(),
     DefaultResponse(models::Error),

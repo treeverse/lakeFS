@@ -441,7 +441,7 @@ public class Example {
 | **401** | Unauthorized |  -  |
 | **403** | Forbidden |  -  |
 | **404** | Resource Not Found |  -  |
-| **409** | Conflict Deprecated: content schema will return Error format and not an empty MergeResult  |  -  |
+| **409** | Conflict |  -  |
 | **412** | precondition failed (e.g. a pre-merge hook returned a failure) |  -  |
 | **429** | too many requests |  -  |
 | **0** | Internal Server Error |  -  |

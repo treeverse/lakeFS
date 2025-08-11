@@ -793,7 +793,7 @@ class RefsApi:
             '401': "Error",
             '403': "Error",
             '404': "Error",
-            '409': "MergeResult",
+            '409': "Error",
             '412': "Error",
             '429': None,
         }
