@@ -933,7 +933,7 @@ class Refs {
                 return response.json();
             case 409:
                 resp = await response.json();
-                throw new MergeError(response.statusText, resp.body);
+                throw new MergeError('Conflict', resp);
             case 412:
             default:
                 throw new Error(await extractError(response));
