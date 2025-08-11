@@ -180,10 +180,10 @@ object StorageUtils {
           }
         } else
           (
-            // Use standard AWSCredentialsProvider if available
-            builderWithEndpoint.withCredentials(
-              credentialsProvider.get.asInstanceOf[AWSCredentialsProvider]
-            )
+            credentialsProvider match {
+              case Some(cp) => builderWithEndpoint.withCredentials(cp)
+              case None     => builderWithEndpoint
+            }
           )
       builderWithCredentials.build
     }
