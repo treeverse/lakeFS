@@ -663,6 +663,7 @@ type Auth struct {
 	LoginMaxDuration  time.Duration `mapstructure:"login_max_duration"`
 	UIConfig          struct {
 		RBAC                 string   `mapstructure:"rbac"`
+		SelectLoginMethod    bool     `mapstructure:"select_login_method"`
 		LoginURL             string   `mapstructure:"login_url"`
 		LoginFailedMessage   string   `mapstructure:"login_failed_message"`
 		FallbackLoginURL     *string  `mapstructure:"fallback_login_url"`
