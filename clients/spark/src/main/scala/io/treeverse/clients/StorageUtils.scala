@@ -102,7 +102,7 @@ object StorageUtils {
       val base = provided.getOrElse(new DefaultAWSCredentialsProviderChain())
       if (roleArn != null && !roleArn.isEmpty) {
         try {
-          val sessionName = "lakefs-gc-" + java.util.UUID.randomUUID().toString
+          val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
           new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
             .withLongLivedCredentialsProvider(base)
             .build()
