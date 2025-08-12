@@ -15,36 +15,43 @@ pub struct LoginConfig {
     /// RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. 
     #[serde(rename = "RBAC", skip_serializing_if = "Option::is_none")]
     pub rbac: Option<Rbac>,
+    /// When set to true, displays a login page that lets the user choose a preferred authentication method for  logging into lakeFS. Either via SSO (using the login_url field, which needs to be configured) or using  lakeFS credentials. 
+    #[serde(rename = "select_login_method", skip_serializing_if = "Option::is_none")]
+    pub select_login_method: Option<bool>,
     /// Placeholder text to display in the username field of the login form. 
     #[serde(rename = "username_ui_placeholder", skip_serializing_if = "Option::is_none")]
     pub username_ui_placeholder: Option<String>,
     /// Placeholder text to display in the password field of the login form. 
     #[serde(rename = "password_ui_placeholder", skip_serializing_if = "Option::is_none")]
     pub password_ui_placeholder: Option<String>,
-    /// primary URL to use for login.
+    /// Primary URL to use for login.
     #[serde(rename = "login_url")]
     pub login_url: String,
-    /// message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
+    /// Message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
     #[serde(rename = "login_failed_message", skip_serializing_if = "Option::is_none")]
     pub login_failed_message: Option<String>,
-    /// secondary URL to offer users to use for login.
+    /// Secondary URL to offer users to use for login.
     #[serde(rename = "fallback_login_url", skip_serializing_if = "Option::is_none")]
     pub fallback_login_url: Option<String>,
-    /// label to place on fallback_login_url.
+    /// Label to place on fallback_login_url.
     #[serde(rename = "fallback_login_label", skip_serializing_if = "Option::is_none")]
     pub fallback_login_label: Option<String>,
-    /// cookie names used to store JWT
+    /// Cookie names used to store JWT
     #[serde(rename = "login_cookie_names")]
     pub login_cookie_names: Vec<String>,
     /// URL to use for logging out.
     #[serde(rename = "logout_url")]
     pub logout_url: String,
+    /// When set to true, the placeholders \"Username\" and \"Password\" are used in the login form.
+    #[serde(rename = "use_login_placeholders", skip_serializing_if = "Option::is_none")]
+    pub use_login_placeholders: Option<bool>,
 }
 
 impl LoginConfig {
     pub fn new(login_url: String, login_cookie_names: Vec<String>, logout_url: String) -> LoginConfig {
         LoginConfig {
             rbac: None,
+            select_login_method: None,
             username_ui_placeholder: None,
             password_ui_placeholder: None,
             login_url,
@@ -53,6 +60,7 @@ impl LoginConfig {
             fallback_login_label: None,
             login_cookie_names,
             logout_url,
+            use_login_placeholders: None,
         }
     }
 }
@@ -63,6 +71,8 @@ pub enum Rbac {
     None,
     #[serde(rename = "simplified")]
     Simplified,
+    #[serde(rename = "internal")]
+    Internal,
     #[serde(rename = "external")]
     External,
 }

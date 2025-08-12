@@ -48,6 +48,14 @@ public class LoginConfigTest {
     }
 
     /**
+     * Test the property 'selectLoginMethod'
+     */
+    @Test
+    public void selectLoginMethodTest() {
+        // TODO: test selectLoginMethod
+    }
+
+    /**
      * Test the property 'usernameUiPlaceholder'
      */
     @Test
@@ -109,6 +117,14 @@ public class LoginConfigTest {
     @Test
     public void logoutUrlTest() {
         // TODO: test logoutUrl
+    }
+
+    /**
+     * Test the property 'useLoginPlaceholders'
+     */
+    @Test
+    public void useLoginPlaceholdersTest() {
+        // TODO: test useLoginPlaceholders
     }
 
 }

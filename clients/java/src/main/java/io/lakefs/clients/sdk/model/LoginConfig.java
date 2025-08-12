@@ -62,6 +62,8 @@ public class LoginConfig {
     
     SIMPLIFIED("simplified"),
     
+    INTERNAL("internal"),
+    
     EXTERNAL("external");
 
     private String value;
@@ -106,6 +108,10 @@ public class LoginConfig {
   @SerializedName(SERIALIZED_NAME_R_B_A_C)
   private RBACEnum RBAC;
 
+  public static final String SERIALIZED_NAME_SELECT_LOGIN_METHOD = "select_login_method";
+  @SerializedName(SERIALIZED_NAME_SELECT_LOGIN_METHOD)
+  private Boolean selectLoginMethod;
+
   public static final String SERIALIZED_NAME_USERNAME_UI_PLACEHOLDER = "username_ui_placeholder";
   @SerializedName(SERIALIZED_NAME_USERNAME_UI_PLACEHOLDER)
   private String usernameUiPlaceholder;
@@ -138,6 +144,10 @@ public class LoginConfig {
   @SerializedName(SERIALIZED_NAME_LOGOUT_URL)
   private String logoutUrl;
 
+  public static final String SERIALIZED_NAME_USE_LOGIN_PLACEHOLDERS = "use_login_placeholders";
+  @SerializedName(SERIALIZED_NAME_USE_LOGIN_PLACEHOLDERS)
+  private Boolean useLoginPlaceholders;
+
   public LoginConfig() {
   }
 
@@ -159,6 +169,27 @@ public class LoginConfig {
 
   public void setRBAC(RBACEnum RBAC) {
     this.RBAC = RBAC;
+  }
+
+
+  public LoginConfig selectLoginMethod(Boolean selectLoginMethod) {
+    
+    this.selectLoginMethod = selectLoginMethod;
+    return this;
+  }
+
+   /**
+   * When set to true, displays a login page that lets the user choose a preferred authentication method for  logging into lakeFS. Either via SSO (using the login_url field, which needs to be configured) or using  lakeFS credentials. 
+   * @return selectLoginMethod
+  **/
+  @javax.annotation.Nullable
+  public Boolean getSelectLoginMethod() {
+    return selectLoginMethod;
+  }
+
+
+  public void setSelectLoginMethod(Boolean selectLoginMethod) {
+    this.selectLoginMethod = selectLoginMethod;
   }
 
 
@@ -211,7 +242,7 @@ public class LoginConfig {
   }
 
    /**
-   * primary URL to use for login.
+   * Primary URL to use for login.
    * @return loginUrl
   **/
   @javax.annotation.Nonnull
@@ -232,7 +263,7 @@ public class LoginConfig {
   }
 
    /**
-   * message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
+   * Message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
    * @return loginFailedMessage
   **/
   @javax.annotation.Nullable
@@ -253,7 +284,7 @@ public class LoginConfig {
   }
 
    /**
-   * secondary URL to offer users to use for login.
+   * Secondary URL to offer users to use for login.
    * @return fallbackLoginUrl
   **/
   @javax.annotation.Nullable
@@ -274,7 +305,7 @@ public class LoginConfig {
   }
 
    /**
-   * label to place on fallback_login_url.
+   * Label to place on fallback_login_url.
    * @return fallbackLoginLabel
   **/
   @javax.annotation.Nullable
@@ -303,7 +334,7 @@ public class LoginConfig {
   }
 
    /**
-   * cookie names used to store JWT
+   * Cookie names used to store JWT
    * @return loginCookieNames
   **/
   @javax.annotation.Nonnull
@@ -335,6 +366,27 @@ public class LoginConfig {
 
   public void setLogoutUrl(String logoutUrl) {
     this.logoutUrl = logoutUrl;
+  }
+
+
+  public LoginConfig useLoginPlaceholders(Boolean useLoginPlaceholders) {
+    
+    this.useLoginPlaceholders = useLoginPlaceholders;
+    return this;
+  }
+
+   /**
+   * When set to true, the placeholders \&quot;Username\&quot; and \&quot;Password\&quot; are used in the login form.
+   * @return useLoginPlaceholders
+  **/
+  @javax.annotation.Nullable
+  public Boolean getUseLoginPlaceholders() {
+    return useLoginPlaceholders;
+  }
+
+
+  public void setUseLoginPlaceholders(Boolean useLoginPlaceholders) {
+    this.useLoginPlaceholders = useLoginPlaceholders;
   }
 
   /**
@@ -393,6 +445,7 @@ public class LoginConfig {
     }
     LoginConfig loginConfig = (LoginConfig) o;
     return Objects.equals(this.RBAC, loginConfig.RBAC) &&
+        Objects.equals(this.selectLoginMethod, loginConfig.selectLoginMethod) &&
         Objects.equals(this.usernameUiPlaceholder, loginConfig.usernameUiPlaceholder) &&
         Objects.equals(this.passwordUiPlaceholder, loginConfig.passwordUiPlaceholder) &&
         Objects.equals(this.loginUrl, loginConfig.loginUrl) &&
@@ -400,13 +453,14 @@ public class LoginConfig {
         Objects.equals(this.fallbackLoginUrl, loginConfig.fallbackLoginUrl) &&
         Objects.equals(this.fallbackLoginLabel, loginConfig.fallbackLoginLabel) &&
         Objects.equals(this.loginCookieNames, loginConfig.loginCookieNames) &&
-        Objects.equals(this.logoutUrl, loginConfig.logoutUrl)&&
+        Objects.equals(this.logoutUrl, loginConfig.logoutUrl) &&
+        Objects.equals(this.useLoginPlaceholders, loginConfig.useLoginPlaceholders)&&
         Objects.equals(this.additionalProperties, loginConfig.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(RBAC, usernameUiPlaceholder, passwordUiPlaceholder, loginUrl, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, additionalProperties);
+    return Objects.hash(RBAC, selectLoginMethod, usernameUiPlaceholder, passwordUiPlaceholder, loginUrl, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, useLoginPlaceholders, additionalProperties);
   }
 
   @Override
@@ -414,6 +468,7 @@ public class LoginConfig {
     StringBuilder sb = new StringBuilder();
     sb.append("class LoginConfig {\n");
     sb.append("    RBAC: ").append(toIndentedString(RBAC)).append("\n");
+    sb.append("    selectLoginMethod: ").append(toIndentedString(selectLoginMethod)).append("\n");
     sb.append("    usernameUiPlaceholder: ").append(toIndentedString(usernameUiPlaceholder)).append("\n");
     sb.append("    passwordUiPlaceholder: ").append(toIndentedString(passwordUiPlaceholder)).append("\n");
     sb.append("    loginUrl: ").append(toIndentedString(loginUrl)).append("\n");
@@ -422,6 +477,7 @@ public class LoginConfig {
     sb.append("    fallbackLoginLabel: ").append(toIndentedString(fallbackLoginLabel)).append("\n");
     sb.append("    loginCookieNames: ").append(toIndentedString(loginCookieNames)).append("\n");
     sb.append("    logoutUrl: ").append(toIndentedString(logoutUrl)).append("\n");
+    sb.append("    useLoginPlaceholders: ").append(toIndentedString(useLoginPlaceholders)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -446,6 +502,7 @@ public class LoginConfig {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("RBAC");
+    openapiFields.add("select_login_method");
     openapiFields.add("username_ui_placeholder");
     openapiFields.add("password_ui_placeholder");
     openapiFields.add("login_url");
@@ -454,6 +511,7 @@ public class LoginConfig {
     openapiFields.add("fallback_login_label");
     openapiFields.add("login_cookie_names");
     openapiFields.add("logout_url");
+    openapiFields.add("use_login_placeholders");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
