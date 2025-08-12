@@ -165,17 +165,14 @@ object StorageUtils {
       ): AmazonS3 = {
       val builder = awsS3ClientBuilder.withClientConfiguration(configuration)
       val builderWithEndpoint =
-        if (endpoint != null && region != null && region.nonEmpty)
+        if (endpoint != null)
           builder.withEndpointConfiguration(
             new AwsClientBuilder.EndpointConfiguration(endpoint, region)
           )
-        else if (region != null && region.nonEmpty)
+        else if (region != null)
           builder.withRegion(region)
-        else {
-          val currentRegion = com.amazonaws.regions.Regions.getCurrentRegion
-          if (currentRegion != null) builder.withRegion(currentRegion.getName)
-          else builder.withRegion(com.amazonaws.regions.Regions.US_EAST_1)
-        }
+        else
+          builder
 
       val effective = credentialsProvider.getOrElse(new DefaultAWSCredentialsProviderChain())
       builderWithEndpoint.withCredentials(effective).build()
