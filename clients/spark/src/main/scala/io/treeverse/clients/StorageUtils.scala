@@ -96,15 +96,14 @@ object StorageUtils {
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
     private def resolveCredentialsProvider(
-      roleArn: String,
-      provided: Option[AWSCredentialsProvider]
+        roleArn: String,
+        provided: Option[AWSCredentialsProvider]
     ): AWSCredentialsProvider = {
       val base = provided.getOrElse(new DefaultAWSCredentialsProviderChain())
       if (roleArn != null && !roleArn.isEmpty) {
         try {
           val sessionName = "lakefs-gc-" + java.util.UUID.randomUUID().toString
-          new STSAssumeRoleSessionCredentialsProvider
-          .Builder(roleArn, sessionName)
+          new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
             .withLongLivedCredentialsProvider(base)
             .build()
         } catch {
@@ -131,7 +130,12 @@ object StorageUtils {
       val effectiveProvider = resolveCredentialsProvider(roleArn, credentialsProvider)
 
       val client =
-        initializeS3Client(configuration, Some(effectiveProvider), awsS3ClientBuilder, endpoint, region)
+        initializeS3Client(configuration,
+                           Some(effectiveProvider),
+                           awsS3ClientBuilder,
+                           endpoint,
+                           region
+                          )
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
