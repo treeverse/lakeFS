@@ -162,7 +162,7 @@ object StorageUtils {
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String = null
-      ): AmazonS3 = {
+    ): AmazonS3 = {
       val builder = awsS3ClientBuilder
         .withClientConfiguration(configuration)
       val builderWithEndpoint =
