@@ -1,10 +1,6 @@
 package io.treeverse.clients
 
-import com.amazonaws.auth.{
-  AWSCredentialsProvider,
-  DefaultAWSCredentialsProviderChain,
-  STSAssumeRoleSessionCredentialsProvider
-}
+import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
@@ -15,7 +11,6 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.net.URI
 import java.util.concurrent.TimeUnit
-import java.util.UUID
 
 object StorageUtils {
   val StorageTypeS3 = "s3"
@@ -95,25 +90,6 @@ object StorageUtils {
     val S3NumRetries = 20
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
-    private def resolveCredentialsProvider(
-        roleArn: String,
-        provided: Option[AWSCredentialsProvider]
-    ): AWSCredentialsProvider = {
-      val base = provided.getOrElse(new DefaultAWSCredentialsProviderChain())
-      if (roleArn != null && !roleArn.isEmpty) {
-        try {
-          val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
-          new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
-            .withLongLivedCredentialsProvider(base)
-            .build()
-        } catch {
-          case _: Exception => new DefaultAWSCredentialsProviderChain()
-        }
-      } else {
-        base
-      }
-    }
-
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
@@ -126,16 +102,8 @@ object StorageUtils {
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
 
-      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
-      val effectiveProvider = resolveCredentialsProvider(roleArn, credentialsProvider)
-
       val client =
-        initializeS3Client(configuration,
-                           Some(effectiveProvider),
-                           awsS3ClientBuilder,
-                           endpoint,
-                           region
-                          )
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, region)
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
@@ -153,7 +121,7 @@ object StorageUtils {
         bucketRegion = region
       }
       initializeS3Client(configuration,
-                         Some(effectiveProvider),
+                         credentialsProvider,
                          awsS3ClientBuilder,
                          endpoint,
                          bucketRegion

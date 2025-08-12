@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 import io.treeverse.clients.StorageUtils.S3.createAndValidateS3Client
 
@@ -38,7 +39,13 @@ object S3ClientBuilder extends S3ClientBuilder {
 
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
-    import com.amazonaws.auth.{BasicAWSCredentials, AWSStaticCredentialsProvider}
+    import com.amazonaws.auth.{
+      AWSCredentialsProvider
+      DefaultAWSCredentialsProviderChain
+      STSAssumeRoleSessionCredentialsProvider
+      AWSStaticCredentialsProvider
+      BasicAWSCredentials
+    }
     import io.treeverse.clients.LakeFSContext
     import org.apache.hadoop.fs.s3a.Constants
 
@@ -79,12 +86,34 @@ object S3ClientBuilder extends S3ClientBuilder {
         )
       } else None
 
+    val baseProvider: AWSCredentialsProvider =
+      credentialsProvider.getOrElse(new DefaultAWSCredentialsProviderChain())
+    val roleArnFromConf = hc.get("fs.s3a.assumed.role.arn", null)
+    val configuredProvName = hc.get(Constants.AWS_CREDENTIALS_PROVIDER, "")
+
+    val effectiveProvider: AWSCredentialsProvider =
+      if (
+        roleArnFromConf != null && !roleArnFromConf.isEmpty &&
+        configuredProvName != AssumedRoleCredentialProvider.NAME
+      ) {
+        try {
+          val sessionName = s"lakefs-gc-${UUID.randomUUID().toString}"
+          new STSAssumeRoleSessionCredentialsProvider.Builder(roleArnFromConf, sessionName)
+            .withLongLivedCredentialsProvider(baseProvider)
+            .build()
+        } catch {
+          case _: Exception => baseProvider
+        }
+      } else {
+        baseProvider
+      }
+
     val builder = AmazonS3ClientBuilder
       .standard()
       .withPathStyleAccessEnabled(hc.getBoolean(S3A_PATH_STYLE_ACCESS, true))
 
     createAndValidateS3Client(configuration,
-                              credentialsProvider,
+                              Some(effectiveProvider),
                               builder,
                               s3Endpoint,
                               region,
