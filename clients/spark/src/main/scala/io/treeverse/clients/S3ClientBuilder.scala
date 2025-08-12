@@ -40,10 +40,10 @@ object S3ClientBuilder extends S3ClientBuilder {
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
     import com.amazonaws.auth.{
-      AWSCredentialsProvider
-      DefaultAWSCredentialsProviderChain
-      STSAssumeRoleSessionCredentialsProvider
-      AWSStaticCredentialsProvider
+      AWSCredentialsProvider,
+      DefaultAWSCredentialsProviderChain,
+      STSAssumeRoleSessionCredentialsProvider,
+      AWSStaticCredentialsProvider,
       BasicAWSCredentials
     }
     import io.treeverse.clients.LakeFSContext
