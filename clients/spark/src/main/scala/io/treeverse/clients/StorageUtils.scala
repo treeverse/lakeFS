@@ -95,6 +95,26 @@ object StorageUtils {
     val S3NumRetries = 20
     val logger: Logger = LoggerFactory.getLogger(getClass.toString)
 
+    private def resolveCredentialsProvider(
+      roleArn: String,
+      provided: Option[AWSCredentialsProvider]
+    ): AWSCredentialsProvider = {
+      val base = provided.getOrElse(new DefaultAWSCredentialsProviderChain())
+      if (roleArn != null && !roleArn.isEmpty) {
+        try {
+          val sessionName = "lakefs-gc-" + java.util.UUID.randomUUID().toString
+          new STSAssumeRoleSessionCredentialsProvider
+          .Builder(roleArn, sessionName)
+            .withLongLivedCredentialsProvider(base)
+            .build()
+        } catch {
+          case _: Exception => new DefaultAWSCredentialsProviderChain()
+        }
+      } else {
+        base
+      }
+    }
+
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
         credentialsProvider: Option[AWSCredentialsProvider],
@@ -106,8 +126,12 @@ object StorageUtils {
       logger.debug(s"Creating S3 client for bucket: $bucket, region: $region, endpoint: $endpoint")
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
+
+      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
+      val effectiveProvider = resolveCredentialsProvider(roleArn, credentialsProvider)
+
       val client =
-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, region)
+        initializeS3Client(configuration, Some(effectiveProvider), awsS3ClientBuilder, endpoint, region)
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
@@ -125,7 +149,7 @@ object StorageUtils {
         bucketRegion = region
       }
       initializeS3Client(configuration,
-                         credentialsProvider,
+                         Some(effectiveProvider),
                          awsS3ClientBuilder,
                          endpoint,
                          bucketRegion
@@ -138,54 +162,23 @@ object StorageUtils {
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String = null
-    ): AmazonS3 = {
-      val builder = awsS3ClientBuilder
-        .withClientConfiguration(configuration)
+      ): AmazonS3 = {
+      val builder = awsS3ClientBuilder.withClientConfiguration(configuration)
       val builderWithEndpoint =
-        if (endpoint != null)
+        if (endpoint != null && region != null && region.nonEmpty)
           builder.withEndpointConfiguration(
             new AwsClientBuilder.EndpointConfiguration(endpoint, region)
           )
-        else if (region != null)
+        else if (region != null && region.nonEmpty)
           builder.withRegion(region)
         else {
-          // Fall back to default region provider chain
           val currentRegion = com.amazonaws.regions.Regions.getCurrentRegion
-          if (currentRegion != null) {
-            builder.withRegion(currentRegion.getName)
-          } else {
-            builder.withRegion(com.amazonaws.regions.Regions.US_EAST_1)
-          }
+          if (currentRegion != null) builder.withRegion(currentRegion.getName)
+          else builder.withRegion(com.amazonaws.regions.Regions.US_EAST_1)
         }
 
-      // Check for Hadoop's assumed role configuration
-      val roleArn = System.getProperty("spark.hadoop.fs.s3a.assumed.role.arn")
-
-      // Apply credentials based on configuration
-      val builderWithCredentials =
-        if (roleArn != null && !roleArn.isEmpty) {
-          // If we have a role ARN configured, assume that role
-          try {
-            val sessionName = "lakefs-gc-" + UUID.randomUUID().toString
-            val stsProvider =
-              new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
-                .withLongLivedCredentialsProvider(new DefaultAWSCredentialsProviderChain())
-                .build()
-
-            builderWithEndpoint.withCredentials(stsProvider)
-          } catch {
-            case e: Exception =>
-              logger.info("Falling back to DefaultAWSCredentialsProviderChain")
-              builderWithEndpoint.withCredentials(new DefaultAWSCredentialsProviderChain())
-          }
-        } else
-          (
-            credentialsProvider match {
-              case Some(cp) => builderWithEndpoint.withCredentials(cp)
-              case None     => builderWithEndpoint
-            }
-          )
-      builderWithCredentials.build
+      val effective = credentialsProvider.getOrElse(new DefaultAWSCredentialsProviderChain())
+      builderWithEndpoint.withCredentials(effective).build()
     }
 
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
