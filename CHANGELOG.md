@@ -1,5 +1,12 @@
 # Changelog
 
+# v1.65.1
+
+:bug: Bugs fixed:
+
+- Fix WebUI merge conflict error message (#9405)
+- Fix Upload object API memory growth (#9406)
+
 # v1.65.0
 
 :bug: Bugs fixed:
