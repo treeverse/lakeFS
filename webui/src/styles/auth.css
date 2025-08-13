@@ -91,4 +91,25 @@ body .auth-page .nav-pills .nav-link:hover {
 /* Direct style override for nav-pills */
 .auth-page .nav-pills .nav-link.active {
   background-color: var(--success) !important;
-} 
+}
+
+.login-container {
+  height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #f8f9fa;
+}
+
+.login-card {
+  max-width: 600px;
+  width: 90%;
+}
+
+.login-logo {
+  width: 170px;
+  height: 60px;
+  filter: brightness(0) saturate(100%);
+}
