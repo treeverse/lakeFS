@@ -731,9 +731,10 @@ jobs:
           set -euo pipefail
           curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" \
             | tar -xz -C /tmp
-          echo "HADOOP_HOME=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
+          echo "HADOOP_HOME=/tmp/hadoop-${{ matrix.hadoop_version }}" > test/spark/.env
           H_IN_CONT="/opt/hadoop/share/hadoop"
-          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> $GITHUB_ENV
+          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> test/spark/.env
+          cat test/spark/.env
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -746,7 +747,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          SPARK_TAG: ${{ env.SPARK_TAG }}
           SPARK_EXTRA_CLASSPATH: ${{ env.SPARK_EXTRA_CLASSPATH }}
           HADOOP_HOME: ${{ env.HADOOP_HOME }}
 
