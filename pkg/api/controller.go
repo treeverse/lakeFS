@@ -112,7 +112,8 @@ type Controller struct {
 }
 
 type AuthOpts struct {
-	callback func(w http.ResponseWriter, r *http.Request, code int, v interface{})
+	// this function is called in authorizeCallback when authorization fails
+	onFailure func(w http.ResponseWriter, r *http.Request, httpStatusCode int, error interface{})
 }
 
 var usageCounter = stats.NewUsageCounter()
@@ -4567,8 +4568,8 @@ func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, reposito
 
 func (c *Controller) HeadObject(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.HeadObjectParams) {
 	if !c.authorizeReq(w, r, "HeadObject", permissions.PermissionParams{Repository: &repository, Path: &params.Path},
-		&AuthOpts{callback: func(w http.ResponseWriter, r *http.Request, code int, v interface{}) {
-			writeResponse(w, r, code, nil)
+		&AuthOpts{onFailure: func(w http.ResponseWriter, r *http.Request, httpStatusCode int, error interface{}) {
+			writeResponse(w, r, httpStatusCode, nil)
 		}}) {
 		return
 	}
@@ -5874,11 +5875,11 @@ func paginationFor(hasMore bool, results interface{}, fieldName string) apigen.P
 	return pagination
 }
 
-func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, perms permissions.Node, cb func(w http.ResponseWriter, r *http.Request, code int, v interface{})) bool {
+func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, perms permissions.Node, onFailure func(w http.ResponseWriter, r *http.Request, httpStatusCode int, error interface{})) bool {
 	ctx := r.Context()
 	user, err := auth.GetUser(ctx)
 	if err != nil {
-		cb(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
+		onFailure(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false
 	}
 	resp, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
@@ -5886,15 +5887,15 @@ func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, p
 		RequiredPermissions: perms,
 	})
 	if err != nil {
-		cb(w, r, http.StatusInternalServerError, err)
+		onFailure(w, r, http.StatusInternalServerError, err)
 		return false
 	}
 	if resp.Error != nil {
-		cb(w, r, http.StatusUnauthorized, resp.Error)
+		onFailure(w, r, http.StatusUnauthorized, resp.Error)
 		return false
 	}
 	if !resp.Allowed {
-		cb(w, r, http.StatusInternalServerError, "User does not have the required permissions")
+		onFailure(w, r, http.StatusInternalServerError, "User does not have the required permissions")
 		return false
 	}
 	return true
@@ -5910,11 +5911,11 @@ func (c *Controller) authorizeReq(w http.ResponseWriter, r *http.Request, operat
 		c.Logger.Error(fmt.Sprintf("missing permission descriptor for %s", operationId))
 		return false
 	}
-	callback := writeError
-	if opts != nil && opts.callback != nil {
-		callback = opts.callback
+	onFailure := writeError
+	if opts != nil && opts.onFailure != nil {
+		onFailure = opts.onFailure
 	}
-	return c.authorizeCallback(w, r, desc.Permission(params), callback)
+	return c.authorizeCallback(w, r, desc.Permission(params), onFailure)
 }
 
 func (c *Controller) isNameValid(name, nameType string) (bool, string) {
