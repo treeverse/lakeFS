@@ -594,26 +594,6 @@ func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
 	return awsiam.NewIAMAuthParams(host, opts...), nil
 }
 
-type ExternalPrincipalLoginClient struct {
-	client *apigen.ClientWithResponses
-}
-
-func (c *ExternalPrincipalLoginClient) ExternalPrincipalLogin(ctx context.Context, loginInfo apigen.ExternalLoginInformation) (*apigen.AuthenticationToken, error) {
-	// Convert ExternalLoginInformation to the request body format
-	requestBody := apigen.ExternalPrincipalLoginJSONRequestBody{
-		IdentityRequest:         loginInfo.IdentityRequest,
-		TokenExpirationDuration: loginInfo.TokenExpirationDuration,
-	}
-	resp, err := c.client.ExternalPrincipalLoginWithResponse(ctx, requestBody)
-	if err != nil {
-		return nil, err
-	}
-	if resp.JSON200 != nil {
-		return resp.JSON200, nil
-	}
-	return nil, fmt.Errorf("external principal login failed: status %d", resp.StatusCode())
-}
-
 func getClient() *apigen.ClientWithResponses {
 	opts := []apigen.ClientOption{}
 	httpClient := getHTTPClient()
@@ -645,7 +625,7 @@ func getClient() *apigen.ClientWithResponses {
 		if err != nil {
 			DieErr(err)
 		}
-		loginClient := &ExternalPrincipalLoginClient{client: noAuthClient}
+		loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
 		presignOpt := func(po *sts.PresignOptions) {
 			po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
 				if awsLogSigning {

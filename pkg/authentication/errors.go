@@ -12,4 +12,5 @@ var (
 	ErrInvalidRequest          = errors.New("invalid request")
 	ErrSessionExpired          = errors.New("session expired")
 	ErrInvalidTokenFormat      = errors.New("invalid token format")
+	ErrExternalLoginFailed     = errors.New("external principal login failed")
 )

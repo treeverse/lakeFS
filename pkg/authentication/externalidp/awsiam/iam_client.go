@@ -11,12 +11,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
 	IdentityTokenKey = "identity_token"
 )
+
+type ExternalPrincipalLoginClient struct {
+	Client *apigen.ClientWithResponses
+}
 
 type ExternalPrincipalLoginCaller interface {
 	ExternalPrincipalLogin(ctx context.Context, loginInfo apigen.ExternalLoginInformation) (*apigen.AuthenticationToken, error)
@@ -26,6 +31,21 @@ type ExternalPrincipalLoginCaller interface {
 func WithAWSIAMRoleAuthProviderOption(params *IAMAuthParams, logger logging.Logger, client ExternalPrincipalLoginCaller, initialToken *apigen.AuthenticationToken, presignClientOpts ...func(*sts.PresignOptions)) apigen.ClientOption {
 	awsProvider := NewSecurityProviderAWSIAMRole(logger, params, client, initialToken, presignClientOpts...)
 	return apigen.WithRequestEditorFn(awsProvider.Intercept)
+}
+
+func (c *ExternalPrincipalLoginClient) ExternalPrincipalLogin(ctx context.Context, loginInfo apigen.ExternalLoginInformation) (*apigen.AuthenticationToken, error) {
+	requestBody := apigen.ExternalPrincipalLoginJSONRequestBody{
+		IdentityRequest:         loginInfo.IdentityRequest,
+		TokenExpirationDuration: loginInfo.TokenExpirationDuration,
+	}
+	resp, err := c.Client.ExternalPrincipalLoginWithResponse(ctx, requestBody)
+	if err != nil {
+		return nil, err
+	}
+	if resp.JSON200 != nil {
+		return resp.JSON200, nil
+	}
+	return nil, fmt.Errorf("%w (status: %d)", authentication.ErrExternalLoginFailed, resp.StatusCode())
 }
 
 type SecurityProviderAWSIAMRole struct {
