@@ -729,7 +729,7 @@ jobs:
       - name: Prepare Hadoop ${{ matrix.hadoop_version }} for Spark
         run: |
           set -euo pipefail
-          curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" \
+          curl -fsSL "https://downloads.apache.org/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" \
             | tar -xz -C /tmp
           rm -rf /tmp/hadoop
           mv "/tmp/hadoop-${{ matrix.hadoop_version }}" /tmp/hadoop
