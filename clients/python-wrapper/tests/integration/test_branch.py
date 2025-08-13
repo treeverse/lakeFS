@@ -6,7 +6,7 @@ except ImportError:
     from pydantic import ValidationError
 
 import lakefs
-from lakefs.exceptions import NotFoundException, TransactionException
+from lakefs.exceptions import NotFoundException, TransactionException, ConflictException
 from tests.utests.common import expect_exception_context
 
 
@@ -129,6 +129,8 @@ def test_transaction(setup_repo):
         tx.reset_changes(path_type="common_prefix", path="foo")
         tx_id = tx.id
 
+    assert not list(repo.tags())
+
     # Verify transaction branch was deleted
     with expect_exception_context(NotFoundException):
         repo.branch(tx.id).get_commit()
@@ -207,3 +209,45 @@ def test_transaction_failure(setup_repo, cleanup_branch):
         assert tx.get_commit()
 
     assert test_branch.get_commit() == new_ref.get_commit()
+
+
+def test_transaction_with_tag(setup_repo):
+    _, repo = setup_repo
+    path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c"]
+    test_branch = repo.branch("main")
+
+    with test_branch.transact(commit_message="my transaction with tag", tag="v1.0.0") as tx:
+        assert tx.tag == "v1.0.0"
+        upload_data(tx, path_and_data)
+    assert repo.tag("v1.0.0").get_commit() == test_branch.get_commit()
+
+
+def test_transaction_with_explicit_none_tag(setup_repo):
+    _, repo = setup_repo
+    path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c"]
+    test_branch = repo.branch("main")
+
+    with test_branch.transact(commit_message="my transaction with tag", tag=None) as tx:
+        assert tx.tag is None
+        upload_data(tx, path_and_data)
+    assert not list(repo.tags())
+
+
+def test_transaction_with_existing_tag(setup_repo):
+    _, repo = setup_repo
+    path_and_data = ["a", "b", "bar/a", "bar/b", "bar/c", "c"]
+    test_branch = repo.branch("main")
+
+    repo: "lakefs.Repository"
+
+    test_branch.object("initial_file").upload("initial content")
+    initial_commit = test_branch.commit("initial commit")
+    repo.tag("v1.0.0").create(initial_commit)
+
+    with expect_exception_context(ConflictException, "tag already exists"):
+        with test_branch.transact(commit_message="my transaction with existing tag", tag="v1.0.0") as tx:
+            upload_data(tx, path_and_data)
+
+    # Verify transaction branch was deleted
+    with expect_exception_context(NotFoundException):
+        repo.branch(tx.id).get_commit()
