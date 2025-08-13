@@ -171,8 +171,8 @@ Configuration section for the lakeFS key-value store database.
 
 === "`blockstore.local`"
 
-        !!! note
-             local blockstore is supported for POSIX compliant filesystems only.
+    !!! note
+         local blockstore is supported for POSIX compliant filesystems only.
 
     * `blockstore.local.path` `(string: "~/lakefs/data/block")` - When using the local Block Adapter, which directory to store files in
     * `blockstore.local.import_enabled` `(bool: false)` - Enable import for local Block Adapter, relevant only if you are using shared location
