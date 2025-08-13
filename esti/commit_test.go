@@ -192,18 +192,18 @@ func TestCommitReadOnlyRepo(t *testing.T) {
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	contentWriter, err := w.CreateFormFile("content", filepath.Base(objPath))
-	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	require.NoErrorf(t, err, "failed to upload file %s in %s/%s", objPath, repoName, mainBranch)
 	_, err = contentWriter.Write([]byte(objContent))
-	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	require.NoErrorf(t, err, "failed to upload file %s in %s/%s", objPath, repoName, mainBranch)
 	err = w.Close()
-	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	require.NoErrorf(t, err, "failed to upload file %s in %s/%s", objPath, repoName, mainBranch)
 	uploadResp, err := client.UploadObjectWithBodyWithResponse(ctx, repoName, mainBranch, &apigen.UploadObjectParams{
 		Path:  objPath,
 		Force: swag.Bool(true),
 	}, w.FormDataContentType(), &b)
-	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	require.NoErrorf(t, err, "failed to upload file %s in %s/%s", objPath, repoName, mainBranch)
 	err = VerifyResponse(uploadResp.HTTPResponse, uploadResp.Body)
-	require.NoError(t, err, "failed to upload file", repoName, mainBranch, objPath)
+	require.NoErrorf(t, err, "failed to upload file %s in %s/%s", objPath, repoName, mainBranch)
 
 	commitResp, err = client.CommitWithResponse(ctx, repoName, mainBranch, &apigen.CommitParams{}, apigen.CommitJSONRequestBody{
 		Message: "singleCommit",

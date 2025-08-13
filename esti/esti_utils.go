@@ -519,8 +519,9 @@ func UploadContentWithMetadata(ctx context.Context, client apigen.ClientWithResp
 }
 
 func UploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string, clt apigen.ClientWithResponsesInterface) (checksum, content string) {
+	t.Helper()
 	checksum, content, err := UploadFileRandomDataAndReport(ctx, repo, branch, objPath, false, clt)
-	require.NoError(t, err, "failed to upload file", repo, branch, objPath)
+	require.NoErrorf(t, err, "failed to upload file %s in %s/%s", objPath, repo, branch)
 	return checksum, content
 }
 
