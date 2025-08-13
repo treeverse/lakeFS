@@ -727,14 +727,14 @@ jobs:
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
       - name: Prepare Hadoop ${{ matrix.hadoop_version }} for Spark
-        id: prep_hadoop
         run: |
           set -euo pipefail
           curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" \
             | tar -xz -C /tmp
-          echo "hadoop_home=/tmp/hadoop-${{ matrix.hadoop_version }}" >> "$GITHUB_OUTPUT"
+          rm -rf /tmp/hadoop
+          mv "/tmp/hadoop-${{ matrix.hadoop_version }}" /tmp/hadoop
           H_IN_CONT="/opt/hadoop/share/hadoop"
-          echo "spark_extra_cp=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> "$GITHUB_OUTPUT"
+          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> "$GITHUB_ENV"
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -747,8 +747,7 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          HADOOP_HOME: ${{ steps.prep_hadoop.outputs.hadoop_home }}
-          SPARK_EXTRA_CLASSPATH: ${{ steps.prep_hadoop.outputs.spark_extra_cp }}
+          SPARK_EXTRA_CLASSPATH: ${{ env.SPARK_EXTRA_CLASSPATH }}
 
       - name: Copy repository ref
         run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-hadoop${{ matrix.hadoop_version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
