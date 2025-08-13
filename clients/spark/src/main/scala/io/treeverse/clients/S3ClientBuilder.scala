@@ -76,8 +76,7 @@ object S3ClientBuilder extends S3ClientBuilder {
         try {
           val sessionName = s"lakefs-gc-${UUID.randomUUID().toString}"
           Some(
-            new STSAssumeRoleSessionCredentialsProvider
-            .Builder(roleArn, sessionName)
+            new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, sessionName)
               .withLongLivedCredentialsProvider(new DefaultAWSCredentialsProviderChain())
               .build()
           )
