@@ -726,15 +726,24 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
+      - name: Cache Hadoop
+        uses: actions/cache@v4
+        id: hadoop-cache
+        with:
+          path: /tmp/hadoop-${{ matrix.hadoop_version }}
+          key: hadoop-${{ matrix.hadoop_version }}
+
       - name: Prepare Hadoop ${{ matrix.hadoop_version }} for Spark
+        if: steps.hadoop-cache.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          curl -fsSL "https://downloads.apache.org/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" \
-            | tar -xz -C /tmp
-          rm -rf /tmp/hadoop
-          mv "/tmp/hadoop-${{ matrix.hadoop_version }}" /tmp/hadoop
+          curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" | tar -xz -C /tmp
+
+      - name: Set Hadoop env vars
+        run: |
+          echo "HADOOP_HOME=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
           H_IN_CONT="/opt/hadoop/share/hadoop"
-          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> "$GITHUB_ENV"
+          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> $GITHUB_ENV
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
