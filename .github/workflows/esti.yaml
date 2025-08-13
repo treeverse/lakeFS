@@ -709,7 +709,7 @@ jobs:
       matrix:
         hadoop_version: [ "3.2.1", "3.3.6" ]
     env:
-      SPARK_TAG: 3.3.2
+      SPARK_TAG: 3.2.1
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
