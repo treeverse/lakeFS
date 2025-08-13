@@ -733,7 +733,7 @@ jobs:
             | tar -xz -C /tmp
           echo "HADOOP_HOME=/tmp/hadoop-${{ matrix.hadoop_version }}" > test/spark/.env
           H_IN_CONT="/opt/hadoop/share/hadoop"
-          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> test/spark/.env
+          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/common/*:$H_IN_CONT/common/lib/*:$H_IN_CONT/hdfs/*:$H_IN_CONT/hdfs/lib/*:$H_IN_CONT/mapreduce/*:$H_IN_CONT/mapreduce/lib/*:$H_IN_CONT/yarn/*:$H_IN_CONT/yarn/lib/*:$H_IN_CONT/aws/*" >> test/spark/.env
           cat test/spark/.env
 
       - name: Start lakeFS for Spark tests
@@ -747,8 +747,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          SPARK_EXTRA_CLASSPATH: ${{ env.SPARK_EXTRA_CLASSPATH }}
-          HADOOP_HOME: ${{ env.HADOOP_HOME }}
 
       - name: Copy repository ref
         run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-hadoop${{ matrix.hadoop_version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
