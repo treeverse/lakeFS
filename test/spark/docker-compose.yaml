@@ -67,7 +67,7 @@ services:
       - EXPORT_LOCATION
       - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-      - SPARK_EXTRA_CLASSPATH=${SPARK_EXTRA_CLASSPATH}
+      - SPARK_EXTRA_CLASSPATH
     ports:
       - 18080:8080
     extra_hosts:
@@ -96,7 +96,7 @@ services:
       - AWS_REGION
       - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-      - SPARK_EXTRA_CLASSPATH=${SPARK_EXTRA_CLASSPATH}
+      - SPARK_EXTRA_CLASSPATH
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "docker.lakefs.io:10.5.0.55"
@@ -127,7 +127,7 @@ services:
       - AWS_REGION
       - TESTER_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
       - TESTER_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-      - SPARK_EXTRA_CLASSPATH=${SPARK_EXTRA_CLASSPATH}
+      - SPARK_EXTRA_CLASSPATH
     extra_hosts:
       - "s3.docker.lakefs.io:10.5.0.55"
       - "docker.lakefs.io:10.5.0.55"
