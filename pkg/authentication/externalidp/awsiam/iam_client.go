@@ -34,10 +34,7 @@ func WithAWSIAMRoleAuthProviderOption(params *IAMAuthParams, logger logging.Logg
 }
 
 func (c *ExternalPrincipalLoginClient) ExternalPrincipalLogin(ctx context.Context, loginInfo apigen.ExternalLoginInformation) (*apigen.AuthenticationToken, error) {
-	requestBody := apigen.ExternalPrincipalLoginJSONRequestBody{
-		IdentityRequest:         loginInfo.IdentityRequest,
-		TokenExpirationDuration: loginInfo.TokenExpirationDuration,
-	}
+	requestBody := apigen.ExternalPrincipalLoginJSONRequestBody(loginInfo)
 	resp, err := c.Client.ExternalPrincipalLoginWithResponse(ctx, requestBody)
 	if err != nil {
 		return nil, err
