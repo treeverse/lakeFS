@@ -13,7 +13,7 @@ inputs:
     required: false
     default: "."
   hadoop-version:
-    description: "Hadoop version to download & mount."
+    description: Hadoop version to download
     required: false
     default: ""
   spark-extra-classpath:
