@@ -740,15 +740,15 @@ jobs:
           curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" | tar -xz -C /tmp
 
 
-      - name: Set Hadoop env vars for docker compose
+      - name: Set Hadoop env vars
         run: |
-          set -euo pipefail
+          echo "HADOOP_HOME=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
+          echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
+          # אופציונלי: להשאיר גם קובץ .env לשקיפות
           {
             echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}"
             echo "SPARK_EXTRA_CLASSPATH=/opt/hadoop/share/hadoop/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}"
           } > .env
-          echo "== .env (repo root) =="
-          cat .env
 
 
       - name: Start lakeFS for Spark tests
@@ -762,6 +762,8 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          HADOOP_HOME_HOST: ${{ env.HADOOP_HOME_HOST }}
+          SPARK_EXTRA_CLASSPATH: ${{ env.SPARK_EXTRA_CLASSPATH }}
 
       - name: Verify effective Hadoop jars on classpath
         working-directory: test/spark
