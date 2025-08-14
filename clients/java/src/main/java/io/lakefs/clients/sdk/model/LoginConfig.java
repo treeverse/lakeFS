@@ -108,10 +108,6 @@ public class LoginConfig {
   @SerializedName(SERIALIZED_NAME_R_B_A_C)
   private RBACEnum RBAC;
 
-  public static final String SERIALIZED_NAME_SELECT_LOGIN_METHOD = "select_login_method";
-  @SerializedName(SERIALIZED_NAME_SELECT_LOGIN_METHOD)
-  private Boolean selectLoginMethod;
-
   public static final String SERIALIZED_NAME_USERNAME_UI_PLACEHOLDER = "username_ui_placeholder";
   @SerializedName(SERIALIZED_NAME_USERNAME_UI_PLACEHOLDER)
   private String usernameUiPlaceholder;
@@ -123,6 +119,57 @@ public class LoginConfig {
   public static final String SERIALIZED_NAME_LOGIN_URL = "login_url";
   @SerializedName(SERIALIZED_NAME_LOGIN_URL)
   private String loginUrl;
+
+  /**
+   * Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - selection: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+   */
+  @JsonAdapter(LoginFlowEnum.Adapter.class)
+  public enum LoginFlowEnum {
+    REDIRECT("redirect"),
+    
+    SELECTION("selection");
+
+    private String value;
+
+    LoginFlowEnum(String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return String.valueOf(value);
+    }
+
+    public static LoginFlowEnum fromValue(String value) {
+      for (LoginFlowEnum b : LoginFlowEnum.values()) {
+        if (b.value.equals(value)) {
+          return b;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
+
+    public static class Adapter extends TypeAdapter<LoginFlowEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final LoginFlowEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public LoginFlowEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return LoginFlowEnum.fromValue(value);
+      }
+    }
+  }
+
+  public static final String SERIALIZED_NAME_LOGIN_FLOW = "login_flow";
+  @SerializedName(SERIALIZED_NAME_LOGIN_FLOW)
+  private LoginFlowEnum loginFlow = LoginFlowEnum.REDIRECT;
 
   public static final String SERIALIZED_NAME_LOGIN_FAILED_MESSAGE = "login_failed_message";
   @SerializedName(SERIALIZED_NAME_LOGIN_FAILED_MESSAGE)
@@ -169,27 +216,6 @@ public class LoginConfig {
 
   public void setRBAC(RBACEnum RBAC) {
     this.RBAC = RBAC;
-  }
-
-
-  public LoginConfig selectLoginMethod(Boolean selectLoginMethod) {
-    
-    this.selectLoginMethod = selectLoginMethod;
-    return this;
-  }
-
-   /**
-   * When set to true, displays a login page that lets the user choose a preferred authentication method for  logging into lakeFS. Either via SSO (using the login_url field, which needs to be configured) or using  lakeFS credentials. 
-   * @return selectLoginMethod
-  **/
-  @javax.annotation.Nullable
-  public Boolean getSelectLoginMethod() {
-    return selectLoginMethod;
-  }
-
-
-  public void setSelectLoginMethod(Boolean selectLoginMethod) {
-    this.selectLoginMethod = selectLoginMethod;
   }
 
 
@@ -253,6 +279,27 @@ public class LoginConfig {
 
   public void setLoginUrl(String loginUrl) {
     this.loginUrl = loginUrl;
+  }
+
+
+  public LoginConfig loginFlow(LoginFlowEnum loginFlow) {
+    
+    this.loginFlow = loginFlow;
+    return this;
+  }
+
+   /**
+   * Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - selection: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+   * @return loginFlow
+  **/
+  @javax.annotation.Nullable
+  public LoginFlowEnum getLoginFlow() {
+    return loginFlow;
+  }
+
+
+  public void setLoginFlow(LoginFlowEnum loginFlow) {
+    this.loginFlow = loginFlow;
   }
 
 
@@ -445,10 +492,10 @@ public class LoginConfig {
     }
     LoginConfig loginConfig = (LoginConfig) o;
     return Objects.equals(this.RBAC, loginConfig.RBAC) &&
-        Objects.equals(this.selectLoginMethod, loginConfig.selectLoginMethod) &&
         Objects.equals(this.usernameUiPlaceholder, loginConfig.usernameUiPlaceholder) &&
         Objects.equals(this.passwordUiPlaceholder, loginConfig.passwordUiPlaceholder) &&
         Objects.equals(this.loginUrl, loginConfig.loginUrl) &&
+        Objects.equals(this.loginFlow, loginConfig.loginFlow) &&
         Objects.equals(this.loginFailedMessage, loginConfig.loginFailedMessage) &&
         Objects.equals(this.fallbackLoginUrl, loginConfig.fallbackLoginUrl) &&
         Objects.equals(this.fallbackLoginLabel, loginConfig.fallbackLoginLabel) &&
@@ -460,7 +507,7 @@ public class LoginConfig {
 
   @Override
   public int hashCode() {
-    return Objects.hash(RBAC, selectLoginMethod, usernameUiPlaceholder, passwordUiPlaceholder, loginUrl, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, useLoginPlaceholders, additionalProperties);
+    return Objects.hash(RBAC, usernameUiPlaceholder, passwordUiPlaceholder, loginUrl, loginFlow, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, useLoginPlaceholders, additionalProperties);
   }
 
   @Override
@@ -468,10 +515,10 @@ public class LoginConfig {
     StringBuilder sb = new StringBuilder();
     sb.append("class LoginConfig {\n");
     sb.append("    RBAC: ").append(toIndentedString(RBAC)).append("\n");
-    sb.append("    selectLoginMethod: ").append(toIndentedString(selectLoginMethod)).append("\n");
     sb.append("    usernameUiPlaceholder: ").append(toIndentedString(usernameUiPlaceholder)).append("\n");
     sb.append("    passwordUiPlaceholder: ").append(toIndentedString(passwordUiPlaceholder)).append("\n");
     sb.append("    loginUrl: ").append(toIndentedString(loginUrl)).append("\n");
+    sb.append("    loginFlow: ").append(toIndentedString(loginFlow)).append("\n");
     sb.append("    loginFailedMessage: ").append(toIndentedString(loginFailedMessage)).append("\n");
     sb.append("    fallbackLoginUrl: ").append(toIndentedString(fallbackLoginUrl)).append("\n");
     sb.append("    fallbackLoginLabel: ").append(toIndentedString(fallbackLoginLabel)).append("\n");
@@ -502,10 +549,10 @@ public class LoginConfig {
     // a set of all properties/fields (JSON key names)
     openapiFields = new HashSet<String>();
     openapiFields.add("RBAC");
-    openapiFields.add("select_login_method");
     openapiFields.add("username_ui_placeholder");
     openapiFields.add("password_ui_placeholder");
     openapiFields.add("login_url");
+    openapiFields.add("login_flow");
     openapiFields.add("login_failed_message");
     openapiFields.add("fallback_login_url");
     openapiFields.add("fallback_login_label");
@@ -551,6 +598,9 @@ public class LoginConfig {
       }
       if (!jsonObj.get("login_url").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `login_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_url").toString()));
+      }
+      if ((jsonObj.get("login_flow") != null && !jsonObj.get("login_flow").isJsonNull()) && !jsonObj.get("login_flow").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `login_flow` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_flow").toString()));
       }
       if ((jsonObj.get("login_failed_message") != null && !jsonObj.get("login_failed_message").isJsonNull()) && !jsonObj.get("login_failed_message").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `login_failed_message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_failed_message").toString()));

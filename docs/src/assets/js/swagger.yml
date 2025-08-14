@@ -955,12 +955,6 @@ components:
             with an external auth service.
           type: string
           enum: [none, simplified, internal, external]
-        select_login_method:
-          description: |
-            When set to true, displays a login page that lets the user choose a preferred authentication method for 
-            logging into lakeFS. Either via SSO (using the login_url field, which needs to be configured) or using 
-            lakeFS credentials.
-          type: boolean
         username_ui_placeholder:
           description: |
             Placeholder text to display in the username field of the login form.
@@ -972,6 +966,17 @@ components:
         login_url:
           description: Primary URL to use for login.
           type: string
+        login_flow:
+          type: string
+          description: |
+            Defines login behavior when login_url is set.
+            - redirect (default): Auto-redirect to login_url.
+            - selection: Show a page to choose between logging in via login_url or with lakeFS credentials.
+            Ignored if login_url is not configured.
+          enum:
+            - redirect
+            - selection
+          default: redirect
         login_failed_message:
           description: |
             Message to display to users who fail to login; a full sentence that is rendered

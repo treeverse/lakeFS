@@ -48,14 +48,6 @@ public class LoginConfigTest {
     }
 
     /**
-     * Test the property 'selectLoginMethod'
-     */
-    @Test
-    public void selectLoginMethodTest() {
-        // TODO: test selectLoginMethod
-    }
-
-    /**
      * Test the property 'usernameUiPlaceholder'
      */
     @Test
@@ -77,6 +69,14 @@ public class LoginConfigTest {
     @Test
     public void loginUrlTest() {
         // TODO: test loginUrl
+    }
+
+    /**
+     * Test the property 'loginFlow'
+     */
+    @Test
+    public void loginFlowTest() {
+        // TODO: test loginFlow
     }
 
     /**

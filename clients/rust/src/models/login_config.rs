@@ -15,9 +15,6 @@ pub struct LoginConfig {
     /// RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. 
     #[serde(rename = "RBAC", skip_serializing_if = "Option::is_none")]
     pub rbac: Option<Rbac>,
-    /// When set to true, displays a login page that lets the user choose a preferred authentication method for  logging into lakeFS. Either via SSO (using the login_url field, which needs to be configured) or using  lakeFS credentials. 
-    #[serde(rename = "select_login_method", skip_serializing_if = "Option::is_none")]
-    pub select_login_method: Option<bool>,
     /// Placeholder text to display in the username field of the login form. 
     #[serde(rename = "username_ui_placeholder", skip_serializing_if = "Option::is_none")]
     pub username_ui_placeholder: Option<String>,
@@ -27,6 +24,9 @@ pub struct LoginConfig {
     /// Primary URL to use for login.
     #[serde(rename = "login_url")]
     pub login_url: String,
+    /// Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - selection: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+    #[serde(rename = "login_flow", skip_serializing_if = "Option::is_none")]
+    pub login_flow: Option<LoginFlow>,
     /// Message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
     #[serde(rename = "login_failed_message", skip_serializing_if = "Option::is_none")]
     pub login_failed_message: Option<String>,
@@ -51,10 +51,10 @@ impl LoginConfig {
     pub fn new(login_url: String, login_cookie_names: Vec<String>, logout_url: String) -> LoginConfig {
         LoginConfig {
             rbac: None,
-            select_login_method: None,
             username_ui_placeholder: None,
             password_ui_placeholder: None,
             login_url,
+            login_flow: None,
             login_failed_message: None,
             fallback_login_url: None,
             fallback_login_label: None,
@@ -80,6 +80,20 @@ pub enum Rbac {
 impl Default for Rbac {
     fn default() -> Rbac {
         Self::None
+    }
+}
+/// Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - selection: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub enum LoginFlow {
+    #[serde(rename = "redirect")]
+    Redirect,
+    #[serde(rename = "selection")]
+    Selection,
+}
+
+impl Default for LoginFlow {
+    fn default() -> LoginFlow {
+        Self::Redirect
     }
 }
 
