@@ -712,6 +712,7 @@ jobs:
       SPARK_TAG: 3.2.1
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
+      HADOOP_HOME_HOST: /tmp/hadoop-${{ matrix.hadoop_version }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
