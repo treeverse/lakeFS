@@ -77,7 +77,7 @@ services:
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
     volumes:
-      - ${HADOOP_HOME_HOST}:/opt/hadoop:ro
+      - /tmp/hadoop:/opt/hadoop:ro
   spark-worker:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
     ports:
@@ -105,14 +105,14 @@ services:
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
     volumes:
-      - ${HADOOP_HOME_HOST}:/opt/hadoop:ro
+      - /tmp/hadoop:/opt/hadoop:ro
   spark-submit:
     image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
     profiles: ["command"]
     volumes:
       - ./:/local
       - ../../clients/hadoopfs/target:/target
-      - ${HADOOP_HOME_HOST}:/opt/hadoop:ro
+      - /tmp/hadoop:/opt/hadoop:ro
     environment:
       - input
       - output
