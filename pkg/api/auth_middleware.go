@@ -289,16 +289,23 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 		}
 		return enhanceWithFriendlyName(ctx, user, friendlyName, cookieAuthConfig.PersistFriendlyName, authService, logger), nil
 	}
+
+	// Assign initial groups to the user. by default, we assign the configured default groups from the config.
+	// If the user has a custom initial groups claim, we use it to assign the groups to the user.
 	initialGroups := cookieAuthConfig.DefaultInitialGroups
-	if userInitialGroups, ok := idTokenClaims[cookieAuthConfig.InitialGroupsClaimName].(string); ok {
-		initialGroups = strings.Split(userInitialGroups, ",")
+	if groups, ok := convertAnyToSliceOfString(idTokenClaims[cookieAuthConfig.InitialGroupsClaimName]); ok {
+		initialGroups = groups
 	}
-	for _, g := range initialGroups {
-		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
+	for _, groupName := range initialGroups {
+		err := authService.AddUserToGroup(ctx, u.Username, groupName)
 		if err != nil {
-			log.WithError(err).Error("Failed to add external user to group")
+			logger.WithError(err).WithFields(logging.Fields{
+				"group": groupName,
+				"user":  u.Username,
+			}).Error("Failed to add external user to group")
 		}
 	}
+
 	// The user was just created.
 	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
 	return enhanceWithFriendlyName(ctx, user, friendlyName, false, authService, logger), nil
@@ -368,15 +375,19 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		return enhanceWithFriendlyName(ctx, user, friendlyName, oidcConfig.PersistFriendlyName, authService, logger), nil
 	}
 	initialGroups := oidcConfig.DefaultInitialGroups
-	if userInitialGroups, ok := idTokenClaims[oidcConfig.InitialGroupsClaimName].(string); ok {
-		initialGroups = strings.Split(userInitialGroups, ",")
+	if groups, ok := convertAnyToSliceOfString(idTokenClaims[oidcConfig.InitialGroupsClaimName]); ok {
+		initialGroups = groups
 	}
-	for _, g := range initialGroups {
-		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
+	for _, groupName := range initialGroups {
+		err := authService.AddUserToGroup(ctx, u.Username, groupName)
 		if err != nil {
-			logger.WithError(err).Error("Failed to add external user to group")
+			logger.WithError(err).WithFields(logging.Fields{
+				"group": groupName,
+				"user":  u.Username,
+			}).Error("Failed to add external user to group")
 		}
 	}
+
 	// The user was just created.
 	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
 	return enhanceWithFriendlyName(ctx, &u, friendlyName, false, authService, logger), nil
@@ -415,4 +426,34 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil
+}
+
+// convertAnyToSliceOfString returns a slice of string from any value
+// In case of string, it splits the string by comma and trims the whitespaces
+// In case of []any, it iterates over the slice and converts each element to string
+// If the value is not a string or []any, it returns nil, false
+func convertAnyToSliceOfString(input any) ([]string, bool) {
+	if input == nil {
+		return nil, false
+	}
+
+	var result []string
+	switch v := input.(type) {
+	case string:
+		for _, item := range strings.Split(v, ",") {
+			trimmed := strings.TrimSpace(item)
+			if trimmed != "" {
+				result = append(result, trimmed)
+			}
+		}
+	case []any:
+		for _, item := range v {
+			str, ok := item.(string)
+			if !ok {
+				continue
+			}
+			result = append(result, str)
+		}
+	}
+	return result, len(result) > 0
 }
