@@ -2,7 +2,7 @@ import React from "react";
 
 export interface LoginConfig {
     login_url: string;
-    login_flow?: string;
+    login_url_method?: string;
     username_ui_placeholder: string;
     password_ui_placeholder: string;
     login_failed_message?: string;
