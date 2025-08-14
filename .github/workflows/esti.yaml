@@ -712,8 +712,6 @@ jobs:
       SPARK_TAG: 3.2.1
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
-      HADOOP_HOME_HOST: /tmp/hadoop-${{ matrix.hadoop_version }}
-      SPARK_EXTRA_CLASSPATH: /opt/hadoop/share/hadoop/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -728,34 +726,11 @@ jobs:
         id: unique
         run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
 
-      - name: Cache Hadoop
-        uses: actions/cache@v4
-        id: hadoop-cache
-        with:
-          path: /tmp/hadoop-${{ matrix.hadoop_version }}
-          key: hadoop-${{ matrix.hadoop_version }}
-
-      - name: Prepare Hadoop ${{ matrix.hadoop_version }} for Spark
-        if: steps.hadoop-cache.outputs.cache-hit != 'true'
-        run: |
-          set -euo pipefail
-          curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" | tar -xz -C /tmp
-
-
-      - name: Write .env for docker compose
-        working-directory: test/spark
-        run: |
-          echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}" > .env
-          H_IN_CONT="/opt/hadoop/share/hadoop"
-          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> .env
-
-
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-directory: test/spark
-          hadoop-home-host: /tmp/hadoop-${{ matrix.hadoop_version }}
-          spark-extra-classpath: /opt/hadoop/share/hadoop/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}
+          hadoop-version: /tmp/hadoop-${{ matrix.hadoop_version }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -770,38 +745,23 @@ jobs:
           set -euo pipefail
           echo "---- SPARK_EXTRA_CLASSPATH (raw, from host env) ----"
           echo "${SPARK_EXTRA_CLASSPATH:-<empty>}"
-          
           echo "---- SPARK_CLASSPATH (from image) ----"
           docker compose exec -T spark bash -lc 'echo "${SPARK_CLASSPATH:-<empty>}"'
-          
           echo "---- Build Hadoop classpath inside container ----"
           docker compose exec -T spark bash -lc '
-            set -euo pipefail
-            shopt -s nullglob
-            H="/opt/hadoop/share/hadoop"
-          
-            jars=(
-              "$H"/common/*.jar "$H"/common/lib/*.jar
-              "$H"/hdfs/*.jar "$H"/hdfs/lib/*.jar
-              "$H"/mapreduce/*.jar "$H"/mapreduce/lib/*.jar
-              "$H"/yarn/*.jar "$H"/yarn/lib/*.jar
-              "$H"/aws/*.jar
-            )
-            if [ ${#jars[@]} -eq 0 ]; then
-              echo "No Hadoop JARs found under $H – check that /tmp/hadoop was mounted to /opt/hadoop" >&2
-              exit 1
-            fi
-          
-            HADOOP_CP=$(printf "%s:" "${jars[@]}")
-            HADOOP_CP=${HADOOP_CP%:}
-            echo "HADOOP_CP has $(echo "$HADOOP_CP" | tr ":" "\n" | wc -l) entries"
-            echo "First hadoop-common on CP:"
-            echo "$HADOOP_CP" | tr ":" "\n" | grep -E "hadoop-common-.*\.jar" | head -n 1 || true
-            JAVA_BIN="${JAVA_HOME:-/opt/bitnami/java}/bin/java"
-            echo "JAVA_BIN=$JAVA_BIN"
-            "$JAVA_BIN" -cp "$HADOOP_CP:${SPARK_CLASSPATH:-}" org.apache.hadoop.util.VersionInfo | head -n 10
-            echo "hadoop-aws source:"
-            echo "$HADOOP_CP:${SPARK_CLASSPATH:-}" | tr ":" "\n" | grep -E "hadoop-aws-.*\.jar" | head -n 1 || true
+          set -euo pipefail
+          shopt -s nullglob
+          H="/opt/hadoop/share/hadoop"
+          jars=("$H"/common/*.jar "$H"/common/lib/*.jar "$H"/hdfs/*.jar "$H"/hdfs/lib/*.jar "$H"/mapreduce/*.jar "$H"/mapreduce/lib/*.jar "$H"/yarn/*.jar "$H"/yarn/lib/*.jar "$H"/aws/*.jar)
+          if [ ${#jars[@]} -eq 0 ]; then
+           echo "No Hadoop JARs found under $H – check mount" >&2; exit 1
+          fi
+          HADOOP_CP=$(printf "%s:" "${jars[@]}"); HADOOP_CP=${HADOOP_CP%:}
+          echo "HADOOP_CP entries: $(echo "$HADOOP_CP" | tr ":" "\n" | wc -l)"
+          echo "$HADOOP_CP" | tr ":" "\n" | grep -E "hadoop-common-.*\.jar" | head -n 1 || true
+          JAVA_BIN="${JAVA_HOME:-/opt/bitnami/java}/bin/java"
+          "$JAVA_BIN" -cp "$HADOOP_CP:${SPARK_CLASSPATH:-}" org.apache.hadoop.util.VersionInfo | head -n 10
+          echo "$HADOOP_CP:${SPARK_CLASSPATH:-}" | tr ":" "\n" | grep -E "hadoop-aws-.*\.jar" | head -n 1 || true
           '
 
       - name: Copy repository ref

@@ -12,8 +12,8 @@ inputs:
     description: working directory for the docker compose step
     required: false
     default: "."
-  hadoop-home-host:
-    description: The path to the Hadoop installation on the host
+  hadoop-version:
+    description: "Hadoop version to download & mount."
     required: false
     default: ""
   spark-extra-classpath:
@@ -31,6 +31,55 @@ runs:
     - name: Unpack generated code
       shell: bash
       run: tar -xzvf /tmp/generated.tar.gz
+
+    - name: Resolve Hadoop version & CP
+      id: h
+      shell: bash
+      run: |
+        set -euo pipefail
+        ver="${{ inputs.hadoop-version }}"
+        if [[ -z "${ver}" ]]; then
+          case "${SPARK_TAG:-3}" in
+            2* ) ver="3.2.1" ;;
+            *  ) ver="3.3.6" ;;
+          esac
+        fi
+        echo "ver=$ver" >> "$GITHUB_OUTPUT"
+        echo "home=/tmp/hadoop-$ver" >> "$GITHUB_OUTPUT"
+        H_IN_CONT="/opt/hadoop/share/hadoop"
+        if [[ -z "${{ inputs.spark-extra-classpath }}" ]]; then
+          spark_cp="$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}"
+        else
+          spark_cp="${{ inputs.spark-extra-classpath }}"
+        fi
+        echo "spark_cp=$spark_cp" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Hadoop
+      uses: actions/cache@v4
+      id: hadoop-cache
+      with:
+        path: ${{ steps.h.outputs.home }}
+        key: hadoop-${{ steps.h.outputs.ver }}
+
+    - name: Download Hadoop if missing
+      if: steps.hadoop-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+        curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ steps.h.outputs.ver }}/hadoop-${{ steps.h.outputs.ver }}.tar.gz" \
+        | tar -xz -C /tmp
+
+    - name: Export env & write .env
+      shell: bash
+      run: |
+        echo "HADOOP_HOME_HOST=${{ steps.h.outputs.home }}" >> "$GITHUB_ENV"
+        echo "SPARK_EXTRA_CLASSPATH=${{ steps.h.outputs.spark_cp }}" >> "$GITHUB_ENV"
+        printf "HADOOP_HOME_HOST=%s\nSPARK_EXTRA_CLASSPATH=%s\n" \
+          "${{ steps.h.outputs.home }}" \
+          "${{ steps.h.outputs.spark_cp }}" \
+          > "${{ inputs.compose-directory }}/.env"
+
+
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -45,13 +94,10 @@ runs:
         LAKEFS_STATS_ENABLED: "false"
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
         COMPOSE_PARALLEL_LIMIT: 1
-        HADOOP_HOME_HOST: ${{ inputs.hadoop-home-host }}
-        SPARK_EXTRA_CLASSPATH: ${{ inputs.spark-extra-classpath }}
       shell: bash
       run: |
         set -euo pipefail
-        export HADOOP_HOME_HOST="${{ inputs.hadoop-home-host }}"
-        export SPARK_EXTRA_CLASSPATH="${{ inputs.spark-extra-classpath }}"
-        echo "HADOOP_HOME_HOST=$HADOOP_HOME_HOST"
+        echo "HADOOP_HOME_HOST=${HADOOP_HOME_HOST:-<empty>}"
+        echo "SPARK_EXTRA_CLASSPATH=${SPARK_EXTRA_CLASSPATH:-<empty>}"
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
         docker compose --project-directory ${{ inputs.compose-directory }} ${flags} up ${{ inputs.compose-flags }}
