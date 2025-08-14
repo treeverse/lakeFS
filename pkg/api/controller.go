@@ -5243,7 +5243,7 @@ func newLoginConfig(c *config.Auth) *apigen.LoginConfig {
 	loginConfig := &apigen.LoginConfig{
 		RBAC:               &c.UIConfig.RBAC,
 		LoginUrl:           c.UIConfig.LoginURL,
-		LoginFlow:          &c.UIConfig.LoginFlow,
+		LoginUrlMethod:     &c.UIConfig.LoginUrlMethod,
 		LoginFailedMessage: &c.UIConfig.LoginFailedMessage,
 		FallbackLoginUrl:   c.UIConfig.FallbackLoginURL,
 		FallbackLoginLabel: c.UIConfig.FallbackLoginLabel,

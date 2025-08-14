@@ -8875,8 +8875,8 @@ components:
         login_cookie_names:
         - login_cookie_names
         - login_cookie_names
-        login_flow: redirect
         fallback_login_label: fallback_login_label
+        login_url_method: redirect
       properties:
         RBAC:
           description: |
@@ -8899,16 +8899,16 @@ components:
         login_url:
           description: Primary URL to use for login.
           type: string
-        login_flow:
+        login_url_method:
           default: redirect
           description: |
             Defines login behavior when login_url is set.
             - redirect (default): Auto-redirect to login_url.
-            - selection: Show a page to choose between logging in via login_url or with lakeFS credentials.
+            - select: Show a page to choose between logging in via login_url or with lakeFS credentials.
             Ignored if login_url is not configured.
           enum:
           - redirect
-          - selection
+          - select
           type: string
         login_failed_message:
           description: |
@@ -8952,8 +8952,8 @@ components:
           login_cookie_names:
           - login_cookie_names
           - login_cookie_names
-          login_flow: redirect
           fallback_login_label: fallback_login_label
+          login_url_method: redirect
         state: initialized
         comm_prefs_missing: true
       properties:
