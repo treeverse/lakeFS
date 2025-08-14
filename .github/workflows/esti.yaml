@@ -744,7 +744,6 @@ jobs:
         run: |
           echo "HADOOP_HOME=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
           echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
-          # אופציונלי: להשאיר גם קובץ .env לשקיפות
           {
             echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}"
             echo "SPARK_EXTRA_CLASSPATH=/opt/hadoop/share/hadoop/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}"
