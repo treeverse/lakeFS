@@ -59,18 +59,11 @@ func Reset() {
 func GetAWSAccountID(storageConfig lakefsconfig.StorageConfig) (string, error) {
 	ctx := context.Background()
 
-	// first try to use the default configuration
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err == nil {
-		awsStsClient := sts.NewFromConfig(cfg)
-		resp, err := awsStsClient.GetCallerIdentity(ctx, nil)
-		if err == nil {
-			return aws.ToString(resp.Account), nil
-		}
-	}
-
 	// try to use each storage config with s3 configuration
-	storageIDs := storageConfig.GetStorageIDs()
+	var storageIDs []string
+	if storageConfig != nil {
+		storageIDs = storageConfig.GetStorageIDs()
+	}
 	for _, storageID := range storageIDs {
 		storageConfig := storageConfig.GetStorageByID(storageID)
 		if storageConfig.BlockstoreType() != "s3" {
@@ -100,20 +93,28 @@ func GetAWSAccountID(storageConfig lakefsconfig.StorageConfig) (string, error) {
 				),
 			))
 		}
-		cfg, err := config.LoadDefaultConfig(ctx, opts...)
+		accountID, err := awsGetAccountIDHelper(ctx, opts...)
 		if err != nil {
 			continue
 		}
-
-		awsStsClient := sts.NewFromConfig(cfg)
-		resp, err := awsStsClient.GetCallerIdentity(ctx, nil)
-		if err != nil {
-			continue
-		}
-		return aws.ToString(resp.Account), nil
+		return accountID, nil
 	}
 
-	return "", ErrNotInCloud
+	// Fallback to default AWS credentials
+	return awsGetAccountIDHelper(ctx)
+}
+
+func awsGetAccountIDHelper(ctx context.Context, opts ...func(*config.LoadOptions) error) (string, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, opts...)
+	if err != nil {
+		return "", ErrNotInCloud
+	}
+	awsStsClient := sts.NewFromConfig(cfg)
+	resp, err := awsStsClient.GetCallerIdentity(ctx, nil)
+	if err != nil {
+		return "", ErrNotInCloud
+	}
+	return aws.ToString(resp.Account), nil
 }
 
 // GetAzureSubscriptionID retrieves the Azure Subscription ID using the armsubscriptions package.
