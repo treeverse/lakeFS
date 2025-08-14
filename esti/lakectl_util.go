@@ -87,7 +87,9 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 
 	if isWindowsOS() {
 		// On Windows, extract environment variables from Unix-style command and set them directly
+		fmt.Println("Command:", command)
 		envVars, actualCommand := extractUnixEnvVars(command)
+		fmt.Println("Actual Command:", actualCommand)
 		cmd = exec.Command("powershell.exe", "-Command", actualCommand)
 		additionalEnvVars = envVars
 		cmd.Env = append(os.Environ(), "LAKECTL_INTERACTIVE=false")
