@@ -730,7 +730,7 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-directory: test/spark
-          hadoop-version: /tmp/hadoop-${{ matrix.hadoop_version }}
+          hadoop-version: ${{ matrix.hadoop_version }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
