@@ -742,11 +742,13 @@ jobs:
           curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" | tar -xz -C /tmp
 
 
-      - name: Set Hadoop env vars
+      - name: Write .env for docker compose
+        working-directory: test/spark
         run: |
-          # echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
+          echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}" > .env
           H_IN_CONT="/opt/hadoop/share/hadoop"
-          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> $GITHUB_ENV
+          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> .env
+
 
       - name: Write .env for docker compose
         run: |
