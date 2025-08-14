@@ -49,5 +49,9 @@ runs:
         SPARK_EXTRA_CLASSPATH: ${{ inputs.spark-extra-classpath }}
       shell: bash
       run: |
+        set -euo pipefail
+        export HADOOP_HOME_HOST="${{ inputs.hadoop-home-host }}"
+        export SPARK_EXTRA_CLASSPATH="${{ inputs.spark-extra-classpath }}"
+        echo "HADOOP_HOME_HOST=$HADOOP_HOME_HOST"
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
         docker compose --project-directory ${{ inputs.compose-directory }} ${flags} up ${{ inputs.compose-flags }}
