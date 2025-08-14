@@ -38,6 +38,8 @@ const (
 	AuthSignatureKey     = "X-Amz-Signature"
 	DatetimeFormat       = "20060102T150405Z"
 	CredentialTimeFormat = "20060102"
+
+	AWSIAMProviderType = "aws_iam"
 )
 const (
 	DefaultSTSLoginExpire  = 15 * time.Minute
