@@ -11,10 +11,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 // Cloud provider constants
@@ -35,13 +35,12 @@ var (
 )
 
 // DetectorFunc is a function type that detects a cloud provider and returns its ID
-type DetectorFunc func(storageConfig lakefsconfig.StorageConfig) (string, error)
+type DetectorFunc func(storageConfig config.StorageConfig) (string, error)
 
 // RegisterDetector registers a new cloud detector with the given name
 func RegisterDetector(name string, detector DetectorFunc) {
 	_, exists := detectorsRegistry[name]
 	if exists {
-		// TODO(barak): do we like to panic here?
 		// detector already registered, do nothing
 		return
 	}
@@ -56,7 +55,8 @@ func Reset() {
 }
 
 // GetAWSAccountID retrieves AWS account ID using STS.
-func GetAWSAccountID(storageConfig lakefsconfig.StorageConfig) (string, error) {
+// The implementation uses the storage config to help identify the used account id.
+func GetAWSAccountID(storageConfig config.StorageConfig) (string, error) {
 	ctx := context.Background()
 
 	// try to use each storage config with s3 configuration
@@ -74,18 +74,18 @@ func GetAWSAccountID(storageConfig lakefsconfig.StorageConfig) (string, error) {
 		if err != nil {
 			continue
 		}
-		var opts []func(*config.LoadOptions) error
+		var opts []func(*awsconfig.LoadOptions) error
 		if params.Region != "" {
-			opts = append(opts, config.WithRegion(params.Region))
+			opts = append(opts, awsconfig.WithRegion(params.Region))
 		}
 		if params.Profile != "" {
-			opts = append(opts, config.WithSharedConfigProfile(params.Profile))
+			opts = append(opts, awsconfig.WithSharedConfigProfile(params.Profile))
 		}
 		if params.CredentialsFile != "" {
-			opts = append(opts, config.WithSharedCredentialsFiles([]string{params.CredentialsFile}))
+			opts = append(opts, awsconfig.WithSharedCredentialsFiles([]string{params.CredentialsFile}))
 		}
 		if params.Credentials.AccessKeyID != "" {
-			opts = append(opts, config.WithCredentialsProvider(
+			opts = append(opts, awsconfig.WithCredentialsProvider(
 				credentials.NewStaticCredentialsProvider(
 					params.Credentials.AccessKeyID,
 					params.Credentials.SecretAccessKey,
@@ -93,7 +93,7 @@ func GetAWSAccountID(storageConfig lakefsconfig.StorageConfig) (string, error) {
 				),
 			))
 		}
-		accountID, err := awsGetAccountIDHelper(ctx, opts...)
+		accountID, err := awsAccountLookupBySTS(ctx, opts...)
 		if err != nil {
 			continue
 		}
@@ -101,11 +101,12 @@ func GetAWSAccountID(storageConfig lakefsconfig.StorageConfig) (string, error) {
 	}
 
 	// Fallback to default AWS credentials
-	return awsGetAccountIDHelper(ctx)
+	return awsAccountLookupBySTS(ctx)
 }
 
-func awsGetAccountIDHelper(ctx context.Context, opts ...func(*config.LoadOptions) error) (string, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, opts...)
+// awsAccountLookupBySTS retrieves the AWS account ID using STS.
+func awsAccountLookupBySTS(ctx context.Context, opts ...func(*awsconfig.LoadOptions) error) (string, error) {
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
 		return "", ErrNotInCloud
 	}
@@ -118,7 +119,7 @@ func awsGetAccountIDHelper(ctx context.Context, opts ...func(*config.LoadOptions
 }
 
 // GetAzureSubscriptionID retrieves the Azure Subscription ID using the armsubscriptions package.
-func GetAzureSubscriptionID(storageConfig lakefsconfig.StorageConfig) (string, error) {
+func GetAzureSubscriptionID(config.StorageConfig) (string, error) {
 	if !checkAzureMetadata() {
 		return "", ErrNotInCloud
 	}
@@ -147,7 +148,7 @@ func GetAzureSubscriptionID(storageConfig lakefsconfig.StorageConfig) (string, e
 }
 
 // GetGCPProjectID retrieves the GCP numerical project ID.
-func GetGCPProjectID(_ lakefsconfig.StorageConfig) (string, error) {
+func GetGCPProjectID(_ config.StorageConfig) (string, error) {
 	if !metadata.OnGCE() {
 		return "", ErrNotInCloud
 	}
@@ -182,7 +183,7 @@ func RegisterDefaultDetectors() {
 }
 
 // Detect cloud type and ID. use the storage config if needed
-func Detect(storageConfig lakefsconfig.StorageConfig) (string, string, bool) {
+func Detect(storageConfig config.StorageConfig) (string, string, bool) {
 	// Iterate through detectors in the order they were registered
 	for _, name := range detectorOrder {
 		detector := detectorsRegistry[name]
