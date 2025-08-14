@@ -108,32 +108,35 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 // "VAR1=value1 VAR2=value2 command args"
 // and returns the environment variables and the actual command
 func extractUnixEnvVars(command string) ([]string, string) {
-	const commandParts = 2
-	// Find the lakectl binary in the command
-	lakectlPath := lakectlLocation()
-	parts := strings.SplitN(command, lakectlPath, commandParts)
-
-	if len(parts) != commandParts {
-		// If we can't find the lakectl binary, return the command as-is
-		return []string{}, command
-	}
-
-	// Extract environment variables from the first part
-	envPart := strings.TrimSpace(parts[0])
+	// Parse tokens from the beginning and extract only environment variables
+	tokens := strings.Fields(command)
 	var envVars []string
-	if envPart != "" {
-		envTokens := strings.Fields(envPart)
-		for _, token := range envTokens {
-			if strings.Contains(token, "=") {
+	var commandStart int
+
+	// Extract environment variables from the beginning
+	for i, token := range tokens {
+		// Check if token is an environment variable (key=value format)
+		if strings.Contains(token, "=") && !strings.HasPrefix(token, "/") && !strings.HasPrefix(token, ".") && !strings.Contains(token, "\\") {
+			// Additional check: ensure it looks like a valid env var (no spaces before =)
+			eqIndex := strings.Index(token, "=")
+			if eqIndex > 0 && !strings.ContainsAny(token[:eqIndex], " \t") {
 				envVars = append(envVars, token)
+				continue
 			}
 		}
+		// This token is not an environment variable, so the command starts here
+		commandStart = i
+		break
 	}
 
-	// Return the lakectl binary + arguments intact
-	actualCommand := lakectlPath + parts[1]
+	// If we found environment variables, reconstruct the command from the remaining tokens
+	if commandStart < len(tokens) {
+		actualCommand := strings.Join(tokens[commandStart:], " ")
+		return envVars, actualCommand
+	}
 
-	return envVars, actualCommand
+	// No environment variables found, return the original command
+	return []string{}, command
 }
 
 // expandVariables receives a string with (possibly) variables in the form of {VAR_NAME}, and
