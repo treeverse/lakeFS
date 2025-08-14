@@ -762,26 +762,30 @@ jobs:
         working-directory: test/spark
         run: |
           set -euo pipefail
-          echo "---- SPARK_EXTRA_CLASSPATH ----"
+          echo "---- SPARK_EXTRA_CLASSPATH (raw) ----"
           echo "${SPARK_EXTRA_CLASSPATH}"
           echo "---- SPARK_CLASSPATH (from image) ----"
           docker compose exec -T spark bash -lc 'echo "$SPARK_CLASSPATH"'
           
           echo "---- First hadoop-common JAR on effective classpath ----"
           docker compose exec -T spark bash -lc '
-            EFF_CLASSPATH="${SPARK_EXTRA_CLASSPATH}:${SPARK_CLASSPATH}"
+            EXPANDED_CLASSPATH=$(eval echo "$SPARK_EXTRA_CLASSPATH")
+            EFF_CLASSPATH="${EXPANDED_CLASSPATH}:${SPARK_CLASSPATH}"
             echo "$EFF_CLASSPATH" | tr ":" "\n" | grep -E "hadoop-common-.*\.jar" | head -n 1 || true
           '
           
           echo "---- Hadoop VersionInfo (what the JVM actually loads) ----"
           docker compose exec -T spark bash -lc '
-            EFF_CLASSPATH="${SPARK_EXTRA_CLASSPATH}:${SPARK_CLASSPATH}"
-            java -cp "$EFF_CLASSPATH" org.apache.hadoop.util.VersionInfo | head -n 10
+            EXPANDED_CLASSPATH=$(eval echo "$SPARK_EXTRA_CLASSPATH")
+            EFF_CLASSPATH="${EXPANDED_CLASSPATH}:${SPARK_CLASSPATH}"
+            JAVA_BIN="${JAVA_HOME:-/opt/bitnami/java}/bin/java"
+            "$JAVA_BIN" -cp "$EFF_CLASSPATH" org.apache.hadoop.util.VersionInfo | head -n 10
           '
           
-          echo "---- Where S3AFileSystem class is loaded from (best-effort) ----"
+          echo "---- Where hadoop-aws is taken from (first match) ----"
           docker compose exec -T spark bash -lc '
-            EFF_CLASSPATH="${SPARK_EXTRA_CLASSPATH}:${SPARK_CLASSPATH}"
+            EXPANDED_CLASSPATH=$(eval echo "$SPARK_EXTRA_CLASSPATH")
+            EFF_CLASSPATH="${EXPANDED_CLASSPATH}:${SPARK_CLASSPATH}"
             echo "$EFF_CLASSPATH" | tr ":" "\n" | grep -E "hadoop-aws-.*\.jar" | head -n 1 || true
           '
 
