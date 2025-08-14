@@ -760,6 +760,8 @@ jobs:
 
       - name: Verify effective Hadoop jars on classpath
         working-directory: test/spark
+        env:
+          SPARK_EXTRA_CLASSPATH: ${{ env.SPARK_EXTRA_CLASSPATH }}
         run: |
           set -euo pipefail
           echo "---- SPARK_EXTRA_CLASSPATH (raw) ----"
