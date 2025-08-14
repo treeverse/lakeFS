@@ -739,12 +739,18 @@ jobs:
           set -euo pipefail
           curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" | tar -xz -C /tmp
 
-      - name: Set Hadoop env vars
+
+      - name: Set Hadoop env vars for docker compose
         run: |
-          echo "HADOOP_HOME=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
-          echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
+          set -euo pipefail
+          ENV_FILE="test/spark/.env"
+          : > "$ENV_FILE"
+          echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}" >> "$ENV_FILE"
           H_IN_CONT="/opt/hadoop/share/hadoop"
-          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> $GITHUB_ENV
+          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> "$ENV_FILE"
+          echo "Wrote $(wc -l < "$ENV_FILE") lines to $ENV_FILE:"
+          cat "$ENV_FILE"
+
 
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
@@ -757,8 +763,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          SPARK_EXTRA_CLASSPATH: ${{ env.SPARK_EXTRA_CLASSPATH }}
-          HADOOP_HOME_HOST: ${{ env.HADOOP_HOME_HOST }}
 
       - name: Verify effective Hadoop jars on classpath
         working-directory: test/spark
