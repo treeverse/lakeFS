@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/config"
 )
@@ -64,7 +65,7 @@ type MockAdapterConfig struct {
 }
 
 func (m *MockAdapterConfig) BlockstoreType() string {
-	return "s3" // Always return s3 for cloud detection testing
+	return block.BlockstoreTypeS3 // Always return s3 for cloud detection testing
 }
 
 func (m *MockAdapterConfig) BlockstoreDescription() string {

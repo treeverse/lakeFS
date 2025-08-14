@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 
 	"github.com/treeverse/lakefs/pkg/config"
-	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // MetadataProvider collecting cloud environment metadata.
@@ -23,11 +22,6 @@ func NewMetadataProvider(storageConfig config.StorageConfig) *MetadataProvider {
 	if cloudDetected {
 		metadata[cloudType] = hashCloudID(cloudID)
 	}
-	logging.ContextUnavailable().WithFields(logging.Fields{
-		"cloud_type": cloudType,
-		"cloud_id":   cloudID,
-		"detected":   cloudDetected,
-	}).Debug("Cloud metadata provider initialized")
 	return &MetadataProvider{
 		metadata: metadata,
 	}
