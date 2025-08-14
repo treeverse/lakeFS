@@ -1,5 +1,9 @@
 # Changelog
 
+# v1.65.2
+
+🏢 Includes only changes for Enterprise.
+
 # v1.65.1
 
 :bug: Bugs fixed:
