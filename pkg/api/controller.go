@@ -5242,8 +5242,8 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 func newLoginConfig(c *config.Auth) *apigen.LoginConfig {
 	loginConfig := &apigen.LoginConfig{
 		RBAC:               &c.UIConfig.RBAC,
-		SelectLoginMethod:  &c.UIConfig.SelectLoginMethod,
 		LoginUrl:           c.UIConfig.LoginURL,
+		LoginFlow:          &c.UIConfig.LoginFlow,
 		LoginFailedMessage: &c.UIConfig.LoginFailedMessage,
 		FallbackLoginUrl:   c.UIConfig.FallbackLoginURL,
 		FallbackLoginLabel: c.UIConfig.FallbackLoginLabel,

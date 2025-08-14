@@ -30,17 +30,17 @@ class LoginConfig(BaseModel):
     LoginConfig
     """
     rbac: Optional[StrictStr] = Field(None, alias="RBAC", description="RBAC will remain enabled on GUI if \"external\".  That only works with an external auth service. ")
-    select_login_method: Optional[StrictBool] = Field(None, description="When set to true, displays a login page that lets the user choose a preferred authentication method for  logging into lakeFS. Either via SSO (using the login_url field, which needs to be configured) or using  lakeFS credentials. ")
     username_ui_placeholder: Optional[StrictStr] = Field(None, description="Placeholder text to display in the username field of the login form. ")
     password_ui_placeholder: Optional[StrictStr] = Field(None, description="Placeholder text to display in the password field of the login form. ")
     login_url: StrictStr = Field(..., description="Primary URL to use for login.")
+    login_flow: Optional[StrictStr] = Field('redirect', description="Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - selection: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. ")
     login_failed_message: Optional[StrictStr] = Field(None, description="Message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method ")
     fallback_login_url: Optional[StrictStr] = Field(None, description="Secondary URL to offer users to use for login.")
     fallback_login_label: Optional[StrictStr] = Field(None, description="Label to place on fallback_login_url.")
     login_cookie_names: conlist(StrictStr) = Field(..., description="Cookie names used to store JWT")
     logout_url: StrictStr = Field(..., description="URL to use for logging out.")
     use_login_placeholders: Optional[StrictBool] = Field(None, description="When set to true, the placeholders \"Username\" and \"Password\" are used in the login form.")
-    __properties = ["RBAC", "select_login_method", "username_ui_placeholder", "password_ui_placeholder", "login_url", "login_failed_message", "fallback_login_url", "fallback_login_label", "login_cookie_names", "logout_url", "use_login_placeholders"]
+    __properties = ["RBAC", "username_ui_placeholder", "password_ui_placeholder", "login_url", "login_flow", "login_failed_message", "fallback_login_url", "fallback_login_label", "login_cookie_names", "logout_url", "use_login_placeholders"]
 
     @validator('rbac')
     def rbac_validate_enum(cls, value):
@@ -50,6 +50,16 @@ class LoginConfig(BaseModel):
 
         if value not in ('none', 'simplified', 'internal', 'external'):
             raise ValueError("must be one of enum values ('none', 'simplified', 'internal', 'external')")
+        return value
+
+    @validator('login_flow')
+    def login_flow_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in ('redirect', 'selection'):
+            raise ValueError("must be one of enum values ('redirect', 'selection')")
         return value
 
     class Config:
@@ -89,10 +99,10 @@ class LoginConfig(BaseModel):
 
         _obj = LoginConfig.parse_obj({
             "rbac": obj.get("RBAC"),
-            "select_login_method": obj.get("select_login_method"),
             "username_ui_placeholder": obj.get("username_ui_placeholder"),
             "password_ui_placeholder": obj.get("password_ui_placeholder"),
             "login_url": obj.get("login_url"),
+            "login_flow": obj.get("login_flow") if obj.get("login_flow") is not None else 'redirect',
             "login_failed_message": obj.get("login_failed_message"),
             "fallback_login_url": obj.get("fallback_login_url"),
             "fallback_login_label": obj.get("fallback_login_label"),

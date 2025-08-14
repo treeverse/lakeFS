@@ -38,10 +38,10 @@ class TestLoginConfig(unittest.TestCase):
         if include_optional:
             return LoginConfig(
                 rbac = 'none',
-                select_login_method = True,
                 username_ui_placeholder = '',
                 password_ui_placeholder = '',
                 login_url = '',
+                login_flow = 'redirect',
                 login_failed_message = '',
                 fallback_login_url = '',
                 fallback_login_label = '',
