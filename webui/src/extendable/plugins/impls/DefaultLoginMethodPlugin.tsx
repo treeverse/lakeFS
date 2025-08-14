@@ -3,7 +3,7 @@ import { PluginLoginMethod, LoginConfig } from "../pluginLoginMethod";
 
 class DefaultLoginMethodPlugin implements PluginLoginMethod {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    renderLoginMethodComponent(_loginConfig: LoginConfig | undefined): React.ReactElement | null {
+    renderLoginMethodComponent(_loginConfig: LoginConfig): React.ReactElement | null {
         return null;
     }
 }
