@@ -72,11 +72,11 @@ public class LoginConfigTest {
     }
 
     /**
-     * Test the property 'loginFlow'
+     * Test the property 'loginUrlMethod'
      */
     @Test
-    public void loginFlowTest() {
-        // TODO: test loginFlow
+    public void loginUrlMethodTest() {
+        // TODO: test loginUrlMethod
     }
 
     /**

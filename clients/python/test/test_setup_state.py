@@ -44,7 +44,7 @@ class TestSetupState(unittest.TestCase):
                     username_ui_placeholder = '', 
                     password_ui_placeholder = '', 
                     login_url = '', 
-                    login_flow = 'redirect', 
+                    login_url_method = 'redirect', 
                     login_failed_message = '', 
                     fallback_login_url = '', 
                     fallback_login_label = '', 

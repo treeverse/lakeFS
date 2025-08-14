@@ -24,9 +24,9 @@ pub struct LoginConfig {
     /// Primary URL to use for login.
     #[serde(rename = "login_url")]
     pub login_url: String,
-    /// Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - selection: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
-    #[serde(rename = "login_flow", skip_serializing_if = "Option::is_none")]
-    pub login_flow: Option<LoginFlow>,
+    /// Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+    #[serde(rename = "login_url_method", skip_serializing_if = "Option::is_none")]
+    pub login_url_method: Option<LoginUrlMethod>,
     /// Message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
     #[serde(rename = "login_failed_message", skip_serializing_if = "Option::is_none")]
     pub login_failed_message: Option<String>,
@@ -54,7 +54,7 @@ impl LoginConfig {
             username_ui_placeholder: None,
             password_ui_placeholder: None,
             login_url,
-            login_flow: None,
+            login_url_method: None,
             login_failed_message: None,
             fallback_login_url: None,
             fallback_login_label: None,
@@ -82,17 +82,17 @@ impl Default for Rbac {
         Self::None
     }
 }
-/// Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - selection: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+/// Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
-pub enum LoginFlow {
+pub enum LoginUrlMethod {
     #[serde(rename = "redirect")]
     Redirect,
-    #[serde(rename = "selection")]
-    Selection,
+    #[serde(rename = "select")]
+    Select,
 }
 
-impl Default for LoginFlow {
-    fn default() -> LoginFlow {
+impl Default for LoginUrlMethod {
+    fn default() -> LoginUrlMethod {
         Self::Redirect
     }
 }

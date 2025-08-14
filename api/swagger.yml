@@ -966,16 +966,16 @@ components:
         login_url:
           description: Primary URL to use for login.
           type: string
-        login_flow:
+        login_url_method:
           type: string
           description: |
             Defines login behavior when login_url is set.
             - redirect (default): Auto-redirect to login_url.
-            - selection: Show a page to choose between logging in via login_url or with lakeFS credentials.
+            - select: Show a page to choose between logging in via login_url or with lakeFS credentials.
             Ignored if login_url is not configured.
           enum:
             - redirect
-            - selection
+            - select
           default: redirect
         login_failed_message:
           description: |
