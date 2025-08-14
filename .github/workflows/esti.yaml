@@ -742,6 +742,7 @@ jobs:
       - name: Set Hadoop env vars
         run: |
           echo "HADOOP_HOME=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
+          echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}" >> $GITHUB_ENV
           H_IN_CONT="/opt/hadoop/share/hadoop"
           echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> $GITHUB_ENV
 
