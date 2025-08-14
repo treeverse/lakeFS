@@ -123,8 +123,7 @@ const LoginPage = () => {
     const setupResponse = response as SetupResponse | null;
     const loginConfig = setupResponse?.login_config;
 
-    const shouldShowSelection = loginConfig?.login_flow === 'selection';
-    const loginMethodSelectionComponent = shouldShowSelection ? pluginManager.loginMethod.renderLoginMethodComponent(loginConfig) : null;
+    const loginMethodSelectionComponent = loginConfig ? pluginManager.loginMethod.renderLoginMethodComponent(loginConfig) : null;
     
     if (loginMethodSelectionComponent) {
         if (router.query.method === 'local' && loginConfig) {
