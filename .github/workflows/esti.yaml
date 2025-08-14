@@ -739,18 +739,6 @@ jobs:
           set -euo pipefail
           curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ matrix.hadoop_version }}/hadoop-${{ matrix.hadoop_version }}.tar.gz" | tar -xz -C /tmp
 
-
-      - name: Set Hadoop env vars for docker compose
-        run: |
-          set -euo pipefail
-          mkdir -p test/spark
-          {
-            echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}"
-            echo "SPARK_EXTRA_CLASSPATH=/opt/hadoop/share/hadoop/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}"
-          } > test/spark/.env
-          echo "== test/spark/.env =="
-          cat test/spark/.env
-
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
@@ -762,6 +750,8 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
+          HADOOP_HOME_HOST: /tmp/hadoop-${{ matrix.hadoop_version }}
+          SPARK_EXTRA_CLASSPATH: /opt/hadoop/share/hadoop/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}
 
       - name: Verify effective Hadoop jars on classpath
         working-directory: test/spark
