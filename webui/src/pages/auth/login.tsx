@@ -19,6 +19,7 @@ interface SetupResponse {
 
 interface LoginConfig {
     login_url: string;
+    login_flow?: string;
     username_ui_placeholder: string;
     password_ui_placeholder: string;
     login_failed_message?: string;
@@ -26,7 +27,6 @@ interface LoginConfig {
     fallback_login_label?: string;
     login_cookie_names: string[];
     logout_url: string;
-    select_login_method?: boolean;
 }
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
@@ -123,7 +123,9 @@ const LoginPage = () => {
     const setupResponse = response as SetupResponse | null;
     const loginConfig = setupResponse?.login_config;
 
-    const loginMethodSelectionComponent = loginConfig ? pluginManager.loginMethod.renderLoginMethodComponent(loginConfig) : null;
+    const shouldShowSelection = loginConfig?.login_flow === 'selection';
+    const loginMethodSelectionComponent = shouldShowSelection ? pluginManager.loginMethod.renderLoginMethodComponent(loginConfig) : null;
+    
     if (loginMethodSelectionComponent) {
         if (router.query.method === 'local' && loginConfig) {
             return <LoginForm loginConfig={loginConfig}/>;

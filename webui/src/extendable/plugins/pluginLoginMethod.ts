@@ -2,6 +2,7 @@ import React from "react";
 
 export interface LoginConfig {
     login_url: string;
+    login_flow?: string;
     username_ui_placeholder: string;
     password_ui_placeholder: string;
     login_failed_message?: string;
@@ -9,7 +10,6 @@ export interface LoginConfig {
     fallback_login_label?: string;
     login_cookie_names: string[];
     logout_url: string;
-    select_login_method?: boolean;
 }
 
 export interface PluginLoginMethod {
