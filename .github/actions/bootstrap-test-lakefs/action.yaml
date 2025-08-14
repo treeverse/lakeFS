@@ -12,6 +12,14 @@ inputs:
     description: working directory for the docker compose step
     required: false
     default: "."
+  hadoop-home-host:
+    description: The path to the Hadoop installation on the host
+    required: false
+    default: ""
+  spark-extra-classpath:
+    description: The classpath for Spark
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -36,7 +44,9 @@ runs:
       env:
         LAKEFS_STATS_ENABLED: "false"
         LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.docker.lakefs.io:8000
-        COMPOSE_PARALLEL_LIMIT: 1 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
+        COMPOSE_PARALLEL_LIMIT: 1
+        HADOOP_HOME_HOST: ${{ inputs.hadoop-home-host }}
+        SPARK_EXTRA_CLASSPATH: ${{ inputs.spark-extra-classpath }}
       shell: bash
       run: |
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"

@@ -713,6 +713,7 @@ jobs:
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
       HADOOP_HOME_HOST: /tmp/hadoop-${{ matrix.hadoop_version }}
+      SPARK_EXTRA_CLASSPATH: /opt/hadoop/share/hadoop/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}
     steps:
       - name: Check-out code
         uses: actions/checkout@v4
@@ -757,6 +758,8 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-directory: test/spark
+          hadoop-home-host: /tmp/hadoop-${{ matrix.hadoop_version }}
+          spark-extra-classpath: /opt/hadoop/share/hadoop/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -764,8 +767,6 @@ jobs:
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          #HADOOP_HOME_HOST: /tmp/hadoop-${{ matrix.hadoop_version }}
-          #SPARK_EXTRA_CLASSPATH: /opt/hadoop/share/hadoop/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}
 
       - name: Verify effective Hadoop jars on classpath
         working-directory: test/spark
