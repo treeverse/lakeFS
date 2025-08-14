@@ -2,12 +2,9 @@ package cloud
 
 import (
 	"context"
-	"crypto/md5" //nolint:gosec
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
-	"sync"
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
@@ -15,7 +12,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 )
 
 // Cloud provider constants
@@ -26,11 +25,6 @@ const (
 )
 
 var (
-	cloudType     string
-	cloudID       string
-	cloudDetected bool
-	once          sync.Once
-
 	// ErrNotInCloud is returned when the code is not running in the respective cloud provider
 	ErrNotInCloud = errors.New("not running in cloud provider")
 
@@ -41,17 +35,18 @@ var (
 )
 
 // DetectorFunc is a function type that detects a cloud provider and returns its ID
-type DetectorFunc func() (string, error)
+type DetectorFunc func(storageConfig lakefsconfig.StorageConfig) (string, error)
 
 // RegisterDetector registers a new cloud detector with the given name
 func RegisterDetector(name string, detector DetectorFunc) {
 	_, exists := detectorsRegistry[name]
 	if exists {
+		// TODO(barak): do we like to panic here?
 		// detector already registered, do nothing
 		return
 	}
-	detectorOrder = append(detectorOrder, name)
 	detectorsRegistry[name] = detector
+	detectorOrder = append(detectorOrder, name)
 }
 
 // Reset clears all registered detectors, mainly used for testing
@@ -61,23 +56,68 @@ func Reset() {
 }
 
 // GetAWSAccountID retrieves AWS account ID using STS.
-func GetAWSAccountID() (string, error) {
+func GetAWSAccountID(storageConfig lakefsconfig.StorageConfig) (string, error) {
 	ctx := context.Background()
+
+	// first try to use the default configuration
 	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return "", err
+	if err == nil {
+		awsStsClient := sts.NewFromConfig(cfg)
+		resp, err := awsStsClient.GetCallerIdentity(ctx, nil)
+		if err == nil {
+			return aws.ToString(resp.Account), nil
+		}
 	}
 
-	awsStsClient := sts.NewFromConfig(cfg)
-	resp, err := awsStsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
-	if err != nil {
-		return "", err
+	// try to use each storage config with s3 configuration
+	storageIDs := storageConfig.GetStorageIDs()
+	for _, storageID := range storageIDs {
+		storageConfig := storageConfig.GetStorageByID(storageID)
+		if storageConfig.BlockstoreType() != "s3" {
+			continue
+		}
+
+		params, err := storageConfig.BlockstoreS3Params()
+		if err != nil {
+			continue
+		}
+		var opts []func(*config.LoadOptions) error
+		if params.Region != "" {
+			opts = append(opts, config.WithRegion(params.Region))
+		}
+		if params.Profile != "" {
+			opts = append(opts, config.WithSharedConfigProfile(params.Profile))
+		}
+		if params.CredentialsFile != "" {
+			opts = append(opts, config.WithSharedCredentialsFiles([]string{params.CredentialsFile}))
+		}
+		if params.Credentials.AccessKeyID != "" {
+			opts = append(opts, config.WithCredentialsProvider(
+				credentials.NewStaticCredentialsProvider(
+					params.Credentials.AccessKeyID,
+					params.Credentials.SecretAccessKey,
+					params.Credentials.SessionToken,
+				),
+			))
+		}
+		cfg, err := config.LoadDefaultConfig(ctx, opts...)
+		if err != nil {
+			continue
+		}
+
+		awsStsClient := sts.NewFromConfig(cfg)
+		resp, err := awsStsClient.GetCallerIdentity(ctx, nil)
+		if err != nil {
+			continue
+		}
+		return aws.ToString(resp.Account), nil
 	}
-	return aws.ToString(resp.Account), nil
+
+	return "", ErrNotInCloud
 }
 
 // GetAzureSubscriptionID retrieves the Azure Subscription ID using the armsubscriptions package.
-func GetAzureSubscriptionID() (string, error) {
+func GetAzureSubscriptionID(storageConfig lakefsconfig.StorageConfig) (string, error) {
 	if !checkAzureMetadata() {
 		return "", ErrNotInCloud
 	}
@@ -106,7 +146,7 @@ func GetAzureSubscriptionID() (string, error) {
 }
 
 // GetGCPProjectID retrieves the GCP numerical project ID.
-func GetGCPProjectID() (string, error) {
+func GetGCPProjectID(_ lakefsconfig.StorageConfig) (string, error) {
 	if !metadata.OnGCE() {
 		return "", ErrNotInCloud
 	}
@@ -131,57 +171,33 @@ func checkAzureMetadata() bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-// init registers the built-in cloud detectors
-//
-//nolint:gochecknoinits
-func init() {
-	RegisterDefaultDetectors()
-}
-
 // RegisterDefaultDetectors registers the built-in cloud detectors
 //
-// maintained the order: GCP first, then AWS, then Azure
+// maintaine the order: GCP first, then AWS, then Azure
 func RegisterDefaultDetectors() {
 	RegisterDetector(GCPCloud, GetGCPProjectID)
 	RegisterDetector(AWSCloud, GetAWSAccountID)
 	RegisterDetector(AzureCloud, GetAzureSubscriptionID)
 }
 
-// Detect runs the cloud detection logic and caches the result.
-// Detectors are tried in registration order, and the first one that succeeds is used.
-// Any error is ignored, and the next detector is tried.
-func Detect() {
+// Detect cloud type and ID. use the storage config if needed
+func Detect(storageConfig lakefsconfig.StorageConfig) (string, string, bool) {
 	// Iterate through detectors in the order they were registered
 	for _, name := range detectorOrder {
 		detector := detectorsRegistry[name]
-		if id, err := detector(); err == nil {
-			cloudType, cloudID, cloudDetected = name, id, true
-			return
+		cloudID, err := detector(storageConfig)
+		if err == nil {
+			return name, cloudID, true
 		}
 	}
 
 	// No cloud detected
-	cloudType, cloudID, cloudDetected = "", "", false
+	return "", "", false
 }
 
-// GetHashedInformation returns the detected cloud type, cloud ID (hashed), and detection status.
-func GetHashedInformation() (string, string, bool) {
-	once.Do(Detect)
-	return GetHashedInformationCached()
-}
-
-// GetHashedInformationCached returns the detected cloud type, cloud ID (hashed), and detection status.
-func GetHashedInformationCached() (string, string, bool) {
-	if !cloudDetected {
-		return "", "", false
-	}
-
-	hashedID := hashCloudID(cloudID)
-	return cloudType, hashedID, cloudDetected
-}
-
-// hashCloudID hashes the cloud ID to protect sensitive information
-func hashCloudID(cloudID string) string {
-	s := md5.Sum([]byte(cloudID)) //nolint:gosec
-	return hex.EncodeToString(s[:])
+// init registers the built-in cloud detectors
+//
+//nolint:gochecknoinits
+func init() {
+	RegisterDefaultDetectors()
 }

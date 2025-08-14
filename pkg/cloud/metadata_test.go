@@ -3,6 +3,8 @@ package cloud
 import (
 	"errors"
 	"testing"
+
+	"github.com/treeverse/lakefs/pkg/config"
 )
 
 // TestDetect verifies the cloud detection logic
@@ -14,25 +16,26 @@ func TestDetect(t *testing.T) {
 	const (
 		firstCloud  = "first_cloud"
 		secondCloud = "second_cloud"
-		firstID     = "first-id-123"
 		secondID    = "second-id-456"
 	)
 
+	// Create a mock storage config
+	var mockStorageConfig config.StorageConfig
+
 	// Register a detector that fails
-	RegisterDetector(firstCloud, func() (string, error) {
+	RegisterDetector(firstCloud, func(storageConfig config.StorageConfig) (string, error) {
 		return "", errors.New("detection failed")
 	})
 
 	// Register a detector that succeeds
-	RegisterDetector(secondCloud, func() (string, error) {
+	RegisterDetector(secondCloud, func(storageConfig config.StorageConfig) (string, error) {
 		return secondID, nil
 	})
 
-	// Run detection
-	Detect()
-
-	// Verify the results
-	if !cloudDetected {
+	// Detect and verify the results
+	// The second detector should be called since the first one failed
+	cloudType, cloudID, detected := Detect(mockStorageConfig)
+	if !detected {
 		t.Error("Expected cloud to be detected")
 	}
 	if cloudType != secondCloud {
@@ -40,51 +43,6 @@ func TestDetect(t *testing.T) {
 	}
 	if cloudID != secondID {
 		t.Errorf("Expected cloud ID to be '%s', got '%s'", secondID, cloudID)
-	}
-}
-
-// TestGetHashedInformation verifies the hashing and caching behavior
-func TestGetHashedInformation(t *testing.T) {
-	// Reset all detectors before the test
-	Reset()
-
-	// Register a test detector
-	const (
-		testCloud = "test_cloud"
-		testID    = "test-id-789"
-	)
-	RegisterDetector(testCloud, func() (string, error) {
-		return testID, nil
-	})
-
-	// First call should detect and hash
-	cloudType, cloudID, detected := GetHashedInformation()
-	if !detected {
-		t.Fatal("Expected cloud to be detected")
-	}
-	if cloudType != testCloud {
-		t.Fatalf("Expected cloud type to be '%s', got %s", testCloud, cloudType)
-	}
-	expectedHash := hashCloudID(testID)
-	if cloudID != expectedHash {
-		t.Fatalf("Expected hashed ID to be '%s', got '%s'", expectedHash, cloudID)
-	}
-
-	// Register a new detector that would return different results
-	RegisterDetector("new_cloud", func() (string, error) {
-		return "new-id-999", nil
-	})
-
-	// Second call should return cached results
-	cloudType, cloudID, detected = GetHashedInformation()
-	if !detected {
-		t.Fatal("Expected cloud to be detected")
-	}
-	if cloudType != testCloud {
-		t.Fatalf("Expected cloud type to still be '%s', got %s", testCloud, cloudType)
-	}
-	if cloudID != expectedHash {
-		t.Fatalf("Expected hashed ID to still be '%s', got '%s'", expectedHash, cloudID)
 	}
 }
 
@@ -96,11 +54,14 @@ func TestDetectWithDefaultDetectors(t *testing.T) {
 	// Register the default cloud detectors (AWS, GCP, Azure)
 	RegisterDefaultDetectors()
 
+	// Create a mock storage config
+	var mockStorageConfig config.StorageConfig
+
 	// Run detection
-	Detect()
+	cloudType, cloudID, detected := Detect(mockStorageConfig)
 
 	// If a cloud was detected, verify it's one of the known types
-	if cloudDetected {
+	if detected {
 		switch cloudType {
 		case AWSCloud, GCPCloud, AzureCloud:
 			// Known cloud type detected - test passes
@@ -115,4 +76,83 @@ func TestDetectWithDefaultDetectors(t *testing.T) {
 	}
 	// Note: if no cloud was detected, that's also a valid state
 	// since the test might run in a non-cloud environment
+}
+
+// TestDetectorRegistrationOrder verifies that detectors are called in registration order
+func TestDetectorRegistrationOrder(t *testing.T) {
+	// Reset all detectors before the test
+	Reset()
+
+	const (
+		firstCloud  = "first_cloud"
+		secondCloud = "second_cloud"
+		firstID     = "first-id-123"
+		secondID    = "second-id-456"
+	)
+
+	// Create a mock storage config
+	var mockStorageConfig config.StorageConfig
+
+	// Register first detector that succeeds
+	RegisterDetector(firstCloud, func(storageConfig config.StorageConfig) (string, error) {
+		return firstID, nil
+	})
+
+	// Register second detector that also succeeds
+	RegisterDetector(secondCloud, func(storageConfig config.StorageConfig) (string, error) {
+		return secondID, nil
+	})
+
+	// Run detection - should return the first registered detector's result
+	cloudType, cloudID, detected := Detect(mockStorageConfig)
+
+	// Verify the results - should be from the first detector
+	if !detected {
+		t.Error("Expected cloud to be detected")
+	}
+	if cloudType != firstCloud {
+		t.Errorf("Expected cloud type to be '%s' (first registered), got %s", firstCloud, cloudType)
+	}
+	if cloudID != firstID {
+		t.Errorf("Expected cloud ID to be '%s' (from first detector), got '%s'", firstID, cloudID)
+	}
+}
+
+// TestRegisterDetectorDuplicate verifies that duplicate detector registrations are handled properly
+func TestRegisterDetectorDuplicate(t *testing.T) {
+	// Reset all detectors before the test
+	Reset()
+
+	const (
+		cloudName = "test_cloud"
+		firstID   = "first-id"
+		secondID  = "second-id"
+	)
+
+	// Create a mock storage config
+	var mockStorageConfig config.StorageConfig
+
+	// Register a detector
+	RegisterDetector(cloudName, func(storageConfig config.StorageConfig) (string, error) {
+		return firstID, nil
+	})
+
+	// Try to register the same detector again with different implementation
+	RegisterDetector(cloudName, func(storageConfig config.StorageConfig) (string, error) {
+		return secondID, nil
+	})
+
+	// Run detection - should use the first registration
+	cloudType, cloudID, detected := Detect(mockStorageConfig)
+
+	// Verify the results - should be from the first detector
+	if !detected {
+		t.Error("Expected cloud to be detected")
+	}
+	if cloudType != cloudName {
+		t.Errorf("Expected cloud type to be '%s', got %s", cloudName, cloudType)
+	}
+	if cloudID != firstID {
+		t.Errorf("Expected cloud ID to be '%s' (from first registration), got '%s'", firstID, cloudID)
+	}
 }

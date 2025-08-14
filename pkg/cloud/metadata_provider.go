@@ -2,30 +2,45 @@ package cloud
 
 import (
 	"context"
+	"crypto/md5" //nolint:gosec
+	"encoding/hex"
+
+	"github.com/treeverse/lakefs/pkg/config"
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 // MetadataProvider collecting cloud environment metadata.
 // Implements the stats.MetadataProvider interface
-type MetadataProvider struct{}
+type MetadataProvider struct {
+	metadata map[string]string
+}
 
-// NewMetadataProvider creates a new MetadataProvider
-func NewMetadataProvider() *MetadataProvider {
-	return &MetadataProvider{}
+// NewMetadataProvider creates a new MetadataProvider and initializes metadata
+// with cloud type and hashed ID if detected.
+func NewMetadataProvider(storageConfig config.StorageConfig) *MetadataProvider {
+	metadata := make(map[string]string)
+	cloudType, cloudID, cloudDetected := Detect(storageConfig)
+	if cloudDetected {
+		metadata[cloudType] = hashCloudID(cloudID)
+	}
+	logging.ContextUnavailable().WithFields(logging.Fields{
+		"cloud_type": cloudType,
+		"cloud_id":   cloudID,
+		"detected":   cloudDetected,
+	}).Debug("Cloud metadata provider initialized")
+	return &MetadataProvider{
+		metadata: metadata,
+	}
 }
 
 // GetMetadata returns cloud metadata information as a map
 // It returns the detected cloud type and a hashed version of the cloud ID
 func (p *MetadataProvider) GetMetadata(ctx context.Context) (map[string]string, error) {
-	metadata := make(map[string]string)
+	return p.metadata, nil
+}
 
-	// Get cloud metadata using the existing function
-	cloudType, cloudID, cloudDetected := GetHashedInformation()
-	if !cloudDetected {
-		return metadata, nil
-	}
-
-	// Add the cloud type and ID to the metadata map
-	metadata[cloudType] = cloudID
-
-	return metadata, nil
+// hashCloudID hashes the cloud ID to protect sensitive information
+func hashCloudID(cloudID string) string {
+	s := md5.Sum([]byte(cloudID)) //nolint:gosec
+	return hex.EncodeToString(s[:])
 }
