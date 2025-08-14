@@ -747,6 +747,12 @@ jobs:
           H_IN_CONT="/opt/hadoop/share/hadoop"
           echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> $GITHUB_ENV
 
+      - name: Write .env for docker compose (test/spark)
+        run: |
+          echo "HADOOP_HOME_HOST=/tmp/hadoop-${{ matrix.hadoop_version }}" > test/spark/.env
+          H_IN_CONT="/opt/hadoop/share/hadoop"
+          echo "SPARK_EXTRA_CLASSPATH=$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}" >> test/spark/.env
+
       - name: Start lakeFS for Spark tests
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
