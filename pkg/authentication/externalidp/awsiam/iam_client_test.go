@@ -44,46 +44,46 @@ func TestIntercept(t *testing.T) {
 	logger := logging.Dummy()
 
 	tests := []struct {
-		name         string
-		initialToken *apigen.AuthenticationToken
-		expectError  bool
-		expectBearer string
+		name          string
+		initialToken  *apigen.AuthenticationToken
+		expectedError error
+		expectBearer  string
 	}{
 		{
-			name:         "valid token",
-			initialToken: makeAuthToken("valid-token", 3600),
-			expectError:  false,
-			expectBearer: "valid-token",
+			name:          "valid token",
+			initialToken:  makeAuthToken("valid-token", 3600),
+			expectedError: nil,
+			expectBearer:  "valid-token",
 		},
 		{
-			name:         "nil token",
-			initialToken: nil,
-			expectError:  false,
-			expectBearer: "new-token",
+			name:          "nil token",
+			initialToken:  nil,
+			expectedError: nil,
+			expectBearer:  "new-token",
 		},
 		{
-			name:         "empty token string",
-			initialToken: makeAuthToken("", 3600),
-			expectError:  false,
-			expectBearer: "new-token",
+			name:          "empty token string",
+			initialToken:  makeAuthToken("", 3600),
+			expectedError: nil,
+			expectBearer:  "new-token",
 		},
 		{
-			name:         "expired token",
-			initialToken: makeAuthToken("expired-token", -3600),
-			expectError:  false,
-			expectBearer: "new-token",
+			name:          "expired token",
+			initialToken:  makeAuthToken("expired-token", -3600),
+			expectedError: nil,
+			expectBearer:  "new-token",
 		},
 		{
-			name:         "after refresh interval",
-			initialToken: makeAuthToken("soon-expired-token", 60*5),
-			expectError:  false,
-			expectBearer: "new-token",
+			name:          "after refresh interval",
+			initialToken:  makeAuthToken("soon-expired-token", 60*5),
+			expectedError: nil,
+			expectBearer:  "new-token",
 		},
 		{
-			name:         "renewal fails",
-			initialToken: nil,
-			expectError:  true,
-			expectBearer: "",
+			name:          "renewal fails",
+			initialToken:  nil,
+			expectedError: errTokenGenerationFailed,
+			expectBearer:  "",
 		},
 	}
 
@@ -93,7 +93,7 @@ func TestIntercept(t *testing.T) {
 				RefreshInterval: 5 * time.Minute,
 			}
 			var testClient *testExternalLoginClient
-			if tt.expectError {
+			if tt.expectedError != nil {
 				testClient = &testExternalLoginClient{
 					shouldFail: true,
 					token:      tt.expectBearer,
@@ -118,15 +118,13 @@ func TestIntercept(t *testing.T) {
 			req := httptest.NewRequest("GET", "http://example.com", nil)
 			err := provider.Intercept(context.Background(), req)
 
-			if tt.expectError {
-				require.Error(t, err)
-				fmt.Println("%w", err)
+			if tt.expectedError != nil {
+				require.ErrorIs(t, err, errTokenGenerationFailed)
 				require.Empty(t, req.Header.Get("Authorization"))
 				return
 			}
 
-			require.NoError(t, err)
-			fmt.Println("%w", err)
+			require.ErrorIs(t, err, nil)
 			require.Equal(t, "Bearer "+tt.expectBearer, req.Header.Get("Authorization"))
 		})
 	}
