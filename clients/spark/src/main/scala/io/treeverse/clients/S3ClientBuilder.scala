@@ -80,13 +80,20 @@ object S3ClientBuilder extends S3ClientBuilder {
           hc.get(Constants.ACCESS_KEY): Any,
           if (hc.get(Constants.SECRET_KEY) == null) "(missing secret key)" else "secret key ******"
         )
-        Some(new AWSStaticCredentialsProvider(new BasicAWSCredentials(hc.get(Constants.ACCESS_KEY), hc.get(Constants.SECRET_KEY))))
+        Some(
+          new AWSStaticCredentialsProvider(
+            new BasicAWSCredentials(hc.get(Constants.ACCESS_KEY), hc.get(Constants.SECRET_KEY))
+          )
+        )
       } else None
 
     val credentialsProvider: Option[AWSCredentialsProvider] =
       if (roleArn != null && !roleArn.isEmpty) {
         try {
-          val stsRoleProviderBuilder = new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, s"lakefs-gc-${UUID.randomUUID().toString}")
+          val stsRoleProviderBuilder = new STSAssumeRoleSessionCredentialsProvider.Builder(
+            roleArn,
+            s"lakefs-gc-${UUID.randomUUID().toString}"
+          )
           baseOpt.foreach(stsRoleProviderBuilder.withLongLivedCredentialsProvider)
           Some(stsRoleProviderBuilder.build())
         } catch { case _: Exception => baseOpt }
