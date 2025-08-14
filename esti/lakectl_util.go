@@ -108,27 +108,23 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 // "VAR1=value1 VAR2=value2 command args"
 // and returns the environment variables and the actual command
 func extractUnixEnvVars(command string) ([]string, string) {
-	// Use a simple regex to find environment variables at the start
-	// Pattern: word characters (letters, digits, underscore) followed by = followed by non-space characters
-	envVarPattern := regexp.MustCompile(`^([A-Za-z_][A-Za-z0-9_]*=[^\s]+)\s+(.*)`)
+	// Find all environment variables anywhere in the command
+	envVarPattern := regexp.MustCompile(`\b([A-Z][A-Z0-9_]*=[^\s]+)`)
 
-	var envVars []string
-	remaining := strings.TrimSpace(command)
+	// Find all matches
+	matches := envVarPattern.FindAllString(command, -1)
 
-	// Keep extracting environment variables from the beginning
-	for {
-		matches := envVarPattern.FindStringSubmatch(remaining)
-		if len(matches) != 3 {
-			// No more environment variables found
-			break
-		}
-
-		envVar := matches[1]
-		envVars = append(envVars, envVar)
-		remaining = strings.TrimSpace(matches[2])
+	// Remove all environment variables from the command
+	cleanedCommand := command
+	for _, envVar := range matches {
+		// Remove the env var and any surrounding whitespace
+		cleanedCommand = regexp.MustCompile(`\s*`+regexp.QuoteMeta(envVar)+`\s*`).ReplaceAllString(cleanedCommand, " ")
 	}
 
-	return envVars, remaining
+	// Clean up extra spaces
+	cleanedCommand = regexp.MustCompile(`\s+`).ReplaceAllString(strings.TrimSpace(cleanedCommand), " ")
+
+	return matches, cleanedCommand
 }
 
 // expandVariables receives a string with (possibly) variables in the form of {VAR_NAME}, and
