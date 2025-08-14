@@ -108,35 +108,75 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 // "VAR1=value1 VAR2=value2 command args"
 // and returns the environment variables and the actual command
 func extractUnixEnvVars(command string) ([]string, string) {
-	// Parse tokens from the beginning and extract only environment variables
-	tokens := strings.Fields(command)
 	var envVars []string
-	var commandStart int
+	var pos int
 
-	// Extract environment variables from the beginning
-	for i, token := range tokens {
-		// Check if token is an environment variable (key=value format)
-		if strings.Contains(token, "=") && !strings.HasPrefix(token, "/") && !strings.HasPrefix(token, ".") && !strings.Contains(token, "\\") {
-			// Additional check: ensure it looks like a valid env var (no spaces before =)
+	// Parse character by character to properly handle environment variables
+	for pos < len(command) {
+		// Skip leading whitespace
+		for pos < len(command) && (command[pos] == ' ' || command[pos] == '\t') {
+			pos++
+		}
+		if pos >= len(command) {
+			break
+		}
+
+		// Find the end of the current token (until space or =)
+		tokenStart := pos
+		for pos < len(command) && command[pos] != ' ' && command[pos] != '\t' {
+			pos++
+		}
+
+		token := command[tokenStart:pos]
+
+		// Check if this token contains = and looks like an environment variable
+		if strings.Contains(token, "=") {
 			eqIndex := strings.Index(token, "=")
-			if eqIndex > 0 && !strings.ContainsAny(token[:eqIndex], " \t") {
-				envVars = append(envVars, token)
-				continue
+			if eqIndex > 0 {
+				// Validate the key part (before =) contains only valid env var characters
+				key := token[:eqIndex]
+				if isValidEnvVarName(key) {
+					envVars = append(envVars, token)
+					continue
+				}
 			}
 		}
+
 		// This token is not an environment variable, so the command starts here
-		commandStart = i
+		// Skip back to the beginning of this token
+		pos = tokenStart
 		break
 	}
 
-	// If we found environment variables, reconstruct the command from the remaining tokens
-	if commandStart < len(tokens) {
-		actualCommand := strings.Join(tokens[commandStart:], " ")
+	// Return the remaining part as the actual command
+	if pos < len(command) {
+		actualCommand := strings.TrimSpace(command[pos:])
 		return envVars, actualCommand
 	}
 
-	// No environment variables found, return the original command
-	return []string{}, command
+	// No command found after env vars
+	return envVars, ""
+}
+
+// isValidEnvVarName checks if a string is a valid environment variable name
+func isValidEnvVarName(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	// Environment variable names should start with letter or underscore
+	// and contain only letters, digits, and underscores
+	for i, r := range name {
+		if i == 0 {
+			if !((r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || r == '_') {
+				return false
+			}
+		} else {
+			if !((r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_') {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // expandVariables receives a string with (possibly) variables in the form of {VAR_NAME}, and
