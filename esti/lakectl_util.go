@@ -92,7 +92,9 @@ func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, err
 		if err != nil {
 			workingDir = "." // fallback to current directory
 		}
-		cmd = exec.Command("powershell.exe", "-WorkingDirectory", workingDir, "-Command", actualCommand)
+		// Set PowerShell working directory explicitly before running the command
+		psCommand := fmt.Sprintf("Set-Location -Path '%s'; %s", workingDir, actualCommand)
+		cmd = exec.Command("powershell.exe", "-Command", psCommand)
 		additionalEnvVars = envVars
 		cmd.Env = append(os.Environ(), "LAKECTL_INTERACTIVE=false")
 	} else {
