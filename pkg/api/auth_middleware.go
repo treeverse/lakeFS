@@ -284,7 +284,7 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 		// user already exists - get it:
 		user, err = authService.GetUserByExternalID(ctx, externalID)
 		if err != nil {
-			log.WithError(err).Error("failed to get external user from database")
+			log.WithError(err).Error("Failed to get external user from database")
 			return nil, ErrAuthenticatingRequest
 		}
 		return enhanceWithFriendlyName(ctx, user, friendlyName, cookieAuthConfig.PersistFriendlyName, authService, logger), nil
@@ -292,9 +292,11 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 
 	// Assign initial groups to the user. by default, we assign the configured default groups from the config.
 	// If the user has a custom initial groups claim, we use it to assign the groups to the user.
-	initialGroups := cookieAuthConfig.DefaultInitialGroups
-	if groups, ok := convertAnyToSliceOfString(idTokenClaims[cookieAuthConfig.InitialGroupsClaimName]); ok {
-		initialGroups = groups
+	groupsClaim := idTokenClaims[cookieAuthConfig.InitialGroupsClaimName]
+	initialGroups, err := initialGroupsFromClaims(groupsClaim, cookieAuthConfig.DefaultInitialGroups)
+	if err != nil {
+		log.WithError(err).WithField("groups_claim", groupsClaim).Error("Failed to parse initial groups claim")
+		return nil, ErrAuthenticatingRequest
 	}
 	for _, groupName := range initialGroups {
 		err := authService.AddUserToGroup(ctx, u.Username, groupName)
@@ -374,9 +376,11 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		}
 		return enhanceWithFriendlyName(ctx, user, friendlyName, oidcConfig.PersistFriendlyName, authService, logger), nil
 	}
-	initialGroups := oidcConfig.DefaultInitialGroups
-	if groups, ok := convertAnyToSliceOfString(idTokenClaims[oidcConfig.InitialGroupsClaimName]); ok {
-		initialGroups = groups
+	groupsClaim := idTokenClaims[oidcConfig.InitialGroupsClaimName]
+	initialGroups, err := initialGroupsFromClaims(groupsClaim, oidcConfig.DefaultInitialGroups)
+	if err != nil {
+		logger.WithError(err).WithField("groups_claim", groupsClaim).Error("Failed to parse initial groups claim")
+		return nil, ErrAuthenticatingRequest
 	}
 	for _, groupName := range initialGroups {
 		err := authService.AddUserToGroup(ctx, u.Username, groupName)
@@ -428,32 +432,31 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 	return user, nil
 }
 
-// convertAnyToSliceOfString returns a slice of string from any value
-// In case of string, it splits the string by comma and trims the whitespaces
-// In case of []any, it iterates over the slice and converts each element to string
-// If the value is not a string or []any, it returns nil, false
-func convertAnyToSliceOfString(input any) ([]string, bool) {
-	if input == nil {
-		return nil, false
+// initialGroupsFromClaims extracts initial groups from the claim.
+// If the claim is nil, it returns the default initial groups.
+// If the claim is present but not in the expected format, it returns an error.
+// The expected format is either a comma-separated string or a slice of strings.
+func initialGroupsFromClaims(groupsClaim any, defaultInitialGroups []string) ([]string, error) {
+	if groupsClaim == nil {
+		return defaultInitialGroups, nil
 	}
-
-	var result []string
-	switch v := input.(type) {
+	groups := make([]string, 0)
+	switch v := groupsClaim.(type) {
 	case string:
-		for _, item := range strings.Split(v, ",") {
+		for item := range strings.SplitSeq(v, ",") {
 			trimmed := strings.TrimSpace(item)
 			if trimmed != "" {
-				result = append(result, trimmed)
+				groups = append(groups, trimmed)
 			}
 		}
 	case []any:
 		for _, item := range v {
 			str, ok := item.(string)
 			if !ok {
-				continue
+				return nil, fmt.Errorf("%w: initial groups must be strings", ErrInvalidFormat)
 			}
-			result = append(result, str)
+			groups = append(groups, str)
 		}
 	}
-	return result, len(result) > 0
+	return groups, nil
 }
