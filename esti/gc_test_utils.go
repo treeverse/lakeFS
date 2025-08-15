@@ -12,6 +12,29 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+// getSparkBaseAndPath returns the spark base and path based on SPARK_BASE environment variable
+func getSparkBaseAndPath() (string, string) {
+	sparkBase := os.Getenv("SPARK_BASE")
+	if sparkBase == "" {
+		sparkBase = "bitnami" // Default to bitnami for backward compatibility
+	}
+
+	// Basic validation for supported SPARK_BASE values
+	if sparkBase != "bitnami" && sparkBase != "treeverse" {
+		logger.WithFields(logging.Fields{
+			"spark_base": sparkBase,
+		}).Warn("Unsupported SPARK_BASE value, defaulting to bitnami")
+		sparkBase = "bitnami"
+	}
+
+	sparkPath := "/opt/bitnami/spark"
+	if sparkBase == "treeverse" {
+		sparkPath = "/opt/treeverse/spark"
+	}
+
+	return sparkBase, sparkPath
+}
+
 func getSparkSubmitArgs(entryPoint string) []string {
 	return []string{
 		"--master", "spark://localhost:7077",
@@ -24,9 +47,12 @@ func getSparkSubmitArgs(entryPoint string) []string {
 }
 
 func getDockerArgs(workingDirectory string, localJar string) []string {
+	// Support both bitnami and treeverse spark paths
+	_, sparkPath := getSparkBaseAndPath()
+
 	return []string{
 		"run", "--network", "host", "--add-host", "lakefs:127.0.0.1",
-		"-v", fmt.Sprintf("%s/ivy:/opt/bitnami/spark/.ivy2", workingDirectory),
+		"-v", fmt.Sprintf("%s/ivy:%s/.ivy2", workingDirectory, sparkPath),
 		"-v", fmt.Sprintf("%s:/opt/metaclient/client.jar", localJar),
 		"--rm",
 		"-e", "AWS_ACCESS_KEY_ID",
@@ -111,7 +137,9 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", config.SparkVersion), "spark-submit")
+	// Support both bitnami and treeverse spark images
+	sparkBase, _ := getSparkBaseAndPath()
+	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/%s/spark:%s", sparkBase, config.SparkVersion), "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
 	args := dockerArgs
