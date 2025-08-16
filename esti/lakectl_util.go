@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -41,8 +43,16 @@ var (
 	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
 )
 
+func isWindowsOS() bool {
+	return runtime.GOOS == "windows"
+}
+
 func lakectlLocation() string {
-	return viper.GetString("binaries_dir") + "/lakectl"
+	binDir := viper.GetString("binaries_dir")
+	if isWindowsOS() {
+		return filepath.Join(binDir, "lakectl.exe")
+	}
+	return filepath.Join(binDir, "lakectl")
 }
 
 func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string {
@@ -50,6 +60,7 @@ func LakectlWithParams(accessKeyID, secretAccessKey, endPointURL string) string 
 }
 
 func LakectlWithParamsWithPosixPerms(accessKeyID, secretAccessKey, endPointURL string, withPosixPerms bool) string {
+	// Always use Unix syntax - let runShellCommand handle platform specifics
 	lakectlCmdline := "LAKECTL_CREDENTIALS_ACCESS_KEY_ID=" + accessKeyID +
 		" LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=" + secretAccessKey +
 		" LAKECTL_SERVER_ENDPOINT_URL=" + endPointURL +
@@ -70,12 +81,54 @@ func LakectlWithPosixPerms() string {
 func runShellCommand(t *testing.T, command string, isTerminal bool) ([]byte, error) {
 	t.Helper()
 	t.Logf("Run shell command '%s'", command)
-	// Assuming linux. Not sure if this is correct
-	cmd := exec.Command("/bin/sh", "-c", command)
-	cmd.Env = append(os.Environ(),
-		"LAKECTL_INTERACTIVE="+strconv.FormatBool(isTerminal),
-	)
+
+	var cmd *exec.Cmd
+	var additionalEnvVars []string
+
+	if isWindowsOS() {
+		// On Windows, extract environment variables from Unix-style command and set them directly
+		envVars, actualCommand := extractUnixEnvVars(command)
+		workingDir, err := os.Getwd()
+		if err != nil {
+			workingDir = "." // fallback to current directory
+		}
+		// Set PowerShell working directory explicitly before running the command
+		psCommand := fmt.Sprintf("Set-Location -Path '%s'; %s", workingDir, actualCommand)
+		cmd = exec.Command("powershell.exe", "-Command", psCommand)
+		additionalEnvVars = envVars
+		cmd.Env = append(os.Environ(), "LAKECTL_INTERACTIVE=false")
+	} else {
+		cmd = exec.Command("/bin/sh", "-c", command)
+		cmd.Env = append(os.Environ(), "LAKECTL_INTERACTIVE="+strconv.FormatBool(isTerminal))
+	}
+
+	// Add any platform-specific environment variables
+	cmd.Env = append(cmd.Env, additionalEnvVars...)
+
 	return cmd.CombinedOutput()
+}
+
+// extractUnixEnvVars parses a Unix-style command string like:
+// "VAR1=value1 VAR2=value2 command args"
+// and returns the environment variables and the actual command
+func extractUnixEnvVars(command string) ([]string, string) {
+	// Find all environment variables anywhere in the command
+	envVarPattern := regexp.MustCompile(`\b([A-Z][A-Z0-9_]*=[^\s]+)`)
+
+	// Find all matches
+	matches := envVarPattern.FindAllString(command, -1)
+
+	// Remove all environment variables from the command
+	cleanedCommand := command
+	for _, envVar := range matches {
+		// Remove the env var and any surrounding whitespace
+		cleanedCommand = regexp.MustCompile(`\s*`+regexp.QuoteMeta(envVar)+`\s*`).ReplaceAllString(cleanedCommand, " ")
+	}
+
+	// Clean up extra spaces
+	cleanedCommand = regexp.MustCompile(`\s+`).ReplaceAllString(strings.TrimSpace(cleanedCommand), " ")
+
+	return matches, cleanedCommand
 }
 
 // expandVariables receives a string with (possibly) variables in the form of {VAR_NAME}, and
@@ -186,14 +239,24 @@ func RunCmdAndVerifyFailureWithFile(t *testing.T, cmd string, isTerminal bool, g
 
 func runCmdAndVerifyWithFile(t *testing.T, cmd, goldenFile string, expectFail, isTerminal bool, vars map[string]string) {
 	t.Helper()
-	goldenFile = "golden/" + goldenFile + ".golden"
+
+	// Default golden file path
+	goldenPath := filepath.Join("golden", goldenFile+".golden")
+
+	// On Windows, check for Windows-specific golden file first
+	if isWindowsOS() {
+		windowsGoldenFile := filepath.Join("golden", goldenFile+".windows.golden")
+		if _, err := os.Stat(windowsGoldenFile); err == nil {
+			goldenPath = windowsGoldenFile
+		}
+	}
 
 	if *update {
-		updateGoldenFile(t, cmd, isTerminal, goldenFile, vars)
+		updateGoldenFile(t, cmd, isTerminal, goldenPath, vars)
 	} else {
-		content, err := os.ReadFile(goldenFile)
+		content, err := os.ReadFile(goldenPath)
 		if err != nil {
-			t.Fatal("Failed to read", goldenFile, "-", err)
+			t.Fatal("Failed to read", goldenPath, "-", err)
 		}
 		expected := sanitize(string(content), vars)
 		runCmdAndVerifyResult(t, cmd, expectFail, isTerminal, expected, vars)

@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -69,6 +70,8 @@ const (
 	minHTTPErrorStatusCode   = 400
 	ViperStorageNamespaceKey = "storage_namespace"
 	ViperBlockstoreType      = "blockstore_type"
+
+	windowsOSStr = "windows"
 )
 
 var (
@@ -281,6 +284,14 @@ func skipOnSchemaMismatch(t *testing.T, rawURL string) {
 	}
 }
 
+// skipOnWindows skips the test when running on Windows
+func skipOnWindows(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == windowsOSStr {
+		t.Skip("Skipping test on Windows")
+	}
+}
+
 // VerifyResponse returns an error based on failed if resp failed to perform action.  It uses
 // body in errors.
 func VerifyResponse(resp *http.Response, body []byte) error {
@@ -334,7 +345,7 @@ func GenerateUniqueRepositoryName() string {
 }
 
 func GenerateUniqueStorageNamespace(repoName string) string {
-	ns := viper.GetString("storage_namespace")
+	ns := viper.GetString(ViperStorageNamespaceKey)
 	if !strings.HasSuffix(ns, "/") {
 		ns += "/"
 	}
