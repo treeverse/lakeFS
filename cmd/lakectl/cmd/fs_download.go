@@ -50,7 +50,7 @@ var fsDownloadCmd = &cobra.Command{
 			if s, _ := os.Stat(dest); s != nil && s.IsDir() {
 				dest += string(filepath.Separator) // destination is in filesystem
 			}
-			if remotePath != "" && strings.HasSuffix(dest, uri.PathSeparator) {
+			if remotePath != "" && strings.HasSuffix(dest, string(filepath.Separator)) {
 				dest += filepath.Base(filepath.FromSlash(remotePath))
 			}
 
