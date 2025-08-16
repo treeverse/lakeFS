@@ -702,9 +702,12 @@ jobs:
           cp target/scala-2.12/lakefs-spark-client-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
 
   metadata-client-export-spark3:
-    name: Test lakeFS metadata client export with Spark 3.x
+    name: Export test - Hadoop ${{ matrix.hadoop_version }}
     needs: [deploy-image, build-spark3-metadata-client, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        hadoop_version: [ "3.2.1", "3.3.6" ]
     env:
       SPARK_TAG: 3.2.1
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -727,6 +730,7 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-directory: test/spark
+          hadoop-version: ${{ matrix.hadoop_version }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -735,23 +739,48 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
+      - name: Verify effective Hadoop jars on classpath
+        working-directory: test/spark
+        run: |
+          set -euo pipefail
+          echo "---- SPARK_EXTRA_CLASSPATH (raw, from host env) ----"
+          echo "${SPARK_EXTRA_CLASSPATH:-<empty>}"
+          echo "---- SPARK_CLASSPATH (from image) ----"
+          docker compose exec -T spark bash -lc 'echo "${SPARK_CLASSPATH:-<empty>}"'
+          echo "---- Build Hadoop classpath inside container ----"
+          docker compose exec -T spark bash -lc '
+          set -euo pipefail
+          shopt -s nullglob
+          H="/opt/hadoop/share/hadoop"
+          jars=("$H"/common/*.jar "$H"/common/lib/*.jar "$H"/hdfs/*.jar "$H"/hdfs/lib/*.jar "$H"/mapreduce/*.jar "$H"/mapreduce/lib/*.jar "$H"/yarn/*.jar "$H"/yarn/lib/*.jar "$H"/aws/*.jar)
+          if [ ${#jars[@]} -eq 0 ]; then
+           echo "No Hadoop JARs found under $H – check mount" >&2; exit 1
+          fi
+          HADOOP_CP=$(printf "%s:" "${jars[@]}"); HADOOP_CP=${HADOOP_CP%:}
+          echo "HADOOP_CP entries: $(echo "$HADOOP_CP" | tr ":" "\n" | wc -l)"
+          echo "$HADOOP_CP" | tr ":" "\n" | grep -E "hadoop-common-.*\.jar" | head -n 1 || true
+          JAVA_BIN="${JAVA_HOME:-/opt/bitnami/java}/bin/java"
+          "$JAVA_BIN" -cp "$HADOOP_CP:${SPARK_CLASSPATH:-}" org.apache.hadoop.util.VersionInfo | head -n 10
+          echo "$HADOOP_CP:${SPARK_CLASSPATH:-}" | tr ":" "\n" | grep -E "hadoop-aws-.*\.jar" | head -n 1 || true
+          '
+
       - name: Copy repository ref
-        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
+        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-hadoop${{ matrix.hadoop_version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
 
       - name: Setup Exporter tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-hadoop${{ matrix.hadoop_version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
         working-directory: test/spark
         run: ./setup-exporter-test.sh
 
-      - name: Test Exporter with Spark 3.x
+      - name: Test Exporter (Hadoop ${{ matrix.hadoop_version }})
+        working-directory: test/spark
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-hadoop${{ matrix.hadoop_version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
           CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
-          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-client-export/${{ steps.unique.outputs.value }}
-        working-directory: test/spark
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-hadoop${{ matrix.hadoop_version }}-client-export/${{ steps.unique.outputs.value }}
         run: ./run-exporter-test.sh
 
       - name: lakeFS Logs on Spark with gateway failure

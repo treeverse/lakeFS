@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 import io.treeverse.clients.StorageUtils.S3.createAndValidateS3Client
 
@@ -38,7 +39,12 @@ object S3ClientBuilder extends S3ClientBuilder {
 
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
-    import com.amazonaws.auth.{BasicAWSCredentials, AWSStaticCredentialsProvider}
+    import com.amazonaws.auth.{
+      AWSCredentialsProvider,
+      STSAssumeRoleSessionCredentialsProvider,
+      AWSStaticCredentialsProvider,
+      BasicAWSCredentials
+    }
     import io.treeverse.clients.LakeFSContext
     import org.apache.hadoop.fs.s3a.Constants
 
@@ -62,7 +68,9 @@ object S3ClientBuilder extends S3ClientBuilder {
     //     Possibly pre-generate a FileSystem to access the desired bucket,
     //     and query for its credentials provider.  And cache them, in case
     //     some objects live in different buckets.
-    val credentialsProvider =
+    val roleArn = hc.get(Constants.ASSUMED_ROLE_ARN, null)
+
+    val baseOpt: Option[AWSCredentialsProvider] =
       if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME) {
         logger.info("Use configured AssumedRoleCredentialProvider for bucket {}", bucket)
         Some(new AssumedRoleCredentialProvider(new java.net.URI("s3a://" + bucket), hc))
@@ -78,6 +86,18 @@ object S3ClientBuilder extends S3ClientBuilder {
           )
         )
       } else None
+
+    val credentialsProvider: Option[AWSCredentialsProvider] =
+      if (roleArn != null && !roleArn.isEmpty) {
+        try {
+          val stsRoleProviderBuilder = new STSAssumeRoleSessionCredentialsProvider.Builder(
+            roleArn,
+            s"lakefs-gc-${UUID.randomUUID().toString}"
+          )
+          baseOpt.foreach(stsRoleProviderBuilder.withLongLivedCredentialsProvider)
+          Some(stsRoleProviderBuilder.build())
+        } catch { case _: Exception => baseOpt }
+      } else baseOpt
 
     val builder = AmazonS3ClientBuilder
       .standard()

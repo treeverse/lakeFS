@@ -1,6 +1,6 @@
 package io.treeverse.clients
 
-import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.retry.PredefinedRetryPolicies.SDKDefaultRetryCondition
 import com.amazonaws.retry.RetryUtils
@@ -98,10 +98,12 @@ object StorageUtils {
         region: String,
         bucket: String
     ): AmazonS3 = {
+      logger.debug(s"Creating S3 client for bucket: $bucket, region: $region, endpoint: $endpoint")
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
+
       val client =
-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, region)
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
@@ -144,11 +146,9 @@ object StorageUtils {
           builder.withRegion(region)
         else
           builder
-      val builderWithCredentials = credentialsProvider match {
-        case Some(cp) => builderWithEndpoint.withCredentials(cp)
-        case None     => builderWithEndpoint
-      }
-      builderWithCredentials.build
+
+      val effective = credentialsProvider.getOrElse(new DefaultAWSCredentialsProviderChain())
+      builderWithEndpoint.withCredentials(effective).build()
     }
 
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
