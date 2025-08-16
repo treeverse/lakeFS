@@ -21,24 +21,30 @@ pub struct LoginConfig {
     /// Placeholder text to display in the password field of the login form. 
     #[serde(rename = "password_ui_placeholder", skip_serializing_if = "Option::is_none")]
     pub password_ui_placeholder: Option<String>,
-    /// primary URL to use for login.
+    /// Primary URL to use for login.
     #[serde(rename = "login_url")]
     pub login_url: String,
-    /// message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
+    /// Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+    #[serde(rename = "login_url_method", skip_serializing_if = "Option::is_none")]
+    pub login_url_method: Option<LoginUrlMethod>,
+    /// Message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
     #[serde(rename = "login_failed_message", skip_serializing_if = "Option::is_none")]
     pub login_failed_message: Option<String>,
-    /// secondary URL to offer users to use for login.
+    /// Secondary URL to offer users to use for login.
     #[serde(rename = "fallback_login_url", skip_serializing_if = "Option::is_none")]
     pub fallback_login_url: Option<String>,
-    /// label to place on fallback_login_url.
+    /// Label to place on fallback_login_url.
     #[serde(rename = "fallback_login_label", skip_serializing_if = "Option::is_none")]
     pub fallback_login_label: Option<String>,
-    /// cookie names used to store JWT
+    /// Cookie names used to store JWT
     #[serde(rename = "login_cookie_names")]
     pub login_cookie_names: Vec<String>,
     /// URL to use for logging out.
     #[serde(rename = "logout_url")]
     pub logout_url: String,
+    /// When set to true, the placeholders \"Username\" and \"Password\" are used in the login form.
+    #[serde(rename = "use_login_placeholders", skip_serializing_if = "Option::is_none")]
+    pub use_login_placeholders: Option<bool>,
 }
 
 impl LoginConfig {
@@ -48,11 +54,13 @@ impl LoginConfig {
             username_ui_placeholder: None,
             password_ui_placeholder: None,
             login_url,
+            login_url_method: None,
             login_failed_message: None,
             fallback_login_url: None,
             fallback_login_label: None,
             login_cookie_names,
             logout_url,
+            use_login_placeholders: None,
         }
     }
 }
@@ -63,6 +71,8 @@ pub enum Rbac {
     None,
     #[serde(rename = "simplified")]
     Simplified,
+    #[serde(rename = "internal")]
+    Internal,
     #[serde(rename = "external")]
     External,
 }
@@ -70,6 +80,20 @@ pub enum Rbac {
 impl Default for Rbac {
     fn default() -> Rbac {
         Self::None
+    }
+}
+/// Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+pub enum LoginUrlMethod {
+    #[serde(rename = "redirect")]
+    Redirect,
+    #[serde(rename = "select")]
+    Select,
+}
+
+impl Default for LoginUrlMethod {
+    fn default() -> LoginUrlMethod {
+        Self::Redirect
     }
 }
 

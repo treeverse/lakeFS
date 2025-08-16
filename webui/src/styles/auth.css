@@ -91,4 +91,20 @@ body .auth-page .nav-pills .nav-link:hover {
 /* Direct style override for nav-pills */
 .auth-page .nav-pills .nav-link.active {
   background-color: var(--success) !important;
-} 
+}
+
+.btn.login-method-secondary {
+  background-color: #b0b6bf !important;
+  border-color: #b0b6bf !important;
+  color: white !important;
+}
+
+.btn.login-method-secondary:hover {
+  background-color: #979a9f !important;
+  border-color: #979a9f !important;
+  color: white !important;
+}
+
+.login-method-secondary .key-icon {
+  filter: grayscale(100%);
+}

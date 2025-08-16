@@ -9,9 +9,17 @@ import {AlertError} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {useNavigate} from "react-router-dom";
+import {usePluginManager} from "../../extendable/plugins/pluginsContext";
+
+interface SetupResponse {
+    state: string;
+    comm_prefs_missing?: boolean;
+    login_config?: LoginConfig;
+}
 
 interface LoginConfig {
     login_url: string;
+    login_url_method?: string;
     username_ui_placeholder: string;
     password_ui_placeholder: string;
     login_failed_message?: string;
@@ -98,29 +106,46 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     )
 }
 
-
 const LoginPage = () => {
     const router = useRouter();
     const { response, error, loading } = useAPI(() => setup.getState());
+    const pluginManager = usePluginManager();
+
     if (loading) {
         return null;
     }
 
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
-    if (!error && response && (response.state !== SETUP_STATE_INITIALIZED || response.comm_prefs_missing === true)) {
-        router.push({pathname: '/setup', query: router.query})
+    if (!error && response && ((response as SetupResponse).state !== SETUP_STATE_INITIALIZED || (response as SetupResponse).comm_prefs_missing)) {
+        router.push({pathname: '/setup', params: {}, query: router.query as Record<string, string>})
         return null;
     }
-    const loginConfig = response?.login_config;
+    const setupResponse = response as SetupResponse | null;
+    const loginConfig = setupResponse?.login_config;
+
+    const loginMethodSelectionComponent = loginConfig ? pluginManager.loginMethod.renderLoginMethodComponent(loginConfig) : null;
+    
+    if (loginMethodSelectionComponent) {
+        if (router.query.method === 'local' && loginConfig) {
+            return <LoginForm loginConfig={loginConfig}/>;
+        }
+
+        return loginMethodSelectionComponent;
+    }
+
     if (router.query.redirected)  {
         if(!error && loginConfig?.login_url) {
-            window.location = loginConfig.login_url;
+            window.location.href = loginConfig.login_url;
             return null;
         }
         delete router.query.redirected;
 
-        router.push({pathname: '/auth/login', query: router.query})
+        router.push({pathname: '/auth/login', params: {}, query: router.query as Record<string, string>})
     }
+    if (!loginConfig) {
+        return null;
+    }
+
     return (
         <LoginForm loginConfig={loginConfig}/>
     );

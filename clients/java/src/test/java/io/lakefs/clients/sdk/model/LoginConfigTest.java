@@ -72,6 +72,14 @@ public class LoginConfigTest {
     }
 
     /**
+     * Test the property 'loginUrlMethod'
+     */
+    @Test
+    public void loginUrlMethodTest() {
+        // TODO: test loginUrlMethod
+    }
+
+    /**
      * Test the property 'loginFailedMessage'
      */
     @Test
@@ -109,6 +117,14 @@ public class LoginConfigTest {
     @Test
     public void logoutUrlTest() {
         // TODO: test logoutUrl
+    }
+
+    /**
+     * Test the property 'useLoginPlaceholders'
+     */
+    @Test
+    public void useLoginPlaceholdersTest() {
+        // TODO: test useLoginPlaceholders
     }
 
 }
