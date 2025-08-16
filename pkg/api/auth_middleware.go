@@ -284,21 +284,30 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 		// user already exists - get it:
 		user, err = authService.GetUserByExternalID(ctx, externalID)
 		if err != nil {
-			log.WithError(err).Error("failed to get external user from database")
+			log.WithError(err).Error("Failed to get external user from database")
 			return nil, ErrAuthenticatingRequest
 		}
 		return enhanceWithFriendlyName(ctx, user, friendlyName, cookieAuthConfig.PersistFriendlyName, authService, logger), nil
 	}
-	initialGroups := cookieAuthConfig.DefaultInitialGroups
-	if userInitialGroups, ok := idTokenClaims[cookieAuthConfig.InitialGroupsClaimName].(string); ok {
-		initialGroups = strings.Split(userInitialGroups, ",")
+
+	// Assign initial groups to the user. by default, we assign the configured default groups from the config.
+	// If the user has a custom initial groups claim, we use it to assign the groups to the user.
+	groupsClaim := idTokenClaims[cookieAuthConfig.InitialGroupsClaimName]
+	initialGroups, err := initialGroupsFromClaims(groupsClaim, cookieAuthConfig.DefaultInitialGroups)
+	if err != nil {
+		log.WithError(err).WithField("groups_claim", groupsClaim).Error("Failed to parse initial groups claim")
+		return nil, ErrAuthenticatingRequest
 	}
-	for _, g := range initialGroups {
-		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
+	for _, groupName := range initialGroups {
+		err := authService.AddUserToGroup(ctx, u.Username, groupName)
 		if err != nil {
-			log.WithError(err).Error("Failed to add external user to group")
+			logger.WithError(err).WithFields(logging.Fields{
+				"group": groupName,
+				"user":  u.Username,
+			}).Error("Failed to add external user to group")
 		}
 	}
+
 	// The user was just created.
 	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
 	return enhanceWithFriendlyName(ctx, user, friendlyName, false, authService, logger), nil
@@ -367,16 +376,22 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 		}
 		return enhanceWithFriendlyName(ctx, user, friendlyName, oidcConfig.PersistFriendlyName, authService, logger), nil
 	}
-	initialGroups := oidcConfig.DefaultInitialGroups
-	if userInitialGroups, ok := idTokenClaims[oidcConfig.InitialGroupsClaimName].(string); ok {
-		initialGroups = strings.Split(userInitialGroups, ",")
+	groupsClaim := idTokenClaims[oidcConfig.InitialGroupsClaimName]
+	initialGroups, err := initialGroupsFromClaims(groupsClaim, oidcConfig.DefaultInitialGroups)
+	if err != nil {
+		logger.WithError(err).WithField("groups_claim", groupsClaim).Error("Failed to parse initial groups claim")
+		return nil, ErrAuthenticatingRequest
 	}
-	for _, g := range initialGroups {
-		err = authService.AddUserToGroup(ctx, u.Username, strings.TrimSpace(g))
+	for _, groupName := range initialGroups {
+		err := authService.AddUserToGroup(ctx, u.Username, groupName)
 		if err != nil {
-			logger.WithError(err).Error("Failed to add external user to group")
+			logger.WithError(err).WithFields(logging.Fields{
+				"group": groupName,
+				"user":  u.Username,
+			}).Error("Failed to add external user to group")
 		}
 	}
+
 	// The user was just created.
 	// Regardless of the value of PersistFriendlyName, we don't need to update their friendly name if we got here.
 	return enhanceWithFriendlyName(ctx, &u, friendlyName, false, authService, logger), nil
@@ -415,4 +430,33 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 		return nil, ErrAuthenticatingRequest
 	}
 	return user, nil
+}
+
+// initialGroupsFromClaims extracts initial groups from the claim.
+// If the claim is nil, it returns the default initial groups.
+// If the claim is present but not in the expected format, it returns an error.
+// The expected format is either a comma-separated string or a slice of strings.
+func initialGroupsFromClaims(groupsClaim any, defaultInitialGroups []string) ([]string, error) {
+	if groupsClaim == nil {
+		return defaultInitialGroups, nil
+	}
+	groups := make([]string, 0)
+	switch v := groupsClaim.(type) {
+	case string:
+		for item := range strings.SplitSeq(v, ",") {
+			trimmed := strings.TrimSpace(item)
+			if trimmed != "" {
+				groups = append(groups, trimmed)
+			}
+		}
+	case []any:
+		for _, item := range v {
+			str, ok := item.(string)
+			if !ok {
+				return nil, fmt.Errorf("%w: initial groups must be strings", ErrInvalidFormat)
+			}
+			groups = append(groups, str)
+		}
+	}
+	return groups, nil
 }
