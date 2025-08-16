@@ -8,12 +8,14 @@ Name | Type | Description | Notes
 **rbac** | **str** | RBAC will remain enabled on GUI if \&quot;external\&quot;.  That only works with an external auth service.  | [optional] 
 **username_ui_placeholder** | **str** | Placeholder text to display in the username field of the login form.  | [optional] 
 **password_ui_placeholder** | **str** | Placeholder text to display in the password field of the login form.  | [optional] 
-**login_url** | **str** | primary URL to use for login. | 
-**login_failed_message** | **str** | message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method  | [optional] 
-**fallback_login_url** | **str** | secondary URL to offer users to use for login. | [optional] 
-**fallback_login_label** | **str** | label to place on fallback_login_url. | [optional] 
-**login_cookie_names** | **List[str]** | cookie names used to store JWT | 
+**login_url** | **str** | Primary URL to use for login. | 
+**login_url_method** | **str** | Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured.  | [optional] [default to 'redirect']
+**login_failed_message** | **str** | Message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method  | [optional] 
+**fallback_login_url** | **str** | Secondary URL to offer users to use for login. | [optional] 
+**fallback_login_label** | **str** | Label to place on fallback_login_url. | [optional] 
+**login_cookie_names** | **List[str]** | Cookie names used to store JWT | 
 **logout_url** | **str** | URL to use for logging out. | 
+**use_login_placeholders** | **bool** | When set to true, the placeholders \&quot;Username\&quot; and \&quot;Password\&quot; are used in the login form. | [optional] 
 
 ## Example
 

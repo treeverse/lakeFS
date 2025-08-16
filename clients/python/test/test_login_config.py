@@ -41,13 +41,15 @@ class TestLoginConfig(unittest.TestCase):
                 username_ui_placeholder = '',
                 password_ui_placeholder = '',
                 login_url = '',
+                login_url_method = 'redirect',
                 login_failed_message = '',
                 fallback_login_url = '',
                 fallback_login_label = '',
                 login_cookie_names = [
                     ''
                     ],
-                logout_url = ''
+                logout_url = '',
+                use_login_placeholders = True
             )
         else:
             return LoginConfig(

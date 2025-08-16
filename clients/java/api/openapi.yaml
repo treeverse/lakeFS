@@ -8865,6 +8865,7 @@ components:
     LoginConfig:
       example:
         username_ui_placeholder: username_ui_placeholder
+        use_login_placeholders: true
         login_failed_message: login_failed_message
         logout_url: logout_url
         login_url: login_url
@@ -8875,6 +8876,7 @@ components:
         - login_cookie_names
         - login_cookie_names
         fallback_login_label: fallback_login_label
+        login_url_method: redirect
       properties:
         RBAC:
           description: |
@@ -8883,6 +8885,7 @@ components:
           enum:
           - none
           - simplified
+          - internal
           - external
           type: string
         username_ui_placeholder:
@@ -8894,27 +8897,42 @@ components:
             Placeholder text to display in the password field of the login form.
           type: string
         login_url:
-          description: primary URL to use for login.
+          description: Primary URL to use for login.
+          type: string
+        login_url_method:
+          default: redirect
+          description: |
+            Defines login behavior when login_url is set.
+            - redirect (default): Auto-redirect to login_url.
+            - select: Show a page to choose between logging in via login_url or with lakeFS credentials.
+            Ignored if login_url is not configured.
+          enum:
+          - redirect
+          - select
           type: string
         login_failed_message:
           description: |
-            message to display to users who fail to login; a full sentence that is rendered
+            Message to display to users who fail to login; a full sentence that is rendered
             in HTML and may contain a link to a secondary login method
           type: string
         fallback_login_url:
-          description: secondary URL to offer users to use for login.
+          description: Secondary URL to offer users to use for login.
           type: string
         fallback_login_label:
-          description: label to place on fallback_login_url.
+          description: Label to place on fallback_login_url.
           type: string
         login_cookie_names:
-          description: cookie names used to store JWT
+          description: Cookie names used to store JWT
           items:
             type: string
           type: array
         logout_url:
           description: URL to use for logging out.
           type: string
+        use_login_placeholders:
+          description: "When set to true, the placeholders \"Username\" and \"Password\"\
+            \ are used in the login form."
+          type: boolean
       required:
       - login_cookie_names
       - login_url
@@ -8924,6 +8942,7 @@ components:
       example:
         login_config:
           username_ui_placeholder: username_ui_placeholder
+          use_login_placeholders: true
           login_failed_message: login_failed_message
           logout_url: logout_url
           login_url: login_url
@@ -8934,6 +8953,7 @@ components:
           - login_cookie_names
           - login_cookie_names
           fallback_login_label: fallback_login_label
+          login_url_method: redirect
         state: initialized
         comm_prefs_missing: true
       properties:

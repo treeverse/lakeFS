@@ -954,7 +954,7 @@ components:
             RBAC will remain enabled on GUI if "external".  That only works
             with an external auth service.
           type: string
-          enum: [none, simplified, external]
+          enum: [none, simplified, internal, external]
         username_ui_placeholder:
           description: |
             Placeholder text to display in the username field of the login form.
@@ -964,27 +964,41 @@ components:
             Placeholder text to display in the password field of the login form.
           type: string
         login_url:
-          description: primary URL to use for login.
+          description: Primary URL to use for login.
           type: string
+        login_url_method:
+          type: string
+          description: |
+            Defines login behavior when login_url is set.
+            - redirect (default): Auto-redirect to login_url.
+            - select: Show a page to choose between logging in via login_url or with lakeFS credentials.
+            Ignored if login_url is not configured.
+          enum:
+            - redirect
+            - select
+          default: redirect
         login_failed_message:
           description: |
-            message to display to users who fail to login; a full sentence that is rendered
+            Message to display to users who fail to login; a full sentence that is rendered
             in HTML and may contain a link to a secondary login method
           type: string
         fallback_login_url:
-          description: secondary URL to offer users to use for login.
+          description: Secondary URL to offer users to use for login.
           type: string
         fallback_login_label:
-          description: label to place on fallback_login_url.
+          description: Label to place on fallback_login_url.
           type: string
         login_cookie_names:
-          description: cookie names used to store JWT
+          description: Cookie names used to store JWT
           type: array
           items:
             type: string
         logout_url:
           description: URL to use for logging out.
           type: string
+        use_login_placeholders:
+          description: When set to true, the placeholders "Username" and "Password" are used in the login form.
+          type: boolean
       required:
         - login_url
         - login_cookie_names
