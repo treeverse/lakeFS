@@ -22,6 +22,7 @@ import (
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -67,14 +68,16 @@ var runCmd = &cobra.Command{
 		baseCfg := cfg.GetBaseConfig()
 		viper.WatchConfig()
 		viper.OnConfigChange(func(in fsnotify.Event) {
-			var c config.Config
-			if err := config.Unmarshal(c); err != nil {
-				logger.WithError(err).Error("Failed to unmarshal config while reload")
+			// get current level before calling BuildConfig
+			currentLevel := logging.Level()
+			c, err := configfactory.BuildConfig("")
+			if err != nil {
+				logger.WithError(err).Error("Failed to reload configuration")
 				return
 			}
 			baseCfg := c.GetBaseConfig()
-			if baseCfg.Logging.Level != logging.Level() {
-				logger.WithField("level", baseCfg.Logging.Level).Info("Update log level")
+			if baseCfg.Logging.Level != currentLevel {
+				logger.WithField("level", baseCfg.Logging.Level).Info("Update logging level")
 				logging.SetLevel(baseCfg.Logging.Level)
 			}
 		})
