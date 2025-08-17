@@ -55,7 +55,12 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	if err != nil {
 		return err
 	}
-	return os.Rename(tmpFile, c.filePath)
+
+	err = os.Rename(tmpFile, c.filePath)
+	if err != nil {
+		os.Remove(tmpFile)
+	}
+	return err
 }
 
 func (c *JWTCache) LoadToken() (*apigen.AuthenticationToken, error) {
