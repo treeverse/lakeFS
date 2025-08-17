@@ -33,7 +33,7 @@ runs:
       run: tar -xzvf /tmp/generated.tar.gz
 
     - name: Resolve Hadoop version
-      id: h
+      id: v
       shell: bash
       run: |
         set -euo pipefail
@@ -51,81 +51,71 @@ runs:
       uses: actions/cache@v4
       id: hadoop-cache
       with:
-        path: ${{ steps.h.outputs.home }}
-        key: hadoop-${{ steps.h.outputs.ver }}
+        path: ${{ steps.v.outputs.home }}
+        key: hadoop-${{ steps.v.outputs.ver }}
 
     - name: Download Hadoop if missing
       if: steps.hadoop-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
-        curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ steps.h.outputs.ver }}/hadoop-${{ steps.h.outputs.ver }}.tar.gz" \
+        curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ steps.v.outputs.ver }}/hadoop-${{ steps.v.outputs.ver }}.tar.gz" \
         | tar -xz -C /tmp
 
-    - name: Build minimal Hadoop CP (after download)
-      id: hcp
+    - name: Build minimal Spark CP from Hadoop
+      id: cp
       shell: bash
       run: |
         set -euo pipefail
-        home="${{ steps.h.outputs.home }}"
+        home="${{ steps.v.outputs.home }}"
         H_HOST="$home/share/hadoop"
-        [[ -d "$H_HOST" ]] || { echo "Missing $H_HOST"; find "$home" -maxdepth 2 -type d -print; exit 1; }
 
-        echo "::group::Hadoop layout"; find "$H_HOST" -maxdepth 2 -type d -print; echo "::endgroup::"
-
-        # חובה: hadoop-common + hadoop-auth
-        mapfile -t COMMON < <(find "$H_HOST/common" -maxdepth 1 -type f -name "hadoop-common-*.jar" -print)
-        mapfile -t AUTH   < <(find "$H_HOST/common/lib" -maxdepth 1 -type f -name "hadoop-auth-*.jar" -print)
-
-        mapfile -t AWS_CORE < <(
-          find "$H_HOST" \( -path "$H_HOST/tools/lib/*" -o -path "$H_HOST/aws/*" -o -path "$H_HOST/client/*" \) \
-               -maxdepth 1 -type f -name "hadoop-aws-*.jar" -print 2>/dev/null || true
-        )
-
-        AWS_DEPS=()
-        if [[ ${#AWS_CORE[@]} -gt 0 ]]; then
-          d="$(dirname "${AWS_CORE[0]}")"
-          while IFS= read -r j; do AWS_DEPS+=("$j"); done < <(
-            find "$d" -maxdepth 1 -type f \
-              \( -name "aws-java-sdk-*.jar" -o -name "aws-java-sdk-bundle-*.jar" \
-                 -o -name "jackson-*.jar" -o -name "http*.jar" \
-                 -o -name "commons-*.jar" -o -name "joda-time-*.jar" \) \
-              ! -name "netty*.jar" -print
-          )
+        if compgen -G "$H_HOST/tools/lib/hadoop-aws-*.jar" > /dev/null; then
+          aws_path="$H_HOST/tools/lib/hadoop-aws-*.jar"
+        elif compgen -G "$H_HOST/aws/hadoop-aws-*.jar" > /dev/null; then
+          aws_path="$H_HOST/aws/hadoop-aws-*.jar"
+        else
+          echo "::error::Could not find hadoop-aws under $H_HOST"; exit 1
         fi
 
-        ALL=( "${COMMON[@]}" "${AUTH[@]}" "${AWS_CORE[@]}" "${AWS_DEPS[@]}" )
-        if [[ ${#ALL[@]} -lt 2 ]]; then
-          echo "Did not find minimal Hadoop jars under $H_HOST"
-          echo "found:"; find "$H_HOST" -type f -name "*.jar" | sed 's,^,  ,'
-          exit 1
+        mapfile -t JARS_HOST < <(
+          compgen -G "$H_HOST/common/hadoop-common-*.jar"
+          compgen -G "$H_HOST/common/lib/hadoop-auth-*.jar"
+          compgen -G "$aws_path"
+
+          compgen -G "$H_HOST/common/lib/woodstox-core-*.jar"
+          compgen -G "$H_HOST/common/lib/stax2-api-*.jar"
+
+          compgen -G "$H_HOST/common/lib/aws-java-sdk-*.jar" || true
+          compgen -G "$H_HOST/common/lib/aws-java-sdk-bundle-*.jar" || true
+          compgen -G "$H_HOST/common/lib/jackson-*.jar"
+          compgen -G "$H_HOST/common/lib/http*.jar"
+          compgen -G "$H_HOST/common/lib/commons-*.jar"
+          compgen -G "$H_HOST/common/lib/joda-time-*.jar"
+        )
+
+        # sanity
+        if [[ ${#JARS_HOST[@]} -lt 5 ]]; then
+          printf "::error::Too few jars collected (%d). Found:\n%s\n" "${#JARS_HOST[@]}" "${JARS_HOST[*]}"; exit 1
         fi
 
         CP_CONT=""
-        for p in "${ALL[@]}"; do
+        for p in "${JARS_HOST[@]}"; do
           p_cont="${p/$home/\/opt\/hadoop}"
           CP_CONT="${CP_CONT:+${CP_CONT}:}${p_cont}"
         done
-        echo "spark_cp=$CP_CONT" >> "$GITHUB_OUTPUT"
+
+        echo "spark_cp_min=$CP_CONT" >> "$GITHUB_OUTPUT"
 
     - name: Export env & write .env
       shell: bash
       run: |
-        set -euo pipefail
-        echo "HADOOP_HOME_HOST=${{ steps.h.outputs.home }}" >> "$GITHUB_ENV"
-        # אם ה-input spark-extra-classpath לא ריק – תן לו עדיפות; אחרת קח את ה-autodetect
-        if [[ -n "${{ inputs.spark-extra-classpath }}" ]]; then
-          echo "SPARK_EXTRA_CLASSPATH=${{ inputs.spark-extra-classpath }}" >> "$GITHUB_ENV"
-          SPARK_CP="${{ inputs.spark-extra-classpath }}"
-        else
-          echo "SPARK_EXTRA_CLASSPATH=${{ steps.hcp.outputs.spark_cp }}" >> "$GITHUB_ENV"
-          SPARK_CP="${{ steps.hcp.outputs.spark_cp }}"
-        fi
-        mkdir -p "${{ inputs.compose-directory }}"
-        printf "HADOOP_HOME_HOST=%s\nSPARK_EXTRA_CLASSPATH=%s\n" \
-          "${{ steps.h.outputs.home }}" \
-          "$SPARK_CP" \
-          > "${{ inputs.compose-directory }}/.env"
+        echo "HADOOP_HOME_HOST=${{ steps.v.outputs.home }}" >> "$GITHUB_ENV"
+        echo "SPARK_EXTRA_CLASSPATH=${{ steps.cp.outputs.spark_cp_min }}" >> "$GITHUB_ENV"
+        cat > "${{ inputs.compose-directory }}/.env" <<EOF
+        HADOOP_HOME_HOST=${{ steps.v.outputs.home }}
+        SPARK_EXTRA_CLASSPATH=${{ steps.cp.outputs.spark_cp_min }}
+        EOF
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -143,8 +133,5 @@ runs:
         COMPOSE_PARALLEL_LIMIT: 1 # Workaround for https://github.com/docker/compose/issues/12747 until compose >= v2.36.0
       shell: bash
       run: |
-        set -euo pipefail
-        echo "HADOOP_HOME_HOST=${HADOOP_HOME_HOST:-<empty>}"
-        echo "SPARK_EXTRA_CLASSPATH=${SPARK_EXTRA_CLASSPATH:-<empty>}"
         [[ -z "${{ inputs.compose-file }}" ]] && flags="" || flags="-f ${{ inputs.compose-file }}"
         docker compose --project-directory ${{ inputs.compose-directory }} ${flags} up ${{ inputs.compose-flags }}
