@@ -32,7 +32,7 @@ runs:
       shell: bash
       run: tar -xzvf /tmp/generated.tar.gz
 
-    - name: Resolve Hadoop version & CP
+    - name: Resolve Hadoop version & CP (minimal)
       id: h
       shell: bash
       run: |
@@ -49,24 +49,32 @@ runs:
         echo "home=$home" >> "$GITHUB_OUTPUT"
         
         H_HOST="$home/share/hadoop"
-        H_CONT="/opt/hadoop/share/hadoop"
-        
+        aws_path=""
+        if compgen -G "$H_HOST/tools/lib/hadoop-aws-*.jar" > /dev/null; then
+          aws_path="$H_HOST/tools/lib/hadoop-aws-*.jar"
+        elif compgen -G "$H_HOST/aws/hadoop-aws-*.jar" > /dev/null; then
+          aws_path="$H_HOST/aws/hadoop-aws-*.jar"
+        fi
+
         mapfile -t JARS_HOST < <(
-          find "$H_HOST/common" -maxdepth 1 -type f \
-            \( -name "hadoop-common-*.jar" -o -name "hadoop-auth-*.jar" \) -print
-          find "$H_HOST/aws" -maxdepth 1 -type f -name "hadoop-aws-*.jar" -print
-          find "$H_HOST/common/lib" -maxdepth 1 -type f \
-            \( -name "aws-java-sdk-*.jar" -o -name "aws-java-sdk-bundle-*.jar" \
-               -o -name "jackson-*.jar" -o -name "http*.jar" \
-               -o -name "commons-*.jar" -o -name "joda-time-*.jar" \) \
-            ! -name "netty*.jar" -print
+          compgen -G "$H_HOST/common/hadoop-common-*.jar"
+          compgen -G "$H_HOST/common/lib/hadoop-auth-*.jar"
+          [[ -n "$aws_path" ]] && compgen -G "$aws_path" || true
         )
+
+        if [[ ${#JARS_HOST[@]} -lt 2 ]]; then
+          echo "Did not find minimal Hadoop jars under $H_HOST" >&2
+          printf 'found:\n%s\n' "${JARS_HOST[@]}" >&2
+          exit 1
+        fi
+
         CP_CONT=""
         for p in "${JARS_HOST[@]}"; do
           p_cont="${p/$home/\/opt\/hadoop}"
           CP_CONT="${CP_CONT:+${CP_CONT}:}${p_cont}"
         done
-        echo "spark_cp=$CP_CONT" >> "$GITHUB_OUTPUT"
+
+        echo "spark_cp_min=$CP_CONT" >> "$GITHUB_OUTPUT"
 
     - name: Cache Hadoop
       uses: actions/cache@v4
@@ -87,11 +95,11 @@ runs:
       shell: bash
       run: |
         echo "HADOOP_HOME_HOST=${{ steps.h.outputs.home }}" >> "$GITHUB_ENV"
-        echo "SPARK_EXTRA_CLASSPATH=${{ steps.h.outputs.spark_cp }}" >> "$GITHUB_ENV"
-        printf "HADOOP_HOME_HOST=%s\nSPARK_EXTRA_CLASSPATH=%s\n" \
-          "${{ steps.h.outputs.home }}" \
-          "${{ steps.h.outputs.spark_cp }}" \
-          > "${{ inputs.compose-directory }}/.env"
+        echo "SPARK_HADOOP_CP_MIN=${{ steps.h.outputs.spark_cp_min }}" >> "$GITHUB_ENV"
+        cat > "${{ inputs.compose-directory }}/.env" <<EOF
+        HADOOP_HOME_HOST=${{ steps.h.outputs.home }}
+        SPARK_HADOOP_CP_MIN=${{ steps.h.outputs.spark_cp_min }}
+        EOF
 
 
     - name: Configure AWS Credentials
