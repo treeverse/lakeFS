@@ -764,22 +764,26 @@ jobs:
           set -euo pipefail
           docker compose exec -T spark bash -lc '
             set -euo pipefail
-            printf "%s\n" \
-          "import org.apache.hadoop.util.VersionInfo" \
-          "import org.apache.hadoop.fs.s3a.S3AFileSystem" \
-          "println(\"HadoopVersion=\" + VersionInfo.getVersion)" \
-          "println(\"S3AFileSystem -> \" + classOf[S3AFileSystem].getProtectionDomain.getCodeSource.getLocation)" \
-          "sys.exit(0)" > /tmp/printwhere.scala
+            echo "SPARK_EXTRA_CLASSPATH=${SPARK_EXTRA_CLASSPATH}"
+            cat >/tmp/printwhere.scala << "EOF"
+            import org.apache.hadoop.util.VersionInfo
+            import org.apache.hadoop.fs.s3a.S3AFileSystem
+            println("HadoopVersion=" + VersionInfo.getVersion)
+            println("S3AFileSystem -> " + classOf[S3AFileSystem].getProtectionDomain.getCodeSource.getLocation)
+            sys.exit(0)
+            EOF
           
-          /opt/bitnami/spark/bin/spark-shell \
-            --master local[1] \
-            --conf spark.driver.extraClassPath=\"${SPARK_EXTRA_CLASSPATH}\" \
-            --conf spark.executor.extraClassPath=\"${SPARK_EXTRA_CLASSPATH}\" \
-            -i /tmp/printwhere.scala
+            /opt/bitnami/spark/bin/spark-shell \
+              --master local[1] \
+              --conf spark.driver.userClassPathFirst=true \
+              --conf spark.executor.userClassPathFirst=true \
+              --conf spark.driver.extraClassPath="${SPARK_EXTRA_CLASSPATH}" \
+              --conf spark.executor.extraClassPath="${SPARK_EXTRA_CLASSPATH}" \
+              -i /tmp/printwhere.scala
           ' | tee /tmp/probe.out
           echo "=== Probe result ==="
-          cat /tmp/probe.out
-
+          grep -E "HadoopVersion=|S3AFileSystem ->" -n /tmp/probe.out || true
+    
 
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
