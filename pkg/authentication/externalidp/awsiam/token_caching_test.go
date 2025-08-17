@@ -124,7 +124,7 @@ func TestJWTCacheLoadToken(t *testing.T) {
 		require.NoError(t, err)
 
 		// Load the token
-		loadedToken, err := cache.LoadToken()
+		loadedToken, err := cache.LoadToken(0)
 		require.NoError(t, err)
 		require.NotNil(t, loadedToken)
 
@@ -151,7 +151,7 @@ func TestJWTCacheLoadToken(t *testing.T) {
 		file.Close()
 
 		// load should return nil for expired token
-		loadedToken, err := cache.LoadToken()
+		loadedToken, err := cache.LoadToken(0)
 		require.NoError(t, err)
 		require.Nil(t, loadedToken)
 	})
@@ -161,7 +161,7 @@ func TestJWTCacheLoadToken(t *testing.T) {
 		cache, err := NewJWTCache(tempDir)
 		require.NoError(t, err)
 
-		loadedToken, err := cache.LoadToken()
+		loadedToken, err := cache.LoadToken(0)
 		require.Error(t, err)
 		require.Nil(t, loadedToken)
 	})
@@ -175,7 +175,7 @@ func TestJWTCacheLoadToken(t *testing.T) {
 		err = os.WriteFile(cache.filePath, []byte("invalid json"), 0600)
 		require.NoError(t, err)
 
-		loadedToken, err := cache.LoadToken()
+		loadedToken, err := cache.LoadToken(0)
 		require.Error(t, err)
 		require.Nil(t, loadedToken)
 	})
@@ -195,7 +195,7 @@ func TestJWTCacheSaveAndLoad(t *testing.T) {
 	err = cache.SaveToken(originalToken)
 	require.NoError(t, err)
 
-	loadedToken, err := cache.LoadToken()
+	loadedToken, err := cache.LoadToken(0)
 	require.NoError(t, err)
 	require.NotNil(t, loadedToken)
 

@@ -63,7 +63,7 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	return err
 }
 
-func (c *JWTCache) LoadToken() (*apigen.AuthenticationToken, error) {
+func (c *JWTCache) LoadToken(refreshInterval time.Duration) (*apigen.AuthenticationToken, error) {
 	file, err := os.OpenFile(c.filePath, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c *JWTCache) LoadToken() (*apigen.AuthenticationToken, error) {
 		return nil, err
 	}
 
-	if cache.ExpirationTime > 0 && time.Now().Unix() >= cache.ExpirationTime {
+	if cache.ExpirationTime > 0 && time.Now().Unix() >= cache.ExpirationTime+int64(refreshInterval.Seconds()) {
 		return nil, nil
 	}
 	token := &apigen.AuthenticationToken{

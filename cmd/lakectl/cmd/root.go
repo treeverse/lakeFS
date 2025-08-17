@@ -637,7 +637,7 @@ func getClient() *apigen.ClientWithResponses {
 		if err != nil {
 			DieErr(err)
 		}
-		token, err := tokenCache.LoadToken()
+		token, err := tokenCache.LoadToken(awsIAMparams.RefreshInterval)
 		if err != nil {
 			DieErr(err)
 		}
