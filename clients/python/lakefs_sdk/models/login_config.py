@@ -21,9 +21,9 @@ import json
 
 from typing import List, Optional
 try:
-    from pydantic.v1 import BaseModel, Field, StrictBool, StrictStr, conlist, validator
+    from pydantic.v1 import BaseModel, Field, StrictStr, conlist, validator
 except ImportError:
-    from pydantic import BaseModel, Field, StrictBool, StrictStr, conlist, validator
+    from pydantic import BaseModel, Field, StrictStr, conlist, validator
 
 class LoginConfig(BaseModel):
     """
@@ -39,8 +39,7 @@ class LoginConfig(BaseModel):
     fallback_login_label: Optional[StrictStr] = Field(None, description="Label to place on fallback_login_url.")
     login_cookie_names: conlist(StrictStr) = Field(..., description="Cookie names used to store JWT")
     logout_url: StrictStr = Field(..., description="URL to use for logging out.")
-    use_login_placeholders: Optional[StrictBool] = Field(None, description="When set to true, the placeholders \"Username\" and \"Password\" are used in the login form.")
-    __properties = ["RBAC", "username_ui_placeholder", "password_ui_placeholder", "login_url", "login_url_method", "login_failed_message", "fallback_login_url", "fallback_login_label", "login_cookie_names", "logout_url", "use_login_placeholders"]
+    __properties = ["RBAC", "username_ui_placeholder", "password_ui_placeholder", "login_url", "login_url_method", "login_failed_message", "fallback_login_url", "fallback_login_label", "login_cookie_names", "logout_url"]
 
     @validator('rbac')
     def rbac_validate_enum(cls, value):
@@ -107,8 +106,7 @@ class LoginConfig(BaseModel):
             "fallback_login_url": obj.get("fallback_login_url"),
             "fallback_login_label": obj.get("fallback_login_label"),
             "login_cookie_names": obj.get("login_cookie_names"),
-            "logout_url": obj.get("logout_url"),
-            "use_login_placeholders": obj.get("use_login_placeholders")
+            "logout_url": obj.get("logout_url")
         })
         return _obj
 

@@ -15,7 +15,6 @@ Name | Type | Description | Notes
 **fallback_login_label** | **str** | Label to place on fallback_login_url. | [optional] 
 **login_cookie_names** | **List[str]** | Cookie names used to store JWT | 
 **logout_url** | **str** | URL to use for logging out. | 
-**use_login_placeholders** | **bool** | When set to true, the placeholders \&quot;Username\&quot; and \&quot;Password\&quot; are used in the login form. | [optional] 
 
 ## Example
 

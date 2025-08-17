@@ -14,7 +14,6 @@ Name | Type | Description | Notes
 **fallback_login_label** | Option<**String**> | Label to place on fallback_login_url. | [optional]
 **login_cookie_names** | **Vec<String>** | Cookie names used to store JWT | 
 **logout_url** | **String** | URL to use for logging out. | 
-**use_login_placeholders** | Option<**bool**> | When set to true, the placeholders \"Username\" and \"Password\" are used in the login form. | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

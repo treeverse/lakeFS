@@ -8865,7 +8865,6 @@ components:
     LoginConfig:
       example:
         username_ui_placeholder: username_ui_placeholder
-        use_login_placeholders: true
         login_failed_message: login_failed_message
         logout_url: logout_url
         login_url: login_url
@@ -8929,10 +8928,6 @@ components:
         logout_url:
           description: URL to use for logging out.
           type: string
-        use_login_placeholders:
-          description: "When set to true, the placeholders \"Username\" and \"Password\"\
-            \ are used in the login form."
-          type: boolean
       required:
       - login_cookie_names
       - login_url
@@ -8942,7 +8937,6 @@ components:
       example:
         login_config:
           username_ui_placeholder: username_ui_placeholder
-          use_login_placeholders: true
           login_failed_message: login_failed_message
           logout_url: logout_url
           login_url: login_url

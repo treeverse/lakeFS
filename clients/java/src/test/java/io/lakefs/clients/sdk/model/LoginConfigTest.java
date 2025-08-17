@@ -119,12 +119,4 @@ public class LoginConfigTest {
         // TODO: test logoutUrl
     }
 
-    /**
-     * Test the property 'useLoginPlaceholders'
-     */
-    @Test
-    public void useLoginPlaceholdersTest() {
-        // TODO: test useLoginPlaceholders
-    }
-
 }

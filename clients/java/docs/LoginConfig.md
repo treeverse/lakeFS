@@ -17,7 +17,6 @@
 |**fallbackLoginLabel** | **String** | Label to place on fallback_login_url. |  [optional] |
 |**loginCookieNames** | **List&lt;String&gt;** | Cookie names used to store JWT |  |
 |**logoutUrl** | **String** | URL to use for logging out. |  |
-|**useLoginPlaceholders** | **Boolean** | When set to true, the placeholders \&quot;Username\&quot; and \&quot;Password\&quot; are used in the login form. |  [optional] |
 
 
 
