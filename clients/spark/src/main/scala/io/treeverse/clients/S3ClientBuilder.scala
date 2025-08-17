@@ -47,7 +47,7 @@ object S3ClientBuilder extends S3ClientBuilder {
       Option(classOf[org.apache.hadoop.util.VersionInfo].getProtectionDomain.getCodeSource)
         .map(_.getLocation.toString)
         .getOrElse("<unknown>")
-    println(
+    logger.info(
       s"Ben-El test Hadoop runtime version: $ver; S3AFileSystem from: $s3a; VersionInfo from: $viJar"
     )
   }
