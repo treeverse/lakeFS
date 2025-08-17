@@ -38,19 +38,20 @@ runs:
       run: |
         set -euo pipefail
         ver="${{ inputs.hadoop-version }}"
-        if [[ -z "${ver}" ]]; then
+        if [[ -z "$ver" ]]; then
           case "${SPARK_TAG:-3}" in
             2* ) ver="3.2.1" ;;
             *  ) ver="3.3.6" ;;
           esac
         fi
         echo "ver=$ver" >> "$GITHUB_OUTPUT"
-        echo "home=/tmp/hadoop-$ver" >> "$GITHUB_OUTPUT"
+        home="/tmp/hadoop-$ver"
+        echo "home=$home" >> "$GITHUB_OUTPUT"
         H_IN_CONT="/opt/hadoop/share/hadoop"
-        if [[ -z "${{ inputs.spark-extra-classpath }}" ]]; then
-          spark_cp="$H_IN_CONT/{common/*,common/lib/*,hdfs/*,hdfs/lib/*,mapreduce/*,mapreduce/lib/*,yarn/*,yarn/lib/*,aws/*}"
-        else
-          spark_cp="${{ inputs.spark-extra-classpath }}"
+        default_cp="${H_IN_CONT}/common/*:${H_IN_CONT}/common/lib/*:${H_IN_CONT}/hdfs/*:${H_IN_CONT}/hdfs/lib/*:${H_IN_CONT}/mapreduce/*:${H_IN_CONT}/mapreduce/lib/*:${H_IN_CONT}/yarn/*:${H_IN_CONT}/yarn/lib/*:${H_IN_CONT}/aws/*"
+        spark_cp="${{ inputs.spark-extra-classpath }}"
+        if [[ -z "$spark_cp" ]]; then
+          spark_cp="$default_cp"
         fi
         echo "spark_cp=$spark_cp" >> "$GITHUB_OUTPUT"
 
