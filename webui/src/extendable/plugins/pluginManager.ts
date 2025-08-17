@@ -2,13 +2,13 @@ import { PluginRepoCreationForm } from "./pluginRepoCreationForm";
 import DefaultRepoCreationFormPlugin from "./impls/DefaultRepoCreationFormPlugin";
 import { PluginCustomObjectRenderers } from "./pluginCustomObjectRenderers";
 import DefaultCustomObjectRenderersPlugin from "./impls/DefaultCustomObjectRenderers";
-import { PluginLoginMethod } from "./pluginLoginMethod";
-import DefaultLoginMethodPlugin from "./impls/DefaultLoginMethodPlugin";
+import { PluginLoginMethodSelection } from "./pluginLoginMethodSelection";
+import DefaultLoginMethodSelectionPlugin from "./impls/DefaultLoginMethodSelectionPlugin";
 
 export class PluginManager {
     private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;
     private _customObjectRenderers: PluginCustomObjectRenderers = DefaultCustomObjectRenderersPlugin;
-    private _loginMethod: PluginLoginMethod = DefaultLoginMethodPlugin;
+    private _loginMethodSelection: PluginLoginMethodSelection = DefaultLoginMethodSelectionPlugin;
 
     overridePluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
         this._repoCreationForm = pluginRepoCreationForm;
@@ -26,11 +26,11 @@ export class PluginManager {
         return this._customObjectRenderers;
     }
 
-    overridePluginLoginMethod(pluginLoginMethod: PluginLoginMethod): void {
-        this._loginMethod = pluginLoginMethod;
+    overridePluginLoginMethodSelection(pluginLoginMethodSelection: PluginLoginMethodSelection): void {
+        this._loginMethodSelection = pluginLoginMethodSelection;
     }
 
-    get loginMethod(): PluginLoginMethod {
-        return this._loginMethod;
+    get loginMethodSelection(): PluginLoginMethodSelection {
+        return this._loginMethodSelection;
     }
 }

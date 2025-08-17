@@ -11,13 +11,15 @@ import {useAPI} from "../../lib/hooks/api";
 import {useNavigate} from "react-router-dom";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 
+const LOCAL_LOGIN_METHOD = 'local';
+
 interface SetupResponse {
     state: string;
     comm_prefs_missing?: boolean;
     login_config?: LoginConfig;
 }
 
-interface LoginConfig {
+export interface LoginConfig {
     login_url: string;
     login_url_method?: string;
     username_ui_placeholder: string;
@@ -106,6 +108,41 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     )
 }
 
+/**
+ * Decides whether to use the login method selection flow - render the login selection component or fall back to the
+ * local lakeFS login form or the legacy flow handled by the caller.
+ *
+ * Flow:
+ * - Ask the plugin for a selection component.
+ *   - If the plugin returns null → return null (caller continues with the legacy flow).
+ *   - If the plugin returns a component:
+ *       - The user is always redirected to /auth/login for all login methods.
+ *         There is no auto-redirect to login_url; SSO redirection only occurs after the user selects SSO on the
+ *         selection component.
+ *       - If the user chose local lakeFS login (router.query.method === LOCAL_LOGIN_METHOD),
+ *         render the LoginForm.
+ *       - Otherwise, render the login selection component where the user can choose between SSO and lakeFS login.
+ */
+const handleLoginMethodSelection = (
+    loginConfig: LoginConfig, 
+    router: any, 
+    pluginManager: any
+): React.ReactElement | null => {
+    const loginMethodSelectionComponent = pluginManager.loginMethodSelection.renderLoginMethodSelection(loginConfig);
+    
+    if (loginMethodSelectionComponent) {
+        // If the user selected local lakeFS login, show the standard login form
+        if (router.query.method === LOCAL_LOGIN_METHOD) {
+            return <LoginForm loginConfig={loginConfig}/>;
+        }
+        
+        // Otherwise, show the login method selection component
+        return loginMethodSelectionComponent;
+    }
+    
+    return null;
+};
+
 const LoginPage = () => {
     const router = useRouter();
     const { response, error, loading } = useAPI(() => setup.getState());
@@ -116,34 +153,32 @@ const LoginPage = () => {
     }
 
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
-    if (!error && response && ((response as SetupResponse).state !== SETUP_STATE_INITIALIZED || (response as SetupResponse).comm_prefs_missing)) {
+    const setupResponse = response as SetupResponse | null;
+    if (!error && setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
         router.push({pathname: '/setup', params: {}, query: router.query as Record<string, string>})
         return null;
     }
-    const setupResponse = response as SetupResponse | null;
     const loginConfig = setupResponse?.login_config;
-
-    const loginMethodSelectionComponent = loginConfig ? pluginManager.loginMethod.renderLoginMethodComponent(loginConfig) : null;
-    
-    if (loginMethodSelectionComponent) {
-        if (router.query.method === 'local' && loginConfig) {
-            return <LoginForm loginConfig={loginConfig}/>;
-        }
-
-        return loginMethodSelectionComponent;
+    if (!loginConfig) {
+        return null;
     }
 
+    const loginMethodComponent = handleLoginMethodSelection(loginConfig, router, pluginManager);
+    if (loginMethodComponent) {
+        // Login method selection flow – triggered when login_url is set and login_url_method === 'select'.
+        // In this case, skip the legacy flow and show either the login selection component or the local lakeFS login form.
+        return loginMethodComponent;
+    }
+
+    // Legacy login flow – use local lakeFS login, or automatically redirect to login_url if SSO login_url is configured.
     if (router.query.redirected)  {
-        if(!error && loginConfig?.login_url) {
+        if(!error && loginConfig.login_url) {
             window.location.href = loginConfig.login_url;
             return null;
         }
         delete router.query.redirected;
 
         router.push({pathname: '/auth/login', params: {}, query: router.query as Record<string, string>})
-    }
-    if (!loginConfig) {
-        return null;
     }
 
     return (
