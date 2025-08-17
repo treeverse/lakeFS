@@ -9,6 +9,8 @@ import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import org.apache.hadoop.util.VersionInfo
+import org.apache.hadoop.fs.s3a.S3AFileSystem
 
 import io.treeverse.clients.StorageUtils.S3.createAndValidateS3Client
 
