@@ -702,12 +702,9 @@ jobs:
           cp target/scala-2.12/lakefs-spark-client-assembly*.jar ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
 
   metadata-client-export-spark3:
-    name: Export test - Hadoop ${{ matrix.hadoop_version }}
+    name: Test lakeFS metadata client export with Spark 3.x
     needs: [deploy-image, build-spark3-metadata-client, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        hadoop_version: [ "3.2.1", "3.3.6" ]
     env:
       SPARK_TAG: 3.2.1
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
@@ -730,7 +727,6 @@ jobs:
         uses: ./.github/actions/bootstrap-test-lakefs
         with:
           compose-directory: test/spark
-          hadoop-version: ${{ matrix.hadoop_version }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -740,11 +736,11 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
       - name: Copy repository ref
-        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-hadoop${{ matrix.hadoop_version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
+        run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
 
       - name: Setup Exporter tests
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-hadoop${{ matrix.hadoop_version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
         working-directory: test/spark
         run: ./setup-exporter-test.sh
@@ -752,38 +748,11 @@ jobs:
       - name: Test Exporter (Hadoop ${{ matrix.hadoop_version }})
         working-directory: test/spark
         env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-hadoop${{ matrix.hadoop_version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
+          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
           CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
-          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-hadoop${{ matrix.hadoop_version }}-client-export/${{ steps.unique.outputs.value }}
+          EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-client-export/${{ steps.unique.outputs.value }}
         run: ./run-exporter-test.sh
-
-      - name: Runtime probe (Hadoop who/where)
-        working-directory: test/spark
-        run: |
-          set -euo pipefail
-          docker compose exec -T spark bash -lc '
-            set -euo pipefail
-            echo "SPARK_EXTRA_CLASSPATH=${SPARK_EXTRA_CLASSPATH}"
-            cat >/tmp/printwhere.scala << "EOF"
-            import org.apache.hadoop.util.VersionInfo
-            import org.apache.hadoop.fs.s3a.S3AFileSystem
-            println("HadoopVersion=" + VersionInfo.getVersion)
-            println("S3AFileSystem -> " + classOf[S3AFileSystem].getProtectionDomain.getCodeSource.getLocation)
-            sys.exit(0)
-            EOF
-          
-            /opt/bitnami/spark/bin/spark-shell \
-              --master local[1] \
-              --conf spark.driver.userClassPathFirst=true \
-              --conf spark.executor.userClassPathFirst=true \
-              --conf spark.driver.extraClassPath="${SPARK_EXTRA_CLASSPATH}" \
-              --conf spark.executor.extraClassPath="${SPARK_EXTRA_CLASSPATH}" \
-              -i /tmp/printwhere.scala
-          ' | tee /tmp/probe.out
-          echo "=== Probe result ==="
-          grep -E "HadoopVersion=|S3AFileSystem ->" -n /tmp/probe.out || true
-    
 
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
