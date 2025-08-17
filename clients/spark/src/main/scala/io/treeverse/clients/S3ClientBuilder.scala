@@ -63,6 +63,8 @@ object S3ClientBuilder extends S3ClientBuilder {
     import io.treeverse.clients.LakeFSContext
     import org.apache.hadoop.fs.s3a.Constants
 
+    logHadoopRuntimeOnce
+
     val minBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS,
                                     LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS
                                    ) * 1000
