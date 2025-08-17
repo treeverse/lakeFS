@@ -47,13 +47,26 @@ runs:
         echo "ver=$ver" >> "$GITHUB_OUTPUT"
         home="/tmp/hadoop-$ver"
         echo "home=$home" >> "$GITHUB_OUTPUT"
-        H_IN_CONT="/opt/hadoop/share/hadoop"
-        default_cp="${H_IN_CONT}/common/*:${H_IN_CONT}/common/lib/*:${H_IN_CONT}/hdfs/*:${H_IN_CONT}/hdfs/lib/*:${H_IN_CONT}/mapreduce/*:${H_IN_CONT}/mapreduce/lib/*:${H_IN_CONT}/yarn/*:${H_IN_CONT}/yarn/lib/*:${H_IN_CONT}/aws/*"
-        spark_cp="${{ inputs.spark-extra-classpath }}"
-        if [[ -z "$spark_cp" ]]; then
-          spark_cp="$default_cp"
-        fi
-        echo "spark_cp=$spark_cp" >> "$GITHUB_OUTPUT"
+        
+        H_HOST="$home/share/hadoop"
+        H_CONT="/opt/hadoop/share/hadoop"
+        
+        mapfile -t JARS_HOST < <(
+          find "$H_HOST/common" -maxdepth 1 -type f \
+            \( -name "hadoop-common-*.jar" -o -name "hadoop-auth-*.jar" \) -print
+          find "$H_HOST/aws" -maxdepth 1 -type f -name "hadoop-aws-*.jar" -print
+          find "$H_HOST/common/lib" -maxdepth 1 -type f \
+            \( -name "aws-java-sdk-*.jar" -o -name "aws-java-sdk-bundle-*.jar" \
+               -o -name "jackson-*.jar" -o -name "http*.jar" \
+               -o -name "commons-*.jar" -o -name "joda-time-*.jar" \) \
+            ! -name "netty*.jar" -print
+        )
+        CP_CONT=""
+        for p in "${JARS_HOST[@]}"; do
+          p_cont="${p/$home/\/opt\/hadoop}"
+          CP_CONT="${CP_CONT:+${CP_CONT}:}${p_cont}"
+        done
+        echo "spark_cp=$CP_CONT" >> "$GITHUB_OUTPUT"
 
     - name: Cache Hadoop
       uses: actions/cache@v4
