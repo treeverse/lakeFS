@@ -42,9 +42,6 @@ pub struct LoginConfig {
     /// URL to use for logging out.
     #[serde(rename = "logout_url")]
     pub logout_url: String,
-    /// When set to true, the placeholders \"Username\" and \"Password\" are used in the login form.
-    #[serde(rename = "use_login_placeholders", skip_serializing_if = "Option::is_none")]
-    pub use_login_placeholders: Option<bool>,
 }
 
 impl LoginConfig {
@@ -60,7 +57,6 @@ impl LoginConfig {
             fallback_login_label: None,
             login_cookie_names,
             logout_url,
-            use_login_placeholders: None,
         }
     }
 }

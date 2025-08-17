@@ -48,8 +48,7 @@ class TestLoginConfig(unittest.TestCase):
                 login_cookie_names = [
                     ''
                     ],
-                logout_url = '',
-                use_login_placeholders = True
+                logout_url = ''
             )
         else:
             return LoginConfig(

@@ -191,10 +191,6 @@ public class LoginConfig {
   @SerializedName(SERIALIZED_NAME_LOGOUT_URL)
   private String logoutUrl;
 
-  public static final String SERIALIZED_NAME_USE_LOGIN_PLACEHOLDERS = "use_login_placeholders";
-  @SerializedName(SERIALIZED_NAME_USE_LOGIN_PLACEHOLDERS)
-  private Boolean useLoginPlaceholders;
-
   public LoginConfig() {
   }
 
@@ -415,27 +411,6 @@ public class LoginConfig {
     this.logoutUrl = logoutUrl;
   }
 
-
-  public LoginConfig useLoginPlaceholders(Boolean useLoginPlaceholders) {
-    
-    this.useLoginPlaceholders = useLoginPlaceholders;
-    return this;
-  }
-
-   /**
-   * When set to true, the placeholders \&quot;Username\&quot; and \&quot;Password\&quot; are used in the login form.
-   * @return useLoginPlaceholders
-  **/
-  @javax.annotation.Nullable
-  public Boolean getUseLoginPlaceholders() {
-    return useLoginPlaceholders;
-  }
-
-
-  public void setUseLoginPlaceholders(Boolean useLoginPlaceholders) {
-    this.useLoginPlaceholders = useLoginPlaceholders;
-  }
-
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -500,14 +475,13 @@ public class LoginConfig {
         Objects.equals(this.fallbackLoginUrl, loginConfig.fallbackLoginUrl) &&
         Objects.equals(this.fallbackLoginLabel, loginConfig.fallbackLoginLabel) &&
         Objects.equals(this.loginCookieNames, loginConfig.loginCookieNames) &&
-        Objects.equals(this.logoutUrl, loginConfig.logoutUrl) &&
-        Objects.equals(this.useLoginPlaceholders, loginConfig.useLoginPlaceholders)&&
+        Objects.equals(this.logoutUrl, loginConfig.logoutUrl)&&
         Objects.equals(this.additionalProperties, loginConfig.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(RBAC, usernameUiPlaceholder, passwordUiPlaceholder, loginUrl, loginUrlMethod, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, useLoginPlaceholders, additionalProperties);
+    return Objects.hash(RBAC, usernameUiPlaceholder, passwordUiPlaceholder, loginUrl, loginUrlMethod, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, additionalProperties);
   }
 
   @Override
@@ -524,7 +498,6 @@ public class LoginConfig {
     sb.append("    fallbackLoginLabel: ").append(toIndentedString(fallbackLoginLabel)).append("\n");
     sb.append("    loginCookieNames: ").append(toIndentedString(loginCookieNames)).append("\n");
     sb.append("    logoutUrl: ").append(toIndentedString(logoutUrl)).append("\n");
-    sb.append("    useLoginPlaceholders: ").append(toIndentedString(useLoginPlaceholders)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -558,7 +531,6 @@ public class LoginConfig {
     openapiFields.add("fallback_login_label");
     openapiFields.add("login_cookie_names");
     openapiFields.add("logout_url");
-    openapiFields.add("use_login_placeholders");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();

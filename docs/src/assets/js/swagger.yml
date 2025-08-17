@@ -996,9 +996,6 @@ components:
         logout_url:
           description: URL to use for logging out.
           type: string
-        use_login_placeholders:
-          description: When set to true, the placeholders "Username" and "Password" are used in the login form.
-          type: boolean
       required:
         - login_url
         - login_cookie_names
