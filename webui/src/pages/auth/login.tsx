@@ -125,9 +125,9 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
  */
 const handleLoginMethodSelection = (
     loginConfig: LoginConfig, 
-    router: any, 
-    pluginManager: any
+    router: ReturnType<typeof useRouter<{method?: string}>>
 ): React.ReactElement | null => {
+    const pluginManager = usePluginManager();
     const loginMethodSelectionComponent = pluginManager.loginMethodSelection.renderLoginMethodSelection(loginConfig);
     
     if (loginMethodSelectionComponent) {
@@ -146,7 +146,6 @@ const handleLoginMethodSelection = (
 const LoginPage = () => {
     const router = useRouter();
     const { response, error, loading } = useAPI(() => setup.getState());
-    const pluginManager = usePluginManager();
 
     if (loading) {
         return null;
@@ -163,7 +162,7 @@ const LoginPage = () => {
         return null;
     }
 
-    const loginMethodComponent = handleLoginMethodSelection(loginConfig, router, pluginManager);
+    const loginMethodComponent = handleLoginMethodSelection(loginConfig, router);
     if (loginMethodComponent) {
         // Login method selection flow – triggered when login_url is set and login_url_method === 'select'.
         // In this case, skip the legacy flow and show either the login selection component or the local lakeFS login form.
