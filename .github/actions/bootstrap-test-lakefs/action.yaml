@@ -12,14 +12,6 @@ inputs:
     description: working directory for the docker compose step
     required: false
     default: "."
-  hadoop-version:
-    description: Hadoop version to download
-    required: false
-    default: ""
-  spark-extra-classpath:
-    description: The classpath for Spark
-    required: false
-    default: ""
 runs:
   using: "composite"
   steps:
@@ -31,92 +23,6 @@ runs:
     - name: Unpack generated code
       shell: bash
       run: tar -xzvf /tmp/generated.tar.gz
-
-    - name: Resolve Hadoop version
-      id: v
-      shell: bash
-      run: |
-        set -euo pipefail
-        ver="${{ inputs.hadoop-version }}"
-        if [[ -z "$ver" ]]; then
-          case "${SPARK_TAG:-3}" in
-            2* ) ver="3.2.1" ;;
-            *  ) ver="3.3.6" ;;
-          esac
-        fi
-        echo "ver=$ver"  >> "$GITHUB_OUTPUT"
-        echo "home=/tmp/hadoop-$ver" >> "$GITHUB_OUTPUT"
-
-    - name: Cache Hadoop
-      uses: actions/cache@v4
-      id: hadoop-cache
-      with:
-        path: ${{ steps.v.outputs.home }}
-        key: hadoop-${{ steps.v.outputs.ver }}
-
-    - name: Download Hadoop if missing
-      if: steps.hadoop-cache.outputs.cache-hit != 'true'
-      shell: bash
-      run: |
-        set -euo pipefail
-        curl -fsSL "https://archive.apache.org/dist/hadoop/common/hadoop-${{ steps.v.outputs.ver }}/hadoop-${{ steps.v.outputs.ver }}.tar.gz" \
-        | tar -xz -C /tmp
-
-    - name: Build minimal Spark CP from Hadoop
-      id: cp
-      shell: bash
-      run: |
-        set -euo pipefail
-        home="${{ steps.v.outputs.home }}"
-        H_HOST="$home/share/hadoop"
-
-        if compgen -G "$H_HOST/tools/lib/hadoop-aws-*.jar" > /dev/null; then
-          aws_path="$H_HOST/tools/lib/hadoop-aws-*.jar"
-        elif compgen -G "$H_HOST/aws/hadoop-aws-*.jar" > /dev/null; then
-          aws_path="$H_HOST/aws/hadoop-aws-*.jar"
-        else
-          echo "::error::Could not find hadoop-aws under $H_HOST"; exit 1
-        fi
-
-        mapfile -t JARS_HOST < <(
-          compgen -G "$H_HOST/common/hadoop-common-*.jar"
-          compgen -G "$H_HOST/common/lib/hadoop-auth-*.jar"
-          compgen -G "$aws_path"
-
-          compgen -G "$H_HOST/common/lib/woodstox-core-*.jar"
-          compgen -G "$H_HOST/common/lib/stax2-api-*.jar"
-
-          compgen -G "$H_HOST/common/lib/aws-java-sdk-*.jar" || true
-          compgen -G "$H_HOST/common/lib/aws-java-sdk-bundle-*.jar" || true
-          compgen -G "$H_HOST/common/lib/jackson-*.jar"
-          compgen -G "$H_HOST/common/lib/http*.jar"
-          compgen -G "$H_HOST/common/lib/commons-*.jar"
-          compgen -G "$H_HOST/common/lib/joda-time-*.jar"
-        )
-
-        # sanity
-        if [[ ${#JARS_HOST[@]} -lt 5 ]]; then
-          printf "::error::Too few jars collected (%d). Found:\n%s\n" "${#JARS_HOST[@]}" "${JARS_HOST[*]}"; exit 1
-        fi
-
-        CP_CONT=""
-        for p in "${JARS_HOST[@]}"; do
-          p_cont="${p/$home/\/opt\/hadoop}"
-          CP_CONT="${CP_CONT:+${CP_CONT}:}${p_cont}"
-        done
-
-        echo "spark_cp_min=$CP_CONT" >> "$GITHUB_OUTPUT"
-
-    - name: Export env & write .env
-      shell: bash
-      run: |
-        echo "HADOOP_HOME_HOST=${{ steps.v.outputs.home }}" >> "$GITHUB_ENV"
-        echo "SPARK_EXTRA_CLASSPATH=${{ steps.cp.outputs.spark_cp_min }}" >> "$GITHUB_ENV"
-        cat > "${{ inputs.compose-directory }}/.env" <<EOF
-        HADOOP_HOME_HOST=${{ steps.v.outputs.home }}
-        SPARK_EXTRA_CLASSPATH=${{ steps.cp.outputs.spark_cp_min }}
-        EOF
-
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
