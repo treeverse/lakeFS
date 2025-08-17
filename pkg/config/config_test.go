@@ -176,7 +176,7 @@ func TestConfig_LoginUrlMethodDefaults(t *testing.T) {
 		require.NoError(t, err)
 		authConfig := c.AuthConfig()
 		require.Equal(t, "none", authConfig.UIConfig.RBAC)
-		require.Equal(t, "redirect", authConfig.UIConfig.LoginUrlMethod)
+		require.Equal(t, "redirect", authConfig.UIConfig.LoginURLMethod)
 	})
 
 	t.Run("partial ui_config - missing login_url_method should get default", func(t *testing.T) {
@@ -185,7 +185,7 @@ func TestConfig_LoginUrlMethodDefaults(t *testing.T) {
 		authConfig := c.AuthConfig()
 		require.Equal(t, "internal", authConfig.UIConfig.RBAC)
 		require.Equal(t, "https://example.com/login", authConfig.UIConfig.LoginURL)
-		require.Equal(t, "redirect", authConfig.UIConfig.LoginUrlMethod)
+		require.Equal(t, "redirect", authConfig.UIConfig.LoginURLMethod)
 	})
 
 	t.Run("explicit login_url_method - should not be overridden", func(t *testing.T) {
@@ -193,7 +193,7 @@ func TestConfig_LoginUrlMethodDefaults(t *testing.T) {
 		require.NoError(t, err)
 		authConfig := c.AuthConfig()
 		require.Equal(t, "internal", authConfig.UIConfig.RBAC)
-		require.Equal(t, "select", authConfig.UIConfig.LoginUrlMethod)
+		require.Equal(t, "select", authConfig.UIConfig.LoginURLMethod)
 	})
 }
 
