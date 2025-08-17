@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	fileName = ".lakectl_token_cache.json"
+	fileName           = ".lakectl_token_cache.json"
+	readWriteOwnerOnly = 0600
 )
 
 type TokenCache struct {
@@ -46,7 +47,7 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	}
 
 	tmpFile := c.filePath + ".tmp"
-	file, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	file, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, readWriteOwnerOnly)
 	if err != nil {
 		return err
 	}

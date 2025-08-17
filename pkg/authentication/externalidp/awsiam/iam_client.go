@@ -100,7 +100,7 @@ func (s *SecurityProviderAWSIAMRole) GetLakeFSTokenFromAWS(ctx context.Context) 
 		return nil, fmt.Errorf("calling external principal login: %w", err)
 	}
 	cache, _ := NewJWTCache("")
-	cache.SaveToken(res)
+	_ = cache.SaveToken(res)
 	return res, nil
 }
 
