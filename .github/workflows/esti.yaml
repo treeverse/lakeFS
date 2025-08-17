@@ -521,7 +521,7 @@ jobs:
         if: ${{ failure() }}
         continue-on-error: true
         working-directory: test/spark
-        run: docker-compose logs --tail=2500 lakefs
+        run: docker-compose logs --tail=2500 lakefs      #
 
       - name: Spark${{ matrix.spark.tag }} + lakeFS GW + Redirect
         if: env.SPARK_TAG == '3'
@@ -751,6 +751,7 @@ jobs:
           REPOSITORY: test-data-exporter
           CLIENT_JAR: ${{ github.workspace }}/test/spark/metaclient/spark-assembly.jar
           EXPORT_LOCATION: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-client-export/${{ steps.unique.outputs.value }}
+        working-directory: test/spark
         run: ./run-exporter-test.sh
 
       - name: lakeFS Logs on Spark with gateway failure
@@ -1223,7 +1224,7 @@ jobs:
   # e2e-<db type>-<block adapter type>
   e2e-ddb-local-local:
     name: E2E - DynamoDB Local - Local Block Adapter
-    needs:
+    needs: #
       - deploy-image
       - login-to-amazon-ecr
     runs-on: ubuntu-22.04-8-cores
@@ -1298,7 +1299,7 @@ jobs:
           output: "test-results.md"
 
   quickstart:
-    name: Quickstart
+    name: Quickstart #
     needs:
       - deploy-image
       - login-to-amazon-ecr
