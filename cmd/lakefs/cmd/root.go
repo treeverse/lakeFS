@@ -179,7 +179,7 @@ func getHomeDir() string {
 func initStatsMetadata(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, storageConfig config.StorageConfig) *stats.Metadata {
 	metadataProviders := []stats.MetadataProvider{
 		authMetadataManager,
-		cloud.NewMetadataProvider(),
+		cloud.NewMetadataProvider(storageConfig),
 		block.NewMetadataProvider(storageConfig),
 	}
 	return stats.NewMetadata(ctx, logger, metadataProviders)
