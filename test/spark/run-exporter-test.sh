@@ -4,39 +4,7 @@ set -o pipefail
 
 REPOSITORY=${REPOSITORY//./-}
 # Run Export
-EXTRA_CONF=()
-if [[ -n "${SPARK_HADOOP_CP_MIN:-${SPARK_EXTRA_CLASSPATH:-}}" ]]; then
-  CP="${SPARK_HADOOP_CP_MIN:-${SPARK_EXTRA_CLASSPATH}}"
-  EXTRA_CONF+=("--conf" "spark.driver.userClassPathFirst=true")
-  EXTRA_CONF+=("--conf" "spark.executor.userClassPathFirst=true")
-  EXTRA_CONF+=("--conf" "spark.driver.extraClassPath=${CP}")
-  EXTRA_CONF+=("--conf" "spark.executor.extraClassPath=${CP}")
-  echo "Using Hadoop override CP: ${CP}"
-fi
-
-EXTRA_CONF_STR=""
-for t in "${EXTRA_CONF[@]}"; do
-  EXTRA_CONF_STR+=" $(printf %q "$t")"
-done
-
-docker compose run \
-  -T --no-deps --rm \
-  -v "${CLIENT_JAR}:/client/client.jar" \
-  -e SPARK_HADOOP_CP_MIN \
-  -e SPARK_EXTRA_CLASSPATH \
-  spark-submit bash -lc "
-    set -e
-    spark-submit \
-      --master spark://spark:7077 \
-      ${EXTRA_CONF_STR} \
-      --conf spark.hadoop.lakefs.api.url=http:/docker.lakefs.io:8000/api/v1 \
-      --conf spark.hadoop.lakefs.api.access_key=\${TESTER_ACCESS_KEY_ID} \
-      --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false \
-      --conf spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY} \
-      --class io.treeverse.clients.Main \
-      /client/client.jar \"${REPOSITORY}\" \"${EXPORT_LOCATION}\" --branch=main
-  "
-#docker compose run -v  ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c "spark-submit  --master spark://spark:7077   --conf spark.driver.userClassPathFirst=true   --conf spark.executor.userClassPathFirst=true   --conf spark.driver.extraClassPath=\${SPARK_EXTRA_CLASSPATH}   --conf spark.executor.extraClassPath=\${SPARK_EXTRA_CLASSPATH}   --conf spark.hadoop.lakefs.api.url=http:/docker.lakefs.io:8000/api/v1   --conf spark.hadoop.lakefs.api.access_key=\${TESTER_ACCESS_KEY_ID}   --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false   --conf spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY}   --class io.treeverse.clients.Main  /client/client.jar ${REPOSITORY} ${EXPORT_LOCATION}   --branch=main"
+docker compose run -v  ${CLIENT_JAR}:/client/client.jar -T --no-deps --rm spark-submit bash -c "spark-submit  --master spark://spark:7077   --conf spark.driver.userClassPathFirst=true   --conf spark.executor.userClassPathFirst=true   --conf spark.driver.extraClassPath=\${SPARK_EXTRA_CLASSPATH}   --conf spark.executor.extraClassPath=\${SPARK_EXTRA_CLASSPATH}   --conf spark.hadoop.lakefs.api.url=http:/docker.lakefs.io:8000/api/v1   --conf spark.hadoop.lakefs.api.access_key=\${TESTER_ACCESS_KEY_ID}   --conf spark.hadoop.fs.s3a.connection.ssl.enabled=false   --conf spark.hadoop.lakefs.api.secret_key=\${TESTER_SECRET_ACCESS_KEY}   --class io.treeverse.clients.Main  /client/client.jar ${REPOSITORY} ${EXPORT_LOCATION}   --branch=main"
 
 # Validate export
 lakectl_out=$(mktemp)
