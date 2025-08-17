@@ -745,8 +745,7 @@ jobs:
         working-directory: test/spark
         run: ./setup-exporter-test.sh
 
-      - name: Test Exporter (Hadoop ${{ matrix.hadoop_version }})
-        working-directory: test/spark
+      - name: Test Exporter with Spark 3.x
         env:
           STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-metaclient/exporter/${{ steps.unique.outputs.value }}
           REPOSITORY: test-data-exporter
