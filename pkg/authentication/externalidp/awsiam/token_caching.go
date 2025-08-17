@@ -84,7 +84,6 @@ func (c *JWTCache) LoadToken(refreshInterval time.Duration) (*apigen.Authenticat
 		Token:           cache.Token,
 		TokenExpiration: &cache.ExpirationTime}
 	return token, nil
-
 }
 
 func (c *JWTCache) ClearCache() error {
