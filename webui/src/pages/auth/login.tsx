@@ -11,8 +11,6 @@ import {useAPI} from "../../lib/hooks/api";
 import {useNavigate} from "react-router-dom";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 
-const LOCAL_LOGIN_METHOD = 'local';
-
 interface SetupResponse {
     state: string;
     comm_prefs_missing?: boolean;
@@ -30,6 +28,10 @@ export interface LoginConfig {
     login_cookie_names: string[];
     logout_url: string;
 }
+
+export const AUTH_LOGIN_PATH = '/auth/login';
+export const LOCAL_LOGIN_METHOD = 'local';
+export const LOGIN_URL_METHOD_SELECT = 'select';
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
