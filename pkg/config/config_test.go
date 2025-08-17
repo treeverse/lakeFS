@@ -170,6 +170,33 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	})
 }
 
+func TestConfig_LoginUrlMethodDefaults(t *testing.T) {
+	t.Run("no ui_config section - should get default", func(t *testing.T) {
+		c, err := newConfigFromFile("testdata/no_ui_config.yaml")
+		require.NoError(t, err)
+		authConfig := c.AuthConfig()
+		require.Equal(t, "none", authConfig.UIConfig.RBAC)
+		require.Equal(t, "redirect", authConfig.UIConfig.LoginUrlMethod)
+	})
+
+	t.Run("partial ui_config - missing login_url_method should get default", func(t *testing.T) {
+		c, err := newConfigFromFile("testdata/partial_ui_config.yaml")
+		require.NoError(t, err)
+		authConfig := c.AuthConfig()
+		require.Equal(t, "internal", authConfig.UIConfig.RBAC)
+		require.Equal(t, "https://example.com/login", authConfig.UIConfig.LoginURL)
+		require.Equal(t, "redirect", authConfig.UIConfig.LoginUrlMethod)
+	})
+
+	t.Run("explicit login_url_method - should not be overridden", func(t *testing.T) {
+		c, err := newConfigFromFile("testdata/custom_login_url_method.yaml")
+		require.NoError(t, err)
+		authConfig := c.AuthConfig()
+		require.Equal(t, "internal", authConfig.UIConfig.RBAC)
+		require.Equal(t, "select", authConfig.UIConfig.LoginUrlMethod)
+	})
+}
+
 func TestConfig_JSONLogger(t *testing.T) {
 	logfile := "/tmp/lakefs_json_logger_test.log"
 	_ = os.Remove(logfile)
