@@ -37,21 +37,6 @@ trait S3ClientBuilder extends Serializable {
 object S3ClientBuilder extends S3ClientBuilder {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString + "[hadoop3]")
 
-//  private lazy val logHadoopRuntimeOnce: Unit = {
-//    val ver = org.apache.hadoop.util.VersionInfo.getVersion
-//    val s3a =
-//      Option(classOf[org.apache.hadoop.fs.s3a.S3AFileSystem].getProtectionDomain.getCodeSource)
-//        .map(_.getLocation.toString)
-//        .getOrElse("<unknown>")
-//    val viJar =
-//      Option(classOf[org.apache.hadoop.util.VersionInfo].getProtectionDomain.getCodeSource)
-//        .map(_.getLocation.toString)
-//        .getOrElse("<unknown>")
-//    println(
-//      s"Ben-El test Hadoop runtime version: $ver; S3AFileSystem from: $s3a; VersionInfo from: $viJar"
-//    )
-//  }
-
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
     import com.amazonaws.auth.{
@@ -62,8 +47,6 @@ object S3ClientBuilder extends S3ClientBuilder {
     }
     import io.treeverse.clients.LakeFSContext
     import org.apache.hadoop.fs.s3a.Constants
-
-    //logHadoopRuntimeOnce
 
     val minBackoffMsecs = hc.getInt(LakeFSContext.LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS,
                                     LakeFSContext.DEFAULT_LAKEFS_CONF_GC_S3_MIN_BACKOFF_SECONDS
