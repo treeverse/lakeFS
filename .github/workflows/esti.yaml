@@ -763,23 +763,26 @@ jobs:
         run: |
           set -euo pipefail
           docker compose exec -T spark bash -lc '
-            cat >/tmp/PrintWhere.java << "EOF"
-            public class PrintWhere {
-              public static void main(String[] args) throws Exception {
-                System.out.println("HadoopVersion=" + org.apache.hadoop.util.VersionInfo.getVersion());
-                Class<?> c = Class.forName("org.apache.hadoop.fs.s3a.S3AFileSystem");
-                System.out.println("S3AFileSystem -> " +
-                  c.getProtectionDomain().getCodeSource().getLocation());
-              }
-            }
-            EOF
-            javac -cp "${SPARK_CLASSPATH:-}" /tmp/PrintWhere.java
-            jar cfe /tmp/printwhere.jar PrintWhere -C /tmp PrintWhere.class
-            /opt/bitnami/spark/bin/spark-submit \
-              --master local[1] \
-              --conf spark.driver.extraClassPath="${SPARK_EXTRA_CLASSPATH}" \
-              --conf spark.executor.extraClassPath="${SPARK_EXTRA_CLASSPATH}" \
-              /tmp/printwhere.jar
+            set -euo pipefail
+            printf "%s\n" \
+          "public class PrintWhere {" \
+          "  public static void main(String[] args) throws Exception {" \
+          "    System.out.println(\"HadoopVersion=\" + org.apache.hadoop.util.VersionInfo.getVersion());" \
+          "    Class<?> c = Class.forName(\"org.apache.hadoop.fs.s3a.S3AFileSystem\");" \
+          "    System.out.println(\"S3AFileSystem -> \" + c.getProtectionDomain().getCodeSource().getLocation());" \
+          "  }" \
+          "}" > /tmp/PrintWhere.java
+          
+          JAVAC=\"${JAVA_HOME:-/opt/bitnami/java}/bin/javac\"
+          JAR=\"${JAVA_HOME:-/opt/bitnami/java}/bin/jar\"
+          \"$JAVAC\" -cp \"${SPARK_CLASSPATH:-}\" /tmp/PrintWhere.java
+          \"$JAR\" cfe /tmp/printwhere.jar PrintWhere -C /tmp PrintWhere.class
+          
+          /opt/bitnami/spark/bin/spark-submit \
+            --master local[1] \
+            --conf spark.driver.extraClassPath=\"${SPARK_EXTRA_CLASSPATH}\" \
+            --conf spark.executor.extraClassPath=\"${SPARK_EXTRA_CLASSPATH}\" \
+            /tmp/printwhere.jar
           ' | tee /tmp/probe.out
           echo "=== Probe result ==="; cat /tmp/probe.out
 
