@@ -739,31 +739,6 @@ jobs:
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
           LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
 
-      - name: Verify effective Hadoop jars on classpath
-        working-directory: test/spark
-        run: |
-          set -euo pipefail
-          echo "---- SPARK_EXTRA_CLASSPATH (raw, from host env) ----"
-          echo "${SPARK_EXTRA_CLASSPATH:-<empty>}"
-          echo "---- SPARK_CLASSPATH (from image) ----"
-          docker compose exec -T spark bash -lc 'echo "${SPARK_CLASSPATH:-<empty>}"'
-          echo "---- Build Hadoop classpath inside container ----"
-          docker compose exec -T spark bash -lc '
-          set -euo pipefail
-          shopt -s nullglob
-          H="/opt/hadoop/share/hadoop"
-          jars=("$H"/common/*.jar "$H"/common/lib/*.jar "$H"/hdfs/*.jar "$H"/hdfs/lib/*.jar "$H"/mapreduce/*.jar "$H"/mapreduce/lib/*.jar "$H"/yarn/*.jar "$H"/yarn/lib/*.jar "$H"/aws/*.jar)
-          if [ ${#jars[@]} -eq 0 ]; then
-           echo "No Hadoop JARs found under $H – check mount" >&2; exit 1
-          fi
-          HADOOP_CP=$(printf "%s:" "${jars[@]}"); HADOOP_CP=${HADOOP_CP%:}
-          echo "HADOOP_CP entries: $(echo "$HADOOP_CP" | tr ":" "\n" | wc -l)"
-          echo "$HADOOP_CP" | tr ":" "\n" | grep -E "hadoop-common-.*\.jar" | head -n 1 || true
-          JAVA_BIN="${JAVA_HOME:-/opt/bitnami/java}/bin/java"
-          "$JAVA_BIN" -cp "$HADOOP_CP:${SPARK_CLASSPATH:-}" org.apache.hadoop.util.VersionInfo | head -n 10
-          echo "$HADOOP_CP:${SPARK_CLASSPATH:-}" | tr ":" "\n" | grep -E "hadoop-aws-.*\.jar" | head -n 1 || true
-          '
-
       - name: Copy repository ref
         run: aws s3 cp --recursive s3://esti-system-testing-data/golden-files/gc-test-data s3://esti-system-testing/${{ github.run_number }}-spark3.2.1-hadoop${{ matrix.hadoop_version }}-metaclient/exporter/${{ steps.unique.outputs.value }}
 

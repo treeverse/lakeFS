@@ -37,6 +37,15 @@ trait S3ClientBuilder extends Serializable {
 object S3ClientBuilder extends S3ClientBuilder {
   val logger: Logger = LoggerFactory.getLogger(getClass.toString + "[hadoop3]")
 
+  private lazy val logHadoopRuntimeOnce: Unit = {
+    val ver = VersionInfo.getVersion
+    val s3aJar = Option(classOf[S3AFileSystem]
+      .getProtectionDomain.getCodeSource).map(_.getLocation.toString).getOrElse("<unknown>")
+    val viJar = Option(classOf[VersionInfo]
+      .getProtectionDomain.getCodeSource).map(_.getLocation.toString).getOrElse("<unknown>")
+    logger.info(s"Ben-El test Hadoop runtime version: $ver; S3AFileSystem from: $s3aJar; VersionInfo from: $viJar")
+  }
+
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
     import com.amazonaws.auth.{
