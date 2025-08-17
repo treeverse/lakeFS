@@ -764,6 +764,19 @@ jobs:
         working-directory: test/spark
         run: docker compose logs --tail=2500 lakefs
 
+      - name: Spark logs (always)
+        if: always()
+        continue-on-error: true
+        working-directory: test/spark
+        run: |
+          echo "=== spark (master) logs ==="
+          docker compose logs --no-color --tail=2000 spark | tee /tmp/spark.log
+          echo "=== spark-worker logs ==="
+          docker compose logs --no-color --tail=2000 spark-worker | tee /tmp/spark-worker.log
+          echo "=== Hadoop runtime line ==="
+          grep -F "Ben-El test Hadoop runtime version:" -n /tmp/spark.log || true
+
+
   run-system-aws-s3-kv-dynamodb:
     name: Run latest lakeFS app on AWS S3 DynamoDB KV
     needs: [deploy-image, login-to-amazon-ecr]
