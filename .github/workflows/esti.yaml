@@ -765,26 +765,21 @@ jobs:
           docker compose exec -T spark bash -lc '
             set -euo pipefail
             printf "%s\n" \
-          "public class PrintWhere {" \
-          "  public static void main(String[] args) throws Exception {" \
-          "    System.out.println(\"HadoopVersion=\" + org.apache.hadoop.util.VersionInfo.getVersion());" \
-          "    Class<?> c = Class.forName(\"org.apache.hadoop.fs.s3a.S3AFileSystem\");" \
-          "    System.out.println(\"S3AFileSystem -> \" + c.getProtectionDomain().getCodeSource().getLocation());" \
-          "  }" \
-          "}" > /tmp/PrintWhere.java
+          "import org.apache.hadoop.util.VersionInfo" \
+          "import org.apache.hadoop.fs.s3a.S3AFileSystem" \
+          "println(\"HadoopVersion=\" + VersionInfo.getVersion)" \
+          "println(\"S3AFileSystem -> \" + classOf[S3AFileSystem].getProtectionDomain.getCodeSource.getLocation)" \
+          "sys.exit(0)" > /tmp/printwhere.scala
           
-          JAVAC=\"${JAVA_HOME:-/opt/bitnami/java}/bin/javac\"
-          JAR=\"${JAVA_HOME:-/opt/bitnami/java}/bin/jar\"
-          \"$JAVAC\" -cp \"${SPARK_CLASSPATH:-}\" /tmp/PrintWhere.java
-          \"$JAR\" cfe /tmp/printwhere.jar PrintWhere -C /tmp PrintWhere.class
-          
-          /opt/bitnami/spark/bin/spark-submit \
+          /opt/bitnami/spark/bin/spark-shell \
             --master local[1] \
             --conf spark.driver.extraClassPath=\"${SPARK_EXTRA_CLASSPATH}\" \
             --conf spark.executor.extraClassPath=\"${SPARK_EXTRA_CLASSPATH}\" \
-            /tmp/printwhere.jar
+            -i /tmp/printwhere.scala
           ' | tee /tmp/probe.out
-          echo "=== Probe result ==="; cat /tmp/probe.out
+          echo "=== Probe result ==="
+          cat /tmp/probe.out
+
 
       - name: lakeFS Logs on Spark with gateway failure
         if: ${{ failure() }}
