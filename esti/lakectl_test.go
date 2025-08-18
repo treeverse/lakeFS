@@ -668,6 +668,8 @@ func TestLakectlFsDownload(t *testing.T) {
 		// while PowerShell/lakectl resolve and print the long path. Using cwd ensures a stable cross-platform assertion.
 		cwd, err := os.Getwd()
 		require.NoError(t, err)
+		abs, _ := filepath.Abs(dest)
+		fmt.Println("######################################", dest, cwd, abs)
 		require.Contains(t, sanitizedResult, filepath.Join(cwd, "ro_1k.0"))
 	})
 
