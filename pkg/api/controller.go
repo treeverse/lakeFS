@@ -4789,6 +4789,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'")
+	w.Header().Set("Content-Disposition", "attachment")
 
 	// handle partial response if byte range supplied
 	var reader io.ReadCloser
