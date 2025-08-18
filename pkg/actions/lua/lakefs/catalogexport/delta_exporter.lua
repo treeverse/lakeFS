@@ -209,11 +209,27 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
     return response
 end
 
+local table_descriptors_paths = {}
+local function get_table_descriptor_path(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
+    if not table_descriptors_paths[table_name_yaml] and table_descriptors_paths[table_name_yaml] ~= nil then
+        local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
+        if table_descriptor.path ~= nil then
+            table_descriptors_paths[table_name_yaml] = table_descriptor.path
+        else
+            table_descriptors_paths[table_name_yaml] = nil
+        end
+    end
+    return table_descriptors_paths[table_name_yaml]
+end
+
+
 -- Local function to filter the list of table defs to include only those that have changed
 local function changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)
     -- Perform a diff_refs operation to get the differences between references
     local after = ""
     local changed_path_set = {}
+    -- Initialize the result table for storing changed table definitions
+    local changed_table_def_names = {}
     while true do
         local status, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref, after)
         if status ~= 200 then
@@ -221,37 +237,34 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
         end
 
         -- Now make a set out of the paths of the filenames
-        for i, diff_item in ipairs(diff_resp.results) do
+        for _, diff_item in ipairs(diff_resp.results) do
             local dir = pathlib.extract_dir_name(diff_item.path)
             if dir then
                 changed_path_set[dir] = true
             end
         end
+
+        -- Iterate through the table definitions and add to the result the ones that pass the filter
+        for index, table_name_yaml in ipairs(table_def_names) do
+            local path = get_table_descriptor_path(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
+            if path ~= nil then
+                print(index, "table_descriptor.path", path)
+                -- filter only the changed paths from the list
+                for changed_path, value in pairs(changed_path_set) do
+                    if value and strings.has_prefix(changed_path, path) then
+                        table.insert(changed_table_def_names, table_name_yaml)
+                        print("  (inserted)")
+                    end
+                end
+            else
+                print("  (skipped nil path)")
+            end
+        end
+
         if not diff_resp.pagination or not diff_resp.pagination.has_more then
             break
         end
         after = diff_resp.pagination.next_offset
-    end
-
-    -- Initialize the result table for storing changed table definitions
-    local changed_table_def_names = {}
-
-    -- Iterate through the table definitions and add to the result the ones that pass the filter
-    for index, table_name_yaml in ipairs(table_def_names) do
-        local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
-        if table_descriptor.path ~= nil then
-            print(index, "table_descriptor.path", table_descriptor.path)
-
-            -- filter only the changed paths from the list
-            for changed_path, value in pairs(changed_path_set) do
-                if value and strings.has_prefix(changed_path, table_descriptor.path) then
-                    table.insert(changed_table_def_names, table_name_yaml)
-                    print("  (inserted)")
-                end
-            end
-        else
-            print("  (skipped nil path)")
-        end
     end
 
     -- Return the changed table definitions
