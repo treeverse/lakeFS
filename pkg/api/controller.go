@@ -4789,6 +4789,7 @@ func (c *Controller) GetObject(w http.ResponseWriter, r *http.Request, repositor
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'")
+	w.Header().Set("Content-Disposition", "attachment")
 
 	// handle partial response if byte range supplied
 	var reader io.ReadCloser
@@ -5351,10 +5352,11 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 	}
 
 	// collect metadata
+	storageConfig := c.Config.GetBaseConfig().StorageConfig()
 	metadataProviders := []stats.MetadataProvider{
 		c.MetadataManager,
-		cloud.NewMetadataProvider(),
-		block.NewMetadataProvider(c.Config.GetBaseConfig().StorageConfig()),
+		cloud.NewMetadataProvider(storageConfig),
+		block.NewMetadataProvider(storageConfig),
 	}
 	meta := stats.NewMetadata(ctx, c.Logger, metadataProviders)
 

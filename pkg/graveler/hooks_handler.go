@@ -1,5 +1,7 @@
 package graveler
 
+//go:generate go run github.com/treeverse/lakefs/tools/isvalidgen --source ./hooks_handler.go --type EventType
+
 import (
 	"context"
 	"time"
@@ -28,34 +30,10 @@ const (
 	EventTypePostRevert       EventType = "post-revert"
 	EventTypePreCherryPick    EventType = "pre-cherry-pick"
 	EventTypePostCherryPick   EventType = "post-cherry-pick"
-
-	UnixYear3000 = 32500915200
 )
 
-func (e EventType) Valid() bool {
-	switch e {
-	case EventTypePrepareCommit,
-		EventTypePreCommit,
-		EventTypePostCommit,
-		EventTypePreMerge,
-		EventTypePostMerge,
-		EventTypePreCreateBranch,
-		EventTypePostCreateBranch,
-		EventTypePreDeleteBranch,
-		EventTypePostDeleteBranch,
-		EventTypePreCreateTag,
-		EventTypePostCreateTag,
-		EventTypePreDeleteTag,
-		EventTypePostDeleteTag,
-		EventTypePreRevert,
-		EventTypePostRevert,
-		EventTypePreCherryPick,
-		EventTypePostCherryPick:
-		// Supported events
-		return true
-	}
-	return false
-}
+// UnixYear3000 used by NewRunID for generating run IDs in reverse order
+const UnixYear3000 = 32500915200
 
 // HookRecord is an aggregation of all necessary fields for all event types
 type HookRecord struct {
