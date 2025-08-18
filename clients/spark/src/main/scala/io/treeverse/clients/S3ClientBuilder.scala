@@ -69,7 +69,7 @@ object S3ClientBuilder extends S3ClientBuilder {
     //     Possibly pre-generate a FileSystem to access the desired bucket,
     //     and query for its credentials provider.  And cache them, in case
     //     some objects live in different buckets.
-    val roleArn = hc.get(Constants.ASSUMED_ROLE_ARN, null)
+    val roleArn = hc.getTrimmed(Constants.ASSUMED_ROLE_ARN, "")
 
     val base: AWSCredentialsProvider =
       if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME) {
@@ -89,7 +89,7 @@ object S3ClientBuilder extends S3ClientBuilder {
       }
 
     val credentialsProvider: AWSCredentialsProvider =
-      if (roleArn != null && !roleArn.isEmpty) {
+      if (roleArn.nonEmpty) {
         new STSAssumeRoleSessionCredentialsProvider.Builder(
           roleArn,
           s"lakefs-gc-${UUID.randomUUID().toString}"
