@@ -41,6 +41,7 @@ object S3ClientBuilder extends S3ClientBuilder {
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
     import com.amazonaws.auth.{
       AWSCredentialsProvider,
+      DefaultAWSCredentialsProviderChain,
       STSAssumeRoleSessionCredentialsProvider,
       AWSStaticCredentialsProvider,
       BasicAWSCredentials
@@ -70,42 +71,33 @@ object S3ClientBuilder extends S3ClientBuilder {
     //     some objects live in different buckets.
     val roleArn = hc.get(Constants.ASSUMED_ROLE_ARN, null)
 
-    val baseOpt: Option[AWSCredentialsProvider] =
+    val base: AWSCredentialsProvider =
       if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME) {
         logger.info("Use configured AssumedRoleCredentialProvider for bucket {}", bucket)
-        Some(new AssumedRoleCredentialProvider(new java.net.URI("s3a://" + bucket), hc))
+        new AssumedRoleCredentialProvider(new java.net.URI("s3a://" + bucket), hc)
       } else if (hc.get(Constants.ACCESS_KEY) != null) {
         logger.info(
           "Use access key ID {} {}",
           hc.get(Constants.ACCESS_KEY): Any,
           if (hc.get(Constants.SECRET_KEY) == null) "(missing secret key)" else "secret key ******"
         )
-        Some(
-          new AWSStaticCredentialsProvider(
-            new BasicAWSCredentials(hc.get(Constants.ACCESS_KEY), hc.get(Constants.SECRET_KEY))
-          )
+        new AWSStaticCredentialsProvider(
+          new BasicAWSCredentials(hc.get(Constants.ACCESS_KEY), hc.get(Constants.SECRET_KEY))
         )
-      } else None
+      } else {
+        new DefaultAWSCredentialsProviderChain()
+      }
 
-    val credentialsProvider: Option[AWSCredentialsProvider] =
+    val credentialsProvider: AWSCredentialsProvider =
       if (roleArn != null && !roleArn.isEmpty) {
-        try {
-          val stsRoleProviderBuilder = new STSAssumeRoleSessionCredentialsProvider.Builder(
-            roleArn,
-            s"lakefs-gc-${UUID.randomUUID().toString}"
-          )
-          baseOpt.foreach(stsRoleProviderBuilder.withLongLivedCredentialsProvider)
-          Some(stsRoleProviderBuilder.build())
-        } catch {
-          case t: Throwable =>
-            logger.warn(
-              s"Failed to assume role $roleArn; falling back to base credentials provider: " +
-                baseOpt.map(_.getClass.getName).getOrElse("DefaultAWSCredentialsProviderChain"),
-              t
-            )
-            baseOpt
-        }
-      } else baseOpt
+        new STSAssumeRoleSessionCredentialsProvider.Builder(
+          roleArn,
+          s"lakefs-gc-${UUID.randomUUID().toString}"
+        ).withLongLivedCredentialsProvider(base)
+          .build()
+      } else {
+        base
+      }
 
     val builder = AmazonS3ClientBuilder
       .standard()
