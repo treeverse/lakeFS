@@ -13,6 +13,7 @@ import {OverlayTrigger} from "react-bootstrap";
 import Tooltip from "react-bootstrap/Tooltip";
 import Button from "react-bootstrap/Button";
 import {TreeRowType} from "../../../constants";
+import { BarChart3 } from 'lucide-react';
 
 class RowAction {
     /**
@@ -20,12 +21,14 @@ class RowAction {
      * @param {string} tooltip
      * @param {string} text
      * @param {()=>void} onClick
+     * @param {boolean} active
      */
-    constructor(icon, tooltip= "", text, onClick) {
+    constructor(icon, tooltip= "", text, onClick, active = false) {
         this.icon = icon
         this.tooltip = tooltip
         this.text = text
         this.onClick = onClick
+        this.active = active
     }
 }
 
@@ -37,6 +40,7 @@ const ChangeRowActions = ({actions}) => <>
         actions.map(action => (
             <OverlayTrigger key={action.text} placement="bottom" overlay={<Tooltip hidden={!action.tooltip}>{action.tooltip}</Tooltip>}>
                 <Button variant="link" disabled={false}
+                        className={`row-action-btn ${action.active ? 'active' : ''}`}
                         onClick={(e) => {
                             e.preventDefault();
                             action.onClick()
@@ -57,7 +61,9 @@ export const ObjectTreeEntryRow = ({entry, relativeTo = "", diffExpanded, depth 
 
     const rowActions = []
     if (onClickExpandDiff) {
-        rowActions.push(new RowAction(null, null, diffExpanded ? "Hide object changes" : "Show object changes", onClickExpandDiff))
+        const expandIcon = diffExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>;
+        const expandTooltip = diffExpanded ? "Hide object changes" : "Show object changes";
+        rowActions.push(new RowAction(expandIcon, expandTooltip, null, onClickExpandDiff))
     }
     if (onRevert) {
         rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", null, () => {
@@ -81,7 +87,8 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
         pathSection = <Link href={onNavigate(entry)}>{pathSection}</Link>
     }
     const rowActions = []
-    rowActions.push(new RowAction(null, null, showSummary ? "Hide change summary" : "Calculate change summary", () => setShowSummary(!showSummary)))
+    const summaryTooltip = showSummary ? "Hide change summary" : "Calculate change summary";
+    rowActions.push(new RowAction(<BarChart3/>, summaryTooltip, null, () => setShowSummary(!showSummary), showSummary))
     if (onRevert) {
         rowActions.push(new RowAction(<HistoryIcon/>, "Revert changes", null, () => {
             setShowRevertConfirm(true)
