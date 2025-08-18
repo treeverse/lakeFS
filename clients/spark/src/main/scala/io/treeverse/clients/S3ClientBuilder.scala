@@ -96,7 +96,15 @@ object S3ClientBuilder extends S3ClientBuilder {
           )
           baseOpt.foreach(stsRoleProviderBuilder.withLongLivedCredentialsProvider)
           Some(stsRoleProviderBuilder.build())
-        } catch { case _: Exception => baseOpt }
+        } catch {
+          case t: Throwable =>
+            logger.warn(
+              s"Failed to assume role $roleArn; falling back to base credentials provider: " +
+                baseOpt.map(_.getClass.getName).getOrElse("DefaultAWSCredentialsProviderChain"),
+              t
+            )
+            baseOpt
+        }
       } else baseOpt
 
     val builder = AmazonS3ClientBuilder
