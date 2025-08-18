@@ -212,18 +212,25 @@ end
 -- Local function to filter the list of table defs to include only those that have changed
 local function changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)
     -- Perform a diff_refs operation to get the differences between references
-    local status, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref)
-    if status ~= 200 then
-        error("Failed to perform diff_refs with status: " .. tostring(status))
-    end
-
-    -- Now make a set out of the paths of the filenames
+    local after = ""
     local changed_path_set = {}
-    for _, diff_item in ipairs(diff_resp.results) do
-        local dir = pathlib.extract_dir_name(diff_item.path)
-        if dir then
-            changed_path_set[dir] = true
+    while true do
+        local status, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref, after)
+        if status ~= 200 then
+            error("Failed to perform diff_refs with status: " .. tostring(status))
         end
+
+        -- Now make a set out of the paths of the filenames
+        for i, diff_item in ipairs(diff_resp.results) do
+            local dir = pathlib.extract_dir_name(diff_item.path)
+            if dir then
+                changed_path_set[dir] = true
+            end
+        end
+        if not diff_resp.pagination or not diff_resp.pagination.has_more then
+            break
+        end
+        after = diff_resp.pagination.next_offset
     end
 
     -- Initialize the result table for storing changed table definitions
