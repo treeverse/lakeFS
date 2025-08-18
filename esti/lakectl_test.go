@@ -647,7 +647,7 @@ func TestLakectlFsDownload(t *testing.T) {
 		dest := t.TempDir()
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" "+dest, false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download: "+src)
-		require.Contains(t, sanitizedResult, dest+"/"+"ro_1k.0")
+		require.Contains(t, sanitizedResult, filepath.Join(dest, "ro_1k.0"))
 	})
 
 	t.Run("single_with_rel_dest", func(t *testing.T) {
@@ -664,7 +664,11 @@ func TestLakectlFsDownload(t *testing.T) {
 		src := "lakefs://" + repoName + "/" + mainBranch + "/data/ro/ro_1k.0"
 		sanitizedResult := runCmd(t, Lakectl()+" fs download "+src+" .", false, false, map[string]string{})
 		require.Contains(t, sanitizedResult, "download: "+src)
-		require.Contains(t, sanitizedResult, filepath.Join(dest, "ro_1k.0"))
+		// Use cwd rather than dest because on Windows t.TempDir() may return an 8.3 short path (e.g., RUNNER~1)
+		// while PowerShell/lakectl resolve and print the long path. Using cwd ensures a stable cross-platform assertion.
+		cwd, err := os.Getwd()
+		require.NoError(t, err)
+		require.Contains(t, sanitizedResult, filepath.Join(cwd, "ro_1k.0"))
 	})
 
 	t.Run("single_with_recursive_flag", func(t *testing.T) {
@@ -719,7 +723,7 @@ func TestLakectlFsUpload(t *testing.T) {
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s "+filepath.Join("files", "ro_1k"), false, "lakectl_fs_upload", vars)
 	})
 	t.Run("single_file_with_separator", func(t *testing.T) {
-		// First upload the file without separator
+		// First upload the file without a separator
 		vars["FILE_PATH"] = "data/ro/ro_1k.0_sep"
 		RunCmdAndVerifySuccessWithFile(t, Lakectl()+" fs upload lakefs://"+repoName+"/"+mainBranch+"/"+vars["FILE_PATH"]+" -s "+filepath.Join("files", "ro_1k"), false, "lakectl_fs_upload", vars)
 
