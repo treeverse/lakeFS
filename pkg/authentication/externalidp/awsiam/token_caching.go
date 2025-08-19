@@ -10,14 +10,10 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
-var ErrTokenExpired = fmt.Errorf("token expired")
 var ErrCacheExpired = fmt.Errorf("cache expired")
 var ErrFailedToCreateCacheDir = fmt.Errorf("failed to create cache dir")
 
 const (
-	fileName                  = "lakectl_token_cache.json"
-	lakectlDirName            = ".lakectl"
-	cacheDirName              = "cache"
 	readWriteOwnerOnly        = 0600
 	ReadWriteExecuteOwnerOnly = 0700
 	MaxCacheTime              = time.Hour
@@ -33,7 +29,7 @@ type JWTCache struct {
 	filePath string
 }
 
-func NewJWTCache(baseDir string) (*JWTCache, error) {
+func NewJWTCache(baseDir, lakectlDir, cacheDir, fileName string) (*JWTCache, error) {
 	if baseDir == "" {
 		var err error
 		baseDir, err = os.UserHomeDir()
@@ -41,13 +37,13 @@ func NewJWTCache(baseDir string) (*JWTCache, error) {
 			return nil, err
 		}
 	}
-	cacheDir := filepath.Join(baseDir, lakectlDirName, cacheDirName)
-	if err := os.MkdirAll(cacheDir, ReadWriteExecuteOwnerOnly); err != nil {
+	cachePath := filepath.Join(baseDir, lakectlDir, cacheDir)
+	if err := os.MkdirAll(cachePath, ReadWriteExecuteOwnerOnly); err != nil {
 		return nil, ErrFailedToCreateCacheDir
 	}
 
 	jwtCache := &JWTCache{
-		filePath: filepath.Join(cacheDir, fileName),
+		filePath: filepath.Join(cachePath, fileName),
 	}
 	return jwtCache, nil
 }

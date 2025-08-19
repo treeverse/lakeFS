@@ -182,6 +182,12 @@ const (
 	defaultMinRetryInterval = 200 * time.Millisecond
 )
 
+const (
+	CacheFileName  = "lakectl_token_cache.json"
+	LakectlDirName = ".lakectl"
+	CacheDirName   = "cache"
+)
+
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
 	cmd.Flags().BoolP(recursiveFlagName, recursiveFlagShort, false, usage)
 }
@@ -597,30 +603,24 @@ func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
 func getClient() *apigen.ClientWithResponses {
 	opts := []apigen.ClientOption{}
 	httpClient := getHTTPClient()
-
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(accessKeyID), string(secretAccessKey))
-	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
-
 	if err != nil {
 		DieErr(err)
 	}
-
 	serverEndpoint, err := apiutil.NormalizeLakeFSEndpoint(cfg.Server.EndpointURL.String())
 	if err != nil {
 		DieErr(err)
 	}
-
 	awsIAMparams, err := newAWSIAMAuthProviderConfig()
 	if err != nil {
 		DieErr(err)
 	}
 
-	useIAMRoleProviderAuth := awsIAMparams != nil && accessKeyID == "" && secretAccessKey == ""
-	// If AWS IAM params provided use them
-	if useIAMRoleProviderAuth {
-		opts = getClientOptions(awsIAMparams, serverEndpoint, awsLogSigning)
+	useIAMAuth := awsIAMparams != nil && accessKeyID == "" && secretAccessKey == ""
+	if useIAMAuth {
+		opts = getClientOptions(awsIAMparams, serverEndpoint)
 	}
 
 	oss := osinfo.GetOSInfo()
@@ -643,14 +643,10 @@ func getClient() *apigen.ClientWithResponses {
 	return client
 }
 
-func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string, awsLogSigning bool) []apigen.ClientOption {
-	opts := []apigen.ClientOption{}
-	// create a new unauthenticated client
-	noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
-	if err != nil {
-		DieErr(err)
-	}
-	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
+func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
+	token := getOrCreateCachedToken(awsIAMparams, serverEndpoint)
+	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
+
 	presignOpt := func(po *sts.PresignOptions) {
 		po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
 			if awsLogSigning {
@@ -658,28 +654,75 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string,
 			}
 		})
 	}
-
-	var token *apigen.AuthenticationToken
-	tokenCache, err := awsiam.NewJWTCache("")
+	noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
 	if err != nil {
-		logging.ContextUnavailable().Errorf("Error creating token cache: %w", err)
+		DieErr(err)
 	}
+	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
+
+	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(
+		awsIAMparams,
+		logging.ContextUnavailable(),
+		loginClient,
+		token,
+		presignOpt,
+	)
+
+	return []apigen.ClientOption{awsAuthProvider}
+}
+
+func getOrCreateCachedToken(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) *apigen.AuthenticationToken {
+	tokenCache := initTokenCache()
+
 	if tokenCache != nil {
-		token, err = tokenCache.GetToken()
-		if err != nil {
-			logging.ContextUnavailable().Errorf("Error loading token from cache: %w", err)
+		if cachedToken, err := tokenCache.GetToken(); err == nil {
+			return cachedToken
 		}
 	}
-	if token == nil {
-		securityprovider := awsiam.NewSecurityProviderAWSIAMRole(logging.ContextUnavailable(), awsIAMparams, loginClient, nil)
-		token, err = securityprovider.GetLakeFSTokenFromAWS(context.TODO())
-	}
+
+	token := generateNewToken(awsIAMparams, serverEndpoint)
+
 	if tokenCache != nil {
-		tokenCache.SaveToken(token)
+		if err := tokenCache.SaveToken(token); err != nil {
+			logging.ContextUnavailable().Errorf("Error saving token to cache: %w", err)
+		}
 	}
-	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(awsIAMparams, logging.ContextUnavailable(), loginClient, token, presignOpt)
-	opts = append(opts, awsAuthProvider)
-	return opts
+	return token
+}
+
+func initTokenCache() *awsiam.JWTCache {
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		logging.ContextUnavailable().Errorf("Error getting user home dir: %w", err)
+	}
+	tokenCache, err := awsiam.NewJWTCache(homedir, LakectlDirName, CacheDirName, CacheFileName)
+	if err != nil {
+		logging.ContextUnavailable().Errorf("Error creating token cache: %w", err)
+		return nil
+	}
+	return tokenCache
+}
+
+func generateNewToken(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) *apigen.AuthenticationToken {
+	noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
+	if err != nil {
+		DieErr(err)
+	}
+	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
+
+	securityProvider := awsiam.NewSecurityProviderAWSIAMRole(
+		logging.ContextUnavailable(),
+		awsIAMparams,
+		loginClient,
+		nil,
+	)
+
+	token, err := securityProvider.GetLakeFSTokenFromAWS(context.TODO())
+	if err != nil {
+		DieErr(err)
+	}
+
+	return token
 }
 
 // isUnknownCommandError checks if the error from ExecuteC is an unknown command error.

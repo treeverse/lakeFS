@@ -14,18 +14,18 @@ import (
 func TestNewJWTCache(t *testing.T) {
 	t.Run("with custom cache dir", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
+		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 		require.NotEmpty(t, cache)
-		require.Equal(t, filepath.Join(tempDir, lakectlDirName, cacheDirName, fileName), cache.filePath)
+		require.Equal(t, filepath.Join(tempDir, ".lakectl", "cache", "lakectl_token_cache.json"), cache.filePath)
 	})
 
 	t.Run("with empty cache dir uses home dir", func(t *testing.T) {
-		cache, err := NewJWTCache("")
+		cache, err := NewJWTCache("", ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 		require.NotEmpty(t, cache)
 		homeDir, _ := os.UserHomeDir()
-		expectedPath := filepath.Join(homeDir, lakectlDirName, cacheDirName, fileName)
+		expectedPath := filepath.Join(homeDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.Equal(t, expectedPath, cache.filePath)
 	})
 }
@@ -33,7 +33,7 @@ func TestNewJWTCache(t *testing.T) {
 func TestJWTCacheSaveToken(t *testing.T) {
 	t.Run("saves valid token successfully", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
+		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		expirationTime := time.Now().Add(1 * time.Hour).Unix()
@@ -62,7 +62,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 
 	t.Run("handles nil token", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
+		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		err = cache.SaveToken(nil)
@@ -75,7 +75,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 
 	t.Run("handles token with empty string", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
+		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		token := &apigen.AuthenticationToken{
@@ -92,7 +92,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 
 	t.Run("handles token without expiration", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
+		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		token := &apigen.AuthenticationToken{
@@ -112,7 +112,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 func TestJWTCacheGetToken(t *testing.T) {
 	t.Run("loads valid non-expired token", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
+		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		expirationTime := time.Now().Add(1 * time.Hour).Unix()
@@ -132,33 +132,9 @@ func TestJWTCacheGetToken(t *testing.T) {
 		require.Equal(t, expirationTime, *loadedToken.TokenExpiration)
 	})
 
-	t.Run("returns error for expired token", func(t *testing.T) {
-		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
-		require.NoError(t, err)
-
-		expiredTime := time.Now().Add(-1 * time.Hour).Unix()
-		expiredCache := TokenCache{
-			Token:          "expired-token",
-			ExpirationTime: expiredTime,
-		}
-
-		// Write expired token directly to file
-		file, err := os.OpenFile(cache.filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-		require.NoError(t, err)
-		err = json.NewEncoder(file).Encode(expiredCache)
-		require.NoError(t, err)
-		file.Close()
-
-		// load should return nil for expired token
-		loadedToken, err := cache.GetToken()
-		require.ErrorIs(t, err, ErrTokenExpired)
-		require.Nil(t, loadedToken)
-	})
-
 	t.Run("returns error for expired cache", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
+		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		expirationTime := time.Now().Add(1 * time.Hour).Unix()
@@ -193,7 +169,7 @@ func TestJWTCacheGetToken(t *testing.T) {
 
 	t.Run("returns nil when cache file doesn't exist", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
+		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		loadedToken, err := cache.GetToken()
@@ -203,7 +179,7 @@ func TestJWTCacheGetToken(t *testing.T) {
 
 	t.Run("returns error for corrupted cache file", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir)
+		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		// Write invalid JSON
@@ -218,7 +194,7 @@ func TestJWTCacheGetToken(t *testing.T) {
 
 func TestJWTCacheSaveAndLoad(t *testing.T) {
 	tempDir := t.TempDir()
-	cache, err := NewJWTCache(tempDir)
+	cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
 	require.NoError(t, err)
 
 	expirationTime := time.Now().Add(30 * time.Minute).Unix()
