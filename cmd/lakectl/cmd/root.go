@@ -620,33 +620,7 @@ func getClient() *apigen.ClientWithResponses {
 	useIAMRoleProviderAuth := awsIAMparams != nil && accessKeyID == "" && secretAccessKey == ""
 	// If AWS IAM params provided use them
 	if useIAMRoleProviderAuth {
-		// create a new unauthenticated client
-		noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
-		if err != nil {
-			DieErr(err)
-		}
-		loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
-		presignOpt := func(po *sts.PresignOptions) {
-			po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
-				if awsLogSigning {
-					o.ClientLogMode = aws.LogSigning
-				}
-			})
-		}
-
-		var token *apigen.AuthenticationToken
-		tokenCache, err := awsiam.NewJWTCache("")
-		if err != nil {
-			logging.ContextUnavailable().Errorf("Error creating token cache: %w", err)
-		}
-		if tokenCache != nil {
-			token, err = tokenCache.LoadToken(awsIAMparams.RefreshInterval)
-			if err != nil {
-				logging.ContextUnavailable().Errorf("Error loading token from cache: %w", err)
-			}
-		}
-		awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(awsIAMparams, logging.ContextUnavailable(), loginClient, token, presignOpt)
-		opts = append(opts, awsAuthProvider)
+		opts = getClientOptions(awsIAMparams, serverEndpoint, awsLogSigning)
 	}
 
 	oss := osinfo.GetOSInfo()
@@ -667,6 +641,45 @@ func getClient() *apigen.ClientWithResponses {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
 	}
 	return client
+}
+
+func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string, awsLogSigning bool) []apigen.ClientOption {
+	opts := []apigen.ClientOption{}
+	// create a new unauthenticated client
+	noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
+	if err != nil {
+		DieErr(err)
+	}
+	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
+	presignOpt := func(po *sts.PresignOptions) {
+		po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
+			if awsLogSigning {
+				o.ClientLogMode = aws.LogSigning
+			}
+		})
+	}
+
+	var token *apigen.AuthenticationToken
+	tokenCache, err := awsiam.NewJWTCache("")
+	if err != nil {
+		logging.ContextUnavailable().Errorf("Error creating token cache: %w", err)
+	}
+	if tokenCache != nil {
+		token, err = tokenCache.GetToken()
+		if err != nil {
+			logging.ContextUnavailable().Errorf("Error loading token from cache: %w", err)
+		}
+	}
+	if token == nil {
+		securityprovider := awsiam.NewSecurityProviderAWSIAMRole(logging.ContextUnavailable(), awsIAMparams, loginClient, nil)
+		token, err = securityprovider.GetLakeFSTokenFromAWS(context.TODO())
+	}
+	if tokenCache != nil {
+		tokenCache.SaveToken(token)
+	}
+	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(awsIAMparams, logging.ContextUnavailable(), loginClient, token, presignOpt)
+	opts = append(opts, awsAuthProvider)
+	return opts
 }
 
 // isUnknownCommandError checks if the error from ExecuteC is an unknown command error.

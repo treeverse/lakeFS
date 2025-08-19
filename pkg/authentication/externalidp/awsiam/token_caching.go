@@ -20,7 +20,7 @@ const (
 	cacheDirName              = "cache"
 	readWriteOwnerOnly        = 0600
 	ReadWriteExecuteOwnerOnly = 0700
-	MaxCacheTime              = 3600 * time.Second
+	MaxCacheTime              = time.Hour
 )
 
 type TokenCache struct {
@@ -86,7 +86,7 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	return err
 }
 
-func (c *JWTCache) LoadToken(refreshInterval time.Duration) (*apigen.AuthenticationToken, error) {
+func (c *JWTCache) GetToken() (*apigen.AuthenticationToken, error) {
 	file, err := os.OpenFile(c.filePath, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
@@ -98,10 +98,6 @@ func (c *JWTCache) LoadToken(refreshInterval time.Duration) (*apigen.Authenticat
 	err = json.NewDecoder(file).Decode(&cache)
 	if err != nil {
 		return nil, err
-	}
-
-	if cache.ExpirationTime > 0 && time.Now().Unix() >= cache.ExpirationTime+int64(refreshInterval.Seconds()) {
-		return nil, ErrTokenExpired
 	}
 
 	if cache.WriteTime+int64(MaxCacheTime.Seconds()) <= time.Now().Unix() {
