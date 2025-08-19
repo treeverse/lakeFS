@@ -212,39 +212,56 @@ end
 -- Local function to filter the list of table defs to include only those that have changed
 local function changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)
     -- Perform a diff_refs operation to get the differences between references
-    local status, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref)
-    if status ~= 200 then
-        error("Failed to perform diff_refs with status: " .. tostring(status))
-    end
-
-    -- Now make a set out of the paths of the filenames
-    local changed_path_set = {}
-    for _, diff_item in ipairs(diff_resp.results) do
-        local dir = pathlib.extract_dir_name(diff_item.path)
-        if dir then
-            changed_path_set[dir] = true
+    local after = ""
+    local table_descriptors_paths = {}
+    for _, table_name_yaml in ipairs(table_def_names) do
+        if not table_descriptors_paths[table_name_yaml] then
+            local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
+            if table_descriptor.path ~= nil then
+                table_descriptors_paths[table_name_yaml] = table_descriptor.path
+            else
+                table_descriptors_paths[table_name_yaml] = "" -- Marker: don't fetch this table descriptor again
+            end
         end
     end
-
     -- Initialize the result table for storing changed table definitions
     local changed_table_def_names = {}
-
-    -- Iterate through the table definitions and add to the result the ones that pass the filter
-    for index, table_name_yaml in ipairs(table_def_names) do
-        local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
-        if table_descriptor.path ~= nil then
-            print(index, "table_descriptor.path", table_descriptor.path)
-
-            -- filter only the changed paths from the list
-            for changed_path, value in pairs(changed_path_set) do
-                if value and strings.has_prefix(changed_path, table_descriptor.path) then
-                    table.insert(changed_table_def_names, table_name_yaml)
-                    print("  (inserted)")
-                end
-            end
-        else
-            print("  (skipped nil path)")
+    while true do
+        local status, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref, after)
+        local changed_path_set = {}
+        if status ~= 200 then
+            error("Failed to perform diff_refs with status: " .. tostring(status) .. " ref: " .. ref ..
+                  " compare_ref: " .. compare_ref .. " after: " .. after)
         end
+
+        -- Now make a set out of the paths of the filenames
+        for _, diff_item in ipairs(diff_resp.results) do
+            local dir = pathlib.extract_dir_name(diff_item.path)
+            if dir then
+                changed_path_set[dir] = true
+            end
+        end
+
+        -- Iterate through the table definitions and add to the result the ones that pass the filter
+        for table_name_yaml, path in pairs(table_descriptors_paths) do
+            if path ~= "" then
+                print("table_descriptor.path", path)
+                -- filter only the changed paths from the list
+                for changed_path, value in pairs(changed_path_set) do
+                    if value and strings.has_prefix(changed_path, path) then
+                        table.insert(changed_table_def_names, table_name_yaml)
+                        print("  (inserted)")
+                    end
+                end
+            else
+                print("  (skipped nil path)")
+            end
+        end
+
+        if not diff_resp.pagination or not diff_resp.pagination.has_more then
+            break
+        end
+        after = diff_resp.pagination.next_offset
     end
 
     -- Return the changed table definitions
