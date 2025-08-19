@@ -396,7 +396,7 @@ type AuthConfig interface {
 	GetAuthUIConfig() *AuthUIConfig
 	GetLoginURLMethodConfigParam() string
 	// UseUILoginPlaceholders Added this function to the interface because its implementation requires parameters from both BaseAuth and
-	//AuthUIConfig, so neither struct alone could implement it.
+	// AuthUIConfig, so neither struct alone could implement it.
 	UseUILoginPlaceholders() bool
 }
 
@@ -731,7 +731,7 @@ func (a *Auth) GetLoginURLMethodConfigParam() string {
 // UseUILoginPlaceholders returns true if the UI should use placeholders for login
 // the UI should use placeholders just in case of LDAP, the other auth methods should have their own login page
 func (a *Auth) UseUILoginPlaceholders() bool {
-	return a.BaseAuth.RemoteAuthenticator.Enabled || a.AuthUIConfig.UseLoginPlaceholders
+	return a.RemoteAuthenticator.Enabled || a.AuthUIConfig.UseLoginPlaceholders
 }
 
 func (b *BaseAuth) IsAuthenticationTypeAPI() bool {
