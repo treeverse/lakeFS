@@ -239,11 +239,11 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
                 if table_descriptor.path ~= nil then
                     table_descriptors_paths[table_name_yaml] = table_descriptor.path
                 else
-                    table_descriptors_paths[table_name_yaml] = false
+                    table_descriptors_paths[table_name_yaml] = "" -- Marker: don't fetch this table descriptor again
                 end
             end
             local path = table_descriptors_paths[table_name_yaml]
-            if path then
+            if path and path ~= "" then
                 print(index, "table_descriptor.path", path)
                 -- filter only the changed paths from the list
                 for changed_path, value in pairs(changed_path_set) do
