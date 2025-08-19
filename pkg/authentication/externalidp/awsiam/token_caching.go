@@ -2,6 +2,7 @@ package awsiam
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -9,28 +10,41 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
+var ErrTokenExpired = fmt.Errorf("token expired")
+var ErrCacheExpired = fmt.Errorf("cache expired")
+var ErrFailedToCreateCacheDir = fmt.Errorf("failed to create cache dir")
+
 const (
-	fileName           = ".lakectl_token_cache.json"
+	fileName           = "lakectl_token_cache.json"
+	lakectlDirName     = ".lakectl"
+	cacheDirName       = "cache"
 	readWriteOwnerOnly = 0600
+	MaxCacheTime       = 3600 * time.Second
 )
 
 type TokenCache struct {
 	Token          string `json:"token"`
 	ExpirationTime int64  `json:"expiration_time"`
+	WriteTime      int64  `json:"write_time"`
 }
 
 type JWTCache struct {
 	filePath string
 }
 
-func NewJWTCache(cacheDir string) (*JWTCache, error) {
-	if cacheDir == "" {
+func NewJWTCache(baseDir string) (*JWTCache, error) {
+	if baseDir == "" {
 		var err error
-		cacheDir, err = os.UserHomeDir()
+		baseDir, err = os.UserHomeDir()
 		if err != nil {
 			return nil, err
 		}
 	}
+	cacheDir := filepath.Join(baseDir, lakectlDirName, cacheDirName)
+	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+		return nil, ErrFailedToCreateCacheDir
+	}
+
 	jwtCache := &JWTCache{
 		filePath: filepath.Join(cacheDir, fileName),
 	}
@@ -41,9 +55,11 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	if token == nil || token.Token == "" || token.TokenExpiration == nil {
 		return nil
 	}
+
 	cache := &TokenCache{
 		Token:          token.Token,
 		ExpirationTime: *token.TokenExpiration,
+		WriteTime:      time.Now().Unix(),
 	}
 
 	tmpFile := c.filePath + ".tmp"
@@ -51,8 +67,13 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+
 	err = json.NewEncoder(file).Encode(cache)
+	if err != nil {
+		return err
+	}
+
+	err = file.Close()
 	if err != nil {
 		return err
 	}
@@ -70,6 +91,7 @@ func (c *JWTCache) LoadToken(refreshInterval time.Duration) (*apigen.Authenticat
 		return nil, err
 	}
 	defer file.Close()
+
 	var cache TokenCache
 
 	err = json.NewDecoder(file).Decode(&cache)
@@ -78,8 +100,13 @@ func (c *JWTCache) LoadToken(refreshInterval time.Duration) (*apigen.Authenticat
 	}
 
 	if cache.ExpirationTime > 0 && time.Now().Unix() >= cache.ExpirationTime+int64(refreshInterval.Seconds()) {
-		return nil, nil
+		return nil, ErrTokenExpired
 	}
+
+	if cache.WriteTime+int64(MaxCacheTime.Seconds()) <= time.Now().Unix() {
+		return nil, ErrCacheExpired
+	}
+
 	token := &apigen.AuthenticationToken{
 		Token:           cache.Token,
 		TokenExpiration: &cache.ExpirationTime}

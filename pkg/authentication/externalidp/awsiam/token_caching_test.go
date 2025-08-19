@@ -17,7 +17,7 @@ func TestNewJWTCache(t *testing.T) {
 		cache, err := NewJWTCache(tempDir)
 		require.NoError(t, err)
 		require.NotEmpty(t, cache)
-		require.Equal(t, filepath.Join(tempDir, fileName), cache.filePath)
+		require.Equal(t, filepath.Join(tempDir, lakectlDirName, cacheDirName, fileName), cache.filePath)
 	})
 
 	t.Run("with empty cache dir uses home dir", func(t *testing.T) {
@@ -25,7 +25,7 @@ func TestNewJWTCache(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, cache)
 		homeDir, _ := os.UserHomeDir()
-		expectedPath := filepath.Join(homeDir, fileName)
+		expectedPath := filepath.Join(homeDir, lakectlDirName, cacheDirName, fileName)
 		require.Equal(t, expectedPath, cache.filePath)
 	})
 }
@@ -132,7 +132,7 @@ func TestJWTCacheLoadToken(t *testing.T) {
 		require.Equal(t, expirationTime, *loadedToken.TokenExpiration)
 	})
 
-	t.Run("returns nil for expired token", func(t *testing.T) {
+	t.Run("returns error for expired token", func(t *testing.T) {
 		tempDir := t.TempDir()
 		cache, err := NewJWTCache(tempDir)
 		require.NoError(t, err)
@@ -152,7 +152,42 @@ func TestJWTCacheLoadToken(t *testing.T) {
 
 		// load should return nil for expired token
 		loadedToken, err := cache.LoadToken(0)
+		require.ErrorIs(t, err, ErrTokenExpired)
+		require.Nil(t, loadedToken)
+	})
+
+	t.Run("returns error for expired cache", func(t *testing.T) {
+		tempDir := t.TempDir()
+		cache, err := NewJWTCache(tempDir)
 		require.NoError(t, err)
+
+		expirationTime := time.Now().Add(1 * time.Hour).Unix()
+		token := &apigen.AuthenticationToken{
+			Token:           "test-jwt-token",
+			TokenExpiration: &expirationTime,
+		}
+
+		err = cache.SaveToken(token)
+		require.NoError(t, err)
+
+		// manually modify the cache file to have an old WriteTime
+		oldWriteTime := time.Now().Add(-MaxCacheTime - 1*time.Minute).Unix()
+
+		expiredCache := TokenCache{
+			Token:          "test-jwt-token",
+			ExpirationTime: expirationTime, 
+			WriteTime:      oldWriteTime, 
+		}
+
+		file, err := os.OpenFile(cache.filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+		require.NoError(t, err)
+		err = json.NewEncoder(file).Encode(expiredCache)
+		require.NoError(t, err)
+		file.Close()
+
+		// Load should return ErrCacheExpired
+		loadedToken, err := cache.LoadToken(0)
+		require.ErrorIs(t, err, ErrCacheExpired)
 		require.Nil(t, loadedToken)
 	})
 
