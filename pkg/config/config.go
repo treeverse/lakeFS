@@ -395,6 +395,8 @@ type AuthConfig interface {
 	GetBaseAuthConfig() *BaseAuth
 	GetAuthUIConfig() *AuthUIConfig
 	GetLoginURLMethodConfigParam() string
+	// UseUILoginPlaceholders Added this function to the interface because its implementation requires parameters from both BaseAuth and
+	//AuthUIConfig, so neither struct alone could implement it.
 	UseUILoginPlaceholders() bool
 }
 
