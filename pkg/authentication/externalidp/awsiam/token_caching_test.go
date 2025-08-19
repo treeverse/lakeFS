@@ -175,8 +175,8 @@ func TestJWTCacheLoadToken(t *testing.T) {
 
 		expiredCache := TokenCache{
 			Token:          "test-jwt-token",
-			ExpirationTime: expirationTime, 
-			WriteTime:      oldWriteTime, 
+			ExpirationTime: expirationTime,
+			WriteTime:      oldWriteTime,
 		}
 
 		file, err := os.OpenFile(cache.filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)

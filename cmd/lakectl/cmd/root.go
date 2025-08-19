@@ -643,11 +643,10 @@ func getClient() *apigen.ClientWithResponses {
 			token, err = tokenCache.LoadToken(awsIAMparams.RefreshInterval)
 			if err != nil {
 				logging.ContextUnavailable().Errorf("Error loading token from cache: %w", err)
-			} 
+			}
 		}
 		awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(awsIAMparams, logging.ContextUnavailable(), loginClient, token, presignOpt)
 		opts = append(opts, awsAuthProvider)
-
 	}
 
 	oss := osinfo.GetOSInfo()
