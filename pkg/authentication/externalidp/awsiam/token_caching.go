@@ -15,11 +15,12 @@ var ErrCacheExpired = fmt.Errorf("cache expired")
 var ErrFailedToCreateCacheDir = fmt.Errorf("failed to create cache dir")
 
 const (
-	fileName           = "lakectl_token_cache.json"
-	lakectlDirName     = ".lakectl"
-	cacheDirName       = "cache"
-	readWriteOwnerOnly = 0600
-	MaxCacheTime       = 3600 * time.Second
+	fileName                  = "lakectl_token_cache.json"
+	lakectlDirName            = ".lakectl"
+	cacheDirName              = "cache"
+	readWriteOwnerOnly        = 0600
+	ReadWriteExecuteOwnerOnly = 0700
+	MaxCacheTime              = 3600 * time.Second
 )
 
 type TokenCache struct {
@@ -41,7 +42,7 @@ func NewJWTCache(baseDir string) (*JWTCache, error) {
 		}
 	}
 	cacheDir := filepath.Join(baseDir, lakectlDirName, cacheDirName)
-	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+	if err := os.MkdirAll(cacheDir, ReadWriteExecuteOwnerOnly); err != nil {
 		return nil, ErrFailedToCreateCacheDir
 	}
 

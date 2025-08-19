@@ -103,9 +103,11 @@ func (s *SecurityProviderAWSIAMRole) GetLakeFSTokenFromAWS(ctx context.Context) 
 	if err != nil {
 		s.Logger.Errorf("Error creating token cache: &w", err)
 	}
-	err = cache.SaveToken(res)
-	if err != nil {
-		s.Logger.Errorf("Error loading token from cache: &w", err)
+	if cache != nil {
+		err = cache.SaveToken(res)
+		if err != nil {
+			s.Logger.Errorf("Error loading token from cache: &w", err)
+		}
 	}
 	return res, nil
 }

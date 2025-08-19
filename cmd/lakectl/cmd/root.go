@@ -633,16 +633,21 @@ func getClient() *apigen.ClientWithResponses {
 				}
 			})
 		}
+
+		var token *apigen.AuthenticationToken
 		tokenCache, err := awsiam.NewJWTCache("")
 		if err != nil {
-			logging.ContextUnavailable().Errorf("Error creating token cache: &w", err)
+			logging.ContextUnavailable().Errorf("Error creating token cache: %w", err)
 		}
-		token, err := tokenCache.LoadToken(awsIAMparams.RefreshInterval)
-		if err != nil {
-			logging.ContextUnavailable().Errorf("Error loading token from cache: &w", err)
+		if tokenCache != nil {
+			token, err = tokenCache.LoadToken(awsIAMparams.RefreshInterval)
+			if err != nil {
+				logging.ContextUnavailable().Errorf("Error loading token from cache: %w", err)
+			} 
 		}
 		awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(awsIAMparams, logging.ContextUnavailable(), loginClient, token, presignOpt)
 		opts = append(opts, awsAuthProvider)
+
 	}
 
 	oss := osinfo.GetOSInfo()
