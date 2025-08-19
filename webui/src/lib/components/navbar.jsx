@@ -64,39 +64,31 @@ const TopNavLink = ({ href, children }) => {
 };
 
 const TopNav = ({logged = true}) => {
-    if (!logged) {
+    if (logged) {
         return (
-            <Navbar variant="dark" bg="dark" expand="md">
-            <Container fluid={true}>
-                <Link component={Navbar.Brand} href="/">
-                    <img src="/logo.png" alt="lakeFS" className="logo"/>
-                </Link>
-            </Container>
+            <Navbar variant="dark" bg="dark" expand="md" className="border-bottom">
+                <Container fluid={true}>
+                    <Link component={Navbar.Brand} href="/">
+                        <img src="/logo.png" alt="lakeFS" className="logo"/>
+                    </Link>
+                    <Navbar.Toggle aria-controls="navbarScroll" />
+                    <Navbar.Collapse id="navbarScroll">
+
+                        <Nav className="me-auto my-2 my-lg-0"
+                             style={{ maxHeight: '100px' }}
+                             navbarScroll>
+                            <TopNavLink href="/repositories">Repositories</TopNavLink>
+                            <TopNavLink href="/auth">Administration</TopNavLink>
+                        </Nav>
+
+                        <DarkModeToggle/>
+                        <NavUserInfo/>
+                    </Navbar.Collapse>
+                </Container>
             </Navbar>
         );
     }
-    return (
-        <Navbar variant="dark" bg="dark" expand="md" className="border-bottom">
-            <Container fluid={true}>
-                <Link component={Navbar.Brand} href="/">
-                    <img src="/logo.png" alt="lakeFS" className="logo"/>
-                </Link>
-                <Navbar.Toggle aria-controls="navbarScroll" />
-                <Navbar.Collapse id="navbarScroll">
-
-                    <Nav className="me-auto my-2 my-lg-0"
-                         style={{ maxHeight: '100px' }}
-                         navbarScroll>
-                        <TopNavLink href="/repositories">Repositories</TopNavLink>
-                        <TopNavLink href="/auth">Administration</TopNavLink>
-                    </Nav>
-
-                    <DarkModeToggle/>
-                    <NavUserInfo/>
-                </Navbar.Collapse>
-            </Container>
-        </Navbar>
-    );
+    return null;
 };
 
 export default TopNav;
