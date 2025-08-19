@@ -233,16 +233,16 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
 
         -- Iterate through the table definitions and add to the result the ones that pass the filter
         for index, table_name_yaml in ipairs(table_def_names) do
-            if not table_descriptors_paths[table_name_yaml] and table_descriptors_paths[table_name_yaml] ~= nil then
+            if table_descriptors_paths[table_name_yaml] == nil then
                 local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
                 if table_descriptor.path ~= nil then
                     table_descriptors_paths[table_name_yaml] = table_descriptor.path
                 else
-                    table_descriptors_paths[table_name_yaml] = nil
+                    table_descriptors_paths[table_name_yaml] = false
                 end
             end
             local path = table_descriptors_paths[table_name_yaml]
-            if path ~= nil then
+            if path then
                 print(index, "table_descriptor.path", path)
                 -- filter only the changed paths from the list
                 for changed_path, value in pairs(changed_path_set) do
