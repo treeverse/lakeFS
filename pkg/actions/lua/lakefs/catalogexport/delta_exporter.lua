@@ -209,24 +209,11 @@ local function export_delta_log(action, table_def_names, write_object, delta_cli
     return response
 end
 
-local table_descriptors_paths = {}
-local function get_table_descriptor_path(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
-    if not table_descriptors_paths[table_name_yaml] and table_descriptors_paths[table_name_yaml] ~= nil then
-        local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
-        if table_descriptor.path ~= nil then
-            table_descriptors_paths[table_name_yaml] = table_descriptor.path
-        else
-            table_descriptors_paths[table_name_yaml] = nil
-        end
-    end
-    return table_descriptors_paths[table_name_yaml]
-end
-
-
 -- Local function to filter the list of table defs to include only those that have changed
 local function changed_table_defs(table_def_names, table_descriptors_path, repository_id, ref, compare_ref)
     -- Perform a diff_refs operation to get the differences between references
     local after = ""
+    local table_descriptors_paths = {}
     local changed_path_set = {}
     -- Initialize the result table for storing changed table definitions
     local changed_table_def_names = {}
@@ -246,7 +233,15 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
 
         -- Iterate through the table definitions and add to the result the ones that pass the filter
         for index, table_name_yaml in ipairs(table_def_names) do
-            local path = get_table_descriptor_path(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
+            if not table_descriptors_paths[table_name_yaml] and table_descriptors_paths[table_name_yaml] ~= nil then
+                local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
+                if table_descriptor.path ~= nil then
+                    table_descriptors_paths[table_name_yaml] = table_descriptor.path
+                else
+                    table_descriptors_paths[table_name_yaml] = nil
+                end
+            end
+            local path = table_descriptors_paths[table_name_yaml]
             if path ~= nil then
                 print(index, "table_descriptor.path", path)
                 -- filter only the changed paths from the list
