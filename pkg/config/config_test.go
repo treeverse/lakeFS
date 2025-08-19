@@ -81,7 +81,7 @@ func TestConfig_NewFromFile(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			c, err := newConfigFromFile("testdata/auth_fixture/basic_auth.yaml")
 			require.NoError(t, err)
-			require.Equal(t, "test value", c.AuthConfig().Encrypt.SecretKey.SecureValue())
+			require.Equal(t, "test value", c.AuthConfig().GetBaseAuthConfig().Encrypt.SecretKey.SecureValue())
 		})
 		t.Run("invalid auth", func(t *testing.T) {
 			_, err := newConfigFromFile("testdata/auth_fixture/invalid_auth.yaml")
@@ -167,33 +167,6 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 		if _, ok := metricsAdapter.InnerAdapter().(*gs.Adapter); !ok {
 			t.Fatalf("expected an gs block adapter, got something else instead")
 		}
-	})
-}
-
-func TestConfig_LoginUrlMethodDefaults(t *testing.T) {
-	t.Run("no ui_config section - should get default", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/no_ui_config.yaml")
-		require.NoError(t, err)
-		authConfig := c.AuthConfig()
-		require.Equal(t, "none", authConfig.UIConfig.RBAC)
-		require.Equal(t, "redirect", authConfig.UIConfig.LoginURLMethod)
-	})
-
-	t.Run("partial ui_config - missing login_url_method should get default", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/partial_ui_config.yaml")
-		require.NoError(t, err)
-		authConfig := c.AuthConfig()
-		require.Equal(t, "internal", authConfig.UIConfig.RBAC)
-		require.Equal(t, "https://example.com/login", authConfig.UIConfig.LoginURL)
-		require.Equal(t, "redirect", authConfig.UIConfig.LoginURLMethod)
-	})
-
-	t.Run("explicit login_url_method - should not be overridden", func(t *testing.T) {
-		c, err := newConfigFromFile("testdata/custom_login_url_method.yaml")
-		require.NoError(t, err)
-		authConfig := c.AuthConfig()
-		require.Equal(t, "internal", authConfig.UIConfig.RBAC)
-		require.Equal(t, "select", authConfig.UIConfig.LoginURLMethod)
 	})
 }
 

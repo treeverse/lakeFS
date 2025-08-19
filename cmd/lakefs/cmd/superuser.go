@@ -33,7 +33,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		cfg := LoadConfig()
 		authConfig := cfg.AuthConfig()
 		baseConfig := cfg.GetBaseConfig()
-		if authConfig.GetBasicAuthConfig().AuthUIConfig.RBAC == config.AuthRBACExternal {
+		if authConfig.GetAuthUIConfig().RBAC == config.AuthRBACExternal {
 			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
 			os.Exit(1)
 		}
@@ -68,7 +68,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		}
 		defer kvStore.Close()
 
-		addToAdmins := !authConfig.IsAuthBasic()
+		addToAdmins := !authConfig.GetAuthUIConfig().IsAuthBasic()
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
 		metadata := initStatsMetadata(ctx, logger, authMetadataManager, baseConfig.StorageConfig())
 		authService, err := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)

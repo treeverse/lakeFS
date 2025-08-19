@@ -14,11 +14,14 @@ import (
 
 var errSimplifiedOrExternalAuth = errors.New("cannot set auth.ui_config.rbac to non-simplified without setting an external auth service")
 
-func checkAuthModeSupport(baseCfg config.Auth) error {
-	if baseCfg.IsAuthBasic() { // Basic mode
+func checkAuthModeSupport(authCfg config.AuthConfig) error {
+	baseAuthCfg := authCfg.GetBaseAuthConfig()
+	authUICfg := authCfg.GetAuthUIConfig()
+
+	if authUICfg.IsAuthBasic() { // Basic mode
 		return nil
 	}
-	if !baseCfg.IsAuthUISimplified() && !baseCfg.IsAuthTypeAPI() {
+	if !authUICfg.IsAuthUISimplified() && !baseAuthCfg.IsAuthTypeAPI() {
 		return errSimplifiedOrExternalAuth
 	}
 	return nil
@@ -26,16 +29,18 @@ func checkAuthModeSupport(baseCfg config.Auth) error {
 
 func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logger, kvStore kv.Store, metadataManager *auth.KVMetadataManager) auth.Service {
 	authCfg := cfg.AuthConfig()
-	if err := checkAuthModeSupport(*cfg.AuthConfig()); err != nil {
+	baseAuthCfg := authCfg.GetBaseAuthConfig()
+	authUICfg := authCfg.GetAuthUIConfig()
+	if err := checkAuthModeSupport(authCfg); err != nil {
 		logger.WithError(err).Fatal("Unsupported auth mode")
 	}
 
-	secretStore := crypt.NewSecretStore([]byte(authCfg.GetBasicAuthConfig().Encrypt.SecretKey))
-	if authCfg.IsAuthBasic() {
+	secretStore := crypt.NewSecretStore([]byte(baseAuthCfg.Encrypt.SecretKey))
+	if authUICfg.IsAuthBasic() {
 		apiService := auth.NewBasicAuthService(
 			kvStore,
 			secretStore,
-			authparams.ServiceCache(authCfg.GetBasicAuthConfig().Cache),
+			authparams.ServiceCache(baseAuthCfg.Cache),
 			logger.WithField("service", "auth_service"),
 		)
 		// Check if migration needed
@@ -64,19 +69,19 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 
 	// Not Basic - using auth server
 	apiService, err := auth.NewAPIAuthService(
-		authCfg.GetBasicAuthConfig().API.Endpoint,
-		authCfg.GetBasicAuthConfig().API.Token.SecureValue(),
-		authCfg.IsAdvancedAuth(),
-		authCfg.GetBasicAuthConfig().AuthenticationAPI.ExternalPrincipalsEnabled,
+		baseAuthCfg.API.Endpoint,
+		baseAuthCfg.API.Token.SecureValue(),
+		authUICfg.IsAdvancedAuth(),
+		baseAuthCfg.AuthenticationAPI.ExternalPrincipalsEnabled,
 		secretStore,
-		authparams.ServiceCache(authCfg.GetBasicAuthConfig().Cache),
+		authparams.ServiceCache(baseAuthCfg.Cache),
 		logger.WithField("service", "auth_api"),
 	)
 	if err != nil {
 		logger.WithError(err).Fatal("failed to create authentication service")
 	}
-	if !authCfg.GetBasicAuthConfig().API.SkipHealthCheck {
-		if err := apiService.CheckHealth(ctx, logger, authCfg.GetBasicAuthConfig().API.HealthCheckTimeout); err != nil {
+	if !baseAuthCfg.API.SkipHealthCheck {
+		if err := apiService.CheckHealth(ctx, logger, baseAuthCfg.API.HealthCheckTimeout); err != nil {
 			logger.WithError(err).Fatal("Auth API health check failed")
 		}
 	}

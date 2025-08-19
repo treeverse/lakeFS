@@ -749,7 +749,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	}
 
 	loginTime := time.Now()
-	duration := c.Config.AuthConfig().GetBasicAuthConfig().LoginDuration
+	duration := c.Config.AuthConfig().GetBaseAuthConfig().LoginDuration
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
@@ -793,13 +793,13 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	c.Logger.WithField("user_id", externalPrincipalIDInfo.UserID).Debug("got external principal ID info, generating a new JWT")
-	duration := c.Config.AuthConfig().GetBasicAuthConfig().LoginDuration
+	duration := c.Config.AuthConfig().GetBaseAuthConfig().LoginDuration
 	if swag.IntValue(body.TokenExpirationDuration) > 0 {
 		duration = time.Second * time.Duration(*body.TokenExpirationDuration)
 	}
-	if duration > c.Config.AuthConfig().GetBasicAuthConfig().LoginMaxDuration {
-		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.AuthConfig().GetBasicAuthConfig().LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
-		duration = c.Config.AuthConfig().GetBasicAuthConfig().LoginMaxDuration
+	if duration > c.Config.AuthConfig().GetBaseAuthConfig().LoginMaxDuration {
+		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.AuthConfig().GetBaseAuthConfig().LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
+		duration = c.Config.AuthConfig().GetBaseAuthConfig().LoginMaxDuration
 	}
 	loginTime := time.Now()
 	expires := loginTime.Add(duration)
@@ -1350,7 +1350,7 @@ func (c *Controller) AddGroupMembership(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, groupID string, params apigen.ListGroupPoliciesParams) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1407,7 +1407,7 @@ func serializePolicy(p *model.Policy) apigen.Policy {
 }
 
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1429,7 +1429,7 @@ func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1452,7 +1452,7 @@ func (c *Controller) AttachPolicyToGroup(w http.ResponseWriter, r *http.Request,
 }
 
 func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params apigen.ListPoliciesParams) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1491,7 +1491,7 @@ func (c *Controller) ListPolicies(w http.ResponseWriter, r *http.Request, params
 }
 
 func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body apigen.CreatePolicyJSONRequestBody) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1537,7 +1537,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 }
 
 func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1563,7 +1563,7 @@ func (c *Controller) DeletePolicy(w http.ResponseWriter, r *http.Request, policy
 }
 
 func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID string) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1591,7 +1591,7 @@ func (c *Controller) GetPolicy(w http.ResponseWriter, r *http.Request, policyID 
 }
 
 func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body apigen.UpdatePolicyJSONRequestBody, policyID string) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1919,7 +1919,7 @@ func (c *Controller) ListUserGroups(w http.ResponseWriter, r *http.Request, user
 }
 
 func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, userID string, params apigen.ListUserPoliciesParams) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1964,7 +1964,7 @@ func (c *Controller) ListUserPolicies(w http.ResponseWriter, r *http.Request, us
 }
 
 func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -1986,7 +1986,7 @@ func (c *Controller) DetachPolicyFromUser(w http.ResponseWriter, r *http.Request
 }
 
 func (c *Controller) AttachPolicyToUser(w http.ResponseWriter, r *http.Request, userID, policyID string) {
-	if c.Config.AuthConfig().IsAuthUISimplified() {
+	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
 		return
 	}
@@ -5239,17 +5239,17 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 	writeResponse(w, r, http.StatusOK, response)
 }
 
-func newLoginConfig(c *config.Auth) *apigen.LoginConfig {
-	authUIConfig := c.GetBasicAuthConfig().AuthUIConfig
+func newLoginConfig(c config.AuthConfig) *apigen.LoginConfig {
+	authUICfg := c.GetAuthUIConfig()
 	loginConfig := &apigen.LoginConfig{
-		RBAC:               apiutil.Ptr(authUIConfig.RBAC),
-		LoginUrl:           authUIConfig.LoginURL,
+		RBAC:               apiutil.Ptr(authUICfg.RBAC),
+		LoginUrl:           authUICfg.LoginURL,
 		LoginUrlMethod:     apiutil.Ptr(c.GetLoginURLMethodConfigParam()),
-		LoginFailedMessage: apiutil.Ptr(authUIConfig.LoginFailedMessage),
-		FallbackLoginUrl:   authUIConfig.FallbackLoginURL,
-		FallbackLoginLabel: authUIConfig.FallbackLoginLabel,
-		LoginCookieNames:   authUIConfig.LoginCookieNames,
-		LogoutUrl:          authUIConfig.LogoutURL,
+		LoginFailedMessage: apiutil.Ptr(authUICfg.LoginFailedMessage),
+		FallbackLoginUrl:   authUICfg.FallbackLoginURL,
+		FallbackLoginLabel: authUICfg.FallbackLoginLabel,
+		LoginCookieNames:   authUICfg.LoginCookieNames,
+		LogoutUrl:          authUICfg.LogoutURL,
 	}
 	if c.UseUILoginPlaceholders() {
 		loginConfig.UsernameUiPlaceholder = swag.String(usernamePlaceholder)
@@ -5262,7 +5262,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// external auth reports as initialized to avoid triggering the setup wizard
-	if c.Config.AuthConfig().GetBasicAuthConfig().AuthUIConfig.RBAC == config.AuthRBACExternal {
+	if c.Config.AuthConfig().GetAuthUIConfig().RBAC == config.AuthRBACExternal {
 		response := apigen.SetupState{
 			State:            swag.String(string(auth.SetupStateInitialized)),
 			LoginConfig:      newLoginConfig(c.Config.AuthConfig()),
@@ -5336,7 +5336,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	if c.Config.AuthConfig().GetBasicAuthConfig().AuthUIConfig.RBAC == config.AuthRBACExternal {
+	if c.Config.AuthConfig().GetAuthUIConfig().RBAC == config.AuthRBACExternal {
 		// nothing to do - users are managed elsewhere
 		writeResponse(w, r, http.StatusOK, apigen.CredentialsWithSecret{})
 		return
@@ -6168,7 +6168,7 @@ func (c *Controller) ListUserExternalPrincipals(w http.ResponseWriter, r *http.R
 
 func (c *Controller) isExternalPrincipalNotSupported(ctx context.Context) bool {
 	// if IsAuthUISimplified true then it means the user not using RBAC model
-	return c.Config.AuthConfig().IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
+	return c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() || !c.Auth.IsExternalPrincipalsEnabled(ctx)
 }
 
 func (c *Controller) GetLicense(w http.ResponseWriter, r *http.Request) {

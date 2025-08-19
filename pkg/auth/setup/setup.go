@@ -235,8 +235,8 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 		cred *model.Credential
 		err  error
 	)
-	authCfg := cfg.AuthConfig()
-	if authCfg.IsAuthBasic() {
+	authUICfg := cfg.AuthConfig().GetAuthUIConfig()
+	if authUICfg.IsAuthBasic() {
 		if cred, err = AddAdminUser(ctx, authService, adminUser, false); err != nil {
 			return nil, err
 		}
@@ -245,7 +245,7 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 	}
 
 	// update setup time with auth type used
-	if err = metadataManager.UpdateSetupTimestamp(ctx, time.Now(), authCfg.GetBasicAuthConfig().AuthUIConfig.RBAC); err != nil {
+	if err = metadataManager.UpdateSetupTimestamp(ctx, time.Now(), authUICfg.RBAC); err != nil {
 		logging.FromContext(ctx).WithError(err).Error("Failed the update setup timestamp")
 	}
 

@@ -12,7 +12,7 @@ type ConfigImpl struct {
 	UI                config.UI   `mapstructure:"ui"`
 }
 
-func (c *ConfigImpl) AuthConfig() *config.Auth {
+func (c *ConfigImpl) AuthConfig() config.AuthConfig {
 	return &c.Auth
 }
 
