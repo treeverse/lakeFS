@@ -220,7 +220,8 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
     while true do
         local status, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref, after)
         if status ~= 200 then
-            error("Failed to perform diff_refs with status: " .. tostring(status))
+            error("Failed to perform diff_refs with status: " .. tostring(status) .. " ref: " .. ref ..
+                  " compare_ref: " .. compare_ref .. " after: " .. after)
         end
 
         -- Now make a set out of the paths of the filenames
