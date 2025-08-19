@@ -397,6 +397,11 @@ type UIConfig interface {
 	GetCustomViewers() []apigen.CustomViewer
 }
 
+type AuthConfig interface {
+	GetBasicAuthConfig() *BasicAuth
+	GetLoginURLMethodConfigParam() string
+}
+
 // BaseConfig - Output struct of configuration, used to validate.  If you read a key using a viper accessor
 // rather than accessing a field of this struct, that key will *not* be validated.  So don't
 // do that.
@@ -620,7 +625,7 @@ const (
 	gcpAESKeyLength = 32
 )
 
-type Auth struct {
+type BasicAuth struct {
 	Cache struct {
 		Enabled bool          `mapstructure:"enabled"`
 		Size    int           `mapstructure:"size"`
@@ -661,19 +666,19 @@ type Auth struct {
 	LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
 	LoginDuration     time.Duration `mapstructure:"login_duration"`
 	LoginMaxDuration  time.Duration `mapstructure:"login_max_duration"`
-	UIConfig          struct {
-		RBAC                 string   `mapstructure:"rbac"`
-		LoginURL             string   `mapstructure:"login_url"`
-		LoginURLMethod       string   `mapstructure:"login_url_method"`
-		LoginFailedMessage   string   `mapstructure:"login_failed_message"`
-		FallbackLoginURL     *string  `mapstructure:"fallback_login_url"`
-		FallbackLoginLabel   *string  `mapstructure:"fallback_login_label"`
-		LoginCookieNames     []string `mapstructure:"login_cookie_names"`
-		LogoutURL            string   `mapstructure:"logout_url"`
-		UseLoginPlaceholders bool     `mapstructure:"use_login_placeholders"`
-	} `mapstructure:"ui_config"`
+	AuthUIConfig      AuthUIConfig  `mapstructure:"ui_config"`
 }
 
+type AuthUIConfig struct {
+	RBAC                 string   `mapstructure:"rbac"`
+	LoginURL             string   `mapstructure:"login_url"`
+	LoginFailedMessage   string   `mapstructure:"login_failed_message"`
+	FallbackLoginURL     *string  `mapstructure:"fallback_login_url"`
+	FallbackLoginLabel   *string  `mapstructure:"fallback_login_label"`
+	LoginCookieNames     []string `mapstructure:"login_cookie_names"`
+	LogoutURL            string   `mapstructure:"logout_url"`
+	UseLoginPlaceholders bool     `mapstructure:"use_login_placeholders"`
+}
 type OIDC struct {
 	// configure how users are handled on the lakeFS side:
 	ValidateIDTokenClaims  map[string]string `mapstructure:"validate_id_token_claims"`
@@ -702,36 +707,48 @@ type CookieAuthVerification struct {
 	PersistFriendlyName bool `mapstructure:"persist_friendly_name"`
 }
 
+type Auth struct {
+	BasicAuth BasicAuth `mapstructure:"auth"`
+}
+
+func (c *Auth) GetBasicAuthConfig() *BasicAuth {
+	return &c.BasicAuth
+}
+
+func (c *Auth) GetLoginURLMethodConfigParam() string {
+	return "none"
+}
+
 func (c *Auth) IsAuthBasic() bool {
-	return c.UIConfig.RBAC == AuthRBACNone
+	return c.BasicAuth.AuthUIConfig.RBAC == AuthRBACNone
 }
 
 func (c *Auth) IsAuthUISimplified() bool {
-	return c.UIConfig.RBAC == AuthRBACSimplified
+	return c.BasicAuth.AuthUIConfig.RBAC == AuthRBACSimplified
 }
 
 func (c *Auth) IsAuthenticationTypeAPI() bool {
-	return c.AuthenticationAPI.Endpoint != ""
+	return c.BasicAuth.AuthenticationAPI.Endpoint != ""
 }
 
 func (c *Auth) IsAuthTypeAPI() bool {
-	return c.API.Endpoint != ""
+	return c.BasicAuth.API.Endpoint != ""
 }
 
 func (c *Auth) IsExternalPrincipalsEnabled() bool {
 	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
 	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
-	return c.AuthenticationAPI.ExternalPrincipalsEnabled
+	return c.BasicAuth.AuthenticationAPI.ExternalPrincipalsEnabled
 }
 
 // UseUILoginPlaceholders returns true if the UI should use placeholders for login
 // the UI should use placeholders just in case of LDAP, the other auth methods should have their own login page
 func (c *Auth) UseUILoginPlaceholders() bool {
-	return c.RemoteAuthenticator.Enabled || c.UIConfig.UseLoginPlaceholders
+	return c.BasicAuth.RemoteAuthenticator.Enabled || c.BasicAuth.AuthUIConfig.UseLoginPlaceholders
 }
 
 func (c *Auth) IsAdvancedAuth() bool {
-	return c.UIConfig.RBAC == AuthRBACExternal || c.UIConfig.RBAC == AuthRBACInternal
+	return c.BasicAuth.AuthUIConfig.RBAC == AuthRBACExternal || c.BasicAuth.AuthUIConfig.RBAC == AuthRBACInternal
 }
 
 type UI struct {

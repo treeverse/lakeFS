@@ -33,7 +33,7 @@ class LoginConfig(BaseModel):
     username_ui_placeholder: Optional[StrictStr] = Field(None, description="Placeholder text to display in the username field of the login form. ")
     password_ui_placeholder: Optional[StrictStr] = Field(None, description="Placeholder text to display in the password field of the login form. ")
     login_url: StrictStr = Field(..., description="Primary URL to use for login.")
-    login_url_method: Optional[StrictStr] = Field('redirect', description="Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. ")
+    login_url_method: Optional[StrictStr] = Field(None, description="Defines login behavior when login_url is set. - none: For OSS users. - redirect: Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. ")
     login_failed_message: Optional[StrictStr] = Field(None, description="Message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method ")
     fallback_login_url: Optional[StrictStr] = Field(None, description="Secondary URL to offer users to use for login.")
     fallback_login_label: Optional[StrictStr] = Field(None, description="Label to place on fallback_login_url.")
@@ -57,8 +57,8 @@ class LoginConfig(BaseModel):
         if value is None:
             return value
 
-        if value not in ('redirect', 'select'):
-            raise ValueError("must be one of enum values ('redirect', 'select')")
+        if value not in ('none', 'redirect', 'select'):
+            raise ValueError("must be one of enum values ('none', 'redirect', 'select')")
         return value
 
     class Config:
@@ -101,7 +101,7 @@ class LoginConfig(BaseModel):
             "username_ui_placeholder": obj.get("username_ui_placeholder"),
             "password_ui_placeholder": obj.get("password_ui_placeholder"),
             "login_url": obj.get("login_url"),
-            "login_url_method": obj.get("login_url_method") if obj.get("login_url_method") is not None else 'redirect',
+            "login_url_method": obj.get("login_url_method"),
             "login_failed_message": obj.get("login_failed_message"),
             "fallback_login_url": obj.get("fallback_login_url"),
             "fallback_login_label": obj.get("fallback_login_label"),

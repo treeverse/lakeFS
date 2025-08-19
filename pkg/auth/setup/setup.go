@@ -245,7 +245,7 @@ func CreateInitialAdminUserWithKeys(ctx context.Context, authService auth.Servic
 	}
 
 	// update setup time with auth type used
-	if err = metadataManager.UpdateSetupTimestamp(ctx, time.Now(), authCfg.UIConfig.RBAC); err != nil {
+	if err = metadataManager.UpdateSetupTimestamp(ctx, time.Now(), authCfg.GetBasicAuthConfig().AuthUIConfig.RBAC); err != nil {
 		logging.FromContext(ctx).WithError(err).Error("Failed the update setup timestamp")
 	}
 

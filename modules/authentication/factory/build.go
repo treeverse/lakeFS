@@ -14,7 +14,11 @@ import (
 func NewAuthenticationService(_ context.Context, c config.Config, logger logging.Logger) (authentication.Service, error) {
 	authCfg := c.AuthConfig()
 	if authCfg.IsAuthenticationTypeAPI() {
-		return authentication.NewAPIService(authCfg.AuthenticationAPI.Endpoint, authCfg.CookieAuthVerification.ValidateIDTokenClaims, logger.WithField("service", "authentication_api"), authCfg.AuthenticationAPI.ExternalPrincipalsEnabled)
+		return authentication.NewAPIService(
+			authCfg.GetBasicAuthConfig().AuthenticationAPI.Endpoint,
+			authCfg.GetBasicAuthConfig().CookieAuthVerification.ValidateIDTokenClaims,
+			logger.WithField("service", "authentication_api"),
+			authCfg.GetBasicAuthConfig().AuthenticationAPI.ExternalPrincipalsEnabled)
 	}
 	return authentication.NewDummyService(), nil
 }
@@ -27,8 +31,8 @@ func BuildAuthenticatorChain(c config.Config, logger logging.Logger, authService
 	}
 
 	// remote authenticator setup
-	if authConfig.RemoteAuthenticator.Enabled {
-		remoteAuthenticator, err := authremote.NewAuthenticator(authremote.AuthenticatorConfig(authConfig.RemoteAuthenticator), authService, logger)
+	if authConfig.GetBasicAuthConfig().RemoteAuthenticator.Enabled {
+		remoteAuthenticator, err := authremote.NewAuthenticator(authremote.AuthenticatorConfig(authConfig.GetBasicAuthConfig().RemoteAuthenticator), authService, logger)
 		if err != nil {
 			return authenticators, fmt.Errorf("failed to create remote authenticator: %w", err)
 		}

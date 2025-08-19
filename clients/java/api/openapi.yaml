@@ -8875,7 +8875,7 @@ components:
         - login_cookie_names
         - login_cookie_names
         fallback_login_label: fallback_login_label
-        login_url_method: redirect
+        login_url_method: none
       properties:
         RBAC:
           description: |
@@ -8899,13 +8899,14 @@ components:
           description: Primary URL to use for login.
           type: string
         login_url_method:
-          default: redirect
           description: |
             Defines login behavior when login_url is set.
-            - redirect (default): Auto-redirect to login_url.
+            - none: For OSS users.
+            - redirect: Auto-redirect to login_url.
             - select: Show a page to choose between logging in via login_url or with lakeFS credentials.
             Ignored if login_url is not configured.
           enum:
+          - none
           - redirect
           - select
           type: string
@@ -8947,7 +8948,7 @@ components:
           - login_cookie_names
           - login_cookie_names
           fallback_login_label: fallback_login_label
-          login_url_method: redirect
+          login_url_method: none
         state: initialized
         comm_prefs_missing: true
       properties:

@@ -30,12 +30,12 @@ func NewAuthService(ctx context.Context, cfg config.Config, logger logging.Logge
 		logger.WithError(err).Fatal("Unsupported auth mode")
 	}
 
-	secretStore := crypt.NewSecretStore([]byte(authCfg.Encrypt.SecretKey))
+	secretStore := crypt.NewSecretStore([]byte(authCfg.GetBasicAuthConfig().Encrypt.SecretKey))
 	if authCfg.IsAuthBasic() {
 		apiService := auth.NewBasicAuthService(
 			kvStore,
 			secretStore,
-			authparams.ServiceCache(authCfg.Cache),
+			authparams.ServiceCache(authCfg.GetBasicAuthConfig().Cache),
 			logger.WithField("service", "auth_service"),
 		)
 		// Check if migration needed
@@ -64,19 +64,19 @@ Please run "lakefs superuser -h" and follow the instructions on how to migrate a
 
 	// Not Basic - using auth server
 	apiService, err := auth.NewAPIAuthService(
-		authCfg.API.Endpoint,
-		authCfg.API.Token.SecureValue(),
+		authCfg.GetBasicAuthConfig().API.Endpoint,
+		authCfg.GetBasicAuthConfig().API.Token.SecureValue(),
 		authCfg.IsAdvancedAuth(),
-		authCfg.AuthenticationAPI.ExternalPrincipalsEnabled,
+		authCfg.GetBasicAuthConfig().AuthenticationAPI.ExternalPrincipalsEnabled,
 		secretStore,
-		authparams.ServiceCache(authCfg.Cache),
+		authparams.ServiceCache(authCfg.GetBasicAuthConfig().Cache),
 		logger.WithField("service", "auth_api"),
 	)
 	if err != nil {
 		logger.WithError(err).Fatal("failed to create authentication service")
 	}
-	if !authCfg.API.SkipHealthCheck {
-		if err := apiService.CheckHealth(ctx, logger, authCfg.API.HealthCheckTimeout); err != nil {
+	if !authCfg.GetBasicAuthConfig().API.SkipHealthCheck {
+		if err := apiService.CheckHealth(ctx, logger, authCfg.GetBasicAuthConfig().API.HealthCheckTimeout); err != nil {
 			logger.WithError(err).Fatal("Auth API health check failed")
 		}
 	}

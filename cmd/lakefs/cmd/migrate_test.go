@@ -35,8 +35,8 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("initial_kv_version", func(t *testing.T) {
 		cfg := configfactory.ConfigImpl{}
-		cfg.Auth.UIConfig.RBAC = config.AuthRBACSimplified
-		cfg.Auth.Encrypt.SecretKey = "test"
+		cfg.Auth.GetBasicAuthConfig().AuthUIConfig.RBAC = config.AuthRBACSimplified
+		cfg.Auth.GetBasicAuthConfig().Encrypt.SecretKey = "test"
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.InitialMigrateVersion))
 		err := cmd.DoMigration(ctx, kvStore, cfg.GetBaseConfig(), false)
@@ -48,7 +48,7 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("from_acl_v1_force", func(t *testing.T) {
 		cfg := configfactory.ConfigImpl{}
-		cfg.Auth.UIConfig.RBAC = config.AuthRBACSimplified
+		cfg.Auth.GetBasicAuthConfig().AuthUIConfig.RBAC = config.AuthRBACSimplified
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.ACLNoReposMigrateVersion))
 		err := cmd.DoMigration(ctx, kvStore, cfg.GetBaseConfig(), true)
@@ -60,7 +60,7 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("from_acl_v2", func(t *testing.T) {
 		cfg := configfactory.ConfigImpl{}
-		cfg.Auth.UIConfig.RBAC = config.AuthRBACSimplified
+		cfg.Auth.GetBasicAuthConfig().AuthUIConfig.RBAC = config.AuthRBACSimplified
 		startVer := kv.ACLNoReposMigrateVersion
 		for !kv.IsLatestSchemaVersion(startVer) {
 			kvStore := kvtest.GetStore(ctx, t)
@@ -76,7 +76,7 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("latest_version", func(t *testing.T) {
 		cfg := configfactory.ConfigImpl{}
-		cfg.Auth.UIConfig.RBAC = config.AuthRBACSimplified
+		cfg.Auth.GetBasicAuthConfig().AuthUIConfig.RBAC = config.AuthRBACSimplified
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.NextSchemaVersion-1))
 		err := cmd.DoMigration(ctx, kvStore, cfg.GetBaseConfig(), false)
@@ -88,7 +88,7 @@ func TestDoMigrate(t *testing.T) {
 
 	t.Run("next_version", func(t *testing.T) {
 		cfg := configfactory.ConfigImpl{}
-		cfg.Auth.UIConfig.RBAC = config.AuthRBACSimplified
+		cfg.Auth.GetBasicAuthConfig().AuthUIConfig.RBAC = config.AuthRBACSimplified
 		kvStore := kvtest.GetStore(ctx, t)
 		require.NoError(t, kv.SetDBSchemaVersion(ctx, kvStore, kv.NextSchemaVersion))
 		err := cmd.DoMigration(ctx, kvStore, cfg.GetBaseConfig(), false)

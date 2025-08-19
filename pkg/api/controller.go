@@ -749,7 +749,7 @@ func (c *Controller) Login(w http.ResponseWriter, r *http.Request, body apigen.L
 	}
 
 	loginTime := time.Now()
-	duration := c.Config.AuthConfig().LoginDuration
+	duration := c.Config.AuthConfig().GetBasicAuthConfig().LoginDuration
 	expires := loginTime.Add(duration)
 	secret := c.Auth.SecretStore().SharedSecret()
 
@@ -793,13 +793,13 @@ func (c *Controller) ExternalPrincipalLogin(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	c.Logger.WithField("user_id", externalPrincipalIDInfo.UserID).Debug("got external principal ID info, generating a new JWT")
-	duration := c.Config.AuthConfig().LoginDuration
+	duration := c.Config.AuthConfig().GetBasicAuthConfig().LoginDuration
 	if swag.IntValue(body.TokenExpirationDuration) > 0 {
 		duration = time.Second * time.Duration(*body.TokenExpirationDuration)
 	}
-	if duration > c.Config.AuthConfig().LoginMaxDuration {
-		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.AuthConfig().LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
-		duration = c.Config.AuthConfig().LoginMaxDuration
+	if duration > c.Config.AuthConfig().GetBasicAuthConfig().LoginMaxDuration {
+		c.Logger.WithFields(logging.Fields{"duration": duration, "max_duration": c.Config.AuthConfig().GetBasicAuthConfig().LoginMaxDuration}).Warn("Login duration exceeds maximum allowed, using maximum allowed")
+		duration = c.Config.AuthConfig().GetBasicAuthConfig().LoginMaxDuration
 	}
 	loginTime := time.Now()
 	expires := loginTime.Add(duration)
@@ -5240,15 +5240,16 @@ func (c *Controller) GetTag(w http.ResponseWriter, r *http.Request, repository, 
 }
 
 func newLoginConfig(c *config.Auth) *apigen.LoginConfig {
+	authUIConfig := c.GetBasicAuthConfig().AuthUIConfig
 	loginConfig := &apigen.LoginConfig{
-		RBAC:               &c.UIConfig.RBAC,
-		LoginUrl:           c.UIConfig.LoginURL,
-		LoginUrlMethod:     &c.UIConfig.LoginURLMethod,
-		LoginFailedMessage: &c.UIConfig.LoginFailedMessage,
-		FallbackLoginUrl:   c.UIConfig.FallbackLoginURL,
-		FallbackLoginLabel: c.UIConfig.FallbackLoginLabel,
-		LoginCookieNames:   c.UIConfig.LoginCookieNames,
-		LogoutUrl:          c.UIConfig.LogoutURL,
+		RBAC:               apiutil.Ptr(authUIConfig.RBAC),
+		LoginUrl:           authUIConfig.LoginURL,
+		LoginUrlMethod:     apiutil.Ptr(c.GetLoginURLMethodConfigParam()),
+		LoginFailedMessage: apiutil.Ptr(authUIConfig.LoginFailedMessage),
+		FallbackLoginUrl:   authUIConfig.FallbackLoginURL,
+		FallbackLoginLabel: authUIConfig.FallbackLoginLabel,
+		LoginCookieNames:   authUIConfig.LoginCookieNames,
+		LogoutUrl:          authUIConfig.LogoutURL,
 	}
 	if c.UseUILoginPlaceholders() {
 		loginConfig.UsernameUiPlaceholder = swag.String(usernamePlaceholder)
@@ -5261,7 +5262,7 @@ func (c *Controller) GetSetupState(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// external auth reports as initialized to avoid triggering the setup wizard
-	if c.Config.AuthConfig().UIConfig.RBAC == config.AuthRBACExternal {
+	if c.Config.AuthConfig().GetBasicAuthConfig().AuthUIConfig.RBAC == config.AuthRBACExternal {
 		response := apigen.SetupState{
 			State:            swag.String(string(auth.SetupStateInitialized)),
 			LoginConfig:      newLoginConfig(c.Config.AuthConfig()),
@@ -5335,7 +5336,7 @@ func (c *Controller) Setup(w http.ResponseWriter, r *http.Request, body apigen.S
 		return
 	}
 
-	if c.Config.AuthConfig().UIConfig.RBAC == config.AuthRBACExternal {
+	if c.Config.AuthConfig().GetBasicAuthConfig().AuthUIConfig.RBAC == config.AuthRBACExternal {
 		// nothing to do - users are managed elsewhere
 		writeResponse(w, r, http.StatusOK, apigen.CredentialsWithSecret{})
 		return

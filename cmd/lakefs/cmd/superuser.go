@@ -33,7 +33,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		cfg := LoadConfig()
 		authConfig := cfg.AuthConfig()
 		baseConfig := cfg.GetBaseConfig()
-		if authConfig.UIConfig.RBAC == config.AuthRBACExternal {
+		if authConfig.GetBasicAuthConfig().AuthUIConfig.RBAC == config.AuthRBACExternal {
 			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
 			os.Exit(1)
 		}
