@@ -214,11 +214,21 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
     -- Perform a diff_refs operation to get the differences between references
     local after = ""
     local table_descriptors_paths = {}
-    local changed_path_set = {}
+    for _, table_name_yaml in ipairs(table_def_names) do
+        if not table_descriptors_paths[table_name_yaml] then
+            local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
+            if table_descriptor.path ~= nil then
+                table_descriptors_paths[table_name_yaml] = table_descriptor.path
+            else
+                table_descriptors_paths[table_name_yaml] = "" -- Marker: don't fetch this table descriptor again
+            end
+        end
+    end
     -- Initialize the result table for storing changed table definitions
     local changed_table_def_names = {}
     while true do
         local status, diff_resp = lakefs.diff_refs(repository_id, ref, compare_ref, after)
+        local changed_path_set = {}
         if status ~= 200 then
             error("Failed to perform diff_refs with status: " .. tostring(status) .. " ref: " .. ref ..
                   " compare_ref: " .. compare_ref .. " after: " .. after)
@@ -233,18 +243,9 @@ local function changed_table_defs(table_def_names, table_descriptors_path, repos
         end
 
         -- Iterate through the table definitions and add to the result the ones that pass the filter
-        for index, table_name_yaml in ipairs(table_def_names) do
-            if table_descriptors_paths[table_name_yaml] == nil then
-                local table_descriptor = get_table_descriptor(repository_id, compare_ref, table_name_yaml, table_descriptors_path)
-                if table_descriptor.path ~= nil then
-                    table_descriptors_paths[table_name_yaml] = table_descriptor.path
-                else
-                    table_descriptors_paths[table_name_yaml] = "" -- Marker: don't fetch this table descriptor again
-                end
-            end
-            local path = table_descriptors_paths[table_name_yaml]
-            if path and path ~= "" then
-                print(index, "table_descriptor.path", path)
+        for table_name_yaml, path in pairs(table_descriptors_paths) do
+            if path ~= "" then
+                print("table_descriptor.path", path)
                 -- filter only the changed paths from the list
                 for changed_path, value in pairs(changed_path_set) do
                     if value and strings.has_prefix(changed_path, path) then
