@@ -731,7 +731,7 @@ func (a *Auth) GetLoginURLMethodConfigParam() string {
 // UseUILoginPlaceholders returns true if the UI should use placeholders for login
 // the UI should use placeholders just in case of LDAP, the other auth methods should have their own login page
 func (a *Auth) UseUILoginPlaceholders() bool {
-	return a.RemoteAuthenticator.Enabled || a.AuthUIConfig.UseLoginPlaceholders
+	return a.RemoteAuthenticator.Enabled || a.UseLoginPlaceholders
 }
 
 func (b *BaseAuth) IsAuthenticationTypeAPI() bool {
