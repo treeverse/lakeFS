@@ -65,6 +65,7 @@ func ExternalPrincipalArn(principalID string) string {
 type PermissionParams struct {
 	Repository *string
 	Path       *string
+	Branch     *string
 }
 
 type PermissionDescriptor interface {
@@ -84,8 +85,27 @@ func (o *ObjectPermission) Permission(params PermissionParams) Node {
 	}
 }
 
+type BranchPermission struct {
+	Action string
+}
+
+func (o *BranchPermission) Permission(params PermissionParams) Node {
+	return Node{
+		Permission: Permission{
+			Action:   o.Action,
+			Resource: ObjectArn(*params.Repository, *params.Branch),
+		},
+	}
+}
+
 var readObjectPermission = ObjectPermission{Action: ReadObjectAction}
 var writeObjectPermission = ObjectPermission{Action: WriteObjectAction}
+var createBranchPermission = BranchPermission{Action: CreateBranchAction}
+var deleteBranchPermission = BranchPermission{Action: DeleteBranchAction}
+var readBranchPermission = BranchPermission{Action: ReadBranchAction}
+var revertBranchPermission = BranchPermission{Action: RevertBranchAction}
+var createCommitPermission = BranchPermission{Action: CreateCommitAction}
+var importCancelPermission = BranchPermission{Action: ImportCancelAction}
 
 var permissionByOp = map[string]PermissionDescriptor{
 	"HeadObject":               &readObjectPermission,
@@ -97,6 +117,17 @@ var permissionByOp = map[string]PermissionDescriptor{
 	"UpdateObjectUserMetadata": &writeObjectPermission,
 	"UploadObject":             &writeObjectPermission,
 	"UploadObjectPreflight":    &writeObjectPermission,
+	"CreateBranch":             &createBranchPermission,
+	"DeleteBranch":             &deleteBranchPermission,
+	"GetBranch":                &readBranchPermission,
+	"RevertBranch":             &revertBranchPermission,
+	"LogCommits":               &readBranchPermission,
+	"ResetBranch":              &revertBranchPermission,
+	"MergeIntoBranch":          &createCommitPermission,
+	"HardResetBranch":          &revertBranchPermission,
+	"ImportStatus":             &readBranchPermission,
+	"Commit":                   &createCommitPermission,
+	"ImportCancel":             &importCancelPermission,
 }
 
 func GetPermissionDescriptor(operationId string) PermissionDescriptor {
