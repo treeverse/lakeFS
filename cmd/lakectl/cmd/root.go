@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -186,6 +187,16 @@ const (
 	CacheFileName  = "lakectl_token_cache.json"
 	LakectlDirName = ".lakectl"
 	CacheDirName   = "cache"
+)
+
+var (
+	cachedToken         *apigen.AuthenticationToken
+	tokenLoadOnce       sync.Once
+	tokenCache          *awsiam.JWTCache
+	tokenCacheOnce      sync.Once
+	tokenSaveOnce       sync.Once
+	ErrTokenUnavailable = fmt.Errorf("token is not available")
+	ErrCacheUnavailable = fmt.Errorf("cache is not available")
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -644,7 +655,8 @@ func getClient() *apigen.ClientWithResponses {
 }
 
 func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
-	token := getOrCreateCachedToken(awsIAMparams, serverEndpoint)
+	token := getTokenOnce(awsIAMparams, serverEndpoint)
+	SaveTokenToCache()
 	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
 
 	presignOpt := func(po *sts.PresignOptions) {
@@ -671,42 +683,73 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string)
 	return []apigen.ClientOption{awsAuthProvider}
 }
 
-func getOrCreateCachedToken(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) *apigen.AuthenticationToken {
-	tokenCache := initTokenCache()
+func getTokenOnce(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) *apigen.AuthenticationToken {
+	tokenLoadOnce.Do(func() {
+		cache := getTokenCacheOnce()
+		var err error
+		if cache != nil {
+			if token, err := cache.GetToken(); err == nil {
+				cachedToken = token
+				return
+			}
+			logging.ContextUnavailable().Errorf("Error loading token from cache: %w", err)
 
-	if tokenCache != nil {
-		if cachedToken, err := tokenCache.GetToken(); err == nil {
-			return cachedToken
 		}
-	}
-
-	token := generateNewToken(awsIAMparams, serverEndpoint)
-
-	if tokenCache != nil {
-		if err := tokenCache.SaveToken(token); err != nil {
-			logging.ContextUnavailable().Errorf("Error saving token to cache: %w", err)
+		cachedToken = generateNewToken(awsIAMparams, serverEndpoint)
+		if cache != nil {
+			if err := cache.SaveToken(cachedToken); err != nil {
+				logging.ContextUnavailable().Errorf("Error saving token to cache: %w", err)
+			}
 		}
-	}
-	return token
+
+	})
+	return cachedToken
 }
 
-func initTokenCache() *awsiam.JWTCache {
-	homedir, err := os.UserHomeDir()
-	if err != nil {
-		logging.ContextUnavailable().Errorf("Error getting user home dir: %w", err)
-	}
-	tokenCache, err := awsiam.NewJWTCache(homedir, LakectlDirName, CacheDirName, CacheFileName)
-	if err != nil {
-		logging.ContextUnavailable().Errorf("Error creating token cache: %w", err)
-		return nil
-	}
+func getTokenCacheOnce() *awsiam.JWTCache {
+	tokenCacheOnce.Do(func() {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			logging.ContextUnavailable().Debugf("Error getting user homedir: %w", err)
+		}
+		cache, err := awsiam.NewJWTCache(homeDir, LakectlDirName, CacheDirName, CacheFileName)
+		if err != nil {
+			logging.ContextUnavailable().Debugf("Error creating token cache: %w", err)
+			tokenCache = nil
+		} else {
+			tokenCache = cache
+		}
+	})
 	return tokenCache
+}
+
+func SaveTokenToCache() error {
+	cache := getTokenCacheOnce()
+	if cache == nil {
+		return ErrTokenUnavailable
+	}
+
+	if cachedToken == nil {
+		return ErrTokenUnavailable
+	}
+
+	// Use the same sync.Once mechanism to ensure only one write per process
+	saveTokenToCacheOnce(cache, cachedToken)
+	return nil
+}
+
+func saveTokenToCacheOnce(cache *awsiam.JWTCache, token *apigen.AuthenticationToken) {
+	tokenSaveOnce.Do(func() {
+		if err := cache.SaveToken(token); err != nil {
+			logging.ContextUnavailable().Errorf("Error saving token to cache: %w", err)
+		}
+	})
 }
 
 func generateNewToken(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) *apigen.AuthenticationToken {
 	noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
 	if err != nil {
-		DieErr(err)
+		logging.ContextUnavailable().Debugf("Error generating auth client: %w", err)
 	}
 	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
 
