@@ -88,7 +88,7 @@ object S3ClientBuilder extends S3ClientBuilder {
                       null
                      ) == AssumedRoleCredentialProvider.NAME
       ) {
-        logger.info("Using Hadoop AssumedRoleCredentialProvider as base (EMR6/v1).")
+        logger.info("Use configured AssumedRoleCredentialProvider for bucket {}", bucket)
         new AssumedRoleCredentialProvider(new java.net.URI(s"s3a://$bucket"), hc)
       } else if (accessKey != null && secretKey != null) {
         logger.info("Using access key ID {} {}", accessKey: Any, "secret key ******")
