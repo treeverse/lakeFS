@@ -101,7 +101,7 @@ func (a *Action) Validate() error {
 }
 
 func validateEvent(event graveler.EventType, on *ActionOn) error {
-	if !event.Valid() {
+	if !event.IsValid() {
 		return fmt.Errorf("event '%s' is not supported: %w", event, ErrInvalidAction)
 	}
 	if on != nil {
