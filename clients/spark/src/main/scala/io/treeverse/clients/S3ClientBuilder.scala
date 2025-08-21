@@ -71,23 +71,30 @@ object S3ClientBuilder extends S3ClientBuilder {
     //     some objects live in different buckets.
     val roleArn = hc.getTrimmed(Constants.ASSUMED_ROLE_ARN, "")
 
-    val cpName = hc.getTrimmed(Constants.AWS_CREDENTIALS_PROVIDER, null)
-    if (cpName == AssumedRoleCredentialProvider.NAME) {
-      logger.info(
-        "S3A credentials provider is Hadoop AssumedRoleCredentialProvider – " +
-          "ignoring it for AWS SDK client and using our own STS if role ARN is set."
-      )
-    }
-
     val accessKey = hc.getTrimmed(Constants.ACCESS_KEY, null)
     val secretKey = hc.getTrimmed(Constants.SECRET_KEY, null)
 
+    val useHadoopAssumeAsBase: Boolean =
+      try {
+        classOf[com.amazonaws.auth.AWSCredentialsProvider].isAssignableFrom(
+          Class.forName("org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider")
+        )
+      } catch { case _: Throwable => false }
+
     val base: AWSCredentialsProvider =
-      if (accessKey != null && secretKey != null) {
-        logger.info("Use access key ID {} {}", accessKey: Any, "secret key ******")
+      if (
+        useHadoopAssumeAsBase &&
+        hc.getTrimmed(Constants.AWS_CREDENTIALS_PROVIDER,
+                      null
+                     ) == AssumedRoleCredentialProvider.NAME
+      ) {
+        logger.info("Using Hadoop AssumedRoleCredentialProvider as base (EMR6/v1).")
+        new AssumedRoleCredentialProvider(new java.net.URI(s"s3a://$bucket"), hc)
+      } else if (accessKey != null && secretKey != null) {
+        logger.info("Using access key ID {} {}", accessKey: Any, "secret key ******")
         new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
       } else {
-        logger.info("Use DefaultAWSCredentialsProviderChain()")
+        logger.info("Using DefaultAWSCredentialsProviderChain")
         new DefaultAWSCredentialsProviderChain()
       }
 
