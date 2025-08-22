@@ -99,13 +99,19 @@ object S3ClientBuilder extends S3ClientBuilder {
       }
 
     val credentialsProvider: AWSCredentialsProvider =
-      if (roleArn.nonEmpty) {
+      if (roleArn.nonEmpty && !useHadoopAssumeAsBase) {
         new STSAssumeRoleSessionCredentialsProvider.Builder(
           roleArn,
           s"lakefs-gc-${UUID.randomUUID().toString}"
         ).withLongLivedCredentialsProvider(base)
           .build()
       } else {
+        if (roleArn.nonEmpty && useHadoopAssumeAsBase) {
+          logger.info(
+            "Role ARN is set but Hadoop AssumedRoleCredentialProvider is the base; " +
+              "skipping additional STS to avoid double-assume."
+          )
+        }
         base
       }
 
