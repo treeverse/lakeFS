@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	redis "github.com/redis/go-redis/v9"
@@ -32,6 +33,7 @@ type EntriesIterator struct {
 	seekKey      []byte
 	endReached   bool
 	cachedEntry  *kv.Entry
+	seenKeys     map[string]bool // Track seen keys to avoid duplicates
 }
 
 const (
@@ -39,6 +41,7 @@ const (
 	DefaultDB       = 0
 	DefaultPoolSize = 10
 	keyDelimiter    = ":"
+	scanCount       = 1000 // Redis SCAN count hint
 )
 
 var (
@@ -269,6 +272,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 		store:        s,
 		batchSize:    batchSize,
 		currentIndex: -1,
+		seenKeys:     make(map[string]bool),
 	}
 
 	if len(options.KeyStart) > 0 {
@@ -292,52 +296,60 @@ func (it *EntriesIterator) loadNextBatch() {
 		return
 	}
 
-	keys, cursor, err := it.store.client.Scan(it.ctx, it.cursor, it.pattern, int64(it.batchSize)).Result()
-	if err != nil {
-		it.err = fmt.Errorf("redis scan: %w", err)
-		return
-	}
-
-	it.cursor = cursor
-	if cursor == 0 {
-		it.endReached = true
-	}
-
 	// Filter keys and extract sortable key parts
 	type keyEntry struct {
 		redisKey string
 		keyPart  []byte
 	}
 
-	filteredEntries := make([]keyEntry, 0, len(keys))
-	for _, key := range keys {
-		_, keyPart, err := it.store.parseKey(key)
+	filteredEntries := make([]keyEntry, 0, it.batchSize)
+
+	// Keep loading from Redis until we have enough keys or reach the end
+	for len(filteredEntries) < it.batchSize && !it.endReached {
+		keys, cursor, err := it.store.client.Scan(it.ctx, it.cursor, it.pattern, scanCount).Result()
 		if err != nil {
-			continue // Skip malformed keys
+			it.err = fmt.Errorf("redis scan: %w", err)
+			return
 		}
 
-		// Apply seek filter if needed
-		if it.seekKey != nil && bytes.Compare(keyPart, it.seekKey) < 0 {
-			continue
+		it.cursor = cursor
+		if cursor == 0 {
+			it.endReached = true
 		}
 
-		filteredEntries = append(filteredEntries, keyEntry{
-			redisKey: key,
-			keyPart:  keyPart,
-		})
-	}
+		for _, key := range keys {
+			// Skip duplicates
+			if it.seenKeys[key] {
+				continue
+			}
+			it.seenKeys[key] = true
 
-	// Sort by key part using a proper sorting algorithm
-	if len(filteredEntries) > 1 {
-		// Simple bubble sort for now - could be optimized with sort.Slice
-		for i := 0; i < len(filteredEntries)-1; i++ {
-			for j := i + 1; j < len(filteredEntries); j++ {
-				if bytes.Compare(filteredEntries[i].keyPart, filteredEntries[j].keyPart) > 0 {
-					filteredEntries[i], filteredEntries[j] = filteredEntries[j], filteredEntries[i]
-				}
+			_, keyPart, err := it.store.parseKey(key)
+			if err != nil {
+				continue // Skip malformed keys
+			}
+
+			// Apply seek filter if needed
+			if it.seekKey != nil && bytes.Compare(keyPart, it.seekKey) < 0 {
+				continue
+			}
+
+			filteredEntries = append(filteredEntries, keyEntry{
+				redisKey: key,
+				keyPart:  keyPart,
+			})
+
+			// If we have enough entries, we can stop for now
+			if len(filteredEntries) >= it.batchSize {
+				break
 			}
 		}
 	}
+
+	// Sort by key part using sort.Slice for efficiency
+	sort.Slice(filteredEntries, func(i, j int) bool {
+		return bytes.Compare(filteredEntries[i].keyPart, filteredEntries[j].keyPart) < 0
+	})
 
 	// Extract sorted keys
 	it.keys = make([]string, len(filteredEntries))
@@ -428,6 +440,7 @@ func (it *EntriesIterator) SeekGE(key []byte) {
 	it.cursor = 0
 	it.endReached = false
 	it.cachedEntry = nil
+	it.seenKeys = make(map[string]bool)
 	it.loadNextBatch()
 
 	// Find the first key >= seekKey in current batch

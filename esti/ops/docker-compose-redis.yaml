@@ -2,7 +2,7 @@ version: "3"
 services:
   lakefs:
     extends:
-      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      file: docker-compose-common.yaml
       service: lakefs
     depends_on:
       - "redis"
@@ -19,12 +19,12 @@ services:
 
   redis:
     extends:
-      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      file: docker-compose-common.yaml
       service: redis
 
   esti:
     extends:
-      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      file: docker-compose-common.yaml
       service: esti
 
 volumes:
