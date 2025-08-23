@@ -70,3 +70,8 @@ services:
     image: "amazon/dynamodb-local:2.5.2"
     ports:
       - "6432:8000"
+
+  redis:
+    image: "redis:7.0-alpine"
+    ports:
+      - "6380:6379"

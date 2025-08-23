@@ -15,6 +15,7 @@ type Config struct {
 	DynamoDB *DynamoDB
 	Local    *Local
 	CosmosDB *CosmosDB
+	Redis    *Redis
 }
 
 type Local struct {
@@ -78,6 +79,19 @@ type CosmosDB struct {
 	StrongConsistency bool
 }
 
+type Redis struct {
+	// Address - Redis server address (host:port)
+	Address string
+	// Password - Redis server password (optional)
+	Password string
+	// DB - Redis database number (default: 0)
+	DB int
+	// PoolSize - Connection pool size
+	PoolSize int
+	// KeyPrefix - Prefix for all keys stored in Redis
+	KeyPrefix string
+}
+
 func NewConfig(cfg *config.Database) (Config, error) {
 	p := Config{
 		Type: cfg.Type,
@@ -129,6 +143,16 @@ func NewConfig(cfg *config.Database) (Config, error) {
 			Throughput:        cfg.CosmosDB.Throughput,
 			Autoscale:         cfg.CosmosDB.Autoscale,
 			StrongConsistency: true,
+		}
+	}
+
+	if cfg.Redis != nil {
+		p.Redis = &Redis{
+			Address:   cfg.Redis.Address,
+			Password:  cfg.Redis.Password.SecureValue(),
+			DB:        cfg.Redis.DB,
+			PoolSize:  cfg.Redis.PoolSize,
+			KeyPrefix: cfg.Redis.KeyPrefix,
 		}
 	}
 

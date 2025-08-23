@@ -1,0 +1,37 @@
+version: "3"
+services:
+  lakefs:
+    extends:
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      service: lakefs
+    depends_on:
+      - "redis"
+    volumes:
+      - lakefs-app:/app:ro
+    environment:
+      - LAKEFS_DATABASE_TYPE=redis
+      - LAKEFS_DATABASE_REDIS_ADDRESS=redis:6379
+      - LAKEFS_DATABASE_REDIS_DB=0
+      - LAKEFS_DATABASE_REDIS_KEY_PREFIX=lakefs
+      - LAKEFS_BLOCKSTORE_TYPE=s3
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+  redis:
+    extends:
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      service: redis
+
+  esti:
+    extends:
+      file: ${OSS_ESTI_OPS_PATH:-esti/ops}/docker-compose-common.yaml
+      service: esti
+
+volumes:
+  lakefs-code:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ${LAKEFS_ROOT:-.}
+  lakefs-app:

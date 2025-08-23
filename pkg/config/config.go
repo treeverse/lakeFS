@@ -135,6 +135,19 @@ type Database struct {
 		Throughput int32        `mapstructure:"throughput"`
 		Autoscale  bool         `mapstructure:"autoscale"`
 	} `mapstructure:"cosmosdb"`
+
+	Redis *struct {
+		// Address - Redis server address (host:port)
+		Address string `mapstructure:"address"`
+		// Password - Redis server password (optional)
+		Password SecureString `mapstructure:"password"`
+		// DB - Redis database number (default: 0)
+		DB int `mapstructure:"db"`
+		// PoolSize - Connection pool size
+		PoolSize int `mapstructure:"pool_size"`
+		// KeyPrefix - Prefix for all keys stored in Redis
+		KeyPrefix string `mapstructure:"key_prefix"`
+	} `mapstructure:"redis"`
 }
 
 // ApproximatelyCorrectOwnership configures an approximate ("mostly correct") ownership.
