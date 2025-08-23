@@ -36,10 +36,10 @@ func TestMain(m *testing.M) {
 func TestRedisKV(t *testing.T) {
 	kvtest.DriverTest(t, func(t testing.TB, ctx context.Context) kv.Store {
 		t.Helper()
-		
+
 		// Use unique DB number for isolation - just use a simple counter approach
 		dbNum := 1
-		
+
 		store, err := kv.Open(ctx, kvparams.Config{
 			Type: "redis",
 			Redis: &kvparams.Redis{

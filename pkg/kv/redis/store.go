@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/redis/go-redis/v9"
+	redis "github.com/redis/go-redis/v9"
 	"github.com/treeverse/lakefs/pkg/kv"
 	"github.com/treeverse/lakefs/pkg/kv/kvparams"
 )
@@ -302,12 +302,17 @@ func (it *EntriesIterator) loadNextBatch() {
 		it.endReached = true
 	}
 
-	// Filter and sort keys
-	filteredKeys := make([]string, 0, len(keys))
+	// Filter keys and extract sortable key parts
+	type keyEntry struct {
+		redisKey string
+		keyPart  []byte
+	}
+
+	filteredEntries := make([]keyEntry, 0, len(keys))
 	for _, key := range keys {
 		_, keyPart, err := it.store.parseKey(key)
 		if err != nil {
-			continue
+			continue // Skip malformed keys
 		}
 
 		// Apply seek filter if needed
@@ -315,21 +320,30 @@ func (it *EntriesIterator) loadNextBatch() {
 			continue
 		}
 
-		filteredKeys = append(filteredKeys, key)
+		filteredEntries = append(filteredEntries, keyEntry{
+			redisKey: key,
+			keyPart:  keyPart,
+		})
 	}
 
-	// Sort keys by the key part (not the full Redis key)
-	for i := 0; i < len(filteredKeys)-1; i++ {
-		for j := i + 1; j < len(filteredKeys); j++ {
-			_, keyI, _ := it.store.parseKey(filteredKeys[i])
-			_, keyJ, _ := it.store.parseKey(filteredKeys[j])
-			if bytes.Compare(keyI, keyJ) > 0 {
-				filteredKeys[i], filteredKeys[j] = filteredKeys[j], filteredKeys[i]
+	// Sort by key part using a proper sorting algorithm
+	if len(filteredEntries) > 1 {
+		// Simple bubble sort for now - could be optimized with sort.Slice
+		for i := 0; i < len(filteredEntries)-1; i++ {
+			for j := i + 1; j < len(filteredEntries); j++ {
+				if bytes.Compare(filteredEntries[i].keyPart, filteredEntries[j].keyPart) > 0 {
+					filteredEntries[i], filteredEntries[j] = filteredEntries[j], filteredEntries[i]
+				}
 			}
 		}
 	}
 
-	it.keys = filteredKeys
+	// Extract sorted keys
+	it.keys = make([]string, len(filteredEntries))
+	for i, entry := range filteredEntries {
+		it.keys[i] = entry.redisKey
+	}
+
 	it.currentIndex = -1
 }
 
@@ -341,15 +355,22 @@ func (it *EntriesIterator) Next() bool {
 	it.currentIndex++
 
 	// If we've reached the end of current batch, try to load next batch
-	if it.currentIndex >= len(it.keys) {
+	for it.currentIndex >= len(it.keys) {
 		if it.endReached {
 			return false
 		}
 		it.loadNextBatch()
-		if it.err != nil || len(it.keys) == 0 {
+		if it.err != nil {
 			return false
 		}
-		it.currentIndex = 0
+		if len(it.keys) == 0 && it.endReached {
+			return false
+		}
+		if len(it.keys) > 0 {
+			it.currentIndex = 0
+			break
+		}
+		// Continue to next batch if this one is empty but we haven't reached the end
 	}
 
 	return it.currentIndex < len(it.keys)
@@ -378,7 +399,7 @@ func (it *EntriesIterator) SeekGE(key []byte) {
 }
 
 func (it *EntriesIterator) Entry() *kv.Entry {
-	if it.err != nil || it.currentIndex < 0 || it.currentIndex >= len(it.keys) {
+	if it.err != nil || it.currentIndex < 0 || it.currentIndex >= len(it.keys) || len(it.keys) == 0 {
 		return nil
 	}
 
@@ -389,7 +410,11 @@ func (it *EntriesIterator) Entry() *kv.Entry {
 		return nil
 	}
 
-	value, err := it.store.client.Get(it.ctx, redisKey).Bytes()
+	val, err := it.store.client.Get(it.ctx, redisKey).Result()
+	if errors.Is(err, redis.Nil) {
+		// Key was deleted between scan and get - skip it
+		return nil
+	}
 	if err != nil {
 		it.err = fmt.Errorf("redis get during iteration: %w", err)
 		return nil
@@ -398,7 +423,7 @@ func (it *EntriesIterator) Entry() *kv.Entry {
 	return &kv.Entry{
 		PartitionKey: partitionKey,
 		Key:          key,
-		Value:        value,
+		Value:        []byte(val),
 	}
 }
 
