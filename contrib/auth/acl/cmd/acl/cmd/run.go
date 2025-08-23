@@ -17,6 +17,7 @@ import (
 	_ "github.com/treeverse/lakefs/pkg/kv/local"
 	_ "github.com/treeverse/lakefs/pkg/kv/mem"
 	_ "github.com/treeverse/lakefs/pkg/kv/postgres"
+	_ "github.com/treeverse/lakefs/pkg/kv/redis"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 

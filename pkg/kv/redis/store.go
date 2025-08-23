@@ -3,6 +3,7 @@ package redis
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -39,7 +40,11 @@ const (
 	keyDelimiter    = ":"
 )
 
-func init() {
+var (
+	ErrInvalidKeyFormat = errors.New("invalid key format")
+)
+
+func init() { //nolint:gochecknoinits
 	kv.Register(DriverName, &Driver{})
 }
 
@@ -98,16 +103,16 @@ func (s *Store) formatKey(partitionKey, key []byte) string {
 
 func (s *Store) parseKey(redisKey string) (partitionKey, key []byte, err error) {
 	parts := strings.Split(redisKey, keyDelimiter)
-	
+
 	expectedParts := 2
 	if s.params.KeyPrefix != "" {
 		expectedParts = 3
 	}
-	
+
 	if len(parts) != expectedParts {
-		return nil, nil, fmt.Errorf("invalid key format: %s", redisKey)
+		return nil, nil, fmt.Errorf("%w: %s", ErrInvalidKeyFormat, redisKey)
 	}
-	
+
 	if s.params.KeyPrefix != "" {
 		return []byte(parts[1]), []byte(parts[2]), nil
 	}
@@ -124,7 +129,7 @@ func (s *Store) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWit
 
 	redisKey := s.formatKey(partitionKey, key)
 	val, err := s.client.Get(ctx, redisKey).Bytes()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		return nil, kv.ErrNotFound
 	}
 	if err != nil {
@@ -249,7 +254,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 
 	// Create pattern to match all keys with this partition
 	pattern := s.formatKey(partitionKey, []byte("*"))
-	
+
 	batchSize := 100
 	if options.BatchSize > 0 {
 		batchSize = options.BatchSize
@@ -271,7 +276,7 @@ func (s *Store) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOp
 
 	// Load first batch
 	iterator.loadNextBatch()
-	
+
 	return iterator, iterator.err
 }
 
@@ -304,12 +309,12 @@ func (it *EntriesIterator) loadNextBatch() {
 		if err != nil {
 			continue
 		}
-		
+
 		// Apply seek filter if needed
 		if it.seekKey != nil && bytes.Compare(keyPart, it.seekKey) < 0 {
 			continue
 		}
-		
+
 		filteredKeys = append(filteredKeys, key)
 	}
 
@@ -334,7 +339,7 @@ func (it *EntriesIterator) Next() bool {
 	}
 
 	it.currentIndex++
-	
+
 	// If we've reached the end of current batch, try to load next batch
 	if it.currentIndex >= len(it.keys) {
 		if it.endReached {
@@ -346,7 +351,7 @@ func (it *EntriesIterator) Next() bool {
 		}
 		it.currentIndex = 0
 	}
-	
+
 	return it.currentIndex < len(it.keys)
 }
 
@@ -355,7 +360,7 @@ func (it *EntriesIterator) SeekGE(key []byte) {
 	it.cursor = 0
 	it.endReached = false
 	it.loadNextBatch()
-	
+
 	// Find the first key >= seekKey in current batch
 	for i, redisKey := range it.keys {
 		_, keyPart, err := it.store.parseKey(redisKey)
@@ -367,7 +372,7 @@ func (it *EntriesIterator) SeekGE(key []byte) {
 			return
 		}
 	}
-	
+
 	// If not found in current batch, position at end
 	it.currentIndex = len(it.keys) - 1
 }

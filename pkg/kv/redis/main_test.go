@@ -1,14 +1,13 @@
-package redis
+package redis_test
 
 import (
 	"context"
 	"fmt"
 	"os"
-	"testing"
 	"time"
 
 	"github.com/ory/dockertest/v3"
-	"github.com/redis/go-redis/v9"
+	redisclient "github.com/redis/go-redis/v9"
 )
 
 const (
@@ -25,14 +24,7 @@ func setupRedis(pool *dockertest.Pool) (func(), string, error) {
 		return func() {}, redisURI, nil
 	}
 
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "redis",
-		Tag:        "7.0-alpine",
-		Env:        []string{},
-	}, func(config *dockertest.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = dockertest.RestartPolicy{Name: "no"}
-	})
+	resource, err := pool.Run("redis", "7.0-alpine", []string{})
 	if err != nil {
 		return nil, "", fmt.Errorf("could not start redis: %w", err)
 	}
@@ -48,7 +40,7 @@ func setupRedis(pool *dockertest.Pool) (func(), string, error) {
 	pool.MaxWait = 10 * time.Second
 	ctx := context.Background()
 	if err := pool.Retry(func() error {
-		client := redis.NewClient(&redis.Options{
+		client := redisclient.NewClient(&redisclient.Options{
 			Addr: redisAddr,
 		})
 		defer client.Close()
