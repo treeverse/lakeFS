@@ -31,6 +31,7 @@ type EntriesIterator struct {
 	batchSize    int
 	seekKey      []byte
 	endReached   bool
+	cachedEntry  *kv.Entry
 }
 
 const (
@@ -352,53 +353,48 @@ func (it *EntriesIterator) Next() bool {
 		return false
 	}
 
-	it.currentIndex++
+	// Clear cached entry from previous iteration
+	it.cachedEntry = nil
 
-	// If we've reached the end of current batch, try to load next batch
-	for it.currentIndex >= len(it.keys) {
-		if it.endReached {
+	for {
+		it.currentIndex++
+
+		// If we've reached the end of current batch, try to load next batch
+		for it.currentIndex >= len(it.keys) {
+			if it.endReached {
+				return false
+			}
+			it.loadNextBatch()
+			if it.err != nil {
+				return false
+			}
+			if len(it.keys) == 0 && it.endReached {
+				return false
+			}
+			if len(it.keys) > 0 {
+				it.currentIndex = 0
+				break
+			}
+			// Continue to next batch if this one is empty but we haven't reached the end
+		}
+
+		if it.currentIndex >= len(it.keys) {
 			return false
 		}
-		it.loadNextBatch()
-		if it.err != nil {
-			return false
+
+		// Pre-fetch and validate the entry
+		entry := it.fetchCurrentEntry()
+		if entry != nil {
+			it.cachedEntry = entry
+			return true
 		}
-		if len(it.keys) == 0 && it.endReached {
-			return false
-		}
-		if len(it.keys) > 0 {
-			it.currentIndex = 0
-			break
-		}
-		// Continue to next batch if this one is empty but we haven't reached the end
+
+		// If entry is nil (key was deleted), continue to next key
+		continue
 	}
-
-	return it.currentIndex < len(it.keys)
 }
 
-func (it *EntriesIterator) SeekGE(key []byte) {
-	it.seekKey = key
-	it.cursor = 0
-	it.endReached = false
-	it.loadNextBatch()
-
-	// Find the first key >= seekKey in current batch
-	for i, redisKey := range it.keys {
-		_, keyPart, err := it.store.parseKey(redisKey)
-		if err != nil {
-			continue
-		}
-		if bytes.Compare(keyPart, key) >= 0 {
-			it.currentIndex = i - 1 // Will be incremented by Next()
-			return
-		}
-	}
-
-	// If not found in current batch, position at end
-	it.currentIndex = len(it.keys) - 1
-}
-
-func (it *EntriesIterator) Entry() *kv.Entry {
+func (it *EntriesIterator) fetchCurrentEntry() *kv.Entry {
 	if it.err != nil || it.currentIndex < 0 || it.currentIndex >= len(it.keys) || len(it.keys) == 0 {
 		return nil
 	}
@@ -406,7 +402,7 @@ func (it *EntriesIterator) Entry() *kv.Entry {
 	redisKey := it.keys[it.currentIndex]
 	partitionKey, key, err := it.store.parseKey(redisKey)
 	if err != nil {
-		it.err = err
+		// Don't set it.err for parse errors - just skip this key
 		return nil
 	}
 
@@ -427,6 +423,33 @@ func (it *EntriesIterator) Entry() *kv.Entry {
 	}
 }
 
+func (it *EntriesIterator) SeekGE(key []byte) {
+	it.seekKey = key
+	it.cursor = 0
+	it.endReached = false
+	it.cachedEntry = nil
+	it.loadNextBatch()
+
+	// Find the first key >= seekKey in current batch
+	for i, redisKey := range it.keys {
+		_, keyPart, err := it.store.parseKey(redisKey)
+		if err != nil {
+			continue
+		}
+		if bytes.Compare(keyPart, key) >= 0 {
+			it.currentIndex = i - 1 // Will be incremented by Next()
+			return
+		}
+	}
+
+	// If not found in current batch, position at end
+	it.currentIndex = len(it.keys) - 1
+}
+
+func (it *EntriesIterator) Entry() *kv.Entry {
+	return it.cachedEntry
+}
+
 func (it *EntriesIterator) Err() error {
 	return it.err
 }
@@ -434,5 +457,6 @@ func (it *EntriesIterator) Err() error {
 func (it *EntriesIterator) Close() {
 	it.keys = nil
 	it.currentIndex = -1
+	it.cachedEntry = nil
 	it.err = kv.ErrClosedEntries
 }
