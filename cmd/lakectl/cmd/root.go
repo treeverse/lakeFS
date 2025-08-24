@@ -659,17 +659,10 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string)
 
 	// Create the callback function that will save tokens to cache
 	tokenCacheCallback := func(newToken *apigen.AuthenticationToken) {
-		// Update the global cached token in memory
 		cachedToken = newToken
-
-		// Save the new token to cache file
-		cache := getTokenCacheOnce()
-		if cache != nil {
-			if err := cache.SaveToken(newToken); err != nil {
-				logging.ContextUnavailable().Errorf("Error saving refreshed token to cache: %w", err)
-			} else {
-				logging.ContextUnavailable().Debug("Successfully saved refreshed token to cache")
-			}
+		err := SaveTokenToCache()
+		if err != nil {
+			logging.ContextUnavailable().Debugf("error saving token to cache: %w", err)
 		}
 	}
 
@@ -688,16 +681,14 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string)
 	}
 	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
 
-	// Use the new callback version instead of the original
 	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(
 		awsIAMparams,
 		logging.ContextUnavailable(),
 		loginClient,
 		token,
-		tokenCacheCallback, // This is the key addition
+		tokenCacheCallback,
 		presignOpt,
 	)
-
 	return []apigen.ClientOption{awsAuthProvider}
 }
 
@@ -738,12 +729,9 @@ func SaveTokenToCache() error {
 	if cache == nil {
 		return ErrTokenUnavailable
 	}
-
 	if cachedToken == nil {
 		return ErrTokenUnavailable
 	}
-
-	// Use the same sync.Once mechanism to ensure only one write per process
 	saveTokenToCacheOnce(cache, cachedToken)
 	return nil
 }
