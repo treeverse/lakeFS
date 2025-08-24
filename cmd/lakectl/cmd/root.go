@@ -654,16 +654,19 @@ func getClient() *apigen.ClientWithResponses {
 	return client
 }
 
-func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
-	token := getTokenOnce()
-
-	tokenCacheCallback := func(newToken *apigen.AuthenticationToken) {
+func CreateTokenCacheCallback() awsiam.TokenCacheCallback {
+	return func(newToken *apigen.AuthenticationToken) {
 		cachedToken = newToken
-		err := SaveTokenToCache()
-		if err != nil {
+		if err := SaveTokenToCache(); err != nil {
 			logging.ContextUnavailable().Debugf("error saving token to cache: %w", err)
 		}
 	}
+}
+
+func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
+	token := getTokenOnce()
+
+	tokenCacheCallback := CreateTokenCacheCallback()
 
 	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
 	presignOpt := func(po *sts.PresignOptions) {
