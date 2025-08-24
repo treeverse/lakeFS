@@ -82,13 +82,11 @@ func (s *SecurityProviderAWSIAMRole) Intercept(ctx context.Context, req *http.Re
 		s.AuthenticationToken = token
 		s.Logger.WithField("expiry", time.Unix(*s.AuthenticationToken.TokenExpiration, 0)).Debug("success renewing session token")
 
-		// Call the cache callback if provided
 		if s.TokenCacheCallback != nil {
-			// Run in goroutine to avoid blocking the request
 			go func() {
 				defer func() {
 					if r := recover(); r != nil {
-						s.Logger.WithField("panic", r).Error("token cache callback panicked")
+						s.Logger.WithField("panic", r).Debug("token cache callback panicked")
 					}
 				}()
 				s.TokenCacheCallback(token)

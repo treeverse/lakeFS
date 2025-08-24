@@ -657,7 +657,6 @@ func getClient() *apigen.ClientWithResponses {
 func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
 	token := getTokenOnce()
 
-	// Create the callback function that will save tokens to cache
 	tokenCacheCallback := func(newToken *apigen.AuthenticationToken) {
 		cachedToken = newToken
 		err := SaveTokenToCache()
@@ -726,10 +725,7 @@ func getTokenCacheOnce() *awsiam.JWTCache {
 
 func SaveTokenToCache() error {
 	cache := getTokenCacheOnce()
-	if cache == nil {
-		return ErrTokenUnavailable
-	}
-	if cachedToken == nil {
+	if cache == nil || cachedToken == nil {
 		return ErrTokenUnavailable
 	}
 	saveTokenToCacheOnce(cache, cachedToken)
@@ -739,7 +735,7 @@ func SaveTokenToCache() error {
 func saveTokenToCacheOnce(cache *awsiam.JWTCache, token *apigen.AuthenticationToken) {
 	tokenSaveOnce.Do(func() {
 		if err := cache.SaveToken(token); err != nil {
-			logging.ContextUnavailable().Errorf("Error saving token to cache: %w", err)
+			logging.ContextUnavailable().Debugf("Error saving token to cache: %w", err)
 		}
 	})
 }
