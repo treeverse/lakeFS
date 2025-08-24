@@ -655,13 +655,25 @@ func getClient() *apigen.ClientWithResponses {
 }
 
 func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
-	token := getTokenOnce(awsIAMparams, serverEndpoint)
-	err := SaveTokenToCache()
-	if err != nil {
-		logging.ContextUnavailable().Debugf("error saving token to cache: %w", err)
-	}
-	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
+	token := getTokenOnce()
 
+	// Create the callback function that will save tokens to cache
+	tokenCacheCallback := func(newToken *apigen.AuthenticationToken) {
+		// Update the global cached token in memory
+		cachedToken = newToken
+
+		// Save the new token to cache file
+		cache := getTokenCacheOnce()
+		if cache != nil {
+			if err := cache.SaveToken(newToken); err != nil {
+				logging.ContextUnavailable().Errorf("Error saving refreshed token to cache: %w", err)
+			} else {
+				logging.ContextUnavailable().Debug("Successfully saved refreshed token to cache")
+			}
+		}
+	}
+
+	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
 	presignOpt := func(po *sts.PresignOptions) {
 		po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
 			if awsLogSigning {
@@ -669,24 +681,27 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string)
 			}
 		})
 	}
+
 	noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
 	if err != nil {
 		DieErr(err)
 	}
 	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
 
+	// Use the new callback version instead of the original
 	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(
 		awsIAMparams,
 		logging.ContextUnavailable(),
 		loginClient,
 		token,
+		tokenCacheCallback, // This is the key addition
 		presignOpt,
 	)
 
 	return []apigen.ClientOption{awsAuthProvider}
 }
 
-func getTokenOnce(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) *apigen.AuthenticationToken {
+func getTokenOnce() *apigen.AuthenticationToken {
 	tokenLoadOnce.Do(func() {
 		cache := getTokenCacheOnce()
 		var err error
@@ -696,12 +711,6 @@ func getTokenOnce(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) *ap
 				return
 			}
 			logging.ContextUnavailable().Errorf("Error loading token from cache: %w", err)
-		}
-		cachedToken = generateNewToken(awsIAMparams, serverEndpoint)
-		if cache != nil {
-			if err := cache.SaveToken(cachedToken); err != nil {
-				logging.ContextUnavailable().Errorf("Error saving token to cache: %w", err)
-			}
 		}
 	})
 	return cachedToken
@@ -745,28 +754,6 @@ func saveTokenToCacheOnce(cache *awsiam.JWTCache, token *apigen.AuthenticationTo
 			logging.ContextUnavailable().Errorf("Error saving token to cache: %w", err)
 		}
 	})
-}
-
-func generateNewToken(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) *apigen.AuthenticationToken {
-	noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
-	if err != nil {
-		logging.ContextUnavailable().Debugf("Error generating auth client: %w", err)
-	}
-	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
-
-	securityProvider := awsiam.NewSecurityProviderAWSIAMRole(
-		logging.ContextUnavailable(),
-		awsIAMparams,
-		loginClient,
-		nil,
-	)
-
-	token, err := securityProvider.GetLakeFSTokenFromAWS(context.TODO())
-	if err != nil {
-		DieErr(err)
-	}
-
-	return token
 }
 
 // isUnknownCommandError checks if the error from ExecuteC is an unknown command error.
