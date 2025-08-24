@@ -72,6 +72,14 @@ public class LoginConfigTest {
     }
 
     /**
+     * Test the property 'loginUrlMethod'
+     */
+    @Test
+    public void loginUrlMethodTest() {
+        // TODO: test loginUrlMethod
+    }
+
+    /**
      * Test the property 'loginFailedMessage'
      */
     @Test
