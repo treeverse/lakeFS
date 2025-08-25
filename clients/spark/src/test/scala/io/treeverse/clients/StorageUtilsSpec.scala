@@ -54,7 +54,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
       )
       val initializedClient: AmazonS3 = StorageUtils.S3.createAndValidateS3Client(
         clientConfiguration,
-        Some(credentialsProvider),
+        credentialsProvider,
         awsS3ClientBuilder,
         ENDPOINT,
         US_WEST_2,
@@ -77,7 +77,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
       )
       val initializedClient: AmazonS3 = StorageUtils.S3.createAndValidateS3Client(
         clientConfiguration,
-        Some(credentialsProvider),
+        credentialsProvider,
         awsS3ClientBuilder,
         ENDPOINT,
         AP_SOUTHEAST_1,
@@ -102,7 +102,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
       )
       val initializedClient: AmazonS3 = StorageUtils.S3.createAndValidateS3Client(
         clientConfiguration,
-        Some(credentialsProvider),
+        credentialsProvider,
         awsS3ClientBuilder,
         ENDPOINT,
         US_WEST_2,
@@ -124,7 +124,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
       )
       val initializedClient: AmazonS3 = StorageUtils.S3.createAndValidateS3Client(
         clientConfiguration,
-        Some(credentialsProvider),
+        credentialsProvider,
         awsS3ClientBuilder,
         ENDPOINT,
         US_WEST_2,
@@ -231,7 +231,7 @@ class StorageUtilsSpec extends AnyFunSpec with BeforeAndAfter with MockitoSugar 
   private def initializeClient(): AmazonS3 = {
     StorageUtils.S3.createAndValidateS3Client(
       clientConfiguration,
-      Some(credentialsProvider),
+      credentialsProvider,
       awsS3ClientBuilder,
       ENDPOINT,
       US_STANDARD,
