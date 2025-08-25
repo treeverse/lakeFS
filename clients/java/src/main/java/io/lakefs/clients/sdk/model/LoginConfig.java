@@ -121,10 +121,12 @@ public class LoginConfig {
   private String loginUrl;
 
   /**
-   * Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+   * Defines login behavior when login_url is set. - none: For OSS users. - redirect: Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
    */
   @JsonAdapter(LoginUrlMethodEnum.Adapter.class)
   public enum LoginUrlMethodEnum {
+    NONE("none"),
+    
     REDIRECT("redirect"),
     
     SELECT("select");
@@ -169,7 +171,7 @@ public class LoginConfig {
 
   public static final String SERIALIZED_NAME_LOGIN_URL_METHOD = "login_url_method";
   @SerializedName(SERIALIZED_NAME_LOGIN_URL_METHOD)
-  private LoginUrlMethodEnum loginUrlMethod = LoginUrlMethodEnum.REDIRECT;
+  private LoginUrlMethodEnum loginUrlMethod;
 
   public static final String SERIALIZED_NAME_LOGIN_FAILED_MESSAGE = "login_failed_message";
   @SerializedName(SERIALIZED_NAME_LOGIN_FAILED_MESSAGE)
@@ -285,7 +287,7 @@ public class LoginConfig {
   }
 
    /**
-   * Defines login behavior when login_url is set. - redirect (default): Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+   * Defines login behavior when login_url is set. - none: For OSS users. - redirect: Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
    * @return loginUrlMethod
   **/
   @javax.annotation.Nullable

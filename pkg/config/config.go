@@ -379,7 +379,7 @@ func GetActualStorageID(storageConfig StorageConfig, storageID string) string {
 type Config interface {
 	GetBaseConfig() *BaseConfig
 	StorageConfig() StorageConfig
-	AuthConfig() *Auth
+	AuthConfig() AuthConfig
 	UIConfig() UIConfig
 	Validate() error
 	GetVersionContext() string
@@ -389,6 +389,15 @@ type StorageConfig interface {
 	GetStorageByID(storageID string) AdapterConfig
 	GetStorageIDs() []string
 	SigningKey() SecureString
+}
+
+type AuthConfig interface {
+	GetBaseAuthConfig() *BaseAuth
+	GetAuthUIConfig() *AuthUIConfig
+	GetLoginURLMethodConfigParam() string
+	// UseUILoginPlaceholders Added this function to the interface because its implementation requires parameters from both BaseAuth and
+	// AuthUIConfig, so neither struct alone could implement it.
+	UseUILoginPlaceholders() bool
 }
 
 type UIConfig interface {
@@ -620,7 +629,7 @@ const (
 	gcpAESKeyLength = 32
 )
 
-type Auth struct {
+type BaseAuth struct {
 	Cache struct {
 		Enabled bool          `mapstructure:"enabled"`
 		Size    int           `mapstructure:"size"`
@@ -661,17 +670,22 @@ type Auth struct {
 	LogoutRedirectURL string        `mapstructure:"logout_redirect_url"`
 	LoginDuration     time.Duration `mapstructure:"login_duration"`
 	LoginMaxDuration  time.Duration `mapstructure:"login_max_duration"`
-	UIConfig          struct {
-		RBAC                 string   `mapstructure:"rbac"`
-		LoginURL             string   `mapstructure:"login_url"`
-		LoginURLMethod       string   `mapstructure:"login_url_method"`
-		LoginFailedMessage   string   `mapstructure:"login_failed_message"`
-		FallbackLoginURL     *string  `mapstructure:"fallback_login_url"`
-		FallbackLoginLabel   *string  `mapstructure:"fallback_login_label"`
-		LoginCookieNames     []string `mapstructure:"login_cookie_names"`
-		LogoutURL            string   `mapstructure:"logout_url"`
-		UseLoginPlaceholders bool     `mapstructure:"use_login_placeholders"`
-	} `mapstructure:"ui_config"`
+}
+
+type AuthUIConfig struct {
+	RBAC                 string   `mapstructure:"rbac"`
+	LoginURL             string   `mapstructure:"login_url"`
+	LoginFailedMessage   string   `mapstructure:"login_failed_message"`
+	FallbackLoginURL     *string  `mapstructure:"fallback_login_url"`
+	FallbackLoginLabel   *string  `mapstructure:"fallback_login_label"`
+	LoginCookieNames     []string `mapstructure:"login_cookie_names"`
+	LogoutURL            string   `mapstructure:"logout_url"`
+	UseLoginPlaceholders bool     `mapstructure:"use_login_placeholders"`
+}
+
+type Auth struct {
+	BaseAuth     `mapstructure:",squash"`
+	AuthUIConfig `mapstructure:"ui_config"`
 }
 
 type OIDC struct {
@@ -702,36 +716,48 @@ type CookieAuthVerification struct {
 	PersistFriendlyName bool `mapstructure:"persist_friendly_name"`
 }
 
-func (c *Auth) IsAuthBasic() bool {
-	return c.UIConfig.RBAC == AuthRBACNone
+func (a *Auth) GetBaseAuthConfig() *BaseAuth {
+	return &a.BaseAuth
 }
 
-func (c *Auth) IsAuthUISimplified() bool {
-	return c.UIConfig.RBAC == AuthRBACSimplified
+func (a *Auth) GetAuthUIConfig() *AuthUIConfig {
+	return &a.AuthUIConfig
 }
 
-func (c *Auth) IsAuthenticationTypeAPI() bool {
-	return c.AuthenticationAPI.Endpoint != ""
-}
-
-func (c *Auth) IsAuthTypeAPI() bool {
-	return c.API.Endpoint != ""
-}
-
-func (c *Auth) IsExternalPrincipalsEnabled() bool {
-	// IsAuthTypeAPI must be true since the local auth service doesnt support external principals
-	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
-	return c.AuthenticationAPI.ExternalPrincipalsEnabled
+func (a *Auth) GetLoginURLMethodConfigParam() string {
+	return "none"
 }
 
 // UseUILoginPlaceholders returns true if the UI should use placeholders for login
 // the UI should use placeholders just in case of LDAP, the other auth methods should have their own login page
-func (c *Auth) UseUILoginPlaceholders() bool {
-	return c.RemoteAuthenticator.Enabled || c.UIConfig.UseLoginPlaceholders
+func (a *Auth) UseUILoginPlaceholders() bool {
+	return a.RemoteAuthenticator.Enabled || a.UseLoginPlaceholders
 }
 
-func (c *Auth) IsAdvancedAuth() bool {
-	return c.UIConfig.RBAC == AuthRBACExternal || c.UIConfig.RBAC == AuthRBACInternal
+func (b *BaseAuth) IsAuthenticationTypeAPI() bool {
+	return b.AuthenticationAPI.Endpoint != ""
+}
+
+func (b *BaseAuth) IsAuthTypeAPI() bool {
+	return b.API.Endpoint != ""
+}
+
+func (b *BaseAuth) IsExternalPrincipalsEnabled() bool {
+	// IsAuthTypeAPI must be true since the local auth service doesn't support external principals
+	// ExternalPrincipalsEnabled indicates that the remote auth service enables external principals support since its optional extension
+	return b.AuthenticationAPI.ExternalPrincipalsEnabled
+}
+
+func (u *AuthUIConfig) IsAuthBasic() bool {
+	return u.RBAC == AuthRBACNone
+}
+
+func (u *AuthUIConfig) IsAuthUISimplified() bool {
+	return u.RBAC == AuthRBACSimplified
+}
+
+func (u *AuthUIConfig) IsAdvancedAuth() bool {
+	return u.RBAC == AuthRBACExternal || u.RBAC == AuthRBACInternal
 }
 
 type UI struct {

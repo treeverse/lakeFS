@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
 	"github.com/go-viper/mapstructure/v2"
@@ -21,6 +24,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/authentication/externalidp/awsiam"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/git"
 	giterror "github.com/treeverse/lakefs/pkg/git/errors"
@@ -72,10 +76,11 @@ type Configuration struct {
 		Provider        struct {
 			Type   lakefsconfig.OnlyString `mapstructure:"type"`
 			AWSIAM struct {
-				TokenTTL            time.Duration      `mapstructure:"token_ttl_seconds"`
-				URLPresignTTL       time.Duration      `mapstructure:"url_presign_ttl_seconds"`
-				RefreshInterval     time.Duration      `mapstructure:"refresh_interval"`
-				TokenRequestHeaders *map[string]string `mapstructure:"token_request_headers"`
+				TokenTTL                   time.Duration      `mapstructure:"token_ttl_seconds"`
+				URLPresignTTL              time.Duration      `mapstructure:"url_presign_ttl_seconds"`
+				RefreshInterval            time.Duration      `mapstructure:"refresh_interval"`
+				TokenRequestHeaders        *map[string]string `mapstructure:"token_request_headers"`
+				ClientLogPreSigningRequest bool               `mapstructure:"client_log_pre_signing_request"`
 			} `mapstructure:"aws_iam"`
 		} `mapstructure:"provider"`
 	} `mapstructure:"credentials"`
@@ -553,12 +558,51 @@ func getHTTPClient() *http.Client {
 	return NewRetryClient(cfg.Server.Retries, transport)
 }
 
+func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
+	var opts []awsiam.IAMAuthParamsOptions
+	providerType := cfg.Credentials.Provider.Type.String()
+	if providerType != awsiam.AWSIAMProviderType {
+		return nil, nil
+	}
+
+	TokenTTL := cfg.Credentials.Provider.AWSIAM.TokenTTL
+	URLPresignTTL := cfg.Credentials.Provider.AWSIAM.URLPresignTTL
+	RefreshInterval := cfg.Credentials.Provider.AWSIAM.RefreshInterval
+	serverEndpoint := cfg.Server.EndpointURL.String()
+	parsed, err := url.Parse(serverEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	host := parsed.Host
+	// in case using something like localhost:8000
+	if strings.Contains(host, ":") {
+		host = strings.Split(host, ":")[0]
+	}
+
+	if headers := cfg.Credentials.Provider.AWSIAM.TokenRequestHeaders; headers != nil {
+		opts = append(opts, awsiam.WithTokenRequestHeaders(*headers))
+	}
+	if TokenTTL != 0 {
+		opts = append(opts, awsiam.WithTokenTTL(TokenTTL))
+	}
+	if URLPresignTTL != 0 {
+		opts = append(opts, awsiam.WithURLPresignTTL(URLPresignTTL))
+	}
+	if RefreshInterval != 0 {
+		opts = append(opts, awsiam.WithURLPresignTTL(RefreshInterval))
+	}
+	return awsiam.NewIAMAuthParams(host, opts...), nil
+}
+
 func getClient() *apigen.ClientWithResponses {
+	opts := []apigen.ClientOption{}
 	httpClient := getHTTPClient()
 
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(accessKeyID), string(secretAccessKey))
+	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
+
 	if err != nil {
 		DieErr(err)
 	}
@@ -568,17 +612,44 @@ func getClient() *apigen.ClientWithResponses {
 		DieErr(err)
 	}
 
+	awsIAMparams, err := newAWSIAMAuthProviderConfig()
+	if err != nil {
+		DieErr(err)
+	}
+
+	useIAMRoleProviderAuth := awsIAMparams != nil && accessKeyID == "" && secretAccessKey == ""
+	// If AWS IAM params provided use them
+	if useIAMRoleProviderAuth {
+		// create a new unauthenticated client
+		noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
+		if err != nil {
+			DieErr(err)
+		}
+		loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
+		presignOpt := func(po *sts.PresignOptions) {
+			po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
+				if awsLogSigning {
+					o.ClientLogMode = aws.LogSigning
+				}
+			})
+		}
+		awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(awsIAMparams, logging.ContextUnavailable(), loginClient, nil, presignOpt)
+		opts = append(opts, awsAuthProvider)
+	}
+
 	oss := osinfo.GetOSInfo()
 	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
-		apigen.WithHTTPClient(httpClient),
-		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
-		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-			// This UA string structure is agreed upon
-			// Please consider that when making changes
-			req.Header.Set("User-Agent", fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, oss.OS, oss.Version, oss.Platform))
-			return nil
-		}),
+		append([]apigen.ClientOption{
+			apigen.WithHTTPClient(httpClient),
+			apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
+			apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+				// This UA string structure is agreed upon
+				// Please consider that when making changes
+				req.Header.Set("User-Agent", fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, oss.OS, oss.Version, oss.Platform))
+				return nil
+			}),
+		}, opts...)...,
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)

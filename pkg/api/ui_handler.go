@@ -36,7 +36,8 @@ func NewUIHandler(gatewayDomains []string, snippets []params.CodeSnippet) http.H
 	fileSystem := http.FS(injectedContent)
 	gzipHandler := gziphandler.GzipHandler(http.FileServer(fileSystem))
 	etagHandler := EtagMiddleware(injectedContent, http.StripPrefix("/", gzipHandler))
-	return NewHandlerWithDefault(fileSystem, etagHandler, gatewayDomains)
+	securityHandler := SecurityMiddleware(etagHandler)
+	return NewHandlerWithDefault(fileSystem, securityHandler, gatewayDomains)
 }
 
 func NewS3GatewayEndpointErrorHandler(gatewayDomains []string) http.Handler {
