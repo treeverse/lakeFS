@@ -2866,12 +2866,7 @@ func (c *Controller) ListBranches(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body apigen.CreateBranchJSONRequestBody, repository string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateBranchAction,
-			Resource: permissions.BranchArn(repository, body.Name),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "CreateBranch", permissions.PermissionParams{Repository: &repository, Branch: &body.Name}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2893,12 +2888,7 @@ func (c *Controller) CreateBranch(w http.ResponseWriter, r *http.Request, body a
 }
 
 func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, repository, branch string, body apigen.DeleteBranchParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.DeleteBranchAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "DeleteBranch", permissions.PermissionParams{Repository: &repository, Branch: &branch}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -2912,12 +2902,7 @@ func (c *Controller) DeleteBranch(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) GetBranch(w http.ResponseWriter, r *http.Request, repository, branch string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadBranchAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "GetBranch", permissions.PermissionParams{Repository: &repository, Branch: &branch}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3047,12 +3032,7 @@ func (c *Controller) handleAPIError(ctx context.Context, w http.ResponseWriter, 
 }
 
 func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body apigen.ResetBranchJSONRequestBody, repository, branch string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.RevertBranchAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "ResetBranch", permissions.PermissionParams{Repository: &repository, Branch: &branch}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3080,13 +3060,8 @@ func (c *Controller) ResetBranch(w http.ResponseWriter, r *http.Request, body ap
 }
 
 func (c *Controller) HardResetBranch(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.HardResetBranchParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			// TODO(ozkatz): Can we have another action here?
-			Action:   permissions.RevertBranchAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
+	// TODO(ozkatz): Can we have another action here?
+	if !c.authorizeReq(w, r, "HardResetBranch", permissions.PermissionParams{Repository: &repository, Branch: &branch}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3211,12 +3186,7 @@ func importStatusToResponse(status *graveler.ImportStatus) apigen.ImportStatus {
 }
 
 func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.ImportStatusParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadBranchAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "ImportStatus", permissions.PermissionParams{Repository: &repository, Branch: &branch}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3230,12 +3200,7 @@ func (c *Controller) ImportStatus(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.ImportCancelParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ImportCancelAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "ImportCancel", permissions.PermissionParams{Repository: &repository, Branch: &branch}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3249,12 +3214,7 @@ func (c *Controller) ImportCancel(w http.ResponseWriter, r *http.Request, reposi
 }
 
 func (c *Controller) Commit(w http.ResponseWriter, r *http.Request, body apigen.CommitJSONRequestBody, repository, branch string, params apigen.CommitParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateCommitAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "Commit", permissions.PermissionParams{Repository: &repository, Branch: &branch}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -3708,12 +3668,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 }
 
 func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body apigen.RevertBranchJSONRequestBody, repository, branch string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.RevertBranchAction,
-			Resource: permissions.BranchArn(repository, branch),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "RevertBranch", permissions.PermissionParams{Repository: &repository, Branch: &branch}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -4516,12 +4471,7 @@ func (c *Controller) DiffRefs(w http.ResponseWriter, r *http.Request, repository
 }
 
 func (c *Controller) LogCommits(w http.ResponseWriter, r *http.Request, repository, ref string, params apigen.LogCommitsParams) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.ReadBranchAction,
-			Resource: permissions.BranchArn(repository, ref),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "LogCommits", permissions.PermissionParams{Repository: &repository, Branch: &ref}, nil) {
 		return
 	}
 	ctx := r.Context()
@@ -5038,12 +4988,7 @@ func (c *Controller) GetUnderlyingProperties(w http.ResponseWriter, r *http.Requ
 }
 
 func (c *Controller) MergeIntoBranch(w http.ResponseWriter, r *http.Request, body apigen.MergeIntoBranchJSONRequestBody, repository, sourceRef, destinationBranch string) {
-	if !c.authorize(w, r, permissions.Node{
-		Permission: permissions.Permission{
-			Action:   permissions.CreateCommitAction,
-			Resource: permissions.BranchArn(repository, destinationBranch),
-		},
-	}) {
+	if !c.authorizeReq(w, r, "MergeIntoBranch", permissions.PermissionParams{Repository: &repository, Branch: &destinationBranch}, nil) {
 		return
 	}
 	ctx := r.Context()
