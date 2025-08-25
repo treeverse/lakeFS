@@ -18,9 +18,11 @@ interface SetupResponse {
 }
 
 export interface LoginConfig {
+    RBAC?: 'none' | 'simplified' | 'internal' | 'external';
+    username_ui_placeholder?: string;
+    password_ui_placeholder?: string;
     login_url: string;
-    username_ui_placeholder: string;
-    password_ui_placeholder: string;
+    login_url_method?: 'none' | 'redirect' | 'select';
     login_failed_message?: string;
     fallback_login_url?: string;
     fallback_login_label?: string;
