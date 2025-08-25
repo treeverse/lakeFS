@@ -49,7 +49,10 @@ This reference uses `.` to denote the nesting of values.
 
 Configuration section for the lakeFS key-value store database.
 
-* `database.type` `(string ["postgres"|"dynamodb"|"cosmosdb"|"local"] : )` - lakeFS database type
+* `database.type` `(string ["postgres"|"dynamodb"|"cosmosdb"|"redis"|"local"] : )` - lakeFS database type
+
+    !!! note
+        The `redis` database type is available in **lakeFS Enterprise**
 
 
 === "`database.postgres`"
