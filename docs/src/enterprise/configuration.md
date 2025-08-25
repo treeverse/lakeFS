@@ -36,6 +36,10 @@ Configuration section for lakeFS Enterprise database options.
 * `database.redis.namespace` `(string : "")` - Prefix for all keys used by the application
 * `database.redis.tls_skip_verify` `(bool : false)` - Skip certificate verification (for development only)
 
+!!! note
+    If you are using Redis or a compatible service such as Amazon MemoryDB, enable **durable writes**.
+    This ensures data is persisted and prevents data loss in case of node restarts or failures.
+    
 ### auth
 
 Configuration section for authentication services, like SAML or OIDC.
