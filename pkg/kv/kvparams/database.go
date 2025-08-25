@@ -100,12 +100,13 @@ type Redis struct {
 	// MemoryDB and TLS specific configuration
 	EnableTLS          bool   // Force TLS for MemoryDB
 	TLSSkipVerify      bool   // Skip cert verification (dev only)
-	AwsRegion          string // AWS region for IAM auth
-	AwsProfile         string // AWS profile
-	AwsAccessKeyID     string // AWS credentials
-	AwsSecretAccessKey string // AWS credentials
+	AWSRegion          string // AWS region for IAM auth
+	AWSProfile         string // AWS profile
+	AWSAccessKeyID     string // AWS credentials
+	AWSSecretAccessKey string // AWS credentials
 	UseIAMAuth         bool   // Enable IAM authentication
-	ClusterMode        bool   // Support Redis Cluster mode
+
+	ClusterMode bool // Support Redis Cluster mode
 }
 
 func NewConfig(cfg *config.Database) (Config, error) {
@@ -175,10 +176,10 @@ func NewConfig(cfg *config.Database) (Config, error) {
 			Namespace:          cfg.Redis.Namespace,
 			EnableTLS:          cfg.Redis.EnableTLS,
 			TLSSkipVerify:      cfg.Redis.TLSSkipVerify,
-			AwsRegion:          cfg.Redis.AwsRegion,
-			AwsProfile:         cfg.Redis.AwsProfile,
-			AwsAccessKeyID:     cfg.Redis.AwsAccessKeyID.SecureValue(),
-			AwsSecretAccessKey: cfg.Redis.AwsSecretAccessKey.SecureValue(),
+			AWSRegion:          cfg.Redis.AWSRegion,
+			AWSProfile:         cfg.Redis.AWSProfile,
+			AWSAccessKeyID:     cfg.Redis.AWSAccessKeyID.SecureValue(),
+			AWSSecretAccessKey: cfg.Redis.AWSSecretAccessKey.SecureValue(),
 			UseIAMAuth:         cfg.Redis.UseIAMAuth,
 			ClusterMode:        cfg.Redis.ClusterMode,
 		}

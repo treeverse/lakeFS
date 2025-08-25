@@ -148,13 +148,13 @@ type Database struct {
 		Namespace          string        `mapstructure:"namespace"`
 		EnableTLS          bool          `mapstructure:"enable_tls"`
 		TLSSkipVerify      bool          `mapstructure:"tls_skip_verify"`
-		AwsRegion          string        `mapstructure:"aws_region"`
-		AwsProfile         string        `mapstructure:"aws_profile"`
-		AwsAccessKeyID     SecureString  `mapstructure:"aws_access_key_id"`
-		AwsSecretAccessKey SecureString  `mapstructure:"aws_secret_access_key"`
+		AWSRegion          string        `mapstructure:"aws_region"`
+		AWSProfile         string        `mapstructure:"aws_profile"`
+		AWSAccessKeyID     SecureString  `mapstructure:"aws_access_key_id"`
+		AWSSecretAccessKey SecureString  `mapstructure:"aws_secret_access_key"`
 		UseIAMAuth         bool          `mapstructure:"use_iam_auth"`
 		ClusterMode        bool          `mapstructure:"cluster_mode"`
-	}
+	} `mapstructure:"redis"`
 }
 
 // ApproximatelyCorrectOwnership configures an approximate ("mostly correct") ownership.
