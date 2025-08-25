@@ -706,7 +706,7 @@ jobs:
     needs: [deploy-image, build-spark3-metadata-client, login-to-amazon-ecr]
     runs-on: ubuntu-22.04
     env:
-      SPARK_TAG: 3.2.1
+      SPARK_TAG: 3.RC-treeverse
       REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
       TAG: ${{ needs.deploy-image.outputs.tag }}
     steps:
