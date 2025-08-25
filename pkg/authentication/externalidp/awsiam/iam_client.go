@@ -27,9 +27,11 @@ type ExternalPrincipalLoginCaller interface {
 	ExternalPrincipalLogin(ctx context.Context, loginInfo apigen.ExternalLoginInformation) (*apigen.AuthenticationToken, error)
 }
 
+type TokenCacheCallback func(token *apigen.AuthenticationToken)
+
 // WithAWSIAMRoleAuthProviderOption will add authentication provider into the GetClient request, which will return a client authenticated with IAM.
-func WithAWSIAMRoleAuthProviderOption(params *IAMAuthParams, logger logging.Logger, client ExternalPrincipalLoginCaller, initialToken *apigen.AuthenticationToken, presignClientOpts ...func(*sts.PresignOptions)) apigen.ClientOption {
-	awsProvider := NewSecurityProviderAWSIAMRole(logger, params, client, initialToken, presignClientOpts...)
+func WithAWSIAMRoleAuthProviderOption(params *IAMAuthParams, logger logging.Logger, client ExternalPrincipalLoginCaller, initialToken *apigen.AuthenticationToken, cacheCallback TokenCacheCallback, presignClientOpts ...func(*sts.PresignOptions)) apigen.ClientOption {
+	awsProvider := NewSecurityProviderAWSIAMRole(logger, params, client, initialToken, cacheCallback, presignClientOpts...)
 	return apigen.WithRequestEditorFn(awsProvider.Intercept)
 }
 
@@ -51,19 +53,22 @@ type SecurityProviderAWSIAMRole struct {
 	Params              *IAMAuthParams
 	// lakeFS unauthenticated client to perform login request. Because of legacy we
 	// have in the generated client code it must contain authrozation header (e.g empty access/secret key id)
-	Client            ExternalPrincipalLoginCaller
-	PresignClientOpts []func(*sts.PresignOptions)
+	Client             ExternalPrincipalLoginCaller
+	PresignClientOpts  []func(*sts.PresignOptions)
+	TokenCacheCallback TokenCacheCallback
 }
 
-func NewSecurityProviderAWSIAMRole(logger logging.Logger, params *IAMAuthParams, client ExternalPrincipalLoginCaller, optionalInitialToken *apigen.AuthenticationToken, presignClientOpts ...func(*sts.PresignOptions)) *SecurityProviderAWSIAMRole {
+func NewSecurityProviderAWSIAMRole(logger logging.Logger, params *IAMAuthParams, client ExternalPrincipalLoginCaller, optionalInitialToken *apigen.AuthenticationToken, cacheCallback TokenCacheCallback, presignClientOpts ...func(*sts.PresignOptions)) *SecurityProviderAWSIAMRole {
 	return &SecurityProviderAWSIAMRole{
 		Logger:              logger,
 		AuthenticationToken: optionalInitialToken,
 		Params:              params,
 		Client:              client,
 		PresignClientOpts:   presignClientOpts,
+		TokenCacheCallback:  cacheCallback,
 	}
 }
+
 func (s *SecurityProviderAWSIAMRole) Intercept(ctx context.Context, req *http.Request) error {
 	if s.AuthenticationToken == nil || s.AuthenticationToken.Token == "" ||
 		(s.AuthenticationToken.TokenExpiration != nil &&
@@ -76,9 +81,24 @@ func (s *SecurityProviderAWSIAMRole) Intercept(ctx context.Context, req *http.Re
 		}
 		s.AuthenticationToken = token
 		s.Logger.WithField("expiry", time.Unix(*s.AuthenticationToken.TokenExpiration, 0)).Debug("success renewing session token")
+
+		if s.TokenCacheCallback != nil {
+			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						s.Logger.WithField("panic", r).Debug("token cache callback panicked")
+					}
+				}()
+				s.TokenCacheCallback(token)
+			}()
+		}
 	}
 	req.Header.Set("Authorization", "Bearer "+s.AuthenticationToken.Token)
 	return nil
+}
+
+func (s *SecurityProviderAWSIAMRole) GetCurrentToken() *apigen.AuthenticationToken {
+	return s.AuthenticationToken
 }
 
 func (s *SecurityProviderAWSIAMRole) GetLakeFSTokenFromAWS(ctx context.Context) (*apigen.AuthenticationToken, error) {
