@@ -703,7 +703,7 @@ func getTokenOnce() *apigen.AuthenticationToken {
 				cachedToken = token
 				return
 			}
-			logging.ContextUnavailable().Errorf("Error loading token from cache: %w", err)
+			logging.ContextUnavailable().Debugf("Error loading token from cache: %w", err)
 		}
 	})
 	return cachedToken
