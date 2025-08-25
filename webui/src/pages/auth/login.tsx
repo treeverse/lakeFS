@@ -19,7 +19,6 @@ interface SetupResponse {
 
 export interface LoginConfig {
     login_url: string;
-    login_url_method?: string;
     username_ui_placeholder: string;
     password_ui_placeholder: string;
     login_failed_message?: string;
@@ -29,9 +28,7 @@ export interface LoginConfig {
     logout_url: string;
 }
 
-export const AUTH_LOGIN_PATH = '/auth/login';
-export const LOCAL_LOGIN_METHOD = 'local';
-export const LOGIN_URL_METHOD_SELECT = 'select';
+const AUTH_LOGIN_PATH = '/auth/login';
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
@@ -110,44 +107,12 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     )
 }
 
-/**
- * Decides whether to use the login method selection flow - render the login selection component or fall back to the
- * local lakeFS login form or the legacy flow handled by the caller.
- *
- * Flow:
- * - Ask the plugin for a selection component.
- *   - If the plugin returns null → return null (caller continues with the legacy flow).
- *   - If the plugin returns a component:
- *       - The user is always redirected to /auth/login for all login methods.
- *         There is no auto-redirect to login_url; SSO redirection only occurs after the user selects SSO on the
- *         selection component.
- *       - If the user chose local lakeFS login (router.query.method === LOCAL_LOGIN_METHOD),
- *         render the LoginForm.
- *       - Otherwise, render the login selection component where the user can choose between SSO and lakeFS login.
- */
-const handleLoginMethodSelection = (
-    loginConfig: LoginConfig, 
-    router: ReturnType<typeof useRouter<{method?: string}>>
-): React.ReactElement | null => {
-    const pluginManager = usePluginManager();
-    const loginMethodSelectionComponent = pluginManager.loginMethodSelection.renderLoginMethodSelection(loginConfig);
-    
-    if (loginMethodSelectionComponent) {
-        // If the user selected local lakeFS login, show the standard login form
-        if (router.query.method === LOCAL_LOGIN_METHOD) {
-            return <LoginForm loginConfig={loginConfig}/>;
-        }
-        
-        // Otherwise, show the login method selection component
-        return loginMethodSelectionComponent;
-    }
-    
-    return null;
-};
-
 const LoginPage = () => {
     const router = useRouter();
     const { response, error, loading } = useAPI(() => setup.getState());
+    const pluginManager = usePluginManager();
+    const showLoginMethodSelectionComponent = pluginManager.loginMethodSelection.showLoginMethodSelectionComponent();
+    const isLakeFSLoginMethodSelected = pluginManager.loginMethodSelection.isLakeFSLoginMethodSelected();
 
     if (loading) {
         return null;
@@ -164,24 +129,30 @@ const LoginPage = () => {
         return null;
     }
 
-    const loginMethodComponent = handleLoginMethodSelection(loginConfig, router);
-    if (loginMethodComponent) {
-        // Login method selection flow – triggered when login_url is set and login_url_method === 'select'.
-        // In this case, skip the legacy flow and show either the login selection component or the local lakeFS login form.
-        return loginMethodComponent;
+    // This condition can be true when SSO login is configured along with the login method selection feature.
+    if (showLoginMethodSelectionComponent && !isLakeFSLoginMethodSelected) {
+        return pluginManager.loginMethodSelection.renderLoginMethodSelectionComponent(loginConfig);
     }
 
-    // Legacy login flow – use local lakeFS login, or automatically redirect to login_url if SSO login_url is configured.
-    if (router.query.redirected)  {
-        if(!error && loginConfig.login_url) {
+    // When SSO login is configured without the login method selection feature, this logic allows users who navigate
+    // directly to AUTH_LOGIN_PATH to log in via lakeFS instead of being automatically redirected to the SSO login page
+    // (login_url). Users are redirected to the SSO login page only if they reach AUTH_LOGIN_PATH through another
+    // endpoint that redirected them there.
+    if (!showLoginMethodSelectionComponent && router.query.redirected)  {
+        if (!error && loginConfig.login_url) {
             window.location.href = loginConfig.login_url;
             return null;
         }
         delete router.query.redirected;
-
-        router.push({pathname: '/auth/login', params: {}, query: router.query as Record<string, string>})
+        router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
     }
 
+    // When SSO login is configured together with the login method selection feature, this line resets
+    // isLakeFSLoginMethodSelected so that the login method selection component will appear again on the next login
+    // attempt. In other configurations, this line has no effect.
+    pluginManager.loginMethodSelection.setIsLakeFSLoginMethodSelected(false);
+
+    // if (showLoginMethodSelectionModal && isLakeFSLoginMethodSelected) or if (!showLoginMethodSelectionModal && !router.query.redirected)
     return (
         <LoginForm loginConfig={loginConfig}/>
     );
