@@ -52,7 +52,7 @@ Configuration section for the lakeFS key-value store database.
 * `database.type` `(string ["postgres"|"dynamodb"|"cosmosdb"|"redis"|"local"] : )` - lakeFS database type
 
     !!! note
-        `redis` database type is available in lakeFS Enterprise only.
+        The `redis` database type is available in **lakeFS Enterprise**
 
 
 === "`database.postgres`"
