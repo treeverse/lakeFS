@@ -111,7 +111,7 @@ func RunSparkSubmit(config *SparkSubmitConfig) error {
 	}
 	workingDirectory = strings.TrimSuffix(workingDirectory, "/")
 	dockerArgs := getDockerArgs(workingDirectory, config.LocalJar)
-	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/bitnami/spark:%s", config.SparkVersion), "spark-submit")
+	dockerArgs = append(dockerArgs, fmt.Sprintf("docker.io/treeverse/bitnami-spark:%s", config.SparkVersion), "spark-submit")
 	sparkSubmitArgs := getSparkSubmitArgs(config.EntryPoint)
 	sparkSubmitArgs = append(sparkSubmitArgs, config.ExtraSubmitArgs...)
 	args := dockerArgs
