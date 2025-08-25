@@ -9,17 +9,28 @@ import {AlertError} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {useNavigate} from "react-router-dom";
+import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 
-interface LoginConfig {
+interface SetupResponse {
+    state: string;
+    comm_prefs_missing?: boolean;
+    login_config?: LoginConfig;
+}
+
+export interface LoginConfig {
+    RBAC?: 'none' | 'simplified' | 'internal' | 'external';
+    username_ui_placeholder?: string;
+    password_ui_placeholder?: string;
     login_url: string;
-    username_ui_placeholder: string;
-    password_ui_placeholder: string;
+    login_url_method?: 'none' | 'redirect' | 'select';
     login_failed_message?: string;
     fallback_login_url?: string;
     fallback_login_label?: string;
     login_cookie_names: string[];
     logout_url: string;
 }
+
+export const AUTH_LOGIN_PATH = '/auth/login';
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
@@ -98,29 +109,53 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     )
 }
 
-
 const LoginPage = () => {
     const router = useRouter();
     const { response, error, loading } = useAPI(() => setup.getState());
+    const pluginManager = usePluginManager();
+
     if (loading) {
         return null;
     }
 
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
-    if (!error && response && (response.state !== SETUP_STATE_INITIALIZED || response.comm_prefs_missing === true)) {
-        router.push({pathname: '/setup', query: router.query})
+    const setupResponse = response as SetupResponse | null;
+    if (!error && setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
+        router.push({pathname: '/setup', params: {}, query: router.query as Record<string, string>})
         return null;
     }
-    const loginConfig = response?.login_config;
-    if (router.query.redirected)  {
-        if(!error && loginConfig?.login_url) {
-            window.location = loginConfig.login_url;
+    const loginConfig = setupResponse?.login_config;
+    if (!loginConfig) {
+        return null;
+    }
+
+    const showLoginMethodSelectionComponent = pluginManager.loginMethodSelection.showLoginMethodSelectionComponent(loginConfig);
+    const isLakeFSLoginMethodSelected = pluginManager.loginMethodSelection.isLakeFSLoginMethodSelected();
+
+    // This condition can be true when SSO login is configured along with the login method selection feature.
+    if (showLoginMethodSelectionComponent && !isLakeFSLoginMethodSelected) {
+        return pluginManager.loginMethodSelection.renderLoginMethodSelectionComponent(loginConfig);
+    }
+
+    // When SSO login is configured without the login method selection feature, this logic allows users who navigate
+    // directly to AUTH_LOGIN_PATH to log in via lakeFS instead of being automatically redirected to the SSO login page
+    // (login_url). Users are redirected to the SSO login page only if they reach AUTH_LOGIN_PATH through another
+    // endpoint that redirected them there.
+    if (!showLoginMethodSelectionComponent && router.query.redirected)  {
+        if (!error && loginConfig.login_url) {
+            window.location.href = loginConfig.login_url;
             return null;
         }
         delete router.query.redirected;
-
-        router.push({pathname: '/auth/login', query: router.query})
+        router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
     }
+
+    // When SSO login is configured together with the login method selection feature, this line resets
+    // isLakeFSLoginMethodSelected so that the login method selection component will appear again on the next login
+    // attempt. In other configurations, this line has no effect.
+    pluginManager.loginMethodSelection.setIsLakeFSLoginMethodSelected(false);
+
+    // if (showLoginMethodSelectionModal && isLakeFSLoginMethodSelected) or if (!showLoginMethodSelectionModal && !router.query.redirected)
     return (
         <LoginForm loginConfig={loginConfig}/>
     );

@@ -91,4 +91,4 @@ body .auth-page .nav-pills .nav-link:hover {
 /* Direct style override for nav-pills */
 .auth-page .nav-pills .nav-link.active {
   background-color: var(--success) !important;
-} 
+}
