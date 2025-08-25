@@ -113,8 +113,6 @@ const LoginPage = () => {
     const router = useRouter();
     const { response, error, loading } = useAPI(() => setup.getState());
     const pluginManager = usePluginManager();
-    const showLoginMethodSelectionComponent = pluginManager.loginMethodSelection.showLoginMethodSelectionComponent();
-    const isLakeFSLoginMethodSelected = pluginManager.loginMethodSelection.isLakeFSLoginMethodSelected();
 
     if (loading) {
         return null;
@@ -130,6 +128,9 @@ const LoginPage = () => {
     if (!loginConfig) {
         return null;
     }
+
+    const showLoginMethodSelectionComponent = pluginManager.loginMethodSelection.showLoginMethodSelectionComponent(loginConfig);
+    const isLakeFSLoginMethodSelected = pluginManager.loginMethodSelection.isLakeFSLoginMethodSelected();
 
     // This condition can be true when SSO login is configured along with the login method selection feature.
     if (showLoginMethodSelectionComponent && !isLakeFSLoginMethodSelected) {

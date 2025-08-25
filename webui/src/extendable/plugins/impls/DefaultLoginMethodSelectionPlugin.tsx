@@ -10,8 +10,7 @@ class DefaultLoginMethodSelectionPlugin implements PluginLoginMethodSelection {
         return false;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    setIsLakeFSLoginMethodSelected(_value: boolean): void {
+    setIsLakeFSLoginMethodSelected(): void {
         // Default implementation does nothing
     }
 
