@@ -76,7 +76,7 @@ services:
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-worker:
-    image: docker.io/treeverse/bitnami-spark:{SPARK_TAG:-3}
+    image: docker.io/treeverse/bitnami-spark:${SPARK_TAG:-3}
     ports:
       - 8081
     environment:
@@ -101,7 +101,7 @@ services:
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-submit:
-    image: docker.io/treeverse/bitnami-spark:{SPARK_TAG:-3}
+    image: docker.io/treeverse/bitnami-spark:${SPARK_TAG:-3}
     profiles: ["command"]
     volumes:
       - ./:/local
