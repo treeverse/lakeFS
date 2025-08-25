@@ -196,7 +196,6 @@ var (
 	tokenCacheOnce      sync.Once
 	tokenSaveOnce       sync.Once
 	ErrTokenUnavailable = fmt.Errorf("token is not available")
-	ErrCacheUnavailable = fmt.Errorf("cache is not available")
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
