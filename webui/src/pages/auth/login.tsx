@@ -30,7 +30,7 @@ export interface LoginConfig {
     logout_url: string;
 }
 
-const AUTH_LOGIN_PATH = '/auth/login';
+export const AUTH_LOGIN_PATH = '/auth/login';
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
