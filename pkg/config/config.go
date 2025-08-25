@@ -135,6 +135,26 @@ type Database struct {
 		Throughput int32        `mapstructure:"throughput"`
 		Autoscale  bool         `mapstructure:"autoscale"`
 	} `mapstructure:"cosmosdb"`
+
+	Redis *struct {
+		Endpoint           string        `mapstructure:"endpoint"`
+		Username           string        `mapstructure:"username"`
+		Password           SecureString  `mapstructure:"password"`
+		Database           int           `mapstructure:"database"`
+		PoolSize           int           `mapstructure:"pool_size"`
+		DialTimeout        time.Duration `mapstructure:"dial_timeout"`
+		ReadTimeout        time.Duration `mapstructure:"read_timeout"`
+		WriteTimeout       time.Duration `mapstructure:"write_timeout"`
+		Namespace          string        `mapstructure:"namespace"`
+		EnableTLS          bool          `mapstructure:"enable_tls"`
+		TLSSkipVerify      bool          `mapstructure:"tls_skip_verify"`
+		AWSRegion          string        `mapstructure:"aws_region"`
+		AWSProfile         string        `mapstructure:"aws_profile"`
+		AWSAccessKeyID     SecureString  `mapstructure:"aws_access_key_id"`
+		AWSSecretAccessKey SecureString  `mapstructure:"aws_secret_access_key"`
+		UseIAMAuth         bool          `mapstructure:"use_iam_auth"`
+		ClusterMode        bool          `mapstructure:"cluster_mode"`
+	} `mapstructure:"redis"`
 }
 
 // ApproximatelyCorrectOwnership configures an approximate ("mostly correct") ownership.

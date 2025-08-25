@@ -15,6 +15,7 @@ type Config struct {
 	DynamoDB *DynamoDB
 	Local    *Local
 	CosmosDB *CosmosDB
+	Redis    *Redis
 }
 
 type Local struct {
@@ -78,6 +79,36 @@ type CosmosDB struct {
 	StrongConsistency bool
 }
 
+type Redis struct {
+	// Redis endpoint (host:port)
+	Endpoint string
+	// Username for Redis authentication (Redis 6.0+)
+	Username string
+	// Password for Redis authentication
+	Password string
+	// Database number to select
+	Database int
+	// Connection pool size
+	PoolSize int
+	// Timeout for dial, read, and write operations
+	DialTimeout  time.Duration
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+
+	Namespace string // Prefix for all keys used by the application
+
+	// MemoryDB and TLS specific configuration
+	EnableTLS          bool   // Force TLS for MemoryDB
+	TLSSkipVerify      bool   // Skip cert verification (dev only)
+	AWSRegion          string // AWS region for IAM auth
+	AWSProfile         string // AWS profile
+	AWSAccessKeyID     string // AWS credentials
+	AWSSecretAccessKey string // AWS credentials
+	UseIAMAuth         bool   // Enable IAM authentication
+
+	ClusterMode bool // Support Redis Cluster mode
+}
+
 func NewConfig(cfg *config.Database) (Config, error) {
 	p := Config{
 		Type: cfg.Type,
@@ -132,5 +163,26 @@ func NewConfig(cfg *config.Database) (Config, error) {
 		}
 	}
 
+	if cfg.Redis != nil {
+		p.Redis = &Redis{
+			Endpoint:           cfg.Redis.Endpoint,
+			Username:           cfg.Redis.Username,
+			Password:           cfg.Redis.Password.SecureValue(),
+			Database:           cfg.Redis.Database,
+			PoolSize:           cfg.Redis.PoolSize,
+			DialTimeout:        cfg.Redis.DialTimeout,
+			ReadTimeout:        cfg.Redis.ReadTimeout,
+			WriteTimeout:       cfg.Redis.WriteTimeout,
+			Namespace:          cfg.Redis.Namespace,
+			EnableTLS:          cfg.Redis.EnableTLS,
+			TLSSkipVerify:      cfg.Redis.TLSSkipVerify,
+			AWSRegion:          cfg.Redis.AWSRegion,
+			AWSProfile:         cfg.Redis.AWSProfile,
+			AWSAccessKeyID:     cfg.Redis.AWSAccessKeyID.SecureValue(),
+			AWSSecretAccessKey: cfg.Redis.AWSSecretAccessKey.SecureValue(),
+			UseIAMAuth:         cfg.Redis.UseIAMAuth,
+			ClusterMode:        cfg.Redis.ClusterMode,
+		}
+	}
 	return p, nil
 }
