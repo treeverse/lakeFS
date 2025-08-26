@@ -77,7 +77,7 @@ export const PolicyEditor = ({ show, onHide, onSubmit, policy = null, noID = fal
                 }}>
                     {(policy === null) && !noID && (
                         <Form.Group className="mb-3">
-                            <FormControl ref={idField} autoFocus placeholder="Policy ID (e.g. 'MyRepoReadWrite')" type="text"/>
+                            <FormControl ref={idField} placeholder="Policy ID (e.g. 'MyRepoReadWrite')" type="text"/>
                         </Form.Group>
                     )}
                     <Form.Group className="mb-3">

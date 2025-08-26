@@ -34,8 +34,8 @@ const UserEffectivePoliciesList = ({ userId, after, onPaginate }) => {
                <DataTable
                     keyFn={policy => policy.id}
                     rowFn={policy => [
-                        <Link href={{pathname: '/auth/policies/:policyId', params: {policyId: policy.id}}}>{policy.id}</Link>,
-                        <FormattedDate dateValue={policy.creation_date}/>
+                        <Link key={`policy-${policy.id}`} href={{pathname: '/auth/policies/:policyId', params: {policyId: policy.id}}}>{policy.id}</Link>,
+                        <FormattedDate key={`policy-date-${policy.id}`} dateValue={policy.creation_date}/>
                     ]}
                     headers={['Policy ID', 'Created At']}
                     results={results}

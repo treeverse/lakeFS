@@ -57,7 +57,7 @@ export const UserConfiguration: FC<UserConfigurationProps> = ({
                         <Form onSubmit={submitHandler}>
                             {requireAdmin &&
                             <Form.Group controlId="user-name" className="mb-3">
-                                <Form.Control type="text" value={adminUser}  onChange={handleAdminUserChange} placeholder="Admin Username" autoFocus/>
+                                <Form.Control type="text" value={adminUser}  onChange={handleAdminUserChange} placeholder="Admin Username" />
                             </Form.Group>}
 
                             {requireCommPrefs &&

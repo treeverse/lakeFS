@@ -73,8 +73,8 @@ const GroupMemberList = ({ groupId, after, onPaginate }) => {
                 <DataTable
                     keyFn={user => user.id}
                     rowFn={user => [
-                        <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>{resolveUserDisplayName(user)}</Link>,
-                        <FormattedDate dateValue={user.creation_date}/>
+                        <Link key={`user-${user.id}`} href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>{resolveUserDisplayName(user)}</Link>,
+                        <FormattedDate key={`date-${user.id}`} dateValue={user.creation_date}/>
                     ]}
                     headers={['User ID', 'Created At']}
                     actions={[{

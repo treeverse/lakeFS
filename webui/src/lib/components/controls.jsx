@@ -324,7 +324,6 @@ export const PrefixSearchWidget = ({ onFilter, text = "Search by Prefix", defaul
                 <InputGroup className="prefix-search-input-group">
                     <Form.Control
                         ref={ref}
-                        autoFocus
                         defaultValue={defaultValue}
                         placeholder={text}
                         aria-label={text}
@@ -493,7 +492,7 @@ export const ExitConfirmationDialog = ({dialogAlert, dialogDescription, onExit, 
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
-                <MuiButton onClick={onContinue} autoFocus>Cancel</MuiButton>
+                <MuiButton onClick={onContinue}>Cancel</MuiButton>
                 <MuiButton onClick={onExit}>
                     Exit
                 </MuiButton>
@@ -535,7 +534,6 @@ export const SearchInput = ({searchPrefix, setSearchPrefix, placeholder}) => {
     return (
         <InputGroup>
             <Form.Control
-                autoFocus
                 placeholder={placeholder}
                 value={searchPrefix}
                 onChange={(e) => setSearchPrefix(e.target.value)}

@@ -51,12 +51,12 @@ export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPa
                 results={results}
                 headers={['Access Key ID', 'Creation Date', '']}
                 rowFn={row => [
-                    <>
+                    <span key={`access-key-${row.access_key_id}`}>
                         <code>{row.access_key_id}</code>
                         {(currentAccessKey === row.access_key_id) && <strong>{' '}(current)</strong>}
-                    </>,
-                    <FormattedDate dateValue={row.creation_date}/>,
-                    <span className="row-hover">
+                    </span>,
+                    <FormattedDate key={`date-${row.access_key_id}`} dateValue={row.creation_date}/>,
+                    <span key={`actions-${row.access_key_id}`} className="row-hover">
                         {(currentAccessKey !== row.access_key_id) &&
                             <ConfirmationButton
                                 variant="outline-danger"
@@ -81,10 +81,10 @@ export const CredentialsTable = ({userId, currentAccessKey, refresh, after, onPa
 
 
 export const CredentialsShowModal = ({credentials, show, onHide}) => {
-    if (!credentials) return <></>;
-
     const {state} = useContext(AppContext);
     const buttonVariant = state.settings.darkMode ? "outline-light" : "outline-dark";
+
+    if (!credentials) return <></>;;
 
     return (
         <Modal show={show} onHide={onHide} size="lg">

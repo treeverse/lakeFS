@@ -1,11 +1,11 @@
 import React, { createContext, useReducer } from "react";
 
-type AppContextType = {
-    settings: AppContext;
+type AppSettings = {
+    darkMode: boolean;
 };
 
-type AppContext = {
-    darkMode: boolean;
+type AppContextType = {
+    settings: AppSettings;
 };
 
 const localStorageKeys = {
@@ -21,7 +21,7 @@ interface Action {
     value: boolean;
 }
 
-const initialLocalSettings: AppContext = {
+const initialLocalSettings: AppSettings = {
     darkMode: window.localStorage.getItem(localStorageKeys.darkMode) === String(true),
 };
 

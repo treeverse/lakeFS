@@ -43,11 +43,12 @@ export const AttachModal = ({
           results={response.results}
           rowFn={ent => [
             <Checkbox
+              key={`checkbox-${ent.id}`}
               defaultChecked={selected.some(selectedEnt => selectedEnt.id === ent.id)}
               onAdd={() => setSelected([...selected, ent])}
               onRemove={() => setSelected(selected.filter(selectedEnt => selectedEnt.id !== ent.id))}
               name={'selected'}/>,
-            <strong>{resolveEntityFn(ent)}</strong>
+            <strong key={`entity-${ent.id}`}>{resolveEntityFn(ent)}</strong>
           ]}
           firstFixedCol={true}
         />
@@ -186,7 +187,7 @@ export const EntityActionModal = ({
           e.preventDefault()
           onSubmit()
         }}>
-          <FormControl ref={idField} autoFocus placeholder={placeholder} type="text"/>
+          <FormControl ref={idField} placeholder={placeholder} type="text"/>
           {showExtraField &&
             <FormControl ref={extraField} placeholder={extraPlaceholder} type="text" className="mt-3"/>
           }

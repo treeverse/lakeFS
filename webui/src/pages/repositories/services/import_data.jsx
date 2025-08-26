@@ -120,7 +120,7 @@ const ImportForm = ({
         <Form>
             <Form.Group className='mt-4 form-group'>
                 <Form.Label>Import from</Form.Label>
-                <Form.Control type="text" name="import-from" style={pathStyle} ref={sourceRef} autoFocus
+                <Form.Control type="text" name="import-from" style={pathStyle} ref={sourceRef} 
                               placeholder={sourceURIExample}
                               onChange={updateSourceURLValidity}/>
                 {isSourceValid === false &&

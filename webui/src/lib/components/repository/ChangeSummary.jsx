@@ -39,7 +39,7 @@ class SummaryData {
  * @param {string} prefix - prefix to display summary for.
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore - function to use to get the change entries.
  */
-export default ({prefix, getMore}) => {
+const ChangeSummary = ({prefix, getMore}) => {
     const [pullMore, setPullMore] = useState(false);
     const [resultsState, setResultsState] = useState({results: [], pagination: {}});
     const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ export default ({prefix, getMore}) => {
                                 </Tooltip>
                             }>
                 <small>
-                    &gt;= {MAX_NUM_OBJECTS.toLocaleString()} results, <a href="#" onClick={onLoadAll}>load more?</a>
+                    &gt;= {MAX_NUM_OBJECTS.toLocaleString()} results, <button type="button" className="btn-link" onClick={onLoadAll}>load more?</button>
                 </small>
             </OverlayTrigger>
         )
@@ -122,3 +122,5 @@ export default ({prefix, getMore}) => {
         </OverlayTrigger>
     )
 }
+
+export default ChangeSummary;

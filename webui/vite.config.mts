@@ -20,10 +20,24 @@ export default ({ command }) => {
       }),
       react(),
       eslintPlugin({
-        include: ['src/**/*.jsx', 'src/**/*.js', 'src/**/*.ts', 'src/**/*.tsx']
+        include: ['src/**/*.jsx', 'src/**/*.js', 'src/**/*.ts', 'src/**/*.tsx'],
+        failOnWarning: false,
+        failOnError: true
       }),
     ],
     publicDir: './pub',
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            router: ['react-router-dom'],
+            ui: ['@mui/material', '@emotion/react', '@emotion/styled'],
+            utils: ['lodash', 'dayjs']
+          }
+        }
+      }
+    }
   };
 
   // in development

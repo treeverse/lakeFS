@@ -55,7 +55,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                                 <Form.Control 
                                     type="text" 
                                     placeholder={usernamePlaceholder} 
-                                    autoFocus
+                                    
                                     className="bg-light"
                                 />
                             </Form.Group>

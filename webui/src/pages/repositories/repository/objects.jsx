@@ -859,7 +859,7 @@ const TreeContainer = ({
     if (!showChangesOnly && reference && reference.type === RefTypeBranch) {
       try {
         return await refs.changes(repo.id, reference.id, "", path, delimiter);
-      } catch (error) {
+      } catch {
         return { results: [] };
       }
     }

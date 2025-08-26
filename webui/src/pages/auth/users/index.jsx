@@ -149,15 +149,16 @@ const UsersContainer = ({ refresh, setRefresh, allUsers, loading, error }) => {
                 keyFn={user => user.id}
                 rowFn={user => [
                     <Checkbox
+                        key={`checkbox-${user.id}`}
                         disabled={(!!currentUser && currentUser.id === user.id)}
                         name={user.id}
                         onAdd={() => setSelected([...selected, user])}
                         onRemove={() => setSelected(selected.filter(u => u !== user))}
                     />,
-                    <Link href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>
+                    <Link key={`link-${user.id}`} href={{pathname: '/auth/users/:userId', params: {userId: user.id}}}>
                         { resolveUserDisplayName(user) }
                     </Link>,
-                    <FormattedDate dateValue={user.creation_date}/>
+                    <FormattedDate key={`date-${user.id}`} dateValue={user.creation_date}/>
                 ]}
                 firstFixedCol={true}
             />
