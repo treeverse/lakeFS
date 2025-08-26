@@ -1,5 +1,14 @@
 # Changelog
 
+# v1.66.0
+
+:bug: Bugs fixed:
+- Fix initial group by claim to support slice of strings (#9427)
+- Fix configuration reload for log level update (#9434)
+- Fix pagination in diff_refs in Lua hook for detla exporter (#9444)
+- API: GetObject use content-disposition to prevent browser rendering (#9440)
+- WebUI: Add security headers to all responses (#9438)
+
 # v1.65.2
 
 🏢 Includes only changes for Enterprise.
