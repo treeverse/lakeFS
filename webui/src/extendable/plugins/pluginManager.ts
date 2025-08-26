@@ -2,13 +2,13 @@ import { PluginRepoCreationForm } from "./pluginRepoCreationForm";
 import DefaultRepoCreationFormPlugin from "./impls/DefaultRepoCreationFormPlugin";
 import { PluginCustomObjectRenderers } from "./pluginCustomObjectRenderers";
 import DefaultCustomObjectRenderersPlugin from "./impls/DefaultCustomObjectRenderers";
-import { PluginLoginMethodSelection } from "./pluginLoginMethodSelection";
-import DefaultLoginMethodSelectionPlugin from "./impls/DefaultLoginMethodSelectionPlugin";
+import { PluginLoginStrategy } from "./pluginLoginStrategy";
+import RedirectToSSOStrategyPlugin from "./impls/RedirectToSSOStrategyPlugin";
 
 export class PluginManager {
     private _repoCreationForm: PluginRepoCreationForm = DefaultRepoCreationFormPlugin;
     private _customObjectRenderers: PluginCustomObjectRenderers = DefaultCustomObjectRenderersPlugin;
-    private _loginMethodSelection: PluginLoginMethodSelection = DefaultLoginMethodSelectionPlugin;
+    private _loginStrategy: PluginLoginStrategy = RedirectToSSOStrategyPlugin;
 
     overridePluginRepoCreationForm(pluginRepoCreationForm: PluginRepoCreationForm): void {
         this._repoCreationForm = pluginRepoCreationForm;
@@ -26,11 +26,11 @@ export class PluginManager {
         return this._customObjectRenderers;
     }
 
-    overridePluginLoginMethodSelection(pluginLoginMethodSelection: PluginLoginMethodSelection): void {
-        this._loginMethodSelection = pluginLoginMethodSelection;
+    overridePluginLoginStrategy(pluginLoginStrategy: PluginLoginStrategy): void {
+        this._loginStrategy = pluginLoginStrategy;
     }
 
-    get loginMethodSelection(): PluginLoginMethodSelection {
-        return this._loginMethodSelection;
+    get loginStrategy(): PluginLoginStrategy {
+        return this._loginStrategy;
     }
 }

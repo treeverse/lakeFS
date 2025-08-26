@@ -5,7 +5,7 @@ import Form from "react-bootstrap/Form";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
-import {AlertError} from "../../lib/components/controls"
+import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {useNavigate} from "react-router-dom";
@@ -114,7 +114,7 @@ const LoginPage = () => {
     const pluginManager = usePluginManager();
 
     if (loading) {
-        return null;
+        return <Loading message="Loading login configuration..." />;
     }
 
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
@@ -128,36 +128,25 @@ const LoginPage = () => {
         return null;
     }
 
-    //const showLoginMethodSelectionComponent = pluginManager.loginMethodSelection.showLoginMethodSelectionComponent(loginConfig);
-    //const isLakeFSLoginMethodSelected = pluginManager.loginMethodSelection.isLakeFSLoginMethodSelected();
-
-    // This condition can be true when SSO login is configured along with the login method selection feature.
-    // if (showLoginMethodSelectionComponent && !isLakeFSLoginMethodSelected) {
-    //     return pluginManager.loginMethodSelection.renderLoginMethodSelectionComponent(loginConfig);
-    // }
-
-    // When SSO login is configured without the login method selection feature, this logic allows users who navigate
-    // directly to AUTH_LOGIN_PATH to log in via lakeFS instead of being automatically redirected to the SSO login page
-    // (login_url). Users are redirected to the SSO login page only if they reach AUTH_LOGIN_PATH through another
-    // endpoint that redirected them there.
+    // SSO handling: when a user navigates directly to AUTH_LOGIN_PATH, they should see the lakeFS login form.
+    // A login strategy is applied only if the user was redirected to AUTH_LOGIN_PATH (with the router.query.redirected flag).
     if (router.query.redirected)  {
-        const loginMethodSelectionComponent = pluginManager.loginMethodSelection.renderLoginMethodSelectionComponent(loginConfig)
-        if (!error && loginMethodSelectionComponent && loginMethodSelectionComponent == 'redirect') {
+        const result = pluginManager.loginStrategy.getLoginStrategy(loginConfig);
+        // 'render' - show the login method selection UI.
+        if (!error && result.type === 'render') {
+            return result.element;
+        }
+        // 'redirected' - the login trategy plugin already redirected to the SSO URL so nothing to render.
+        if (!error && result.type === 'redirected') {
             return null;
         }
-        if (!error && loginMethodSelectionComponent) {
-            return loginMethodSelectionComponent;
-        }
+        // 'none' - remove the router.query.redirected flag and route to AUTH_LOGIN_PATH to log in via lakeFS (LoginForm).
         delete router.query.redirected;
         router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
     }
 
-    // When SSO login is configured together with the login method selection feature, this line resets
-    // isLakeFSLoginMethodSelected so that the login method selection component will appear again on the next login
-    // attempt. In other configurations, this line has no effect.
-    //pluginManager.loginMethodSelection.setIsLakeFSLoginMethodSelected(false);
-
-    // if (showLoginMethodSelectionModal && isLakeFSLoginMethodSelected) or if (!showLoginMethodSelectionModal && !router.query.redirected)
+    // Default: show the lakeFS login form when SSO isn’t configured, or when the user arrives directly at
+    // AUTH_LOGIN_PATH (no router.query.redirected flag).
     return (
         <LoginForm loginConfig={loginConfig}/>
     );
