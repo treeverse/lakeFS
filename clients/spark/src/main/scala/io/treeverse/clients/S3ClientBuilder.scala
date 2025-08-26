@@ -9,6 +9,7 @@ import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
+import scala.util.Try
 
 import io.treeverse.clients.StorageUtils.S3.createAndValidateS3Client
 
@@ -72,24 +73,12 @@ object S3ClientBuilder extends S3ClientBuilder {
     val roleArn = hc.getTrimmed(Constants.ASSUMED_ROLE_ARN, "")
     val accessKey = hc.getTrimmed(Constants.ACCESS_KEY, null)
     val secretKey = hc.getTrimmed(Constants.SECRET_KEY, null)
-    val wantHadoopAssume =
-      hc.getTrimmed(Constants.AWS_CREDENTIALS_PROVIDER, null) == AssumedRoleCredentialProvider.NAME
-
-    // run checks only if relevant
-    val needAssume = roleArn.nonEmpty || wantHadoopAssume
-
-    // Check v1-compatibility ONLY if needed
-    val canUseHadoopAssumeAsBase: Boolean =
-      needAssume && wantHadoopAssume && {
-        try {
-          classOf[com.amazonaws.auth.AWSCredentialsProvider].isAssignableFrom(
-            Class.forName("org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider")
-          )
-        } catch { case _: Throwable => false }
-      }
+    val wantHadoopAssume = hc.getTrimmed(Constants.AWS_CREDENTIALS_PROVIDER, null) == AssumedRoleCredentialProvider.NAME
+    val hadoopAssumeAvailable: Boolean = wantHadoopAssume && Try(Class.forName("org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider")).toOption.exists(classOf[AWSCredentialsProvider].isAssignableFrom)
+    val useHadoopProvider = wantHadoopAssume && hadoopAssumeAvailable
 
     val base: AWSCredentialsProvider =
-      if (canUseHadoopAssumeAsBase) {
+      if (useHadoopProvider) {
         logger.info("Using Hadoop AssumedRoleCredentialProvider as base.")
         new AssumedRoleCredentialProvider(new java.net.URI(s"s3a://$bucket"), hc)
       } else if (accessKey != null && secretKey != null) {
@@ -100,22 +89,15 @@ object S3ClientBuilder extends S3ClientBuilder {
         new DefaultAWSCredentialsProviderChain()
       }
 
-    // Final credentials: either rely on Hadoop (EMR6) or do STS ourselves
     val credentialsProvider: AWSCredentialsProvider =
-      if (roleArn.nonEmpty) {
-        if (canUseHadoopAssumeAsBase) {
-          logger.info(
-            "Role ARN set and Hadoop provider selected - relying on Hadoop provider to assume the role."
-          )
-          base
-        } else {
-          new STSAssumeRoleSessionCredentialsProvider.Builder(
-            roleArn,
-            s"lakefs-gc-${UUID.randomUUID().toString}"
-          ).withLongLivedCredentialsProvider(base)
-            .build()
-        }
+      if (roleArn.nonEmpty && !useHadoopProvider) {
+        new STSAssumeRoleSessionCredentialsProvider.Builder(
+          roleArn, s"lakefs-gc-${UUID.randomUUID().toString}"
+        ).withLongLivedCredentialsProvider(base).build()
       } else {
+        if (roleArn.nonEmpty && useHadoopProvider) {
+          logger.info("Role ARN is set and Hadoop provider selected - relying on Hadoop provider to assume role.")
+        }
         base
       }
 
