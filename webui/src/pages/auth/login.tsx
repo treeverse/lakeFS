@@ -142,15 +142,12 @@ const LoginPage = () => {
     // endpoint that redirected them there.
     if (router.query.redirected)  {
         const loginMethodSelectionComponent = pluginManager.loginMethodSelection.renderLoginMethodSelectionComponent(loginConfig)
+        if (!error && loginMethodSelectionComponent && loginMethodSelectionComponent == 'redirect') {
+            return null;
+        }
         if (!error && loginMethodSelectionComponent) {
-            return loginMethodSelectionComponent
+            return loginMethodSelectionComponent;
         }
-        if(!error && loginConfig.login_url) {
-            window.location.href = loginConfig.login_url;
-            //return null;
-            console.log("in if (!error && loginConfig.login_url)")
-        }
-        console.log("after if (!error && loginConfig.login_url)")
         delete router.query.redirected;
         router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
     }
