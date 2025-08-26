@@ -16,7 +16,7 @@ class DefaultLoginMethodSelectionPlugin implements PluginLoginMethodSelection {
     // }
 
     renderLoginMethodSelectionComponent(): React.ReactElement | null {
-        // if (!!loginConfig.login_url) {
+        // if (loginConfig.login_url) {
         //     const RedirectComponent = () => {
         //         window.location.href = loginConfig.login_url;
         //         return <div>Redirecting...</div>;

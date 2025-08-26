@@ -147,7 +147,7 @@ const LoginPage = () => {
         }
         if(!error && loginConfig.login_url) {
             window.location.href = loginConfig.login_url;
-            return null;
+            //return null;
         }
         delete router.query.redirected;
         router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
