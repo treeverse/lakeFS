@@ -204,10 +204,12 @@ const GroupsContainer = () => {
                         <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
                             {group.name}
                         </Link>]
-                    simplified && elements.push(group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
+                    if (simplified) {
+                        elements.push(group.acl ? <ACLPermission initialValue={group.acl.permission} onSelect={
                             ((permission) => auth.putACL(group.id, {...group.acl, permission})
                                 .then(() => setPutACLError(null), (e) => setPutACLError(e)))
-                        }/> : <></>)
+                        }/> : <></>);
+                    }
                     elements.push(<FormattedDate dateValue={group.creation_date}/>)
 
                     return elements;

@@ -39,7 +39,7 @@ class SummaryData {
  * @param {string} prefix - prefix to display summary for.
  * @param {(after : string, path : string, useDelimiter :? boolean, amount :? number) => Promise<any> } getMore - function to use to get the change entries.
  */
-export default ({prefix, getMore}) => {
+const ChangeSummary = ({prefix, getMore}) => {
     const [pullMore, setPullMore] = useState(false);
     const [resultsState, setResultsState] = useState({results: [], pagination: {}});
     const [loading, setLoading] = useState(true);
@@ -122,3 +122,5 @@ export default ({prefix, getMore}) => {
         </OverlayTrigger>
     )
 }
+
+export default ChangeSummary;
