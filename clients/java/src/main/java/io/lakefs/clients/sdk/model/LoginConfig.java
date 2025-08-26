@@ -62,6 +62,8 @@ public class LoginConfig {
     
     SIMPLIFIED("simplified"),
     
+    INTERNAL("internal"),
+    
     EXTERNAL("external");
 
     private String value;
@@ -117,6 +119,59 @@ public class LoginConfig {
   public static final String SERIALIZED_NAME_LOGIN_URL = "login_url";
   @SerializedName(SERIALIZED_NAME_LOGIN_URL)
   private String loginUrl;
+
+  /**
+   * Defines login behavior when login_url is set. - none: For OSS users. - redirect: Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+   */
+  @JsonAdapter(LoginUrlMethodEnum.Adapter.class)
+  public enum LoginUrlMethodEnum {
+    NONE("none"),
+    
+    REDIRECT("redirect"),
+    
+    SELECT("select");
+
+    private String value;
+
+    LoginUrlMethodEnum(String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return String.valueOf(value);
+    }
+
+    public static LoginUrlMethodEnum fromValue(String value) {
+      for (LoginUrlMethodEnum b : LoginUrlMethodEnum.values()) {
+        if (b.value.equals(value)) {
+          return b;
+        }
+      }
+      throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
+
+    public static class Adapter extends TypeAdapter<LoginUrlMethodEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final LoginUrlMethodEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public LoginUrlMethodEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return LoginUrlMethodEnum.fromValue(value);
+      }
+    }
+  }
+
+  public static final String SERIALIZED_NAME_LOGIN_URL_METHOD = "login_url_method";
+  @SerializedName(SERIALIZED_NAME_LOGIN_URL_METHOD)
+  private LoginUrlMethodEnum loginUrlMethod;
 
   public static final String SERIALIZED_NAME_LOGIN_FAILED_MESSAGE = "login_failed_message";
   @SerializedName(SERIALIZED_NAME_LOGIN_FAILED_MESSAGE)
@@ -211,7 +266,7 @@ public class LoginConfig {
   }
 
    /**
-   * primary URL to use for login.
+   * Primary URL to use for login.
    * @return loginUrl
   **/
   @javax.annotation.Nonnull
@@ -225,6 +280,27 @@ public class LoginConfig {
   }
 
 
+  public LoginConfig loginUrlMethod(LoginUrlMethodEnum loginUrlMethod) {
+    
+    this.loginUrlMethod = loginUrlMethod;
+    return this;
+  }
+
+   /**
+   * Defines login behavior when login_url is set. - none: For OSS users. - redirect: Auto-redirect to login_url. - select: Show a page to choose between logging in via login_url or with lakeFS credentials. Ignored if login_url is not configured. 
+   * @return loginUrlMethod
+  **/
+  @javax.annotation.Nullable
+  public LoginUrlMethodEnum getLoginUrlMethod() {
+    return loginUrlMethod;
+  }
+
+
+  public void setLoginUrlMethod(LoginUrlMethodEnum loginUrlMethod) {
+    this.loginUrlMethod = loginUrlMethod;
+  }
+
+
   public LoginConfig loginFailedMessage(String loginFailedMessage) {
     
     this.loginFailedMessage = loginFailedMessage;
@@ -232,7 +308,7 @@ public class LoginConfig {
   }
 
    /**
-   * message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
+   * Message to display to users who fail to login; a full sentence that is rendered in HTML and may contain a link to a secondary login method 
    * @return loginFailedMessage
   **/
   @javax.annotation.Nullable
@@ -253,7 +329,7 @@ public class LoginConfig {
   }
 
    /**
-   * secondary URL to offer users to use for login.
+   * Secondary URL to offer users to use for login.
    * @return fallbackLoginUrl
   **/
   @javax.annotation.Nullable
@@ -274,7 +350,7 @@ public class LoginConfig {
   }
 
    /**
-   * label to place on fallback_login_url.
+   * Label to place on fallback_login_url.
    * @return fallbackLoginLabel
   **/
   @javax.annotation.Nullable
@@ -303,7 +379,7 @@ public class LoginConfig {
   }
 
    /**
-   * cookie names used to store JWT
+   * Cookie names used to store JWT
    * @return loginCookieNames
   **/
   @javax.annotation.Nonnull
@@ -396,6 +472,7 @@ public class LoginConfig {
         Objects.equals(this.usernameUiPlaceholder, loginConfig.usernameUiPlaceholder) &&
         Objects.equals(this.passwordUiPlaceholder, loginConfig.passwordUiPlaceholder) &&
         Objects.equals(this.loginUrl, loginConfig.loginUrl) &&
+        Objects.equals(this.loginUrlMethod, loginConfig.loginUrlMethod) &&
         Objects.equals(this.loginFailedMessage, loginConfig.loginFailedMessage) &&
         Objects.equals(this.fallbackLoginUrl, loginConfig.fallbackLoginUrl) &&
         Objects.equals(this.fallbackLoginLabel, loginConfig.fallbackLoginLabel) &&
@@ -406,7 +483,7 @@ public class LoginConfig {
 
   @Override
   public int hashCode() {
-    return Objects.hash(RBAC, usernameUiPlaceholder, passwordUiPlaceholder, loginUrl, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, additionalProperties);
+    return Objects.hash(RBAC, usernameUiPlaceholder, passwordUiPlaceholder, loginUrl, loginUrlMethod, loginFailedMessage, fallbackLoginUrl, fallbackLoginLabel, loginCookieNames, logoutUrl, additionalProperties);
   }
 
   @Override
@@ -417,6 +494,7 @@ public class LoginConfig {
     sb.append("    usernameUiPlaceholder: ").append(toIndentedString(usernameUiPlaceholder)).append("\n");
     sb.append("    passwordUiPlaceholder: ").append(toIndentedString(passwordUiPlaceholder)).append("\n");
     sb.append("    loginUrl: ").append(toIndentedString(loginUrl)).append("\n");
+    sb.append("    loginUrlMethod: ").append(toIndentedString(loginUrlMethod)).append("\n");
     sb.append("    loginFailedMessage: ").append(toIndentedString(loginFailedMessage)).append("\n");
     sb.append("    fallbackLoginUrl: ").append(toIndentedString(fallbackLoginUrl)).append("\n");
     sb.append("    fallbackLoginLabel: ").append(toIndentedString(fallbackLoginLabel)).append("\n");
@@ -449,6 +527,7 @@ public class LoginConfig {
     openapiFields.add("username_ui_placeholder");
     openapiFields.add("password_ui_placeholder");
     openapiFields.add("login_url");
+    openapiFields.add("login_url_method");
     openapiFields.add("login_failed_message");
     openapiFields.add("fallback_login_url");
     openapiFields.add("fallback_login_label");
@@ -493,6 +572,9 @@ public class LoginConfig {
       }
       if (!jsonObj.get("login_url").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `login_url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_url").toString()));
+      }
+      if ((jsonObj.get("login_url_method") != null && !jsonObj.get("login_url_method").isJsonNull()) && !jsonObj.get("login_url_method").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `login_url_method` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_url_method").toString()));
       }
       if ((jsonObj.get("login_failed_message") != null && !jsonObj.get("login_failed_message").isJsonNull()) && !jsonObj.get("login_failed_message").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `login_failed_message` to be a primitive type in the JSON string but got `%s`", jsonObj.get("login_failed_message").toString()));

@@ -17,7 +17,29 @@ The sections below provide additional configuration references that complement t
 
 This reference uses `.` to denote the nesting of values.
 
+### database
 
+Configuration section for lakeFS Enterprise database options.
+
+#### database.redis
+
+* `database.redis.endpoint` `(string : "localhost:6379")` - Redis server endpoint in host:port format
+* `database.redis.enable_tls` `(bool : false)` - Enable TLS for Redis connections (required for AWS MemoryDB)
+* `database.redis.cluster_mode` `(bool : false)` - Enable Redis Cluster mode support
+* `database.redis.username` `(string : "")` - Username for Redis authentication
+* `database.redis.password` `(string : "")` - Password for Redis authentication
+* `database.redis.pool_size` `(int : 10)` - Connection pool size for Redis connections
+* `database.redis.dial_timeout` `(duration : 5s)` - Timeout for establishing new connections
+* `database.redis.read_timeout` `(duration : 3s)` - Timeout for socket reads
+* `database.redis.write_timeout` `(duration : 3s)` - Timeout for socket writes
+* `database.redis.database` `(int : 0)` - Database number to select (0-15 for most Redis configurations)
+* `database.redis.namespace` `(string : "")` - Prefix for all keys used by the application
+* `database.redis.tls_skip_verify` `(bool : false)` - Skip certificate verification (for development only)
+
+!!! note
+    If you are using Redis or a compatible service such as Amazon MemoryDB, enable **durable writes**.
+    This ensures data is persisted and prevents data loss in case of node restarts or failures.
+    
 ### auth
 
 Configuration section for authentication services, like SAML or OIDC.
