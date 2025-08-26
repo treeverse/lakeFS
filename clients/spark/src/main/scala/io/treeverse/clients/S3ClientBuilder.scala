@@ -93,7 +93,7 @@ object S3ClientBuilder extends S3ClientBuilder {
       }
 
     val credentialsProvider: AWSCredentialsProvider =
-      if (roleArn.nonEmpty && (!wantHadoopAssume || !hadoopAssumeAvailable)) {
+      if (roleArn.nonEmpty && wantHadoopAssume && !hadoopAssumeAvailable) {
         new STSAssumeRoleSessionCredentialsProvider.Builder(
           roleArn,
           s"lakefs-gc-${UUID.randomUUID().toString}"
