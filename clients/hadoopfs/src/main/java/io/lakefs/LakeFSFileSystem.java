@@ -15,6 +15,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.NoSuchElementException;
+import java.util.regex.Pattern;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -61,7 +62,7 @@ import io.lakefs.storage.StorageAccessStrategy;
 import io.lakefs.utils.ObjectLocation;
 
 /**
- * A dummy implementation of the core lakeFS Filesystem.
+ * The core lakeFS Filesystem.
  * This class implements a {@link LakeFSFileSystem} that can be registered to
  * Spark and support limited write and read actions.
  * <p>
@@ -89,6 +90,7 @@ public class LakeFSFileSystem extends FileSystem {
     private PhysicalAddressTranslator physicalAddressTranslator;
     private StorageAccessStrategy storageAccessStrategy;
     private AccessMode accessMode;
+    private Pattern skipDirectoryMarkerRegex;
     private static File emptyFile = new File("/dev/null");
 
     // Currently bulk deletes *must* receive a single-threaded executor!
@@ -172,6 +174,11 @@ public class LakeFSFileSystem extends FileSystem {
             storageAccessStrategy = new SimpleStorageAccessStrategy(this, lfsClient, conf, physicalAddressTranslator);
         } else {
             throw new IOException("Invalid access mode: " + accessMode);
+        }
+
+        String skipDirectoryMarker = FSConfiguration.get(conf, uri.getScheme(), DIRECTORY_MARKER_KEY_SUFFIX);
+        if (skipDirectoryMarker != null && skipDirectoryMarker != "") {
+            skipDirectoryMarkerRegex = Pattern.compile(skipDirectoryMarker);
         }
     }
 
@@ -599,6 +606,9 @@ public class LakeFSFileSystem extends FileSystem {
      * @param f path to start for empty directory markers
      */
     void deleteEmptyDirectoryMarkers(Path f) {
+        if (skipDirectoryMarkersFor(f)) {
+            return;
+        }
         while (true) {
             try {
                 ObjectLocation objectLocation = pathToObjectLocation(f);
@@ -817,12 +827,15 @@ public class LakeFSFileSystem extends FileSystem {
                 throw new IOException("statObject", e);
             }
         }
-        // not found as a file or directory marker; check if path is a "directory", i.e. a prefix.
-        ListingIterator iterator = new ListingIterator(path, true, 1);
-        iterator.setRemoveDirectory(false);
-        if (iterator.hasNext()) {
-            Path filePath = new Path(objectLoc.toString());
-            return new LakeFSFileStatus.Builder(filePath).isdir(true).build();
+
+        if (!skipDirectoryMarkersFor(path)) {
+            // not found as a file or directory marker; check if path is a "directory", i.e. a prefix.
+            ListingIterator iterator = new ListingIterator(path, true, 1);
+            iterator.setRemoveDirectory(false);
+            if (iterator.hasNext()) {
+                Path filePath = new Path(objectLoc.toString());
+                return new LakeFSFileStatus.Builder(filePath).isdir(true).build();
+            }
         }
         throw new FileNotFoundException(path + " not found");
     }
@@ -1078,5 +1091,14 @@ public class LakeFSFileSystem extends FileSystem {
         } else {
             return this.create(path, permission, flags.contains(CreateFlag.OVERWRITE), bufferSize, replication, blockSize, progress);
         }
+    }
+
+    private boolean skipDirectoryMarkersFor(Path p) {
+        if (skipDirectoryMarkerRegex == null) {
+            return false;
+        }
+        boolean skip = skipDirectoryMarkerRegex.matcher(p.toString()).matches();
+        LOG.info("[DEBUG] skip {}: {}", p.toString(), skip);
+        return skip;
     }
 }

@@ -11,6 +11,7 @@ public class Constants {
     public static final String ENDPOINT_KEY_SUFFIX = "endpoint";
     public static final String LIST_AMOUNT_KEY_SUFFIX = "list.amount";
     public static final String ACCESS_MODE_KEY_SUFFIX = "access.mode";
+    public static final String DIRECTORY_MARKER_KEY_SUFFIX = "experimental.directory_marker_regex";
     // io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider, io.lakefs.auth.InstanceProfileAWSCredentialsLakeFSTokenProvider
     public static final String LAKEFS_AUTH_PROVIDER_KEY_SUFFIX = "auth.provider";
 
