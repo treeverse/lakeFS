@@ -11,6 +11,19 @@ public class Constants {
     public static final String ENDPOINT_KEY_SUFFIX = "endpoint";
     public static final String LIST_AMOUNT_KEY_SUFFIX = "list.amount";
     public static final String ACCESS_MODE_KEY_SUFFIX = "access.mode";
+
+    // Experiment: commit every num-deletes with probability prob.  Enabled
+    // when num-deletes > 0.  Count deletes, and after every num-deletes of
+    // commit with probability prob.  num-deleted should be in the low
+    // thousands, prob should be approximately 1/num_executors running
+    // lakeFSFS on the branch.  Count recursive deletes as more, because
+    // contiguous deletes are particularly relevant for compaction.
+    //
+    // Why recursive deletes?  lakeFS compaction is useful (only) for
+    // consecutive deletes, which is recursive in FileOutputCommitter.
+    public static final String COMMIT_EVERY_NUM_DELETES = "experimental.commit-every.num-deletes";
+    public static final String COMMIT_EVERY_PROBABILITY = "experimental.commit-every.prob";
+
     // io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider, io.lakefs.auth.InstanceProfileAWSCredentialsLakeFSTokenProvider
     public static final String LAKEFS_AUTH_PROVIDER_KEY_SUFFIX = "auth.provider";
 

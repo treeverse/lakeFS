@@ -19,6 +19,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.apache.commons.lang3.StringUtils;
@@ -36,13 +39,16 @@ import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 import org.apache.http.HttpStatus;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.lakefs.Constants.AccessMode;
 import io.lakefs.clients.sdk.ApiException;
 import io.lakefs.clients.sdk.BranchesApi;
+import io.lakefs.clients.sdk.CommitsApi;
 import io.lakefs.clients.sdk.ObjectsApi;
 import io.lakefs.clients.sdk.RepositoriesApi;
+import io.lakefs.clients.sdk.model.Commit;
+import io.lakefs.clients.sdk.model.CommitCreation;
 import io.lakefs.clients.sdk.model.ObjectCopyCreation;
 import io.lakefs.clients.sdk.model.ObjectErrorList;
 import io.lakefs.clients.sdk.model.ObjectStageCreation;
@@ -91,16 +97,26 @@ public class LakeFSFileSystem extends FileSystem {
     private AccessMode accessMode;
     private static File emptyFile = new File("/dev/null");
 
+    private Random deleteCompactionGen = new Random();
+    private Map<RepoBranch, Integer> totalDeleted = new HashMap();
+    private int commitEveryNumDeletes;
+    private double deleteEveryProb;
+
+    @Value.Immutable static interface RepoBranch {
+        @Value.Parameter String repo();
+        @Value.Parameter String branch();
+    }
+
     // Currently bulk deletes *must* receive a single-threaded executor!
     private ExecutorService deleteExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread t = new Thread(r);
-                t.setDaemon(true);
-                return t;
-            }
-        });
-    
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
+        }
+    });
+
     @Override
     public URI getUri() {
         return uri;
@@ -113,8 +129,10 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public void initialize(URI name, Configuration conf) throws IOException {
         initializeWithClientFactory(name, conf, new ClientFactory() {
-                public LakeFSClient newClient() throws IOException { return new LakeFSClient(name.getScheme(), conf); }
-            });
+            public LakeFSClient newClient() throws IOException {
+                return new LakeFSClient(name.getScheme(), conf);
+            }
+        });
     }
 
     private StorageConfig getStorageConfig(URI uri) throws IOException, ApiException {
@@ -173,6 +191,11 @@ public class LakeFSFileSystem extends FileSystem {
         } else {
             throw new IOException("Invalid access mode: " + accessMode);
         }
+
+        commitEveryNumDeletes = FSConfiguration.getInt(conf, uri.getScheme(), COMMIT_EVERY_NUM_DELETES, 0);
+        deleteEveryProb = Double
+                .parseDouble(FSConfiguration.get(conf, uri.getScheme(), COMMIT_EVERY_PROBABILITY, "0.1"));
+        LOG.info("Compact-commit experiment: every {} prob {}", commitEveryNumDeletes, deleteEveryProb);
     }
 
     private synchronized FileSystem getFSForConfig() {
@@ -222,7 +245,7 @@ public class LakeFSFileSystem extends FileSystem {
     @Override
     public FSDataInputStream open(Path path, int bufSize) throws IOException {
         OPERATIONS_LOG.trace("open({})", path);
-        try {                        
+        try {
             ObjectLocation objectLoc = pathToObjectLocation(path);
             return storageAccessStrategy.createDataInputStream(objectLoc, bufSize);
         } catch (ApiException e) {
@@ -231,7 +254,8 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     @Override
-    public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive) throws FileNotFoundException, IOException {
+    public RemoteIterator<LocatedFileStatus> listFiles(Path f, boolean recursive)
+            throws FileNotFoundException, IOException {
         OPERATIONS_LOG.trace("list_files({}), recursive={}", f, recursive);
         return new RemoteIterator<LocatedFileStatus>() {
             private final ListingIterator iterator = new ListingIterator(f, recursive, listAmount);
@@ -349,7 +373,6 @@ public class LakeFSFileSystem extends FileSystem {
         }
         return result;
     }
-
 
     /**
      * Recursively rename objects under src dir.
@@ -494,6 +517,7 @@ public class LakeFSFileSystem extends FileSystem {
             throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
                     ", failed to delete src", e);
         }
+        addDeletedMaybeCompact(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), 1);
         return true;
     }
 
@@ -538,6 +562,7 @@ public class LakeFSFileSystem extends FileSystem {
                 deleted = deleteHelper(loc);
             } else {
                 ObjectLocation location = pathToObjectLocation(path);
+                int numDeletes = 0;
                 try (BulkDeleter deleter = newDeleter(location.getRepository(), location.getRef())) {
                     ListingIterator iterator = new ListingIterator(path, true, listAmount);
                     iterator.setRemoveDirectory(false);
@@ -553,6 +578,8 @@ public class LakeFSFileSystem extends FileSystem {
                     LOG.error("delete(%s, %b): %s", path, recursive, e.toString());
                     deleted = false;
                 }
+                // Bulk deletes are contiguous and more relevant for compaction.
+                addDeletedMaybeCompact(location.getRepository(), location.getRef(), 3*numDeletes);
             }
         } else {
             deleted = deleteHelper(loc);
@@ -560,6 +587,34 @@ public class LakeFSFileSystem extends FileSystem {
 
         createDirectoryMarkerIfNotExists(path.getParent());
         return deleted;
+    }
+
+    private synchronized void addDeletedMaybeCompact(String repo, String branch, int numDeletes) throws IOException {
+        RepoBranch key = ImmutableRepoBranch.builder().repo(repo).branch(branch).build();
+        int total = totalDeleted.getOrDefault(key, 0);
+        total += numDeletes;
+        totalDeleted.put(key, total);
+        if (commitEveryNumDeletes > 0 && total > commitEveryNumDeletes) {
+            if (deleteCompactionGen.nextDouble() < deleteEveryProb) {
+                CommitsApi commitsApi = clientFactory.newClient().getCommitsApi();
+                CommitCreation commitCreation = new CommitCreation();
+                commitCreation.setMessage(String.format("(internal commit; total = %s / nd = %d)", total, numDeletes));
+                try {
+                    Commit commit = commitsApi.commit(repo, branch, commitCreation).execute();
+                    LOG.info("Compact-commit after {} deletes (current {}): {}", total, numDeletes, commit);
+                } catch (ApiException e) {
+                    if (e.getCode() == 400 && e.getMessage().contains("no changes")) {
+                        LOG.info("Compact-commit: no changes (safe)");
+                    } else {
+                        LOG.info("Compact-commit: %s", e.toString());
+                        // Swallow exception, this is merely an optimization!
+                    }
+                }
+            } else {
+                LOG.info("Skip compact-commit after {} deletes (current {})", total, numDeletes);
+            }
+            totalDeleted.put(key, 0);
+        }
     }
 
     private BulkDeleter newDeleter(String repository, String branch) throws IOException {
@@ -586,6 +641,7 @@ public class LakeFSFileSystem extends FileSystem {
             }
             throw new IOException("deleteObject", e);
         }
+        addDeletedMaybeCompact(loc.getRepository(), loc.getRef(), 1);
         return true;
     }
 
@@ -652,7 +708,7 @@ public class LakeFSFileSystem extends FileSystem {
                         .ifNoneMatch("*").content(emptyFile)
                         .execute();
             }
-            
+
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_PRECONDITION_FAILED) {
                 LOG.trace("createDirectoryMarkerIfNotExists: Ignore {} response, marker exists");
@@ -669,11 +725,13 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objectsApi = lfsClient.getObjectsApi();
         String objectPath = objectLoc.getPath();
         // If the path is empty, it represents the root of the branch - no need to try to stat
-        if (!objectPath.isEmpty()){
+        if (!objectPath.isEmpty()) {
             try {
-                ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath()).userMetadata(false).presign(false).execute();
+                ObjectStats objectStat = objectsApi
+                        .statObject(objectLoc.getRepository(), objectLoc.getRef(), objectLoc.getPath())
+                        .userMetadata(false).presign(false).execute();
                 LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
-                return new FileStatus[]{fileStatus};
+                return new FileStatus[] { fileStatus };
             } catch (ApiException e) {
                 if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
                     throw new IOException("statObject", e);
@@ -694,10 +752,10 @@ public class LakeFSFileSystem extends FileSystem {
         // nothing to list - check if it is an empty directory marker
         try {
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(),
-                                                           objectLoc.getRef(),
-                                                           objectLoc.getPath() + SEPARATOR)
-                .userMetadata(false).presign(false)
-                .execute();
+                    objectLoc.getRef(),
+                    objectLoc.getPath() + SEPARATOR)
+                    .userMetadata(false).presign(false)
+                    .execute();
             LakeFSFileStatus fileStatus = convertObjectStatsToFileStatus(objectLoc, objectStat);
             if (fileStatus.isEmptyDirectory()) {
                 return new FileStatus[0];
@@ -793,11 +851,11 @@ public class LakeFSFileSystem extends FileSystem {
         // get object status on path
         try {
             ObjectStats os = objectsApi.statObject(objectLoc.getRepository(),
-                                                   objectLoc.getRef(),
-                                                   objectLoc.getPath())
-                .userMetadata(false)
-                .presign(false)
-                .execute();
+                    objectLoc.getRef(),
+                    objectLoc.getPath())
+                    .userMetadata(false)
+                    .presign(false)
+                    .execute();
             return convertObjectStatsToFileStatus(objectLoc, os);
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
@@ -807,10 +865,10 @@ public class LakeFSFileSystem extends FileSystem {
         // get object status on path + "/" for directory marker directory
         try {
             ObjectStats objectStat = objectsApi.statObject(objectLoc.getRepository(),
-                                                           objectLoc.getRef(),
-                                                           objectLoc.getPath() + SEPARATOR)
-                .userMetadata(false).presign(false)
-                .execute();
+                    objectLoc.getRef(),
+                    objectLoc.getPath() + SEPARATOR)
+                    .userMetadata(false).presign(false)
+                    .execute();
             return convertObjectStatsToFileStatus(objectLoc, objectStat);
         } catch (ApiException e) {
             if (e.getCode() != HttpStatus.SC_NOT_FOUND) {
@@ -828,7 +886,8 @@ public class LakeFSFileSystem extends FileSystem {
     }
 
     @Nonnull
-    private LakeFSFileStatus convertObjectStatsToFileStatus(ObjectLocation objectLocation, ObjectStats objectStat) throws IOException {
+    private LakeFSFileStatus convertObjectStatsToFileStatus(ObjectLocation objectLocation, ObjectStats objectStat)
+            throws IOException {
         long length = 0;
         Long sizeBytes = objectStat.getSizeBytes();
         if (sizeBytes != null) {
@@ -847,15 +906,14 @@ public class LakeFSFileSystem extends FileSystem {
         long blockSize = isDir
                 ? 0
                 : getDefaultBlockSize();
-        LakeFSFileStatus.Builder builder =
-                new LakeFSFileStatus.Builder(filePath)
-                        .length(length)
-                        .isdir(isDir)
-                        .isEmptyDirectory(isEmptyDirectory)
-                        .blockSize(blockSize)
-                        .mTime(modificationTime)
-                        .checksum(objectStat.getChecksum())
-                        .physicalAddress(physicalAddress);
+        LakeFSFileStatus.Builder builder = new LakeFSFileStatus.Builder(filePath)
+                .length(length)
+                .isdir(isDir)
+                .isEmptyDirectory(isEmptyDirectory)
+                .blockSize(blockSize)
+                .mTime(modificationTime)
+                .checksum(objectStat.getChecksum())
+                .physicalAddress(physicalAddress);
         return builder.build();
     }
 
@@ -899,8 +957,8 @@ public class LakeFSFileSystem extends FileSystem {
             // "Right" being: the number of objects that costs about the same to list as 1.
             // 5 is a good guess for now since that in DynamoDB backends listing 5 objects cost the same as 1.
             ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef())
-                .userMetadata(false).presign(false).amount(5).prefix(objectLoc.getPath())
-                .execute();
+                    .userMetadata(false).presign(false).amount(5).prefix(objectLoc.getPath())
+                    .execute();
             List<ObjectStats> l = osl.getResults();
             if (l.isEmpty()) {
                 // No object with any name that starts with objectLoc.
@@ -943,10 +1001,10 @@ public class LakeFSFileSystem extends FileSystem {
 
         try {
             ObjectStatsList osl = objects.listObjects(objectLoc.getRepository(), objectLoc.getRef())
-                .userMetadata(false).presign(false).amount(1).prefix(directoryPath)
-                .execute();
+                    .userMetadata(false).presign(false).amount(1).prefix(directoryPath)
+                    .execute();
             List<ObjectStats> l = osl.getResults();
-            return ! l.isEmpty();
+            return !l.isEmpty();
         } catch (ApiException e) {
             // Repo and ref exist!
             throw new IOException("exists", e);
@@ -1023,9 +1081,11 @@ public class LakeFSFileSystem extends FileSystem {
             do {
                 try {
                     ObjectsApi objectsApi = lfsClient.getObjectsApi();
-                    ObjectStatsList resp = objectsApi.listObjects(objectLocation.getRepository(), objectLocation.getRef())
-                        .userMetadata(false).presign(false).after(nextOffset).amount(amount).delimiter(delimiter).prefix(objectLocation.getPath())
-                        .execute();
+                    ObjectStatsList resp = objectsApi
+                            .listObjects(objectLocation.getRepository(), objectLocation.getRef())
+                            .userMetadata(false).presign(false).after(nextOffset).amount(amount).delimiter(delimiter)
+                            .prefix(objectLocation.getPath())
+                            .execute();
                     chunk = resp.getResults();
                     pos = 0;
                     Pagination pagination = resp.getPagination();
@@ -1071,12 +1131,15 @@ public class LakeFSFileSystem extends FileSystem {
     private static boolean isDirectory(ObjectStats stat) {
         return stat.getPath().endsWith(SEPARATOR) || stat.getPathType() == ObjectStats.PathTypeEnum.COMMON_PREFIX;
     }
-    public FSDataOutputStream createNonRecursive(Path path, FsPermission permission, EnumSet<CreateFlag> flags, int bufferSize, short replication, long blockSize, Progressable progress) throws IOException {
+
+    public FSDataOutputStream createNonRecursive(Path path, FsPermission permission, EnumSet<CreateFlag> flags,
+            int bufferSize, short replication, long blockSize, Progressable progress) throws IOException {
         Path parent = path.getParent();
         if (parent != null && !this.getFileStatus(parent).isDirectory()) {
             throw new FileAlreadyExistsException("Not a directory: " + parent);
         } else {
-            return this.create(path, permission, flags.contains(CreateFlag.OVERWRITE), bufferSize, replication, blockSize, progress);
+            return this.create(path, permission, flags.contains(CreateFlag.OVERWRITE), bufferSize, replication,
+                    blockSize, progress);
         }
     }
 }
