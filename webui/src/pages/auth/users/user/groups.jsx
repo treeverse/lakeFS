@@ -49,6 +49,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
           keyFn={(group) => group.id}
           rowFn={(group) => [
             <Link
+              key={`link-${group.id}`}
               href={{
                 pathname: "/auth/groups/:groupId",
                 params: { groupId: group.id },
@@ -56,7 +57,7 @@ const UserGroupsList = ({ userId, after, onPaginate }) => {
             >
               {group.name}
             </Link>,
-            <FormattedDate dateValue={group.creation_date} />,
+            <FormattedDate key={`date-${group.id}`} dateValue={group.creation_date} />,
           ]}
           headers={["Group Name", "Created At"]}
           actions={[

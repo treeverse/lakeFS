@@ -97,9 +97,14 @@ export const PrefixTreeEntryRow = ({entry, relativeTo = "", dirExpanded, depth =
     );
 };
 const PrefixExpansionSection = ({dirExpanded, onClick}) => {
-    return (<span onClick={onClick} className="prefix-expand-icon">
+    return (<button 
+                type="button"
+                onClick={onClick} 
+                className="prefix-expand-icon btn btn-link p-0 border-0"
+                aria-label={dirExpanded ? "Collapse directory" : "Expand directory"}
+            >
                 {dirExpanded ? <ChevronDownIcon/> : <ChevronRightIcon/>}
-            </span>)
+            </button>)
 }
 
 const TableRow = ({diffIndicator, depth, loading, showSummary, entry, getMore, rowActions,

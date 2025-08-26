@@ -125,14 +125,15 @@ const PoliciesContainer = () => {
                 keyFn={policy => policy.id}
                 rowFn={policy => [
                     <Checkbox
+                        key={`checkbox-${policy.id}`}
                         name={policy.id}
                         onAdd={() => setSelected([...selected, policy])}
                         onRemove={() => setSelected(selected.filter(p => p !== policy))}
                     />,
-                    <Link href={{pathname: '/auth/policies/:policyId', params: {policyId: policy.id}}}>
+                    <Link key={`link-${policy.id}`} href={{pathname: '/auth/policies/:policyId', params: {policyId: policy.id}}}>
                         {policy.id}
                     </Link>,
-                    <FormattedDate dateValue={policy.creation_date}/>
+                    <FormattedDate key={`date-${policy.id}`} dateValue={policy.creation_date}/>
                 ]}
                 firstFixedCol={true}
             />

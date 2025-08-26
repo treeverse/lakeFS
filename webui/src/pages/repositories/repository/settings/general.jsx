@@ -43,7 +43,7 @@ const DeleteRepositoryModal = ({repo, show, onSubmit, onCancel}) => {
                 Data in the underlying object store will not be deleted by this action. <br /> <br />
 
                 Please type <strong>{repo.id}</strong> to confirm: <br />
-                <Form.Control className="mt-2" placeholder="Enter repository name to confirm" type="text" autoFocus ref={repoNameField} onChange={compareRepoName}/>
+                <Form.Control className="mt-2" placeholder="Enter repository name to confirm" type="text"  ref={repoNameField} onChange={compareRepoName}/>
             </Modal.Body>
             <Modal.Footer>
                 <Button disabled={isDisabled} variant="danger" onClick={onSubmit}>I understand the consequences, delete this repository</Button>

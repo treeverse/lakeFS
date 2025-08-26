@@ -329,7 +329,7 @@ const RepositoriesPage = () => {
                                     <Form.Control
                                         className="border-start-0 bg-light"
                                         placeholder="Search repositories..."
-                                        autoFocus
+                                        
                                         value={search}
                                         onChange={event => setSearch(event.target.value)}
                                     />

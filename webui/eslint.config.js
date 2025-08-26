@@ -19,6 +19,11 @@ export default [
       sourceType: "module",
       globals: {
         ...globals.browser,
+        JSX: "readonly",
+        Options: "readonly",
+        process: "readonly",
+        Buffer: "readonly",
+        __buildVersion: "readonly",
       },
       parserOptions: {
         ecmaFeatures: { jsx: true },
@@ -78,6 +83,11 @@ export default [
       "react-hooks/exhaustive-deps": "warn",
       "react/prop-types": "off",
       "react/jsx-key": "error",
+      "jsx-a11y/no-autofocus": "error",
+      "jsx-a11y/click-events-have-key-events": "error",
+      "jsx-a11y/no-static-element-interactions": "error",
+      "jsx-a11y/anchor-is-valid": "error",
+      "jsx-a11y/alt-text": "error",
     },
   },
   {

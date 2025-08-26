@@ -27,44 +27,46 @@ export const ObjectsDiff = ({diffType, repoId, leftRef, rightRef, path}) => {
     if (hooksError) return <AlertError error={hooksError}/>;
 
     const readable = readableObject(path);
-    let left;
-    let right;
-    switch (diffType) {
-        case 'changed':
-        case 'conflict':
-            left = useAPI(async () => objects.getStat(repoId, leftRef, path),
-                [repoId, leftRef, path]);
-            right = useAPI(async () => objects.getStat(repoId, rightRef, path),
-                [repoId, rightRef, path]);
-            break;
-        case 'added':
-            right = useAPI(async () => objects.getStat(repoId, rightRef, path),
-                [repoId, rightRef, path]);
-            break;
-        case 'removed':
-            left = useAPI(async () => objects.getStat(repoId, leftRef, path),
-                [repoId, leftRef, path]);
-            break;
-        default:
-            return <AlertError error={"Unsupported diff type " + diffType}/>;
+    // Always call hooks at the top level
+    const leftStatResponse = useAPI(async () => {
+        if (diffType === 'changed' || diffType === 'conflict' || diffType === 'removed') {
+            return objects.getStat(repoId, leftRef, path);
+        }
+        return null;
+    }, [repoId, leftRef, path, diffType]);
+
+    const rightStatResponse = useAPI(async () => {
+        if (diffType === 'changed' || diffType === 'conflict' || diffType === 'added') {
+            return objects.getStat(repoId, rightRef, path);
+        }
+        return null;
+    }, [repoId, rightRef, path, diffType]);
+
+    if (!['changed', 'conflict', 'added', 'removed'].includes(diffType)) {
+        return <AlertError error={"Unsupported diff type " + diffType}/>;
     }
+
+    let left = leftStatResponse;
+    let right = rightStatResponse;
+
+    const hooksLoading = (left && left.loading) || (right && right.loading);
 
     if (hooksLoading || (left && left.loading) || (right && right.loading)) return <Loading/>;
     const err = (left && left.error) || (right && right.err);
     if (err) return <AlertError error={err}/>;
 
-    const leftStat = left && left.response;
-    const rightStat = right && right.response;
+    const leftStatResponseResponse = left && left.response;
+    const rightStatResponseResponse = right && right.response;
     if (!readable) {
-        return <NoContentDiff left={leftStat} right={rightStat} diffType={diffType}/>;
+        return <NoContentDiff left={leftStatResponseResponse} right={rightStatResponseResponse} diffType={diffType}/>;
     }
-    const objectTooBig = (leftStat && leftStat.size_bytes > maxDiffSizeBytes) || (rightStat && rightStat.size_bytes > maxDiffSizeBytes);
+    const objectTooBig = (leftStatResponse && leftStatResponse.size_bytes > maxDiffSizeBytes) || (rightStatResponse && rightStatResponse.size_bytes > maxDiffSizeBytes);
     if (objectTooBig) {
         return <AlertError error={path + " is too big (> " + humanSize(maxDiffSizeBytes)+ "). To view its diff please download" +
         " the objects and use an external diff tool."}/>
     }
-    const leftSize = leftStat && leftStat.size_bytes;
-    const rightSize = rightStat && rightStat.size_bytes;
+    const leftSize = leftStatResponse && leftStatResponse.size_bytes;
+    const rightSize = rightStatResponse && rightStatResponse.size_bytes;
     return <ContentDiff
         config={storageConfig}
         repoId={repoId}
@@ -122,10 +124,19 @@ const ContentDiff = ({config, repoId, path, leftRef, rightRef, leftSize, rightSi
 
 
 const TextDiff = ({ config, repoId, path, leftRef, rightRef, leftSize, rightSize, diffType, isDarkMode }) => {
-    const left = leftRef && useAPI(async () => objects.get(repoId, leftRef, path, config.pre_sign_support_ui),
-        [repoId, leftRef, path]);
-    const right = rightRef && useAPI(async () => objects.get(repoId, rightRef, path, config.pre_sign_support_ui),
-        [repoId, rightRef, path]);
+    const left = useAPI(async () => {
+        if (leftRef) {
+            return objects.get(repoId, leftRef, path, config.pre_sign_support_ui);
+        }
+        return null;
+    }, [repoId, leftRef, path, config.pre_sign_support_ui]);
+    
+    const right = useAPI(async () => {
+        if (rightRef) {
+            return objects.get(repoId, rightRef, path, config.pre_sign_support_ui);
+        }
+        return null;
+    }, [repoId, rightRef, path, config.pre_sign_support_ui]);
 
     if ((left && left.loading) || (right && right.loading)) return <Loading/>;
     const err = (left && left.error) || (right && right.error);

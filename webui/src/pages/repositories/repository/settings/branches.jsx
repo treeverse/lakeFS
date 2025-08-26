@@ -122,7 +122,7 @@ const CreateRuleModal = ({show, hideFn, onSuccess, repoID, currentRulesResponse}
                 <Form.Group as={Row} controlId="pattern">
                     <Form.Label column sm={4}>Branch name pattern</Form.Label>
                     <Col>
-                        <Form.Control sm={8} type="text" autoFocus ref={patternField}
+                        <Form.Control sm={8} type="text"  ref={patternField}
                                       onChange={() => setCreateButtonDisabled(!patternField.current || !patternField.current.value)}/>
                     </Col>
                 </Form.Group>

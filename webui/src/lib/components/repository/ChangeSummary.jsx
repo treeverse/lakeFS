@@ -86,7 +86,7 @@ const ChangeSummary = ({prefix, getMore}) => {
                                 </Tooltip>
                             }>
                 <small>
-                    &gt;= {MAX_NUM_OBJECTS.toLocaleString()} results, <a href="#" onClick={onLoadAll}>load more?</a>
+                    &gt;= {MAX_NUM_OBJECTS.toLocaleString()} results, <button type="button" className="btn-link" onClick={onLoadAll}>load more?</button>
                 </small>
             </OverlayTrigger>
         )

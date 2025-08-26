@@ -56,7 +56,7 @@ const CommitMetadataTable = ({ commit }) => {
         </thead>
         <tbody>
         {keys.map(key =>
-          <MetadataRow metadata_key={key} metadata_value={commit.metadata[key]}/>)}
+          <MetadataRow key={key} metadata_key={key} metadata_value={commit.metadata[key]}/>)}
         </tbody>
       </Table>
     </>
@@ -69,7 +69,7 @@ const CommitMetadataUIButtons = ({ commit }) => {
 
   return (
     <>{
-      keys.map((key) => <MetadataUIButton metadata_key={key} metadata_value={commit.metadata[key]}/>)
+      keys.map((key) => <MetadataUIButton key={key} metadata_key={key} metadata_value={commit.metadata[key]}/>)
     }</>
   );
 };

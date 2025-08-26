@@ -197,11 +197,12 @@ const GroupsContainer = () => {
                 rowFn={group => {
                     const elements = [
                         <Checkbox
+                            key={`checkbox-${group.id}`}
                             name={group.id}
                             onAdd={() => setSelected([...selected, group])}
                             onRemove={() => setSelected(selected.filter(g => g !== group))}
                         />,
-                        <Link href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
+                        <Link key={`link-${group.id}`} href={{pathname: '/auth/groups/:groupId', params: {groupId: group.id}}}>
                             {group.name}
                         </Link>]
                     if (simplified) {
