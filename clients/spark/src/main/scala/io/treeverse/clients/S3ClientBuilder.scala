@@ -73,8 +73,11 @@ object S3ClientBuilder extends S3ClientBuilder {
     val roleArn = hc.getTrimmed(Constants.ASSUMED_ROLE_ARN, "")
     val accessKey = hc.getTrimmed(Constants.ACCESS_KEY, null)
     val secretKey = hc.getTrimmed(Constants.SECRET_KEY, null)
-    val wantHadoopAssume = hc.getTrimmed(Constants.AWS_CREDENTIALS_PROVIDER, null) == AssumedRoleCredentialProvider.NAME
-    val hadoopAssumeAvailable: Boolean = wantHadoopAssume && Try(Class.forName("org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider")).toOption.exists(classOf[AWSCredentialsProvider].isAssignableFrom)
+    val wantHadoopAssume =
+      hc.getTrimmed(Constants.AWS_CREDENTIALS_PROVIDER, null) == AssumedRoleCredentialProvider.NAME
+    val hadoopAssumeAvailable: Boolean = wantHadoopAssume && Try(
+      Class.forName("org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider")
+    ).toOption.exists(classOf[AWSCredentialsProvider].isAssignableFrom)
     val useHadoopProvider = wantHadoopAssume && hadoopAssumeAvailable
 
     val base: AWSCredentialsProvider =
@@ -92,11 +95,14 @@ object S3ClientBuilder extends S3ClientBuilder {
     val credentialsProvider: AWSCredentialsProvider =
       if (roleArn.nonEmpty && !useHadoopProvider) {
         new STSAssumeRoleSessionCredentialsProvider.Builder(
-          roleArn, s"lakefs-gc-${UUID.randomUUID().toString}"
+          roleArn,
+          s"lakefs-gc-${UUID.randomUUID().toString}"
         ).withLongLivedCredentialsProvider(base).build()
       } else {
         if (roleArn.nonEmpty && useHadoopProvider) {
-          logger.info("Role ARN is set and Hadoop provider selected - relying on Hadoop provider to assume role.")
+          logger.info(
+            "Role ARN is set and Hadoop provider selected - relying on Hadoop provider to assume role."
+          )
         }
         base
       }
