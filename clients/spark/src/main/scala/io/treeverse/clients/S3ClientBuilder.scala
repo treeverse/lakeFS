@@ -70,25 +70,27 @@ object S3ClientBuilder extends S3ClientBuilder {
     //     and query for its credentials provider.  And cache them, in case
     //     some objects live in different buckets.
     val roleArn = hc.getTrimmed(Constants.ASSUMED_ROLE_ARN, "")
-
     val accessKey = hc.getTrimmed(Constants.ACCESS_KEY, null)
     val secretKey = hc.getTrimmed(Constants.SECRET_KEY, null)
+    val wantHadoopAssume =
+      hc.getTrimmed(Constants.AWS_CREDENTIALS_PROVIDER, null) == AssumedRoleCredentialProvider.NAME
 
-    val useHadoopAssumeAsBase: Boolean =
-      try {
-        classOf[com.amazonaws.auth.AWSCredentialsProvider].isAssignableFrom(
-          Class.forName("org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider")
-        )
-      } catch { case _: Throwable => false }
+    // run checks only if relevant
+    val needAssume = roleArn.nonEmpty || wantHadoopAssume
+
+    // Check v1-compatibility ONLY if needed
+    val canUseHadoopAssumeAsBase: Boolean =
+      needAssume && wantHadoopAssume && {
+        try {
+          classOf[com.amazonaws.auth.AWSCredentialsProvider].isAssignableFrom(
+            Class.forName("org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider")
+          )
+        } catch { case _: Throwable => false }
+      }
 
     val base: AWSCredentialsProvider =
-      if (
-        useHadoopAssumeAsBase &&
-        hc.getTrimmed(Constants.AWS_CREDENTIALS_PROVIDER,
-                      null
-                     ) == AssumedRoleCredentialProvider.NAME
-      ) {
-        logger.info("Use configured AssumedRoleCredentialProvider for bucket {}", bucket)
+      if (canUseHadoopAssumeAsBase) {
+        logger.info("Using Hadoop AssumedRoleCredentialProvider as base.")
         new AssumedRoleCredentialProvider(new java.net.URI(s"s3a://$bucket"), hc)
       } else if (accessKey != null && secretKey != null) {
         logger.info("Using access key ID {} {}", accessKey: Any, "secret key ******")
@@ -98,20 +100,22 @@ object S3ClientBuilder extends S3ClientBuilder {
         new DefaultAWSCredentialsProviderChain()
       }
 
+    // Final credentials: either rely on Hadoop (EMR6) or do STS ourselves
     val credentialsProvider: AWSCredentialsProvider =
-      if (roleArn.nonEmpty && !useHadoopAssumeAsBase) {
-        new STSAssumeRoleSessionCredentialsProvider.Builder(
-          roleArn,
-          s"lakefs-gc-${UUID.randomUUID().toString}"
-        ).withLongLivedCredentialsProvider(base)
-          .build()
-      } else {
-        if (roleArn.nonEmpty && useHadoopAssumeAsBase) {
+      if (roleArn.nonEmpty) {
+        if (canUseHadoopAssumeAsBase) {
           logger.info(
-            "Role ARN is set but Hadoop AssumedRoleCredentialProvider is the base; " +
-              "skipping additional STS to avoid double-assume."
+            "Role ARN set and Hadoop provider selected - relying on Hadoop provider to assume the role."
           )
+          base
+        } else {
+          new STSAssumeRoleSessionCredentialsProvider.Builder(
+            roleArn,
+            s"lakefs-gc-${UUID.randomUUID().toString}"
+          ).withLongLivedCredentialsProvider(base)
+            .build()
         }
+      } else {
         base
       }
 
