@@ -70,8 +70,7 @@ When IAM authentication is configured, Everest will use AWS SDK default behavior
 ### Configure everest to use IAM
 
 Everest uses the lakectl configuration file. 
-To enable IAM authentication, new configuration fields have been introduced. 
-Refer to the guide on how to [configure .lakectl.yaml](../security/external-principals-aws.md#lakectl-configuration) accordingly.
+To enable IAM authentication, refer to the guide on how to [configure .lakectl.yaml](../security/external-principals-aws.md#lakectl-configuration) accordingly.
 
 To set using environment variables - those will start with the prefix `EVEREST_LAKEFS_*` or `LAKECTL_*`.
 For example, setting the provider type using env vars:
