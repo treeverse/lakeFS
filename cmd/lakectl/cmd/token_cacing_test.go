@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
@@ -275,6 +276,12 @@ func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *a
 
 		})
 	}
+	presignOpt2 := func(po *sts.PresignOptions) {
+		po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
+			o.Credentials = credentials.NewStaticCredentialsProvider("fake-access", "fake-secret", "")
+			o.Region = "us-east-1"
+		})
+	}
 
 	tokenCacheCallback := createTestTokenCacheCallback(callbackCount)
 
@@ -285,6 +292,7 @@ func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *a
 		initialToken,
 		tokenCacheCallback,
 		presignOpt,
+		presignOpt2,
 	)
 }
 
