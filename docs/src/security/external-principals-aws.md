@@ -142,8 +142,8 @@ For other use cases authenticated to lakeFS via login endpoint, this will requir
 
 ### prerequisites
 
-1. lakeFS should be [configured](#server-configuration) to allow external principals to authenticate, and the used IAM role should be [attached](#administration-of-iam-roles-in-lakefs) to the relevant lakeFS user
-2. lakectl should be [configured](#lakectl-configuration) to use IAM auth
+1. lakeFS must be configured to allow external principals to authenticate. The relevant IAM role should be attached to the appropriate lakeFS user. 
+2. lakectl must be configured to use IAM authentication.
 
 ### lakectl configuration
 
