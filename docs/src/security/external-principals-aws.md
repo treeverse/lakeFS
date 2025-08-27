@@ -147,7 +147,7 @@ For other use cases authenticated to lakeFS via login endpoint, this will requir
 
 ### lakectl configuration
 
-To use IAM authentication, new configuration fields were introduced:
+To use IAM authentication, the following configuration fields are available:
 
 - `credentials.provider.type` `(string: '')` - Settings this `aws_iam` will expect `aws_iam` block and try to use IAM.
 - `credentials.provider.aws_iam.token_ttl_second` `(duration: 60m)` - Optional: lakeFS token duration.
