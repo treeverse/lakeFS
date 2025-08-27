@@ -180,7 +180,8 @@ Instead of reaching out to aws's sts service to get JWT token for lakefs, lakect
 The token will be used in next lakectl operations up until one hour after writing. Later then that lakectl will try and retrieve a new token.
 
 !!! note
-    Cache implementation does not support multiple aws profiles, when switching profiles and for general troubleshooting, try and delete cache first.   
+    Cache implementation does not support multiple AWS profiles. 
+    When switching profiles and for general troubleshooting, try and delete the cache first.   
 
 ## Login with python
 
