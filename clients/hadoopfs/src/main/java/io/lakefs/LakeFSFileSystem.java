@@ -597,11 +597,12 @@ public class LakeFSFileSystem extends FileSystem {
         synchronized (this) {
             total = totalDeleted.getOrDefault(key, 0);
             total += numDeletes;
-            if (commitEveryNumDeletes > 0 && total > commitEveryNumDeletes) {
+            if (commitEveryNumDeletes > 0 && total >= commitEveryNumDeletes) {
                 triggerCommit = true;
-                total = 0;
+                totalDeleted.remove(key);
+            } else {
+                totalDeleted.put(key, total);
             }
-            totalDeleted.put(key, total);
         }
 
         if (triggerCommit) {
