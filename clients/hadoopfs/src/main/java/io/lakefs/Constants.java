@@ -23,6 +23,9 @@ public class Constants {
     // consecutive deletes, which is recursive in FileOutputCommitter.
     public static final String COMMIT_EVERY_NUM_DELETES = "experimental.commit-every.num-deletes";
     public static final String COMMIT_EVERY_PROBABILITY = "experimental.commit-every.prob";
+    // Recursive deletes are necessarily contiguous, and contiguous
+    // tombstones particularly harm performance.  Multiply their weight by some factor.
+    public static final int CONTIGUOUS_DELETION_FACTOR = 3;
 
     // io.lakefs.auth.TemporaryAWSCredentialsLakeFSTokenProvider, io.lakefs.auth.InstanceProfileAWSCredentialsLakeFSTokenProvider
     public static final String LAKEFS_AUTH_PROVIDER_KEY_SUFFIX = "auth.provider";

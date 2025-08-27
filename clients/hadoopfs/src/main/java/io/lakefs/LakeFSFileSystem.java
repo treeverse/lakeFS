@@ -573,13 +573,14 @@ public class LakeFSFileSystem extends FileSystem {
                             fileLoc = fileLoc.toDirectory();
                         }
                         deleter.add(fileLoc.getPath());
+                        numDeletes ++;
                     }
                 } catch (BulkDeleter.DeleteFailuresException e) {
                     LOG.error("delete({}, {}): {}", path, recursive, e.toString());
                     deleted = false;
                 }
                 // Bulk deletes are contiguous and more relevant for compaction.
-                addDeletedMaybeCompact(location.getRepository(), location.getRef(), 3*numDeletes);
+                addDeletedMaybeCompact(location.getRepository(), location.getRef(), CONTIGUOUS_DELETION_FACTOR*numDeletes);
             }
         } else {
             deleted = deleteHelper(loc);
