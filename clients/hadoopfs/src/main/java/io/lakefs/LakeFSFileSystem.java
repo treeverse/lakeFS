@@ -575,7 +575,7 @@ public class LakeFSFileSystem extends FileSystem {
                         deleter.add(fileLoc.getPath());
                     }
                 } catch (BulkDeleter.DeleteFailuresException e) {
-                    LOG.error("delete(%s, %b): %s", path, recursive, e.toString());
+                    LOG.error("delete({}, {}): {}", path, recursive, e.toString());
                     deleted = false;
                 }
                 // Bulk deletes are contiguous and more relevant for compaction.
@@ -616,7 +616,7 @@ public class LakeFSFileSystem extends FileSystem {
                     if (e.getCode() == 400 && e.getMessage().contains("no changes")) {
                         LOG.info("Compact-commit: no changes (safe)");
                     } else {
-                        LOG.info("Compact-commit: %s", e.toString());
+                        LOG.info("Compact-commit: {}", e.toString());
                         // Swallow exception, this is merely an optimization!
                     }
                 }
