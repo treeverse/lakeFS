@@ -3,9 +3,9 @@ package block_test
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
@@ -103,6 +103,18 @@ func TestResolveNamespace(t *testing.T) {
 			},
 		},
 		{
+			Name:             "valid_fq_key_encoded",
+			DefaultNamespace: "mem://foo/",
+			Key:              "s3://example/bar/foo%3Abaz",
+			Type:             block.IdentifierTypeFull,
+			ExpectedErr:      nil,
+			Expected: block.CommonQualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "example",
+				Key:              "bar/foo%3Abaz",
+			},
+		},
+		{
 			Name:             "invalid_namespace_wrong_scheme",
 			DefaultNamespace: "memzzzz://foo/",
 			Key:              "bar/baz",
@@ -153,10 +165,12 @@ func TestResolveNamespace(t *testing.T) {
 			t.Run(fmt.Sprintf("%s/%s", cas.Name, relativeName), func(t *testing.T) {
 				resolved, err := block.DefaultResolveNamespace(cas.DefaultNamespace, cas.Key, r)
 				if err != nil && !errors.Is(err, cas.ExpectedErr) {
-					t.Fatalf("got unexpected error :%v - expected %v", err, cas.ExpectedErr)
+					t.Fatalf("got unexpected error: %v - expected %v", err, cas.ExpectedErr)
 				}
-				if cas.ExpectedErr == nil && !reflect.DeepEqual(resolved, cas.Expected) {
-					t.Fatalf("expected %v got %v", cas.Expected, resolved)
+				if cas.ExpectedErr == nil {
+					if diff := deep.Equal(resolved, cas.Expected); diff != nil {
+						t.Fatalf("mismatch in resolved namespace: %s", diff)
+					}
 				}
 			})
 		}
