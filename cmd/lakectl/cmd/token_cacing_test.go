@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/authentication/externalidp/awsiam"
@@ -267,6 +269,12 @@ func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *a
 	iamAuthParams := &awsiam.IAMAuthParams{
 		RefreshInterval: 5 * time.Minute,
 	}
+	presignOpt := func(po *sts.PresignOptions) {
+		po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
+			o.ClientLogMode = aws.LogSigning
+
+		})
+	}
 
 	tokenCacheCallback := createTestTokenCacheCallback(callbackCount)
 
@@ -276,6 +284,7 @@ func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *a
 		mockClient,
 		initialToken,
 		tokenCacheCallback,
+		presignOpt,
 	)
 }
 
@@ -309,8 +318,8 @@ func TestLoginOnlyOnce(t *testing.T) {
 		require.Equal(t, int64(1), mockClient.getLoginCount())       // Still 1, no new login
 		require.Equal(t, int64(1), atomic.LoadInt64(&callbackCount)) // Still 1, no new callback
 	})
-	// }
-	// func TestNoLoginWhenTokenIsGiven(t *testing.T) {
+}
+func TestNoLoginWhenTokenIsGiven(t *testing.T) {
 	t.Run("no login performed when valid token provided initially", func(t *testing.T) {
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
