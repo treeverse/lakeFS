@@ -175,7 +175,7 @@ These configuration fields can be set via `.lakectl.yaml`:
 
 ### Token Caching
 
-To optimize lakectl's IAM authentication, a simple token caching mechanizm was introduced.
+To optimize lakectl's IAM authentication, a simple token caching mechanism was introduced.
 Instead of performing a login request to AWS to get a JWT for lakeFS, lakectl will save the token to `$HOMEDIR/.lakectl/cache/lakectl_token_cache.json`.
 The token will be used in the next lakectl operations up until one hour after writing. Later than that, lakectl will try and retrieve a new token.
 
