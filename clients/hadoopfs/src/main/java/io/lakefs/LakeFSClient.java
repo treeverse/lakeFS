@@ -24,6 +24,7 @@ public class LakeFSClient {
     private final StagingApi stagingApi;
     private final RepositoriesApi repositoriesApi;
     private final BranchesApi branchesApi;
+    private final CommitsApi commitsApi;
     private final ConfigApi configApi;
     private final InternalApi internalApi;
 
@@ -57,6 +58,7 @@ public class LakeFSClient {
         this.stagingApi = new StagingApi(apiClient);
         this.repositoriesApi = new RepositoriesApi(apiClient);
         this.branchesApi = new BranchesApi(apiClient);
+        this.commitsApi = new CommitsApi(apiClient);
         this.configApi = new ConfigApi(apiClient);
         this.internalApi = new InternalApi(apiClient);
     }
@@ -92,6 +94,10 @@ public class LakeFSClient {
 
     public BranchesApi getBranchesApi() {
         return branchesApi;
+    }
+
+    public CommitsApi getCommitsApi() {
+        return commitsApi;
     }
 
     public ConfigApi getConfigApi() {
