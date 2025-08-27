@@ -69,31 +69,7 @@ When IAM authentication is configured, Everest will use AWS SDK default behavior
 
 ### Configure everest to use IAM
 
-To use IAM authentication, new configuration fields were introduced:
-
-- `credentials.provider.type` `(string: '')` - Settings this `aws_iam` will expect `aws_iam` block and try to use IAM.
-- `credentials.provider.aws_iam.token_ttl_second` `(duration: 60m)` - Optional: lakeFS token duration.
-- `credentials.provider.aws_iam.url_presign_ttl_seconds` `(duration: 15m)` - Optional: AWS STS's presigned URL validation duration.  
-- `credentials.provider.aws_iam.refresh_interval` `(duration: 15m)` - Optional: Amount of time before token expiration that Everest will try to fetch a new session token instead of using the current one.  
-- `credentials.provider.aws_iam.token_request_headers`: Map of required headers and their values to be signed by the AWS STS request as configured in your lakeFS server. If nothing is set the **default** behavior is adding `x-lakefs-server-id:<lakeFS host>`. If your lakeFS server doesn't require any headers (less secure) you can set this empty by setting `{}` empty map in your config. 
-
-These configuration fields can be set via `.lakectl.yaml`: 
-
-!!! example
-    ```yaml
-    credentials:
-    provider:
-        type: aws_iam          # Required
-        aws_iam:
-        token_ttl_seconds: 60m              # Optional, default: 1h
-        url_presign_ttl_seconds: 15m        # Optional, default: 15m
-        refresh_interval: 5m                # Optional, default: 5m
-        token_request_headers:              # Optional, if omitted then will set x-lakefs-server-id: <lakeFS host> by default, to override default set to '{}'
-        # x-lakefs-server-id: <lakeFS host>     Added by default if token_request_headers is not set	
-        custome-key:  custome-val
-    server:
-    endpoint_url: <lakeFS endpoint url>
-    ```
+Everest relays on lakectl configuration file. To use IAM authentication, new configuration fields were introduced. See how to [configure .lakectl.yaml](../security/external-principals-aws.md#lakectl-configuration) accordingly.
 
 To set using environment variables - those will start with the prefix `EVEREST_LAKEFS_*` or `LAKECTL_*`.
 For example, setting the provider type using env vars:
