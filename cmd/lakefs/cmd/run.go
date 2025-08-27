@@ -16,6 +16,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-co-op/gocron"
+	"github.com/gorilla/sessions"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	apifactory "github.com/treeverse/lakefs/modules/api/factory"
@@ -226,27 +227,12 @@ var runCmd = &cobra.Command{
 
 		// update health info with installation ID
 		httputil.SetHealthHandlerInfo(metadata.InstallationID)
+		log := logger.WithField("service", "api_gateway")
 
 		// start API server
-		apiHandler := api.Serve(
-			cfg,
-			c,
-			middlewareAuthenticator,
-			authService,
-			authenticationService,
-			blockStore,
-			authMetadataManager,
-			migrator,
-			bufferedCollector,
-			actionsService,
-			auditChecker,
-			logger.WithField("service", "api_gateway"),
-			baseCfg.Gateways.S3.DomainNames,
-			cfg.UIConfig().GetSnippets(),
-			upload.DefaultPathProvider,
-			usageReporter,
-			licenseManager,
-		)
+		sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
+		controller := apifactory.BuildController(cfg, c, middlewareAuthenticator, authService, authenticationService, c.BlockAdapter, authMetadataManager, migrator, bufferedCollector, actionsService, auditChecker, log, sessionStore, upload.DefaultPathProvider, usageReporter, licenseManager)
+		apiHandler := api.Serve(cfg, controller, middlewareAuthenticator, authService, authenticationService, log, baseCfg.Gateways.S3.DomainNames, cfg.UIConfig().GetSnippets())
 
 		// init gateway server
 		var s3FallbackURL *url.URL

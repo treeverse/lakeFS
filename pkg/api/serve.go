@@ -17,14 +17,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/api/params"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/authentication"
-	"github.com/treeverse/lakefs/pkg/block"
-	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/httputil"
-	"github.com/treeverse/lakefs/pkg/license"
 	"github.com/treeverse/lakefs/pkg/logging"
-	"github.com/treeverse/lakefs/pkg/stats"
-	"github.com/treeverse/lakefs/pkg/upload"
 )
 
 const (
@@ -33,7 +28,7 @@ const (
 	extensionValidationExcludeBody = "x-validation-exclude-body"
 )
 
-func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, gatewayDomains []string, snippets []params.CodeSnippet, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *chi.Mux {
+func Serve(cfg config.Config, controller apigen.ServerInterface, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, logger logging.Logger, gatewayDomains []string, snippets []params.CodeSnippet) *chi.Mux {
 	logger.Info("initialize OpenAPI server")
 	swagger, err := apigen.GetSwagger()
 	if err != nil {
@@ -56,7 +51,6 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 		AuthMiddleware(logger, swagger, authenticator, authService, sessionStore, &oidcConfig, &cookieAuthConfig),
 		MetricsMiddleware(swagger, requestHistograms, requestCounter),
 	)
-	controller := NewController(cfg, catalog, authenticator, authService, authenticationService, blockAdapter, metadataManager, migrator, collector, actions, auditChecker, logger, sessionStore, pathProvider, usageReporter, licenseManager)
 	apigen.HandlerFromMuxWithBaseURL(controller, apiRouter, apiutil.BaseURL)
 
 	r.Mount("/_health", httputil.ServeHealth())

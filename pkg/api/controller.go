@@ -81,7 +81,9 @@ const (
 	passwordPlaceholder = "Password"
 )
 
-type actionsHandler interface {
+type ValidateSetOpts func() ([]graveler.SetOptionsFunc, error)
+
+type ActionsHandler interface {
 	GetRunResult(ctx context.Context, repositoryID, runID string) (*actions.RunResult, error)
 	GetTaskResult(ctx context.Context, repositoryID, runID, hookRunID string) (*actions.TaskResult, error)
 	ListRunResults(ctx context.Context, repositoryID, branchID, commitID, after string) (actions.RunResultIterator, error)
@@ -102,7 +104,7 @@ type Controller struct {
 	MetadataManager auth.MetadataManager
 	Migrator        Migrator
 	Collector       stats.Collector
-	Actions         actionsHandler
+	Actions         ActionsHandler
 	AuditChecker    AuditChecker
 	Logger          logging.Logger
 	sessionStore    sessions.Store
@@ -113,7 +115,7 @@ type Controller struct {
 
 var usageCounter = stats.NewUsageCounter()
 
-func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions actionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *Controller {
+func NewController(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authenticator, authService auth.Service, authenticationService authentication.Service, blockAdapter block.Adapter, metadataManager auth.MetadataManager, migrator Migrator, collector stats.Collector, actions ActionsHandler, auditChecker AuditChecker, logger logging.Logger, sessionStore sessions.Store, pathProvider upload.PathProvider, usageReporter stats.UsageReporterOperations, licenseManager license.Manager) *Controller {
 	return &Controller{
 		Config:          cfg,
 		Catalog:         catalog,
@@ -905,6 +907,19 @@ func (c *Controller) GetPhysicalAddress(w http.ResponseWriter, r *http.Request, 
 }
 
 func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request, body apigen.LinkPhysicalAddressJSONRequestBody, repository, branch string, params apigen.LinkPhysicalAddressParams) {
+	c.LinkPhysicalAddressWithOpts(w, r, body, repository, branch, params, func() ([]graveler.SetOptionsFunc, error) {
+		ifAbsent := false
+		if params.IfNoneMatch != nil {
+			if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
+				return nil, fmt.Errorf("unsupported value for If-None-Match - Only \"*\" is supported: %w", graveler.ErrInvalidValue)
+			}
+			ifAbsent = true
+		}
+		return []graveler.SetOptionsFunc{graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(ifAbsent)}, nil
+	})
+}
+
+func (c *Controller) LinkPhysicalAddressWithOpts(w http.ResponseWriter, r *http.Request, body apigen.LinkPhysicalAddressJSONRequestBody, repository, branch string, params apigen.LinkPhysicalAddressParams, setOptFunc ValidateSetOpts) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
@@ -933,13 +948,10 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	ifAbsent := false
-	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
-			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
-			return
-		}
-		ifAbsent = true
+	setOpts, err := setOptFunc()
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
 	}
 
 	storage := c.Config.StorageConfig().GetStorageByID(repo.StorageID)
@@ -996,7 +1008,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
 	entry := entryBuilder.Build()
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(ifAbsent))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, setOpts...)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3393,6 +3405,30 @@ func (c *Controller) UploadObjectPreflight(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.UploadObjectParams) {
+	c.UploadObjectWithOpts(w, r, repository, branch, params, func() ([]graveler.SetOptionsFunc, error) {
+		// before writing body, ensure preconditions - this means we essentially check for object existence twice:
+		// once before uploading the body to save resources and time,
+		//	and then graveler will check again when passed a SetOptions.
+		allowOverwrite := true
+		if params.IfNoneMatch != nil {
+			if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
+				return nil, fmt.Errorf("unsupported value for If-None-Match - Only \"*\" is supported: %w", graveler.ErrInvalidValue)
+			}
+			// check if exists
+			_, err := c.Catalog.GetEntry(r.Context(), repository, branch, params.Path, catalog.GetEntryParams{})
+			if err == nil {
+				return nil, fmt.Errorf("path already exists: %w", graveler.ErrPreconditionFailed)
+			}
+			if !errors.Is(err, graveler.ErrNotFound) {
+				return nil, err
+			}
+			allowOverwrite = false
+		}
+		return []graveler.SetOptionsFunc{graveler.WithIfAbsent(!allowOverwrite), graveler.WithForce(swag.BoolValue(params.Force))}, nil
+	})
+}
+
+func (c *Controller) UploadObjectWithOpts(w http.ResponseWriter, r *http.Request, repository, branch string, params apigen.UploadObjectParams, setOptFunc ValidateSetOpts) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{
 			Action:   permissions.WriteObjectAction,
@@ -3419,26 +3455,9 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
-	// once before uploading the body to save resources and time,
-	//	and then graveler will check again when passed a SetOptions.
-	allowOverwrite := true
-	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
-			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
-			return
-		}
-		// check if exists
-		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{})
-		if err == nil {
-			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
-			return
-		}
-		if !errors.Is(err, graveler.ErrNotFound) {
-			writeError(w, r, http.StatusInternalServerError, err)
-			return
-		}
-		allowOverwrite = false
+	setOpts, err := setOptFunc()
+	if c.handleAPIError(ctx, w, r, err) {
+		return
 	}
 
 	// read request body parse multipart for "content" and upload the data
@@ -3448,7 +3467,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		writeError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	opts := block.PutOpts{StorageClass: params.StorageClass}
+	putOpts := block.PutOpts{StorageClass: params.StorageClass}
 
 	var blob *upload.Blob
 	if mediaType != "multipart/form-data" {
@@ -3460,7 +3479,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			IdentifierType:   block.IdentifierTypeRelative,
 			Identifier:       address,
 		}
-		blob, err = upload.WriteBlob(ctx, c.BlockAdapter, objectPointer, r.Body, r.ContentLength, opts)
+		blob, err = upload.WriteBlob(ctx, c.BlockAdapter, objectPointer, r.Body, r.ContentLength, putOpts)
 		if err != nil {
 			writeError(w, r, http.StatusInternalServerError, err)
 			return
@@ -3494,7 +3513,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 					IdentifierType:   block.IdentifierTypeRelative,
 					Identifier:       c.PathProvider.NewPath(),
 				}
-				blob, err = upload.WriteBlob(ctx, c.BlockAdapter, objectPointer, part, -1, opts)
+				blob, err = upload.WriteBlob(ctx, c.BlockAdapter, objectPointer, part, -1, putOpts)
 				if err != nil {
 					_ = part.Close()
 					writeError(w, r, http.StatusInternalServerError, err)
@@ -3529,7 +3548,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	entry := entryBuilder.Build()
 
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithIfAbsent(!allowOverwrite), graveler.WithForce(swag.BoolValue(params.Force)))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, setOpts...)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 		return
