@@ -589,12 +589,22 @@ public class LakeFSFileSystem extends FileSystem {
         return deleted;
     }
 
-    private synchronized void addDeletedMaybeCompact(String repo, String branch, int numDeletes) throws IOException {
+    private void addDeletedMaybeCompact(String repo, String branch, int numDeletes) throws IOException {
         RepoBranch key = ImmutableRepoBranch.builder().repo(repo).branch(branch).build();
-        int total = totalDeleted.getOrDefault(key, 0);
-        total += numDeletes;
-        totalDeleted.put(key, total);
-        if (commitEveryNumDeletes > 0 && total > commitEveryNumDeletes) {
+        int total;
+        boolean triggerCommit = false;
+        synchronized (this) {
+            total = totalDeleted.getOrDefault(key, 0);
+            total += numDeletes;
+            if (commitEveryNumDeletes > 0 && total > commitEveryNumDeletes) {
+                triggerCommit = true;
+                total = 0;
+            }
+            totalDeleted.put(key, total);
+        }
+
+        if (triggerCommit) {
+            // Documentation says: "instances of java.util.Random are threadsafe."
             if (deleteCompactionGen.nextDouble() < deleteEveryProb) {
                 CommitsApi commitsApi = clientFactory.newClient().getCommitsApi();
                 CommitCreation commitCreation = new CommitCreation();
@@ -613,7 +623,6 @@ public class LakeFSFileSystem extends FileSystem {
             } else {
                 LOG.info("Skip compact-commit after {} deletes (current {})", total, numDeletes);
             }
-            totalDeleted.put(key, 0);
         }
     }
 
