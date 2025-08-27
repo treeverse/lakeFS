@@ -92,16 +92,17 @@ object StorageUtils {
 
     def createAndValidateS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
+        credentialsProvider: AWSCredentialsProvider,
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String,
         bucket: String
     ): AmazonS3 = {
+      logger.debug(s"Creating S3 client for bucket: $bucket, region: $region, endpoint: $endpoint")
       require(awsS3ClientBuilder != null)
       require(bucket.nonEmpty)
       val client =
-        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint)
+        initializeS3Client(configuration, credentialsProvider, awsS3ClientBuilder, endpoint, region)
       var bucketRegion =
         try {
           getAWSS3Region(client, bucket)
@@ -128,7 +129,7 @@ object StorageUtils {
 
     private def initializeS3Client(
         configuration: ClientConfiguration,
-        credentialsProvider: Option[AWSCredentialsProvider],
+        credentialsProvider: AWSCredentialsProvider,
         awsS3ClientBuilder: AmazonS3ClientBuilder,
         endpoint: String,
         region: String = null
@@ -144,11 +145,8 @@ object StorageUtils {
           builder.withRegion(region)
         else
           builder
-      val builderWithCredentials = credentialsProvider match {
-        case Some(cp) => builderWithEndpoint.withCredentials(cp)
-        case None     => builderWithEndpoint
-      }
-      builderWithCredentials.build
+
+      builderWithEndpoint.withCredentials(credentialsProvider).build()
     }
 
     private def getAWSS3Region(client: AmazonS3, bucket: String): String = {
