@@ -310,6 +310,11 @@ func TestLoginOnlyOnce(t *testing.T) {
 		var callbackCount int64
 		provider := createSecurityProvider(mockClient, nil, &callbackCount)
 
+		t.Logf("Initial token: %v", provider.AuthenticationToken)
+		t.Logf("Mock client login count before: %d", mockClient.getLoginCount())
+		t.Logf("Mock client login count after: %d", mockClient.getLoginCount())
+		require.Nil(t, provider.AuthenticationToken, "Provider should start with no token")
+
 		// should trigger login
 		req1 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
 		err := provider.Intercept(context.Background(), req1)
