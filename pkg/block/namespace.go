@@ -145,11 +145,20 @@ func resolveFull(key string) (CommonQualifiedKey, error) {
 	if err != nil {
 		return CommonQualifiedKey{}, err
 	}
+
+	rawPath := RawPathFromURI(parsedKey)
 	return CommonQualifiedKey{
 		StorageType:      storageType,
 		StorageNamespace: parsedKey.Host,
-		Key:              formatPathWithNamespace("", parsedKey.Path),
+		Key:              formatPathWithNamespace("", rawPath),
 	}, nil
+}
+
+func RawPathFromURI(u *url.URL) string {
+	if u.RawPath != "" {
+		return u.RawPath
+	}
+	return u.Path
 }
 
 func resolveRelative(defaultNamespace, key string) (CommonQualifiedKey, error) {
@@ -164,9 +173,10 @@ func resolveRelative(defaultNamespace, key string) (CommonQualifiedKey, error) {
 		return CommonQualifiedKey{}, fmt.Errorf("no storage type for %s: %w", parsedNS, err)
 	}
 
+	rawPath := RawPathFromURI(parsedNS)
 	return CommonQualifiedKey{
 		StorageType:      storageType,
-		StorageNamespace: strings.TrimSuffix(parsedNS.Host+parsedNS.Path, "/"),
+		StorageNamespace: strings.TrimSuffix(parsedNS.Host+rawPath, "/"),
 		Key:              key,
 	}, nil
 }
@@ -176,7 +186,6 @@ func resolveNamespaceUnknown(defaultNamespace, key string) (CommonQualifiedKey, 
 	if qk, err := resolveFull(key); err == nil {
 		return qk, nil
 	}
-
 	// else, treat it as a relative path
 	return resolveRelative(defaultNamespace, key)
 }

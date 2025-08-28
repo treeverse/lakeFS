@@ -23,7 +23,8 @@ func NewGCSWalker(client *storage.Client) *GCSWalker {
 }
 
 func (w *GCSWalker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
-	prefix := strings.TrimLeft(storageURI.Path, "/")
+	rawPath := block.RawPathFromURI(storageURI)
+	prefix := strings.TrimLeft(rawPath, "/")
 	var basePath string
 	if idx := strings.LastIndex(prefix, "/"); idx != -1 {
 		basePath = prefix[:idx+1]

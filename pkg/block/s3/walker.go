@@ -26,7 +26,8 @@ func NewS3Walker(client *s3.Client) *Walker {
 func (s *Walker) Walk(ctx context.Context, storageURI *url.URL, op block.WalkOptions, walkFn func(e block.ObjectStoreEntry) error) error {
 	var continuation *string
 	const maxKeys = 1000
-	prefix := strings.TrimLeft(storageURI.Path, "/")
+	rawPath := block.RawPathFromURI(storageURI)
+	prefix := strings.TrimLeft(rawPath, "/")
 
 	// basePath is the path relative to which the walk is done. The key of the resulting entries will be relative to this path.
 	// As the original prefix might not end with a separator, it cannot be used for the
