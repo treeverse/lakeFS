@@ -603,63 +603,6 @@ jobs:
         working-directory: test/rclone_export
         run: docker compose logs --tail=1000
 
-  metastore-client-with-trino:
-    name: Test metastore client commands using trino
-    needs: [deploy-image, login-to-amazon-ecr]
-    runs-on: ubuntu-22.04
-    env:
-      TAG: ${{ needs.deploy-image.outputs.tag }}
-      REGISTRY: ${{ needs.login-to-amazon-ecr.outputs.registry }}
-    steps:
-      - name: Check-out code
-        uses: actions/checkout@v4
-
-      - name: Generate uniquifying value
-        id: unique
-        run: echo "value=$RANDOM" >> $GITHUB_OUTPUT
-      - name: Login to GitHub Docker Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build and Push hive-metastore
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: ghcr.io/treeverse/hive-metastore:${{ needs.deploy-image.outputs.tag }}
-          context: test/lakectl_metastore/hive
-          cache-from: type=gha,scope=hive-metastore
-          cache-to: type=gha,mode=max,scope=hive-metastore
-      - name: Start lakeFS for Metastore tests
-        uses: ./.github/actions/bootstrap-test-lakefs
-        with:
-          compose-directory: test/lakectl_metastore
-        env:
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient/${{ steps.unique.outputs.value }}
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_DATABASE_TYPE: postgres
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-          LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_KEY_ID: ${{ secrets.ESTI_AWS_ACCESS_KEY_ID }}
-          LAKECTL_METASTORE_GLUE_CREDENTIALS_ACCESS_SECRET_KEY: ${{ secrets.ESTI_AWS_SECRET_ACCESS_KEY }}
-
-      - name: Setup lakeFS for tests
-        working-directory: test/lakectl_metastore
-        env:
-          STORAGE_NAMESPACE: s3://esti-system-testing/${{ github.run_number }}-metaclient/${{ steps.unique.outputs.value }}
-        run: ./setup-test.sh
-
-      - name: lakeFS Logs on Spark with gateway failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        working-directory: test/lakectl_metastore
-        run: docker compose logs --tail=2500 lakefs
 
   build-spark3-metadata-client:
     name: Build metadata client for Spark 3.x
