@@ -29,8 +29,6 @@ export interface LoginConfig {
     logout_url: string;
 }
 
-export const AUTH_LOGIN_PATH = '/auth/login';
-
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const navigate = useNavigate();
@@ -111,15 +109,18 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
 const LoginPage = () => {
     const router = useRouter();
     const { response, error, loading } = useAPI(() => setup.getState());
-    const pluginManager = usePluginManager();
 
     if (loading) {
         return <Loading />;
     }
 
+    if (error) {
+        return <AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()} />;
+    }
+
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
     const setupResponse = response as SetupResponse | null;
-    if (!error && setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
+    if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
         router.push({pathname: '/setup', params: {}, query: router.query as Record<string, string>})
         return null;
     }
@@ -132,6 +133,7 @@ const LoginPage = () => {
     // A login strategy is applied only if the user was redirected to AUTH_LOGIN_PATH (with the router.query.redirected flag).
     if (router.query.redirected)  {
         delete router.query.redirected;
+        const pluginManager = usePluginManager();
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
         // Return the element (component or null)
         if (loginStrategy.element !== undefined) {
