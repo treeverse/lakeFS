@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/require"
@@ -285,12 +284,12 @@ func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *a
 	iamAuthParams := &awsiam.IAMAuthParams{
 		RefreshInterval: 5 * time.Minute,
 	}
-	presignOpt := func(po *sts.PresignOptions) {
-		po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
-			o.ClientLogMode = aws.LogSigning
+	// presignOpt := func(po *sts.PresignOptions) {
+	// 	po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
+	// 		o.ClientLogMode = aws.LogSigning
 
-		})
-	}
+	// 	})
+	// }
 	presignOpt2 := func(po *sts.PresignOptions) {
 		po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
 			o.Credentials = credentials.NewStaticCredentialsProvider("fake-access", "fake-secret", "")
@@ -306,7 +305,7 @@ func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *a
 		mockClient,
 		initialToken,
 		tokenCacheCallback,
-		presignOpt,
+		// presignOpt,
 		presignOpt2,
 	)
 }
@@ -367,7 +366,8 @@ func TestNoLoginWhenTokenIsGiven(t *testing.T) {
 		err := provider.Intercept(context.Background(), req)
 		require.NoError(t, err)
 		require.Equal(t, "Bearer pre-existing-token", req.Header.Get("Authorization"))
-		require.Equal(t, int64(0), mockClient.getLoginCount())       // No login called
+		require.Equal(t, int64(0), mockClient.getLoginCount()) // No login called
+		time.Sleep(time.Second)
 		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount)) // No callback called
 	})
 }
@@ -390,7 +390,8 @@ func TestRealInterceptWithGlobalCache2(t *testing.T) {
 		err := provider.Intercept(context.Background(), req)
 		require.ErrorIs(t, err, errMockLoginFailed)
 		require.Empty(t, req.Header.Get("Authorization"))
-		require.Equal(t, int64(1), mockClient.getLoginCount())       // Login attempted once
+		require.Equal(t, int64(1), mockClient.getLoginCount()) // Login attempted once
+		time.Sleep(time.Second)
 		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount)) // No callback on failure
 	})
 }
@@ -414,6 +415,7 @@ func TestRealInterceptWithGlobalCache5(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "Bearer callback-cached-token", req1.Header.Get("Authorization"))
 		require.Equal(t, int64(1), mockClient.getLoginCount())
+		time.Sleep(time.Second)
 		require.Equal(t, int64(1), atomic.LoadInt64(&callbackCount))
 
 		// Verify token was saved to global cache
@@ -433,7 +435,8 @@ func TestRealInterceptWithGlobalCache5(t *testing.T) {
 		err = provider2.Intercept(context.Background(), req2)
 		require.NoError(t, err)
 		require.Equal(t, "Bearer callback-cached-token", req2.Header.Get("Authorization"))
-		require.Equal(t, int64(0), mockClient.getLoginCount())       // No new login, used cache
+		require.Equal(t, int64(0), mockClient.getLoginCount()) // No new login, used cache
+		time.Sleep(time.Second)
 		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount)) // No new callback
 	})
 }
