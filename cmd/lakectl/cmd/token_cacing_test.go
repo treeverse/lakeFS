@@ -340,8 +340,8 @@ func TestLoginOnlyOnce(t *testing.T) {
 		require.Equal(t, "Bearer cached-token", req1.Header.Get("Authorization"))
 		require.Equal(t, int64(1), mockClient.getLoginCount())
 	})
-}
-func TestNoLoginWhenTokenIsGiven(t *testing.T) {
+	// }
+	// func TestNoLoginWhenTokenIsGiven(t *testing.T) {
 	t.Run("no login performed when valid token provided initially", func(t *testing.T) {
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
@@ -370,8 +370,8 @@ func TestNoLoginWhenTokenIsGiven(t *testing.T) {
 		time.Sleep(time.Second)
 		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount)) // No callback called
 	})
-}
-func TestRealInterceptWithGlobalCache2(t *testing.T) {
+	// }
+	// func TestRealInterceptWithGlobalCache2(t *testing.T) {
 	t.Run("handles login failure gracefully", func(t *testing.T) {
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
@@ -394,8 +394,8 @@ func TestRealInterceptWithGlobalCache2(t *testing.T) {
 		time.Sleep(time.Second)
 		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount)) // No callback on failure
 	})
-}
-func TestRealInterceptWithGlobalCache5(t *testing.T) {
+	// }
+	// func TestRealInterceptWithGlobalCache5(t *testing.T) {
 	t.Run("token cached via callback and reused after provider recreation", func(t *testing.T) {
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
