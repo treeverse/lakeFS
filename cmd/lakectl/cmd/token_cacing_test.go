@@ -256,18 +256,18 @@ func (m *mockExternalLoginClient) resetLoginCount() {
 	atomic.StoreInt64(&m.loginCount, 0)
 }
 
-func createTestTokenCacheCallback(callbackCount *int64) awsiam.TokenCacheCallback {
-	return func(newToken *apigen.AuthenticationToken) {
-		if callbackCount != nil {
-			atomic.AddInt64(callbackCount, 1)
-		}
-		// update global cached token
-		cachedToken = newToken
-		if err := SaveTokenToCache(); err != nil {
-			logging.ContextUnavailable().Debugf("error saving token to cache: %w", err)
-		}
-	}
-}
+// func createTestTokenCacheCallback(callbackCount *int64) awsiam.TokenCacheCallback {
+// 	return func(newToken *apigen.AuthenticationToken) {
+// 		if callbackCount != nil {
+// 			atomic.AddInt64(callbackCount, 1)
+// 		}
+// 		// update global cached token
+// 		cachedToken = newToken
+// 		if err := SaveTokenToCache(); err != nil {
+// 			logging.ContextUnavailable().Debugf("error saving token to cache: %w", err)
+// 		}
+// 	}
+// }
 
 func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *apigen.AuthenticationToken, callbackCount *int64) *awsiam.SecurityProviderAWSIAMRole {
 	iamAuthParams := &awsiam.IAMAuthParams{
@@ -320,7 +320,7 @@ func TestLoginOnlyOnce(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Bearer cached-token", req1.Header.Get("Authorization"))
 	require.Equal(t, int64(1), mockClient.getLoginCount())
-	
+
 	// Wait for callback to complete
 	time.Sleep(200 * time.Millisecond)
 }
@@ -350,7 +350,7 @@ func TestNoLoginWhenTokenIsGiven(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Bearer pre-existing-token", req.Header.Get("Authorization"))
 	require.Equal(t, int64(0), mockClient.getLoginCount())
-	
+
 	time.Sleep(200 * time.Millisecond)
 	require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
 }
@@ -374,7 +374,7 @@ func TestHandleLoginFailure(t *testing.T) {
 	require.ErrorIs(t, err, errMockLoginFailed)
 	require.Empty(t, req.Header.Get("Authorization"))
 	require.Equal(t, int64(1), mockClient.getLoginCount())
-	
+
 	time.Sleep(200 * time.Millisecond)
 	require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
 }
@@ -398,7 +398,7 @@ func TestTokenCachedAndReused(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Bearer callback-cached-token", req1.Header.Get("Authorization"))
 	require.Equal(t, int64(1), mockClient.getLoginCount())
-	
+
 	time.Sleep(200 * time.Millisecond)
 	require.Equal(t, int64(1), atomic.LoadInt64(&callbackCount))
 
@@ -416,15 +416,20 @@ func TestTokenCachedAndReused(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Bearer callback-cached-token", req2.Header.Get("Authorization"))
 	require.Equal(t, int64(0), mockClient.getLoginCount())
-	
+
 	time.Sleep(200 * time.Millisecond)
 	require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
 }
 
+var globalStateMutex sync.Mutex
+
 func resetGlobalState() {
+	globalStateMutex.Lock()
+	defer globalStateMutex.Unlock()
+
 	// Brief wait for any lingering goroutines
 	time.Sleep(100 * time.Millisecond)
-	
+
 	tokenLoadOnce = sync.Once{}
 	tokenCacheOnce = sync.Once{}
 	tokenSaveOnce = sync.Once{}
@@ -435,5 +440,22 @@ func resetGlobalState() {
 	if homeDir != "" {
 		cacheDir := filepath.Join(homeDir, ".lakectl", "cache")
 		os.RemoveAll(cacheDir)
+	}
+}
+
+// CRITICAL: Also protect the callback
+func createTestTokenCacheCallback(callbackCount *int64) awsiam.TokenCacheCallback {
+	return func(newToken *apigen.AuthenticationToken) {
+		globalStateMutex.Lock()
+		defer globalStateMutex.Unlock()
+
+		if callbackCount != nil {
+			atomic.AddInt64(callbackCount, 1)
+		}
+		// update global cached token
+		cachedToken = newToken
+		if err := SaveTokenToCache(); err != nil {
+			logging.ContextUnavailable().Debugf("error saving token to cache: %w", err)
+		}
 	}
 }
