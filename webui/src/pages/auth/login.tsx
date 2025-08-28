@@ -31,7 +31,7 @@ export interface LoginConfig {
 
 export const AUTH_LOGIN_PATH = '/auth/login';
 
-export const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
+const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const navigate = useNavigate();
     const [loginError, setLoginError] = useState(null);
