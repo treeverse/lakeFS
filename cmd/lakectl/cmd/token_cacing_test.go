@@ -300,130 +300,131 @@ func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *a
 }
 
 func TestLoginOnlyOnce(t *testing.T) {
-	t.Run("login called only once across multiple requests", func(t *testing.T) {
-		// Remove testMutex.Lock()/Unlock() since TestMain handles sequencing
-		resetGlobalState()
-		cleanup := setupTestHomeDir(t)
-		defer cleanup()
+	// Test 1: login called only once across multiple requests
+	resetGlobalState()
+	cleanup := setupTestHomeDir(t)
+	defer cleanup()
 
-		mockClient := &mockExternalLoginClient{
-			shouldFail:    false,
-			tokenToReturn: "cached-token",
-		}
+	mockClient := &mockExternalLoginClient{
+		shouldFail:    false,
+		tokenToReturn: "cached-token",
+	}
 
-		var callbackCount int64
-		provider := createSecurityProvider(mockClient, nil, &callbackCount)
-		require.Nil(t, provider.AuthenticationToken)
+	var callbackCount int64
+	provider := createSecurityProvider(mockClient, nil, &callbackCount)
+	require.Nil(t, provider.AuthenticationToken)
 
-		req1 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
-		err := provider.Intercept(context.Background(), req1)
+	req1 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
+	err := provider.Intercept(context.Background(), req1)
 
-		require.NoError(t, err)
-		require.Equal(t, "Bearer cached-token", req1.Header.Get("Authorization"))
-		require.Equal(t, int64(1), mockClient.getLoginCount())
+	require.NoError(t, err)
+	require.Equal(t, "Bearer cached-token", req1.Header.Get("Authorization"))
+	require.Equal(t, int64(1), mockClient.getLoginCount())
+	
+	// Wait for callback to complete
+	time.Sleep(200 * time.Millisecond)
+}
 
-		// Keep a short sleep to let callback complete
-		time.Sleep(100 * time.Millisecond)
-	})
+func TestNoLoginWhenTokenIsGiven(t *testing.T) {
+	// Test 2: no login performed when valid token provided initially
+	resetGlobalState()
+	cleanup := setupTestHomeDir(t)
+	defer cleanup()
 
-	t.Run("no login performed when valid token provided initially", func(t *testing.T) {
-		resetGlobalState()
-		cleanup := setupTestHomeDir(t)
-		defer cleanup()
+	expiry := time.Now().Add(2 * time.Hour).Unix()
+	existingToken := &apigen.AuthenticationToken{
+		Token:           "pre-existing-token",
+		TokenExpiration: &expiry,
+	}
 
-		expiry := time.Now().Add(2 * time.Hour).Unix()
-		existingToken := &apigen.AuthenticationToken{
-			Token:           "pre-existing-token",
-			TokenExpiration: &expiry,
-		}
+	mockClient := &mockExternalLoginClient{
+		shouldFail:    false,
+		tokenToReturn: "should-not-be-used",
+	}
 
-		mockClient := &mockExternalLoginClient{
-			shouldFail:    false,
-			tokenToReturn: "should-not-be-used",
-		}
+	var callbackCount int64
+	provider := createSecurityProvider(mockClient, existingToken, &callbackCount)
 
-		var callbackCount int64
-		provider := createSecurityProvider(mockClient, existingToken, &callbackCount)
+	req := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
+	err := provider.Intercept(context.Background(), req)
+	require.NoError(t, err)
+	require.Equal(t, "Bearer pre-existing-token", req.Header.Get("Authorization"))
+	require.Equal(t, int64(0), mockClient.getLoginCount())
+	
+	time.Sleep(200 * time.Millisecond)
+	require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
+}
 
-		req := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
-		err := provider.Intercept(context.Background(), req)
-		require.NoError(t, err)
-		require.Equal(t, "Bearer pre-existing-token", req.Header.Get("Authorization"))
-		require.Equal(t, int64(0), mockClient.getLoginCount())
+func TestHandleLoginFailure(t *testing.T) {
+	// Test 3: handles login failure gracefully
+	resetGlobalState()
+	cleanup := setupTestHomeDir(t)
+	defer cleanup()
 
-		time.Sleep(100 * time.Millisecond)
-		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
-	})
+	mockClient := &mockExternalLoginClient{
+		shouldFail:    true,
+		tokenToReturn: "",
+	}
 
-	t.Run("handles login failure gracefully", func(t *testing.T) {
-		resetGlobalState()
-		cleanup := setupTestHomeDir(t)
-		defer cleanup()
+	var callbackCount int64
+	provider := createSecurityProvider(mockClient, nil, &callbackCount)
 
-		mockClient := &mockExternalLoginClient{
-			shouldFail:    true,
-			tokenToReturn: "",
-		}
+	req := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
+	err := provider.Intercept(context.Background(), req)
+	require.ErrorIs(t, err, errMockLoginFailed)
+	require.Empty(t, req.Header.Get("Authorization"))
+	require.Equal(t, int64(1), mockClient.getLoginCount())
+	
+	time.Sleep(200 * time.Millisecond)
+	require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
+}
 
-		var callbackCount int64
-		provider := createSecurityProvider(mockClient, nil, &callbackCount)
+func TestTokenCachedAndReused(t *testing.T) {
+	// Test 4: token cached via callback and reused after provider recreation
+	resetGlobalState()
+	cleanup := setupTestHomeDir(t)
+	defer cleanup()
 
-		req := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
-		err := provider.Intercept(context.Background(), req)
-		require.ErrorIs(t, err, errMockLoginFailed)
-		require.Empty(t, req.Header.Get("Authorization"))
-		require.Equal(t, int64(1), mockClient.getLoginCount())
+	mockClient := &mockExternalLoginClient{
+		shouldFail:    false,
+		tokenToReturn: "callback-cached-token",
+	}
 
-		time.Sleep(100 * time.Millisecond)
-		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
-	})
+	var callbackCount int64
+	provider1 := createSecurityProvider(mockClient, nil, &callbackCount)
 
-	t.Run("token cached via callback and reused after provider recreation", func(t *testing.T) {
-		resetGlobalState()
-		cleanup := setupTestHomeDir(t)
-		defer cleanup()
+	req1 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
+	err := provider1.Intercept(context.Background(), req1)
+	require.NoError(t, err)
+	require.Equal(t, "Bearer callback-cached-token", req1.Header.Get("Authorization"))
+	require.Equal(t, int64(1), mockClient.getLoginCount())
+	
+	time.Sleep(200 * time.Millisecond)
+	require.Equal(t, int64(1), atomic.LoadInt64(&callbackCount))
 
-		mockClient := &mockExternalLoginClient{
-			shouldFail:    false,
-			tokenToReturn: "callback-cached-token",
-		}
+	require.NotNil(t, cachedToken)
+	require.Equal(t, "callback-cached-token", cachedToken.Token)
 
-		var callbackCount int64
-		provider1 := createSecurityProvider(mockClient, nil, &callbackCount)
+	mockClient.resetLoginCount()
+	callbackCount = 0
 
-		req1 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
-		err := provider1.Intercept(context.Background(), req1)
-		require.NoError(t, err)
-		require.Equal(t, "Bearer callback-cached-token", req1.Header.Get("Authorization"))
-		require.Equal(t, int64(1), mockClient.getLoginCount())
+	cachedTokenFromFile := getTokenOnce()
+	provider2 := createSecurityProvider(mockClient, cachedTokenFromFile, &callbackCount)
 
-		time.Sleep(100 * time.Millisecond)
-		require.Equal(t, int64(1), atomic.LoadInt64(&callbackCount))
-
-		require.NotNil(t, cachedToken)
-		require.Equal(t, "callback-cached-token", cachedToken.Token)
-
-		mockClient.resetLoginCount()
-		callbackCount = 0
-
-		cachedTokenFromFile := getTokenOnce()
-		provider2 := createSecurityProvider(mockClient, cachedTokenFromFile, &callbackCount)
-
-		req2 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
-		err = provider2.Intercept(context.Background(), req2)
-		require.NoError(t, err)
-		require.Equal(t, "Bearer callback-cached-token", req2.Header.Get("Authorization"))
-		require.Equal(t, int64(0), mockClient.getLoginCount())
-
-		time.Sleep(100 * time.Millisecond)
-		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
-	})
+	req2 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
+	err = provider2.Intercept(context.Background(), req2)
+	require.NoError(t, err)
+	require.Equal(t, "Bearer callback-cached-token", req2.Header.Get("Authorization"))
+	require.Equal(t, int64(0), mockClient.getLoginCount())
+	
+	time.Sleep(200 * time.Millisecond)
+	require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
 }
 
 func resetGlobalState() {
-	// Brief sleep to let any callback goroutines finish
-	time.Sleep(50 * time.Millisecond)
-
+	// Brief wait for any lingering goroutines
+	time.Sleep(100 * time.Millisecond)
+	
 	tokenLoadOnce = sync.Once{}
 	tokenCacheOnce = sync.Once{}
 	tokenSaveOnce = sync.Once{}
