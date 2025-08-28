@@ -132,7 +132,7 @@ const LoginPage = () => {
     // A login strategy is applied only if the user was redirected to AUTH_LOGIN_PATH (with the router.query.redirected flag).
     if (router.query.redirected)  {
         delete router.query.redirected;
-        const loginStrategyPluginRes = pluginManager.loginStrategy.getLoginStrategy(loginConfig);
+        const loginStrategyPluginRes = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
         // If element is undefined, remove the router.query.redirected flag and route to AUTH_LOGIN_PATH to log in via lakeFS (LoginForm).
         // if (error || loginStrategyPluginRes.element === undefined) {
         //     router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
