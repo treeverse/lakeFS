@@ -104,13 +104,25 @@ func TestResolveNamespace(t *testing.T) {
 		},
 		{
 			Name:             "valid_fq_key_encoded",
-			DefaultNamespace: "mem://foo/",
+			DefaultNamespace: "s3://foo/",
 			Key:              "s3://example/bar/foo%3Abaz",
 			Type:             block.IdentifierTypeFull,
 			ExpectedErr:      nil,
 			Expected: block.CommonQualifiedKey{
 				StorageType:      block.StorageTypeS3,
 				StorageNamespace: "example",
+				Key:              "bar/foo%3Abaz",
+			},
+		},
+		{
+			Name:             "valid_relative_encoded",
+			DefaultNamespace: "s3://foo/",
+			Key:              "bar/foo%3Abaz",
+			Type:             block.IdentifierTypeRelative,
+			ExpectedErr:      nil,
+			Expected: block.CommonQualifiedKey{
+				StorageType:      block.StorageTypeS3,
+				StorageNamespace: "foo",
 				Key:              "bar/foo%3Abaz",
 			},
 		},
