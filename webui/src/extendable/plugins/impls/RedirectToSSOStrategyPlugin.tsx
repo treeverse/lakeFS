@@ -6,9 +6,9 @@ class RedirectToSSOStrategyPlugin implements PluginLoginStrategy {
     getLoginStrategy(loginConfig: LoginConfig): LoginStrategyResult {
         if (loginConfig.login_url) {
             window.location.href = loginConfig.login_url;
-            return { element: null, default: false };
+            return { element: null };
         }
-        return { default: true };
+        return {};
     }
 }
 

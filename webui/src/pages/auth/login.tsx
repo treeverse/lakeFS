@@ -31,7 +31,7 @@ export interface LoginConfig {
 
 export const AUTH_LOGIN_PATH = '/auth/login';
 
-const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
+export const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const navigate = useNavigate();
     const [loginError, setLoginError] = useState(null);
@@ -131,13 +131,13 @@ const LoginPage = () => {
     // SSO handling: when a user navigates directly to AUTH_LOGIN_PATH, they should see the lakeFS login form.
     // A login strategy is applied only if the user was redirected to AUTH_LOGIN_PATH (with the router.query.redirected flag).
     if (router.query.redirected)  {
+        delete router.query.redirected;
         const loginStrategyPluginRes = pluginManager.loginStrategy.getLoginStrategy(loginConfig);
-        // If default is true, remove the router.query.redirected flag and route to AUTH_LOGIN_PATH to log in via lakeFS (LoginForm).
-        if (error || loginStrategyPluginRes.default) {
-            delete router.query.redirected;
+        // If element is undefined, remove the router.query.redirected flag and route to AUTH_LOGIN_PATH to log in via lakeFS (LoginForm).
+        if (error || loginStrategyPluginRes.element === undefined) {
             router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
         }
-        // If no error and default is false, return the result if the plugin - a component or null.
+        // Return the element (component or null)
         return loginStrategyPluginRes.element;
     }
 

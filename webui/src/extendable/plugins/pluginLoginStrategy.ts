@@ -3,7 +3,6 @@ import { LoginConfig } from "../../pages/auth/login";
 
 export type LoginStrategyResult = {
     element?: React.ReactElement | null;
-    default?: boolean;
 };
 
 export interface PluginLoginStrategy {
