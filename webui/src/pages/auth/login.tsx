@@ -114,7 +114,7 @@ const LoginPage = () => {
     const pluginManager = usePluginManager();
 
     if (loading) {
-        return <Loading message="Loading login configuration..." />;
+        return <Loading />;
     }
 
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
@@ -131,18 +131,14 @@ const LoginPage = () => {
     // SSO handling: when a user navigates directly to AUTH_LOGIN_PATH, they should see the lakeFS login form.
     // A login strategy is applied only if the user was redirected to AUTH_LOGIN_PATH (with the router.query.redirected flag).
     if (router.query.redirected)  {
-        const result = pluginManager.loginStrategy.getLoginStrategy(loginConfig);
-        // 'render' - show the login method selection UI.
-        if (!error && result.type === 'render') {
-            return result.element;
+        const loginStrategyPluginRes = pluginManager.loginStrategy.getLoginStrategy(loginConfig);
+        // If default is true, remove the router.query.redirected flag and route to AUTH_LOGIN_PATH to log in via lakeFS (LoginForm).
+        if (error || loginStrategyPluginRes.default) {
+            delete router.query.redirected;
+            router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
         }
-        // 'redirected' - the login trategy plugin already redirected to the SSO URL so nothing to render.
-        if (!error && result.type === 'redirected') {
-            return null;
-        }
-        // 'none' - remove the router.query.redirected flag and route to AUTH_LOGIN_PATH to log in via lakeFS (LoginForm).
-        delete router.query.redirected;
-        router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
+        // If no error and default is false, return the result if the plugin - a component or null.
+        return loginStrategyPluginRes.element;
     }
 
     // Default: show the lakeFS login form when SSO isn’t configured, or when the user arrives directly at
