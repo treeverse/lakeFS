@@ -132,20 +132,15 @@ const LoginPage = () => {
     // A login strategy is applied only if the user was redirected to AUTH_LOGIN_PATH (with the router.query.redirected flag).
     if (router.query.redirected)  {
         delete router.query.redirected;
-        const loginStrategyPluginRes = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
-        // If element is undefined, remove the router.query.redirected flag and route to AUTH_LOGIN_PATH to log in via lakeFS (LoginForm).
-        // if (error || loginStrategyPluginRes.element === undefined) {
-        //     router.push({pathname: AUTH_LOGIN_PATH, params: {}, query: router.query as Record<string, string>})
-        // }
+        const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
         // Return the element (component or null)
-        if (loginStrategyPluginRes.element !== undefined) {
-            return loginStrategyPluginRes.element;
+        if (loginStrategy.element !== undefined) {
+            return loginStrategy.element;
         }
-
     }
 
-    // Default: show the lakeFS login form when SSO isn’t configured, or when the user arrives directly at
-    // AUTH_LOGIN_PATH (no router.query.redirected flag).
+    // Default: show the lakeFS login form when loginStrategyPlugin.element is undefined or when the user arrives
+    // directly at AUTH_LOGIN_PATH (no router.query.redirected flag).
     return (
         <LoginForm loginConfig={loginConfig}/>
     );
