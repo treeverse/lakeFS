@@ -6,6 +6,7 @@ from lakefs.exceptions import api_exception_handler, ServerException
 
 
 class TestException(ApiException):
+    __test__ = False  # Not a test case
     def __init__(self, status: int, reason: str, body: str):
         super().__init__()
         self.status = status
