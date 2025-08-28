@@ -310,8 +310,12 @@ func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *a
 	)
 }
 
+var testMutex sync.Mutex
+
 func TestLoginOnlyOnce(t *testing.T) {
 	t.Run("login called only once across multiple requests", func(t *testing.T) {
+		testMutex.Lock()
+		defer testMutex.Unlock()
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
 		defer cleanup()
@@ -343,6 +347,8 @@ func TestLoginOnlyOnce(t *testing.T) {
 	// }
 	// func TestNoLoginWhenTokenIsGiven(t *testing.T) {
 	t.Run("no login performed when valid token provided initially", func(t *testing.T) {
+		testMutex.Lock()
+		defer testMutex.Unlock()
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
 		defer cleanup()
@@ -373,6 +379,8 @@ func TestLoginOnlyOnce(t *testing.T) {
 	// }
 	// func TestRealInterceptWithGlobalCache2(t *testing.T) {
 	t.Run("handles login failure gracefully", func(t *testing.T) {
+		testMutex.Lock()
+		defer testMutex.Unlock()
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
 		defer cleanup()
@@ -397,6 +405,8 @@ func TestLoginOnlyOnce(t *testing.T) {
 	// }
 	// func TestRealInterceptWithGlobalCache5(t *testing.T) {
 	t.Run("token cached via callback and reused after provider recreation", func(t *testing.T) {
+		testMutex.Lock()
+		defer testMutex.Unlock()
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
 		defer cleanup()
