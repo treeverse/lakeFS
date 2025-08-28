@@ -1,6 +1,8 @@
 # Changelog
 
-## _Upcoming_
+## 0.16.0
+
+Experiment: compacting commits to enhance performance on Spark.
 
 ## 0.2.5
 
