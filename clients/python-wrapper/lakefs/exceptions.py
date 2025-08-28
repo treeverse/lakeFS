@@ -5,6 +5,7 @@ import http
 import json
 from contextlib import contextmanager
 from typing import Optional, Callable
+import logging
 
 import lakefs_sdk.exceptions
 from urllib3 import HTTPResponse
@@ -31,6 +32,8 @@ class ServerException(LakeFSException):
             try:  # Try to get message from body
                 self.body = json.loads(body)
             except json.JSONDecodeError:
+                logging.debug("failed to decode response body: status (%s), reason (%s), body (%s)",
+                              status, reason, body)
                 self.body = {}
         else:
             self.body = {}
