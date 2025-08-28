@@ -21,20 +21,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
-func resetGlobalState() {
-	tokenLoadOnce = sync.Once{}
-	tokenCacheOnce = sync.Once{}
-	tokenSaveOnce = sync.Once{}
-	cachedToken = nil
-	tokenCache = nil
-
-	homeDir := os.Getenv("HOME")
-	if homeDir != "" {
-		cacheDir := filepath.Join(homeDir, ".lakectl", "cache")
-		os.RemoveAll(cacheDir)
-	}
-}
-
 func TestGetTokenCacheOnce(t *testing.T) {
 	t.Run("creates cache on first call ONLY", func(t *testing.T) {
 		resetGlobalState()
@@ -209,6 +195,19 @@ func TestTokenExpiredWrite(t *testing.T) {
 		token := getTokenOnce()
 		require.Nil(t, token)
 	})
+}
+func resetGlobalState() {
+	tokenLoadOnce = sync.Once{}
+	tokenCacheOnce = sync.Once{}
+	tokenSaveOnce = sync.Once{}
+	cachedToken = nil
+	tokenCache = nil
+
+	homeDir := os.Getenv("HOME")
+	if homeDir != "" {
+		cacheDir := filepath.Join(homeDir, ".lakectl", "cache")
+		os.RemoveAll(cacheDir)
+	}
 }
 
 func setupTestHomeDir(t *testing.T) (cleanup func()) {
