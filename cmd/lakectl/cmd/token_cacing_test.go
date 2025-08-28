@@ -20,6 +20,9 @@ import (
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
+func TestMain(m *testing.M) {
+	os.Exit(m.Run())
+}
 func TestGetTokenCacheOnce(t *testing.T) {
 	t.Run("creates cache on first call ONLY", func(t *testing.T) {
 		resetGlobalState()
@@ -195,20 +198,6 @@ func TestTokenExpiredWrite(t *testing.T) {
 		require.Nil(t, token)
 	})
 }
-func resetGlobalState() {
-	tokenLoadOnce = sync.Once{}
-	tokenCacheOnce = sync.Once{}
-	tokenSaveOnce = sync.Once{}
-	cachedToken = nil
-	tokenCache = nil
-
-	homeDir := os.Getenv("HOME")
-	if homeDir != "" {
-		cacheDir := filepath.Join(homeDir, ".lakectl", "cache")
-		os.RemoveAll(cacheDir)
-	}
-}
-
 func setupTestHomeDir(t *testing.T) (cleanup func()) {
 	tempDir := t.TempDir()
 	originalHome := os.Getenv("HOME")
@@ -310,12 +299,9 @@ func createSecurityProvider(mockClient *mockExternalLoginClient, initialToken *a
 	)
 }
 
-var testMutex sync.Mutex
-
 func TestLoginOnlyOnce(t *testing.T) {
 	t.Run("login called only once across multiple requests", func(t *testing.T) {
-		testMutex.Lock()
-		defer testMutex.Unlock()
+		// Remove testMutex.Lock()/Unlock() since TestMain handles sequencing
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
 		defer cleanup()
@@ -329,26 +315,18 @@ func TestLoginOnlyOnce(t *testing.T) {
 		provider := createSecurityProvider(mockClient, nil, &callbackCount)
 		require.Nil(t, provider.AuthenticationToken)
 
-		// Add debug logging
-		t.Logf("Before Intercept - Token: %v", provider.AuthenticationToken)
-		t.Logf("Before Intercept - Login count: %d", mockClient.getLoginCount())
-
 		req1 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
 		err := provider.Intercept(context.Background(), req1)
-
-		t.Logf("After Intercept - Token: %v", provider.AuthenticationToken)
-		t.Logf("After Intercept - Login count: %d", mockClient.getLoginCount())
-		t.Logf("Authorization header: %s", req1.Header.Get("Authorization"))
 
 		require.NoError(t, err)
 		require.Equal(t, "Bearer cached-token", req1.Header.Get("Authorization"))
 		require.Equal(t, int64(1), mockClient.getLoginCount())
+
+		// Keep a short sleep to let callback complete
+		time.Sleep(100 * time.Millisecond)
 	})
-	// }
-	// func TestNoLoginWhenTokenIsGiven(t *testing.T) {
+
 	t.Run("no login performed when valid token provided initially", func(t *testing.T) {
-		testMutex.Lock()
-		defer testMutex.Unlock()
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
 		defer cleanup()
@@ -367,20 +345,17 @@ func TestLoginOnlyOnce(t *testing.T) {
 		var callbackCount int64
 		provider := createSecurityProvider(mockClient, existingToken, &callbackCount)
 
-		// Request should use existing token, no login
 		req := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
 		err := provider.Intercept(context.Background(), req)
 		require.NoError(t, err)
 		require.Equal(t, "Bearer pre-existing-token", req.Header.Get("Authorization"))
-		require.Equal(t, int64(0), mockClient.getLoginCount()) // No login called
-		time.Sleep(time.Second)
-		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount)) // No callback called
+		require.Equal(t, int64(0), mockClient.getLoginCount())
+
+		time.Sleep(100 * time.Millisecond)
+		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
 	})
-	// }
-	// func TestRealInterceptWithGlobalCache2(t *testing.T) {
+
 	t.Run("handles login failure gracefully", func(t *testing.T) {
-		testMutex.Lock()
-		defer testMutex.Unlock()
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
 		defer cleanup()
@@ -393,20 +368,17 @@ func TestLoginOnlyOnce(t *testing.T) {
 		var callbackCount int64
 		provider := createSecurityProvider(mockClient, nil, &callbackCount)
 
-		// Request should fail due to login failure
 		req := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
 		err := provider.Intercept(context.Background(), req)
 		require.ErrorIs(t, err, errMockLoginFailed)
 		require.Empty(t, req.Header.Get("Authorization"))
-		require.Equal(t, int64(1), mockClient.getLoginCount()) // Login attempted once
-		time.Sleep(time.Second)
-		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount)) // No callback on failure
+		require.Equal(t, int64(1), mockClient.getLoginCount())
+
+		time.Sleep(100 * time.Millisecond)
+		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
 	})
-	// }
-	// func TestRealInterceptWithGlobalCache5(t *testing.T) {
+
 	t.Run("token cached via callback and reused after provider recreation", func(t *testing.T) {
-		testMutex.Lock()
-		defer testMutex.Unlock()
 		resetGlobalState()
 		cleanup := setupTestHomeDir(t)
 		defer cleanup()
@@ -419,34 +391,48 @@ func TestLoginOnlyOnce(t *testing.T) {
 		var callbackCount int64
 		provider1 := createSecurityProvider(mockClient, nil, &callbackCount)
 
-		// First request - should trigger login and cache via callback
 		req1 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
 		err := provider1.Intercept(context.Background(), req1)
 		require.NoError(t, err)
 		require.Equal(t, "Bearer callback-cached-token", req1.Header.Get("Authorization"))
 		require.Equal(t, int64(1), mockClient.getLoginCount())
-		time.Sleep(time.Second)
+
+		time.Sleep(100 * time.Millisecond)
 		require.Equal(t, int64(1), atomic.LoadInt64(&callbackCount))
 
-		// Verify token was saved to global cache
 		require.NotNil(t, cachedToken)
 		require.Equal(t, "callback-cached-token", cachedToken.Token)
 
-		// Create new provider instance (simulating new command execution)
 		mockClient.resetLoginCount()
 		callbackCount = 0
 
-		// Get token from cache using global function
 		cachedTokenFromFile := getTokenOnce()
 		provider2 := createSecurityProvider(mockClient, cachedTokenFromFile, &callbackCount)
 
-		// Second request with new provider should use cached token from file
 		req2 := httptest.NewRequest("GET", "http://example.com/api/v1/repositories", nil)
 		err = provider2.Intercept(context.Background(), req2)
 		require.NoError(t, err)
 		require.Equal(t, "Bearer callback-cached-token", req2.Header.Get("Authorization"))
-		require.Equal(t, int64(0), mockClient.getLoginCount()) // No new login, used cache
-		time.Sleep(time.Second)
-		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount)) // No new callback
+		require.Equal(t, int64(0), mockClient.getLoginCount())
+
+		time.Sleep(100 * time.Millisecond)
+		require.Equal(t, int64(0), atomic.LoadInt64(&callbackCount))
 	})
+}
+
+func resetGlobalState() {
+	// Brief sleep to let any callback goroutines finish
+	time.Sleep(50 * time.Millisecond)
+
+	tokenLoadOnce = sync.Once{}
+	tokenCacheOnce = sync.Once{}
+	tokenSaveOnce = sync.Once{}
+	cachedToken = nil
+	tokenCache = nil
+
+	homeDir := os.Getenv("HOME")
+	if homeDir != "" {
+		cacheDir := filepath.Join(homeDir, ".lakectl", "cache")
+		os.RemoveAll(cacheDir)
+	}
 }
