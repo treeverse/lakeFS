@@ -39,6 +39,7 @@ var (
 	rePreSignURL      = regexp.MustCompile(`https://\S+\?\S+`)
 	reSecretAccessKey = regexp.MustCompile(`secret_access_key: \S{16,128}`)
 	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
+	reJWTToken        = regexp.MustCompile(`"token":"[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"`)
 )
 
 func lakectlLocation() string {
@@ -152,6 +153,7 @@ func sanitize(output string, vars map[string]string) string {
 	s = normalizeShortCommitID(s)
 	s = normalizeAccessKeyID(s)
 	s = normalizeSecretAccessKey(s)
+	s = normalizeJWTToken(s)
 	return s
 }
 
@@ -281,6 +283,10 @@ func normalizeAccessKeyID(output string) string {
 
 func normalizeSecretAccessKey(output string) string {
 	return reSecretAccessKey.ReplaceAllString(output, "secret_access_key: <SECRET_ACCESS_KEY>")
+}
+
+func normalizeJWTToken(output string) string {
+	return reJWTToken.ReplaceAllString(output, `"token":"<TOKEN>"`)
 }
 
 func GetCommitter(t testing.TB) string {
