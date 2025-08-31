@@ -119,7 +119,7 @@ public class Example {
 
 <a id="deleteObject"></a>
 # **deleteObject**
-> deleteObject(repository, branch, path).force(force).execute();
+> deleteObject(repository, branch, path).force(force).noTombstone(noTombstone).execute();
 
 delete object. Missing objects will not return a NotFound error.
 
@@ -170,9 +170,11 @@ public class Example {
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
     Boolean force = false; // Boolean | 
+    Boolean noTombstone = false; // Boolean | reduce number of tombstones when deleting *EXPERIMENTAL*
     try {
       apiInstance.deleteObject(repository, branch, path)
             .force(force)
+            .noTombstone(noTombstone)
             .execute();
     } catch (ApiException e) {
       System.err.println("Exception when calling ObjectsApi#deleteObject");
@@ -193,6 +195,7 @@ public class Example {
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
 | **force** | **Boolean**|  | [optional] [default to false] |
+| **noTombstone** | **Boolean**| reduce number of tombstones when deleting *EXPERIMENTAL* | [optional] [default to false] |
 
 ### Return type
 
@@ -219,7 +222,7 @@ null (empty response body)
 
 <a id="deleteObjects"></a>
 # **deleteObjects**
-> ObjectErrorList deleteObjects(repository, branch, pathList).force(force).execute();
+> ObjectErrorList deleteObjects(repository, branch, pathList).force(force).noTombstone(noTombstone).execute();
 
 delete objects. Missing objects will not return a NotFound error.
 
@@ -270,9 +273,11 @@ public class Example {
     String branch = "branch_example"; // String | 
     PathList pathList = new PathList(); // PathList | 
     Boolean force = false; // Boolean | 
+    Boolean noTombstone = false; // Boolean | reduce number of tombstones when deleting *EXPERIMENTAL*
     try {
       ObjectErrorList result = apiInstance.deleteObjects(repository, branch, pathList)
             .force(force)
+            .noTombstone(noTombstone)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -294,6 +299,7 @@ public class Example {
 | **branch** | **String**|  | |
 | **pathList** | [**PathList**](PathList.md)|  | |
 | **force** | **Boolean**|  | [optional] [default to false] |
+| **noTombstone** | **Boolean**| reduce number of tombstones when deleting *EXPERIMENTAL* | [optional] [default to false] |
 
 ### Return type
 

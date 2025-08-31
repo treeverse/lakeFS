@@ -200,6 +200,8 @@ type SetOptions struct {
 	// SquashMerge causes merge commits to be "squashed", losing parent
 	// information about the merged-from branch.
 	SquashMerge bool
+	// NoTombstone will try to remove entry without setting a tombstone in KV
+	NoTombstone bool
 }
 
 type SetOptionsFunc func(opts *SetOptions)
@@ -239,6 +241,12 @@ func WithHidden(v bool) SetOptionsFunc {
 func WithSquashMerge(v bool) SetOptionsFunc {
 	return func(opts *SetOptions) {
 		opts.SquashMerge = v
+	}
+}
+
+func WithNoTombstone(v bool) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.NoTombstone = v
 	}
 }
 
@@ -1951,9 +1959,13 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 	}
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
+	deleteFunc := g.deleteUnsafe
+	if options.NoTombstone {
+		deleteFunc = g.deleteUnsafeNoTombstone
+	}
 	err = g.safeBranchWrite(ctx, log, repository, branchID,
 		safeBranchWriteOptions{}, func(branch *Branch) error {
-			return g.deleteUnsafe(ctx, repository, key, BranchRecord{branchID, branch})
+			return deleteFunc(ctx, repository, key, BranchRecord{branchID, branch})
 		}, "delete")
 	return err
 }
@@ -1980,9 +1992,13 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 
 	var m *multierror.Error
 	log := g.log(ctx).WithField("operation", "delete_keys")
+	deleteFunc := g.deleteUnsafe
+	if options.NoTombstone {
+		deleteFunc = g.deleteUnsafeNoTombstone
+	}
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
 		for _, key := range keys {
-			err := g.deleteUnsafe(ctx, repository, key, BranchRecord{branchID, branch})
+			err = deleteFunc(ctx, repository, key, BranchRecord{branchID, branch})
 			if err != nil {
 				m = multierror.Append(m, &DeleteError{Key: key, Err: err})
 			}
@@ -2037,6 +2053,60 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	}
 	// err == ErrNotFound, key is nowhere to be found - nothing to do
 	return nil
+}
+
+// deleteUnsafeNoTombstone will try to remove the key from KV without adding a tombstone if possible, under the following conditions:
+// 1. Key is not in committed data
+// 2. Key does not exist in any sealed tokens
+// In any other case, a tombstone will be created. This flow ignores the delete sensor and compaction mechanism.
+// TODO (niro): We should revisit this flow when we decide to implement compaction
+func (g *Graveler) deleteUnsafeNoTombstone(ctx context.Context, repository *RepositoryRecord, key Key, branchRecord BranchRecord) error {
+	g.log(ctx).Info("Using NoTombstone flow")
+	// check key in committed - do we need tombstone?
+	var metaRangeID MetaRangeID
+	if branchRecord.CompactedBaseMetaRangeID != "" {
+		metaRangeID = branchRecord.CompactedBaseMetaRangeID
+	} else {
+		commit, err := g.RefManager.GetCommit(ctx, repository, branchRecord.CommitID)
+		if err != nil {
+			return err
+		}
+		metaRangeID = commit.MetaRangeID
+	}
+
+	_, err := g.CommittedManager.Get(ctx, repository.StorageID, repository.StorageNamespace, metaRangeID, key)
+	if err == nil {
+		// found in committed, set tombstone
+		return g.deleteAndNotify(ctx, repository.RepositoryID, branchRecord, key, false)
+	}
+	if !errors.Is(err, ErrNotFound) {
+		// unknown error
+		return fmt.Errorf("reading from committed: %w", err)
+	}
+
+	//key is not committed - check sealed tokens
+	if branchRecord.StagingToken == "" {
+		return fmt.Errorf("missing staging token: %w", ErrNotFound)
+	}
+	for _, st := range branchRecord.SealedTokens {
+		value, err := g.StagingManager.Get(ctx, st, key)
+		if err != nil {
+			if errors.Is(err, ErrNotFound) { // key not found on sealed token, advance to the next one
+				continue
+			}
+			return err // Unexpected error
+		}
+		// Found in sealed
+		// Check if the last value of the key is tombstone (nil) otherwise set tombstone
+		if value != nil {
+			return g.deleteAndNotify(ctx, repository.RepositoryID, branchRecord, key, false)
+		} else { // nothing to do, latest value is already a tombstone
+			return nil
+		}
+	}
+
+	// Key is not in committed or in sealed tokens - simply drop from staging token
+	return g.StagingManager.DropKey(ctx, branchRecord.StagingToken, key)
 }
 
 // listStagingAreaWithoutCompaction Returns an iterator which is an aggregation of all changes on all the branch's staging area (staging + sealed)

@@ -5424,6 +5424,15 @@ paths:
           default: false
           type: boolean
         style: form
+      - description: reduce number of tombstones when deleting *EXPERIMENTAL*
+        explode: true
+        in: query
+        name: no_tombstone
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
       responses:
         "204":
           description: object deleted successfully
@@ -5666,6 +5675,15 @@ paths:
       - explode: true
         in: query
         name: force
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
+      - description: reduce number of tombstones when deleting *EXPERIMENTAL*
+        explode: true
+        in: query
+        name: no_tombstone
         required: false
         schema:
           default: false
@@ -7695,6 +7713,16 @@ components:
       schema:
         type: string
       style: simple
+    NoTombstone:
+      description: reduce number of tombstones when deleting *EXPERIMENTAL*
+      explode: true
+      in: query
+      name: no_tombstone
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
   responses:
     NotFoundOrNoACL:
       content:

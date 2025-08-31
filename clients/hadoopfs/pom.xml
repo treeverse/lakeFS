@@ -287,7 +287,9 @@ To export to S3:
         <dependency>
             <groupId>io.lakefs</groupId>
             <artifactId>sdk</artifactId>
-            <version>1.53.1</version>
+            <version>0.1.0-SNAPSHOT</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/resources/sdk-0.1.0-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>

@@ -50,7 +50,7 @@ Name | Type | Description  | Required | Notes
 
 ## delete_object
 
-> delete_object(repository, branch, path, force)
+> delete_object(repository, branch, path, force, no_tombstone)
 delete object. Missing objects will not return a NotFound error.
 
 ### Parameters
@@ -62,6 +62,7 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** |  | [required] |
 **path** | **String** | relative to the branch | [required] |
 **force** | Option<**bool**> |  |  |[default to false]
+**no_tombstone** | Option<**bool**> | reduce number of tombstones when deleting *EXPERIMENTAL* |  |[default to false]
 
 ### Return type
 
@@ -81,7 +82,7 @@ Name | Type | Description  | Required | Notes
 
 ## delete_objects
 
-> models::ObjectErrorList delete_objects(repository, branch, path_list, force)
+> models::ObjectErrorList delete_objects(repository, branch, path_list, force, no_tombstone)
 delete objects. Missing objects will not return a NotFound error.
 
 ### Parameters
@@ -93,6 +94,7 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** |  | [required] |
 **path_list** | [**PathList**](PathList.md) |  | [required] |
 **force** | Option<**bool**> |  |  |[default to false]
+**no_tombstone** | Option<**bool**> | reduce number of tombstones when deleting *EXPERIMENTAL* |  |[default to false]
 
 ### Return type
 
