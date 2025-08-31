@@ -64,7 +64,7 @@ export const useAPI = (promise, deps = []) => {
             // they are first redirected to the '/auth/login' endpoint. For users logging in via lakeFS
             // (not via SSO), after successful authentication they will be redirected back to the original endpoint
             // they attempted to access. The redirected flag is set here so it can later be used to properly
-            // handle SSO redirection when SSO login is configured without the login method selection feature.
+            // handle SSO redirection when login via SSO is configured.
             router.push({
                 pathname: loginPathname,
                 query: {next: router.route, redirected: true},

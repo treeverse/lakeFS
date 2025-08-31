@@ -129,8 +129,11 @@ const LoginPage = () => {
         return null;
     }
 
-    // SSO handling: when a user navigates directly to AUTH_LOGIN_PATH, they should see the lakeFS login form.
-    // A login strategy is applied only if the user was redirected to AUTH_LOGIN_PATH (with the router.query.redirected flag).
+    // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
+    // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
+    // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
+    // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
+    // selection page or the default lakeFS login form, since both share the same endpoint.
     if (router.query.redirected)  {
         delete router.query.redirected;
         const pluginManager = usePluginManager();
@@ -141,8 +144,8 @@ const LoginPage = () => {
         }
     }
 
-    // Default: show the lakeFS login form when loginStrategyPlugin.element is undefined or when the user arrives
-    // directly at AUTH_LOGIN_PATH (no router.query.redirected flag).
+    // Default: show the lakeFS login form when the user navigates directly at '/auth/login'
+    // (no router.query.redirected flag) or when loginStrategyPlugin.element is undefined.
     return (
         <LoginForm loginConfig={loginConfig}/>
     );
