@@ -40,7 +40,8 @@ var (
 	reSecretAccessKey = regexp.MustCompile(`secret_access_key: \S{16,128}`)
 	reAccessKeyID     = regexp.MustCompile(`access_key_id: AKIA\S{12,124}`)
 	reJWTToken        = regexp.MustCompile(`"token":"[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"`)
-	reTimestampField  = regexp.MustCompile(`"(?:expiration_time|write_time)":\d+`)
+	reExpirationTime  = regexp.MustCompile(`"expiration_time":\d+`)
+	reWriteTime       = regexp.MustCompile(`"write_time":\d+`)
 )
 
 func lakectlLocation() string {
@@ -291,8 +292,8 @@ func normalizeJWTToken(output string) string {
 	return reJWTToken.ReplaceAllString(output, `"token":"<TOKEN>"`)
 }
 func normalizeTimestampField(output string) string {
-	s := reTimestampField.ReplaceAllString(output, `"expiration_time":<TIMESTAMP>`)
-	s = reTimestampField.ReplaceAllString(s, `"write_time":<TIMESTAMP>`)
+	s := reExpirationTime.ReplaceAllString(output, `"expiration_time":<TIMESTAMP>`)
+	s = reWriteTime.ReplaceAllString(s, `"write_time":<TIMESTAMP>`)
 	return s
 }
 
