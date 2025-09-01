@@ -696,24 +696,71 @@ export const URINavigator = ({
               </>
           )}
 
-          {parts.map((part, i) => {
-            const path =
-              parts
-                .slice(0, i + 1)
-                .map((p) => p.name)
-                .join("/") + "/";
-            const query = { path, ref: reference.id };
-            const edgeElement =
-              isPathToFile && i === parts.length - 1 ? (
-                <span>{part.name}</span>
-              ) : (
-                <>
-                  <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
-                  <strong>{"/"}</strong>
-                </>
-              );
-            return <span key={part.name}>{edgeElement}</span>;
-          })}
+           {/* Breadcrumb overflow logic: show first, last 2, collapse middle into dropdown if needed */}
+           {(() => {
+             const MIN_VISIBLE = 3; // Show at least first and last 2
+             if (parts.length <= MIN_VISIBLE) {
+               return parts.map((part, i) => {
+                 const path = parts.slice(0, i + 1).map((p) => p.name).join("/") + "/";
+                 const query = { path, ref: reference.id };
+                 const edgeElement =
+                   isPathToFile && i === parts.length - 1 ? (
+                     <span>{part.name}</span>
+                   ) : (
+                     <>
+                       <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                       <strong>{"/"}</strong>
+                     </>
+                   );
+                 return <span key={part.name}>{edgeElement}</span>;
+               });
+             }
+             // Collapse middle parts into dropdown
+             const first = parts[0];
+             const lastTwo = parts.slice(-2);
+             const middle = parts.slice(1, -2);
+             const firstPath = first.name + "/";
+             const firstQuery = { path: firstPath, ref: reference.id };
+             return [
+               <span key={first.name}>
+                 <Link href={pathURLBuilder(params, firstQuery)}>{first.name}</Link>
+                 <strong>{"/"}</strong>
+               </span>,
+               <Dropdown key="breadcrumb-dropdown" align="end" className="d-inline mx-1">
+                 <Dropdown.Toggle variant="link" size="sm" style={{padding: 0, verticalAlign: 'baseline'}}>
+                   ...
+                 </Dropdown.Toggle>
+                 <Dropdown.Menu>
+                   {middle.map((part, i) => {
+                     const path = parts.slice(0, i + 2).map((p) => p.name).join("/") + "/";
+                     const query = { path, ref: reference.id };
+                     return (
+                       <Dropdown.Item key={part.name} href={pathURLBuilder(params, query)} as="a">
+                         {part.name}
+                       </Dropdown.Item>
+                     );
+                   })}
+                 </Dropdown.Menu>
+                 <strong>{"/"}</strong>
+               </Dropdown>,
+               ...lastTwo.map((part, i) => {
+                 const idx = parts.length - 2 + i;
+                 const path = parts.slice(0, idx + 1).map((p) => p.name).join("/") + "/";
+                 const query = { path, ref: reference.id };
+                 const edgeElement =
+                   isPathToFile && idx === parts.length - 1 ? (
+                     <span>{part.name}</span>
+                   ) : (
+                     <>
+                       <Link href={pathURLBuilder(params, query)}>{part.name}</Link>
+                       <strong>{"/"}</strong>
+                     </>
+                   );
+                 return <span key={part.name}>{edgeElement}</span>;
+               })
+             ];
+           })()}
+
         </div>
       </div>
       <div className="object-viewer-buttons" style={{ flexShrink: 0 }}>
