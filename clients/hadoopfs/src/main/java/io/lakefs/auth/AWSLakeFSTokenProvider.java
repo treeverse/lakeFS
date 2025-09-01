@@ -63,6 +63,16 @@ public class AWSLakeFSTokenProvider implements LakeFSTokenProvider {
         // initialize a lakeFS api client
 
         this.lakeFSApi = io.lakefs.clients.sdk.Configuration.getDefaultApiClient();
+        
+        // Configure timeouts
+        int connectTimeout = FSConfiguration.getInt(conf, scheme, Constants.CONNECT_TIMEOUT_KEY_SUFFIX, Constants.DEFAULT_CONNECT_TIMEOUT_MS);
+        int readTimeout = FSConfiguration.getInt(conf, scheme, Constants.READ_TIMEOUT_KEY_SUFFIX, Constants.DEFAULT_READ_TIMEOUT_MS);
+        int writeTimeout = FSConfiguration.getInt(conf, scheme, Constants.WRITE_TIMEOUT_KEY_SUFFIX, Constants.DEFAULT_WRITE_TIMEOUT_MS);
+        
+        this.lakeFSApi.setConnectTimeout(connectTimeout);
+        this.lakeFSApi.setReadTimeout(readTimeout);
+        this.lakeFSApi.setWriteTimeout(writeTimeout);
+        
         this.lakeFSApi.addDefaultHeader("X-Lakefs-Client", "lakefs-hadoopfs/" + getClass().getPackage().getImplementationVersion());
         String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
         if (endpoint.endsWith(Constants.SEPARATOR)) {
