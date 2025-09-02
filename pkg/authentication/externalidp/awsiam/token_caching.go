@@ -17,6 +17,7 @@ var ErrInvalidTokenFormat = fmt.Errorf("token format is invalid")
 const (
 	readWriteOwnerOnly        = 0600
 	ReadWriteExecuteOwnerOnly = 0700
+	strLen                    = 8
 )
 
 type TokenCache struct {
@@ -57,7 +58,7 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 		ExpirationTime: *token.TokenExpiration,
 	}
 
-	randomBytes := make([]byte, 8)
+	randomBytes := make([]byte, strLen)
 	if _, err := rand.Read(randomBytes); err != nil {
 		return err
 	}
