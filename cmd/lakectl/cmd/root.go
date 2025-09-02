@@ -732,6 +732,7 @@ func SaveTokenToCache() error {
 	if err := cache.SaveToken(cachedToken); err != nil {
 		return err
 	}
+	tokenLoadOnce = sync.Once{}
 	return nil
 }
 
