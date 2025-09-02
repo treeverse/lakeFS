@@ -26,7 +26,7 @@ type TokenCache struct {
 }
 
 type JWTCache struct {
-	filePath string
+	FilePath string
 }
 
 func NewJWTCache(baseDir, lakectlDir, cacheDir, fileName string) (*JWTCache, error) {
@@ -43,7 +43,7 @@ func NewJWTCache(baseDir, lakectlDir, cacheDir, fileName string) (*JWTCache, err
 	}
 
 	jwtCache := &JWTCache{
-		filePath: filepath.Join(cachePath, fileName),
+		FilePath: filepath.Join(cachePath, fileName),
 	}
 	return jwtCache, nil
 }
@@ -63,7 +63,7 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 		return err
 	}
 	randomSuffix := hex.EncodeToString(randomBytes)
-	tmpFile := fmt.Sprintf("%s.tmp.%s", c.filePath, randomSuffix)
+	tmpFile := fmt.Sprintf("%s.tmp.%s", c.FilePath, randomSuffix)
 	file, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, readWriteOwnerOnly)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 		return err
 	}
 
-	err = os.Rename(tmpFile, c.filePath)
+	err = os.Rename(tmpFile, c.FilePath)
 	if err != nil {
 		os.Remove(tmpFile)
 	}
@@ -90,7 +90,7 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 }
 
 func (c *JWTCache) GetToken() (*apigen.AuthenticationToken, error) {
-	file, err := os.OpenFile(c.filePath, os.O_RDONLY, 0)
+	file, err := os.OpenFile(c.FilePath, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -109,5 +109,5 @@ func (c *JWTCache) GetToken() (*apigen.AuthenticationToken, error) {
 }
 
 func (c *JWTCache) ClearCache() error {
-	return os.Remove(c.filePath)
+	return os.Remove(c.FilePath)
 }
