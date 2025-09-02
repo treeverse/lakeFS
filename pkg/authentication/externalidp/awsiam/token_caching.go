@@ -1,9 +1,10 @@
 package awsiam
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 
@@ -55,7 +56,13 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 		Token:          token.Token,
 		ExpirationTime: *token.TokenExpiration,
 	}
-	tmpFile := fmt.Sprintf("%s.tmp.%d", c.filePath, rand.Int63())
+
+	randomBytes := make([]byte, 8)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return err
+	}
+	randomSuffix := hex.EncodeToString(randomBytes)
+	tmpFile := fmt.Sprintf("%s.tmp.%s", c.filePath, randomSuffix)
 	file, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, readWriteOwnerOnly)
 	if err != nil {
 		return err
@@ -63,11 +70,14 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 
 	err = json.NewEncoder(file).Encode(cache)
 	if err != nil {
+		file.Close()
+		os.Remove(tmpFile)
 		return err
 	}
 
 	err = file.Close()
 	if err != nil {
+		os.Remove(tmpFile)
 		return err
 	}
 
