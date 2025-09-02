@@ -1,11 +1,7 @@
-from typing import Any
-
-from setuptools import setup, find_packages, Command, Distribution, glob
-import os
-import shutil
+from setuptools import setup, find_packages
 
 NAME = "lakefs"
-VERSION = "0.12.0"
+VERSION = "0.13.0"
 # To install the library, run the following
 #
 # python setup.py install
