@@ -41,6 +41,14 @@ public class Constants {
 
     public static final String SESSION_ID = "session_id";
 
+    // Timeout configuration
+    public static final String CONNECT_TIMEOUT_KEY_SUFFIX = "api.connect.timeout.ms";
+    public static final String READ_TIMEOUT_KEY_SUFFIX = "api.read.timeout.ms";
+    public static final String WRITE_TIMEOUT_KEY_SUFFIX = "api.write.timeout.ms";
+    public static final int DEFAULT_CONNECT_TIMEOUT_MS = 10000; // 10 seconds
+    public static final int DEFAULT_READ_TIMEOUT_MS = 30000;    // 30 seconds
+    public static final int DEFAULT_WRITE_TIMEOUT_MS = 30000;   // 30 seconds
+
     public static enum AccessMode {
         SIMPLE,
         PRESIGNED;
