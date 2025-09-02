@@ -1959,10 +1959,11 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 	}
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
-	deleteFunc := g.deleteUnsafe
-	if options.NoTombstone {
-		deleteFunc = g.deleteUnsafeNoTombstone
-	}
+	// deleteFunc := g.deleteUnsafe
+	// if options.NoTombstone {
+	// 	deleteFunc = g.deleteUnsafeNoTombstone
+	// }
+	deleteFunc := g.deleteUnsafeNoTombstone
 	err = g.safeBranchWrite(ctx, log, repository, branchID,
 		safeBranchWriteOptions{}, func(branch *Branch) error {
 			return deleteFunc(ctx, repository, key, BranchRecord{branchID, branch})
@@ -1992,10 +1993,11 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 
 	var m *multierror.Error
 	log := g.log(ctx).WithField("operation", "delete_keys")
-	deleteFunc := g.deleteUnsafe
-	if options.NoTombstone {
-		deleteFunc = g.deleteUnsafeNoTombstone
-	}
+	// deleteFunc := g.deleteUnsafe
+	// if options.NoTombstone {
+	// 	deleteFunc = g.deleteUnsafeNoTombstone
+	// }
+	deleteFunc := g.deleteUnsafeNoTombstone
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
 		for _, key := range keys {
 			err = deleteFunc(ctx, repository, key, BranchRecord{branchID, branch})
@@ -2084,7 +2086,7 @@ func (g *Graveler) deleteUnsafeNoTombstone(ctx context.Context, repository *Repo
 		return fmt.Errorf("reading from committed: %w", err)
 	}
 
-	//key is not committed - check sealed tokens
+	// key is not committed - check sealed tokens
 	if branchRecord.StagingToken == "" {
 		return fmt.Errorf("missing staging token: %w", ErrNotFound)
 	}
