@@ -1,4 +1,4 @@
-package awsiam
+package awsiam_test
 
 import (
 	"encoding/json"
