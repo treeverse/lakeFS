@@ -3,26 +3,24 @@ package awsiam
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
-var ErrCacheExpired = fmt.Errorf("cache expired")
 var ErrFailedToCreateCacheDir = fmt.Errorf("failed to create cache dir")
+var ErrInvalidTokenFormat = fmt.Errorf("token format is invalid")
 
 const (
 	readWriteOwnerOnly        = 0600
 	ReadWriteExecuteOwnerOnly = 0700
-	MaxCacheTime              = time.Hour
 )
 
 type TokenCache struct {
 	Token          string `json:"token"`
 	ExpirationTime int64  `json:"expiration_time"`
-	WriteTime      int64  `json:"write_time"`
 }
 
 type JWTCache struct {
@@ -50,16 +48,14 @@ func NewJWTCache(baseDir, lakectlDir, cacheDir, fileName string) (*JWTCache, err
 
 func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	if token == nil || token.Token == "" || token.TokenExpiration == nil {
-		return nil
+		return ErrInvalidTokenFormat
 	}
 
 	cache := &TokenCache{
 		Token:          token.Token,
 		ExpirationTime: *token.TokenExpiration,
-		WriteTime:      time.Now().Unix(),
 	}
-
-	tmpFile := c.filePath + ".tmp"
+	tmpFile := fmt.Sprintf("%s.tmp.%d", c.filePath, rand.Int63())
 	file, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, readWriteOwnerOnly)
 	if err != nil {
 		return err
@@ -95,11 +91,6 @@ func (c *JWTCache) GetToken() (*apigen.AuthenticationToken, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if cache.WriteTime+int64(MaxCacheTime.Seconds()) <= time.Now().Unix() {
-		return nil, ErrCacheExpired
-	}
-
 	token := &apigen.AuthenticationToken{
 		Token:           cache.Token,
 		TokenExpiration: &cache.ExpirationTime}

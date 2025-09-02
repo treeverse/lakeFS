@@ -66,7 +66,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 		require.NoError(t, err)
 
 		err = cache.SaveToken(nil)
-		require.NoError(t, err)
+		require.ErrorIs(t, err, ErrInvalidTokenFormat)
 
 		// file should not be created
 		_, err = os.Stat(cache.filePath)
@@ -83,7 +83,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 		}
 
 		err = cache.SaveToken(token)
-		require.NoError(t, err)
+		require.ErrorIs(t, err, ErrInvalidTokenFormat)
 
 		// file should not be created
 		_, err = os.Stat(cache.filePath)
@@ -101,7 +101,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 		}
 
 		err = cache.SaveToken(token)
-		require.NoError(t, err)
+		require.ErrorIs(t, err, ErrInvalidTokenFormat)
 
 		// file should not be created due to nil expiration
 		_, err = os.Stat(cache.filePath)
@@ -130,41 +130,6 @@ func TestJWTCacheGetToken(t *testing.T) {
 
 		require.Equal(t, "test-jwt-token", loadedToken.Token)
 		require.Equal(t, expirationTime, *loadedToken.TokenExpiration)
-	})
-
-	t.Run("returns error for expired cache", func(t *testing.T) {
-		tempDir := t.TempDir()
-		cache, err := NewJWTCache(tempDir, ".lakectl", "cache", "lakectl_token_cache.json")
-		require.NoError(t, err)
-
-		expirationTime := time.Now().Add(1 * time.Hour).Unix()
-		token := &apigen.AuthenticationToken{
-			Token:           "test-jwt-token",
-			TokenExpiration: &expirationTime,
-		}
-
-		err = cache.SaveToken(token)
-		require.NoError(t, err)
-
-		// manually modify the cache file to have an old WriteTime
-		oldWriteTime := time.Now().Add(-MaxCacheTime - 1*time.Minute).Unix()
-
-		expiredCache := TokenCache{
-			Token:          "test-jwt-token",
-			ExpirationTime: expirationTime,
-			WriteTime:      oldWriteTime,
-		}
-
-		file, err := os.OpenFile(cache.filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-		require.NoError(t, err)
-		err = json.NewEncoder(file).Encode(expiredCache)
-		require.NoError(t, err)
-		file.Close()
-
-		// Load should return ErrCacheExpired
-		loadedToken, err := cache.GetToken()
-		require.ErrorIs(t, err, ErrCacheExpired)
-		require.Nil(t, loadedToken)
 	})
 
 	t.Run("returns nil when cache file doesn't exist", func(t *testing.T) {

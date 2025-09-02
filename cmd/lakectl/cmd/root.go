@@ -194,7 +194,6 @@ var (
 	tokenLoadOnce       sync.Once
 	tokenCache          *awsiam.JWTCache
 	tokenCacheOnce      sync.Once
-	tokenSaveOnce       sync.Once
 	ErrTokenUnavailable = fmt.Errorf("token is not available")
 )
 
@@ -730,16 +729,10 @@ func SaveTokenToCache() error {
 	if cache == nil || cachedToken == nil {
 		return ErrTokenUnavailable
 	}
-	saveTokenToCacheOnce(cache, cachedToken)
+	if err := cache.SaveToken(cachedToken); err != nil {
+		return err
+	}
 	return nil
-}
-
-func saveTokenToCacheOnce(cache *awsiam.JWTCache, token *apigen.AuthenticationToken) {
-	tokenSaveOnce.Do(func() {
-		if err := cache.SaveToken(token); err != nil {
-			logging.ContextUnavailable().Debugf("Error saving token to cache: %w", err)
-		}
-	})
 }
 
 // isUnknownCommandError checks if the error from ExecuteC is an unknown command error.

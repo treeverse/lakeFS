@@ -84,11 +84,6 @@ func (s *SecurityProviderAWSIAMRole) Intercept(ctx context.Context, req *http.Re
 
 		if s.TokenCacheCallback != nil {
 			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						s.Logger.WithField("panic", r).Debug("token cache callback panicked")
-					}
-				}()
 				s.TokenCacheCallback(token)
 			}()
 		}
