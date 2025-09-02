@@ -278,6 +278,9 @@ func (p *PartitionIterator) Next() bool {
 			p.itr = nil
 			return false
 		}
+		// HACK(barak): we reset the batchSize to 0 after the first scan, to let the underlying
+		// store implementation decide on the best batch size for subsequent scans.
+		p.batchSize = 0
 	}
 	if !p.itr.Next() {
 		return false
