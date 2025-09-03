@@ -702,11 +702,11 @@ func getToken() (*apigen.AuthenticationToken, error) {
 func getTokenCache() *awsiam.JWTCache {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		logging.ContextUnavailable().Debugf("Error getting user homedir: %w", err)
+		logging.ContextUnavailable().WithError(err).Debug("unable to get user homedir")
 	}
 	cache, err := awsiam.NewJWTCache(homeDir, cacheFileName)
 	if err != nil {
-		logging.ContextUnavailable().Debugf("Error creating token cache: %w", err)
+		logging.ContextUnavailable().WithError(err).Debug("unable to create token cache")
 		return nil
 	}
 	return cache
