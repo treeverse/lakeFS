@@ -5,28 +5,24 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 )
 
-var ErrCacheExpired = fmt.Errorf("cache expired")
 var ErrFailedToCreateCacheDir = fmt.Errorf("failed to create cache dir")
+var ErrInvalidTokenFormat = fmt.Errorf("token format is invalid")
 
 const (
-	readWriteOwnerOnly        = 0600
 	ReadWriteExecuteOwnerOnly = 0700
-	MaxCacheTime              = time.Hour
 )
 
 type TokenCache struct {
 	Token          string `json:"token"`
 	ExpirationTime int64  `json:"expiration_time"`
-	WriteTime      int64  `json:"write_time"`
 }
 
 type JWTCache struct {
-	filePath string
+	FilePath string
 }
 
 func NewJWTCache(baseDir, lakectlDir, cacheDir, fileName string) (*JWTCache, error) {
@@ -43,47 +39,51 @@ func NewJWTCache(baseDir, lakectlDir, cacheDir, fileName string) (*JWTCache, err
 	}
 
 	jwtCache := &JWTCache{
-		filePath: filepath.Join(cachePath, fileName),
+		FilePath: filepath.Join(cachePath, fileName),
 	}
 	return jwtCache, nil
 }
 
 func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	if token == nil || token.Token == "" || token.TokenExpiration == nil {
-		return nil
+		return ErrInvalidTokenFormat
 	}
 
 	cache := &TokenCache{
 		Token:          token.Token,
 		ExpirationTime: *token.TokenExpiration,
-		WriteTime:      time.Now().Unix(),
 	}
 
-	tmpFile := c.filePath + ".tmp"
-	file, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, readWriteOwnerOnly)
+	dir, name := filepath.Split(c.FilePath)
+	file, err := os.CreateTemp(dir, name+".*.tmp")
 	if err != nil {
 		return err
 	}
+	tmpFile := file.Name()
 
 	err = json.NewEncoder(file).Encode(cache)
 	if err != nil {
+		file.Close()
+		os.Remove(tmpFile)
 		return err
 	}
 
 	err = file.Close()
 	if err != nil {
+		os.Remove(tmpFile)
 		return err
 	}
 
-	err = os.Rename(tmpFile, c.filePath)
+	err = os.Rename(file.Name(), c.FilePath)
 	if err != nil {
 		os.Remove(tmpFile)
+		return err
 	}
-	return err
+	return nil
 }
 
 func (c *JWTCache) GetToken() (*apigen.AuthenticationToken, error) {
-	file, err := os.OpenFile(c.filePath, os.O_RDONLY, 0)
+	file, err := os.OpenFile(c.FilePath, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -95,11 +95,6 @@ func (c *JWTCache) GetToken() (*apigen.AuthenticationToken, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if cache.WriteTime+int64(MaxCacheTime.Seconds()) <= time.Now().Unix() {
-		return nil, ErrCacheExpired
-	}
-
 	token := &apigen.AuthenticationToken{
 		Token:           cache.Token,
 		TokenExpiration: &cache.ExpirationTime}
@@ -107,5 +102,5 @@ func (c *JWTCache) GetToken() (*apigen.AuthenticationToken, error) {
 }
 
 func (c *JWTCache) ClearCache() error {
-	return os.Remove(c.filePath)
+	return os.Remove(c.FilePath)
 }
