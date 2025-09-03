@@ -1961,7 +1961,7 @@ func (g *Graveler) Delete(ctx context.Context, repository *RepositoryRecord, bra
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "delete"})
 	deleteFunc := g.deleteUnsafe
 	if options.NoTombstone {
-		deleteFunc = g.deleteUnsafeNoTombstone
+		deleteFunc = g.deleteNoTombstoneUnsafe
 	}
 	err = g.safeBranchWrite(ctx, log, repository, branchID,
 		safeBranchWriteOptions{}, func(branch *Branch) error {
@@ -1994,7 +1994,7 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	log := g.log(ctx).WithField("operation", "delete_keys")
 	deleteFunc := g.deleteUnsafe
 	if options.NoTombstone {
-		deleteFunc = g.deleteUnsafeNoTombstone
+		deleteFunc = g.deleteNoTombstoneUnsafe
 	}
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{}, func(branch *Branch) error {
 		for _, key := range keys {
@@ -2055,13 +2055,11 @@ func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecor
 	return nil
 }
 
-// deleteUnsafeNoTombstone will try to remove the key from KV without adding a tombstone if possible, under the following conditions:
+// deleteNoTombstoneUnsafe will try to remove the key from KV without adding a tombstone if possible, under the following conditions:
 // 1. Key is not in committed data
 // 2. Key does not exist in any sealed tokens
 // In any other case, a tombstone will be created. This flow ignores the delete sensor and compaction mechanism.
-// TODO (niro): We should revisit this flow when we decide to implement compaction
-func (g *Graveler) deleteUnsafeNoTombstone(ctx context.Context, repository *RepositoryRecord, key Key, branchRecord BranchRecord) error {
-	g.log(ctx).Info("Using NoTombstone flow")
+func (g *Graveler) deleteNoTombstoneUnsafe(ctx context.Context, repository *RepositoryRecord, key Key, branchRecord BranchRecord) error {
 	// check key in committed - do we need tombstone?
 	var metaRangeID MetaRangeID
 	if branchRecord.CompactedBaseMetaRangeID != "" {
@@ -2084,25 +2082,28 @@ func (g *Graveler) deleteUnsafeNoTombstone(ctx context.Context, repository *Repo
 		return fmt.Errorf("reading from committed: %w", err)
 	}
 
-	//key is not committed - check sealed tokens
+	// key is not committed - check sealed tokens
+	// find first key in sealed tokens, if found based on value
 	if branchRecord.StagingToken == "" {
 		return fmt.Errorf("missing staging token: %w", ErrNotFound)
 	}
 	for _, st := range branchRecord.SealedTokens {
 		value, err := g.StagingManager.Get(ctx, st, key)
+		// iterate to next sealed token if key not found
+		if errors.Is(err, ErrNotFound) {
+			continue
+		}
+		// unknown error
 		if err != nil {
-			if errors.Is(err, ErrNotFound) { // key not found on sealed token, advance to the next one
-				continue
-			}
-			return err // Unexpected error
+			return err
 		}
 		// Found in sealed
-		// Check if the last value of the key is tombstone (nil) otherwise set tombstone
-		if value != nil {
-			return g.deleteAndNotify(ctx, repository.RepositoryID, branchRecord, key, false)
-		} else { // nothing to do, latest value is already a tombstone
+		if value == nil {
+			// nothing to do, latest value is already a tombstone
 			return nil
 		}
+		// found in sealed with value - need to set tombstone
+		return g.deleteAndNotify(ctx, repository.RepositoryID, branchRecord, key, false)
 	}
 
 	// Key is not in committed or in sealed tokens - simply drop from staging token
