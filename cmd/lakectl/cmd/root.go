@@ -183,7 +183,7 @@ const (
 )
 
 const (
-	CacheFileName  = "lakectl_token_cache.json"
+	cacheFileName = "lakectl_token_cache.json"
 )
 
 var (
@@ -703,7 +703,7 @@ func getTokenCache() *awsiam.JWTCache {
 	if err != nil {
 		logging.ContextUnavailable().Debugf("Error getting user homedir: %w", err)
 	}
-	cache, err := awsiam.NewJWTCache(homeDir,  CacheFileName)
+	cache, err := awsiam.NewJWTCache(homeDir, CacheFileName)
 	if err != nil {
 		logging.ContextUnavailable().Debugf("Error creating token cache: %w", err)
 		return nil
