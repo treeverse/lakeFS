@@ -78,9 +78,10 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	}
 
 	err = os.Rename(tmpFile, c.FilePath)
-	if err != nil {
-		os.Remove(tmpFile)
-	}
+if err != nil {
+os.Remove(tmpFile)
+return err
+}
 	return err
 }
 
