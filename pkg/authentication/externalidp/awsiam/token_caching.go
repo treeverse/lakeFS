@@ -58,13 +58,8 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 		ExpirationTime: *token.TokenExpiration,
 	}
 
-	randomBytes := make([]byte, strLen)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return err
-	}
-	randomSuffix := hex.EncodeToString(randomBytes)
-	tmpFile := fmt.Sprintf("%s.tmp.%s", c.FilePath, randomSuffix)
-	file, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, readWriteOwnerOnly)
+	dir, name := filepath.Split(c.FilePath)
+	file, err := os.CreateTemp(dir, name+".*.tmp")
 	if err != nil {
 		return err
 	}
