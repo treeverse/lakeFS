@@ -1,8 +1,6 @@
 package awsiam
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,9 +13,7 @@ var ErrFailedToCreateCacheDir = fmt.Errorf("failed to create cache dir")
 var ErrInvalidTokenFormat = fmt.Errorf("token format is invalid")
 
 const (
-	readWriteOwnerOnly        = 0600
 	ReadWriteExecuteOwnerOnly = 0700
-	strLen                    = 8
 )
 
 type TokenCache struct {
@@ -63,6 +59,7 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 	if err != nil {
 		return err
 	}
+	tmpFile := file.Name()
 
 	err = json.NewEncoder(file).Encode(cache)
 	if err != nil {
@@ -77,12 +74,12 @@ func (c *JWTCache) SaveToken(token *apigen.AuthenticationToken) error {
 		return err
 	}
 
-	err = os.Rename(tmpFile, c.FilePath)
-if err != nil {
-os.Remove(tmpFile)
-return err
-}
-	return err
+	err = os.Rename(file.Name(), c.FilePath)
+	if err != nil {
+		os.Remove(tmpFile)
+		return err
+	}
+	return nil
 }
 
 func (c *JWTCache) GetToken() (*apigen.AuthenticationToken, error) {
