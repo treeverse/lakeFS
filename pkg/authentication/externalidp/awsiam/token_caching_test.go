@@ -15,18 +15,18 @@ import (
 func TestNewJWTCache(t *testing.T) {
 	t.Run("with custom cache dir", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := awsiam.NewJWTCache(tempDir, "lakectl_token_cache.json")
+		cache, err := awsiam.NewJWTCache(tempDir, ".lakectl_token_cache.json")
 		require.NoError(t, err)
 		require.NotEmpty(t, cache)
-		require.Equal(t, filepath.Join(tempDir, ".lakectl", "cache", "lakectl_token_cache.json"), cache.FilePath)
+		require.Equal(t, filepath.Join(tempDir,  ".lakectl_token_cache.json"), cache.FilePath)
 	})
 
 	t.Run("with empty cache dir uses home dir", func(t *testing.T) {
-		cache, err := awsiam.NewJWTCache("", "lakectl_token_cache.json")
+		cache, err := awsiam.NewJWTCache("", ".lakectl_token_cache.json")
 		require.NoError(t, err)
 		require.NotEmpty(t, cache)
 		homeDir, _ := os.UserHomeDir()
-		expectedPath := filepath.Join(homeDir, ".lakectl", "cache", "lakectl_token_cache.json")
+		expectedPath := filepath.Join(homeDir,  ".lakectl_token_cache.json")
 		require.Equal(t, expectedPath, cache.FilePath)
 	})
 }
@@ -34,7 +34,7 @@ func TestNewJWTCache(t *testing.T) {
 func TestJWTCacheSaveToken(t *testing.T) {
 	t.Run("saves valid token successfully", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := awsiam.NewJWTCache(tempDir, "lakectl_token_cache.json")
+		cache, err := awsiam.NewJWTCache(tempDir, ".lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		expirationTime := time.Now().Add(1 * time.Hour).Unix()
@@ -63,7 +63,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 
 	t.Run("handles nil token", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := awsiam.NewJWTCache(tempDir, "lakectl_token_cache.json")
+		cache, err := awsiam.NewJWTCache(tempDir, ".lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		err = cache.SaveToken(nil)
@@ -76,7 +76,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 
 	t.Run("handles token with empty string", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := awsiam.NewJWTCache(tempDir, "lakectl_token_cache.json")
+		cache, err := awsiam.NewJWTCache(tempDir, ".lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		token := &apigen.AuthenticationToken{
@@ -93,7 +93,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 
 	t.Run("handles token without expiration", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := awsiam.NewJWTCache(tempDir, "lakectl_token_cache.json")
+		cache, err := awsiam.NewJWTCache(tempDir, ".lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		token := &apigen.AuthenticationToken{
@@ -113,7 +113,7 @@ func TestJWTCacheSaveToken(t *testing.T) {
 func TestJWTCacheGetToken(t *testing.T) {
 	t.Run("loads valid non-expired token", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := awsiam.NewJWTCache(tempDir, "lakectl_token_cache.json")
+		cache, err := awsiam.NewJWTCache(tempDir, ".lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		expirationTime := time.Now().Add(1 * time.Hour).Unix()
@@ -135,7 +135,7 @@ func TestJWTCacheGetToken(t *testing.T) {
 
 	t.Run("returns nil when cache file doesn't exist", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := awsiam.NewJWTCache(tempDir, "lakectl_token_cache.json")
+		cache, err := awsiam.NewJWTCache(tempDir, ".lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		loadedToken, err := cache.GetToken()
@@ -145,7 +145,7 @@ func TestJWTCacheGetToken(t *testing.T) {
 
 	t.Run("returns error for corrupted cache file", func(t *testing.T) {
 		tempDir := t.TempDir()
-		cache, err := awsiam.NewJWTCache(tempDir, "lakectl_token_cache.json")
+		cache, err := awsiam.NewJWTCache(tempDir, ".lakectl_token_cache.json")
 		require.NoError(t, err)
 
 		// Write invalid JSON
@@ -160,7 +160,7 @@ func TestJWTCacheGetToken(t *testing.T) {
 
 func TestJWTCacheSaveAndLoad(t *testing.T) {
 	tempDir := t.TempDir()
-	cache, err := awsiam.NewJWTCache(tempDir, "lakectl_token_cache.json")
+	cache, err := awsiam.NewJWTCache(tempDir, ".lakectl_token_cache.json")
 	require.NoError(t, err)
 
 	expirationTime := time.Now().Add(30 * time.Minute).Unix()

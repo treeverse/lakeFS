@@ -183,7 +183,7 @@ const (
 )
 
 const (
-	cacheFileName = "lakectl_token_cache.json"
+	cacheFileName = ".lakectl_token_cache.json"
 )
 
 var (
