@@ -703,6 +703,7 @@ func getTokenCache() *awsiam.JWTCache {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		logging.ContextUnavailable().WithError(err).Debug("unable to get user homedir")
+		return nil
 	}
 	cache, err := awsiam.NewJWTCache(homeDir, cacheFileName)
 	if err != nil {

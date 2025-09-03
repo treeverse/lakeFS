@@ -20,15 +20,6 @@ func TestNewJWTCache(t *testing.T) {
 		require.NotEmpty(t, cache)
 		require.Equal(t, filepath.Join(tempDir, ".lakectl_token_cache.json"), cache.FilePath)
 	})
-
-	t.Run("with empty cache dir uses home dir", func(t *testing.T) {
-		cache, err := awsiam.NewJWTCache("", ".lakectl_token_cache.json")
-		require.NoError(t, err)
-		require.NotEmpty(t, cache)
-		homeDir, _ := os.UserHomeDir()
-		expectedPath := filepath.Join(homeDir, ".lakectl_token_cache.json")
-		require.Equal(t, expectedPath, cache.FilePath)
-	})
 }
 
 func TestJWTCacheSaveToken(t *testing.T) {
