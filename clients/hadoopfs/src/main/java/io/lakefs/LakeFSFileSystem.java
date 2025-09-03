@@ -83,8 +83,6 @@ public class LakeFSFileSystem extends FileSystem {
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
     public static final Logger OPERATIONS_LOG = LoggerFactory.getLogger(LakeFSFileSystem.class + "[OPERATION]");
     public static final String LAKEFS_DELETE_BULK_SIZE = "fs.lakefs.delete.bulk_size";
-    // Experimental flag to turn on experimental feature when deleting
-    public static final String LAKEFS_EXPER_NO_TOMBSTONE = "fs.lakefs.experimental.no.tombstone";
 
     private Configuration conf;
     private URI uri;
@@ -514,7 +512,7 @@ public class LakeFSFileSystem extends FileSystem {
         }
         // delete src path
         try {
-            objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath()).noTombstone(conf.getBoolean(LAKEFS_EXPER_NO_TOMBSTONE, false)).execute();
+            objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath()).execute();
         } catch (ApiException e) {
             throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
                     ", failed to delete src", e);
@@ -641,7 +639,7 @@ public class LakeFSFileSystem extends FileSystem {
         ObjectsApi objectsApi = clientFactory.newClient().getObjectsApi();
         return new BulkDeleter(deleteExecutor, new BulkDeleter.Callback() {
                 public ObjectErrorList apply(String repository, String branch, PathList pathList) throws ApiException {
-                    return objectsApi.deleteObjects(repository, branch, pathList).noTombstone(conf.getBoolean(LAKEFS_EXPER_NO_TOMBSTONE, false)).execute();
+                    return objectsApi.deleteObjects(repository, branch, pathList).execute();
                 }
             }, repository, branch, conf.getInt(LAKEFS_DELETE_BULK_SIZE, 0));
     }
@@ -649,7 +647,7 @@ public class LakeFSFileSystem extends FileSystem {
     private boolean deleteHelper(ObjectLocation loc) throws IOException {
         try {
             ObjectsApi objectsApi = lfsClient.getObjectsApi();
-            objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath()).noTombstone(conf.getBoolean(LAKEFS_EXPER_NO_TOMBSTONE, false)).execute();
+            objectsApi.deleteObject(loc.getRepository(), loc.getRef(), loc.getPath()).execute();
         } catch (ApiException e) {
             // This condition mimics s3a behaviour in
             // https://github.com/apache/hadoop/blob/874c055e73293e0f707719ebca1819979fb211d8/hadoop-tools/hadoop-aws/src/main/java/org/apache/hadoop/fs/s3a/S3AFileSystem.java#L619
