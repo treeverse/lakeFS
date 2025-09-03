@@ -188,6 +188,7 @@ const (
 
 var (
 	ErrTokenUnavailable = fmt.Errorf("token is not available")
+	ErrCacheUnavailable = fmt.Errorf("cache is not available")
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -695,7 +696,7 @@ func getToken() (*apigen.AuthenticationToken, error) {
 		}
 		return token, nil
 	}
-	return nil, nil
+	return nil, ErrCacheUnavailable
 }
 
 func getTokenCache() *awsiam.JWTCache {
@@ -713,7 +714,10 @@ func getTokenCache() *awsiam.JWTCache {
 
 func SaveTokenToCache(newToken *apigen.AuthenticationToken) error {
 	cache := getTokenCache()
-	if cache == nil || newToken == nil {
+	if cache == nil {
+		return ErrCacheUnavailable
+	}
+	if newToken == nil {
 		return ErrTokenUnavailable
 	}
 	if err := cache.SaveToken(newToken); err != nil {
