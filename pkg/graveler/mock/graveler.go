@@ -139,6 +139,26 @@ func (mr *MockKeyValueStoreMockRecorder) List(ctx, repository, ref, batchSize in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockKeyValueStore)(nil).List), ctx, repository, ref, batchSize)
 }
 
+// Move mocks base method.
+func (m *MockKeyValueStore) Move(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, srcKey, destKey graveler.Key, opts ...graveler.SetOptionsFunc) (*graveler.Value, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, repository, branchID, srcKey, destKey}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Move", varargs...)
+	ret0, _ := ret[0].(*graveler.Value)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Move indicates an expected call of Move.
+func (mr *MockKeyValueStoreMockRecorder) Move(ctx, repository, branchID, srcKey, destKey interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, repository, branchID, srcKey, destKey}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Move", reflect.TypeOf((*MockKeyValueStore)(nil).Move), varargs...)
+}
+
 // Set mocks base method.
 func (m *MockKeyValueStore) Set(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, value graveler.Value, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()

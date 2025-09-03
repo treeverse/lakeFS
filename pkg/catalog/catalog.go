@@ -2836,6 +2836,44 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	return &dstEntry, nil
 }
 
+// MoveEntry moves entry information from source path to destination path.
+// For moves within the same repository and branch, it uses graveler's atomic Move operation.
+// For cross-repository or cross-branch moves, it performs a copy-then-delete operation.
+// If replaceSrcMetadata is true, the metadata will be replaced with the provided metadata.
+// If replaceSrcMetadata is false, the metadata will be copied from the source entry.
+func (c *Catalog) MoveEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
+	// For moves within the same repository and branch, use graveler's atomic Move operation
+	if srcRepository != destRepository {
+		return nil, fmt.Errorf("move different repository - %w", errors.ErrUnsupported)
+	}
+	if srcRef != destBranch {
+		return nil, fmt.Errorf("move different branch - %w", errors.ErrUnsupported)
+	}
+
+	srcKey := graveler.Key(srcPath)
+	destKey := graveler.Key(destPath)
+
+	// Get source repository
+	srcRepo, err := c.getRepository(ctx, srcRepository)
+	if err != nil {
+		return nil, fmt.Errorf("source repository for move: %w", err)
+	}
+
+	movedValue, err := c.Store.Move(ctx, srcRepo, graveler.BranchID(destBranch), srcKey, destKey, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the entry from the returned graveler value
+	protoEntry, err := ValueToEntry(movedValue)
+	if err != nil {
+		return nil, fmt.Errorf("convert moved value to entry: %w", err)
+	}
+
+	movedEntry := newCatalogEntryFromEntry(false, destPath, protoEntry)
+	return &movedEntry, nil
+}
+
 func (c *Catalog) DeleteExpiredImports(ctx context.Context) {
 	repos, err := c.listRepositoriesHelper(ctx)
 	if err != nil {

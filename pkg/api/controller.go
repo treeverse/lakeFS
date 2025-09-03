@@ -3717,6 +3717,91 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 	writeResponse(w, r, http.StatusCreated, response)
 }
 
+func (c *Controller) MoveObject(w http.ResponseWriter, r *http.Request, body apigen.MoveObjectJSONRequestBody, repository, branch string, params apigen.MoveObjectParams) {
+	srcPath := body.SrcPath
+	destPath := params.DestPath
+	if !c.authorize(w, r, permissions.Node{
+		Type: permissions.NodeTypeAnd,
+		Nodes: []permissions.Node{
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.ReadObjectAction,
+					Resource: permissions.ObjectArn(repository, srcPath),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.WriteObjectAction,
+					Resource: permissions.ObjectArn(repository, destPath),
+				},
+			},
+			{
+				Permission: permissions.Permission{
+					Action:   permissions.DeleteObjectAction,
+					Resource: permissions.ObjectArn(repository, srcPath),
+				},
+			},
+		},
+	}) {
+		return
+	}
+
+	ctx := r.Context()
+	c.LogAction(ctx, "move_object", r, repository, branch, destPath)
+
+	repo, err := c.Catalog.GetRepository(ctx, repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// verify destination is a branch (and exists)
+	branchExists, err := c.Catalog.BranchExists(ctx, repository, branch)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if !branchExists {
+		writeError(w, r, http.StatusNotFound, fmt.Sprintf("branch '%s' not found", branch))
+		return
+	}
+
+	// use destination branch as source if not specified
+	srcRef := swag.StringValue(body.SrcRef)
+	if srcRef == "" {
+		srcRef = branch
+	}
+
+	entry, err := c.Catalog.MoveEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, false, nil, graveler.WithForce(swag.BoolValue(body.Force)))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+
+	// TODO(barak): check if we need to return presigned url for the moved object or the resolve handles that for us
+	qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, block.IdentifierTypeRelative)
+	if err != nil {
+		writeError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+
+	var metadata map[string]string
+	if entry.Metadata != nil {
+		metadata = entry.Metadata
+	} else {
+		metadata = map[string]string{}
+	}
+
+	response := apigen.ObjectStats{
+		Checksum:        entry.Checksum,
+		Mtime:           entry.CreationDate.Unix(),
+		Path:            entry.Path,
+		PathType:        entryTypeObject,
+		PhysicalAddress: qk.Format(),
+		SizeBytes:       swag.Int64(entry.Size),
+		ContentType:     swag.String(entry.ContentType),
+		Metadata:        &apigen.ObjectUserMetadata{AdditionalProperties: metadata},
+	}
+	writeResponse(w, r, http.StatusCreated, response)
+}
+
 func (c *Controller) RevertBranch(w http.ResponseWriter, r *http.Request, body apigen.RevertBranchJSONRequestBody, repository, branch string) {
 	if !c.authorize(w, r, permissions.Node{
 		Permission: permissions.Permission{

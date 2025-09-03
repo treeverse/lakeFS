@@ -171,7 +171,7 @@ func (s *StagingFake) Get(_ context.Context, st graveler.StagingToken, key grave
 	return nil, graveler.ErrNotFound
 }
 
-func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key graveler.Key, value *graveler.Value, _ bool) error {
+func (s *StagingFake) Set(_ context.Context, st graveler.StagingToken, key graveler.Key, value *graveler.Value, _ bool) error {
 	if s.SetErr != nil {
 		return s.SetErr
 	}
@@ -179,6 +179,14 @@ func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key gravel
 		Key:   key,
 		Value: value,
 	}
+	// Also store the value in the Values map for Get operations
+	if s.Values == nil {
+		s.Values = make(map[string]map[string]*graveler.Value)
+	}
+	if s.Values[st.String()] == nil {
+		s.Values[st.String()] = make(map[string]*graveler.Value)
+	}
+	s.Values[st.String()][key.String()] = value
 	return nil
 }
 

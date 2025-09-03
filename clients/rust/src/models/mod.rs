@@ -116,6 +116,8 @@ pub mod object_error;
 pub use self::object_error::ObjectError;
 pub mod object_error_list;
 pub use self::object_error_list::ObjectErrorList;
+pub mod object_move_creation;
+pub use self::object_move_creation::ObjectMoveCreation;
 pub mod object_stage_creation;
 pub use self::object_stage_creation::ObjectStageCreation;
 pub mod object_stats;

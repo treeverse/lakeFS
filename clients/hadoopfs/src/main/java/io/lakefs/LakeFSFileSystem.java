@@ -50,6 +50,7 @@ import io.lakefs.clients.sdk.RepositoriesApi;
 import io.lakefs.clients.sdk.model.Commit;
 import io.lakefs.clients.sdk.model.CommitCreation;
 import io.lakefs.clients.sdk.model.ObjectCopyCreation;
+import io.lakefs.clients.sdk.model.ObjectMoveCreation;
 import io.lakefs.clients.sdk.model.ObjectErrorList;
 import io.lakefs.clients.sdk.model.ObjectStageCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
@@ -501,23 +502,15 @@ public class LakeFSFileSystem extends FileSystem {
         //TODO (Tals): Can we add metadata? we currently don't have an API to get the metadata of an object.
 
         try {
-            ObjectCopyCreation creationReq = new ObjectCopyCreation()
+            ObjectMoveCreation moveReq = new ObjectMoveCreation()
                     .srcRef(srcObjectLoc.getRef())
                     .srcPath(srcObjectLoc.getPath());
-            objects.copyObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
-                               creationReq).execute();
+            objects.moveObject(dstObjectLoc.getRepository(), dstObjectLoc.getRef(), dstObjectLoc.getPath(),
+                               moveReq).execute();
         } catch (ApiException e) {
             throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
-                    ", call to copyObject failed", e);
+                    ", call to moveObject failed", e);
         }
-        // delete src path
-        try {
-            objects.deleteObject(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), srcObjectLoc.getPath()).execute();
-        } catch (ApiException e) {
-            throw translateException("renameObject: src:" + srcStatus.getPath() + ", dst: " + dst +
-                    ", failed to delete src", e);
-        }
-        addDeletedMaybeCompact(srcObjectLoc.getRepository(), srcObjectLoc.getRef(), 1);
         return true;
     }
 

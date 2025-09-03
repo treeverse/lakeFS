@@ -413,6 +413,21 @@ components:
           type: boolean
           default: false
 
+    ObjectMoveCreation:
+      type: object
+      required:
+        - src_path
+      properties:
+        src_path:
+          type: string
+          description: path of the moved object relative to the ref
+        src_ref:
+          type: string
+          description: a reference, if empty uses the provided branch as ref
+        force:
+          type: boolean
+          default: false
+
     ObjectStageCreation:
       type: object
       required:
@@ -5243,6 +5258,56 @@ paths:
       responses:
         201:
           description: Copy object response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObjectStats"
+        400:
+          $ref: "#/components/responses/ValidationError"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        429:
+          description: too many requests
+        default:
+          $ref: "#/components/responses/ServerError"
+
+  /repositories/{repository}/branches/{branch}/objects/move:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        description: destination branch for the move
+      - in: query
+        name: dest_path
+        description: destination path relative to the branch
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - objects
+      operationId: moveObject
+      summary: move an object from one path to another
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectMoveCreation"
+      responses:
+        201:
+          description: Move object response
           content:
             application/json:
               schema:

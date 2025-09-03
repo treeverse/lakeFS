@@ -5792,6 +5792,83 @@ paths:
       - objects
       x-content-type: application/json
       x-accepts: application/json
+  /repositories/{repository}/branches/{branch}/objects/move:
+    post:
+      operationId: moveObject
+      parameters:
+      - explode: false
+        in: path
+        name: repository
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: destination branch for the move
+        explode: false
+        in: path
+        name: branch
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: destination path relative to the branch
+        explode: true
+        in: query
+        name: dest_path
+        required: true
+        schema:
+          type: string
+        style: form
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectMoveCreation'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectStats'
+          description: Move object response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Validation Error
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Resource Not Found
+        "429":
+          description: too many requests
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Internal Server Error
+      summary: move an object from one path to another
+      tags:
+      - objects
+      x-content-type: application/json
+      x-accepts: application/json
   /repositories/{repository}/refs/{ref}/objects/stat:
     get:
       operationId: statObject
@@ -8104,6 +8181,24 @@ components:
       properties:
         src_path:
           description: path of the copied object relative to the ref
+          type: string
+        src_ref:
+          description: "a reference, if empty uses the provided branch as ref"
+          type: string
+        force:
+          default: false
+          type: boolean
+      required:
+      - src_path
+      type: object
+    ObjectMoveCreation:
+      example:
+        force: false
+        src_path: src_path
+        src_ref: src_ref
+      properties:
+        src_path:
+          description: path of the moved object relative to the ref
           type: string
         src_ref:
           description: "a reference, if empty uses the provided branch as ref"

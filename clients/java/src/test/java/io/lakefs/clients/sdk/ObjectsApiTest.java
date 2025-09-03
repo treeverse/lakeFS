@@ -18,6 +18,7 @@ import io.lakefs.clients.sdk.model.Error;
 import java.io.File;
 import io.lakefs.clients.sdk.model.ObjectCopyCreation;
 import io.lakefs.clients.sdk.model.ObjectErrorList;
+import io.lakefs.clients.sdk.model.ObjectMoveCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.ObjectStatsList;
 import io.lakefs.clients.sdk.model.PathList;
@@ -164,6 +165,22 @@ public class ObjectsApiTest {
                 .amount(amount)
                 .delimiter(delimiter)
                 .prefix(prefix)
+                .execute();
+        // TODO: test validations
+    }
+
+    /**
+     * move an object from one path to another
+     *
+     * @throws ApiException if the Api call fails
+     */
+    @Test
+    public void moveObjectTest() throws ApiException {
+        String repository = null;
+        String branch = null;
+        String destPath = null;
+        ObjectMoveCreation objectMoveCreation = null;
+        ObjectStats response = api.moveObject(repository, branch, destPath, objectMoveCreation)
                 .execute();
         // TODO: test validations
     }

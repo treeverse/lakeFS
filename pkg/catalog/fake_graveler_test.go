@@ -137,6 +137,19 @@ func (g *FakeGraveler) DeleteBatch(ctx context.Context, repository *graveler.Rep
 	return nil
 }
 
+func (g *FakeGraveler) Move(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, srcKey graveler.Key, destKey graveler.Key, _ ...graveler.SetOptionsFunc) (*graveler.Value, error) {
+	if g.Err != nil {
+		return nil, g.Err
+	}
+	// Simulate move by first getting the source value, then setting it at destination, then deleting source
+	if value, exists := g.KeyValue[string(srcKey)]; exists {
+		g.KeyValue[string(destKey)] = value
+		delete(g.KeyValue, string(srcKey))
+		return value, nil
+	}
+	return nil, graveler.ErrNotFound
+}
+
 func (g *FakeGraveler) List(_ context.Context, _ *graveler.RepositoryRecord, _ graveler.Ref, _ int) (graveler.ValueIterator, error) {
 	if g.Err != nil {
 		return nil, g.Err

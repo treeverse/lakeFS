@@ -609,6 +609,9 @@ type KeyValueStore interface {
 	// DeleteBatch delete values from repository / branch by batch of keys
 	DeleteBatch(ctx context.Context, repository *RepositoryRecord, branchID BranchID, keys []Key, opts ...SetOptionsFunc) error
 
+	// Move atomically moves a value from srcKey to destKey on repository / branch and returns the moved value
+	Move(ctx context.Context, repository *RepositoryRecord, branchID BranchID, srcKey Key, destKey Key, opts ...SetOptionsFunc) (*Value, error)
+
 	// List lists values on repository / ref
 	List(ctx context.Context, repository *RepositoryRecord, ref Ref, batchSize int) (ValueIterator, error)
 }
@@ -1992,6 +1995,39 @@ func (g *Graveler) DeleteBatch(ctx context.Context, repository *RepositoryRecord
 	return err
 }
 
+// Move atomically moves a value from srcKey to destKey on repository / branch.
+// The operation is atomic: if any part fails, no changes are made.
+// Returns the moved value.
+func (g *Graveler) Move(ctx context.Context, repository *RepositoryRecord, branchID BranchID, srcKey Key, destKey Key, opts ...SetOptionsFunc) (*Value, error) {
+	isProtected, err := g.protectedBranchesManager.IsBlocked(ctx, repository, branchID, BranchProtectionBlockedAction_STAGING_WRITE)
+	if err != nil {
+		return nil, err
+	}
+	if isProtected {
+		return nil, ErrWriteToProtectedBranch
+	}
+
+	options := NewSetOptions(opts)
+	if repository.ReadOnly && !options.Force {
+		return nil, ErrReadOnlyRepository
+	}
+
+	log := g.log(ctx).WithFields(logging.Fields{
+		"srcKey":    srcKey,
+		"destKey":   destKey,
+		"operation": "move",
+	})
+
+	var movedValue *Value
+	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
+		var moveErr error
+		movedValue, moveErr = g.moveUnsafe(ctx, repository, srcKey, destKey, BranchRecord{branchID, branch})
+		return moveErr
+	}, "move")
+
+	return movedValue, err
+}
+
 func (g *Graveler) deleteUnsafe(ctx context.Context, repository *RepositoryRecord, key Key, branchRecord BranchRecord) error {
 	// First attempt to update on staging token
 	err := g.deleteAndNotify(ctx, repository.RepositoryID, branchRecord, key, true)
@@ -2053,6 +2089,111 @@ func (g *Graveler) listStagingAreaWithoutCompaction(ctx context.Context, b *Bran
 	}
 	itrs := append([]ValueIterator{it}, g.listSealedTokens(ctx, b, batchSize)...)
 	return NewCombinedIterator(itrs...), nil
+}
+
+func (g *Graveler) moveUnsafe(ctx context.Context, repository *RepositoryRecord, srcKey Key, destKey Key, branchRecord BranchRecord) (*Value, error) {
+	// First, get the source value from staging
+	srcValue, err := g.StagingManager.Get(ctx, branchRecord.StagingToken, srcKey)
+	if err != nil {
+		// report error only if it is not ErrNotFound
+		// if not found in staging, try to get from committed
+		if !errors.Is(err, ErrNotFound) {
+			return nil, fmt.Errorf("get source value from staging for move: %w", err)
+		}
+		// Try to get from committed
+		var metaRangeID MetaRangeID
+		if branchRecord.CompactedBaseMetaRangeID != "" {
+			metaRangeID = branchRecord.CompactedBaseMetaRangeID
+		} else {
+			commit, err := g.RefManager.GetCommit(ctx, repository, branchRecord.CommitID)
+			if err != nil {
+				return nil, fmt.Errorf("get commit for move: %w", err)
+			}
+			metaRangeID = commit.MetaRangeID
+		}
+
+		srcValue, err = g.CommittedManager.Get(ctx, repository.StorageID, repository.StorageNamespace, metaRangeID, srcKey)
+		if err != nil {
+			return nil, fmt.Errorf("get source for move: %w", err)
+		}
+
+		err = g.StagingManager.Set(ctx, branchRecord.StagingToken, destKey, srcValue, false)
+		if err != nil {
+			return nil, fmt.Errorf("set destination value for move: %w", err)
+		}
+
+		err = g.deleteNoTombstoneUnsafe(ctx, repository, srcKey, branchRecord)
+		if err != nil {
+			return nil, fmt.Errorf("delete source key for move: %w", err)
+		}
+		return srcValue, nil
+	}
+
+	// Set the value at the destination key
+	err = g.StagingManager.Set(ctx, branchRecord.StagingToken, destKey, srcValue, false)
+	if err != nil {
+		return nil, fmt.Errorf("set destination value for move: %w", err)
+	}
+
+	// Delete the source key
+	err = g.StagingManager.DropKey(ctx, branchRecord.StagingToken, srcKey)
+	if err != nil {
+		return nil, fmt.Errorf("delete source key for move: %w", err)
+	}
+	return srcValue, nil
+}
+
+// deleteNoTombstoneUnsafe will try to remove the key from KV without adding a tombstone if possible, under the following conditions:
+// 1. Key is not in committed data
+// 2. Key does not exist in any sealed tokens
+// In any other case, a tombstone will be created. This flow ignores the delete sensor and compaction mechanism.
+func (g *Graveler) deleteNoTombstoneUnsafe(ctx context.Context, repository *RepositoryRecord, key Key, branchRecord BranchRecord) error {
+	// check key in committed - do we need tombstone?
+	var metaRangeID MetaRangeID
+	if branchRecord.CompactedBaseMetaRangeID != "" {
+		metaRangeID = branchRecord.CompactedBaseMetaRangeID
+	} else {
+		commit, err := g.RefManager.GetCommit(ctx, repository, branchRecord.CommitID)
+		if err != nil {
+			return err
+		}
+		metaRangeID = commit.MetaRangeID
+	}
+
+	_, err := g.CommittedManager.Get(ctx, repository.StorageID, repository.StorageNamespace, metaRangeID, key)
+	if err == nil {
+		// found in committed, set tombstone
+		return g.deleteAndNotify(ctx, repository.RepositoryID, branchRecord, key, false)
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return fmt.Errorf("reading from committed: %w", err)
+	}
+
+	// key is not committed - check sealed tokens
+	if branchRecord.StagingToken == "" {
+		return fmt.Errorf("missing staging token: %w", ErrNotFound)
+	}
+	// find key in sealed tokens
+	for _, st := range branchRecord.SealedTokens {
+		value, err := g.StagingManager.Get(ctx, st, key)
+		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				// key not found on sealed token, advance to the next one
+				continue
+			}
+			return fmt.Errorf("delete tombstone get key: %w", err)
+		}
+		// Found in sealed
+		// Check if the last value of the key is tombstone (nil) otherwise set tombstone
+		if value == nil {
+			// nothing to do, latest value is already a tombstone
+			return nil
+		}
+		return g.deleteAndNotify(ctx, repository.RepositoryID, branchRecord, key, false)
+	}
+
+	// Key is not in committed or in sealed tokens - simply drop from staging token
+	return g.StagingManager.DropKey(ctx, branchRecord.StagingToken, key)
 }
 
 func (g *Graveler) listSealedTokens(ctx context.Context, b *Branch, batchSize int) []ValueIterator {

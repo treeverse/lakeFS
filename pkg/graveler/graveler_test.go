@@ -2175,6 +2175,106 @@ func TestGravelerDelete(t *testing.T) {
 	}
 }
 
+func TestGravelerMove(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	ctx := context.Background()
+
+	t.Run("successful move", func(t *testing.T) {
+		// Setup test data
+		srcKey := graveler.Key("source_key")
+		destKey := graveler.Key("dest_key")
+		value := &graveler.Value{
+			Identity: []byte("test-identity"),
+			Data:     []byte("test-data"),
+		}
+
+		// Setup mocks - simpler approach by first setting up the source value properly
+		committedMgr := &testutil.CommittedFake{}
+		stagingMgr := &testutil.StagingFake{
+			Values: map[string]map[string]*graveler.Value{
+				"token": {},
+			},
+		}
+		refMgr := &testutil.RefsFake{
+			Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token"},
+			Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
+		}
+
+		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
+
+		// First set the source value
+		err := store.Set(ctx, repository, "branch-1", srcKey, *value)
+		require.NoError(t, err)
+
+		// Verify the source value was set using the LastSetValueRecord
+		require.NotNil(t, stagingMgr.LastSetValueRecord)
+		require.Equal(t, srcKey, stagingMgr.LastSetValueRecord.Key)
+		require.Equal(t, value.Data, stagingMgr.LastSetValueRecord.Value.Data)
+
+		// Perform move
+		movedValue, err := store.Move(ctx, repository, "branch-1", srcKey, destKey)
+		require.NoError(t, err)
+		require.NotNil(t, movedValue)
+		require.Equal(t, value.Data, movedValue.Data)
+		require.Equal(t, value.Identity, movedValue.Identity)
+
+		// After move, the last set operation should be the tombstone for the source key
+		require.NotNil(t, stagingMgr.LastSetValueRecord)
+		require.Equal(t, srcKey, stagingMgr.LastSetValueRecord.Key)
+		require.Nil(t, stagingMgr.LastSetValueRecord.Value, "source key should be tombstoned (nil value)")
+	})
+
+	t.Run("move non-existent key", func(t *testing.T) {
+		srcKey := graveler.Key("non_existent")
+		destKey := graveler.Key("dest_key")
+
+		// Setup mocks with no source value
+		committedMgr := &testutil.CommittedFake{
+			Err: graveler.ErrNotFound,
+		}
+		stagingMgr := &testutil.StagingFake{
+			Err: graveler.ErrNotFound,
+		}
+		refMgr := &testutil.RefsFake{
+			RefType: graveler.ReferenceTypeBranch,
+			Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token"},
+			Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
+		}
+
+		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
+
+		// Perform move - should fail
+		movedValue, err := store.Move(ctx, repository, "branch-1", srcKey, destKey)
+		require.Error(t, err)
+		require.Nil(t, movedValue)
+		require.Contains(t, err.Error(), "get source value for move")
+	})
+
+	t.Run("move with protected branch", func(t *testing.T) {
+		srcKey := graveler.Key("source_key")
+		destKey := graveler.Key("dest_key")
+
+		// Setup protected branch manager that blocks
+		protectedBranchesMgr := mock.NewMockProtectedBranchesManager(ctrl)
+		protectedBranchesMgr.EXPECT().IsBlocked(gomock.Any(), gomock.Any(), gomock.Any(), graveler.BranchProtectionBlockedAction_STAGING_WRITE).Return(true, nil)
+
+		committedMgr := &testutil.CommittedFake{}
+		stagingMgr := &testutil.StagingFake{}
+		refMgr := &testutil.RefsFake{
+			RefType: graveler.ReferenceTypeBranch,
+			Branch:  &graveler.Branch{CommitID: "c1", StagingToken: "token"},
+			Commits: map[graveler.CommitID]*graveler.Commit{"c1": {}},
+		}
+
+		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, protectedBranchesMgr)
+
+		// Perform move - should fail due to protection
+		movedValue, err := store.Move(ctx, repository, "branch-1", srcKey, destKey)
+		require.ErrorIs(t, err, graveler.ErrWriteToProtectedBranch)
+		require.Nil(t, movedValue)
+	})
+}
+
 func TestGraveler_PrepareCommitHook(t *testing.T) {
 	// prepare graveler
 	const expectedRangeID = graveler.MetaRangeID("expectedRangeID")

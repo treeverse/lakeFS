@@ -31,6 +31,7 @@ import io.lakefs.clients.sdk.model.Error;
 import java.io.File;
 import io.lakefs.clients.sdk.model.ObjectCopyCreation;
 import io.lakefs.clients.sdk.model.ObjectErrorList;
+import io.lakefs.clients.sdk.model.ObjectMoveCreation;
 import io.lakefs.clients.sdk.model.ObjectStats;
 import io.lakefs.clients.sdk.model.ObjectStatsList;
 import io.lakefs.clients.sdk.model.PathList;
@@ -1666,6 +1667,218 @@ public class ObjectsApi {
      */
     public APIlistObjectsRequest listObjects(String repository, String ref) {
         return new APIlistObjectsRequest(repository, ref);
+    }
+    private okhttp3.Call moveObjectCall(String repository, String branch, String destPath, ObjectMoveCreation objectMoveCreation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = objectMoveCreation;
+
+        // create path and map variables
+        String localVarPath = "/repositories/{repository}/branches/{branch}/objects/move"
+            .replace("{" + "repository" + "}", localVarApiClient.escapeString(repository.toString()))
+            .replace("{" + "branch" + "}", localVarApiClient.escapeString(branch.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (destPath != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("dest_path", destPath));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "basic_auth", "cookie_auth", "oidc_auth", "saml_auth", "jwt_token" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call moveObjectValidateBeforeCall(String repository, String branch, String destPath, ObjectMoveCreation objectMoveCreation, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'repository' is set
+        if (repository == null) {
+            throw new ApiException("Missing the required parameter 'repository' when calling moveObject(Async)");
+        }
+
+        // verify the required parameter 'branch' is set
+        if (branch == null) {
+            throw new ApiException("Missing the required parameter 'branch' when calling moveObject(Async)");
+        }
+
+        // verify the required parameter 'destPath' is set
+        if (destPath == null) {
+            throw new ApiException("Missing the required parameter 'destPath' when calling moveObject(Async)");
+        }
+
+        // verify the required parameter 'objectMoveCreation' is set
+        if (objectMoveCreation == null) {
+            throw new ApiException("Missing the required parameter 'objectMoveCreation' when calling moveObject(Async)");
+        }
+
+        return moveObjectCall(repository, branch, destPath, objectMoveCreation, _callback);
+
+    }
+
+
+    private ApiResponse<ObjectStats> moveObjectWithHttpInfo(String repository, String branch, String destPath, ObjectMoveCreation objectMoveCreation) throws ApiException {
+        okhttp3.Call localVarCall = moveObjectValidateBeforeCall(repository, branch, destPath, objectMoveCreation, null);
+        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    private okhttp3.Call moveObjectAsync(String repository, String branch, String destPath, ObjectMoveCreation objectMoveCreation, final ApiCallback<ObjectStats> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = moveObjectValidateBeforeCall(repository, branch, destPath, objectMoveCreation, _callback);
+        Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+
+    public class APImoveObjectRequest {
+        private final String repository;
+        private final String branch;
+        private final String destPath;
+        private final ObjectMoveCreation objectMoveCreation;
+
+        private APImoveObjectRequest(String repository, String branch, String destPath, ObjectMoveCreation objectMoveCreation) {
+            this.repository = repository;
+            this.branch = branch;
+            this.destPath = destPath;
+            this.objectMoveCreation = objectMoveCreation;
+        }
+
+        /**
+         * Build call for moveObject
+         * @param _callback ApiCallback API callback
+         * @return Call to execute
+         * @throws ApiException If fail to serialize the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> Move object response </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
+            return moveObjectCall(repository, branch, destPath, objectMoveCreation, _callback);
+        }
+
+        /**
+         * Execute moveObject request
+         * @return ObjectStats
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> Move object response </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ObjectStats execute() throws ApiException {
+            ApiResponse<ObjectStats> localVarResp = moveObjectWithHttpInfo(repository, branch, destPath, objectMoveCreation);
+            return localVarResp.getData();
+        }
+
+        /**
+         * Execute moveObject request with HTTP info returned
+         * @return ApiResponse&lt;ObjectStats&gt;
+         * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> Move object response </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public ApiResponse<ObjectStats> executeWithHttpInfo() throws ApiException {
+            return moveObjectWithHttpInfo(repository, branch, destPath, objectMoveCreation);
+        }
+
+        /**
+         * Execute moveObject request (asynchronously)
+         * @param _callback The callback to be executed when the API call finishes
+         * @return The request call
+         * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+         * @http.response.details
+         <table summary="Response Details" border="1">
+            <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+            <tr><td> 201 </td><td> Move object response </td><td>  -  </td></tr>
+            <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+            <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+            <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+            <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+            <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+            <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+         </table>
+         */
+        public okhttp3.Call executeAsync(final ApiCallback<ObjectStats> _callback) throws ApiException {
+            return moveObjectAsync(repository, branch, destPath, objectMoveCreation, _callback);
+        }
+    }
+
+    /**
+     * move an object from one path to another
+     * 
+     * @param repository  (required)
+     * @param branch destination branch for the move (required)
+     * @param destPath destination path relative to the branch (required)
+     * @param objectMoveCreation  (required)
+     * @return APImoveObjectRequest
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Move object response </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Validation Error </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Resource Not Found </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> too many requests </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> Internal Server Error </td><td>  -  </td></tr>
+     </table>
+     */
+    public APImoveObjectRequest moveObject(String repository, String branch, String destPath, ObjectMoveCreation objectMoveCreation) {
+        return new APImoveObjectRequest(repository, branch, destPath, objectMoveCreation);
     }
     private okhttp3.Call statObjectCall(String repository, String ref, String path, Boolean userMetadata, Boolean presign, final ApiCallback _callback) throws ApiException {
         String basePath = null;

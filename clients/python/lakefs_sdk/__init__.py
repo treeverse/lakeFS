@@ -108,6 +108,7 @@ from lakefs_sdk.models.meta_range_creation_response import MetaRangeCreationResp
 from lakefs_sdk.models.object_copy_creation import ObjectCopyCreation
 from lakefs_sdk.models.object_error import ObjectError
 from lakefs_sdk.models.object_error_list import ObjectErrorList
+from lakefs_sdk.models.object_move_creation import ObjectMoveCreation
 from lakefs_sdk.models.object_stage_creation import ObjectStageCreation
 from lakefs_sdk.models.object_stats import ObjectStats
 from lakefs_sdk.models.object_stats_list import ObjectStatsList

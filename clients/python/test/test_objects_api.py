@@ -76,6 +76,13 @@ class TestObjectsApi(unittest.TestCase):
         """
         pass
 
+    def test_move_object(self) -> None:
+        """Test case for move_object
+
+        move an object from one path to another  # noqa: E501
+        """
+        pass
+
     def test_stat_object(self) -> None:
         """Test case for stat_object
 
