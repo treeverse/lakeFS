@@ -14,6 +14,8 @@ var ErrInvalidTokenFormat = fmt.Errorf("token format is invalid")
 
 const (
 	ReadWriteExecuteOwnerOnly = 0700
+	LakectlDirName            = ".lakectl"
+	CacheDirName              = "cache"
 )
 
 type TokenCache struct {
@@ -25,7 +27,7 @@ type JWTCache struct {
 	FilePath string
 }
 
-func NewJWTCache(baseDir, lakectlDir, cacheDir, fileName string) (*JWTCache, error) {
+func NewJWTCache(baseDir, fileName string) (*JWTCache, error) {
 	if baseDir == "" {
 		var err error
 		baseDir, err = os.UserHomeDir()
@@ -33,7 +35,7 @@ func NewJWTCache(baseDir, lakectlDir, cacheDir, fileName string) (*JWTCache, err
 			return nil, err
 		}
 	}
-	cachePath := filepath.Join(baseDir, lakectlDir, cacheDir)
+	cachePath := filepath.Join(baseDir, LakectlDirName, CacheDirName)
 	if err := os.MkdirAll(cachePath, ReadWriteExecuteOwnerOnly); err != nil {
 		return nil, ErrFailedToCreateCacheDir
 	}

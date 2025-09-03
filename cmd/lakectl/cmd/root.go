@@ -12,7 +12,6 @@ import (
 	"reflect"
 	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -185,15 +184,9 @@ const (
 
 const (
 	CacheFileName  = "lakectl_token_cache.json"
-	LakectlDirName = ".lakectl"
-	CacheDirName   = "cache"
 )
 
 var (
-	cachedToken         *apigen.AuthenticationToken
-	tokenLoadOnce       sync.Once
-	tokenCache          *awsiam.JWTCache
-	tokenCacheOnce      sync.Once
 	ErrTokenUnavailable = fmt.Errorf("token is not available")
 )
 
@@ -654,15 +647,17 @@ func getClient() *apigen.ClientWithResponses {
 
 func CreateTokenCacheCallback() awsiam.TokenCacheCallback {
 	return func(newToken *apigen.AuthenticationToken) {
-		cachedToken = newToken
-		if err := SaveTokenToCache(); err != nil {
+		if err := SaveTokenToCache(newToken); err != nil {
 			logging.ContextUnavailable().Debugf("error saving token to cache: %w", err)
 		}
 	}
 }
 
 func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
-	token := getTokenOnce()
+	token, err := getToken()
+	if err != nil {
+		logging.ContextUnavailable().Debugf("no token available in cache: %w", err)
+	}
 
 	tokenCacheCallback := CreateTokenCacheCallback()
 
@@ -680,7 +675,6 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string)
 		DieErr(err)
 	}
 	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
-
 	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(
 		awsIAMparams,
 		logging.ContextUnavailable(),
@@ -692,47 +686,39 @@ func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string)
 	return []apigen.ClientOption{awsAuthProvider}
 }
 
-func getTokenOnce() *apigen.AuthenticationToken {
-	tokenLoadOnce.Do(func() {
-		cache := getTokenCacheOnce()
-		var err error
-		if cache != nil {
-			if token, err := cache.GetToken(); err == nil {
-				cachedToken = token
-				return
-			}
-			logging.ContextUnavailable().Debugf("Error loading token from cache: %w", err)
+func getToken() (*apigen.AuthenticationToken, error) {
+	cache := getTokenCache()
+	if cache != nil {
+		token, err := cache.GetToken()
+		if err != nil {
+			return nil, err
 		}
-	})
-	return cachedToken
+		return token, nil
+	}
+	return nil, nil
 }
 
-func getTokenCacheOnce() *awsiam.JWTCache {
-	tokenCacheOnce.Do(func() {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			logging.ContextUnavailable().Debugf("Error getting user homedir: %w", err)
-		}
-		cache, err := awsiam.NewJWTCache(homeDir, LakectlDirName, CacheDirName, CacheFileName)
-		if err != nil {
-			logging.ContextUnavailable().Debugf("Error creating token cache: %w", err)
-			tokenCache = nil
-		} else {
-			tokenCache = cache
-		}
-	})
-	return tokenCache
+func getTokenCache() *awsiam.JWTCache {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		logging.ContextUnavailable().Debugf("Error getting user homedir: %w", err)
+	}
+	cache, err := awsiam.NewJWTCache(homeDir,  CacheFileName)
+	if err != nil {
+		logging.ContextUnavailable().Debugf("Error creating token cache: %w", err)
+		return nil
+	}
+	return cache
 }
 
-func SaveTokenToCache() error {
-	cache := getTokenCacheOnce()
-	if cache == nil || cachedToken == nil {
+func SaveTokenToCache(newToken *apigen.AuthenticationToken) error {
+	cache := getTokenCache()
+	if cache == nil || newToken == nil {
 		return ErrTokenUnavailable
 	}
-	if err := cache.SaveToken(cachedToken); err != nil {
+	if err := cache.SaveToken(newToken); err != nil {
 		return err
 	}
-	tokenLoadOnce = sync.Once{}
 	return nil
 }
 
