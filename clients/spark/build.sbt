@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.16.0"
+lazy val projectVersion = "0.17.0-ben-el-demo"
 version := projectVersion
 lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
@@ -107,7 +107,7 @@ s3Upload / mappings := Seq(
   (assembly / assemblyOutputPath).value ->
     s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
 )
-s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com"
+s3Upload / s3Host := "benel-public-test.s3.amazonaws.com"
 s3Upload / s3Progress := true
 
 assembly / assemblyMergeStrategy := {
