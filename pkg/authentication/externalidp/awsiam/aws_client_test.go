@@ -1,4 +1,4 @@
-package awsiam
+package awsiam_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/stretchr/testify/require"
+	"github.com/treeverse/lakefs/pkg/authentication/externalidp/awsiam"
 )
 
 type mockCredentialsProvider struct {
@@ -37,7 +38,7 @@ func TestPresignGetCallerIdentityFromAuthParams(t *testing.T) {
 	}
 	stsClient := sts.NewFromConfig(cfg)
 
-	params := &IAMAuthParams{
+	params := &awsiam.IAMAuthParams{
 		TokenRequestHeaders: map[string]string{
 			"X-Custom-Test": "true",
 			"a-nice-header": "yes-please",
@@ -45,7 +46,7 @@ func TestPresignGetCallerIdentityFromAuthParams(t *testing.T) {
 		URLPresignTTL: time.Duration(numSeconds) * time.Second,
 	}
 
-	presignedURL, err := PresignGetCallerIdentityFromAuthParams(context.Background(), params, stsClient)
+	presignedURL, err := awsiam.PresignGetCallerIdentityFromAuthParams(context.Background(), params, stsClient)
 	require.NoError(t, err)
 	u, err := url.Parse(presignedURL)
 	require.NoError(t, err)
@@ -67,15 +68,15 @@ func TestPresignGetCallerIdentityFromAuthParams(t *testing.T) {
 func TestNewIAMAuthParams(t *testing.T) {
 	thirteenM := 13 * time.Minute
 	nineM := 9 * time.Minute
-	params := NewIAMAuthParams("")
-	require.Equal(t, params.TokenTTL, DefaultTokenTTL)
-	require.Equal(t, params.RefreshInterval, DefaultRefreshInterval)
-	require.Equal(t, params.TokenRequestHeaders[HostServerIDHeader], "")
+	params := awsiam.NewIAMAuthParams("")
+	require.Equal(t, params.TokenTTL, awsiam.DefaultTokenTTL)
+	require.Equal(t, params.RefreshInterval, awsiam.DefaultRefreshInterval)
+	require.Equal(t, params.TokenRequestHeaders[awsiam.HostServerIDHeader], "")
 
 	newheaders := map[string]string{"header": "hallo"}
-	newparams := NewIAMAuthParams("host", WithRefreshInterval(thirteenM), WithTokenTTL(nineM), WithTokenRequestHeaders(newheaders))
+	newparams := awsiam.NewIAMAuthParams("host", awsiam.WithRefreshInterval(thirteenM), awsiam.WithTokenTTL(nineM), awsiam.WithTokenRequestHeaders(newheaders))
 	require.Equal(t, newparams.TokenTTL, nineM)
 	require.Equal(t, newparams.RefreshInterval, thirteenM)
-	require.NotContains(t, newparams.TokenRequestHeaders[HostServerIDHeader], "host")
+	require.NotContains(t, newparams.TokenRequestHeaders[awsiam.HostServerIDHeader], "host")
 	require.Equal(t, newparams.TokenRequestHeaders["header"], "hallo")
 }

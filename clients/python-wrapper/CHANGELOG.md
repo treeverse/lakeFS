@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v0.13.0
+
+:new: What's new:
+
+- Add support for tags in transactions (#9334)
+- Log responses in case of body decoding errors (#9471)
+
 ## v0.12.0
 
 :new: What's new:

@@ -83,14 +83,7 @@ func (s *SecurityProviderAWSIAMRole) Intercept(ctx context.Context, req *http.Re
 		s.Logger.WithField("expiry", time.Unix(*s.AuthenticationToken.TokenExpiration, 0)).Debug("success renewing session token")
 
 		if s.TokenCacheCallback != nil {
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						s.Logger.WithField("panic", r).Debug("token cache callback panicked")
-					}
-				}()
-				s.TokenCacheCallback(token)
-			}()
+			go s.TokenCacheCallback(token)
 		}
 	}
 	req.Header.Set("Authorization", "Bearer "+s.AuthenticationToken.Token)
