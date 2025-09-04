@@ -3263,39 +3263,45 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 	const content = "hello world this is my awesome content"
 
 	t.Run("delete object", func(t *testing.T) {
-		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), repo, branch)
-		verifyResponseOK(t, resp, err)
+		for _, noTombstone := range []bool{false, true} {
+			t.Run(fmt.Sprintf("no_tombstone=%t", noTombstone), func(t *testing.T) {
+				objKey := "foo/bar-" + strconv.FormatBool(noTombstone)
+				resp, err := uploadObjectHelper(t, ctx, clt, objKey, strings.NewReader(content), repo, branch)
+				verifyResponseOK(t, resp, err)
 
-		sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
-		if sizeBytes != 38 {
-			t.Fatalf("expected 38 bytes to be written, got back %d", sizeBytes)
-		}
+				sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
+				if sizeBytes != 38 {
+					t.Fatalf("expected 38 bytes to be written, got back %d", sizeBytes)
+				}
 
-		// download it
-		rresp, err := clt.GetObjectWithResponse(ctx, repo, branch, &apigen.GetObjectParams{Path: "foo/bar"})
-		verifyResponseOK(t, rresp, err)
-		result := string(rresp.Body)
-		if len(result) != 38 {
-			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
-		}
-		etag := rresp.HTTPResponse.Header.Get("ETag")
-		const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
-		if etag != httputil.ETag(expectedEtag) {
-			t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
-		}
+				// download it
+				rresp, err := clt.GetObjectWithResponse(ctx, repo, branch, &apigen.GetObjectParams{Path: objKey})
+				verifyResponseOK(t, rresp, err)
+				result := string(rresp.Body)
+				if len(result) != 38 {
+					t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
+				}
+				etag := rresp.HTTPResponse.Header.Get("ETag")
+				const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
+				if etag != httputil.ETag(expectedEtag) {
+					t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
+				}
 
-		// delete it
-		delResp, err := clt.DeleteObjectWithResponse(ctx, repo, branch, &apigen.DeleteObjectParams{Path: "foo/bar"})
-		verifyResponseOK(t, delResp, err)
+				// delete it
+				delNoTombstone := apigen.NoTombstone(noTombstone)
+				delResp, err := clt.DeleteObjectWithResponse(ctx, repo, branch, &apigen.DeleteObjectParams{Path: objKey, NoTombstone: &delNoTombstone})
+				verifyResponseOK(t, delResp, err)
 
-		// get it
-		statResp, err := clt.StatObjectWithResponse(ctx, repo, branch, &apigen.StatObjectParams{Path: "foo/bar"})
-		testutil.Must(t, err)
-		if statResp == nil {
-			t.Fatal("StatObject missing response")
-		}
-		if statResp.JSON404 == nil {
-			t.Fatalf("expected file to be gone now")
+				// get it
+				statResp, err := clt.StatObjectWithResponse(ctx, repo, branch, &apigen.StatObjectParams{Path: objKey})
+				testutil.Must(t, err)
+				if statResp == nil {
+					t.Fatal("StatObject missing response")
+				}
+				if statResp.JSON404 == nil {
+					t.Fatalf("expected file to be gone now")
+				}
+			})
 		}
 	})
 

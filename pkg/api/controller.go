@@ -698,7 +698,10 @@ func (c *Controller) DeleteObjects(w http.ResponseWriter, r *http.Request, body 
 	}
 
 	// batch delete the entries we allow to delete
-	delErr := c.Catalog.DeleteEntries(ctx, repository, branch, pathsToDelete, graveler.WithForce(swag.BoolValue(params.Force)), graveler.WithNoTombstone(swag.BoolValue((*bool)(params.NoTombstone))))
+	delErr := c.Catalog.DeleteEntries(ctx, repository, branch, pathsToDelete,
+		graveler.WithForce(swag.BoolValue(params.Force)),
+		graveler.WithNoTombstone(swag.BoolValue((*bool)(params.NoTombstone))),
+	)
 	delErrs := graveler.NewMapDeleteErrors(delErr)
 	for _, objectPath := range pathsToDelete {
 		// set err to the specific error when possible
@@ -3369,7 +3372,10 @@ func (c *Controller) DeleteObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	ctx := r.Context()
 	c.LogAction(ctx, "delete_object", r, repository, branch, "")
-	err := c.Catalog.DeleteEntry(ctx, repository, branch, params.Path, graveler.WithForce(swag.BoolValue(params.Force)), graveler.WithNoTombstone(swag.BoolValue((*bool)(params.NoTombstone))))
+	err := c.Catalog.DeleteEntry(ctx, repository, branch, params.Path,
+		graveler.WithForce(swag.BoolValue(params.Force)),
+		graveler.WithNoTombstone(swag.BoolValue((*bool)(params.NoTombstone))),
+	)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
