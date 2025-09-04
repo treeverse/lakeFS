@@ -32,8 +32,9 @@ func (w *Walker) Walk(_ context.Context, storageURI *url.URL, op block.WalkOptio
 	defer w.adapter.mutex.RUnlock()
 
 	// Extract the prefix from the storageURI
+	rawPath := block.RawPathFromURI(storageURI)
 	const schemePrefix = block.BlockstoreTypeMem + "://"
-	prefix := schemePrefix + storageURI.Host + "/" + strings.TrimLeft(storageURI.Path, "/")
+	prefix := schemePrefix + storageURI.Host + "/" + strings.TrimLeft(rawPath, "/")
 
 	// basePath is the path relative to which the walk is done
 	var basePath string
