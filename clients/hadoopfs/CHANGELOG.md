@@ -2,7 +2,8 @@
 
 ## 0.17.0
 
-* Support 'fs.lakefs.experimental.no.tombstone' (bool) experimental deleteObject(s) with minimal tombstones
+* Support setting lakeFS SDK timeouts using `fs.lakefs.api.connect.timeout.ms`, `fs.lakefs.api.read.timeout.ms` and `fs.lakefs.api.write.timeout.ms` respectively
+* Support `fs.lakefs.delete.objects.with.no.tombstone` (bool) experimental deleteObject(s) with minimal tombstones
 * Updated lakeFS SDK to 1.67.0
 
 ## 0.16.0
