@@ -32,7 +32,7 @@ jobs:
           mkdir -p ~/.sbt
           cat << EOS > ~/.sbt/credentials
           realm=Amazon S3
-          host=treeverse-clients-us-east.s3.amazonaws.com
+          host=benel-public-test.s3.amazonaws.com
           user=${AWS_ACCESS_KEY_ID}
           password=${AWS_SECRET_ACCESS_KEY}
           EOS
@@ -50,6 +50,12 @@ jobs:
           PGP_SECRET: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
           SONATYPE_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+      - name: Ben-El test - Who am I in AWS (debug)
+        run: aws sts get-caller-identity
+        env:
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - name: SBT release (Maven Central, AWS)
         run: make publish-scala
         env:                    # Some credentials required in this step, some in previous.

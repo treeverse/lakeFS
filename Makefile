@@ -5,7 +5,7 @@ NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
 UID_GID := $(shell id -u):$(shell id -g)
 
-CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
+CLIENT_JARS_BUCKET="s3://benel-public-test/"
 
 # https://openapi-generator.tech
 OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.4
@@ -302,7 +302,7 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 .PHONY: publish-scala
 publish-scala: ## sbt publish spark client jars to Maven Central and to s3 bucket
 	cd clients/spark && sbt 'assembly; publishSigned; s3Upload; sonaRelease'
-	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
+	# aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
 .PHONY: publish-lakefsfs-test
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
