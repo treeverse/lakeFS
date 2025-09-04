@@ -62,7 +62,7 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** |  | [required] |
 **path** | **String** | relative to the branch | [required] |
 **force** | Option<**bool**> |  |  |[default to false]
-**no_tombstone** | Option<**bool**> | reduce number of tombstones when deleting *EXPERIMENTAL* |  |[default to false]
+**no_tombstone** | Option<**bool**> | delete entry without tombstone when possible *EXPERIMENTAL* |  |[default to false]
 
 ### Return type
 
@@ -94,7 +94,7 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** |  | [required] |
 **path_list** | [**PathList**](PathList.md) |  | [required] |
 **force** | Option<**bool**> |  |  |[default to false]
-**no_tombstone** | Option<**bool**> | reduce number of tombstones when deleting *EXPERIMENTAL* |  |[default to false]
+**no_tombstone** | Option<**bool**> | delete entry without tombstone when possible *EXPERIMENTAL* |  |[default to false]
 
 ### Return type
 

@@ -233,7 +233,7 @@ class ObjectsApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def delete_object(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], force : Optional[StrictBool] = None, no_tombstone : Annotated[Optional[StrictBool], Field(description="reduce number of tombstones when deleting *EXPERIMENTAL*")] = None, **kwargs) -> None:  # noqa: E501
+    def delete_object(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], force : Optional[StrictBool] = None, no_tombstone : Annotated[Optional[StrictBool], Field(description="delete entry without tombstone when possible *EXPERIMENTAL*")] = None, **kwargs) -> None:  # noqa: E501
         """delete object. Missing objects will not return a NotFound error.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -250,7 +250,7 @@ class ObjectsApi:
         :type path: str
         :param force:
         :type force: bool
-        :param no_tombstone: reduce number of tombstones when deleting *EXPERIMENTAL*
+        :param no_tombstone: delete entry without tombstone when possible *EXPERIMENTAL*
         :type no_tombstone: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
@@ -270,7 +270,7 @@ class ObjectsApi:
         return self.delete_object_with_http_info(repository, branch, path, force, no_tombstone, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def delete_object_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], force : Optional[StrictBool] = None, no_tombstone : Annotated[Optional[StrictBool], Field(description="reduce number of tombstones when deleting *EXPERIMENTAL*")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def delete_object_with_http_info(self, repository : StrictStr, branch : StrictStr, path : Annotated[StrictStr, Field(..., description="relative to the branch")], force : Optional[StrictBool] = None, no_tombstone : Annotated[Optional[StrictBool], Field(description="delete entry without tombstone when possible *EXPERIMENTAL*")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """delete object. Missing objects will not return a NotFound error.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -287,7 +287,7 @@ class ObjectsApi:
         :type path: str
         :param force:
         :type force: bool
-        :param no_tombstone: reduce number of tombstones when deleting *EXPERIMENTAL*
+        :param no_tombstone: delete entry without tombstone when possible *EXPERIMENTAL*
         :type no_tombstone: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
@@ -401,7 +401,7 @@ class ObjectsApi:
             _request_auth=_params.get('_request_auth'))
 
     @validate_arguments
-    def delete_objects(self, repository : StrictStr, branch : StrictStr, path_list : PathList, force : Optional[StrictBool] = None, no_tombstone : Annotated[Optional[StrictBool], Field(description="reduce number of tombstones when deleting *EXPERIMENTAL*")] = None, **kwargs) -> ObjectErrorList:  # noqa: E501
+    def delete_objects(self, repository : StrictStr, branch : StrictStr, path_list : PathList, force : Optional[StrictBool] = None, no_tombstone : Annotated[Optional[StrictBool], Field(description="delete entry without tombstone when possible *EXPERIMENTAL*")] = None, **kwargs) -> ObjectErrorList:  # noqa: E501
         """delete objects. Missing objects will not return a NotFound error.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -418,7 +418,7 @@ class ObjectsApi:
         :type path_list: PathList
         :param force:
         :type force: bool
-        :param no_tombstone: reduce number of tombstones when deleting *EXPERIMENTAL*
+        :param no_tombstone: delete entry without tombstone when possible *EXPERIMENTAL*
         :type no_tombstone: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
@@ -438,7 +438,7 @@ class ObjectsApi:
         return self.delete_objects_with_http_info(repository, branch, path_list, force, no_tombstone, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def delete_objects_with_http_info(self, repository : StrictStr, branch : StrictStr, path_list : PathList, force : Optional[StrictBool] = None, no_tombstone : Annotated[Optional[StrictBool], Field(description="reduce number of tombstones when deleting *EXPERIMENTAL*")] = None, **kwargs) -> ApiResponse:  # noqa: E501
+    def delete_objects_with_http_info(self, repository : StrictStr, branch : StrictStr, path_list : PathList, force : Optional[StrictBool] = None, no_tombstone : Annotated[Optional[StrictBool], Field(description="delete entry without tombstone when possible *EXPERIMENTAL*")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """delete objects. Missing objects will not return a NotFound error.  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
@@ -455,7 +455,7 @@ class ObjectsApi:
         :type path_list: PathList
         :param force:
         :type force: bool
-        :param no_tombstone: reduce number of tombstones when deleting *EXPERIMENTAL*
+        :param no_tombstone: delete entry without tombstone when possible *EXPERIMENTAL*
         :type no_tombstone: bool
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional

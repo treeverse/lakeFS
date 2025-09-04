@@ -98,7 +98,7 @@ components:
       schema:
         type: boolean
         default: false
-      description: reduce number of tombstones when deleting *EXPERIMENTAL*
+      description: delete entry without tombstone when possible *EXPERIMENTAL*
 
   responses:
     NotFoundOrNoACL:

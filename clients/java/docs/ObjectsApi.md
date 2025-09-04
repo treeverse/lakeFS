@@ -170,7 +170,7 @@ public class Example {
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
     Boolean force = false; // Boolean | 
-    Boolean noTombstone = false; // Boolean | reduce number of tombstones when deleting *EXPERIMENTAL*
+    Boolean noTombstone = false; // Boolean | delete entry without tombstone when possible *EXPERIMENTAL*
     try {
       apiInstance.deleteObject(repository, branch, path)
             .force(force)
@@ -195,7 +195,7 @@ public class Example {
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
 | **force** | **Boolean**|  | [optional] [default to false] |
-| **noTombstone** | **Boolean**| reduce number of tombstones when deleting *EXPERIMENTAL* | [optional] [default to false] |
+| **noTombstone** | **Boolean**| delete entry without tombstone when possible *EXPERIMENTAL* | [optional] [default to false] |
 
 ### Return type
 
@@ -273,7 +273,7 @@ public class Example {
     String branch = "branch_example"; // String | 
     PathList pathList = new PathList(); // PathList | 
     Boolean force = false; // Boolean | 
-    Boolean noTombstone = false; // Boolean | reduce number of tombstones when deleting *EXPERIMENTAL*
+    Boolean noTombstone = false; // Boolean | delete entry without tombstone when possible *EXPERIMENTAL*
     try {
       ObjectErrorList result = apiInstance.deleteObjects(repository, branch, pathList)
             .force(force)
@@ -299,7 +299,7 @@ public class Example {
 | **branch** | **String**|  | |
 | **pathList** | [**PathList**](PathList.md)|  | |
 | **force** | **Boolean**|  | [optional] [default to false] |
-| **noTombstone** | **Boolean**| reduce number of tombstones when deleting *EXPERIMENTAL* | [optional] [default to false] |
+| **noTombstone** | **Boolean**| delete entry without tombstone when possible *EXPERIMENTAL* | [optional] [default to false] |
 
 ### Return type
 

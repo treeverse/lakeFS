@@ -409,7 +409,7 @@ public class ObjectsApi {
 
         /**
          * Set noTombstone
-         * @param noTombstone reduce number of tombstones when deleting *EXPERIMENTAL* (optional, default to false)
+         * @param noTombstone delete entry without tombstone when possible *EXPERIMENTAL* (optional, default to false)
          * @return APIdeleteObjectRequest
          */
         public APIdeleteObjectRequest noTombstone(Boolean noTombstone) {
@@ -632,7 +632,7 @@ public class ObjectsApi {
 
         /**
          * Set noTombstone
-         * @param noTombstone reduce number of tombstones when deleting *EXPERIMENTAL* (optional, default to false)
+         * @param noTombstone delete entry without tombstone when possible *EXPERIMENTAL* (optional, default to false)
          * @return APIdeleteObjectsRequest
          */
         public APIdeleteObjectsRequest noTombstone(Boolean noTombstone) {

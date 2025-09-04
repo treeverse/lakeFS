@@ -203,7 +203,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | 
     path = 'path_example' # str | relative to the branch
     force = False # bool |  (optional) (default to False)
-    no_tombstone = False # bool | reduce number of tombstones when deleting *EXPERIMENTAL* (optional) (default to False)
+    no_tombstone = False # bool | delete entry without tombstone when possible *EXPERIMENTAL* (optional) (default to False)
 
     try:
         # delete object. Missing objects will not return a NotFound error.
@@ -223,7 +223,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  | 
  **path** | **str**| relative to the branch | 
  **force** | **bool**|  | [optional] [default to False]
- **no_tombstone** | **bool**| reduce number of tombstones when deleting *EXPERIMENTAL* | [optional] [default to False]
+ **no_tombstone** | **bool**| delete entry without tombstone when possible *EXPERIMENTAL* | [optional] [default to False]
 
 ### Return type
 
@@ -321,7 +321,7 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | 
     path_list = lakefs_sdk.PathList() # PathList | 
     force = False # bool |  (optional) (default to False)
-    no_tombstone = False # bool | reduce number of tombstones when deleting *EXPERIMENTAL* (optional) (default to False)
+    no_tombstone = False # bool | delete entry without tombstone when possible *EXPERIMENTAL* (optional) (default to False)
 
     try:
         # delete objects. Missing objects will not return a NotFound error.
@@ -343,7 +343,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  | 
  **path_list** | [**PathList**](PathList.md)|  | 
  **force** | **bool**|  | [optional] [default to False]
- **no_tombstone** | **bool**| reduce number of tombstones when deleting *EXPERIMENTAL* | [optional] [default to False]
+ **no_tombstone** | **bool**| delete entry without tombstone when possible *EXPERIMENTAL* | [optional] [default to False]
 
 ### Return type
 

@@ -5424,7 +5424,7 @@ paths:
           default: false
           type: boolean
         style: form
-      - description: reduce number of tombstones when deleting *EXPERIMENTAL*
+      - description: delete entry without tombstone when possible *EXPERIMENTAL*
         explode: true
         in: query
         name: no_tombstone
@@ -5680,7 +5680,7 @@ paths:
           default: false
           type: boolean
         style: form
-      - description: reduce number of tombstones when deleting *EXPERIMENTAL*
+      - description: delete entry without tombstone when possible *EXPERIMENTAL*
         explode: true
         in: query
         name: no_tombstone
@@ -7714,7 +7714,7 @@ components:
         type: string
       style: simple
     NoTombstone:
-      description: reduce number of tombstones when deleting *EXPERIMENTAL*
+      description: delete entry without tombstone when possible *EXPERIMENTAL*
       explode: true
       in: query
       name: no_tombstone
