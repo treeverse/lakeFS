@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.17.0
+
+* Support 'fs.lakefs.experimental.no.tombstone' (bool) experimental deleteObject(s) with minimal tombstones
+* Updated lakeFS SDK to 1.67.0
+
 ## 0.16.0
 
 Experiment: compacting commits to enhance performance on Spark.
