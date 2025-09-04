@@ -83,7 +83,7 @@ public class LakeFSFileSystem extends FileSystem {
     public static final Logger LOG = LoggerFactory.getLogger(LakeFSFileSystem.class);
     public static final Logger OPERATIONS_LOG = LoggerFactory.getLogger(LakeFSFileSystem.class + "[OPERATION]");
     public static final String LAKEFS_DELETE_BULK_SIZE = "fs.lakefs.delete.bulk_size";
-    public static final String LAKEFS_EXPER_NO_TOMBSTONE = "fs.lakefs.experimental.no.tombstone"; // Experimental feature to delete object with no-tombstone if possible
+    public static final String LAKEFS_DELETE_OBJECT_NO_TOMBSTONE = " fs.lakefs.delete.object.no.tombstone"; // Experimental feature to delete object with no-tombstone if possible
 
     private Configuration conf;
     private URI uri;
@@ -176,7 +176,7 @@ public class LakeFSFileSystem extends FileSystem {
         setConf(conf);
 
         listAmount = FSConfiguration.getInt(conf, uri.getScheme(), LIST_AMOUNT_KEY_SUFFIX, DEFAULT_LIST_AMOUNT);
-        deleteObjectNoTombstone = conf.getBoolean(LAKEFS_EXPER_NO_TOMBSTONE, false);
+        deleteObjectNoTombstone = conf.getBoolean(LAKEFS_DELETE_OBJECT_NO_TOMBSTONE, false);
         String accessModeConf = FSConfiguration.get(conf, uri.getScheme(), ACCESS_MODE_KEY_SUFFIX);
         accessMode = AccessMode.valueOf(StringUtils.defaultIfBlank(accessModeConf, AccessMode.SIMPLE.toString()).toUpperCase());
         if (accessMode == AccessMode.PRESIGNED) {
