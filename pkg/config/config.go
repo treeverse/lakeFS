@@ -154,6 +154,7 @@ type Database struct {
 		AWSSecretAccessKey SecureString  `mapstructure:"aws_secret_access_key"`
 		UseIAMAuth         bool          `mapstructure:"use_iam_auth"`
 		ClusterMode        bool          `mapstructure:"cluster_mode"`
+		BatchSize          int           `mapstructure:"batch_size"`
 	} `mapstructure:"redis"`
 }
 
