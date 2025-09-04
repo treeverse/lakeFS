@@ -1,5 +1,10 @@
 # Changelog
 
+# v1.67.0
+
+:new: What's new:
+- Delete entity with experimental option to reduce tombstone when possible (#9482)
+
 # v1.66.0
 
 :bug: Bugs fixed:
