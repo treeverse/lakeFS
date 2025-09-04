@@ -5,8 +5,7 @@ description: A configuration reference for lakeFS Enterprise
 
 # lakeFS Enterprise Configuration Reference
 
-
-lakeFS Enterprise configuration extends lakeFS's configuration and uses the same config file. 
+lakeFS Enterprise configuration extends lakeFS's configuration and uses the same config file.
 
 ## lakeFS Configuration
 
@@ -35,18 +34,19 @@ Configuration section for lakeFS Enterprise database options.
 * `database.redis.database` `(int : 0)` - Database number to select (0-15 for most Redis configurations)
 * `database.redis.namespace` `(string : "")` - Prefix for all keys used by the application
 * `database.redis.tls_skip_verify` `(bool : false)` - Skip certificate verification (for development only)
+* `database.redis.batch_size` `(int : 1000)` - Default batch size for Redis KV operations
 
 !!! note
     If you are using Redis or a compatible service such as Amazon MemoryDB, enable **durable writes**.
     This ensures data is persisted and prevents data loss in case of node restarts or failures.
-    
+
 ### auth
 
 Configuration section for authentication services, like SAML or OIDC.
 
 * `auth.logout_redirect_url` `(string : "/auth/login")` - The URL to redirect to after logout. The behavior depends on the authentication provider:
-  - **For OIDC**: The logout URL of the OIDC provider (e.g., Auth0 logout endpoint)
-  - **For SAML**: The URL within lakeFS where the IdP should redirect after logout (e.g., `/auth/login`)
+  * **For OIDC**: The logout URL of the OIDC provider (e.g., Auth0 logout endpoint)
+  * **For SAML**: The URL within lakeFS where the IdP should redirect after logout (e.g., `/auth/login`)
 
 ### auth.providers
 
@@ -72,7 +72,7 @@ Configuration section for SAML
 * `auth.providers.saml.sp_x509_key_path` `(string : '')` - The path to the private key, e.g `'/etc/saml_certs/rsa_saml_private.cert'`
 * `auth.providers.saml.sp_x509_cert_path` `(string : '')` - The path to the public key, '/etc/saml_certs/rsa_saml_public.pem'
 * `auth.providers.saml.sp_sign_request` `(bool : false)` Some IdP require the SLO request to be signed
-* `auth.providers.saml.sp_signature_method` `(string : '')` Optional valid signature values depending on the IdP configuration, e.g. 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'
+* `auth.providers.saml.sp_signature_method` `(string : '')` Optional valid signature values depending on the IdP configuration, e.g. '<http://www.w3.org/2001/04/xmldsig-more#rsa-sha256>'
 * `auth.providers.saml.idp_metadata_url` `(string : '')` - The URL for the metadata server, e.g. `'https://<adfs-auth.company.com>/federationmetadata/2007-06/federationmetadata.xml'`
 * `auth.providers.saml.idp_metadata_file_path` `(string : '')` - The path to the Identity Provider (IdP) metadata XML file, e.g. '/etc/saml/idp-metadata.xml'
 * `auth.providers.saml.idp_skip_verify_tls_cert` `(bool : false)` - Insecure skip verification of the IdP TLS certificate, like when signed by a private CA
@@ -183,13 +183,11 @@ Configuration section for authenticating to lakeFS using AWS presign get-caller-
 
 * `features.local_rbac` `(bool: true)` - Backward compatibility if you use an external RBAC service (such as legacy fluffy). If `false` lakeFS will expect to use `auth.api` and all fluffy related configuration for RBAC.
 
-
-### iceberg_catalog 
+### iceberg_catalog
 
 Configuration section for the Iceberg REST Catalog
 
 * `iceberg_catalog.token_duration` `(duration : 1h)` - Authenticated token duration
-
 
 ### Using Environment Variables
 
