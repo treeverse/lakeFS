@@ -66,8 +66,10 @@ public class ObjectsApiTest {
         String branch = null;
         String path = null;
         Boolean force = null;
+        Boolean noTombstone = null;
         api.deleteObject(repository, branch, path)
                 .force(force)
+                .noTombstone(noTombstone)
                 .execute();
         // TODO: test validations
     }
@@ -83,8 +85,10 @@ public class ObjectsApiTest {
         String branch = null;
         PathList pathList = null;
         Boolean force = null;
+        Boolean noTombstone = null;
         ObjectErrorList response = api.deleteObjects(repository, branch, pathList)
                 .force(force)
+                .noTombstone(noTombstone)
                 .execute();
         // TODO: test validations
     }

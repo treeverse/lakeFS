@@ -292,7 +292,7 @@ public class ObjectsApi {
     public APIcopyObjectRequest copyObject(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation) {
         return new APIcopyObjectRequest(repository, branch, destPath, objectCopyCreation);
     }
-    private okhttp3.Call deleteObjectCall(String repository, String branch, String path, Boolean force, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteObjectCall(String repository, String branch, String path, Boolean force, Boolean noTombstone, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -327,6 +327,10 @@ public class ObjectsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("force", force));
         }
 
+        if (noTombstone != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("no_tombstone", noTombstone));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -347,7 +351,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteObjectValidateBeforeCall(String repository, String branch, String path, Boolean force, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteObjectValidateBeforeCall(String repository, String branch, String path, Boolean force, Boolean noTombstone, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling deleteObject(Async)");
@@ -363,19 +367,19 @@ public class ObjectsApi {
             throw new ApiException("Missing the required parameter 'path' when calling deleteObject(Async)");
         }
 
-        return deleteObjectCall(repository, branch, path, force, _callback);
+        return deleteObjectCall(repository, branch, path, force, noTombstone, _callback);
 
     }
 
 
-    private ApiResponse<Void> deleteObjectWithHttpInfo(String repository, String branch, String path, Boolean force) throws ApiException {
-        okhttp3.Call localVarCall = deleteObjectValidateBeforeCall(repository, branch, path, force, null);
+    private ApiResponse<Void> deleteObjectWithHttpInfo(String repository, String branch, String path, Boolean force, Boolean noTombstone) throws ApiException {
+        okhttp3.Call localVarCall = deleteObjectValidateBeforeCall(repository, branch, path, force, noTombstone, null);
         return localVarApiClient.execute(localVarCall);
     }
 
-    private okhttp3.Call deleteObjectAsync(String repository, String branch, String path, Boolean force, final ApiCallback<Void> _callback) throws ApiException {
+    private okhttp3.Call deleteObjectAsync(String repository, String branch, String path, Boolean force, Boolean noTombstone, final ApiCallback<Void> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteObjectValidateBeforeCall(repository, branch, path, force, _callback);
+        okhttp3.Call localVarCall = deleteObjectValidateBeforeCall(repository, branch, path, force, noTombstone, _callback);
         localVarApiClient.executeAsync(localVarCall, _callback);
         return localVarCall;
     }
@@ -385,6 +389,7 @@ public class ObjectsApi {
         private final String branch;
         private final String path;
         private Boolean force;
+        private Boolean noTombstone;
 
         private APIdeleteObjectRequest(String repository, String branch, String path) {
             this.repository = repository;
@@ -399,6 +404,16 @@ public class ObjectsApi {
          */
         public APIdeleteObjectRequest force(Boolean force) {
             this.force = force;
+            return this;
+        }
+
+        /**
+         * Set noTombstone
+         * @param noTombstone delete entry without tombstone when possible *EXPERIMENTAL* (optional, default to false)
+         * @return APIdeleteObjectRequest
+         */
+        public APIdeleteObjectRequest noTombstone(Boolean noTombstone) {
+            this.noTombstone = noTombstone;
             return this;
         }
 
@@ -419,7 +434,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return deleteObjectCall(repository, branch, path, force, _callback);
+            return deleteObjectCall(repository, branch, path, force, noTombstone, _callback);
         }
 
         /**
@@ -437,7 +452,7 @@ public class ObjectsApi {
          </table>
          */
         public void execute() throws ApiException {
-            deleteObjectWithHttpInfo(repository, branch, path, force);
+            deleteObjectWithHttpInfo(repository, branch, path, force, noTombstone);
         }
 
         /**
@@ -456,7 +471,7 @@ public class ObjectsApi {
          </table>
          */
         public ApiResponse<Void> executeWithHttpInfo() throws ApiException {
-            return deleteObjectWithHttpInfo(repository, branch, path, force);
+            return deleteObjectWithHttpInfo(repository, branch, path, force, noTombstone);
         }
 
         /**
@@ -476,7 +491,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<Void> _callback) throws ApiException {
-            return deleteObjectAsync(repository, branch, path, force, _callback);
+            return deleteObjectAsync(repository, branch, path, force, noTombstone, _callback);
         }
     }
 
@@ -501,7 +516,7 @@ public class ObjectsApi {
     public APIdeleteObjectRequest deleteObject(String repository, String branch, String path) {
         return new APIdeleteObjectRequest(repository, branch, path);
     }
-    private okhttp3.Call deleteObjectsCall(String repository, String branch, PathList pathList, Boolean force, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteObjectsCall(String repository, String branch, PathList pathList, Boolean force, Boolean noTombstone, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -532,6 +547,10 @@ public class ObjectsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("force", force));
         }
 
+        if (noTombstone != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("no_tombstone", noTombstone));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -553,7 +572,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call deleteObjectsValidateBeforeCall(String repository, String branch, PathList pathList, Boolean force, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call deleteObjectsValidateBeforeCall(String repository, String branch, PathList pathList, Boolean force, Boolean noTombstone, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling deleteObjects(Async)");
@@ -569,20 +588,20 @@ public class ObjectsApi {
             throw new ApiException("Missing the required parameter 'pathList' when calling deleteObjects(Async)");
         }
 
-        return deleteObjectsCall(repository, branch, pathList, force, _callback);
+        return deleteObjectsCall(repository, branch, pathList, force, noTombstone, _callback);
 
     }
 
 
-    private ApiResponse<ObjectErrorList> deleteObjectsWithHttpInfo(String repository, String branch, PathList pathList, Boolean force) throws ApiException {
-        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, force, null);
+    private ApiResponse<ObjectErrorList> deleteObjectsWithHttpInfo(String repository, String branch, PathList pathList, Boolean force, Boolean noTombstone) throws ApiException {
+        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, force, noTombstone, null);
         Type localVarReturnType = new TypeToken<ObjectErrorList>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call deleteObjectsAsync(String repository, String branch, PathList pathList, Boolean force, final ApiCallback<ObjectErrorList> _callback) throws ApiException {
+    private okhttp3.Call deleteObjectsAsync(String repository, String branch, PathList pathList, Boolean force, Boolean noTombstone, final ApiCallback<ObjectErrorList> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, force, _callback);
+        okhttp3.Call localVarCall = deleteObjectsValidateBeforeCall(repository, branch, pathList, force, noTombstone, _callback);
         Type localVarReturnType = new TypeToken<ObjectErrorList>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -593,6 +612,7 @@ public class ObjectsApi {
         private final String branch;
         private final PathList pathList;
         private Boolean force;
+        private Boolean noTombstone;
 
         private APIdeleteObjectsRequest(String repository, String branch, PathList pathList) {
             this.repository = repository;
@@ -607,6 +627,16 @@ public class ObjectsApi {
          */
         public APIdeleteObjectsRequest force(Boolean force) {
             this.force = force;
+            return this;
+        }
+
+        /**
+         * Set noTombstone
+         * @param noTombstone delete entry without tombstone when possible *EXPERIMENTAL* (optional, default to false)
+         * @return APIdeleteObjectsRequest
+         */
+        public APIdeleteObjectsRequest noTombstone(Boolean noTombstone) {
+            this.noTombstone = noTombstone;
             return this;
         }
 
@@ -627,7 +657,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return deleteObjectsCall(repository, branch, pathList, force, _callback);
+            return deleteObjectsCall(repository, branch, pathList, force, noTombstone, _callback);
         }
 
         /**
@@ -646,7 +676,7 @@ public class ObjectsApi {
          </table>
          */
         public ObjectErrorList execute() throws ApiException {
-            ApiResponse<ObjectErrorList> localVarResp = deleteObjectsWithHttpInfo(repository, branch, pathList, force);
+            ApiResponse<ObjectErrorList> localVarResp = deleteObjectsWithHttpInfo(repository, branch, pathList, force, noTombstone);
             return localVarResp.getData();
         }
 
@@ -666,7 +696,7 @@ public class ObjectsApi {
          </table>
          */
         public ApiResponse<ObjectErrorList> executeWithHttpInfo() throws ApiException {
-            return deleteObjectsWithHttpInfo(repository, branch, pathList, force);
+            return deleteObjectsWithHttpInfo(repository, branch, pathList, force, noTombstone);
         }
 
         /**
@@ -686,7 +716,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<ObjectErrorList> _callback) throws ApiException {
-            return deleteObjectsAsync(repository, branch, pathList, force, _callback);
+            return deleteObjectsAsync(repository, branch, pathList, force, noTombstone, _callback);
         }
     }
 
