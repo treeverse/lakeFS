@@ -21,7 +21,8 @@ var ErrAzureInvalidURL = errors.New("invalid Azure storage URL")
 // extractAzurePrefix takes a URL that looks like this: https://storageaccount.blob.core.windows.net/container/prefix
 // and return the URL for the container and a prefix, if one exists
 func extractAzurePrefix(storageURI *url.URL) (*url.URL, string, error) {
-	path := strings.TrimLeft(storageURI.Path, "/")
+	rawPath := block.RawPathFromURI(storageURI)
+	path := strings.TrimLeft(rawPath, "/")
 	if len(path) == 0 {
 		return nil, "", fmt.Errorf("%w: could not parse container URL: %s", ErrAzureInvalidURL, storageURI)
 	}
