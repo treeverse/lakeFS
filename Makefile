@@ -301,11 +301,13 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 
 .PHONY: publish-scala guard-s3-no-overwrite
 guard-s3-no-overwrite:
-	@set -euo pipefail; \
+	@set -eu; \
 	BUCKET=treeverse-clients-us-east; \
 	NAME=lakefs-spark-client; \
 	VERSION=$$(grep -E '^lazy val projectVersion' clients/spark/build.sbt | sed -E 's/.*"(.+)".*/\1/'); \
-	JAR_NAME=$$(cd clients/spark && sbt -error 'print assembly/assemblyJarName' | tail -n1); \
+	JAR_NAME_TMP=$$(cd clients/spark && sbt -error 'print assembly/assemblyJarName'); \
+	test $$? -eq 0 || { echo "failed to get assemblyJarName"; exit 1; }; \
+	JAR_NAME=$$(printf "%s\n" "$$JAR_NAME_TMP" | tail -n1); \
 	KEY="$$NAME/$$VERSION/$$JAR_NAME"; \
 	echo "Checking s3://$$BUCKET/$$KEY"; \
 	if aws s3api head-object --bucket "$$BUCKET" --key "$$KEY" >/dev/null 2>&1; then \
