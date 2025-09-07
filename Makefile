@@ -304,7 +304,6 @@ guard-s3-no-overwrite:
 	@set -eu; \
 	HOST=$$(cd clients/spark && sbt -error 'print s3Upload/s3Host' | tail -n1); \
 	echo "DEBUG HOST=$$HOST"; \
-	# חילוץ bucket בצורה עמידה משני הפורמטים הנתמכים
 	BUCKET=$$(printf "%s" "$$HOST" | sed -E 's|^([^.]+)\.s3\.amazonaws\.com$$|\1|; s|^s3\.amazonaws\.com/([^/]+)$$|\1|; s|^https?://||; s|/$$||'); \
 	[ -n "$$BUCKET" ] || { echo "::error ::empty bucket derived from HOST ($$HOST)"; exit 42; }; \
 	MAP_LINE=$$(cd clients/spark && sbt -error 'print s3Upload/mappings' | tail -n1); \
