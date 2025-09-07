@@ -301,18 +301,19 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 
 .PHONY: publish-scala guard-s3-no-overwrite
 guard-s3-no-overwrite:
-	HOST=$$(cd clients/spark && sbt -error 'print s3Upload/s3Host' | tail -n1)
-	case "$$HOST" in
-	  *.s3.amazonaws.com) BUCKET=$${HOST%%.s3.amazonaws.com} ;;
-	  s3.amazonaws.com/*) BUCKET=$${HOST\#s3.amazonaws.com/} ;;
-	  *) BUCKET=$$HOST ;;
-	esac
-	MAP_LINE=$$(cd clients/spark && sbt -error 'print s3Upload/mappings' | tail -n1)
-	KEY=$$(printf "%s\n" "$$MAP_LINE" | sed -E 's/.*->[[:space:]]*([^ )]+)\).*/\1/')
-	echo "Guard check: s3://$$BUCKET/$$KEY (host: $$HOST)"
-	if aws s3api head-object --bucket "$$BUCKET" --key "$$KEY" >/dev/null 2>&1; then
-	  echo "::error ::object already exists. Bump version or delete explicitly: s3://$$BUCKET/$$KEY"
-	  exit 42
+	@set -eu; \
+	HOST=$$(cd clients/spark && sbt -error 'print s3Upload/s3Host' | tail -n1); \
+	case "$$HOST" in \
+	  *.s3.amazonaws.com) BUCKET=$${HOST%%.s3.amazonaws.com} ;; \
+	  s3.amazonaws.com/*) BUCKET=$${HOST\#s3.amazonaws.com/} ;; \
+	  *) BUCKET=$$HOST ;; \
+	esac; \
+	MAP_LINE=$$(cd clients/spark && sbt -error 'print s3Upload/mappings' | tail -n1); \
+	KEY=$$(printf "%s\n" "$$MAP_LINE" | awk -F'->' '{gsub(/^[ \t]+/,"",$$2); sub(/\).*$$/,"",$$2); print $$2}'); \
+	echo "Guard check: s3://$$BUCKET/$$KEY (host: $$HOST)"; \
+	if aws s3api head-object --bucket "$$BUCKET" --key "$$KEY" >/dev/null 2>&1; then \
+	  echo "::error ::object already exists. Bump version or delete explicitly: s3://$$BUCKET/$$KEY"; \
+	  exit 42; \
 	fi
 publish-scala: guard-s3-no-overwrite
 	cd clients/spark && sbt 'assembly; s3Upload'
