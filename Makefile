@@ -299,8 +299,20 @@ gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 	go run github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION) generate
 
-.PHONY: publish-scala
-publish-scala: ## sbt publish spark client jars to Maven Central and to s3 bucket
+.PHONY: publish-scala guard-s3-no-overwrite
+guard-s3-no-overwrite:
+	@set -euo pipefail; \
+	BUCKET=treeverse-clients-us-east; \
+	NAME=lakefs-spark-client; \
+	VERSION=$$(grep -E '^lazy val projectVersion' clients/spark/build.sbt | sed -E 's/.*"(.+)".*/\1/'); \
+	JAR_NAME=$$(cd clients/spark && sbt -error 'print assembly/assemblyJarName' | tail -n1); \
+	KEY="$$NAME/$$VERSION/$$JAR_NAME"; \
+	echo "Checking s3://$$BUCKET/$$KEY"; \
+	if aws s3api head-object --bucket "$$BUCKET" --key "$$KEY" >/dev/null 2>&1; then \
+	  echo "ERROR: object exists. Bump version or delete first: s3://$$BUCKET/$$KEY"; \
+	  exit 42; \
+	fi
+publish-scala: guard-s3-no-overwrite ## sbt publish spark client jars to Maven Central and to s3 bucket
 	cd clients/spark && sbt 'assembly; publishSigned; s3Upload; sonaRelease'
 	aws s3 cp --recursive --acl public-read $(CLIENT_JARS_BUCKET) $(CLIENT_JARS_BUCKET) --metadata-directive REPLACE
 
