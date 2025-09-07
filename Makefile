@@ -302,19 +302,20 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 .PHONY: publish-scala guard-s3-no-overwrite
 guard-s3-no-overwrite:
 	@set -eu; \
-	BUCKET=benel-public-test; \
-	NAME=lakefs-spark-client; \
-	VERSION=$$(grep -E '^lazy val projectVersion' clients/spark/build.sbt | sed -E 's/.*"(.+)".*/\1/'); \
-	JAR_NAME_TMP=$$(cd clients/spark && sbt -error 'print assembly/assemblyJarName'); \
-	test $$? -eq 0 || { echo "failed to get assemblyJarName"; exit 1; }; \
-	JAR_NAME=$$(printf "%s\n" "$$JAR_NAME_TMP" | tail -n1); \
-	KEY="$$NAME/$$VERSION/$$JAR_NAME"; \
-	echo "Checking s3://$$BUCKET/$$KEY"; \
+	HOST=$$(cd clients/spark && sbt -error 'print s3Upload/s3Host' | tail -n1); \
+	case "$$HOST" in \
+	  *.s3.amazonaws.com) BUCKET=$${HOST%%.s3.amazonaws.com} ;; \
+	  s3.amazonaws.com/*) BUCKET=$${HOST\#s3.amazonaws.com/} ;; \
+	  *) BUCKET=$$HOST ;; \
+	esac; \
+	MAP_LINE=$$(cd clients/spark && sbt -error 'print s3Upload/mappings' | tail -n1); \
+	KEY=$$(printf "%s\n" "$$MAP_LINE" | sed -E 's/.*->[[:space:]]*([^ )]+)\).*/\1/'); \
+	echo "Guard check: s3://$$BUCKET/$$KEY (host: $$HOST)"; \
 	if aws s3api head-object --bucket "$$BUCKET" --key "$$KEY" >/dev/null 2>&1; then \
-	  echo "ERROR: object exists. Bump version or delete first: s3://$$BUCKET/$$KEY"; \
+	  echo "ERROR: object already exists. Bump version or delete explicitly: s3://$$BUCKET/$$KEY"; \
 	  exit 42; \
 	fi
-publish-scala: guard-s3-no-overwrite ## sbt publish spark client jars to Maven Central and to s3 bucket
+publish-scala: guard-s3-no-overwrite
 	cd clients/spark && sbt 'assembly; s3Upload'
 
 .PHONY: publish-lakefsfs-test
