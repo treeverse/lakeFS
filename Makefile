@@ -303,16 +303,18 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 guard-s3-no-overwrite:
 	@set -eu; \
 	HOST=$$(cd clients/spark && sbt -error 'print s3Upload/s3Host' | tail -n1); \
-	case "$$HOST" in \
-	  *.s3.amazonaws.com) BUCKET=$${HOST%%.s3.amazonaws.com} ;; \
-	  s3.amazonaws.com/*) BUCKET=$${HOST\#s3.amazonaws.com/} ;; \
-	  *) BUCKET=$$HOST ;; \
-	esac; \
+	echo "DEBUG HOST=$$HOST"; \
+	# חילוץ bucket בצורה עמידה משני הפורמטים הנתמכים
+	BUCKET=$$(printf "%s" "$$HOST" | sed -E 's|^([^.]+)\.s3\.amazonaws\.com$$|\1|; s|^s3\.amazonaws\.com/([^/]+)$$|\1|; s|^https?://||; s|/$$||'); \
+	[ -n "$$BUCKET" ] || { echo "::error ::empty bucket derived from HOST ($$HOST)"; exit 42; }; \
 	MAP_LINE=$$(cd clients/spark && sbt -error 'print s3Upload/mappings' | tail -n1); \
+	echo "DEBUG MAP_LINE=$$MAP_LINE"; \
 	KEY=$$(printf "%s\n" "$$MAP_LINE" | awk -F'->' '{gsub(/^[ \t]+/,"",$$2); sub(/\).*$$/,"",$$2); print $$2}'); \
+	[ -n "$$KEY" ] || { echo "::error ::failed to derive KEY from mappings"; exit 42; }; \
 	URL="https://$$BUCKET.s3.amazonaws.com/$$KEY"; \
 	echo "Guard check: $$URL"; \
 	STATUS=$$(curl -sS -o /dev/null -w '%{http_code}' "$$URL" || echo 000); \
+	echo "DEBUG HTTP STATUS=$$STATUS"; \
 	if [ "$$STATUS" != "404" ]; then \
 	  echo "::error ::object already exists or inaccessible (status=$$STATUS). Bump version or delete explicitly: $$URL"; \
 	  exit 42; \
