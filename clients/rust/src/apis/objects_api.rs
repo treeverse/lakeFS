@@ -177,7 +177,7 @@ pub async fn copy_object(configuration: &configuration::Configuration, repositor
     }
 }
 
-pub async fn delete_object(configuration: &configuration::Configuration, repository: &str, branch: &str, path: &str, force: Option<bool>) -> Result<(), Error<DeleteObjectError>> {
+pub async fn delete_object(configuration: &configuration::Configuration, repository: &str, branch: &str, path: &str, force: Option<bool>, no_tombstone: Option<bool>) -> Result<(), Error<DeleteObjectError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -188,6 +188,9 @@ pub async fn delete_object(configuration: &configuration::Configuration, reposit
     local_var_req_builder = local_var_req_builder.query(&[("path", &path.to_string())]);
     if let Some(ref local_var_str) = force {
         local_var_req_builder = local_var_req_builder.query(&[("force", &local_var_str.to_string())]);
+    }
+    if let Some(ref local_var_str) = no_tombstone {
+        local_var_req_builder = local_var_req_builder.query(&[("no_tombstone", &local_var_str.to_string())]);
     }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());
@@ -214,7 +217,7 @@ pub async fn delete_object(configuration: &configuration::Configuration, reposit
     }
 }
 
-pub async fn delete_objects(configuration: &configuration::Configuration, repository: &str, branch: &str, path_list: models::PathList, force: Option<bool>) -> Result<models::ObjectErrorList, Error<DeleteObjectsError>> {
+pub async fn delete_objects(configuration: &configuration::Configuration, repository: &str, branch: &str, path_list: models::PathList, force: Option<bool>, no_tombstone: Option<bool>) -> Result<models::ObjectErrorList, Error<DeleteObjectsError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -224,6 +227,9 @@ pub async fn delete_objects(configuration: &configuration::Configuration, reposi
 
     if let Some(ref local_var_str) = force {
         local_var_req_builder = local_var_req_builder.query(&[("force", &local_var_str.to_string())]);
+    }
+    if let Some(ref local_var_str) = no_tombstone {
+        local_var_req_builder = local_var_req_builder.query(&[("no_tombstone", &local_var_str.to_string())]);
     }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());

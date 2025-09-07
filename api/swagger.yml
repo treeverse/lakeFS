@@ -90,6 +90,15 @@ components:
       required: false
       schema:
         type: string
+    
+    NoTombstone:
+      in: query
+      name: no_tombstone
+      required: false
+      schema:
+        type: boolean
+        default: false
+      description: delete entry without tombstone when possible *EXPERIMENTAL*
 
   responses:
     NotFoundOrNoACL:
@@ -5149,6 +5158,7 @@ paths:
           schema:
             type: boolean
             default: false
+        - $ref: "#/components/parameters/NoTombstone"
       responses:
         204:
           description: object deleted successfully
@@ -5181,6 +5191,7 @@ paths:
         schema:
           type: boolean
           default: false
+      - $ref: "#/components/parameters/NoTombstone"
     post:
       tags:
         - objects

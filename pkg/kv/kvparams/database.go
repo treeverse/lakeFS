@@ -92,6 +92,7 @@ type Redis struct {
 	EnableTLS     bool
 	ClusterMode   bool
 	TLSSkipVerify bool // Skip cert verification (dev only)
+	BatchSize     int
 }
 
 func NewConfig(cfg *config.Database) (Config, error) {
@@ -162,6 +163,7 @@ func NewConfig(cfg *config.Database) (Config, error) {
 			EnableTLS:     cfg.Redis.EnableTLS,
 			ClusterMode:   cfg.Redis.ClusterMode,
 			TLSSkipVerify: cfg.Redis.TLSSkipVerify,
+			BatchSize:     cfg.Redis.BatchSize,
 		}
 	}
 	return p, nil
