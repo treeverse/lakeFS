@@ -310,9 +310,11 @@ guard-s3-no-overwrite:
 	esac; \
 	MAP_LINE=$$(cd clients/spark && sbt -error 'print s3Upload/mappings' | tail -n1); \
 	KEY=$$(printf "%s\n" "$$MAP_LINE" | awk -F'->' '{gsub(/^[ \t]+/,"",$$2); sub(/\).*$$/,"",$$2); print $$2}'); \
-	echo "Guard check: s3://$$BUCKET/$$KEY (host: $$HOST)"; \
-	if aws s3api head-object --bucket "$$BUCKET" --key "$$KEY" >/dev/null 2>&1; then \
-	  echo "::error ::object already exists. Bump version or delete explicitly: s3://$$BUCKET/$$KEY"; \
+	URL="https://$$BUCKET.s3.amazonaws.com/$$KEY"; \
+	echo "Guard check: $$URL"; \
+	STATUS=$$(curl -sS -o /dev/null -w '%{http_code}' "$$URL" || echo 000); \
+	if [ "$$STATUS" != "404" ]; then \
+	  echo "::error ::object already exists or inaccessible (status=$$STATUS). Bump version or delete explicitly: $$URL"; \
 	  exit 42; \
 	fi
 publish-scala: guard-s3-no-overwrite
