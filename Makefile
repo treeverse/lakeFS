@@ -302,7 +302,7 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 .PHONY: publish-scala guard-s3-no-overwrite
 guard-s3-no-overwrite:
 	@set -eu; \
-	BUCKET=treeverse-clients-us-east; \
+	BUCKET=benel-public-test; \
 	NAME=lakefs-spark-client; \
 	VERSION=$$(grep -E '^lazy val projectVersion' clients/spark/build.sbt | sed -E 's/.*"(.+)".*/\1/'); \
 	JAR_NAME_TMP=$$(cd clients/spark && sbt -error 'print assembly/assemblyJarName'); \
