@@ -307,8 +307,11 @@ guard-s3-no-overwrite:
 	MAP_LINE=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print s3Upload/mappings' | tail -n1); \
 	KEY=$$(printf "%s\n" "$$MAP_LINE" | awk -F',' '{print $$NF}' | sed -E 's/^[[:space:](]+//; s/[[:space:])]+$$//'); \
 	URL="https://$$BUCKET.s3.amazonaws.com/$$KEY"; \
-	[ "$$(curl -sS -o /dev/null -w '%{http_code}' "$$URL" || echo 000)" = "404" ] || { \
-	  echo "::error ::object already exists or inaccessible: $$URL"; exit 42; }
+	STATUS=$$(curl -sS -o /dev/null -w '%{http_code}' "$$URL" || echo 000); \
+	if [ "$$STATUS" != "404" ]; then \
+	  echo "::error ::object already exists or inaccessible (status=$$STATUS). Bump version or delete explicitly: $$URL"; \
+	  exit 42; \
+	fi
 publish-scala: guard-s3-no-overwrite
 	cd clients/spark && sbt 'assembly; s3Upload'
 
