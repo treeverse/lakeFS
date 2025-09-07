@@ -42,17 +42,41 @@ Configuration section for lakeFS Enterprise database options.
     
 ### auth
 
-Configuration section for authentication services, like SAML or OIDC.
+Configuration section for SSO authentication services, like SAML or OIDC.
 
-* `auth.logout_redirect_url` `(string : "/auth/login")` - The URL to redirect to after logout. The behavior depends on the authentication provider:
-  - **For OIDC**: The logout URL of the OIDC provider (e.g., Auth0 logout endpoint)
-  - **For SAML**: The URL within lakeFS where the IdP should redirect after logout (e.g., `/auth/login`)
+* `auth.logout_redirect_url` `(string : "/auth/login")` - The URL to redirect to after logout when using SSO authentication services, like SAML or OIDC.   
+The configuration depends on the authentication provider:  
+    - **For OIDC:** The logout URL of the OIDC provider (e.g., Auth0 logout endpoint).
+    - **For SAML:** The URL within lakeFS where the IdP should redirect after logout (e.g., `/auth/login`).
+
+#### auth.ui_config
+
+* `auth.ui_config.login_url_method` `(string : "redirect")` - Controls how lakeFS handles login when an `auth.ui_config.login_url` (SSO via OIDC or SAML) is configured.   
+Supported values:
+    * `auth.ui_config.login_url_method="none"` - Default for OSS lakeFS. lakeFS OSS does not support SSO authentication.
+    * `auth.ui_config.login_url_method="redirect"` - Default for lakeFS Enterprise. If `auth.ui_config.login_url` is set, when users are redirected to the lakeFS login page, they are automatically redirected to the SSO login page.
+    * `auth.ui_config.login_url_method="select"` - If `auth.ui_config.login_url` is set, when users are redirected to the login page, they are presented with a page that allows them to select between two options: login via SSO (`login_url`) or login with lakeFS credentials.
+
+    !!! warning
+        - The `auth.ui_config.login_url_method` setting must always be used together with `auth.ui_config.login_url`, meaning an SSO IdP (OIDC or SAML) must be configured.
+        - To ensure users return to the lakeFS login selection page after logout (instead of being automatically redirected to the SSO login page), configure the logout redirect URL.   
+          The configuration depends on the authentication provider:
+            - **For OIDC:** Set the `returnTo` value in `auth.providers.oidc.logout_endpoint_query_parameters` to:  
+            `["returnTo", "https://<lakefs.ingress.domain>/auth/login?redirected=true"]`  
+            instead of:  
+            `["returnTo", "https://<lakefs.ingress.domain>/oidc/login"]`.
+            - **For SAML:** Set the `auth.logout_redirect_url` to:  
+              `https://<lakefs.ingress.domain>/auth/login?redirected=true`.  
+              If a Logout Redirection URL is configured in your IdP, ensure it points to the same path:
+              `https://<lakefs.ingress.domain>/auth/login?redirected=true`.
 
 ### auth.providers
 
-Configuration section external identity providers
+Configuration section for external identity providers used for authentication services, such as LDAP, SAML or OIDC.
 
 #### auth.providers.ldap
+
+Configuration section for LDAP.
 
 * `auth.providers.ldap.server_endpoint` `(string : "")` - The LDAP server address, e.g. `'ldaps://ldap.company.com:636'`
 * `auth.providers.ldap.bind_dn` `(string : "")` - The bind string, e.g. `'uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com'`
@@ -66,7 +90,7 @@ Configuration section external identity providers
 
 #### auth.providers.saml
 
-Configuration section for SAML
+Configuration section for SAML.
 
 * `auth.providers.saml.sp_root_url` `(string : '')` - The base lakeFS-URL, e.g. `'https://<lakefs-url>'`
 * `auth.providers.saml.sp_x509_key_path` `(string : '')` - The path to the private key, e.g `'/etc/saml_certs/rsa_saml_private.cert'`
@@ -82,7 +106,7 @@ Configuration section for SAML
 
 #### auth.providers.oidc
 
-Configuration section for OIDC
+Configuration section for OIDC.
 
 * `auth.providers.oidc.url` `(string : '')` - The OIDC provider url, e.g. `'https://oidc-provider-url.com/'`
 * `auth.providers.oidc.client_id` `(string : '')` - The application's ID
@@ -100,21 +124,18 @@ Configuration section for OIDC
 * `auth.providers.oidc.additional_scope_claims` `(string[] : '[]')` - Specifies optional requested permissions, other than `openid` and `profile` that are being used
 * `auth.providers.oidc.post_login_redirect_url` `(string : '')` - The URL to redirect users to after successful OIDC authentication, e.g. `'http://localhost:8000/'`
 
-### auth.external
+#### auth.external_aws_auth
 
-Configuration section for the external authentication methods
+Configuration section for authentication to lakeFS using the AWS presigned get-caller-identity request:   
+[External Principals AWS Auth](../security/external-principals-aws.md)
 
-#### auth.external.aws_auth
-
-Configuration section for authenticating to lakeFS using AWS presign get-caller-identity request: [External Principals AWS Auth](../security/external-principals-aws.md)
-
-* `auth.external.aws_auth.enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's
-* `auth.external.aws_auth.get_caller_identity_max_age` `(duration : 15m)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set
-* `auth.external.aws_auth.valid_sts_hosts` `([]string)` - The default are all the valid AWS STS hosts (`sts.amazonaws.com`, `sts.us-east-2.amazonaws.com` etc.)
-* `auth.external.aws_auth.required_headers` `(map[string]string : )` - Headers that must be present by the client when doing login request. For security reasons it is recommended to set `X-LakeFS-Server-ID: <lakefs.ingress.domain>`, lakeFS clients assume that's the default
-* `auth.external.aws_auth.optional_headers` `(map[string]string : )` - Optional headers that can be present by the client when doing login request
-* `auth.external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS
-* `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS
+* `auth.external_aws_auth.enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's
+* `auth.external_aws_auth.get_caller_identity_max_age` `(duration : 15m)` - The maximum age in seconds for the GetCallerIdentity request to be valid, the max is 15 minutes enforced by AWS, smaller TTL can be set
+* `auth.external_aws_auth.valid_sts_hosts` `([]string)` - The default are all the valid AWS STS hosts (`sts.amazonaws.com`, `sts.us-east-2.amazonaws.com` etc.)
+* `auth.external_aws_auth.required_headers` `(map[string]string : )` - Headers that must be present by the client when doing login request. For security reasons it is recommended to set `X-LakeFS-Server-ID: <lakefs.ingress.domain>`, lakeFS clients assume that's the default
+* `auth.external_aws_auth.optional_headers` `(map[string]string : )` - Optional headers that can be present by the client when doing login request
+* `auth.external_aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS
+* `auth.external_aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS
 
 ### blockstores
 

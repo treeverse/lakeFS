@@ -103,16 +103,8 @@ Configuration section for the lakeFS key-value store database.
 
 ### auth
 
-* `auth.login_duration` `(time duration : "168h")` - The duration the login token is valid for
-* `auth.login_max_duration` `(time duration : "168h")` - The maximum duration user can ask for a login token
-* `auth.cookie_domain` `(string : "")` - [Domain attribute](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define_where_cookies_are_sent) to set the access_token cookie on (the default is an empty string which defaults to the same host that sets the cookie)
-* `auth.ui_config.rbac` `(string: "none")` - "none", "simplified", "external" or "internal" (enterprise feature).
-
-    If you have configured an external auth server you can set this to "external" to support the policy editor.
-
-    If you are using the enteprrise version of lakeFS, you can set this to "internal" to use the built-in policy editor.
-
-* `auth.ui_config.use_login_placeholders` `(bool: false)` - If set to true, the login page will show placeholders for the _Access Key ID_ and _Secret Access Key_ (_Username_ and _Password_).
+* `auth.login_duration` `(time duration : "168h")` - The duration the login token is valid for.
+* `auth.login_max_duration` `(time duration : "168h")` - The maximum duration user can ask for a login token.
 
 #### auth.cache
 
@@ -120,6 +112,9 @@ Configuration section for the lakeFS key-value store database.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
 * `auth.cache.ttl` `(time duration : "20s")` - How long to store an item in the auth cache. Using a higher value reduces load on the database, but will cause changes longer to take effect for cached users.
 * `auth.cache.jitter` `(time duration : "3s")` - A random amount of time between 0 and this value is added to each item's TTL. This is done to avoid a large bulk of keys expiring at once and overwhelming the database.
+
+#### auth.encrypt
+
 * `auth.encrypt.secret_key` `(string : required)` - A random (cryptographically safe) generated string that is used for encryption and HMAC signing
 
     !!! warning
@@ -144,6 +139,14 @@ Configuration section for the lakeFS key-value store database.
 * `auth.remote_authenticator.default_user_group` `(string : Viewers)` - Create users in this group (i.e `Viewers`, `Developers`, etc).
 * `auth.remote_authenticator.request_timeout` `(duration : 10s)` - If specified, timeout for remote authentication requests.
 
+#### auth.oidc
+
+* `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups
+* `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set.
+* `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
+* `auth.oidc.persist_friendly_name` `(string : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.oidc.friendly_name_claim_name`.
+* `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
+
 #### auth.cookie_auth_verification
 
 * `auth.cookie_auth_verification.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
@@ -154,15 +157,18 @@ Configuration section for the lakeFS key-value store database.
 * `auth.cookie_auth_verification.external_user_id_claim_name` - `(string : )` - If specified, the value from the claim with this name will be used as the user's id name.
 * `auth.cookie_auth_verification.auth_source` - `(string : )` - If specified, user will be labeled with this auth source.
 
-#### auth.oidc
+#### auth.ui_config
 
-* `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups
-* `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set.
-* `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
-* `auth.oidc.persist_friendly_name` `(string : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.oidc.friendly_name_claim_name`.
-* `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
+* `auth.ui_config.rbac` `(string: "none")` - "none", "simplified", "external" or "internal".
+    - `auth.ui_config.rbac="none"` - lakeFS runs without an RBAC authorization service. No additional users, groups, or policies can be created.
+    - `auth.ui_config.rbac="simplified"` - lakeFS uses ACL as the authorization service. You must implement your own ACL service and connect it to lakeFS. See the [implementation guide](../security/ACL-server-implementation.md) and [ACL overview](../security/access-control-lists.md) for details.
+    - `auth.ui_config.rbac="external"` - lakeFS integrates with an external RBAC authorization service.
+    - `auth.ui_config.rbac="internal"` - Available in the Enterprise lakeFS version. Uses the built-in RBAC authorization service. More information is available [here](../security/rbac.md).
 
-
+* `auth.ui_config.login_url` `(string : "")` - An absolute or relative URL to your IdP’s login page, used to authenticate to lakeFS via SSO with OIDC or SAML.
+* `auth.ui_config.login_failed_message` `(string : "")` - Custom error message displayed when authentication fails on the login form (defaults to "The credentials don't match." if not specified).
+* `auth.ui_config.logout_url` `(string : "")`- URL to redirect users to when they logout from lakeFS (defaults to "/logout" if not specified).
+* `auth.ui_config.use_login_placeholders` `(bool: false)` - If set to true, the login page will show placeholders for the _Access Key ID_ and _Secret Access Key_ (_Username_ and _Password_) (defaults to "false" if not specified).
 
 ### blockstore
 
