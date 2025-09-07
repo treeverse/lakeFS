@@ -303,12 +303,10 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 guard-s3-no-overwrite:
 	@set -eu; \
 	HOST=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print s3Upload/s3Host' | tail -n1); \
-	BUCKET=$${HOST%%.s3.amazonaws.com}; \
 	NAME=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print name' | tail -n1); \
 	VERSION=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print version' | tail -n1); \
 	JAR=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print assembly/assemblyJarName' | tail -n1); \
-	KEY="$$NAME/$$VERSION/$$JAR"; \
-	URL="https://$$BUCKET.s3.amazonaws.com/$$KEY"; \
+	URL="https://$${HOST%%.s3.amazonaws.com}.s3.amazonaws.com/$$NAME/$$VERSION/$$JAR"; \
 	STATUS=$$(curl -sS -o /dev/null -w '%{http_code}' "$$URL" || echo 000); \
 	[ "$$STATUS" = 404 ] || { echo "::error ::object already exists or inaccessible (status=$$STATUS). Bump version or delete explicitly: $$URL"; exit 42; }
 publish-scala: guard-s3-no-overwrite
