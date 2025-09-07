@@ -304,8 +304,10 @@ guard-s3-no-overwrite:
 	@set -eu; \
 	HOST=$$(cd clients/spark && sbt -error 'print s3Upload/s3Host' | tail -n1); \
 	BUCKET=$${HOST%%.s3.amazonaws.com}; \
-	MAP_LINE=$$(cd clients/spark && sbt -error 'print s3Upload/mappings' | tail -n1); \
-	KEY=$$(printf "%s\n" "$$MAP_LINE" | awk -F',' '{print $$NF}' | sed -E 's/^[[:space:](]+//; s/[[:space:])]+$$//'); \
+	NAME=$$(cd clients/spark && sbt -error 'print name' | tail -n1); \
+	VERSION=$$(cd clients/spark && sbt -error 'print version' | tail -n1); \
+	JAR=$$(cd clients/spark && sbt -error 'print assembly/assemblyJarName' | tail -n1); \
+	KEY="$$NAME/$$VERSION/$$JAR"; \
 	URL="https://$$BUCKET.s3.amazonaws.com/$$KEY"; \
 	STATUS=$$(curl -sS -o /dev/null -w '%{http_code}' "$$URL" || echo 000); \
 	if [ "$$STATUS" != "404" ]; then \
