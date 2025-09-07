@@ -303,28 +303,18 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 guard-s3-no-overwrite:
 	@set -eu; \
 	HOST=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print s3Upload/s3Host' | tail -n1); \
-	if [ -z "$$HOST" ]; then \
-	  HOST=$$(grep -E 's3Upload[[:space:]]*/[[:space:]]*s3Host[[:space:]]*:=' -n clients/spark/build.sbt \
-	         | sed -E 's/.*:="[[:space:]]*([^"]+)".*/\1/' | tail -n1); \
-	fi; \
 	echo "DEBUG HOST=$$HOST"; \
-	BUCKET=$$(printf "%s" "$$HOST" \
-	          | sed -E 's|^([^.]+)\.s3\.amazonaws\.com$$|\1|; s|^s3\.amazonaws\.com/([^/]+)$$|\1|; s|^https?://||; s|/$$||'); \
+	BUCKET=$$(printf "%s" "$$HOST" | sed -E 's|^([^.]+)\.s3\.amazonaws\.com$$|\1|; s|^s3\.amazonaws\.com/([^/]+)$$|\1|; s|^https?://||; s|/$$||'); \
 	[ -n "$$BUCKET" ] || { echo "::error ::empty bucket derived from HOST ($$HOST)"; exit 42; }; \
 	MAP_LINE=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print s3Upload/mappings' | tail -n1 || true); \
 	echo "DEBUG MAP_LINE=$$MAP_LINE"; \
-	if [ -n "$$MAP_LINE" ]; then \
+	if printf "%s" "$$MAP_LINE" | grep -q '->'; then \
 	  KEY=$$(printf "%s\n" "$$MAP_LINE" | awk -F'->' '{gsub(/^[ \t]+/,"",$$2); sub(/\).*$$/,"",$$2); print $$2}'); \
 	else \
-	  NAME=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print name' | tail -n1); \
-	  VERSION=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print version' | tail -n1); \
-	  JAR_NAME_TMP=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print assembly/assemblyJarName'); \
-	  JAR_NAME=$$(printf "%s\n" "$$JAR_NAME_TMP" | tail -n1); \
-	  KEY="$$NAME/$$VERSION/$$JAR_NAME"; \
+	  KEY=$$(printf "%s\n" "$$MAP_LINE" | awk -F',' '{print $$NF}' | sed -E 's/^[[:space:](]+//; s/[[:space:])]+$$//'); \
 	fi; \
-	[ -n "$$KEY" ] || { echo "::error ::failed to derive KEY"; exit 42; }; \
+	[ -n "$$KEY" ] || { echo "::error ::failed to derive KEY from mappings"; exit 42; }; \
 	echo "DEBUG KEY=$$KEY"; \
-	# --- check public URL (fail-closed) ---
 	URL="https://$$BUCKET.s3.amazonaws.com/$$KEY"; \
 	echo "Guard check: $$URL"; \
 	STATUS=$$(curl -sS -o /dev/null -w '%{http_code}' "$$URL" || echo 000); \
