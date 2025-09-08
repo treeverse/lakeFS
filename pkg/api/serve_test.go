@@ -260,3 +260,24 @@ func TestInvalidRoute(t *testing.T) {
 		t.Fatalf("client response error message: %s, expected: %s", errMsg, expectedErrMsg)
 	}
 }
+
+func TestNotImplementedAPI(t *testing.T) {
+	handler, _ := setupHandler(t)
+	server := setupServer(t, handler)
+
+	// verify that for specific APIs, we get a 405 Not Implemented
+	routes := []string{"/iceberg/api/v1/config", "/iceberg/relative_to/v1/config"}
+	for _, route := range routes {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+route, nil)
+		if err != nil {
+			t.Fatalf("failed to make http request '%s': %s", route, err)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("failed to perform http request '%s': %s", route, err)
+		}
+		if resp.StatusCode != http.StatusNotImplemented {
+			t.Fatalf("expected status code %d, got %d for '%s'", http.StatusNotImplemented, resp.StatusCode, route)
+		}
+	}
+}

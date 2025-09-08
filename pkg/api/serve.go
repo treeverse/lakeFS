@@ -66,6 +66,10 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().GetBaseAuthConfig().LogoutRedirectURL))
 
+	// Additional API routes we like to serve before the UI handler
+	r.Mount("/iceberg/api/", http.HandlerFunc(NotImplementedHandler))
+	r.Mount("/iceberg/relative_to/", http.HandlerFunc(NotImplementedHandler))
+
 	// Configuration flag to control if the embedded UI is served
 	// or not and assign the correct handler for each case.
 	var rootHandler http.Handler
@@ -168,4 +172,9 @@ func validateRequest(r *http.Request, route *routers.Route, pathParams map[strin
 // not accessible.
 func InvalidAPIEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	writeError(w, r, http.StatusInternalServerError, ErrInvalidAPIEndpoint)
+}
+
+// NotImplementedHandler returns HTTP 501 Not Implemented status for endpoints that are not yet implemented.
+func NotImplementedHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not Implemented", http.StatusNotImplemented)
 }
