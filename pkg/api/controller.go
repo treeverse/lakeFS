@@ -3132,9 +3132,21 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 	if !c.authorize(w, r, perm) {
 		return
 	}
-
 	ctx := r.Context()
 	c.LogAction(ctx, "import", r, repository, branch, "")
+	repo, err := c.Catalog.GetRepository(r.Context(), repository)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	storageInfo := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageNamespace)
+	if storageInfo == nil {
+		writeError(w, r, http.StatusNotFound, fmt.Sprintf("no storage namespace info for storage id: %s", repo.StorageID))
+		return
+	}
+	if !storageInfo.ImportSupport {
+		writeError(w, r, http.StatusForbidden, "import is not supported for this storage")
+		return
+	}
 
 	user, err := auth.GetUser(ctx)
 	if err != nil {
