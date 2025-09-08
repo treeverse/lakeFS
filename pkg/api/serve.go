@@ -67,8 +67,8 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().GetBaseAuthConfig().LogoutRedirectURL))
 
 	// Additional API routes we like to serve before the UI handler
-	r.Mount("/iceberg/api/", http.HandlerFunc(NotImplementedHandler))
-	r.Mount("/iceberg/relative_to/", http.HandlerFunc(NotImplementedHandler))
+	r.Mount("/iceberg/api/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
+	r.Mount("/iceberg/relative_to/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
 
 	// Configuration flag to control if the embedded UI is served
 	// or not and assign the correct handler for each case.
@@ -174,7 +174,8 @@ func InvalidAPIEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	writeError(w, r, http.StatusInternalServerError, ErrInvalidAPIEndpoint)
 }
 
-// NotImplementedHandler returns HTTP 501 Not Implemented status for endpoints that are not yet implemented.
-func NotImplementedHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not Implemented", http.StatusNotImplemented)
+// NotImplementedIcebergCatalogHandler returns HTTP 501 Not Implemented status for
+// Iceberg REST Catalog endpoints.
+func NotImplementedIcebergCatalogHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Iceberg REST Catalog Not Implemented", http.StatusNotImplemented)
 }
