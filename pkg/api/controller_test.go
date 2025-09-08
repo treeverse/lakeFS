@@ -6634,3 +6634,43 @@ func TestController_GetLicense(t *testing.T) {
 		require.NotNil(t, resp.JSON501, "expected HTTP-501 response, got %v", resp.StatusCode())
 	})
 }
+
+func TestController_ImportStart_Disabled(t *testing.T) {
+	// set up a server with local imports disabled
+	storageLocation := t.TempDir()
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
+	viper.Set("blockstore.local.path", storageLocation)
+	viper.Set("blockstore.local.import_enabled", false)
+
+	clt, deps := setupClientWithAdmin(t)
+	ctx := t.Context()
+
+	// Create a repository with a unique name for the test
+	repo := testUniqueRepoName()
+	createRepoResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+		Name:             repo,
+		StorageNamespace: onBlock(deps, "bucket/prefix"),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, createRepoResp.JSON201, "expected status 201 Created when creating repo")
+
+	// attempt to start an import
+	resp, err := clt.ImportStartWithResponse(ctx, repo, "main", apigen.ImportStartJSONRequestBody{
+		Commit: apigen.CommitCreation{
+			Message: "test import",
+		},
+		Paths: []apigen.ImportLocation{
+			{
+				Path:        "some/local/path",
+				Type:        "common_prefix",
+				Destination: "/",
+			},
+		},
+	})
+
+	// verify the request is forbidden
+	require.NoError(t, err)
+	require.NotNil(t, resp, "response should not be nil")
+	require.NotNil(t, resp.JSON403, "expected a 403 forbidden response, but got none")
+	require.Contains(t, resp.JSON403.Message, "import is not supported for this storage")
+}
