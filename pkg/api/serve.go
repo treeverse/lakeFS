@@ -69,6 +69,7 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 	// Additional API routes we like to serve before the UI handler
 	r.Mount("/iceberg/api/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
 	r.Mount("/iceberg/relative_to/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
+	r.Mount("/mds/iceberg/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
 
 	// Configuration flag to control if the embedded UI is served
 	// or not and assign the correct handler for each case.
