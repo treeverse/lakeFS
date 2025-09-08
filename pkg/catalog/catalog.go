@@ -2769,63 +2769,21 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 // if replaceSrcMetadata is true, the metadata will be replaced with the provided metadata.
 // if replaceSrcMetadata is false, the metadata will be copied from the source entry.
 func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
-	// copyObjectFull copy data from srcEntry's physical address (if set) or srcPath into destPath
-	// fetch src entry if needed - optimization in case we already have the entry
+	if srcRepository != destRepository {
+		return nil, fmt.Errorf("copy between repositories is not supported: %w", graveler.ErrConflictFound)
+	}
+	if srcRef != destBranch {
+		return nil, fmt.Errorf("copy between branches is not supported: %w", graveler.ErrConflictFound)
+	}
+
 	srcEntry, err := c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
 	if err != nil {
 		return nil, err
 	}
 
-	// load repositories information for storage namespace
-	destRepo, err := c.GetRepository(ctx, destRepository)
-	if err != nil {
-		return nil, err
-	}
-
-	srcRepo := destRepo
-	if srcRepository != destRepository {
-		srcRepo, err = c.GetRepository(ctx, srcRepository)
-		if err != nil {
-			return nil, err
-		}
-
-		if srcRepo.StorageID != destRepo.StorageID {
-			return nil, fmt.Errorf("%w: cannot copy between repos with different StorageIDs", graveler.ErrInvalidStorageID)
-		}
-	}
-
-	// copy data to a new physical address
+	// copy the metadata into a new entry
 	dstEntry := *srcEntry
 	dstEntry.Path = destPath
-	dstEntry.AddressType = AddressTypeRelative
-	dstEntry.PhysicalAddress = c.PathProvider.NewPath()
-
-	if replaceSrcMetadata {
-		dstEntry.Metadata = metadata
-	} else {
-		dstEntry.Metadata = srcEntry.Metadata
-	}
-
-	srcObject := block.ObjectPointer{
-		StorageID:        srcRepo.StorageID,
-		StorageNamespace: srcRepo.StorageNamespace,
-		IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
-		Identifier:       srcEntry.PhysicalAddress,
-	}
-	destObj := block.ObjectPointer{
-		StorageID:        destRepo.StorageID,
-		StorageNamespace: destRepo.StorageNamespace,
-		IdentifierType:   dstEntry.AddressType.ToIdentifierType(),
-		Identifier:       dstEntry.PhysicalAddress,
-	}
-	err = c.BlockAdapter.Copy(ctx, srcObject, destObj)
-	if err != nil {
-		return nil, err
-	}
-
-	// Update creation date only after actual copy!!!
-	// The actual file upload can take a while and depend on many factors so we would like
-	// The mtime (creationDate) in lakeFS to be as close as possible to the mtime in the underlying storage
 	dstEntry.CreationDate = time.Now()
 
 	// create entry for the final copy
