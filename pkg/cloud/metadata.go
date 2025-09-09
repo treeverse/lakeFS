@@ -191,7 +191,7 @@ func checkAzureMetadata() error {
 
 // RegisterDefaultDetectors registers the built-in cloud detectors
 //
-// maintaine the order: GCP first, then AWS, then Azure
+// maintain the order: GCP first, then AWS, then Azure
 func RegisterDefaultDetectors() {
 	RegisterDetector(GCPCloud, DetectGCPProjectID)
 	RegisterDetector(AWSCloud, DetectAWSAccountID)

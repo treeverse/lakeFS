@@ -70,7 +70,7 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 
 		addToAdmins := !authUIConfig.IsAuthBasic()
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
-		metadata := initStatsMetadata(ctx, logger, authMetadataManager, baseConfig.StorageConfig())
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
 		authService, err := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 		if err != nil {
 			fmt.Printf("Failed to initialize auth service: %s\n", err)
