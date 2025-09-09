@@ -3700,7 +3700,7 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		srcRef = branch
 	}
 
-	// based on mode, do logical clone or physical copy
+	// copy based on mode, logical clone or physical copy
 	gravelerOpts := graveler.WithForce(swag.BoolValue(body.Force))
 	var entry *catalog.DBEntry
 	if swag.StringValue(params.Mode) == CopyobjectModeLogical {
