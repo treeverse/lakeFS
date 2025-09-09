@@ -142,9 +142,9 @@ Configuration section for the lakeFS key-value store database.
 #### auth.oidc
 
 * `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups
-* `auth.oidc.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set.
-* `auth.oidc.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
-* `auth.oidc.persist_friendly_name` `(string : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.oidc.friendly_name_claim_name`.
+* `auth.oidc.initial_groups_claim_name` `(string : '')` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set.
+* `auth.oidc.friendly_name_claim_name` `(string : '')` - If specified, the value from the claim with this name will be used as the user's display name.
+* `auth.oidc.persist_friendly_name` `(bool : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.oidc.friendly_name_claim_name`.
 * `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
 
 #### auth.cookie_auth_verification
@@ -160,10 +160,10 @@ Configuration section for the lakeFS key-value store database.
 #### auth.ui_config
 
 * `auth.ui_config.rbac` `(string: "none")` - "none", "simplified", "external" or "internal".
-    - `auth.ui_config.rbac="none"` - lakeFS runs without an RBAC authorization service. No additional users, groups, or policies can be created.
-    - `auth.ui_config.rbac="simplified"` - lakeFS uses ACL as the authorization service. You must implement your own ACL service and connect it to lakeFS. See the [implementation guide](../security/ACL-server-implementation.md) and [ACL overview](../security/access-control-lists.md) for details.
-    - `auth.ui_config.rbac="external"` - lakeFS integrates with an external RBAC authorization service.
-    - `auth.ui_config.rbac="internal"` - Available in the Enterprise lakeFS version. Uses the built-in RBAC authorization service. More information is available [here](../security/rbac.md).
+    - `"none"` - lakeFS runs without an RBAC authorization service. No additional users, groups, or policies can be created.
+    - `"simplified"` - lakeFS uses ACL as the authorization service. You must implement your own ACL service and connect it to lakeFS. See the [implementation guide](../security/ACL-server-implementation.md) and [ACL overview](../security/access-control-lists.md) for details.
+    - `"external"` - lakeFS integrates with an external RBAC authorization service.
+    - `"internal"` - Available in the Enterprise lakeFS version. Uses the built-in RBAC authorization service. More information is available [here](../security/rbac.md).
 
 * `auth.ui_config.login_url` `(string : "")` - An absolute or relative URL to your IdP’s login page, used to authenticate to lakeFS via SSO with OIDC or SAML.
 * `auth.ui_config.login_failed_message` `(string : "")` - Custom error message displayed when authentication fails on the login form (defaults to "The credentials don't match." if not specified).

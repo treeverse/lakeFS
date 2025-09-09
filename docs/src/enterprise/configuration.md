@@ -47,28 +47,18 @@ Configuration section for SSO authentication services, like SAML or OIDC.
 * `auth.logout_redirect_url` `(string : "/auth/login")` - The URL to redirect to after logout when using SSO authentication services, like SAML or OIDC.   
 The configuration depends on the authentication provider:  
     - **For OIDC:** The logout URL of the OIDC provider (e.g., Auth0 logout endpoint).
-    - **For SAML:** The URL within lakeFS where the IdP should redirect after logout (e.g., `/auth/login`).
+    - **For SAML:** The URL within lakeFS where the IdP should redirect after logout (e.g., `/auth/login`).   
+      If you are configuring SAML with `auth.ui_config.login_url_method`, ensure users return to the lakeFS login selection page after logout (instead of being automatically redirected to the SSO login page), set the `auth.logout_redirect_url` to:  
+      `https://<lakefs.ingress.domain>/auth/login?redirected=true`.  
+      If a Logout Redirection URL is configured in your IdP, ensure it points to the same path:
+      `https://<lakefs.ingress.domain>/auth/login?redirected=true`.
 
 #### auth.ui_config
 
-* `auth.ui_config.login_url_method` `(string : "redirect")` - Controls how lakeFS handles login when an `auth.ui_config.login_url` (SSO via OIDC or SAML) is configured.   
-Supported values:
-    * `auth.ui_config.login_url_method="none"` - Default for OSS lakeFS. lakeFS OSS does not support SSO authentication.
-    * `auth.ui_config.login_url_method="redirect"` - Default for lakeFS Enterprise. If `auth.ui_config.login_url` is set, when users are redirected to the lakeFS login page, they are automatically redirected to the SSO login page.
-    * `auth.ui_config.login_url_method="select"` - If `auth.ui_config.login_url` is set, when users are redirected to the login page, they are presented with a page that allows them to select between two options: login via SSO (`login_url`) or login with lakeFS credentials.
-
-    !!! warning
-        - The `auth.ui_config.login_url_method` setting must always be used together with `auth.ui_config.login_url`, meaning an SSO IdP (OIDC or SAML) must be configured.
-        - To ensure users return to the lakeFS login selection page after logout (instead of being automatically redirected to the SSO login page), configure the logout redirect URL.   
-          The configuration depends on the authentication provider:
-            - **For OIDC:** Set the `returnTo` value in `auth.providers.oidc.logout_endpoint_query_parameters` to:  
-            `["returnTo", "https://<lakefs.ingress.domain>/auth/login?redirected=true"]`  
-            instead of:  
-            `["returnTo", "https://<lakefs.ingress.domain>/oidc/login"]`.
-            - **For SAML:** Set the `auth.logout_redirect_url` to:  
-              `https://<lakefs.ingress.domain>/auth/login?redirected=true`.  
-              If a Logout Redirection URL is configured in your IdP, ensure it points to the same path:
-              `https://<lakefs.ingress.domain>/auth/login?redirected=true`.
+* `auth.ui_config.login_url_method` `(string : "redirect")` - Controls how lakeFS handles login when an `auth.ui_config.login_url` (SSO via OIDC or SAML) is configured. This parameter is only relevant when `auth.ui_config.login_url` is set.  
+**Supported values:**
+    * `"redirect"` - Default for lakeFS Enterprise. When users are redirected to the lakeFS login page, they are automatically redirected to the SSO login page.
+    * `"select"` - When users are redirected to the login page, they are presented with a selection page that allows them to choose between the builtin lakeFS login and SSO login.
 
 ### auth.providers
 
@@ -76,7 +66,7 @@ Configuration section for external identity providers used for authentication se
 
 #### auth.providers.ldap
 
-Configuration section for LDAP.
+Configuration section for LDAP
 
 * `auth.providers.ldap.server_endpoint` `(string : "")` - The LDAP server address, e.g. `'ldaps://ldap.company.com:636'`
 * `auth.providers.ldap.bind_dn` `(string : "")` - The bind string, e.g. `'uid=<bind-user-name>,ou=Users,o=<org-id>,dc=<company>,dc=com'`
@@ -90,7 +80,7 @@ Configuration section for LDAP.
 
 #### auth.providers.saml
 
-Configuration section for SAML.
+Configuration section for SAML
 
 * `auth.providers.saml.sp_root_url` `(string : '')` - The base lakeFS-URL, e.g. `'https://<lakefs-url>'`
 * `auth.providers.saml.sp_x509_key_path` `(string : '')` - The path to the private key, e.g `'/etc/saml_certs/rsa_saml_private.cert'`
@@ -106,13 +96,13 @@ Configuration section for SAML.
 
 #### auth.providers.oidc
 
-Configuration section for OIDC.
+Configuration section for OIDC
 
 * `auth.providers.oidc.url` `(string : '')` - The OIDC provider url, e.g. `'https://oidc-provider-url.com/'`
 * `auth.providers.oidc.client_id` `(string : '')` - The application's ID
 * `auth.providers.oidc.client_secret` `(string : '')` - The application's secret
 * `auth.providers.oidc.callback_base_url` `(string : '')` - A default callback address of the lakeFS server
-* `auth.providers.oidc.callback_base_urls` `(string[] : '[]')` - If callback_base_urls is configured, check current host is whitelisted otherwise use callback_base_url (without 's'). These config keys are mutually exclusive
+* `auth.providers.oidc.callback_base_urls` `(string[] : [])` - If callback_base_urls is configured, check current host is whitelisted otherwise use callback_base_url (without 's'). These config keys are mutually exclusive
 
 !!! note
     You may configure a list of URLs that the OIDC provider may redirect to. This allows lakeFS to be accessed from multiple hostnames while retaining federated auth capabilities.
@@ -120,8 +110,13 @@ Configuration section for OIDC.
 
 * `auth.providers.oidc.authorize_endpoint_query_parameters` `(map[string]string : {} )` - key/value parameters that are passed to a provider's authorization endpoint
 * `auth.providers.oidc.logout_endpoint_query_parameters` `(string[] : [])` - The query parameters that will be used to redirect the user to the OIDC provider after logout, e.g. `["returnTo", "https://<lakefs.ingress.domain>/oidc/login"]`
+
+!!! note
+    If you are configuring OIDC with `auth.ui_config.login_url_method`, ensure users return to the lakeFS login selection page after logout (instead of being automatically redirected to the SSO login page), set the `returnTo` value in `auth.providers.oidc.logout_endpoint_query_parameters` to:  
+    `["returnTo", "https://<lakefs.ingress.domain>/auth/login?redirected=true"]`
+
 * `auth.providers.oidc.logout_client_id_query_parameter` `(string : '')` - The claim name that represents the client identifier in the OIDC provider
-* `auth.providers.oidc.additional_scope_claims` `(string[] : '[]')` - Specifies optional requested permissions, other than `openid` and `profile` that are being used
+* `auth.providers.oidc.additional_scope_claims` `(string[] : [])` - Specifies optional requested permissions, other than `openid` and `profile` that are being used
 * `auth.providers.oidc.post_login_redirect_url` `(string : '')` - The URL to redirect users to after successful OIDC authentication, e.g. `'http://localhost:8000/'`
 
 #### auth.external_aws_auth
