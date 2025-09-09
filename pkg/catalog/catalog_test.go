@@ -7,11 +7,13 @@ import (
 	"io"
 	"net/url"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
@@ -685,7 +687,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 		for _, compactBranch := range []bool{false, true} {
 			t.Run(tt.name, func(t *testing.T) {
 				const repositoryID = "repo1"
-				g, expectedRecords := createPrepareUncommittedTestScenario(t, repositoryID, tt.numBranch, tt.numRecords, tt.expectedCalls, compactBranch)
+				g, expectedRecords := createPrepareUncommittedTestScenario(t, repositoryID, tt.numBranch, tt.numRecords, compactBranch)
 				blockAdapter := testutil.NewBlockAdapterByType(t, block.BlockstoreTypeMem)
 				c := &catalog.Catalog{
 					Store:                 g.Sut,
@@ -738,7 +740,7 @@ func TestCatalog_PrepareGCUncommitted(t *testing.T) {
 	}
 }
 
-func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, numBranches, numRecords, expectedCalls int, compact bool) (*gUtils.GravelerTest, []string) {
+func createPrepareUncommittedTestScenario(t *testing.T, repositoryID string, numBranches, numRecords int, compact bool) (*gUtils.GravelerTest, []string) {
 	t.Helper()
 
 	test := gUtils.InitGravelerTest(t)
@@ -941,4 +943,268 @@ func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, c
 		records = append(records, record.PhysicalAddress)
 	}
 	return records
+}
+
+func TestCatalog_CloneEntry(t *testing.T) {
+	ctx := t.Context()
+
+	tests := []struct {
+		name           string
+		srcRepository  string
+		srcRef         string
+		srcPath        string
+		destRepository string
+		destBranch     string
+		destPath       string
+		setupData      map[string]*graveler.Value
+		expectedError  error
+		expectedEntry  *catalog.DBEntry
+	}{
+		{
+			name:           "successful_clone_same_repo_and_branch",
+			srcRepository:  "repo1",
+			srcRef:         "main",
+			srcPath:        "source/file.txt",
+			destRepository: "repo1",
+			destBranch:     "main",
+			destPath:       "dest/file.txt",
+			setupData: map[string]*graveler.Value{
+				"repo1/main/source/file.txt": {
+					Identity: []byte("identity1"),
+					Data:     createEntryData("physical1", 1024, "etag1", map[string]string{"key1": "value1"}),
+				},
+			},
+			expectedError: nil,
+			expectedEntry: &catalog.DBEntry{
+				Path:            "dest/file.txt",
+				PhysicalAddress: "physical1",
+				Size:            1024,
+				Checksum:        "etag1",
+				Metadata:        catalog.Metadata{"key1": "value1"},
+				AddressType:     catalog.AddressTypeRelative,
+				ContentType:     "application/octet-stream",
+				Expired:         false,
+				CommonLevel:     false,
+			},
+		},
+		{
+			name:           "error_different_repositories",
+			srcRepository:  "repo1",
+			srcRef:         "main",
+			srcPath:        "source/file.txt",
+			destRepository: "repo2",
+			destBranch:     "main",
+			destPath:       "dest/file.txt",
+			setupData:      map[string]*graveler.Value{},
+			expectedError:  graveler.ErrInvalid,
+		},
+		{
+			name:           "error_different_branches",
+			srcRepository:  "repo1",
+			srcRef:         "main",
+			srcPath:        "source/file.txt",
+			destRepository: "repo1",
+			destBranch:     "feature",
+			destPath:       "dest/file.txt",
+			setupData:      map[string]*graveler.Value{},
+			expectedError:  graveler.ErrInvalid,
+		},
+		{
+			name:           "error_source_entry_not_found",
+			srcRepository:  "repo1",
+			srcRef:         "main",
+			srcPath:        "nonexistent/file.txt",
+			destRepository: "repo1",
+			destBranch:     "main",
+			destPath:       "dest/file.txt",
+			setupData:      map[string]*graveler.Value{},
+			expectedError:  graveler.ErrNotFound,
+		},
+		{
+			name:           "successful_clone_with_metadata",
+			srcRepository:  "repo1",
+			srcRef:         "main",
+			srcPath:        "source/data.json",
+			destRepository: "repo1",
+			destBranch:     "main",
+			destPath:       "dest/data.json",
+			setupData: map[string]*graveler.Value{
+				"repo1/main/source/data.json": {
+					Identity: []byte("identity2"),
+					Data:     createEntryData("physical2", 2048, "etag2", map[string]string{"content-type": "application/json", "author": "test"}),
+				},
+			},
+			expectedError: nil,
+			expectedEntry: &catalog.DBEntry{
+				Path:            "dest/data.json",
+				PhysicalAddress: "physical2",
+				Size:            2048,
+				Checksum:        "etag2",
+				Metadata:        catalog.Metadata{"content-type": "application/json", "author": "test"},
+				AddressType:     catalog.AddressTypeRelative,
+				ContentType:     "application/octet-stream",
+				Expired:         false,
+				CommonLevel:     false,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gravelerMock := &catalog.FakeGraveler{
+				KeyValue: tt.setupData,
+			}
+			c := &catalog.Catalog{
+				Store: gravelerMock,
+			}
+
+			result, err := c.CloneEntry(ctx, tt.srcRepository, tt.srcRef, tt.srcPath, tt.destRepository, tt.destBranch, tt.destPath)
+
+			// Verify error
+			if tt.expectedError != nil {
+				require.ErrorIs(t, err, tt.expectedError)
+				return
+			}
+
+			// Verify success
+			require.NoError(t, err)
+			require.NotNil(t, result)
+
+			// Verify expected values
+			assert.Equal(t, tt.expectedEntry.Path, result.Path)
+			assert.Equal(t, tt.expectedEntry.PhysicalAddress, result.PhysicalAddress)
+			assert.Equal(t, tt.expectedEntry.Size, result.Size)
+			assert.Equal(t, tt.expectedEntry.Checksum, result.Checksum)
+			assert.Equal(t, tt.expectedEntry.Metadata, result.Metadata)
+			assert.Equal(t, tt.expectedEntry.AddressType, result.AddressType)
+			assert.Equal(t, tt.expectedEntry.ContentType, result.ContentType)
+			assert.Equal(t, tt.expectedEntry.Expired, result.Expired)
+			assert.Equal(t, tt.expectedEntry.CommonLevel, result.CommonLevel)
+			assert.True(t, result.CreationDate.After(tt.expectedEntry.CreationDate))
+
+			// Verify the entry was actually created in the store
+			destKey := fakeGravelerBuildKey(graveler.RepositoryID(tt.destRepository), graveler.Ref(tt.destBranch), graveler.Key(tt.destPath))
+			createdValue, exists := gravelerMock.KeyValue[destKey]
+			require.True(t, exists, "Expected entry to be created in store")
+			require.NotNil(t, createdValue)
+
+			createdEntry, err := catalog.ValueToEntry(createdValue)
+			require.NoError(t, err)
+			require.NotNil(t, createdEntry)
+		})
+	}
+}
+
+func TestCatalog_CloneEntry_WithOptions(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now()
+
+	// Setup test data
+	setupData := map[string]*graveler.Value{
+		"repo1/main/source/file.txt": {
+			Identity: []byte("identity1"),
+			Data:     createEntryData("physical1", 1024, "etag1", map[string]string{"key1": "value1"}),
+		},
+	}
+
+	// Setup mock graveler
+	gravelerMock := &catalog.FakeGraveler{
+		KeyValue: setupData,
+	}
+
+	// Setup catalog
+	c := &catalog.Catalog{
+		Store: gravelerMock,
+	}
+
+	// Test with options (even though CloneEntry doesn't use them directly, they should be passed through)
+	result, err := c.CloneEntry(ctx, "repo1", "main", "source/file.txt", "repo1", "main", "dest/file.txt", graveler.WithForce(true))
+
+	// Verify success
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Verify basic properties
+	assert.Equal(t, "dest/file.txt", result.Path)
+	assert.Equal(t, "physical1", result.PhysicalAddress)
+	assert.Equal(t, int64(1024), result.Size)
+	assert.Equal(t, "etag1", result.Checksum)
+	assert.Equal(t, catalog.Metadata{"key1": "value1"}, result.Metadata)
+
+	// Verify creation date is recent
+	assert.True(t, result.CreationDate.After(now.Add(-time.Second)))
+	assert.True(t, result.CreationDate.Before(now.Add(time.Second)))
+}
+
+func TestCatalog_CloneEntry_EdgeCases(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("empty_paths", func(t *testing.T) {
+		gravelerMock := &catalog.FakeGraveler{
+			KeyValue: map[string]*graveler.Value{
+				"repo1/main/root": {
+					Identity: []byte("identity1"),
+					Data:     createEntryData("physical1", 0, "etag1", map[string]string{}),
+				},
+			},
+		}
+
+		c := &catalog.Catalog{
+			Store: gravelerMock,
+		}
+
+		result, err := c.CloneEntry(ctx, "repo1", "main", "root", "repo1", "main", "dest/root")
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, "dest/root", result.Path)
+	})
+
+	t.Run("large_metadata", func(t *testing.T) {
+		largeMetadata := make(catalog.Metadata)
+		for i := range 100 {
+			largeMetadata[fmt.Sprintf("key%d", i)] = fmt.Sprintf("value%d", i)
+		}
+
+		gravelerMock := &catalog.FakeGraveler{
+			KeyValue: map[string]*graveler.Value{
+				"repo1/main/source/large.txt": {
+					Identity: []byte("identity1"),
+					Data:     createEntryData("physical1", 1024, "etag1", largeMetadata),
+				},
+			},
+		}
+
+		c := &catalog.Catalog{
+			Store: gravelerMock,
+		}
+
+		result, err := c.CloneEntry(ctx, "repo1", "main", "source/large.txt", "repo1", "main", "dest/large.txt")
+		require.NoError(t, err)
+		require.NotNil(t, result)
+		assert.Equal(t, largeMetadata, result.Metadata)
+	})
+}
+
+// Helper function to create entry data for testing
+func createEntryData(address string, size int64, etag string, metadata map[string]string) []byte {
+	entry := &catalog.Entry{
+		Address:      address,
+		AddressType:  catalog.Entry_RELATIVE,
+		LastModified: timestamppb.New(time.Now()),
+		Size:         size,
+		ETag:         etag,
+		Metadata:     metadata,
+		ContentType:  "application/octet-stream",
+	}
+
+	data, err := proto.Marshal(entry)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
+// Helper function to build keys for the fake graveler (copied from fake_graveler_test.go)
+func fakeGravelerBuildKey(repositoryID graveler.RepositoryID, ref graveler.Ref, key graveler.Key) string {
+	return strings.Join([]string{repositoryID.String(), ref.String(), key.String()}, "/")
 }
