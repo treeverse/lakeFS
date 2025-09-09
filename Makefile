@@ -306,7 +306,7 @@ guard-s3-no-overwrite:
 	NAME=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print name' | tail -n1); \
 	VERSION=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print version' | tail -n1); \
 	JAR=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print assembly/assemblyJarName' | tail -n1); \
-	URL="https://$${HOST%%.s3.amazonaws.com}.s3.amazonaws.com/$$NAME/$$VERSION/$$JAR"; \
+	URL="https://$$HOST/$$NAME/$$VERSION/$$JAR"; \
 	STATUS=$$(curl -sS -o /dev/null -w '%{http_code}' "$$URL" || echo 000); \
 	[ "$$STATUS" = 404 ] || { echo "::error ::object already exists or inaccessible (status=$$STATUS). Bump version or delete explicitly: $$URL"; exit 42; }
 publish-scala: guard-s3-no-overwrite
