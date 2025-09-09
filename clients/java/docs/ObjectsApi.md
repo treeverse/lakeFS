@@ -18,7 +18,7 @@ All URIs are relative to */api/v1*
 
 <a id="copyObject"></a>
 # **copyObject**
-> ObjectStats copyObject(repository, branch, destPath, objectCopyCreation).execute();
+> ObjectStats copyObject(repository, branch, destPath, objectCopyCreation).mode(mode).execute();
 
 create a copy of an object
 
@@ -69,8 +69,10 @@ public class Example {
     String branch = "branch_example"; // String | destination branch for the copy
     String destPath = "destPath_example"; // String | destination path relative to the branch
     ObjectCopyCreation objectCopyCreation = new ObjectCopyCreation(); // ObjectCopyCreation | 
+    String mode = "physical"; // String | Determines how the object is copied: - physical (default): Creates a new copy of the object in both lakeFS and the underlying storage (e.g., S3). Results in two independent objects. - logical: Creates a new lakeFS entry that points to the same underlying storage object. Both lakeFS objects share the same physical data in storage (e.g., same S3 object). *EXPERIMENTAL* 
     try {
       ObjectStats result = apiInstance.copyObject(repository, branch, destPath, objectCopyCreation)
+            .mode(mode)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -92,6 +94,7 @@ public class Example {
 | **branch** | **String**| destination branch for the copy | |
 | **destPath** | **String**| destination path relative to the branch | |
 | **objectCopyCreation** | [**ObjectCopyCreation**](ObjectCopyCreation.md)|  | |
+| **mode** | **String**| Determines how the object is copied: - physical (default): Creates a new copy of the object in both lakeFS and the underlying storage (e.g., S3). Results in two independent objects. - logical: Creates a new lakeFS entry that points to the same underlying storage object. Both lakeFS objects share the same physical data in storage (e.g., same S3 object). *EXPERIMENTAL*  | [optional] [enum: physical, logical] |
 
 ### Return type
 

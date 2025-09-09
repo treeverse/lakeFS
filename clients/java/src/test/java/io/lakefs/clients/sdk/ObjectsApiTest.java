@@ -50,7 +50,9 @@ public class ObjectsApiTest {
         String branch = null;
         String destPath = null;
         ObjectCopyCreation objectCopyCreation = null;
+        String mode = null;
         ObjectStats response = api.copyObject(repository, branch, destPath, objectCopyCreation)
+                .mode(mode)
                 .execute();
         // TODO: test validations
     }

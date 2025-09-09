@@ -19,7 +19,7 @@ Method | HTTP request | Description
 
 ## copy_object
 
-> models::ObjectStats copy_object(repository, branch, dest_path, object_copy_creation)
+> models::ObjectStats copy_object(repository, branch, dest_path, object_copy_creation, mode)
 create a copy of an object
 
 ### Parameters
@@ -31,6 +31,7 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** | destination branch for the copy | [required] |
 **dest_path** | **String** | destination path relative to the branch | [required] |
 **object_copy_creation** | [**ObjectCopyCreation**](ObjectCopyCreation.md) |  | [required] |
+**mode** | Option<**String**> | Determines how the object is copied: - physical (default): Creates a new copy of the object in both lakeFS and the underlying storage (e.g., S3). Results in two independent objects. - logical: Creates a new lakeFS entry that points to the same underlying storage object. Both lakeFS objects share the same physical data in storage (e.g., same S3 object). *EXPERIMENTAL*  |  |
 
 ### Return type
 
