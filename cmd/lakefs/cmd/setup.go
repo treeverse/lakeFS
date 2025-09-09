@@ -85,7 +85,7 @@ var setupCmd = &cobra.Command{
 			fmt.Printf("Setup failed: %s\n", err)
 			os.Exit(1)
 		}
-		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg.StorageConfig())
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
 
 		credentials, err := setupLakeFS(ctx, cfg, authMetadataManager, authService, userName, accessKeyID, secretAccessKey, noCheck)
 		if err != nil {
