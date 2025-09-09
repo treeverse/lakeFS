@@ -2765,6 +2765,29 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
+func (c *Catalog) CloneEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
+	if srcRepository != destRepository {
+		return nil, fmt.Errorf("%w: clone must be between the same repository", graveler.ErrInvalid)
+	}
+	if srcRef != destBranch {
+		return nil, fmt.Errorf("%w: clone must be between the same branch", graveler.ErrInvalid)
+	}
+	srcEntry, err := c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
+	if err != nil {
+		return nil, err
+	}
+
+	// copy the metadata into a new entry
+	dstEntry := *srcEntry
+	dstEntry.Path = destPath
+	dstEntry.CreationDate = time.Now()
+	err = c.CreateEntry(ctx, destRepository, destBranch, dstEntry, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &dstEntry, nil
+}
+
 // CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address.
 // if replaceSrcMetadata is true, the metadata will be replaced with the provided metadata.
 // if replaceSrcMetadata is false, the metadata will be copied from the source entry.

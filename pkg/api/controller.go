@@ -79,6 +79,8 @@ const (
 
 	usernamePlaceholder = "Username"
 	passwordPlaceholder = "Password"
+
+	CopyobjectModeLogical = "logical"
 )
 
 type actionsHandler interface {
@@ -3698,8 +3700,14 @@ func (c *Controller) CopyObject(w http.ResponseWriter, r *http.Request, body api
 		srcRef = branch
 	}
 
-	// copy entry
-	entry, err := c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, false, nil, graveler.WithForce(swag.BoolValue(body.Force)))
+	// based on mode, do logical clone or physical copy
+	gravelerOpts := graveler.WithForce(swag.BoolValue(body.Force))
+	var entry *catalog.DBEntry
+	if swag.StringValue(params.Mode) == CopyobjectModeLogical {
+		entry, err = c.Catalog.CloneEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, gravelerOpts)
+	} else {
+		entry, err = c.Catalog.CopyEntry(ctx, repository, srcRef, srcPath, repository, branch, destPath, false, nil, gravelerOpts)
+	}
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

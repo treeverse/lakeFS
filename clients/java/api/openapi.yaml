@@ -5766,6 +5766,20 @@ paths:
         schema:
           type: string
         style: form
+      - description: |
+          physical - Default. Uses copy of new object's physical address.
+          logical - Creates an entry point to the same physical address.
+          *EXPERIMENTAL*
+        explode: true
+        in: query
+        name: mode
+        required: false
+        schema:
+          enum:
+          - physical
+          - logical
+          type: string
+        style: form
       requestBody:
         content:
           application/json:

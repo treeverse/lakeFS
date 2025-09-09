@@ -59,13 +59,13 @@ class ObjectsApi:
         self.api_client = api_client
 
     @validate_arguments
-    def copy_object(self, repository : StrictStr, branch : Annotated[StrictStr, Field(..., description="destination branch for the copy")], dest_path : Annotated[StrictStr, Field(..., description="destination path relative to the branch")], object_copy_creation : ObjectCopyCreation, **kwargs) -> ObjectStats:  # noqa: E501
+    def copy_object(self, repository : StrictStr, branch : Annotated[StrictStr, Field(..., description="destination branch for the copy")], dest_path : Annotated[StrictStr, Field(..., description="destination path relative to the branch")], object_copy_creation : ObjectCopyCreation, mode : Annotated[Optional[StrictStr], Field(description="physical - Default. Uses copy of new object's physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL* ")] = None, **kwargs) -> ObjectStats:  # noqa: E501
         """create a copy of an object  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.copy_object(repository, branch, dest_path, object_copy_creation, async_req=True)
+        >>> thread = api.copy_object(repository, branch, dest_path, object_copy_creation, mode, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -76,6 +76,8 @@ class ObjectsApi:
         :type dest_path: str
         :param object_copy_creation: (required)
         :type object_copy_creation: ObjectCopyCreation
+        :param mode: physical - Default. Uses copy of new object's physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL* 
+        :type mode: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _request_timeout: timeout setting for this request.
@@ -91,16 +93,16 @@ class ObjectsApi:
         if '_preload_content' in kwargs:
             message = "Error! Please call the copy_object_with_http_info method with `_preload_content` instead and obtain raw data from ApiResponse.raw_data"  # noqa: E501
             raise ValueError(message)
-        return self.copy_object_with_http_info(repository, branch, dest_path, object_copy_creation, **kwargs)  # noqa: E501
+        return self.copy_object_with_http_info(repository, branch, dest_path, object_copy_creation, mode, **kwargs)  # noqa: E501
 
     @validate_arguments
-    def copy_object_with_http_info(self, repository : StrictStr, branch : Annotated[StrictStr, Field(..., description="destination branch for the copy")], dest_path : Annotated[StrictStr, Field(..., description="destination path relative to the branch")], object_copy_creation : ObjectCopyCreation, **kwargs) -> ApiResponse:  # noqa: E501
+    def copy_object_with_http_info(self, repository : StrictStr, branch : Annotated[StrictStr, Field(..., description="destination branch for the copy")], dest_path : Annotated[StrictStr, Field(..., description="destination path relative to the branch")], object_copy_creation : ObjectCopyCreation, mode : Annotated[Optional[StrictStr], Field(description="physical - Default. Uses copy of new object's physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL* ")] = None, **kwargs) -> ApiResponse:  # noqa: E501
         """create a copy of an object  # noqa: E501
 
         This method makes a synchronous HTTP request by default. To make an
         asynchronous HTTP request, please pass async_req=True
 
-        >>> thread = api.copy_object_with_http_info(repository, branch, dest_path, object_copy_creation, async_req=True)
+        >>> thread = api.copy_object_with_http_info(repository, branch, dest_path, object_copy_creation, mode, async_req=True)
         >>> result = thread.get()
 
         :param repository: (required)
@@ -111,6 +113,8 @@ class ObjectsApi:
         :type dest_path: str
         :param object_copy_creation: (required)
         :type object_copy_creation: ObjectCopyCreation
+        :param mode: physical - Default. Uses copy of new object's physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL* 
+        :type mode: str
         :param async_req: Whether to execute the request asynchronously.
         :type async_req: bool, optional
         :param _preload_content: if False, the ApiResponse.data will
@@ -142,7 +146,8 @@ class ObjectsApi:
             'repository',
             'branch',
             'dest_path',
-            'object_copy_creation'
+            'object_copy_creation',
+            'mode'
         ]
         _all_params.extend(
             [
@@ -181,6 +186,9 @@ class ObjectsApi:
         _query_params = []
         if _params.get('dest_path') is not None:  # noqa: E501
             _query_params.append(('dest_path', _params['dest_path']))
+
+        if _params.get('mode') is not None:  # noqa: E501
+            _query_params.append(('mode', _params['mode']))
 
         # process the header parameters
         _header_params = dict(_params.get('_headers', {}))

@@ -17,7 +17,7 @@ Method | HTTP request | Description
 
 
 # **copy_object**
-> ObjectStats copy_object(repository, branch, dest_path, object_copy_creation)
+> ObjectStats copy_object(repository, branch, dest_path, object_copy_creation, mode=mode)
 
 create a copy of an object
 
@@ -86,10 +86,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | destination branch for the copy
     dest_path = 'dest_path_example' # str | destination path relative to the branch
     object_copy_creation = lakefs_sdk.ObjectCopyCreation() # ObjectCopyCreation | 
+    mode = 'mode_example' # str | physical - Default. Uses copy of new object's physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL*  (optional)
 
     try:
         # create a copy of an object
-        api_response = api_instance.copy_object(repository, branch, dest_path, object_copy_creation)
+        api_response = api_instance.copy_object(repository, branch, dest_path, object_copy_creation, mode=mode)
         print("The response of ObjectsApi->copy_object:\n")
         pprint(api_response)
     except Exception as e:
@@ -107,6 +108,7 @@ Name | Type | Description  | Notes
  **branch** | **str**| destination branch for the copy | 
  **dest_path** | **str**| destination path relative to the branch | 
  **object_copy_creation** | [**ObjectCopyCreation**](ObjectCopyCreation.md)|  | 
+ **mode** | **str**| physical - Default. Uses copy of new object&#39;s physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL*  | [optional] 
 
 ### Return type
 

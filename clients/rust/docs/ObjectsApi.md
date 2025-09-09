@@ -19,7 +19,7 @@ Method | HTTP request | Description
 
 ## copy_object
 
-> models::ObjectStats copy_object(repository, branch, dest_path, object_copy_creation)
+> models::ObjectStats copy_object(repository, branch, dest_path, object_copy_creation, mode)
 create a copy of an object
 
 ### Parameters
@@ -31,6 +31,7 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** | destination branch for the copy | [required] |
 **dest_path** | **String** | destination path relative to the branch | [required] |
 **object_copy_creation** | [**ObjectCopyCreation**](ObjectCopyCreation.md) |  | [required] |
+**mode** | Option<**String**> | physical - Default. Uses copy of new object's physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL*  |  |
 
 ### Return type
 
