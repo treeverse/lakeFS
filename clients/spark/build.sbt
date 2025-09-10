@@ -114,6 +114,8 @@ s3Upload / s3Progress := true
 lazy val s3PutIfAbsent = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match")
 
 s3PutIfAbsent := {
+  import sys.process._
+
   val bucket = (s3Upload / s3Host).value
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
