@@ -282,9 +282,8 @@ var kvLoadCmd = &cobra.Command{
 		strategy := kv.LoadStrategy(strategyFlag)
 		switch strategy {
 		case kv.LoadStrategyOverwrite, kv.LoadStrategySkip:
-			// Valid strategies
 		default:
-			return fmt.Errorf("%w: %s (must be one of: overwrite, merge, skip)", errInvalidStrategy, strategyFlag)
+			return fmt.Errorf("%w: %s (must be one of: overwrite or skip)", errInvalidStrategy, strategyFlag)
 		}
 
 		ctx := cmd.Context()
@@ -349,6 +348,6 @@ func init() {
 	kvCmd.AddCommand(kvLoadCmd)
 	kvLoadCmd.Flags().String("input", "", "input file (required)")
 	kvLoadCmd.Flags().String("sections", "", "comma-separated list of sections to load (default: all sections in dump)")
-	kvLoadCmd.Flags().String("strategy", "overwrite", "load strategy: overwrite, merge, or skip (default: overwrite)")
+	kvLoadCmd.Flags().String("strategy", "overwrite", "load strategy: overwrite or skip (default: overwrite)")
 	_ = kvLoadCmd.MarkFlagRequired("input")
 }
