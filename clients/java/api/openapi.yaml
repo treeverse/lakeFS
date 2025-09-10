@@ -5424,6 +5424,15 @@ paths:
           default: false
           type: boolean
         style: form
+      - description: delete entry without tombstone when possible *EXPERIMENTAL*
+        explode: true
+        in: query
+        name: no_tombstone
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
       responses:
         "204":
           description: object deleted successfully
@@ -5666,6 +5675,15 @@ paths:
       - explode: true
         in: query
         name: force
+        required: false
+        schema:
+          default: false
+          type: boolean
+        style: form
+      - description: delete entry without tombstone when possible *EXPERIMENTAL*
+        explode: true
+        in: query
+        name: no_tombstone
         required: false
         schema:
           default: false
@@ -7695,6 +7713,16 @@ components:
       schema:
         type: string
       style: simple
+    NoTombstone:
+      description: delete entry without tombstone when possible *EXPERIMENTAL*
+      explode: true
+      in: query
+      name: no_tombstone
+      required: false
+      schema:
+        default: false
+        type: boolean
+      style: form
   responses:
     NotFoundOrNoACL:
       content:
@@ -8875,6 +8903,7 @@ components:
         - login_cookie_names
         - login_cookie_names
         fallback_login_label: fallback_login_label
+        login_url_method: none
       properties:
         RBAC:
           description: |
@@ -8883,6 +8912,7 @@ components:
           enum:
           - none
           - simplified
+          - internal
           - external
           type: string
         username_ui_placeholder:
@@ -8894,21 +8924,33 @@ components:
             Placeholder text to display in the password field of the login form.
           type: string
         login_url:
-          description: primary URL to use for login.
+          description: Primary URL to use for login.
+          type: string
+        login_url_method:
+          description: |
+            Defines login behavior when login_url is set.
+            - none: For OSS users.
+            - redirect: Auto-redirect to login_url.
+            - select: Show a page to choose between logging in via login_url or with lakeFS credentials.
+            Ignored if login_url is not configured.
+          enum:
+          - none
+          - redirect
+          - select
           type: string
         login_failed_message:
           description: |
-            message to display to users who fail to login; a full sentence that is rendered
+            Message to display to users who fail to login; a full sentence that is rendered
             in HTML and may contain a link to a secondary login method
           type: string
         fallback_login_url:
-          description: secondary URL to offer users to use for login.
+          description: Secondary URL to offer users to use for login.
           type: string
         fallback_login_label:
-          description: label to place on fallback_login_url.
+          description: Label to place on fallback_login_url.
           type: string
         login_cookie_names:
-          description: cookie names used to store JWT
+          description: Cookie names used to store JWT
           items:
             type: string
           type: array
@@ -8934,6 +8976,7 @@ components:
           - login_cookie_names
           - login_cookie_names
           fallback_login_label: fallback_login_label
+          login_url_method: none
         state: initialized
         comm_prefs_missing: true
       properties:

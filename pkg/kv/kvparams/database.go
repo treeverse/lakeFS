@@ -15,6 +15,7 @@ type Config struct {
 	DynamoDB *DynamoDB
 	Local    *Local
 	CosmosDB *CosmosDB
+	Redis    *Redis
 }
 
 type Local struct {
@@ -78,6 +79,22 @@ type CosmosDB struct {
 	StrongConsistency bool
 }
 
+type Redis struct {
+	Endpoint      string // Endpoint is the single address (host:port) or ';' separated addresses for cluster
+	Username      string
+	Password      string
+	Database      int // Database number to select
+	PoolSize      int // Connection pool size
+	DialTimeout   time.Duration
+	ReadTimeout   time.Duration
+	WriteTimeout  time.Duration
+	Namespace     string // Namespace is a prefix for all keys
+	EnableTLS     bool
+	ClusterMode   bool
+	TLSSkipVerify bool // Skip cert verification (dev only)
+	BatchSize     int
+}
+
 func NewConfig(cfg *config.Database) (Config, error) {
 	p := Config{
 		Type: cfg.Type,
@@ -132,5 +149,22 @@ func NewConfig(cfg *config.Database) (Config, error) {
 		}
 	}
 
+	if cfg.Redis != nil {
+		p.Redis = &Redis{
+			Endpoint:      cfg.Redis.Endpoint,
+			Username:      cfg.Redis.Username,
+			Password:      cfg.Redis.Password.SecureValue(),
+			Database:      cfg.Redis.Database,
+			PoolSize:      cfg.Redis.PoolSize,
+			DialTimeout:   cfg.Redis.DialTimeout,
+			ReadTimeout:   cfg.Redis.ReadTimeout,
+			WriteTimeout:  cfg.Redis.WriteTimeout,
+			Namespace:     cfg.Redis.Namespace,
+			EnableTLS:     cfg.Redis.EnableTLS,
+			ClusterMode:   cfg.Redis.ClusterMode,
+			TLSSkipVerify: cfg.Redis.TLSSkipVerify,
+			BatchSize:     cfg.Redis.BatchSize,
+		}
+	}
 	return p, nil
 }

@@ -24,6 +24,7 @@ public class LakeFSClient {
     private final StagingApi stagingApi;
     private final RepositoriesApi repositoriesApi;
     private final BranchesApi branchesApi;
+    private final CommitsApi commitsApi;
     private final ConfigApi configApi;
     private final InternalApi internalApi;
 
@@ -57,6 +58,7 @@ public class LakeFSClient {
         this.stagingApi = new StagingApi(apiClient);
         this.repositoriesApi = new RepositoriesApi(apiClient);
         this.branchesApi = new BranchesApi(apiClient);
+        this.commitsApi = new CommitsApi(apiClient);
         this.configApi = new ConfigApi(apiClient);
         this.internalApi = new InternalApi(apiClient);
     }
@@ -64,6 +66,16 @@ public class LakeFSClient {
     ApiClient newApiClientNoAuth(String scheme, Configuration conf) {
 
         ApiClient apiClient = io.lakefs.clients.sdk.Configuration.getDefaultApiClient();
+        
+        // Configure timeouts
+        int connectTimeout = FSConfiguration.getInt(conf, scheme, Constants.CONNECT_TIMEOUT_KEY_SUFFIX, Constants.DEFAULT_CONNECT_TIMEOUT_MS);
+        int readTimeout = FSConfiguration.getInt(conf, scheme, Constants.READ_TIMEOUT_KEY_SUFFIX, Constants.DEFAULT_READ_TIMEOUT_MS);
+        int writeTimeout = FSConfiguration.getInt(conf, scheme, Constants.WRITE_TIMEOUT_KEY_SUFFIX, Constants.DEFAULT_WRITE_TIMEOUT_MS);
+        
+        apiClient.setConnectTimeout(connectTimeout);
+        apiClient.setReadTimeout(readTimeout);
+        apiClient.setWriteTimeout(writeTimeout);
+        
         String endpoint = FSConfiguration.get(conf, scheme, Constants.ENDPOINT_KEY_SUFFIX, Constants.DEFAULT_CLIENT_ENDPOINT);
         if (endpoint.endsWith(Constants.SEPARATOR)) {
             endpoint = endpoint.substring(0, endpoint.length() - 1);
@@ -92,6 +104,10 @@ public class LakeFSClient {
 
     public BranchesApi getBranchesApi() {
         return branchesApi;
+    }
+
+    public CommitsApi getCommitsApi() {
+        return commitsApi;
     }
 
     public ConfigApi getConfigApi() {

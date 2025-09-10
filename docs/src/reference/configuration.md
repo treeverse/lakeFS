@@ -49,7 +49,10 @@ This reference uses `.` to denote the nesting of values.
 
 Configuration section for the lakeFS key-value store database.
 
-* `database.type` `(string ["postgres"|"dynamodb"|"cosmosdb"|"local"] : )` - lakeFS database type
+* `database.type` `(string ["postgres"|"dynamodb"|"cosmosdb"|"redis"|"local"] : )` - lakeFS database type
+
+    !!! note
+        The `redis` database type is available in **lakeFS Enterprise**
 
 
 === "`database.postgres`"
@@ -235,9 +238,9 @@ Configuration section for the lakeFS key-value store database.
 
 #### graveler.repository_cache
 
-* `graveler.reposiory_cache.size` `(int : 1000)` - How many items to store in the repository cache.
-* `graveler.reposiory_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.
-* `graveler.reposiory_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
+* `graveler.repository_cache.size` `(int : 1000)` - How many items to store in the repository cache.
+* `graveler.repository_cache.ttl` `(time duration : "5s")` - How long to store an item in the repository cache.
+* `graveler.repository_cache.jitter` `(time duration : "2s")` - A random amount of time between 0 and this value is added to each item's TTL.
 
 #### graveler.commit_cache
 

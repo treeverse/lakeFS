@@ -53,7 +53,7 @@ services:
         condition: service_healthy
     entrypoint: ["sh", "-c", "/app/lakefs setup --user-name tester --access-key-id $${TESTER_ACCESS_KEY_ID} --secret-access-key $${TESTER_SECRET_ACCESS_KEY}"]
   spark:
-    image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
+    image: docker.io/treeverse/bitnami-spark:${SPARK_TAG:-3}
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark
@@ -76,7 +76,7 @@ services:
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-worker:
-    image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
+    image: docker.io/treeverse/bitnami-spark:${SPARK_TAG:-3}
     ports:
       - 8081
     environment:
@@ -101,7 +101,7 @@ services:
       - "gateway-test-spark3.s3.docker.lakefs.io:10.5.0.55"
       - "thick-client-test.s3.docker.lakefs.io:10.5.0.55"
   spark-submit:
-    image: docker.io/${SPARK_BASE:-bitnami/spark}:${SPARK_TAG:-3}
+    image: docker.io/treeverse/bitnami-spark:${SPARK_TAG:-3}
     profiles: ["command"]
     volumes:
       - ./:/local

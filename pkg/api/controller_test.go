@@ -3263,39 +3263,45 @@ func TestController_ObjectsDeleteObjectHandler(t *testing.T) {
 	const content = "hello world this is my awesome content"
 
 	t.Run("delete object", func(t *testing.T) {
-		resp, err := uploadObjectHelper(t, ctx, clt, "foo/bar", strings.NewReader(content), repo, branch)
-		verifyResponseOK(t, resp, err)
+		for _, noTombstone := range []bool{false, true} {
+			t.Run(fmt.Sprintf("no_tombstone=%t", noTombstone), func(t *testing.T) {
+				objKey := "foo/bar-" + strconv.FormatBool(noTombstone)
+				resp, err := uploadObjectHelper(t, ctx, clt, objKey, strings.NewReader(content), repo, branch)
+				verifyResponseOK(t, resp, err)
 
-		sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
-		if sizeBytes != 38 {
-			t.Fatalf("expected 38 bytes to be written, got back %d", sizeBytes)
-		}
+				sizeBytes := apiutil.Value(resp.JSON201.SizeBytes)
+				if sizeBytes != 38 {
+					t.Fatalf("expected 38 bytes to be written, got back %d", sizeBytes)
+				}
 
-		// download it
-		rresp, err := clt.GetObjectWithResponse(ctx, repo, branch, &apigen.GetObjectParams{Path: "foo/bar"})
-		verifyResponseOK(t, rresp, err)
-		result := string(rresp.Body)
-		if len(result) != 38 {
-			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
-		}
-		etag := rresp.HTTPResponse.Header.Get("ETag")
-		const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
-		if etag != httputil.ETag(expectedEtag) {
-			t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
-		}
+				// download it
+				rresp, err := clt.GetObjectWithResponse(ctx, repo, branch, &apigen.GetObjectParams{Path: objKey})
+				verifyResponseOK(t, rresp, err)
+				result := string(rresp.Body)
+				if len(result) != 38 {
+					t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
+				}
+				etag := rresp.HTTPResponse.Header.Get("ETag")
+				const expectedEtag = "7e70ed4aa82063dd88ca47e91a8c6e09"
+				if etag != httputil.ETag(expectedEtag) {
+					t.Fatalf("got unexpected etag: %s - expected %s", etag, httputil.ETag(expectedEtag))
+				}
 
-		// delete it
-		delResp, err := clt.DeleteObjectWithResponse(ctx, repo, branch, &apigen.DeleteObjectParams{Path: "foo/bar"})
-		verifyResponseOK(t, delResp, err)
+				// delete it
+				delNoTombstone := apigen.NoTombstone(noTombstone)
+				delResp, err := clt.DeleteObjectWithResponse(ctx, repo, branch, &apigen.DeleteObjectParams{Path: objKey, NoTombstone: &delNoTombstone})
+				verifyResponseOK(t, delResp, err)
 
-		// get it
-		statResp, err := clt.StatObjectWithResponse(ctx, repo, branch, &apigen.StatObjectParams{Path: "foo/bar"})
-		testutil.Must(t, err)
-		if statResp == nil {
-			t.Fatal("StatObject missing response")
-		}
-		if statResp.JSON404 == nil {
-			t.Fatalf("expected file to be gone now")
+				// get it
+				statResp, err := clt.StatObjectWithResponse(ctx, repo, branch, &apigen.StatObjectParams{Path: objKey})
+				testutil.Must(t, err)
+				if statResp == nil {
+					t.Fatal("StatObject missing response")
+				}
+				if statResp.JSON404 == nil {
+					t.Fatalf("expected file to be gone now")
+				}
+			})
 		}
 	})
 
@@ -6627,4 +6633,44 @@ func TestController_GetLicense(t *testing.T) {
 		require.Equal(t, http.StatusNotImplemented, resp.StatusCode(), "Expected status Not Implemented")
 		require.NotNil(t, resp.JSON501, "expected HTTP-501 response, got %v", resp.StatusCode())
 	})
+}
+
+func TestController_ImportStart_Disabled(t *testing.T) {
+	// set up a server with local imports disabled
+	storageLocation := t.TempDir()
+	viper.Set(config.BlockstoreTypeKey, block.BlockstoreTypeLocal)
+	viper.Set("blockstore.local.path", storageLocation)
+	viper.Set("blockstore.local.import_enabled", false)
+
+	clt, deps := setupClientWithAdmin(t)
+	ctx := t.Context()
+
+	// Create a repository with a unique name for the test
+	repo := testUniqueRepoName()
+	createRepoResp, err := clt.CreateRepositoryWithResponse(ctx, &apigen.CreateRepositoryParams{}, apigen.CreateRepositoryJSONRequestBody{
+		Name:             repo,
+		StorageNamespace: onBlock(deps, "bucket/prefix"),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, createRepoResp.JSON201, "expected status 201 Created when creating repo")
+
+	// attempt to start an import
+	resp, err := clt.ImportStartWithResponse(ctx, repo, "main", apigen.ImportStartJSONRequestBody{
+		Commit: apigen.CommitCreation{
+			Message: "test import",
+		},
+		Paths: []apigen.ImportLocation{
+			{
+				Path:        "some/local/path",
+				Type:        "common_prefix",
+				Destination: "/",
+			},
+		},
+	})
+
+	// verify the request is forbidden
+	require.NoError(t, err)
+	require.NotNil(t, resp, "response should not be nil")
+	require.NotNil(t, resp.JSON403, "expected a 403 forbidden response, but got none")
+	require.Contains(t, resp.JSON403.Message, "import is not supported for this storage")
 }

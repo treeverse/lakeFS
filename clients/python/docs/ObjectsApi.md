@@ -136,7 +136,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **delete_object**
-> delete_object(repository, branch, path, force=force)
+> delete_object(repository, branch, path, force=force, no_tombstone=no_tombstone)
 
 delete object. Missing objects will not return a NotFound error.
 
@@ -203,10 +203,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | 
     path = 'path_example' # str | relative to the branch
     force = False # bool |  (optional) (default to False)
+    no_tombstone = False # bool | delete entry without tombstone when possible *EXPERIMENTAL* (optional) (default to False)
 
     try:
         # delete object. Missing objects will not return a NotFound error.
-        api_instance.delete_object(repository, branch, path, force=force)
+        api_instance.delete_object(repository, branch, path, force=force, no_tombstone=no_tombstone)
     except Exception as e:
         print("Exception when calling ObjectsApi->delete_object: %s\n" % e)
 ```
@@ -222,6 +223,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  | 
  **path** | **str**| relative to the branch | 
  **force** | **bool**|  | [optional] [default to False]
+ **no_tombstone** | **bool**| delete entry without tombstone when possible *EXPERIMENTAL* | [optional] [default to False]
 
 ### Return type
 
@@ -250,7 +252,7 @@ void (empty response body)
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **delete_objects**
-> ObjectErrorList delete_objects(repository, branch, path_list, force=force)
+> ObjectErrorList delete_objects(repository, branch, path_list, force=force, no_tombstone=no_tombstone)
 
 delete objects. Missing objects will not return a NotFound error.
 
@@ -319,10 +321,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     branch = 'branch_example' # str | 
     path_list = lakefs_sdk.PathList() # PathList | 
     force = False # bool |  (optional) (default to False)
+    no_tombstone = False # bool | delete entry without tombstone when possible *EXPERIMENTAL* (optional) (default to False)
 
     try:
         # delete objects. Missing objects will not return a NotFound error.
-        api_response = api_instance.delete_objects(repository, branch, path_list, force=force)
+        api_response = api_instance.delete_objects(repository, branch, path_list, force=force, no_tombstone=no_tombstone)
         print("The response of ObjectsApi->delete_objects:\n")
         pprint(api_response)
     except Exception as e:
@@ -340,6 +343,7 @@ Name | Type | Description  | Notes
  **branch** | **str**|  | 
  **path_list** | [**PathList**](PathList.md)|  | 
  **force** | **bool**|  | [optional] [default to False]
+ **no_tombstone** | **bool**| delete entry without tombstone when possible *EXPERIMENTAL* | [optional] [default to False]
 
 ### Return type
 

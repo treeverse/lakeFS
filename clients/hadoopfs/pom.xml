@@ -287,12 +287,18 @@ To export to S3:
         <dependency>
             <groupId>io.lakefs</groupId>
             <artifactId>sdk</artifactId>
-            <version>1.53.1</version>
+            <version>1.67.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <version>${hadoop.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>value</artifactId>
+            <version>2.9.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -384,12 +390,6 @@ To export to S3:
             <groupId>org.mock-server</groupId>
             <artifactId>mockserver-core</artifactId>
             <version>5.15.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.immutables</groupId>
-            <artifactId>value</artifactId>
-            <version>2.9.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>

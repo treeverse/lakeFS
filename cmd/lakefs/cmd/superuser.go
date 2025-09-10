@@ -31,9 +31,9 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := LoadConfig()
-		authConfig := cfg.AuthConfig()
+		authUIConfig := cfg.AuthConfig().GetAuthUIConfig()
 		baseConfig := cfg.GetBaseConfig()
-		if authConfig.UIConfig.RBAC == config.AuthRBACExternal {
+		if authUIConfig.RBAC == config.AuthRBACExternal {
 			fmt.Printf("Can't create additional admin while using external auth API - auth.api.endpoint is configured.\n")
 			os.Exit(1)
 		}
@@ -68,9 +68,9 @@ If the wrong user or credentials were chosen it is possible to delete the user a
 		}
 		defer kvStore.Close()
 
-		addToAdmins := !authConfig.IsAuthBasic()
+		addToAdmins := !authUIConfig.IsAuthBasic()
 		authMetadataManager := auth.NewKVMetadataManager(version.Version, baseConfig.Installation.FixedID, baseConfig.Database.Type, kvStore)
-		metadata := initStatsMetadata(ctx, logger, authMetadataManager, baseConfig.StorageConfig())
+		metadata := initStatsMetadata(ctx, logger, authMetadataManager, cfg)
 		authService, err := authfactory.NewAuthService(ctx, cfg, logger, kvStore, authMetadataManager)
 		if err != nil {
 			fmt.Printf("Failed to initialize auth service: %s\n", err)

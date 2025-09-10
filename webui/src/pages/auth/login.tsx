@@ -3,15 +3,23 @@ import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../lib/api";
-import {AlertError} from "../../lib/components/controls"
+import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {useNavigate} from "react-router-dom";
+import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 
-interface LoginConfig {
+interface SetupResponse {
+    state: string;
+    comm_prefs_missing?: boolean;
+    login_config?: LoginConfig;
+}
+
+export interface LoginConfig {
+    username_ui_placeholder?: string;
+    password_ui_placeholder?: string;
     login_url: string;
-    username_ui_placeholder: string;
-    password_ui_placeholder: string;
+    login_url_method?: 'none' | 'redirect' | 'select';
     login_failed_message?: string;
     fallback_login_url?: string;
     fallback_login_label?: string;
@@ -110,25 +118,43 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
 const LoginPage = () => {
     const router = useRouter();
     const { response, error, loading } = useAPI(() => setup.getState());
+
     if (loading) {
-        return null;
+        return <Loading />;
+    }
+
+    if (error) {
+        return <AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()} />;
     }
 
     // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
-    if (!error && response && (response.state !== SETUP_STATE_INITIALIZED || response.comm_prefs_missing === true)) {
-        router.push({pathname: '/setup', query: router.query})
+    const setupResponse = response as SetupResponse | null;
+    if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
+        router.push({pathname: '/setup', params: {}, query: router.query as Record<string, string>})
         return null;
     }
-    const loginConfig = response?.login_config;
-    if (router.query.redirected)  {
-        if(!error && loginConfig?.login_url) {
-            window.location = loginConfig.login_url;
-            return null;
-        }
-        delete router.query.redirected;
-
-        router.push({pathname: '/auth/login', query: router.query})
+    const loginConfig = setupResponse?.login_config;
+    if (!loginConfig) {
+        return null;
     }
+
+    // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
+    // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
+    // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
+    // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
+    // selection page or the default lakeFS login form, since both share the same endpoint.
+    if (router.query.redirected)  {
+        delete router.query.redirected;
+        const pluginManager = usePluginManager();
+        const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
+        // Return the element (component or null)
+        if (loginStrategy.element !== undefined) {
+            return loginStrategy.element;
+        }
+    }
+
+    // Default: show the lakeFS login form when the user navigates directly at '/auth/login'
+    // (no router.query.redirected flag) or when loginStrategyPlugin.element is undefined.
     return (
         <LoginForm loginConfig={loginConfig}/>
     );

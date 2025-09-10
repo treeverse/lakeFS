@@ -5,14 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/go-openapi/swag"
 	"github.com/go-viper/mapstructure/v2"
@@ -21,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/authentication/externalidp/awsiam"
 	lakefsconfig "github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/git"
 	giterror "github.com/treeverse/lakefs/pkg/git/errors"
@@ -72,10 +77,11 @@ type Configuration struct {
 		Provider        struct {
 			Type   lakefsconfig.OnlyString `mapstructure:"type"`
 			AWSIAM struct {
-				TokenTTL            time.Duration      `mapstructure:"token_ttl_seconds"`
-				URLPresignTTL       time.Duration      `mapstructure:"url_presign_ttl_seconds"`
-				RefreshInterval     time.Duration      `mapstructure:"refresh_interval"`
-				TokenRequestHeaders *map[string]string `mapstructure:"token_request_headers"`
+				TokenTTL                   time.Duration      `mapstructure:"token_ttl_seconds"`
+				URLPresignTTL              time.Duration      `mapstructure:"url_presign_ttl_seconds"`
+				RefreshInterval            time.Duration      `mapstructure:"refresh_interval"`
+				TokenRequestHeaders        *map[string]string `mapstructure:"token_request_headers"`
+				ClientLogPreSigningRequest bool               `mapstructure:"client_log_pre_signing_request"`
 			} `mapstructure:"aws_iam"`
 		} `mapstructure:"provider"`
 	} `mapstructure:"credentials"`
@@ -175,6 +181,20 @@ const (
 	defaultMaxAttempts      = 4
 	defaultMaxRetryInterval = 30 * time.Second
 	defaultMinRetryInterval = 200 * time.Millisecond
+)
+
+const (
+	CacheFileName  = "lakectl_token_cache.json"
+	LakectlDirName = ".lakectl"
+	CacheDirName   = "cache"
+)
+
+var (
+	cachedToken         *apigen.AuthenticationToken
+	tokenLoadOnce       sync.Once
+	tokenCache          *awsiam.JWTCache
+	tokenCacheOnce      sync.Once
+	ErrTokenUnavailable = fmt.Errorf("token is not available")
 )
 
 func withRecursiveFlag(cmd *cobra.Command, usage string) {
@@ -553,37 +573,167 @@ func getHTTPClient() *http.Client {
 	return NewRetryClient(cfg.Server.Retries, transport)
 }
 
-func getClient() *apigen.ClientWithResponses {
-	httpClient := getHTTPClient()
+func newAWSIAMAuthProviderConfig() (*awsiam.IAMAuthParams, error) {
+	var opts []awsiam.IAMAuthParamsOptions
+	providerType := cfg.Credentials.Provider.Type.String()
+	if providerType != awsiam.AWSIAMProviderType {
+		return nil, nil
+	}
 
+	TokenTTL := cfg.Credentials.Provider.AWSIAM.TokenTTL
+	URLPresignTTL := cfg.Credentials.Provider.AWSIAM.URLPresignTTL
+	RefreshInterval := cfg.Credentials.Provider.AWSIAM.RefreshInterval
+	serverEndpoint := cfg.Server.EndpointURL.String()
+	parsed, err := url.Parse(serverEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	host := parsed.Host
+	// in case using something like localhost:8000
+	if strings.Contains(host, ":") {
+		host = strings.Split(host, ":")[0]
+	}
+
+	if headers := cfg.Credentials.Provider.AWSIAM.TokenRequestHeaders; headers != nil {
+		opts = append(opts, awsiam.WithTokenRequestHeaders(*headers))
+	}
+	if TokenTTL != 0 {
+		opts = append(opts, awsiam.WithTokenTTL(TokenTTL))
+	}
+	if URLPresignTTL != 0 {
+		opts = append(opts, awsiam.WithURLPresignTTL(URLPresignTTL))
+	}
+	if RefreshInterval != 0 {
+		opts = append(opts, awsiam.WithURLPresignTTL(RefreshInterval))
+	}
+	return awsiam.NewIAMAuthParams(host, opts...), nil
+}
+
+func getClient() *apigen.ClientWithResponses {
+	opts := []apigen.ClientOption{}
+	httpClient := getHTTPClient()
 	accessKeyID := cfg.Credentials.AccessKeyID
 	secretAccessKey := cfg.Credentials.SecretAccessKey
 	basicAuthProvider, err := securityprovider.NewSecurityProviderBasicAuth(string(accessKeyID), string(secretAccessKey))
 	if err != nil {
 		DieErr(err)
 	}
-
 	serverEndpoint, err := apiutil.NormalizeLakeFSEndpoint(cfg.Server.EndpointURL.String())
 	if err != nil {
 		DieErr(err)
+	}
+	awsIAMparams, err := newAWSIAMAuthProviderConfig()
+	if err != nil {
+		DieErr(err)
+	}
+
+	useIAMAuth := awsIAMparams != nil && accessKeyID == "" && secretAccessKey == ""
+	if useIAMAuth {
+		opts = getClientOptions(awsIAMparams, serverEndpoint)
 	}
 
 	oss := osinfo.GetOSInfo()
 	client, err := apigen.NewClientWithResponses(
 		serverEndpoint,
-		apigen.WithHTTPClient(httpClient),
-		apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
-		apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-			// This UA string structure is agreed upon
-			// Please consider that when making changes
-			req.Header.Set("User-Agent", fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, oss.OS, oss.Version, oss.Platform))
-			return nil
-		}),
+		append([]apigen.ClientOption{
+			apigen.WithHTTPClient(httpClient),
+			apigen.WithRequestEditorFn(basicAuthProvider.Intercept),
+			apigen.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+				// This UA string structure is agreed upon
+				// Please consider that when making changes
+				req.Header.Set("User-Agent", fmt.Sprintf("lakectl/%s/%s/%s/%s", version.Version, oss.OS, oss.Version, oss.Platform))
+				return nil
+			}),
+		}, opts...)...,
 	)
 	if err != nil {
 		Die(fmt.Sprintf("could not initialize API client: %s", err), 1)
 	}
 	return client
+}
+
+func CreateTokenCacheCallback() awsiam.TokenCacheCallback {
+	return func(newToken *apigen.AuthenticationToken) {
+		cachedToken = newToken
+		if err := SaveTokenToCache(); err != nil {
+			logging.ContextUnavailable().Debugf("error saving token to cache: %w", err)
+		}
+	}
+}
+
+func getClientOptions(awsIAMparams *awsiam.IAMAuthParams, serverEndpoint string) []apigen.ClientOption {
+	token := getTokenOnce()
+
+	tokenCacheCallback := CreateTokenCacheCallback()
+
+	awsLogSigning := cfg.Credentials.Provider.AWSIAM.ClientLogPreSigningRequest
+	presignOpt := func(po *sts.PresignOptions) {
+		po.ClientOptions = append(po.ClientOptions, func(o *sts.Options) {
+			if awsLogSigning {
+				o.ClientLogMode = aws.LogSigning
+			}
+		})
+	}
+
+	noAuthClient, err := apigen.NewClientWithResponses(serverEndpoint)
+	if err != nil {
+		DieErr(err)
+	}
+	loginClient := &awsiam.ExternalPrincipalLoginClient{Client: noAuthClient}
+
+	awsAuthProvider := awsiam.WithAWSIAMRoleAuthProviderOption(
+		awsIAMparams,
+		logging.ContextUnavailable(),
+		loginClient,
+		token,
+		tokenCacheCallback,
+		presignOpt,
+	)
+	return []apigen.ClientOption{awsAuthProvider}
+}
+
+func getTokenOnce() *apigen.AuthenticationToken {
+	tokenLoadOnce.Do(func() {
+		cache := getTokenCacheOnce()
+		var err error
+		if cache != nil {
+			if token, err := cache.GetToken(); err == nil {
+				cachedToken = token
+				return
+			}
+			logging.ContextUnavailable().Debugf("Error loading token from cache: %w", err)
+		}
+	})
+	return cachedToken
+}
+
+func getTokenCacheOnce() *awsiam.JWTCache {
+	tokenCacheOnce.Do(func() {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			logging.ContextUnavailable().Debugf("Error getting user homedir: %w", err)
+		}
+		cache, err := awsiam.NewJWTCache(homeDir, LakectlDirName, CacheDirName, CacheFileName)
+		if err != nil {
+			logging.ContextUnavailable().Debugf("Error creating token cache: %w", err)
+			tokenCache = nil
+		} else {
+			tokenCache = cache
+		}
+	})
+	return tokenCache
+}
+
+func SaveTokenToCache() error {
+	cache := getTokenCacheOnce()
+	if cache == nil || cachedToken == nil {
+		return ErrTokenUnavailable
+	}
+	if err := cache.SaveToken(cachedToken); err != nil {
+		return err
+	}
+	tokenLoadOnce = sync.Once{}
+	return nil
 }
 
 // isUnknownCommandError checks if the error from ExecuteC is an unknown command error.

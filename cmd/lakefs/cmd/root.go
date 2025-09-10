@@ -176,10 +176,11 @@ func getHomeDir() string {
 }
 
 // initStatsMetadata initializes and returns stats metadata with all required providers
-func initStatsMetadata(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, storageConfig config.StorageConfig) *stats.Metadata {
+func initStatsMetadata(ctx context.Context, logger logging.Logger, authMetadataManager auth.MetadataManager, cfg config.Config) *stats.Metadata {
+	storageConfig := cfg.StorageConfig()
 	metadataProviders := []stats.MetadataProvider{
 		authMetadataManager,
-		cloud.NewMetadataProvider(),
+		cloud.NewMetadataProvider(storageConfig, cfg.GetBaseConfig().Stats.Enabled),
 		block.NewMetadataProvider(storageConfig),
 	}
 	return stats.NewMetadata(ctx, logger, metadataProviders)

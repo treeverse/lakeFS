@@ -8,6 +8,8 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
+import scala.util.Try
 
 import io.treeverse.clients.StorageUtils.S3.createAndValidateS3Client
 
@@ -38,7 +40,13 @@ object S3ClientBuilder extends S3ClientBuilder {
 
   def build(hc: Configuration, bucket: String, region: String, numRetries: Int): AmazonS3 = {
     import org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider
-    import com.amazonaws.auth.{BasicAWSCredentials, AWSStaticCredentialsProvider}
+    import com.amazonaws.auth.{
+      AWSCredentialsProvider,
+      DefaultAWSCredentialsProviderChain,
+      STSAssumeRoleSessionCredentialsProvider,
+      AWSStaticCredentialsProvider,
+      BasicAWSCredentials
+    }
     import io.treeverse.clients.LakeFSContext
     import org.apache.hadoop.fs.s3a.Constants
 
@@ -62,22 +70,39 @@ object S3ClientBuilder extends S3ClientBuilder {
     //     Possibly pre-generate a FileSystem to access the desired bucket,
     //     and query for its credentials provider.  And cache them, in case
     //     some objects live in different buckets.
-    val credentialsProvider =
-      if (hc.get(Constants.AWS_CREDENTIALS_PROVIDER) == AssumedRoleCredentialProvider.NAME) {
-        logger.info("Use configured AssumedRoleCredentialProvider for bucket {}", bucket)
-        Some(new AssumedRoleCredentialProvider(new java.net.URI("s3a://" + bucket), hc))
-      } else if (hc.get(Constants.ACCESS_KEY) != null) {
-        logger.info(
-          "Use access key ID {} {}",
-          hc.get(Constants.ACCESS_KEY): Any,
-          if (hc.get(Constants.SECRET_KEY) == null) "(missing secret key)" else "secret key ******"
+    val roleArn = hc.getTrimmed(Constants.ASSUMED_ROLE_ARN, "")
+    val accessKey = hc.getTrimmed(Constants.ACCESS_KEY, null)
+    val secretKey = hc.getTrimmed(Constants.SECRET_KEY, null)
+    val wantHadoopAssume =
+      hc.getTrimmed(Constants.AWS_CREDENTIALS_PROVIDER, null) == AssumedRoleCredentialProvider.NAME
+    val hadoopAssumeAvailable: Boolean = wantHadoopAssume && Try(
+      Class.forName("org.apache.hadoop.fs.s3a.auth.AssumedRoleCredentialProvider")
+    ).toOption.exists(classOf[AWSCredentialsProvider].isAssignableFrom)
+    val useHadoopProvider = wantHadoopAssume && hadoopAssumeAvailable
+
+    val base: AWSCredentialsProvider =
+      if (useHadoopProvider) {
+        logger.info("Using Hadoop AssumedRoleCredentialProvider as base.")
+        new AssumedRoleCredentialProvider(new java.net.URI(s"s3a://$bucket"), hc)
+      } else if (accessKey != null && secretKey != null) {
+        logger.info("Using access key ID {} {}", accessKey: Any, "secret key ******")
+        new AWSStaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey))
+      } else {
+        logger.info("Using DefaultAWSCredentialsProviderChain")
+        new DefaultAWSCredentialsProviderChain()
+      }
+
+    val credentialsProvider: AWSCredentialsProvider =
+      if (roleArn.nonEmpty && wantHadoopAssume && !hadoopAssumeAvailable) {
+        new STSAssumeRoleSessionCredentialsProvider.Builder(
+          roleArn,
+          s"lakefs-gc-${UUID.randomUUID().toString}"
         )
-        Some(
-          new AWSStaticCredentialsProvider(
-            new BasicAWSCredentials(hc.get(Constants.ACCESS_KEY), hc.get(Constants.SECRET_KEY))
-          )
-        )
-      } else None
+          .withLongLivedCredentialsProvider(base)
+          .build()
+      } else {
+        base
+      }
 
     val builder = AmazonS3ClientBuilder
       .standard()

@@ -40,8 +40,8 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 		panic(err)
 	}
 	sessionStore := sessions.NewCookieStore(authService.SecretStore().SharedSecret())
-	oidcConfig := OIDCConfig(cfg.AuthConfig().OIDC)
-	cookieAuthConfig := CookieAuthConfig(cfg.AuthConfig().CookieAuthVerification)
+	oidcConfig := OIDCConfig(cfg.AuthConfig().GetBaseAuthConfig().OIDC)
+	cookieAuthConfig := CookieAuthConfig(cfg.AuthConfig().GetBaseAuthConfig().CookieAuthVerification)
 	r := chi.NewRouter()
 	apiRouter := r.With(
 		OapiRequestValidatorWithOptions(swagger, &openapi3filter.Options{
@@ -64,7 +64,12 @@ func Serve(cfg config.Config, catalog *catalog.Catalog, authenticator auth.Authe
 	r.Mount("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	r.Mount("/openapi.json", http.HandlerFunc(swaggerSpecHandler))
 	r.Mount(apiutil.BaseURL, http.HandlerFunc(InvalidAPIEndpointHandler))
-	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().LogoutRedirectURL))
+	r.Mount("/logout", NewLogoutHandler(sessionStore, logger, cfg.AuthConfig().GetBaseAuthConfig().LogoutRedirectURL))
+
+	// Additional API routes we like to serve before the UI handler
+	r.Mount("/iceberg/api/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
+	r.Mount("/iceberg/relative_to/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
+	r.Mount("/mds/iceberg/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
 
 	// Configuration flag to control if the embedded UI is served
 	// or not and assign the correct handler for each case.
@@ -168,4 +173,10 @@ func validateRequest(r *http.Request, route *routers.Route, pathParams map[strin
 // not accessible.
 func InvalidAPIEndpointHandler(w http.ResponseWriter, r *http.Request) {
 	writeError(w, r, http.StatusInternalServerError, ErrInvalidAPIEndpoint)
+}
+
+// NotImplementedIcebergCatalogHandler returns HTTP 501 Not Implemented status for
+// Iceberg REST Catalog endpoints.
+func NotImplementedIcebergCatalogHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Iceberg REST Catalog Not Implemented", http.StatusNotImplemented)
 }
