@@ -93,23 +93,14 @@ body .auth-page .nav-pills .nav-link:hover {
   background-color: var(--success) !important;
 }
 
-.login-container {
-  height: 100vh;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background-color: #f8f9fa;
-}
-
 .login-card {
   max-width: 600px;
   width: 90%;
+  margin: 50px auto auto auto;
 }
 
 .login-logo {
-  width: 170px;
-  height: 60px;
+  width: 359px;
+  height: 82px;
   filter: brightness(0) saturate(100%);
 }

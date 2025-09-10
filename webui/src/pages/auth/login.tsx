@@ -28,13 +28,12 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
 
     return (
-        <div className="d-flex align-items-center justify-content-center login-container">
-            <Card className="login-widget shadow-lg border-0 login-card">
+        <div className="d-flex align-items-center justify-content-center">
+            <Card className="shadow-lg border-0 login-card">
                 <Card.Header className="text-center">
                     <div className="mb-3">
                         <img src="/logo.png" alt="lakeFS" className="login-logo" />
                     </div>
-                    <h4 className="mb-0">Login</h4>
                 </Card.Header>
                 <Card.Body className="p-4">
                     <Form onSubmit={async (e) => {
