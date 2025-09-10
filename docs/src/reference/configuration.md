@@ -104,7 +104,7 @@ Configuration section for the lakeFS key-value store database.
 ### auth
 
 * `auth.login_duration` `(time duration : "168h")` - The duration the login token is valid for.
-* `auth.login_max_duration` `(time duration : "168h")` - The maximum duration user can ask for a login token.
+* `auth.login_max_duration` `(time duration : "336h")` - The maximum duration user can ask for a login token.
 
 #### auth.cache
 
@@ -115,58 +115,58 @@ Configuration section for the lakeFS key-value store database.
 
 #### auth.encrypt
 
-* `auth.encrypt.secret_key` `(string : required)` - A random (cryptographically safe) generated string that is used for encryption and HMAC signing
+* `auth.encrypt.secret_key` `(string : "" - required)` - A random (cryptographically safe) generated string that is used for encryption and HMAC signing.
 
     !!! warning
-        It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
+        It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time.
 
 #### auth.api
 
-* `auth.api.endpoint` `(string: https://external.service/api/v1)` - URL to external Authorization Service described at [authorization.yml](https://github.com/treeverse/lakeFS/blob/master/api/authorization.yml);
-* `auth.api.token` `(string: eyJhbGciOiJIUzI1NiIsInR5...)` - API token used to authenticate requests to api endpoint
-* `auth.api.health_check_timeout` `(time duration : "20s")` - Timeout duration for external auth API health check
-* `auth.api.skip_health_check` `(bool : false)` - Skip external auth API health check
+* `auth.api.endpoint` `(string: "")` - URL to external Authorization Service described at [authorization.yml](https://github.com/treeverse/lakeFS/blob/master/api/authorization.yml); (e.g., "https://external.service/api/v1").
+* `auth.api.token` `(string: "")` - API token used to authenticate requests to api endpoint (e.g., eyJhbGciOiJIUzI1NiIsInR5...).
+* `auth.api.health_check_timeout` `(time duration : "20s")` - Timeout duration for external auth API health check.
+* `auth.api.skip_health_check` `(bool : false)` - Skip external auth API health check.
 
 #### auth.authentication_api
 
-* `auth.authentication_api.endpoint` `(string : "")` - URL to external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml);
+* `auth.authentication_api.endpoint` `(string : "")` - URL to external Authentication Service described at [authentication.yml](https://github.com/treeverse/lakeFS/blob/master/api/authentication.yml).
 * `auth.authentication_api.external_principals_enabled` `(bool : false)` - If true, external principals API will be enabled, e.g auth service and login api's.
 
 #### auth.remote_authenticator
 
 * `auth.remote_authenticator.enabled` `(bool : false)` - If specified, also authenticate users via this Remote Authenticator server.
-* `auth.remote_authenticator.endpoint` `(string : required)` - Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth).
-* `auth.remote_authenticator.default_user_group` `(string : Viewers)` - Create users in this group (i.e `Viewers`, `Developers`, etc).
-* `auth.remote_authenticator.request_timeout` `(duration : 10s)` - If specified, timeout for remote authentication requests.
+* `auth.remote_authenticator.endpoint` `(string : "" - required)` - Endpoint URL of the remote authentication service (e.g. https://my-auth.example.com/auth).
+* `auth.remote_authenticator.default_user_group` `(string : "Viewers")` - Create users in this group (i.e `Viewers`, `Developers`, etc).
+* `auth.remote_authenticator.request_timeout` `(time duration : 10s)` - If specified, timeout for remote authentication requests.
 
 #### auth.oidc
 
-* `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups
-* `auth.oidc.initial_groups_claim_name` `(string : '')` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set.
-* `auth.oidc.friendly_name_claim_name` `(string : '')` - If specified, the value from the claim with this name will be used as the user's display name.
+* `auth.oidc.default_initial_groups` `(string[] : [])` - By default, OIDC users will be assigned to these groups.
+* `auth.oidc.initial_groups_claim_name` `(string : "")` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.oidc.default_initial_groups` is also set.
+* `auth.oidc.friendly_name_claim_name` `(string : "")` - If specified, the value from the claim with this name will be used as the user's display name.
 * `auth.oidc.persist_friendly_name` `(bool : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.oidc.friendly_name_claim_name`.
-* `auth.oidc.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
+* `auth.oidc.validate_id_token_claims` `(map[string]string : {})` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
 
 #### auth.cookie_auth_verification
 
-* `auth.cookie_auth_verification.validate_id_token_claims` `(map[string]string : )` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
-* `auth.cookie_auth_verification.default_initial_groups` (string[] : [])` - By default, users will be assigned to these groups
-* `auth.cookie_auth_verification.initial_groups_claim_name` `(string[] : [])` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.cookie_auth_verification.default_initial_groups` is also set.
-* `auth.cookie_auth_verification.friendly_name_claim_name` `(string[] : )` - If specified, the value from the claim with this name will be used as the user's display name.
-* `auth.cookie_auth_verification.persist_friendly_name` `(string : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.cookie_auth_verification.friendly_name_claim_name`.
-* `auth.cookie_auth_verification.external_user_id_claim_name` - `(string : )` - If specified, the value from the claim with this name will be used as the user's id name.
-* `auth.cookie_auth_verification.auth_source` - `(string : )` - If specified, user will be labeled with this auth source.
+* `auth.cookie_auth_verification.validate_id_token_claims` `(map[string]string : {})` - When a user tries to access lakeFS, validate that the ID token contains these claims with the corresponding values.
+* `auth.cookie_auth_verification.default_initial_groups` `(string[] : [])` - By default, users will be assigned to these groups.
+* `auth.cookie_auth_verification.initial_groups_claim_name` `(string : "")` - Use this claim from the ID token to provide the initial group for new users. This will take priority if `auth.cookie_auth_verification.default_initial_groups` is also set.
+* `auth.cookie_auth_verification.friendly_name_claim_name` `(string : "")` - If specified, the value from the claim with this name will be used as the user's display name.
+* `auth.cookie_auth_verification.persist_friendly_name` `(bool : false)` - If set to `true`, the friendly name is persisted to the KV store and can be displayed in the user list. This is meant to be used in conjunction with `auth.cookie_auth_verification.friendly_name_claim_name`.
+* `auth.cookie_auth_verification.external_user_id_claim_name` - `(string : "")` - If specified, the value from the claim with this name will be used as the user's id name.
+* `auth.cookie_auth_verification.auth_source` - `(string : "")` - If specified, user will be labeled with this auth source.
 
 #### auth.ui_config
 
 * `auth.ui_config.rbac` `(string: "none")` - "none", "simplified", "external" or "internal".
     - `"none"` - lakeFS runs without an RBAC authorization service. No additional users, groups, or policies can be created.
     - `"simplified"` - lakeFS uses ACL as the authorization service. You must implement your own ACL service and connect it to lakeFS. See the [implementation guide](../security/ACL-server-implementation.md) and [ACL overview](../security/access-control-lists.md) for details.
-    - `"external"` - lakeFS integrates with an external RBAC authorization service.
+    - `"external"` - For lakeFS cloud - lakeFS cloud integrates with an external RBAC authorization service.
     - `"internal"` - Available in the Enterprise lakeFS version. Uses the built-in RBAC authorization service. More information is available [here](../security/rbac.md).
 
 * `auth.ui_config.login_url` `(string : "")` - An absolute or relative URL to your IdP’s login page, used to authenticate to lakeFS via SSO with OIDC or SAML.
-* `auth.ui_config.login_failed_message` `(string : "")` - Custom error message displayed when authentication fails on the login form (defaults to "The credentials don't match." if not specified).
+* `auth.ui_config.login_failed_message` `(string : "The credentials don't match.")` - Custom error message displayed when authentication fails on the login form (defaults to "The credentials don't match." if not specified).
 * `auth.ui_config.logout_url` `(string : "")`- URL to redirect users to when they logout from lakeFS (defaults to "/logout" if not specified).
 * `auth.ui_config.use_login_placeholders` `(bool: false)` - If set to true, the login page will show placeholders for the _Access Key ID_ and _Secret Access Key_ (_Username_ and _Password_) (defaults to "false" if not specified).
 
