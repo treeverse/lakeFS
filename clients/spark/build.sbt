@@ -104,9 +104,7 @@ assembly / assemblyShadeRules := Seq(
 )
 
 // ===== Safe upload with If-None-Match =====
-lazy val safeS3Upload = taskKey[Unit](
-  "Upload JAR to S3 atomically with If-None-Match = \"*\""
-)
+lazy val safeS3Upload = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match = \"*\"")
 lazy val s3BucketHost = settingKey[String]("S3 bucket host")
 s3BucketHost := "benel-public-test.s3.amazonaws.com"
 
@@ -114,7 +112,7 @@ safeS3Upload := {
   import software.amazon.awssdk.services.s3.S3Client
   import software.amazon.awssdk.services.s3.model._
   import software.amazon.awssdk.core.sync.RequestBody
-  import software.amazon.awssdk.core.RequestOverrideConfiguration
+  import software.amazon.awssdk.core.client.config.RequestOverrideConfiguration
 
   val log     = streams.value.log
   val jarFile = (assembly / assemblyOutputPath).value
