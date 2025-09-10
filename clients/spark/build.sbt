@@ -127,9 +127,7 @@ s3PutIfAbsent := {
   if (code != 0) {
     val exists = Process(Seq("aws","s3api","head-object","--bucket",bucket,"--key",key,"--region",region)).! == 0
     if (exists) sys.error(s"Artifact already exists: $url")
-    else sys.error(s"s3 put-object failed (see logs): $url")
-  } else {
-    println(s"Uploaded OK: $url")
+    else sys.error(s"s3 put-object failed: $url")
   }
 }
 // ===== End safe upload =====
