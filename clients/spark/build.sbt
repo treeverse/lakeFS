@@ -109,8 +109,6 @@ lazy val s3PutIfAbsent = taskKey[Unit]("Upload JAR to S3 atomically with If-None
 s3PutIfAbsent := {
   import sys.process._
 
-  (assembly).value
-
   val jar    = (assembly / assemblyOutputPath).value
   val bucket = "benel-public-test"
   val region = "us-east-1"
