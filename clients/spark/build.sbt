@@ -112,7 +112,7 @@ s3PutIfAbsent := {
   val bucket = "benel-public-test"
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
-  val url = s"https://$bucket/$key"
+  val url = s"https://$bucket.s3.amazonaws.com/$key"
   val region = "us-east-1"
 
   val cmd = Seq(
