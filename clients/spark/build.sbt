@@ -104,25 +104,38 @@ assembly / assemblyShadeRules := Seq(
 )
 
 // ===== Safe upload =====
-lazy val s3PutIfAbsent = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match = \"*\"")
+lazy val s3PutIfAbsent = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match")
 
 s3PutIfAbsent := {
   import sys.process._
-  val jar      = (assembly / assemblyOutputPath).value
-  val bucket   = "benel-public-test"
-  val key      = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
 
-  val cmd = Seq(
-    "aws", "s3api", "put-object",
+  (assembly).value
+
+  val jar    = (assembly / assemblyOutputPath).value
+  val bucket = "benel-public-test"
+  val region = "us-east-1"
+  val key    = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
+
+  val putCmd = Seq(
+    "aws","s3api","put-object",
     "--bucket", bucket,
     "--key", key,
     "--body", jar.getAbsolutePath,
-    "--if-none-match", "*"
+    "--if-none-match","*",
+    "--region", region
   )
 
-  val exit = Process(cmd, None, "AWS_REGION" -> "us-east-1").!
-  if (exit != 0) sys.error(s"S3 put-object failed (object may already exist): s3://$bucket/$key")
-  else streams.value.log.info(s"Uploaded: s3://$bucket/$key")
+  val putExit = Process(putCmd).!
+
+  if (putExit == 0) {
+    streams.value.log.info(s"Uploaded: s3://$bucket/$key")
+  } else {
+    val headExit = Process(Seq("aws","s3api","head-object","--bucket",bucket,"--key",key,"--region",region)).!
+    if (headExit == 0)
+      sys.error(s"Artifact already exists (refusing to overwrite): s3://$bucket/$key")
+    else
+      sys.error(s"S3 put-object failed.")
+  }
 }
 // ===== End safe upload =====
 
