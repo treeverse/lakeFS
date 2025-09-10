@@ -104,7 +104,9 @@ assembly / assemblyShadeRules := Seq(
 )
 
 // ===== Safe upload with If-None-Match =====
-lazy val safeS3Upload = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match = \"*\"")
+lazy val safeS3Upload = taskKey[Unit](
+  "Upload JAR to S3 atomically with If-None-Match = \"*\""
+)
 lazy val s3BucketHost = settingKey[String]("S3 bucket host")
 s3BucketHost := "benel-public-test.s3.amazonaws.com"
 
@@ -112,27 +114,35 @@ safeS3Upload := {
   import software.amazon.awssdk.services.s3.S3Client
   import software.amazon.awssdk.services.s3.model._
   import software.amazon.awssdk.core.sync.RequestBody
+  import software.amazon.awssdk.core.RequestOverrideConfiguration
 
   val log     = streams.value.log
   val jarFile = (assembly / assemblyOutputPath).value
   val nm      = name.value
   val ver     = version.value
   val jarName = (assembly / assemblyJarName).value
-  val host    =  s3BucketHost.value
+  val host    = s3BucketHost.value
+
   val bucket =
     if (host.endsWith(".s3.amazonaws.com")) host.stripSuffix(".s3.amazonaws.com")
     else if (host.startsWith("s3.amazonaws.com/")) host.stripPrefix("s3.amazonaws.com/")
     else host
 
-  val key     = s"$nm/$ver/$jarName"
-  val url     = s"https://$bucket.s3.amazonaws.com/$key"
-  val client  = S3Client.builder().build()
+  val key = s"$nm/$ver/$jarName"
+  val url = s"https://$bucket.s3.amazonaws.com/$key"
+
+  val client = S3Client.builder().build()
+
+  val reqOverride =
+    RequestOverrideConfiguration.builder()
+      .putHeader("If-None-Match", "*")
+      .build()
 
   val put = PutObjectRequest.builder()
     .bucket(bucket)
     .key(key)
     .contentType("application/java-archive")
-    .ifNoneMatch("*")
+    .overrideConfiguration(reqOverride)
     .build()
 
   log.info(s"Uploading with If-None-Match: $url")
