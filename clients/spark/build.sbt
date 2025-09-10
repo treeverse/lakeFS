@@ -103,55 +103,26 @@ assembly / assemblyShadeRules := Seq(
   rename("reactor.util.**").inAll
 )
 
-// ===== Safe upload with If-None-Match =====
-lazy val safeS3Upload = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match = \"*\"")
-lazy val s3BucketHost = settingKey[String]("S3 bucket host")
-s3BucketHost := "benel-public-test.s3.amazonaws.com"
+// ===== Safe upload =====
+lazy val s3PutIfAbsent = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match = \"*\"")
 
-safeS3Upload := {
-  import software.amazon.awssdk.services.s3.S3Client
-  import software.amazon.awssdk.services.s3.model._
-  import software.amazon.awssdk.core.sync.RequestBody
-  import software.amazon.awssdk.core.client.config.RequestOverrideConfiguration
+s3PutIfAbsent := {
+  import sys.process._
+  val jar      = (assembly / assemblyOutputPath).value
+  val bucket   = "benel-public-test"
+  val key      = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
 
-  val log     = streams.value.log
-  val jarFile = (assembly / assemblyOutputPath).value
-  val nm      = name.value
-  val ver     = version.value
-  val jarName = (assembly / assemblyJarName).value
-  val host    = s3BucketHost.value
+  val cmd = Seq(
+    "aws", "s3api", "put-object",
+    "--bucket", bucket,
+    "--key", key,
+    "--body", jar.getAbsolutePath,
+    "--if-none-match", "*"
+  )
 
-  val bucket =
-    if (host.endsWith(".s3.amazonaws.com")) host.stripSuffix(".s3.amazonaws.com")
-    else if (host.startsWith("s3.amazonaws.com/")) host.stripPrefix("s3.amazonaws.com/")
-    else host
-
-  val key = s"$nm/$ver/$jarName"
-  val url = s"https://$bucket.s3.amazonaws.com/$key"
-
-  val client = S3Client.builder().build()
-
-  val reqOverride =
-    RequestOverrideConfiguration.builder()
-      .putHeader("If-None-Match", "*")
-      .build()
-
-  val put = PutObjectRequest.builder()
-    .bucket(bucket)
-    .key(key)
-    .overrideConfiguration(reqOverride)
-    .build()
-
-  log.info(s"Uploading with If-None-Match: $url")
-  try {
-    client.putObject(put, RequestBody.fromFile(jarFile.toPath))
-    log.info(s"Uploaded OK: $url")
-  } catch {
-    case e: S3Exception if e.statusCode() == 412 =>
-      sys.error(s"Refusing to overwrite existing object (If-None-Match): $url")
-    case e: S3Exception =>
-      sys.error(s"S3 error ${e.statusCode()}: ${e.awsErrorDetails().errorMessage()} (${e.awsErrorDetails().errorCode()}) for $url")
-  } finally client.close()
+  val exit = Process(cmd, None, "AWS_REGION" -> "us-east-1").!
+  if (exit != 0) sys.error(s"S3 put-object failed (object may already exist): s3://$bucket/$key")
+  else streams.value.log.info(s"Uploaded: s3://$bucket/$key")
 }
 // ===== End safe upload =====
 

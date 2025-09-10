@@ -301,7 +301,7 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 
 .PHONY: publish-scala
 publish-scala:
-	cd clients/spark && sbt 'assembly; safeS3Upload'
+	cd clients/spark && sbt 'assembly; s3PutIfAbsent'
 
 .PHONY: publish-lakefsfs-test
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
