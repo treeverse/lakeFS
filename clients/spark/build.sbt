@@ -103,23 +103,16 @@ assembly / assemblyShadeRules := Seq(
   rename("reactor.util.**").inAll
 )
 
-s3Upload / mappings := Seq(
-  (assembly / assemblyOutputPath).value ->
-    s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
-)
-s3Upload / s3Host := "benel-public-test.s3.amazonaws.com"
-s3Upload / s3Progress := true
-
 // ===== Safe upload =====
 lazy val s3PutIfAbsent = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match")
 
 s3PutIfAbsent := {
   import sys.process._
 
-  val bucket = (s3Upload / s3Host).value
+  val bucket = "benel-public-test"
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
-  val url = s"https://$bucket.s3.amazonaws.com/$key"
+  val url = s"https://$bucket/$key"
   val region = "us-east-1"
 
   val cmd = Seq(
