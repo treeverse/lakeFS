@@ -299,18 +299,9 @@ gen-ui: $(UI_DIR)/node_modules  ## Build UI web app
 gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 	go run github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION) generate
 
-.PHONY: publish-scala guard-s3-no-overwrite
-guard-s3-no-overwrite:
-	@set -eu; \
-	HOST=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print s3Upload/s3Host' | tail -n1); \
-	NAME=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print name' | tail -n1); \
-	VERSION=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print version' | tail -n1); \
-	JAR=$$(cd clients/spark && sbt -error --no-colors --supershell=false 'print assembly/assemblyJarName' | tail -n1); \
-	URL="https://$$HOST/$$NAME/$$VERSION/$$JAR"; \
-	STATUS=$$(curl -sS -o /dev/null -w '%{http_code}' "$$URL" || echo 000); \
-	[ "$$STATUS" = 404 ] || { echo "::error ::object already exists or inaccessible (status=$$STATUS). Bump version or delete explicitly: $$URL"; exit 42; }
-publish-scala: guard-s3-no-overwrite
-	cd clients/spark && sbt 'assembly; s3Upload'
+.PHONY: publish-scala
+publish-scala:
+	cd clients/spark && sbt 'assembly; safeS3Upload'
 
 .PHONY: publish-lakefsfs-test
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket

@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.16.0-demo-13"
+lazy val projectVersion = "0.16.0-demo-14"
 version := projectVersion
 lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
@@ -103,12 +103,50 @@ assembly / assemblyShadeRules := Seq(
   rename("reactor.util.**").inAll
 )
 
-s3Upload / mappings := Seq(
-  (assembly / assemblyOutputPath).value ->
-    s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
-)
-s3Upload / s3Host := "benel-public-test.s3.amazonaws.com"
-s3Upload / s3Progress := true
+// ===== Safe upload with If-None-Match =====
+lazy val safeS3Upload = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match = \"*\"")
+lazy val s3BucketHost = settingKey[String]("S3 bucket host")
+s3BucketHost := "benel-public-test.s3.amazonaws.com"
+
+safeS3Upload := {
+  import software.amazon.awssdk.services.s3.S3Client
+  import software.amazon.awssdk.services.s3.model._
+  import software.amazon.awssdk.core.sync.RequestBody
+
+  val log     = streams.value.log
+  val jarFile = (assembly / assemblyOutputPath).value
+  val nm      = name.value
+  val ver     = version.value
+  val jarName = (assembly / assemblyJarName).value
+  val host    =  s3BucketHost.value
+  val bucket =
+    if (host.endsWith(".s3.amazonaws.com")) host.stripSuffix(".s3.amazonaws.com")
+    else if (host.startsWith("s3.amazonaws.com/")) host.stripPrefix("s3.amazonaws.com/")
+    else host
+
+  val key     = s"$nm/$ver/$jarName"
+  val url     = s"https://$bucket.s3.amazonaws.com/$key"
+  val client  = S3Client.builder().build()
+
+  val put = PutObjectRequest.builder()
+    .bucket(bucket)
+    .key(key)
+    .contentType("application/java-archive")
+    .ifNoneMatch("*")
+    .build()
+
+  log.info(s"Uploading with If-None-Match: $url")
+  try {
+    client.putObject(put, RequestBody.fromFile(jarFile.toPath))
+    log.info(s"Uploaded OK: $url")
+  } catch {
+    case e: S3Exception if e.statusCode() == 412 =>
+      sys.error(s"Refusing to overwrite existing object (If-None-Match): $url")
+    case e: S3Exception =>
+      sys.error(s"S3 error ${e.statusCode()}: ${e.awsErrorDetails().errorMessage()} (${e.awsErrorDetails().errorCode()}) for $url")
+  } finally client.close()
+}
+// ===== End safe upload =====
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) =>
