@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.16.0-demo-17"
+lazy val projectVersion = "0.16.0-demo-18"
 version := projectVersion
 lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
@@ -128,6 +128,8 @@ s3PutIfAbsent := {
     val exists = Process(Seq("aws","s3api","head-object","--bucket",bucket,"--key",key,"--region",region)).! == 0
     if (exists) sys.error(s"Artifact already exists: $url")
     else sys.error(s"s3 put-object failed: $url")
+  } else {
+    println(s"Uploaded to S3 successfully: $url")
   }
 }
 // ===== End safe upload =====
