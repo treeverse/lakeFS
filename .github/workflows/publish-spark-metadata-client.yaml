@@ -32,7 +32,7 @@ jobs:
           mkdir -p ~/.sbt
           cat << EOS > ~/.sbt/credentials
           realm=Amazon S3
-          host=treeverse-clients-us-east.s3.amazonaws.com
+          host=benel-public-test.s3.amazonaws.com
           user=${AWS_ACCESS_KEY_ID}
           password=${AWS_SECRET_ACCESS_KEY}
           EOS

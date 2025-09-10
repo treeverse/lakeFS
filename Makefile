@@ -5,7 +5,7 @@ NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
 UID_GID := $(shell id -u):$(shell id -g)
 
-CLIENT_JARS_BUCKET="s3://treeverse-clients-us-east/"
+CLIENT_JARS_BUCKET="s3://benel-public-test/"
 
 # https://openapi-generator.tech
 OPENAPI_GENERATOR_IMAGE=treeverse/openapi-generator-cli:v7.0.1.4
