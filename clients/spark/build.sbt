@@ -108,31 +108,23 @@ lazy val s3PutIfAbsent = taskKey[Unit]("Upload JAR to S3 atomically with If-None
 
 s3PutIfAbsent := {
   import sys.process._
-
-  val jar    = (assembly / assemblyOutputPath).value
+  val jarFile = (assembly).value
   val bucket = "benel-public-test"
-  val region = "us-east-1"
-  val key    = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
+  val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
 
-  val putCmd = Seq(
+  val cmd = Seq(
     "aws","s3api","put-object",
     "--bucket", bucket,
     "--key", key,
-    "--body", jar.getAbsolutePath,
+    "--body", jarFile.getAbsolutePath,
     "--if-none-match","*",
-    "--region", region
+    "--region","us-east-1",
   )
-
-  val putExit = Process(putCmd).!
-
-  if (putExit == 0) {
-    streams.value.log.info(s"Uploaded: s3://$bucket/$key")
-  } else {
-    val headExit = Process(Seq("aws","s3api","head-object","--bucket",bucket,"--key",key,"--region",region)).!
-    if (headExit == 0)
-      sys.error(s"Artifact already exists (refusing to overwrite): s3://$bucket/$key")
-    else
-      sys.error(s"S3 put-object failed.")
+  val code = Process(cmd).!
+  if (code != 0) {
+    val exists = Process(Seq("aws","s3api","head-object","--bucket",bucket,"--key",key,"--region","us-east-1")).! == 0
+    if (exists) sys.error(s"Artifact already exists: s3://$bucket/$key")
+    else sys.error("S3 put-object failed (see logs).")
   }
 }
 // ===== End safe upload =====
