@@ -118,6 +118,7 @@ s3PutIfAbsent := {
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
   val url = s"https://$bucket.s3.amazonaws.com/$key"
+  val region = "us-east-1"
 
   val cmd = Seq(
     "aws","s3api","put-object",
@@ -125,7 +126,7 @@ s3PutIfAbsent := {
     "--key", key,
     "--body", jarFile.getAbsolutePath,
     "--if-none-match","*",
-    "--region", "us-east-1"
+    "--region", region
   )
   val code = Process(cmd).!
   if (code != 0) {
