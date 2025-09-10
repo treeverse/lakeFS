@@ -141,7 +141,6 @@ safeS3Upload := {
   val put = PutObjectRequest.builder()
     .bucket(bucket)
     .key(key)
-    .contentType("application/java-archive")
     .overrideConfiguration(reqOverride)
     .build()
 
