@@ -108,6 +108,7 @@ lazy val safeS3Upload = taskKey[Unit]("Upload JAR to S3 atomically with If-None-
 lazy val s3BucketHost = settingKey[String]("S3 bucket host")
 s3BucketHost := "benel-public-test.s3.amazonaws.com"
 
+// ===== Safe upload with If-None-Match =====
 safeS3Upload := {
   import software.amazon.awssdk.services.s3.S3Client
   import software.amazon.awssdk.services.s3.model._
