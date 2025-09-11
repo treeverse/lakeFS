@@ -1,10 +1,10 @@
-lazy val projectVersion = "0.16.0"
+lazy val projectVersion = "0.16.0-demo-20"
 version := projectVersion
 lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
 
-name := "lakefs-spark-client"
+name := "benel-test-lakefs-spark-client"
 organization := "io.lakefs"
 organizationName := "Treeverse Labs"
 organizationHomepage := Some(url("http://treeverse.io"))
@@ -103,12 +103,37 @@ assembly / assemblyShadeRules := Seq(
   rename("reactor.util.**").inAll
 )
 
-s3Upload / mappings := Seq(
-  (assembly / assemblyOutputPath).value ->
-    s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
-)
-s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com"
-s3Upload / s3Progress := true
+// ===== Safe upload =====
+lazy val s3PutIfAbsent = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match")
+
+s3PutIfAbsent := {
+  import sys.process._
+
+  val bucket = "benel-public-test"
+  val jarFile = (assembly / assemblyOutputPath).value
+  val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
+  val url = s"https://$bucket.s3.amazonaws.com/$key"
+  val region = "us-east-1"
+
+  val cmd = Seq(
+    "aws","s3api","put-object",
+    "--bucket", bucket,
+    "--key", key,
+    "--body", jarFile.getAbsolutePath,
+    "--if-none-match","*",
+    "--region", region,
+    "--acl","public-read"
+  )
+  val code = Process(cmd).!
+  if (code != 0) {
+    val exists = Process(Seq("aws","s3api","head-object","--bucket",bucket,"--key",key,"--region",region)).! == 0
+    if (exists) sys.error(s"Artifact already exists: $url")
+    else sys.error(s"s3 put-object failed: $url")
+  } else {
+    println(s"Uploaded to S3 successfully: $url")
+  }
+}
+// ===== End safe upload =====
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) =>
