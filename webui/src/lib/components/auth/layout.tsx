@@ -9,11 +9,8 @@ import Card from "react-bootstrap/Card";
 import {Link} from "../nav";
 import {useLoginConfigContext} from "../../hooks/conf";
 import {useLayoutOutletContext} from "../layout";
-import {useRouter} from "../../hooks/router";
-import useUser from "../../hooks/user";
 import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
-import {Loading} from "../controls";
 
 type AuthOutletContext = [(tab: string) => void];
 
@@ -23,33 +20,12 @@ export const AuthLayout = () => {
     const [activeTab, setActiveTab] = useState("credentials");  
     const {RBAC: rbac} = useLoginConfigContext();
     const [setIsLogged] = useLayoutOutletContext();
-    const { user, loading, error } = useUser();
-    const userWithId = user as { id?: string } | null;
-    const router = useRouter();
 
     useEffect(() => {
-        if (!loading) {
-            if (!userWithId || userWithId.id === "" || error) {
-                router.push({
-                    pathname: '/auth/login',
-                    params: {},
-                    query: { next: router.route, redirected: 'true' },
-                });
-                return;
-            }
-            // User is authenticated, show authenticated navbar
-            setIsLogged(true);
-        }
-    }, [userWithId, loading, error, setIsLogged, router]);
-    
-    if (loading) {
-        return <Loading/>;
-    }
+        setIsLogged(true);
+    }, [setIsLogged]);
 
-    // Don't render anything if not authenticated (will redirect)
-    if (!userWithId || userWithId.id === "" || error) {
-        return null;
-    }
+
     return (
         <Container fluid="xl">
             <Row className="mt-5" >
