@@ -20,12 +20,9 @@ export const AuthLayout = () => {
     const [activeTab, setActiveTab] = useState("credentials");  
     const {RBAC: rbac} = useLoginConfigContext();
     const [setIsLogged] = useLayoutOutletContext();
-
     useEffect(() => {
         setIsLogged(true);
     }, [setIsLogged]);
-
-
     return (
         <Container fluid="xl">
             <Row className="mt-5" >
