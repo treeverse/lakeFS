@@ -266,7 +266,7 @@ const BranchesContainer = () => {
     const routerPfx = (router.query.prefix) ? router.query.prefix : "";
 
     if (loading) return <Loading/>;
-    if (error) return <RepoError error={error}/>;
+    if (error) return <RepoError error={error} router={router}/>;
 
     return (
         <BranchList

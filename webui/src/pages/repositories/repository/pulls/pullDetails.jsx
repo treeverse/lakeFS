@@ -220,7 +220,7 @@ const PullDetailsContainer = () => {
     const {pullId} = router.params;
 
     if (loading) return <Loading/>;
-    if (error) return <RepoError error={error}/>;
+    if (error) return <RepoError error={error} router={router}/>;
 
     return <PullDetails repo={repo} pullId={pullId}/>;
 };

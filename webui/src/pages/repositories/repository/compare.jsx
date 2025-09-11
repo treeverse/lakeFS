@@ -13,7 +13,7 @@ const CompareContainer = () => {
     const {prefix} = router.query;
 
     if (loading) return <Loading/>;
-    if (error) return <RepoError error={error}/>;
+    if (error) return <RepoError error={error} router={router}/>;
 
     return (
         <CompareBranches
