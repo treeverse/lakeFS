@@ -1252,7 +1252,7 @@ const ObjectsBrowser = ({ config }) => {
   };
 
   if (loading) return <Loading />;
-  if (error) return <RepoError error={error} />;
+  if (error) return <RepoError error={error} router={router} />;
 
   return (
     <>
@@ -1516,6 +1516,7 @@ const ObjectsBrowser = ({ config }) => {
 };
 
 const RepositoryObjectsPage = () => {
+    const router = useRouter();
     const {repo, loading: repoLoading, error: repoError} = useRefs();
     const {config, loading: configsLoading, error: configsError} = useConfigContext();
 
@@ -1523,11 +1524,11 @@ const RepositoryObjectsPage = () => {
     useEffect(() => setActivePage("objects"), [setActivePage]);
 
     if (repoLoading || configsLoading) return <Loading/>;
-    if (repoError || configsError) return <RepoError error={repoError || configsError}/>;
+    if (repoError || configsError) return <RepoError error={repoError || configsError} router={router}/>;
 
     const {storageConfig, loading: configLoading, error: configError} = getRepoStorageConfig(config?.storages, repo);
     if (configLoading) return <Loading/>;
-    if (configError) return <RepoError error={configError}/>;
+    if (configError) return <RepoError error={configError} router={router}/>;
 
     return <ObjectsBrowser config={storageConfig}/>;
 };

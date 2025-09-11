@@ -86,13 +86,14 @@ const CreatePullForm = ({repo, reference, compare, title, setTitle, description,
 };
 
 const CreatePull = () => {
+    const router = useRouter();
     const {repo, loading, error, reference, compare} = useRefs();
 
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
     if (loading) return <Loading/>;
-    if (error) return <RepoError error={error}/>;
+    if (error) return <RepoError error={error} router={router}/>;
 
     return (
         <div className="w-75">

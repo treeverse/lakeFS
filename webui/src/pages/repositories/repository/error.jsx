@@ -1,7 +1,7 @@
 import {useRouter} from "../../../lib/hooks/router";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
-import {repositories, RepositoryDeletionError} from "../../../lib/api";
+import {repositories, RepositoryDeletionError, AuthenticationError} from "../../../lib/api";
 import {TrashIcon} from "@primer/octicons-react";
 import React from "react";
 import {AlertError} from "../../../lib/components/controls";
@@ -30,7 +30,15 @@ const RepositoryInDeletionContainer = ({repoId}) => {
     );
 };
 
-export const RepoError = ({error}) => {
+export const RepoError = ({error, router}) => {
+    if (error instanceof AuthenticationError) {
+        router.push({
+            pathname: '/auth/login',
+            query: {next: router.route, redirected: true},
+        });
+        return null;
+    }
+    
     if (error instanceof RepositoryDeletionError) {
         return <RepositoryInDeletionContainer repoId={error.repoId}/>;
     }
