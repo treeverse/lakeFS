@@ -1,4 +1,4 @@
-lazy val projectVersion = "0.16.0-demo-19"
+lazy val projectVersion = "0.16.0-demo-20"
 version := projectVersion
 lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
@@ -121,8 +121,8 @@ s3PutIfAbsent := {
     "--key", key,
     "--body", jarFile.getAbsolutePath,
     "--if-none-match","*",
-    "--region", region
-    // "--acl","public-read"
+    "--region", region,
+    "--acl","public-read"
   )
   val code = Process(cmd).!
   if (code != 0) {
