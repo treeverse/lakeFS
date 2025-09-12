@@ -52,7 +52,7 @@ const (
 	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 )
 
-func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c config.AdapterConfig, opts ...BuildOption) (block.Adapter, error) {
+func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c config.AdapterConfig, blockStoragePrefix string, opts ...BuildOption) (block.Adapter, error) {
 	// Apply options
 	options := &AdapterOptions{}
 	for _, opt := range opts {
@@ -85,7 +85,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 		if err != nil {
 			return nil, err
 		}
-		return buildGSAdapter(ctx, p, options.GS...)
+		return buildGSAdapter(ctx, p, blockStoragePrefix, options.GS...)
 	case block.BlockstoreTypeAzure:
 		p, err := c.BlockstoreAzureParams()
 		if err != nil {
@@ -168,7 +168,41 @@ func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, erro
 	return storage.NewClient(ctx, opts...)
 }
 
-func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (*gs.Adapter, error) {
+func buildGSAdapter(ctx context.Context, params params.GS, blockStoragePrefix string, adapterOpts ...gs.AdapterOption) (block.Adapter, error) {
+	if params.DataCredentialsJSON == "" && params.DataCredentialsFile == "" {
+		return buildSingleGSAdapter(ctx, params, adapterOpts...)
+	}
+
+	// Build metadata adapter (can access from anywhere)
+	metadataParams := params
+
+	metadataAdapter, err := buildSingleGSAdapter(ctx, metadataParams, adapterOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metadata adapter: %w", err)
+	}
+
+	dataParams := params
+	if params.DataCredentialsFile != "" {
+		dataParams.CredentialsFile = params.DataCredentialsFile
+		dataParams.CredentialsJSON = ""
+	} else if params.DataCredentialsJSON != "" {
+		dataParams.CredentialsJSON = params.DataCredentialsJSON
+		dataParams.CredentialsFile = ""
+	}
+
+	dataAdapter, err := buildSingleGSAdapter(ctx, dataParams, adapterOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create data adapter: %w", err)
+	}
+
+	dualAdapter := gs.NewDualAdapter(metadataAdapter, dataAdapter, blockStoragePrefix)
+	logging.FromContext(ctx).WithField("type", "gs_dual").Info("initialized dual blockstore adapter")
+
+	return dualAdapter, nil
+}
+
+// buildSingleGSAdapter creates a single GS adapter (extracted from original buildGSAdapter)
+func buildSingleGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (*gs.Adapter, error) {
 	client, err := BuildGSClient(ctx, params)
 	if err != nil {
 		return nil, err
