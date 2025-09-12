@@ -235,6 +235,11 @@ type BlockstoreGS struct {
 	DisablePreSignedUI                   bool          `mapstructure:"disable_pre_signed_ui"`
 	ServerSideEncryptionCustomerSupplied string        `mapstructure:"server_side_encryption_customer_supplied"`
 	ServerSideEncryptionKmsKeyID         string        `mapstructure:"server_side_encryption_kms_key_id"`
+
+	// Dual adapter configuration for network-restricted access
+	DataCredentialsFile string `mapstructure:"data_credentials_file"`
+	DataCredentialsJSON string `mapstructure:"data_credentials_json"`
+	UseDualAdapter      bool   `mapstructure:"use_dual_adapter"`
 }
 
 type Blockstore struct {
@@ -336,6 +341,15 @@ func (b *Blockstore) BlockstoreGSParams() (blockparams.GS, error) {
 	if err != nil {
 		return blockparams.GS{}, fmt.Errorf("parse GS credentials path '%s': %w", b.GS.CredentialsFile, err)
 	}
+
+	var dataCredPath string
+	if b.GS.DataCredentialsFile != "" {
+		dataCredPath, err = homedir.Expand(b.GS.DataCredentialsFile)
+		if err != nil {
+			return blockparams.GS{}, fmt.Errorf("parse GS data credentials path '%s': %w", b.GS.DataCredentialsFile, err)
+		}
+	}
+
 	return blockparams.GS{
 		CredentialsFile:                      credPath,
 		CredentialsJSON:                      b.GS.CredentialsJSON,
@@ -344,6 +358,9 @@ func (b *Blockstore) BlockstoreGSParams() (blockparams.GS, error) {
 		DisablePreSignedUI:                   b.GS.DisablePreSignedUI,
 		ServerSideEncryptionCustomerSupplied: customerSuppliedKey,
 		ServerSideEncryptionKmsKeyID:         b.GS.ServerSideEncryptionKmsKeyID,
+		DataCredentialsFile:                  dataCredPath,
+		DataCredentialsJSON:                  b.GS.DataCredentialsJSON,
+		UseDualAdapter:                       b.GS.UseDualAdapter,
 	}, nil
 }
 
