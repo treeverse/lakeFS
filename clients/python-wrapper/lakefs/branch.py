@@ -152,7 +152,8 @@ class Branch(_BaseBranch):
         ref = reference if isinstance(reference, str) else reference.id
         cherry_pick_creation = lakefs_sdk.CherryPickCreation(ref=ref, parent_number=parent_number)
         with api_exception_handler():
-            res = self._client.sdk_client.branches_api.cherry_pick(self._repo_id, self._id, cherry_pick_creation, **kwargs)
+            res = self._client.sdk_client.branches_api.cherry_pick(
+                self._repo_id, self._id, cherry_pick_creation, **kwargs)
             return Commit(**res.dict())
 
     def create(self, source_reference: ReferenceType, exist_ok: bool = False, **kwargs) -> Branch:
