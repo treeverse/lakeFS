@@ -20,12 +20,13 @@ class Tag(Reference):
     def __init__(self, repository_id: str, tag_id: str, client: Optional[Client] = None):
         super().__init__(repository_id, reference_id=tag_id, client=client)
 
-    def create(self, source_ref: ReferenceType, exist_ok: Optional[bool] = False) -> Tag:
+    def create(self, source_ref: ReferenceType, exist_ok: Optional[bool] = False, **kwargs) -> Tag:
         """
         Create a tag from the given source_ref
 
         :param source_ref: The reference to create the tag on (either ID or Reference object)
         :param exist_ok: If True returns the existing Tag reference otherwise raises exception
+        :param kwargs: Additional Keyword Arguments to send to the server
         :return: A lakeFS SDK Tag object
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise NotFoundException: if source_ref_id doesn't exist on the lakeFS server
@@ -40,18 +41,19 @@ class Tag(Reference):
             return None
 
         with api_exception_handler(handle_conflict):
-            self._client.sdk_client.tags_api.create_tag(self._repo_id, tag_creation)
+            self._client.sdk_client.tags_api.create_tag(self._repo_id, tag_creation, **kwargs)
 
         return self
 
-    def delete(self) -> None:
+    def delete(self, **kwargs) -> None:
         """
         Delete the tag from the lakeFS server
 
+        :param kwargs: Additional Keyword Arguments to send to the server
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise NotFoundException: if source_ref_id doesn't exist on the lakeFS server
         :raise ServerException: for any other errors
         """
         with api_exception_handler():
-            self._client.sdk_client.tags_api.delete_tag(self._repo_id, self.id)
+            self._client.sdk_client.tags_api.delete_tag(self._repo_id, self.id, **kwargs)
             self._commit = None
