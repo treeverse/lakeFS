@@ -58,15 +58,14 @@ Metadata Search works by enabling metadata indexing on selected repositories and
 where `repo` is the data repository id.  
 2. **Creates matching branches** in the metadata repository for each configured branch in the data repository. For example, a `dev`
 branch in data repository `my-repo`, will have a corresponding `dev` branch in `my-repo-metadata`.
-3. **Maintains a versioned Iceberg object metadata table** on each matching branch in the metadata repository at:
-`<repo>-metadata.<branch>.system.object_metadata`.
+3. **Maintains a versioned Iceberg object metadata table** on each matching branch in the metadata repository.
 4. **Continuously syncs metadata** via a background processing pipeline that keeps the object metadata tables
    [eventually consistent](#consistency) with changes in the corresponding data repository branches.
 
-Once metadata tables are in place, you can run queries against them in two ways:
+Once metadata tables are in place, you can run queries against them as follows:
 
-* By [branch name](#using-branch-names), to search the latest metadata state on a given branch.
-* By [commit ID](#using-commit-ids), to access a specific historical metadata version and ensure [reproducible queries](#writing-reproducible-queries). 
+* By **branch name**, to search the latest metadata state on a given branch.
+* By **commit ID** or **Tag name**, to access a specific historical metadata version and ensure [reproducible queries](#writing-reproducible-queries). 
 This lets you retrieve the exact metadata state from any immutable point in time.
 
 Queries are executed through the lakeFS Iceberg REST catalog, which is fully compatible with standard engines like Trino,
@@ -75,7 +74,7 @@ DuckDB, Spark, PyIceberg, and others.
 !!! info
     You can use Metadata Search even without a license for full Iceberg support in lakeFS.
     The feature relies on the lakeFS-managed Iceberg REST catalog for querying object metadata, but it can work 
-    side-by-side with other catalog you use for managing other Iceberg tables. 
+    side-by-side with any other catalog you use to manage additional Iceberg tables. 
 
 ### Object Metadata Table Schema
 
@@ -96,7 +95,7 @@ branch. The table contains at most one row per object, ensuring that query perfo
 
 ### Consistency 
 
-lakeFS object metadata tables are eventually consistent, which means it may take up to a few minutes for newly committed 
+lakeFS object metadata tables are eventually consistent, which means that it may take up to a few minutes for newly committed 
 objects to become searchable. Metadata becomes searchable **atomically** — either all object metadata from the commit 
 is available, or none of it is. Commits are processed sequentially: a child commit will only be processed after its parent
 has been fully ingested.
@@ -105,7 +104,7 @@ has been fully ingested.
     To check whether the most recent state of your branch is available for metadata search queries, check if the following 
     query returns results:
     ```sql
-    USE "<repo>-metadata.<branch>.system";
+    USE "<repo>.<branch>.system";
     SELECT * FROM object_metadata
     WHERE commit_id = <head_commit> -- Replace with the head commit ID of the branch you are looking at 
     LIMIT 1;
@@ -212,7 +211,7 @@ catalog = RestCatalog(name = "my_catalog", **{
 })
 
 # `repo` is the repository name we would like to search 
-con = catalog.load_table('repo-metadata.main.system.object_metadata').scan().to_duckdb('object_metadata')
+con = catalog.load_table('repo.main.system.object_metadata').scan().to_duckdb('object_metadata')
 
 query = f"""
 SELECT path   
@@ -235,7 +234,7 @@ instead of branch names.
 
 **Why not use Branch names?**
 
-Querying metadata tables using a branch name, e.g., `repo-metadata.main.system.object_metadata` return results based on
+Querying metadata tables using a branch name, e.g., `repo.main.system.object_metadata` return results based on
 the state of the branch’s HEAD commit at the time of the query, assuming the metadata has already been ingested (within 
 [eventual consistency](#consistency) constraints). However, because branch heads are mutable and advance with each new
 commit, the results of such queries can change over time.
@@ -249,8 +248,8 @@ always returns the same results, regardless of subsequent changes to the branch.
 **How to query using commit IDs?**  
 
 1. Identify the relevant **full** commit ID from the data repository (e.g., `c12` on branch `dev` in repo `my-repo`). 
-2. Query the object metadata table using the following pattern: `<repo>-metadata.commit-<commit_id>.system.object_metadata`,
-or `my-repo-metadata.commit-c12.system.object_metadata` in our example. 
+2. Query the object metadata table using the following pattern: `<repo>.commit-<commit_id>.system.object_metadata`,
+or `my-repo.commit-c12.system.object_metadata` in our example. 
 
 This accesses the metadata corresponding to commit `c12`.
 
@@ -274,7 +273,7 @@ Spark, or PyIceberg), you may need to adjust the syntax accordingly.
 
 The following example returns images labeled as dogs that are not in a sitting position:
 ```sql
-USE "repo-metadata.main.system";
+USE "repo.main.system";
 
 SELECT * FROM object_metadata
 WHERE path LIKE `%.jpg`
@@ -288,7 +287,7 @@ This example demonstrates how to write reproducible queries by referencing a spe
 It returns images labeled as dogs that are not sitting, based on the metadata state at that commit:
 
 ```sql
-USE "repo-metadata.commit-dc3117ec3a727104226c896bf7ab9350ee5da06ae052406262840e9a4a8c9ffb.system";
+USE "repo.commit-dc3117ec3a727104226c896bf7ab9350ee5da06ae052406262840e9a4a8c9ffb.system";
 
 SELECT * FROM object_metadata
 WHERE path LIKE `%.jpg`
@@ -302,7 +301,7 @@ Assume that any object annotated by an AI-powered tool includes the object metad
 indicate its origin. The following example returns all such AI-annotated objects: 
 
 ```sql
-USE "repo-metadata.main.system";
+USE "repo.main.system";
 
 SELECT *
 FROM object_metadata
@@ -316,7 +315,7 @@ WHERE user_metadata['source'] = 'autolabel';
 Find all `.png` files larger than 2MB.
 
 ```sql
-USE "repo-metadata.main.system";
+USE "repo.main.system";
 
 SELECT *
 FROM object_metadata
@@ -329,7 +328,7 @@ WHERE path LIKE '%.png'
 This example finds all objects added in the last 7 days.
 
 ```sql
-USE "repo-metadata.main.system";
+USE "repo.main.system";
 
 SELECT *
 FROM object_metadata
@@ -344,7 +343,7 @@ Assume all objects under `customers/` must have user metadata `PII=true`.
 This example returns objects where `PII=false`, or PII key is missing. 
 
 ```sql
-USE "repo-metadata.main.system";
+USE "repo.main.system";
 
 SELECT *
 FROM object_metadata
