@@ -191,13 +191,14 @@ class ObjectReader(LakeFSIOBase):
     _readlines_buf: io.BytesIO
 
     def __init__(self, obj: StoredObject, mode: ReadModes, pre_sign: Optional[bool] = None,
-                 client: Optional[Client] = None) -> None:
+                 client: Optional[Client] = None, **kwargs) -> None:
         if mode not in get_args(ReadModes):
             raise ValueError(f"invalid read mode: '{mode}'. ReadModes: {ReadModes}")
 
         super().__init__(obj, mode, pre_sign, client)
         self._readlines_buf = io.BytesIO(b"")
         self._is_closed = False
+        self._kwargs = kwargs
 
     @property
     def pre_sign(self):
@@ -291,7 +292,8 @@ class ObjectReader(LakeFSIOBase):
                                                                       self._obj.ref,
                                                                       self._obj.path,
                                                                       range=read_range,
-                                                                      presign=self.pre_sign)
+                                                                      presign=self.pre_sign,
+                                                                      **self._kwargs)
 
         except InvalidRangeException:
             # This is done in order to behave like the built-in open() function
@@ -398,7 +400,8 @@ class ObjectWriter(LakeFSIOBase):
                  pre_sign: Optional[bool] = None,
                  content_type: Optional[str] = None,
                  metadata: Optional[dict[str, str]] = None,
-                 client: Optional[Client] = None) -> None:
+                 client: Optional[Client] = None,
+                 **kwargs) -> None:
 
         if 'x' in mode and obj.exists():  # Requires explicit create
             raise ObjectExistsException
@@ -418,6 +421,7 @@ class ObjectWriter(LakeFSIOBase):
         }
         self._fd = tempfile.SpooledTemporaryFile(**open_kwargs)  # pylint: disable=consider-using-with
         super().__init__(obj, mode, pre_sign, client)
+        self._kwargs = kwargs
 
     @property
     def pre_sign(self) -> bool:
@@ -552,10 +556,13 @@ class ObjectWriter(LakeFSIOBase):
         return lakefs_sdk.ObjectStats(**json.loads(resp.data))
 
     def _upload_presign(self) -> lakefs_sdk.ObjectStats:
+        # Extract staging-specific kwargs
+        staging_kwargs = {k: v for k, v in self._kwargs.items() if k in ['_request_timeout', 'async_req']}
         staging_location = self._client.sdk_client.staging_api.get_physical_address(self._obj.repo,
                                                                                     self._obj.ref,
                                                                                     self._obj.path,
-                                                                                    True)
+                                                                                    True,
+                                                                                    **staging_kwargs)
         url = staging_location.presigned_url
 
         headers = {"Content-Length": self._pos}
@@ -584,7 +591,8 @@ class ObjectWriter(LakeFSIOBase):
                                                                              self._obj.ref,
                                                                              self._obj.path,
                                                                              staging_metadata=staging_metadata,
-                                                                             if_none_match=if_none_match)
+                                                                             if_none_match=if_none_match,
+                                                                             **staging_kwargs)
         except lakefs_sdk.ApiException as e:
             if self._mode.startswith("x") and e.status == http.HTTPStatus.PRECONDITION_FAILED:
                 raise ObjectExistsException(e.status, e.reason, e.body) from e
@@ -667,7 +675,7 @@ class StoredObject(_BaseLakeFSObject):
         """
         return self._path
 
-    def reader(self, mode: ReadModes = 'rb', pre_sign: Optional[bool] = None) -> ObjectReader:
+    def reader(self, mode: ReadModes = 'rb', pre_sign: Optional[bool] = None, **kwargs) -> ObjectReader:
         """
         Context manager which provide a file-descriptor like object that allow reading the given object.
 
@@ -691,9 +699,9 @@ class StoredObject(_BaseLakeFSObject):
             information.
         :return: A Reader object
         """
-        return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client)
+        return ObjectReader(self, mode=mode, pre_sign=pre_sign, client=self._client, **kwargs)
 
-    def stat(self, pre_sign: Optional[bool] = None) -> ObjectInfo:
+    def stat(self, pre_sign: Optional[bool] = None, **kwargs) -> ObjectInfo:
         """
         Return the Stat object representing this object
         """
@@ -701,7 +709,7 @@ class StoredObject(_BaseLakeFSObject):
         if self._stats is None or pre_sign:
             with api_exception_handler(_io_exception_handler):
                 stat = self._client.sdk_client.objects_api.stat_object(
-                    self._repo_id, self._ref_id, self._path, presign=pre_sign)
+                    self._repo_id, self._ref_id, self._path, presign=pre_sign, **kwargs)
                 self._stats = ObjectInfo(**stat.dict())
         return self._stats
 
@@ -715,7 +723,7 @@ class StoredObject(_BaseLakeFSObject):
                 self._storage_id = repo.storage_id if repo.storage_id else SINGLE_STORAGE_ID
         return self._storage_id
 
-    def exists(self) -> bool:
+    def exists(self, **kwargs) -> bool:
         """
         Returns True if object exists in lakeFS, False otherwise
         """
@@ -728,12 +736,12 @@ class StoredObject(_BaseLakeFSObject):
             return _io_exception_handler(e)
 
         with api_exception_handler(exist_handler):
-            self._client.sdk_client.objects_api.head_object(self._repo_id, self._ref_id, self._path)
+            self._client.sdk_client.objects_api.head_object(self._repo_id, self._ref_id, self._path, **kwargs)
             exists = True
 
         return exists
 
-    def copy(self, destination_branch_id: str, destination_path: str) -> WriteableObject:
+    def copy(self, destination_branch_id: str, destination_path: str, **kwargs) -> WriteableObject:
         """
         Copy the object to a destination branch
 
@@ -750,7 +758,8 @@ class StoredObject(_BaseLakeFSObject):
             self._client.sdk_client.objects_api.copy_object(repository=self._repo_id,
                                                             branch=destination_branch_id,
                                                             dest_path=destination_path,
-                                                            object_copy_creation=object_copy_creation)
+                                                            object_copy_creation=object_copy_creation,
+                                                            **kwargs)
 
         return WriteableObject(repository_id=self._repo_id, reference_id=destination_branch_id, path=destination_path,
                                client=self._client)
@@ -775,7 +784,8 @@ class WriteableObject(StoredObject):
                mode: WriteModes = 'w',
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
-               metadata: Optional[dict[str, str]] = None) -> WriteableObject:
+               metadata: Optional[dict[str, str]] = None,
+               **kwargs) -> WriteableObject:
         """
         Upload a new object or overwrites an existing object
 
@@ -799,12 +809,12 @@ class WriteableObject(StoredObject):
         :raise PermissionException: if user is not authorized to perform this operation, or operation is forbidden
         :raise ServerException: for any other errors
         """
-        with ObjectWriter(self, mode, pre_sign, content_type, metadata, self._client) as writer:
+        with ObjectWriter(self, mode, pre_sign, content_type, metadata, self._client, **kwargs) as writer:
             writer.write(data)
 
         return self
 
-    def delete(self) -> None:
+    def delete(self, **kwargs) -> None:
         """
         Delete object from lakeFS
 
@@ -813,14 +823,15 @@ class WriteableObject(StoredObject):
         :raise ServerException: for any other errors
         """
         with api_exception_handler(_io_exception_handler):
-            self._client.sdk_client.objects_api.delete_object(self._repo_id, self._ref_id, self._path)
+            self._client.sdk_client.objects_api.delete_object(self._repo_id, self._ref_id, self._path, **kwargs)
             self._stats = None
 
     def writer(self,
                mode: WriteModes = 'wb',
                pre_sign: Optional[bool] = None,
                content_type: Optional[str] = None,
-               metadata: Optional[dict[str, str]] = None) -> ObjectWriter:
+               metadata: Optional[dict[str, str]] = None,
+               **kwargs) -> ObjectWriter:
         """
         Context manager which provide a file-descriptor like object that allow writing the given object to lakeFS
         The writes are saved in a buffer as long as the writer is open. Only when it closes it writes the data into
@@ -850,7 +861,8 @@ class WriteableObject(StoredObject):
                             pre_sign=pre_sign,
                             content_type=content_type,
                             metadata=metadata,
-                            client=self._client)
+                            client=self._client,
+                            **kwargs)
 
 
 def _io_exception_handler(e: LakeFSException):
