@@ -103,13 +103,14 @@ assembly / assemblyShadeRules := Seq(
   rename("reactor.util.**").inAll
 )
 
-// ===== Safe upload =====
+// Safe upload: put-object with If-None-Match to prevent overwriting an existing key.
+// Fails the build on any error and surfaces the AWS CLI error message.
 lazy val s3PutIfAbsent = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match")
 
 s3PutIfAbsent := {
   import sys.process._
 
-  val bucket = "benel-public-test"
+  val bucket = "treeverse-clients-us-east"
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
   val url = s"https://$bucket.s3.amazonaws.com/$key"
@@ -122,18 +123,22 @@ s3PutIfAbsent := {
     "--body", jarFile.getAbsolutePath,
     "--if-none-match","*",
     "--region", region,
-    "--acl","public-read" // should be removed after "Bucket owner enforced" (disable acl's) will be applied on treeverse-clients-us-east bucket
+    "--acl","public-read" // TODO: should be removed after "Bucket owner enforced" (disable acl's) will be applied on treeverse-clients-us-east bucket
   )
-  val code = Process(cmd).!
+  val out = new StringBuilder
+  val err = new StringBuilder
+  val code = cmd.!(ProcessLogger(out append _, err append _))
+
   if (code != 0) {
-    val exists = Process(Seq("aws","s3api","head-object","--bucket",bucket,"--key",key,"--region",region)).! == 0
-    if (exists) sys.error(s"Artifact already exists: $url")
-    else sys.error(s"s3 put-object failed: $url")
+    val e = err.toString
+    if (e.contains("PreconditionFailed") || e.contains("412"))
+      sys.error(s"Artifact already exists: $url")
+    else
+      sys.error(s"'aws s3api put-object' failed (exit=$code): $e")
   } else {
     println(s"Uploaded to S3 successfully: $url")
   }
 }
-// ===== End safe upload =====
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) =>
