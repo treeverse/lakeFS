@@ -113,7 +113,6 @@ s3PutIfAbsent := {
   val bucket = "treeverse-clients-us-east"
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
-  val url = s"https://$bucket.s3.amazonaws.com/$key"
   val region = "us-east-1"
 
   val cmd = Seq(
@@ -123,20 +122,20 @@ s3PutIfAbsent := {
     "--body", jarFile.getAbsolutePath,
     "--if-none-match","*",
     "--region", region,
-    "--acl","public-read" // TODO: should be removed after "Bucket owner enforced" (disable acl's) will be applied on treeverse-clients-us-east bucket
+    "--acl","public-read" // TODO: remove after switching bucket to "Bucket owner enforced"
   )
-  val out = new StringBuilder
-  val err = new StringBuilder
+  val out  = new StringBuilder
+  val err  = new StringBuilder
   val code = cmd.!(ProcessLogger(out append _, err append _))
 
   if (code != 0) {
     val e = err.toString
     if (e.contains("PreconditionFailed") || e.contains("412"))
-      sys.error(s"Artifact already exists: $url")
+      sys.error(s"Artifact already exists: https://$bucket.s3.amazonaws.com/$key")
     else
       sys.error(s"'aws s3api put-object' failed (exit=$code): $e")
   } else {
-    println(s"Uploaded to S3 successfully: $url")
+    println(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
   }
 }
 
