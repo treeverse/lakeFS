@@ -229,6 +229,8 @@ Configuration section for the lakeFS key-value store database.
     * `blockstore.gs.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.
     * `blockstore.gs.server_side_encryption_customer_supplied` `(string : )` - Server side encryption with AES key in hex format, exclusive with key ID below
     * `blockstore.gs.server_side_encryption_kms_key_id` `(string : )` - Server side encryption KMS key ID, exclusive with above
+    * `blockstore.gs.data_credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key for data operations **experimental**
+    * `blockstore.gs.data_credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key for data operations **experimental**
 
 ### graveler
 

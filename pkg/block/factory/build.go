@@ -195,7 +195,7 @@ func buildGSAdapter(ctx context.Context, params params.GS, blockStoragePrefix st
 		return nil, fmt.Errorf("failed to create data adapter: %w", err)
 	}
 
-	dualAdapter := gs.NewDualAdapter(metadataAdapter, dataAdapter, blockStoragePrefix)
+	dualAdapter := gs.NewDualAdapter(metadataAdapter, dataAdapter)
 	logging.FromContext(ctx).WithField("type", "gs_dual").Info("initialized dual blockstore adapter")
 
 	return dualAdapter, nil

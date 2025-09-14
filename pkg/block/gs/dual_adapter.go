@@ -2,6 +2,7 @@ package gs
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -10,25 +11,28 @@ import (
 	"github.com/treeverse/lakefs/pkg/block"
 )
 
+const defaultLakeFSPrefix = "_lakefs/"
+
+var errCrossAdapterCopy = fmt.Errorf("cross adapter copy is not supported")
+
 // DualAdapter routes operations between metadata and data adapters based on object path
 type DualAdapter struct {
-	metadataAdapter block.Adapter // For _lakefs/* operations (unrestricted network access)
-	dataAdapter     block.Adapter // For data/* operations (restricted to customer networks)
-	metadataPrefix  string        // Default: "_lakefs"
+	metadataAdapter block.Adapter
+	dataAdapter     block.Adapter
+	metadataPrefix  string
 }
 
 // NewDualAdapter creates a new dual adapter that routes operations based on object path
-func NewDualAdapter(metadataAdapter, dataAdapter block.Adapter, metadataPrefix string) *DualAdapter {
+func NewDualAdapter(metadataAdapter, dataAdapter block.Adapter) *DualAdapter {
 	return &DualAdapter{
 		metadataAdapter: metadataAdapter,
 		dataAdapter:     dataAdapter,
-		metadataPrefix:  metadataPrefix,
 	}
 }
 
 // isMetadataOperation determines if the operation should use the metadata adapter
 func (d *DualAdapter) isMetadataOperation(obj block.ObjectPointer) bool {
-	return strings.HasPrefix(obj.Identifier, d.metadataPrefix+"/")
+	return obj.IdentifierType == block.IdentifierTypeRelative && strings.HasPrefix(obj.Identifier, defaultLakeFSPrefix)
 }
 
 // getAdapter returns the appropriate adapter for the operation
@@ -76,22 +80,11 @@ func (d *DualAdapter) Copy(ctx context.Context, sourceObj, destinationObj block.
 	sourceAdapter := d.getAdapter(sourceObj)
 	destAdapter := d.getAdapter(destinationObj)
 
-	if sourceAdapter == destAdapter {
-		// Same adapter, direct copy
-		return sourceAdapter.Copy(ctx, sourceObj, destinationObj)
+	if sourceAdapter != destAdapter {
+		return errCrossAdapterCopy
 	}
 
-	// Cross-adapter copy: read from source, write to destination
-	reader, err := sourceAdapter.Get(ctx, sourceObj)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-
-	// Note: For a minimal implementation, we assume size unknown (-1)
-	// A full implementation would get the size from properties
-	_, err = destAdapter.Put(ctx, destinationObj, -1, reader, block.PutOpts{})
-	return err
+	return sourceAdapter.Copy(ctx, sourceObj, destinationObj)
 }
 
 // Multipart upload operations
@@ -105,11 +98,25 @@ func (d *DualAdapter) UploadPart(ctx context.Context, obj block.ObjectPointer, s
 }
 
 func (d *DualAdapter) UploadCopyPart(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int) (*block.UploadPartResponse, error) {
-	return d.getAdapter(destinationObj).UploadCopyPart(ctx, sourceObj, destinationObj, uploadID, partNumber)
+	sourceAdapter := d.getAdapter(sourceObj)
+	destAdapter := d.getAdapter(destinationObj)
+
+	if sourceAdapter != destAdapter {
+		return nil, errCrossAdapterCopy
+	}
+
+	return sourceAdapter.UploadCopyPart(ctx, sourceObj, destinationObj, uploadID, partNumber)
 }
 
 func (d *DualAdapter) UploadCopyPartRange(ctx context.Context, sourceObj, destinationObj block.ObjectPointer, uploadID string, partNumber int, startPosition, endPosition int64) (*block.UploadPartResponse, error) {
-	return d.getAdapter(destinationObj).UploadCopyPartRange(ctx, sourceObj, destinationObj, uploadID, partNumber, startPosition, endPosition)
+	sourceAdapter := d.getAdapter(sourceObj)
+	destAdapter := d.getAdapter(destinationObj)
+
+	if sourceAdapter != destAdapter {
+		return nil, errCrossAdapterCopy
+	}
+
+	return sourceAdapter.UploadCopyPartRange(ctx, sourceObj, destinationObj, uploadID, partNumber, startPosition, endPosition)
 }
 
 func (d *DualAdapter) ListParts(ctx context.Context, obj block.ObjectPointer, uploadID string, opts block.ListPartsOpts) (*block.ListPartsResponse, error) {
@@ -155,16 +162,5 @@ func (d *DualAdapter) GetRegion(ctx context.Context, storageID, storageNamespace
 }
 
 func (d *DualAdapter) RuntimeStats() map[string]string {
-	// Combine stats from both adapters
-	metadataStats := d.metadataAdapter.RuntimeStats()
-	dataStats := d.dataAdapter.RuntimeStats()
-
-	result := make(map[string]string)
-	for k, v := range metadataStats {
-		result["metadata_"+k] = v
-	}
-	for k, v := range dataStats {
-		result["data_"+k] = v
-	}
-	return result
+	return nil
 }
