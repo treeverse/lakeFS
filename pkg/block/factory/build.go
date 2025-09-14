@@ -173,22 +173,14 @@ func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.Ada
 		return buildSingleGSAdapter(ctx, params, adapterOpts...)
 	}
 
-	// Build metadata adapter (can access from anywhere)
-	metadataParams := params
-
-	metadataAdapter, err := buildSingleGSAdapter(ctx, metadataParams, adapterOpts...)
+	metadataAdapter, err := buildSingleGSAdapter(ctx, params, adapterOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metadata adapter: %w", err)
 	}
 
 	dataParams := params
-	if params.DataCredentialsFile != "" {
-		dataParams.CredentialsFile = params.DataCredentialsFile
-		dataParams.CredentialsJSON = ""
-	} else if params.DataCredentialsJSON != "" {
-		dataParams.CredentialsJSON = params.DataCredentialsJSON
-		dataParams.CredentialsFile = ""
-	}
+	dataParams.CredentialsFile = params.DataCredentialsFile
+	dataParams.CredentialsJSON = params.DataCredentialsJSON
 
 	dataAdapter, err := buildSingleGSAdapter(ctx, dataParams, adapterOpts...)
 	if err != nil {
@@ -196,7 +188,7 @@ func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.Ada
 	}
 
 	dualAdapter := gs.NewDualAdapter(metadataAdapter, dataAdapter)
-	logging.FromContext(ctx).WithField("type", "gs_dual").Info("initialized dual blockstore adapter")
+	logging.FromContext(ctx).WithField("type", "gs").Info("initialized dual blockstore adapter")
 
 	return dualAdapter, nil
 }

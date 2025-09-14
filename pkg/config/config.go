@@ -236,7 +236,7 @@ type BlockstoreGS struct {
 	ServerSideEncryptionCustomerSupplied string        `mapstructure:"server_side_encryption_customer_supplied"`
 	ServerSideEncryptionKmsKeyID         string        `mapstructure:"server_side_encryption_kms_key_id"`
 
-	// Dual adapter configuration for network-restricted access
+	// Dual adapter configuration for network-restricted access **experimental**
 	DataCredentialsFile string `mapstructure:"data_credentials_file"`
 	DataCredentialsJSON string `mapstructure:"data_credentials_json"`
 }

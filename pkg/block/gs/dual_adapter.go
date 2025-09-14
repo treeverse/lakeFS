@@ -13,7 +13,7 @@ import (
 
 const defaultLakeFSPrefix = "_lakefs/"
 
-var errCrossAdapterCopy = fmt.Errorf("cross adapter copy is not supported")
+var ErrCrossAdapterCopy = fmt.Errorf("cross adapter copy is not supported: %w", block.ErrOperationNotSupported)
 
 // DualAdapter routes operations between metadata and data adapters based on object path
 type DualAdapter struct {
@@ -43,6 +43,7 @@ func (d *DualAdapter) getAdapter(obj block.ObjectPointer) block.Adapter {
 }
 
 // Core adapter methods - delegate to appropriate adapter
+
 func (d *DualAdapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) (*block.PutResponse, error) {
 	return d.getAdapter(obj).Put(ctx, obj, sizeBytes, reader, opts)
 }
@@ -80,7 +81,7 @@ func (d *DualAdapter) Copy(ctx context.Context, sourceObj, destinationObj block.
 	destAdapter := d.getAdapter(destinationObj)
 
 	if sourceAdapter != destAdapter {
-		return errCrossAdapterCopy
+		return ErrCrossAdapterCopy
 	}
 
 	return sourceAdapter.Copy(ctx, sourceObj, destinationObj)
@@ -101,7 +102,7 @@ func (d *DualAdapter) UploadCopyPart(ctx context.Context, sourceObj, destination
 	destAdapter := d.getAdapter(destinationObj)
 
 	if sourceAdapter != destAdapter {
-		return nil, errCrossAdapterCopy
+		return nil, ErrCrossAdapterCopy
 	}
 
 	return sourceAdapter.UploadCopyPart(ctx, sourceObj, destinationObj, uploadID, partNumber)
@@ -112,7 +113,7 @@ func (d *DualAdapter) UploadCopyPartRange(ctx context.Context, sourceObj, destin
 	destAdapter := d.getAdapter(destinationObj)
 
 	if sourceAdapter != destAdapter {
-		return nil, errCrossAdapterCopy
+		return nil, ErrCrossAdapterCopy
 	}
 
 	return sourceAdapter.UploadCopyPartRange(ctx, sourceObj, destinationObj, uploadID, partNumber, startPosition, endPosition)
@@ -145,7 +146,7 @@ func (d *DualAdapter) BlockstoreType() string {
 }
 
 func (d *DualAdapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMetadata, error) {
-	return d.dataAdapter.BlockstoreMetadata(ctx)
+	return nil, block.ErrOperationNotSupported
 }
 
 func (d *DualAdapter) GetStorageNamespaceInfo(storageID string) *block.StorageNamespaceInfo {
@@ -157,7 +158,7 @@ func (d *DualAdapter) ResolveNamespace(storageID, storageNamespace, key string, 
 }
 
 func (d *DualAdapter) GetRegion(ctx context.Context, storageID, storageNamespace string) (string, error) {
-	return d.dataAdapter.GetRegion(ctx, storageID, storageNamespace)
+	return "", block.ErrOperationNotSupported
 }
 
 func (d *DualAdapter) RuntimeStats() map[string]string {
