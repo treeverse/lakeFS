@@ -16,11 +16,13 @@ type MetadataProvider struct {
 
 // NewMetadataProvider creates a new MetadataProvider and initializes metadata
 // with cloud type and hashed ID if detected.
-func NewMetadataProvider(storageConfig config.StorageConfig) *MetadataProvider {
+func NewMetadataProvider(storageConfig config.StorageConfig, enabled bool) *MetadataProvider {
 	metadata := make(map[string]string)
-	cloudType, cloudID, cloudDetected := Detect(storageConfig)
-	if cloudDetected {
-		metadata[cloudType] = hashCloudID(cloudID)
+	if enabled {
+		cloudType, cloudID, cloudDetected := Detect(storageConfig)
+		if cloudDetected {
+			metadata[cloudType] = hashCloudID(cloudID)
+		}
 	}
 	return &MetadataProvider{
 		metadata: metadata,
