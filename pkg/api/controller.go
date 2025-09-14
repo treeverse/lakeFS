@@ -3138,7 +3138,7 @@ func (c *Controller) ImportStart(w http.ResponseWriter, r *http.Request, body ap
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	storageInfo := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageNamespace)
+	storageInfo := c.BlockAdapter.GetStorageNamespaceInfo(repo.StorageID)
 	if storageInfo == nil {
 		writeError(w, r, http.StatusNotFound, fmt.Sprintf("no storage namespace info for storage id: %s", repo.StorageID))
 		return
