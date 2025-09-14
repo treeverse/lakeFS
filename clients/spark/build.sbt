@@ -1,10 +1,10 @@
-lazy val projectVersion = "0.16.0-demo-20"
+lazy val projectVersion = "0.16.0"
 version := projectVersion
 lazy val hadoopVersion = "3.3.6"
 ThisBuild / isSnapshot := false
 ThisBuild / scalaVersion := "2.12.12"
 
-name := "benel-test-lakefs-spark-client"
+name := "lakefs-spark-client"
 organization := "io.lakefs"
 organizationName := "Treeverse Labs"
 organizationHomepage := Some(url("http://treeverse.io"))
