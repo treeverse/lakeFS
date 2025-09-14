@@ -52,7 +52,7 @@ const (
 	googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
 )
 
-func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c config.AdapterConfig, blockStoragePrefix string, opts ...BuildOption) (block.Adapter, error) {
+func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c config.AdapterConfig, opts ...BuildOption) (block.Adapter, error) {
 	// Apply options
 	options := &AdapterOptions{}
 	for _, opt := range opts {
@@ -85,7 +85,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 		if err != nil {
 			return nil, err
 		}
-		return buildGSAdapter(ctx, p, blockStoragePrefix, options.GS...)
+		return buildGSAdapter(ctx, p, options.GS...)
 	case block.BlockstoreTypeAzure:
 		p, err := c.BlockstoreAzureParams()
 		if err != nil {
@@ -168,7 +168,7 @@ func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, erro
 	return storage.NewClient(ctx, opts...)
 }
 
-func buildGSAdapter(ctx context.Context, params params.GS, blockStoragePrefix string, adapterOpts ...gs.AdapterOption) (block.Adapter, error) {
+func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (block.Adapter, error) {
 	if params.DataCredentialsJSON == "" && params.DataCredentialsFile == "" {
 		return buildSingleGSAdapter(ctx, params, adapterOpts...)
 	}

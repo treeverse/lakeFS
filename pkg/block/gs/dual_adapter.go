@@ -19,7 +19,6 @@ var errCrossAdapterCopy = fmt.Errorf("cross adapter copy is not supported")
 type DualAdapter struct {
 	metadataAdapter block.Adapter
 	dataAdapter     block.Adapter
-	metadataPrefix  string
 }
 
 // NewDualAdapter creates a new dual adapter that routes operations based on object path
