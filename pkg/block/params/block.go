@@ -62,6 +62,10 @@ type GS struct {
 	DisablePreSignedUI                   bool
 	ServerSideEncryptionCustomerSupplied []byte
 	ServerSideEncryptionKmsKeyID         string
+
+	// Dual adapter configuration
+	DataCredentialsFile string
+	DataCredentialsJSON string
 }
 
 type Azure struct {
