@@ -122,7 +122,7 @@ s3PutIfAbsent := {
     "--body", jarFile.getAbsolutePath,
     "--if-none-match","*",
     "--region", region,
-    "--acl","public-read"
+    "--acl","public-read" // should be removed after "Bucket owner enforced" (disable acl's) will be applied on treeverse-clients-us-east bucket
   )
   val code = Process(cmd).!
   if (code != 0) {
