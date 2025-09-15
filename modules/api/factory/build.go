@@ -2,6 +2,7 @@ package factory
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -25,5 +26,15 @@ type ServiceDependencies struct {
 }
 
 func RegisterServices(ctx context.Context, sd ServiceDependencies, router *chi.Mux) error {
+	// Additional API routes we like to serve and report as not implemented
+	router.Mount("/iceberg/api/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
+	router.Mount("/iceberg/relative_to/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
+	router.Mount("/mds/iceberg/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
+
 	return nil
+}
+
+// NotImplementedIcebergCatalogHandler returns HTTP 501 Not Implemented status for Iceberg REST Catalog endpoints.
+func NotImplementedIcebergCatalogHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Iceberg REST Catalog Not Implemented", http.StatusNotImplemented)
 }
