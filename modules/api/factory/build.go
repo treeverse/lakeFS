@@ -29,7 +29,7 @@ func RegisterServices(ctx context.Context, sd ServiceDependencies, router *chi.M
 	// Additional API routes we like to serve and report as not implemented
 	router.Mount("/iceberg/api/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
 	router.Mount("/iceberg/relative_to/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
-	router.Mount("/mds/iceberg/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
+	router.Mount("/mds/iceberg/api/", http.HandlerFunc(NotImplementedIcebergCatalogHandler))
 
 	return nil
 }
