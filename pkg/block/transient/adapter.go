@@ -35,7 +35,10 @@ func (a *Adapter) Get(_ context.Context, _ block.ObjectPointer) (io.ReadCloser, 
 	return io.NopCloser(&io.LimitedReader{R: rand.Reader, N: DefaultReaderSize}), nil
 }
 
-func (a *Adapter) GetWalker(_ string, _ block.WalkerOptions) (block.Walker, error) {
+func (a *Adapter) GetWalker(storageID string, opts block.WalkerOptions) (block.Walker, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	return nil, block.ErrOperationNotSupported
 }
 
@@ -150,7 +153,10 @@ func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetada
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(storageID string) *block.StorageNamespaceInfo {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeTransient)
 	info.PreSignSupport = false
 	info.PreSignSupportUI = false
@@ -162,7 +168,10 @@ func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierTy
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
-func (a *Adapter) GetRegion(_ context.Context, _, _ string) (string, error) {
+func (a *Adapter) GetRegion(_ context.Context, storageID string, storageNamespace string) (string, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	return "", block.ErrOperationNotSupported
 }
 

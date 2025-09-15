@@ -162,10 +162,13 @@ func verifyObjectPointer(obj block.ObjectPointer) error {
 }
 
 func (a *Adapter) GetWalker(storageID string, opts block.WalkerOptions) (block.Walker, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeMem); err != nil {
 		return nil, err
 	}
-	return NewMemWalker(storageID, a), nil
+	return NewMemWalker("", a), nil
 }
 
 func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode, _ string) (string, time.Time, error) {
@@ -443,7 +446,10 @@ func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetada
 	return nil, fmt.Errorf("blockstore metadata: %w", block.ErrOperationNotSupported)
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(storageID string) *block.StorageNamespaceInfo {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeMem)
 	info.PreSignSupport = false
 	info.ImportSupport = false
@@ -454,7 +460,10 @@ func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierTy
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
-func (a *Adapter) GetRegion(_ context.Context, _, _ string) (string, error) {
+func (a *Adapter) GetRegion(_ context.Context, storageID string, storageNamespace string) (string, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	return "", fmt.Errorf("get region: %w", block.ErrOperationNotSupported)
 }
 

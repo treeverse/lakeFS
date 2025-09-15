@@ -222,7 +222,10 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadClos
 	return a.Download(ctx, obj, 0, blockblob.CountToEnd)
 }
 
-func (a *Adapter) GetWalker(_ string, opts block.WalkerOptions) (block.Walker, error) {
+func (a *Adapter) GetWalker(storageID string, opts block.WalkerOptions) (block.Walker, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeAzure); err != nil {
 		return nil, err
 	}
@@ -629,7 +632,10 @@ func (a *Adapter) CompleteMultiPartUpload(ctx context.Context, obj block.ObjectP
 	return completeMultipart(ctx, multipartList.Part, *containerURL, qualifiedKey.BlobURL)
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(storageID string) *block.StorageNamespaceInfo {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeAzure)
 
 	info.ImportValidityRegex = fmt.Sprintf(`^https?://[a-z0-9_-]+\.%s`, a.clientCache.params.Domain)
@@ -649,7 +655,10 @@ func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierTy
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
-func (a *Adapter) GetRegion(_ context.Context, _, _ string) (string, error) {
+func (a *Adapter) GetRegion(_ context.Context, storageID string, storageNamespace string) (string, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	return "", block.ErrOperationNotSupported
 }
 

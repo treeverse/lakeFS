@@ -385,7 +385,10 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadClos
 	return objectOutput.Body, nil
 }
 
-func (a *Adapter) GetWalker(_ string, opts block.WalkerOptions) (block.Walker, error) {
+func (a *Adapter) GetWalker(storageID string, opts block.WalkerOptions) (block.Walker, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeS3); err != nil {
 		return nil, err
 	}
@@ -916,7 +919,10 @@ func (a *Adapter) BlockstoreMetadata(ctx context.Context) (*block.BlockstoreMeta
 	return &block.BlockstoreMetadata{Region: &region}, nil
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(storageID string) *block.StorageNamespaceInfo {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeS3)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -945,7 +951,10 @@ func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierTy
 	return block.DefaultResolveNamespace(storageNamespace, key, identifierType)
 }
 
-func (a *Adapter) GetRegion(ctx context.Context, _, storageNamespace string) (string, error) {
+func (a *Adapter) GetRegion(ctx context.Context, storageID string, storageNamespace string) (string, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	namespaceURL, err := url.Parse(storageNamespace)
 	if err != nil {
 		return "", fmt.Errorf(`%s isn't a valid url': %w`, storageNamespace, block.ErrInvalidNamespace)

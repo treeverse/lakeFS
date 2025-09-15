@@ -200,7 +200,10 @@ func (a *Adapter) Get(ctx context.Context, obj block.ObjectPointer) (io.ReadClos
 	return r, nil
 }
 
-func (a *Adapter) GetWalker(_ string, opts block.WalkerOptions) (block.Walker, error) {
+func (a *Adapter) GetWalker(storageID string, opts block.WalkerOptions) (block.Walker, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeGS); err != nil {
 		return nil, err
 	}
@@ -693,7 +696,10 @@ func (a *Adapter) BlockstoreMetadata(_ context.Context) (*block.BlockstoreMetada
 	return nil, block.ErrOperationNotSupported
 }
 
-func (a *Adapter) GetStorageNamespaceInfo(string) *block.StorageNamespaceInfo {
+func (a *Adapter) GetStorageNamespaceInfo(storageID string) *block.StorageNamespaceInfo {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	info := block.DefaultStorageNamespaceInfo(block.BlockstoreTypeGS)
 	if a.disablePreSigned {
 		info.PreSignSupport = false
@@ -728,7 +734,10 @@ func (a *Adapter) ResolveNamespace(_, storageNamespace, key string, identifierTy
 	return qualifiedKey, nil
 }
 
-func (a *Adapter) GetRegion(_ context.Context, _, _ string) (string, error) {
+func (a *Adapter) GetRegion(_ context.Context, storageID string, storageNamespace string) (string, error) {
+	if storageID != "" {
+		panic("storageID must be empty")
+	}
 	return "", block.ErrOperationNotSupported
 }
 
