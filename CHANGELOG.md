@@ -1,5 +1,9 @@
 # Changelog
 
+# v1.67.0
+
+🏢 Includes only changes for Enterprise.
+
 # v1.68.0
 :new: What's new:
 - GS: Dual Adapter (Experimental) (#9508)
