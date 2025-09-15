@@ -13,6 +13,7 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -167,10 +168,24 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
+	logger := logging.ContextUnavailable()
+	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logger, nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
 
 	// reset cloud metadata - faster setup, the cloud metadata maintain its own tests
 	cloud.Reset()
+
+	// register additional API services
+	err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
+		Config:                cfg,
+		Authenticator:         authenticator,
+		AuthService:           authService,
+		AuthenticationService: authenticationService,
+		BlockAdapter:          c.BlockAdapter,
+		Collector:             collector,
+		Logger:                logger,
+		LicenseManager:        licenseManager,
+	}, handler)
+	testutil.MustDo(t, "register module api factory", err)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,
