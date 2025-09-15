@@ -47,11 +47,7 @@ Configuration section for SSO authentication services, like SAML or OIDC.
 * `auth.logout_redirect_url` `(string : "/auth/login")` - The URL to redirect to after logout when using SSO authentication services, like SAML or OIDC.   
 The configuration depends on the authentication provider:  
     - **For OIDC:** The logout URL of the OIDC provider (e.g., Auth0 logout endpoint).
-    - **For SAML:** The URL within lakeFS where the IdP should redirect after logout (e.g., `/auth/login`).   
-      If you are configuring SAML with `auth.ui_config.login_url_method`, ensure users return to the lakeFS login selection page after logout (instead of being automatically redirected to the SSO login page), set the `auth.logout_redirect_url` to:  
-      `https://<lakefs.ingress.domain>/auth/login?redirected=true`.  
-      If a Logout Redirection URL is configured in your IdP, ensure it points to the same path:
-      `https://<lakefs.ingress.domain>/auth/login?redirected=true`.
+    - **For SAML:** The URL within lakeFS where the IdP should redirect after logout (e.g., `/auth/login`).
 
 #### auth.ui_config
 
@@ -110,11 +106,6 @@ Configuration section for OIDC
 
 * `auth.providers.oidc.authorize_endpoint_query_parameters` `(map[string]string : {})` - key/value parameters that are passed to a provider's authorization endpoint
 * `auth.providers.oidc.logout_endpoint_query_parameters` `(string[] : [])` - The query parameters that will be used to redirect the user to the OIDC provider after logout, e.g. `["returnTo", "https://<lakefs.ingress.domain>/oidc/login"]`
-
-!!! note
-    If you are configuring OIDC with `auth.ui_config.login_url_method`, ensure users return to the lakeFS login selection page after logout (instead of being automatically redirected to the SSO login page), set the `returnTo` value in `auth.providers.oidc.logout_endpoint_query_parameters` to:  
-    `["returnTo", "https://<lakefs.ingress.domain>/auth/login?redirected=true"]`
-
 * `auth.providers.oidc.logout_client_id_query_parameter` `(string : "")` - The claim name that represents the client identifier in the OIDC provider
 * `auth.providers.oidc.additional_scope_claims` `(string[] : [])` - Specifies optional requested permissions, other than `openid` and `profile` that are being used
 * `auth.providers.oidc.post_login_redirect_url` `(string : "")` - The URL to redirect users to after successful OIDC authentication, e.g. `'http://localhost:8000/'`
