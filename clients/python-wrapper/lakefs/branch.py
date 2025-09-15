@@ -104,12 +104,13 @@ class _BaseBranch(Reference):
             )
 
     def reset_changes(self, path_type: Literal["common_prefix", "object", "reset"] = "reset",
-                      path: Optional[str] = None) -> None:
+                      path: Optional[str] = None, **kwargs) -> None:
         """
         Reset uncommitted changes (if any) on this branch
 
         :param path_type: the type of path to reset ('common_prefix', 'object', 'reset' - for all changes)
         :param path: the path to reset (optional) - if path_type is 'reset' this parameter is ignored
+        :param kwargs: Additional Keyword Arguments to send to the server
         :raise ValidationError: if path_type is not one of the allowed values
         :raise NotFoundException: if branch or repository do not exist
         :raise NotAuthorizedException: if user is not authorized to perform this operation
@@ -117,7 +118,7 @@ class _BaseBranch(Reference):
         """
 
         reset_creation = lakefs_sdk.ResetCreation(path=path, type=path_type)
-        return self._client.sdk_client.branches_api.reset_branch(self._repo_id, self.id, reset_creation)
+        return self._client.sdk_client.branches_api.reset_branch(self._repo_id, self.id, reset_creation, **kwargs)
 
 
 class Branch(_BaseBranch):
@@ -135,13 +136,14 @@ class Branch(_BaseBranch):
         self._commit = None
         return super().get_commit()
 
-    def cherry_pick(self, reference: ReferenceType, parent_number: Optional[int] = None) -> Commit:
+    def cherry_pick(self, reference: ReferenceType, parent_number: Optional[int] = None, **kwargs) -> Commit:
         """
         Cherry-pick a given reference onto the branch.
 
         :param reference: ID of the reference to cherry-pick.
         :param parent_number: When cherry-picking a merge commit, the parent number (starting from 1)
             with which to perform the diff. The default branch is parent 1.
+        :param kwargs: Additional Keyword Arguments to send to the server
         :return: The cherry-picked commit at the head of the branch.
         :raise NotFoundException: If either the repository or target reference do not exist.
         :raise NotAuthorizedException: If the user is not authorized to perform this operation.
@@ -150,7 +152,8 @@ class Branch(_BaseBranch):
         ref = reference if isinstance(reference, str) else reference.id
         cherry_pick_creation = lakefs_sdk.CherryPickCreation(ref=ref, parent_number=parent_number)
         with api_exception_handler():
-            res = self._client.sdk_client.branches_api.cherry_pick(self._repo_id, self._id, cherry_pick_creation)
+            res = self._client.sdk_client.branches_api.cherry_pick(
+                self._repo_id, self._id, cherry_pick_creation, **kwargs)
             return Commit(**res.dict())
 
     def create(self, source_reference: ReferenceType, exist_ok: bool = False, **kwargs) -> Branch:
@@ -219,20 +222,21 @@ class Branch(_BaseBranch):
             c = self._client.sdk_client.commits_api.commit(self._repo_id, self._id, commits_creation)
         return Reference(self._repo_id, c.id, self._client)
 
-    def delete(self) -> None:
+    def delete(self, **kwargs) -> None:
         """
         Delete branch from lakeFS server
 
+        :param kwargs: Additional Keyword Arguments to send to the server
         :raise NotFoundException: if branch or repository do not exist
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ForbiddenException: for branches that are protected
         :raise ServerException: for any other errors
         """
         with api_exception_handler():
-            return self._client.sdk_client.branches_api.delete_branch(self._repo_id, self._id)
+            return self._client.sdk_client.branches_api.delete_branch(self._repo_id, self._id, **kwargs)
 
     def revert(self, reference: Optional[ReferenceType], parent_number: int = 0, *,
-               reference_id: Optional[str] = None) -> Commit:
+               reference_id: Optional[str] = None, **kwargs) -> Commit:
         """
         revert the changes done by the provided reference on the current branch
 
@@ -244,6 +248,7 @@ class Branch(_BaseBranch):
         :param parent_number: when reverting a merge commit, the parent number (starting from 1) relative to which to
             perform the revert. The default for non merge commits is 0
         :param reference: the reference to revert
+        :param kwargs: Additional Keyword Arguments to send to the server
         :return: The commit created by the revert
         :raise NotFoundException: if branch by this id does not exist
         :raise NotAuthorizedException: if user is not authorized to perform this operation
@@ -272,7 +277,8 @@ class Branch(_BaseBranch):
             self._client.sdk_client.branches_api.revert_branch(
                 self._repo_id,
                 self._id,
-                lakefs_sdk.RevertCreation(ref=ref, parent_number=parent_number)
+                lakefs_sdk.RevertCreation(ref=ref, parent_number=parent_number),
+                **kwargs
             )
             commit = self._client.sdk_client.commits_api.get_commit(self._repo_id, self._id)
             return Commit(**commit.dict())

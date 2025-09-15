@@ -66,16 +66,17 @@ class Repository(_BaseLakeFSObject):
             self._properties = RepositoryProperties(**repo.dict())
         return self
 
-    def delete(self) -> None:
+    def delete(self, **kwargs) -> None:
         """
         Delete repository from lakeFS server
 
+        :param kwargs: Additional Keyword Arguments to send to the server
         :raise NotFoundException: if repository by this id does not exist
         :raise NotAuthorizedException: if user is not authorized to perform this operation
         :raise ServerException: for any other errors
         """
         with api_exception_handler():
-            self._client.sdk_client.repositories_api.delete_repository(self._id)
+            self._client.sdk_client.repositories_api.delete_repository(self._id, **kwargs)
 
     def branch(self, branch_id: str) -> Branch:
         """
