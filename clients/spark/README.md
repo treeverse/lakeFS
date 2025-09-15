@@ -58,6 +58,25 @@ spark-submit --conf spark.hadoop.lakefs.api.url=https://lakefs.example.com/api/v
 
 Follow the [Spark client release checklist](https://github.com/treeverse/dev/blob/main/pages/lakefs-clients-release.md#spark-metadata-client)
 
+### Publishing Requirements (maintainers)
+
+AWS CLI v2 must be available on the publishing environment (CI or local).
+
+Required env vars: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`.
+
+### Publishing Flow (maintainers)
+
+The publication pipeline does protection while uploading - an atomic upload (`s3PutIfAbsent` sbt task).
+
+This sbt task performs:
+
+`aws s3api put-object --if-none-match "*" --acl public-read --bucket <bucket> --key <name>/<version>/<jar> --body <jar-path> --region <region>`
+
+The `--if-none-match "*"` makes the upload fail with `412 Precondition Failed` if the object already exists, preventing accidental overwrite.
+(The `--acl public-read` is temporary until the bucket moves to "Bucket owner enforced").
+
+See the CI workflow and Makefile for exact targets.
+
 ## Debugging
 
 To debug the Exporter or the Garbage Collector using your IDE you can use a remote JVM debugger. You can follow [these](https://sparkbyexamples.com/spark/how-to-debug-spark-application-locally-or-remote/) instructions to connect one. 
