@@ -902,7 +902,7 @@ lakeFS Mount uses a lazy prefetch strategy. Files are not downloaded at mount ti
 
 <h3>What are the scale limitations of lakeFS Mount, and what are the recommended configurations for dealing with large datasets?</h3>
 
-When using lakeFS Mount, the volume of data accessed by the local machine influences the scale limitations more than the total size of the dataset under the mounted prefix. This is because lakeFS Mount uses a lazy downloading approach, meaning it only downloads the accessed files. Listing large directories of objects can take up to several seconds, and we are working to improve this experience.
+When using lakeFS Mount, the volume of data accessed by the local machine influences the scale limitations more than the total size of the dataset under the mounted prefix. This is because lakeFS Mount uses a lazy downloading approach, meaning it only downloads the accessed files.
 
 <h5>Recommended Configuration</h5>
 
