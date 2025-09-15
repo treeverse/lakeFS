@@ -168,7 +168,7 @@ func (a *Adapter) GetWalker(storageID string, opts block.WalkerOptions) (block.W
 	if err := block.ValidateStorageType(opts.StorageURI, block.StorageTypeMem); err != nil {
 		return nil, err
 	}
-	return NewMemWalker("", a), nil
+	return NewMemWalker(storageID, a), nil
 }
 
 func (a *Adapter) GetPreSignedURL(_ context.Context, obj block.ObjectPointer, _ block.PreSignMode, _ string) (string, time.Time, error) {
