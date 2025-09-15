@@ -281,7 +281,7 @@ func TestNotImplementedAPI(t *testing.T) {
 	server := setupServer(t, handler)
 
 	// verify that for specific APIs, we get a 405 Not Implemented
-	routes := []string{"/iceberg/api/v1/config", "/iceberg/relative_to/v1/config", "/mds/iceberg/v1/config"}
+	routes := []string{"/iceberg/api/v1/config", "/iceberg/relative_to/v1/config", "/mds/iceberg/api/v1/config"}
 	for _, route := range routes {
 		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+route, nil)
 		if err != nil {
