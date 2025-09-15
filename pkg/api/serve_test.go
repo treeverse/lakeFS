@@ -13,6 +13,7 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/spf13/viper"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -167,10 +168,24 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 
 	authenticationService := authentication.NewDummyService()
 	licenseManager, _ := licensefactory.NewLicenseManager(ctx, cfg)
-	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logging.ContextUnavailable(), nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
+	logger := logging.ContextUnavailable()
+	handler := api.Serve(cfg, c, authenticator, authService, authenticationService, c.BlockAdapter, meta, migrator, collector, actionsService, auditChecker, logger, nil, nil, upload.DefaultPathProvider, stats.DefaultUsageReporter, licenseManager)
 
 	// reset cloud metadata - faster setup, the cloud metadata maintain its own tests
 	cloud.Reset()
+
+	// register additional API services
+	err = apifactory.RegisterServices(ctx, apifactory.ServiceDependencies{
+		Config:                cfg,
+		Authenticator:         authenticator,
+		AuthService:           authService,
+		AuthenticationService: authenticationService,
+		BlockAdapter:          c.BlockAdapter,
+		Collector:             collector,
+		Logger:                logger,
+		LicenseManager:        licenseManager,
+	}, handler)
+	testutil.MustDo(t, "register module api factory", err)
 
 	return handler, &dependencies{
 		blocks:      c.BlockAdapter,
@@ -266,7 +281,7 @@ func TestNotImplementedAPI(t *testing.T) {
 	server := setupServer(t, handler)
 
 	// verify that for specific APIs, we get a 405 Not Implemented
-	routes := []string{"/iceberg/api/v1/config", "/iceberg/relative_to/v1/config", "/mds/iceberg/v1/config"}
+	routes := []string{"/iceberg/api/v1/config", "/iceberg/relative_to/v1/config", "/mds/iceberg/api/v1/config"}
 	for _, route := range routes {
 		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+route, nil)
 		if err != nil {
