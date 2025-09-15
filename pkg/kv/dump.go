@@ -12,7 +12,7 @@ import (
 type DumpFormat struct {
 	Version   string     `json:"version"`
 	Timestamp string     `json:"timestamp"`
-	Entries   []RawEntry `json:"entries"`
+	Entries   []RawEntry `json:"entries,omitempty"`
 }
 
 // RawEntry represents a raw key-value entry with partition
@@ -147,14 +147,14 @@ func CreateDump(ctx context.Context, store Store, sections []string) (*DumpForma
 	}
 
 	// Map sections to partitions
-	partitionSet := make(map[string]bool)
+	partitionSet := make(map[string]struct{})
 	for _, section := range sections {
 		partitions, exists := SectionMapping[section]
 		if !exists {
 			return nil, fmt.Errorf("%w section: %s", ErrUnsupported, section)
 		}
 		for _, partition := range partitions {
-			partitionSet[partition] = true
+			partitionSet[partition] = struct{}{}
 		}
 	}
 
