@@ -52,9 +52,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             setLoginError(null);
                             const username = formData.get('username');
                             const password = formData.get('password');
-                            if (typeof username === 'string' && typeof password === 'string') {
-                                await auth.login(username, password);
-                            }
+                            await auth.login(username, password);
                             router.push(next || '/');
                             navigate(0);
                         } catch(err) {
