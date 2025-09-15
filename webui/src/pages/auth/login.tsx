@@ -115,6 +115,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
 
 const LoginPage = () => {
     const router = useRouter();
+    const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
 
     if (loading) {
@@ -143,7 +144,6 @@ const LoginPage = () => {
     // selection page or the default lakeFS login form, since both share the same endpoint.
     if (router.query.redirected)  {
         delete router.query.redirected;
-        const pluginManager = usePluginManager();
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
         // Return the element (component or null)
         if (loginStrategy.element !== undefined) {

@@ -224,6 +224,8 @@ Configuration section for the lakeFS key-value store database.
 
     * `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
     * `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
+    * `blockstore.gs.data_credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key for data operations **experimental**
+    * `blockstore.gs.data_credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key for data operations **experimental**
     * `blockstore.gs.pre_signed_expiry` `(time duration : "15m")` - Expiry of pre-signed URL.
     * `blockstore.gs.disable_pre_signed` `(bool : false)` - Disable use of pre-signed URL.
     * `blockstore.gs.disable_pre_signed_ui` `(bool : true)` - Disable use of pre-signed URL in the UI.

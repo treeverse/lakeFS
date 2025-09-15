@@ -1,5 +1,12 @@
 # Changelog
 
+# v1.68.0
+:new: What's new:
+- GS: Dual Adapter (Experimental) (#9508)
+:bug: Bugs fixed:
+- Fix block store adapters physical path resolve (#9464)
+- Fix enforce import_enabled flag for local storage (#9417)
+
 # v1.67.0
 
 :new: What's new:
