@@ -32,7 +32,7 @@ jobs:
           mkdir -p ~/.sbt
           cat << EOS > ~/.sbt/credentials
           realm=Amazon S3
-          host=treeverse-clients-us-east.s3.amazonaws.com
+          host=benel-public-test.s3.amazonaws.com
           user=${AWS_ACCESS_KEY_ID}
           password=${AWS_SECRET_ACCESS_KEY}
           EOS
@@ -53,7 +53,7 @@ jobs:
       - name: SBT release (Maven Central, AWS)
         run: make publish-scala
         env:                    # Some credentials required in this step, some in previous.
-          S3_PUBLISH_BUCKET: treeverse-clients-us-east
+          S3_PUBLISH_BUCKET: benel-public-test
           AWS_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
