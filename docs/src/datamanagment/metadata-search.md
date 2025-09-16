@@ -61,12 +61,18 @@ branch in data repository `my-repo`, will have a corresponding `dev` branch in `
 3. **Maintains a versioned Iceberg object metadata table** on each matching branch in the metadata repository.
 4. **Continuously syncs metadata** via a background processing pipeline that keeps the object metadata tables
    [eventually consistent](#consistency) with changes in the corresponding data repository branches.
+5. **Wraps the lakeFS Iceberg REST catalog** to transparently redirect table queries to the correct physical location, so
+that users always query metadata tables through the data repository namespace rather than the underlying metadata repository.
 
-Once metadata tables are in place, you can run queries against them as follows:
+### Querying Metadata
 
-* By **branch name**, to search the latest metadata state on a given branch.
-* By **commit ID** or **Tag name**, to access a specific historical metadata version and ensure [reproducible queries](#writing-reproducible-queries). 
-This lets you retrieve the exact metadata state from any immutable point in time.
+Metadata queries are always performed through the **data repository namespace**, not the metadata repository that lakeFS
+manages internally. You can query metadata in two ways: 
+
+* By **branch name**: `<repo>.<branch>.system.object_metadata`, to search the latest metadata state on a given branch.
+* By **commit ID** or **Tag name**: `<repo>.<commit_id>.system.object_metadata` or `<repo>.<tag_name>.system.object_metadata`, 
+to access a specific historical metadata version and ensure [reproducible queries](#writing-reproducible-queries). This lets you retrieve the exact 
+metadata state from any immutable point in time.
 
 Queries are executed through the lakeFS Iceberg REST catalog, which is fully compatible with standard engines like Trino,
 DuckDB, Spark, PyIceberg, and others.
@@ -177,7 +183,13 @@ asterisk, e.g., `dev-*`.
 ## How to Search by Metadata
 
 To search by object metadata in lakeFS, query the Iceberg `object_metadata` tables that lakeFS automatically creates and
-manages. You can use any Iceberg-compatible engine, such as DuckDB, Trino, Spark, PyIceberg, or others.
+manages. These tables are always available under the data repository namespace: 
+
+```
+<repo>.<ref>.system.object_metadata
+```  
+
+You can use any Iceberg-compatible engine, such as DuckDB, Trino, Spark, PyIceberg, or others.
 
 If you're using DuckDB, note the Iceberg REST Catalog [guide](../integrations/iceberg.md#relative-namespace-support) for 
 details on how to reference `object_metadata` tables.
@@ -190,7 +202,18 @@ details on how to reference `object_metadata` tables.
 
 #### Search Steps
  
-1. [Initialize](../integrations/iceberg.md#catalog-initialization-example-using-pyiceberg) lakeFS Iceberg catalog, and authenticate.
+1. Initialize lakeFS Iceberg catalog, and authenticate.
+The following example uses PyIceberg:
+```python
+from pyiceberg.catalog.rest import RestCatalog
+
+catalog = RestCatalog(name = "my_catalog", **{
+    'prefix': 'lakefs',
+    'uri': f'{lakefs_endpoint}/mds/iceberg/api',
+    'oauth2-server-uri': f'{lakefs_endpoint}/mds/iceberg/api/v1/oauth/tokens',
+    'credential': f'{lakefs_client_key}:{lakefs_client_secret}',
+})
+``` 
 2. Load the object metadata table that represents the reference you would like to query.
 3. Use SQL to search by system or user-defined metadata.
 
@@ -205,8 +228,8 @@ from pyiceberg.catalog import load_catalog
 # Initialize the catalog
 catalog = RestCatalog(name = "my_catalog", **{
     'prefix': 'lakefs',
-    'uri': 'https://lakefs.example.com/iceberg/api',
-    'oauth2-server-uri': 'https://lakefs.example.com/iceberg/api/iceberg/api/v1/oauth/tokens',
+    'uri': 'https://lakefs.example.com/mds/iceberg/api',
+    'oauth2-server-uri': 'https://lakefs.example.com/mds/iceberg/api/iceberg/api/v1/oauth/tokens',
     'credential': f'AKIAlakefs12345EXAMPLE:abc/lakefs/1234567bPxRfiCYEXAMPLEKEY',
 })
 
@@ -226,11 +249,15 @@ df = con.execute(query).df()
 This query finds all newly added cat images (added in the past week), demonstrating how you can combine user-defined and
 system metadata fields in powerful, version-aware searches.
 
+!!! note
+    This catalog initialization differs from the [classic lakeFS Iceberg catalog](../integrations/iceberg.md#catalog-initialization-example-using-pyiceberg).
+    Notice the additional `mds` path segment in the endpoints, which routes requests through the Metadata Search service.
+
 ### Writing Reproducible Queries
 
 In collaborative environments or during iterative development, it's important to ensure that metadata queries return consistent,
-reproducible results. To achieve this, you should query object metadata tables using commit IDs, which are immutable references,
-instead of branch names.
+reproducible results. To achieve this, you should query object metadata tables using commit IDs or tag names, which are 
+immutable references, instead of branch names.
 
 **Why not use Branch names?**
 
@@ -239,26 +266,45 @@ the state of the branch’s HEAD commit at the time of the query, assuming the m
 [eventual consistency](#consistency) constraints). However, because branch heads are mutable and advance with each new
 commit, the results of such queries can change over time.
 
-**Use commit IDs for stability**
+**Use commit ID or tag name for stability**
 
-To ensure stability and reproducibility, use lakeFS commit IDs in your queries. Each commit ID made to the **data repository** 
-references a specific, fixed snapshot of the repository state, including its metadata. This guarantees that the same query
-always returns the same results, regardless of subsequent changes to the branch.
+To ensure stability and reproducibility, use lakeFS commit IDs or tag names in your queries. Each commit or tag created 
+on the **data repository** reference a specific, fixed snapshot of the repository state, including its metadata. 
+This guarantees that the same query always returns the same results, regardless of subsequent changes to the branch.
 
-**How to query using commit IDs?**  
+#### Using Commit ID 
 
-1. Identify the relevant **full** commit ID from the data repository (e.g., `c12` on branch `dev` in repo `my-repo`). 
-2. Query the object metadata table using the following pattern: `<repo>.commit-<commit_id>.system.object_metadata`,
-or `my-repo.commit-c12.system.object_metadata` in our example. 
-
-This accesses the metadata corresponding to commit `c12`.
-
-!!! note
-    Use the full commit SHA when querying by commit. Shortened commit IDs are not supported at this time.  
+1. Identify the relevant commit ID from the data repository (e.g., `dc3117ec3a727104226c896bf7ab9350ee5da06ae052406262840e9a4a8c9ffb`
+on branch `dev` in repo `my-repo`). 
+2. Query the object metadata table using the following pattern: 
+```
+<repo>.<commit_id>.system.object_metadata
+```
+Examples:
+```
+my-repo.dc3117e.system.object_metadata
+my-repo.dc3117ec3a727104226c896bf7ab9350ee5da06ae052406262840e9a4a8c9ffb.system.object_metadata
+```  
+Both table paths return the metadata for commit `dc3117ec3a727104226c896bf7ab9350ee5da06ae052406262840e9a4a8c9ffb`.
 
 !!! tip
-    For full reproducibility and version control, include the commit ID directly in your queries and store those 
-    queries in Git.   
+    For readability, prefer using the short commit SHA (e.g., `dc3117e`).  
+
+#### Using Tag Name
+
+1. Identify the relevant tag from the data repository (e.g., `v_0.2.1` on branch `main` in repo `my-repo`).
+2. Query the object metadata table using the following pattern:
+```
+<repo>.<tag_name>.system.object_metadata
+```
+Examples:
+```
+my-repo.v_0.2.1.system.object_metadata
+```  
+
+!!! tip
+    For end-to-end reproducibility, include the **commit ID** or **tag name** directly in your queries, and version those
+    queries with Git.
 
 ### Example Queries
 
@@ -267,6 +313,10 @@ This section showcases how to use lakeFS Metadata Search to answer different typ
 For simplicity and readability, the examples are written in Trino SQL. If you're using another engine (e.g., DuckDB, 
 Spark, or PyIceberg), you may need to adjust the syntax accordingly.
 
+The examples below use **branch names** as references for simplicity. However, for reproducible results, it is recommended
+to use **commit IDs** or **tag names** instead. You can convert any example into a [reproducible query](#writing-reproducible-queries)
+by replacing the branch reference accordingly.
+
 <h4>Object Annotation and Labeling</h4> 
 
 <h5>Filter by Object Labels</h5>
@@ -274,20 +324,6 @@ Spark, or PyIceberg), you may need to adjust the syntax accordingly.
 The following example returns images labeled as dogs that are not in a sitting position:
 ```sql
 USE "repo.main.system";
-
-SELECT * FROM object_metadata
-WHERE path LIKE `%.jpg`
-  AND user_metadata['animal'] = 'dog'
-  AND user_metadata['position'] != 'sitting';
-```
-
-<h5>Filter by Object Labels on past commit</h5>
-
-This example demonstrates how to write reproducible queries by referencing a specific lakeFS commit.
-It returns images labeled as dogs that are not sitting, based on the metadata state at that commit:
-
-```sql
-USE "repo.commit-dc3117ec3a727104226c896bf7ab9350ee5da06ae052406262840e9a4a8c9ffb.system";
 
 SELECT * FROM object_metadata
 WHERE path LIKE `%.jpg`
@@ -353,9 +389,3 @@ WHERE path LIKE 'customers/%'
         OR user_metadata['PII'] IS NULL
     );
 ```
-
-## Limitations
-
-* Querying by [tags](../understand/glossary.md#tag) is unsupported, and is in our roadmap.  
-* Querying by commit is only supported by using the pattern described [here](#using-commit-ids).
-  
