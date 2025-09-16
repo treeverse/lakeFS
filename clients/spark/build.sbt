@@ -93,8 +93,8 @@ assembly / assemblyShadeRules := Seq(
   rename("com.google.protobuf.**").inAll,
   rename("com.google.common.**")
     .inLibrary("com.google.guava" % "guava" % "30.1-jre",
-               "com.google.guava" % "failureaccess" % "1.0.1"
-              )
+      "com.google.guava" % "failureaccess" % "1.0.1"
+    )
     .inProject,
   rename("scala.collection.compat.**").inAll,
   rename("okio.**").inAll,
@@ -113,6 +113,8 @@ publishBucket := sys.props.get("publish.bucket").getOrElse("treeverse-clients-us
 
 s3Upload := {
   import sys.process._
+
+  val log = streams.value.log
   val bucket = publishBucket.value
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
@@ -127,11 +129,9 @@ s3Upload := {
     "--acl","public-read" // TODO: remove after switching bucket to "Bucket owner enforced"
   )
 
-  val code = cmd.!
-  if (code != 0)
-    sys.error(s"S3 upload failed (exit=$code). bucket=$bucket key=$key")
-  else
-    println(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
+  val pl = ProcessLogger(out => log.info(out), err => log.error(err))
+  Process(cmd).!!(pl)
+  log.info(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
 }
 
 assembly / assemblyMergeStrategy := {
