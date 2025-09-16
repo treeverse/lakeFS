@@ -17,9 +17,6 @@ PY_OPENAPI_GENERATOR=$(DOCKER) run -e PYTHON_POST_PROCESS_FILE="/mnt/clients/pyt
 GOLANGCI_LINT=github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 BUF_CLI_VERSION=v1.54.0
 
-# Optional flag: only pass -Dpublish.bucket if S3_PUBLISH_BUCKET is set
-PUBLISH_BUCKET_FLAG := $(if $(S3_PUBLISH_BUCKET),-Dpublish.bucket=$(S3_PUBLISH_BUCKET),)
-
 ifndef PACKAGE_VERSION
 	PACKAGE_VERSION=0.1.0-SNAPSHOT
 endif
@@ -305,7 +302,7 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 .PHONY: publish-scala
 publish-scala: ## sbt publish spark client jars to Maven Central and to s3 bucket
 	cd clients/spark && \
-	sbt $(PUBLISH_BUCKET_FLAG) 'assembly; publishSigned; s3Upload; sonaRelease'
+	sbt -Dpublish.bucket=$(S3_PUBLISH_BUCKET) 'assembly; publishSigned; s3Upload; sonaRelease'
 
 .PHONY: publish-lakefsfs-test
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket

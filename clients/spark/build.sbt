@@ -109,7 +109,7 @@ lazy val s3Upload = taskKey[Unit]("Upload JAR to S3 without override existing")
 val publishBucket = settingKey[String]("Target S3 bucket for publishing the JAR")
 
 // Overridable via -Dpublish.bucket
-publishBucket := sys.props.get("publish.bucket").getOrElse("treeverse-clients-us-east")
+publishBucket := sys.props.get("publish.bucket").filter(_.nonEmpty).getOrElse("treeverse-clients-us-east")
 
 s3Upload := {
   import sys.process._
