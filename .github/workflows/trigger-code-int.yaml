@@ -18,7 +18,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
         run: |
-          gh workflow run code-int \
+          gh workflow run code-int.yaml \
             --repo treeverse/lakeFS-Enterprise \
             --ref task/code-int \
             --field ref='${{ github.ref }}' \
