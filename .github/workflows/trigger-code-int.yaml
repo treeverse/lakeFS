@@ -1,8 +1,5 @@
 name: Trigger Code Integration
 
-# This workflow triggers the 'code-int' workflow in the treeverse/lakeFS-Enterprise repository
-# It runs automatically on every commit to master and can also be triggered manually
-
 on:
   workflow_dispatch:
 
@@ -18,11 +15,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
         run: |
-          gh workflow run code-int.yaml \
-            --repo treeverse/lakeFS-Enterprise \
-            --ref task/code-int \
-            --field ref='${{ github.ref }}' \
-            --field sha='${{ github.sha }}' \
-            --field repository='${{ github.repository }}' \
-            --field run_id='${{ github.run_id }}' \
-            --field run_number='${{ github.run_number }}'
+          gh workflow run code-int.yaml --repo treeverse/lakeFS-Enterprise --field ref='${{ github.ref }}'
