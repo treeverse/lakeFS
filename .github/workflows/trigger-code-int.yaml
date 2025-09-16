@@ -1,6 +1,9 @@
 name: Trigger Code Integration
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
