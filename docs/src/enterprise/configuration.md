@@ -116,6 +116,26 @@ Configuration section for authenticating to lakeFS using AWS presign get-caller-
 * `auth.external.aws_auth.http_client.timeout` `(duration : 10s)` - The timeout for the HTTP client used to communicate with AWS STS
 * `auth.external.aws_auth.http_client.skip_verify` `(bool : false)` - Skip SSL verification with AWS STS
 
+## auth.prefetched_cache
+
+Configuration section for the prefetched cache
+The prefetched cache is used to cache entries from the auth KV store in memory to reduce the number of calls to the KV store.
+In addition to the prefetched cache, there is also an LRU negative cache that caches negative lookups (i.e. entries that do not exist in the KV store).
+
+* `auth.prefetched_cache.enabled` `(bool : false)` - Enable the prefetched cache
+* `auth.prefetched_cache.interval` `(duration : 30s)` - The interval at which to refresh the cache
+* `auth.prefetched_cache.ttl` `(duration : 1m)` - The time to live for each cache entry
+* `auth.prefetched_cache.size` `(int : 10000)` - The maximum number of entries in the cache
+* `auth.prefetched_cache.eviction_jitter` `(duration : 3s)` - The maximum random jitter to add to the eviction interval to prevent thundering herds
+* `auth.prefetched_cache.negative_cache_size` `(int : 40000)` - The maximum number of entries in the negative cache
+
+### backpressure
+
+Configuration section for backpressure settings
+When enabled, backpressure will limit the number of requests each server will handle concurrently through s3 gateway.
+* `backpressure.enabled` `(bool : false)` - Enable backpressure
+* `backpressure.upload_part_max_concurrent` `(int : 0)` - The maximum number of concurrent upload part requests. 0 means no limit.
+
 ### blockstores
 
 !!! info
