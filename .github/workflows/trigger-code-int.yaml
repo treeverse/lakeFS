@@ -4,10 +4,7 @@ name: Trigger Code Integration
 # It runs automatically on every commit to master and can also be triggered manually
 
 on:
-  commit:
   push:
-    branches:
-      - master
   workflow_dispatch:
 
 permissions:
