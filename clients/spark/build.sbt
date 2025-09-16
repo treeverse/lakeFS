@@ -114,7 +114,7 @@ publishBucket := sys.props.get("publish.bucket").getOrElse("treeverse-clients-us
 s3Upload := {
   import sys.process._
 
-  val log     = streams.value.log
+  val log = streams.value.log
   val bucket = publishBucket.value
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
@@ -130,11 +130,8 @@ s3Upload := {
   )
 
   val pl = ProcessLogger(out => log.info(out), err => log.error(err))
-  val code = Process(cmd).!(pl)
-  if (code != 0)
-    sys.error(s"S3 upload failed (exit=$code). bucket=$bucket key=$key")
-  else
-    log.info(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
+  Process(cmd).!!(pl)
+  log.info(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
 }
 
 assembly / assemblyMergeStrategy := {
