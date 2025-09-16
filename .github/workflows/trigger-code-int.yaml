@@ -1,4 +1,4 @@
-name: Trigger Code Integration Workflow
+name: Trigger Code Integration
 
 # This workflow triggers the 'code-int' workflow in the treeverse/lakeFS-Enterprise repository
 # It runs automatically on every commit to master and can also be triggered manually
