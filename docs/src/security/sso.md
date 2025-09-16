@@ -210,16 +210,6 @@ If you're using an authentication provider that is not listed, please [contact u
             #idp_skip_verify_tls_cert: true
     ```
 
-    !!! note
-        **In the lakefsConfig:**   
-        If you are configuring SAML with `auth.ui_config.login_url_method` (i.e., you want to display a selection page for the login method - see more info [here](../enterprise/configuration.md/#authui_config)), ensure that users return to the lakeFS login selection page after logout (instead of being automatically redirected to the SSO login page).   
-        
-        To do this, set:  
-        `auth.logout_redirect_url: https://<lakefs.ingress.domain>/auth/login?redirected=true`  
-        
-        If a Logout Redirection URL is also configured in your IdP, make sure it points to the same path:
-        `https://<lakefs.ingress.domain>/auth/login?redirected=true`
-
 === "OpenID Connect"
 
     In order for OIDC to work, configure the following values in your chart's `values.yaml` file:
@@ -262,18 +252,14 @@ If you're using an authentication provider that is not listed, please [contact u
             callback_base_url: https://<lakefs.ingress.domain>
             # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
             logout_client_id_query_parameter: client_id
-            # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
+            # query parameters used to redirect the user to the OIDC provider (e.g., Okta) after logout.
+            # If you are using `auth.ui_config.login_url_method: select` and want to redirect
+            # back to the login selection page, set the return address to lakeFS:
+            # ["returnTo", "https://<lakefs.ingress.domain>/"]
             logout_endpoint_query_parameters:
               - returnTo
               - https://<lakefs.ingress.domain>/oidc/login
     ```
-    !!! note
-        **In the lakefsConfig:**   
-        If you are configuring OIDC with `auth.ui_config.login_url_method` (i.e., you want to display a selection page for the login method - see more info [here](../enterprise/configuration.md/#authui_config)), ensure users return to the lakeFS login selection page after logout (instead of being automatically redirected to the SSO login page).  
-        
-        To do this, set:  
-        the `returnTo` value in `auth.providers.oidc.logout_endpoint_query_parameters` to:  
-        `["returnTo", "https://<lakefs.ingress.domain>/auth/login?redirected=true"]`
 
 === "LDAP"
 
