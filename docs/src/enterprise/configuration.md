@@ -120,6 +120,8 @@ Configuration section for authenticating to lakeFS using AWS presign get-caller-
 
 Configuration section for the prefetched cache.
 The prefetched cache is used to cache entries from the auth KV store in memory to reduce the number of calls to the KV store.
+!!! note
+    When prefetched cache is enabled, the auth catch used to cache responses from the auth service is disabled.
 
 * `auth.prefetched_cache.enabled` `(bool : false)` - Enable the prefetched cache
 * `auth.prefetched_cache.interval` `(duration : 30s)` - The interval at which to refresh the cache
@@ -127,10 +129,12 @@ The prefetched cache is used to cache entries from the auth KV store in memory t
 * `auth.prefetched_cache.size` `(int : 10000)` - The maximum number of entries in the cache
 * `auth.prefetched_cache.eviction_jitter` `(duration : 3s)` - The maximum random jitter to add to the eviction interval to prevent thundering herds
 * `auth.prefetched_cache.negative_cache_size` `(int : 40000)` - The maximum number of missing entries the cache will remember
+
 ### backpressure
 
 Configuration section for backpressure settings.
 When enabled, backpressure will limit the number of requests each server will handle concurrently through s3 gateway
+
 * `backpressure.enabled` `(bool : false)` - Enable backpressure
 * `backpressure.upload_part_max_concurrent` `(int : 0)` - The maximum number of concurrent upload part requests. 0 means no limit
 
