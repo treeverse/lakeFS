@@ -4,7 +4,7 @@ name: Trigger Code Integration
 # It runs automatically on every commit to master and can also be triggered manually
 
 on:
-  pull_request:
+  commit:
   push:
     branches:
       - master
