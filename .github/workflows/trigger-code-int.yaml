@@ -21,6 +21,7 @@ jobs:
         run: |
           gh workflow run code-int \
             --repo treeverse/lakeFS-Enterprise \
+            --ref task/code-int \
             --field ref='${{ github.ref }}' \
             --field sha='${{ github.sha }}' \
             --field repository='${{ github.repository }}' \
