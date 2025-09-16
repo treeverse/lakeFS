@@ -100,7 +100,6 @@ body .auth-page .nav-pills .nav-link:hover {
 }
 
 .login-logo {
-  width: 359px;
-  height: 82px;
-  filter: brightness(0) saturate(100%);
+  width: 269px;
+  height: 62px;
 }
