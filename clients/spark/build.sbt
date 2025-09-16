@@ -129,7 +129,7 @@ s3Upload := {
 
   val code = cmd.!
   if (code != 0)
-    sys.error(s"'${cmd.mkString(" ")}' failed (exit=$code). See output above.")
+    sys.error(s"S3 upload failed (exit=$code). bucket=$bucket key=$key")
   else
     println(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
 }
