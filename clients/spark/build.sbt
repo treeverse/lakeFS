@@ -106,11 +106,14 @@ assembly / assemblyShadeRules := Seq(
 // Safe upload: put-object with If-None-Match to prevent overwriting an existing key.
 // Fails the build on any error and surfaces the AWS CLI error message.
 lazy val s3Upload = taskKey[Unit]("Upload JAR to S3 without override existing")
+val publishBucket = settingKey[String]("Target S3 bucket for publishing the JAR")
+
+// Overridable via -Dpublish.bucket
+publishBucket := sys.props.get("publish.bucket").getOrElse("treeverse-clients-us-east")
 
 s3Upload := {
   import sys.process._
-
-  val bucket = "treeverse-clients-us-east"
+  val bucket = publishBucket.value
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
   val region = "us-east-1"
@@ -124,19 +127,12 @@ s3Upload := {
     "--region", region,
     "--acl","public-read" // TODO: remove after switching bucket to "Bucket owner enforced"
   )
-  val out  = new StringBuilder
-  val err  = new StringBuilder
-  val code = cmd.!(ProcessLogger(out append _, err append _))
 
-  if (code != 0) {
-    val e = err.toString
-    if (e.contains("PreconditionFailed") || e.contains("412"))
-      sys.error(s"Artifact already exists: https://$bucket.s3.amazonaws.com/$key")
-    else
-      sys.error(s"'aws s3api put-object' failed (exit=$code): $e")
-  } else {
+  val code = cmd.!
+  if (code != 0)
+    sys.error(s"'${cmd.mkString(" ")}' failed (exit=$code). See output above.")
+  else
     println(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
-  }
 }
 
 assembly / assemblyMergeStrategy := {
