@@ -105,7 +105,7 @@ assembly / assemblyShadeRules := Seq(
 
 // Safe upload: put-object with If-None-Match to prevent overwriting an existing key.
 // Fails the build on any error and surfaces the AWS CLI error message.
-lazy val s3Upload = taskKey[Unit]("Upload JAR to S3 atomically with If-None-Match")
+lazy val s3Upload = taskKey[Unit]("Upload JAR to S3 without override existing")
 
 s3Upload := {
   import sys.process._
