@@ -116,7 +116,6 @@ s3Upload := {
   val bucket = publishBucket.value
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
-  val region = "us-east-1"
 
   val cmd = Seq(
     "aws","s3api","put-object",
@@ -124,7 +123,7 @@ s3Upload := {
     "--key", key,
     "--body", jarFile.getAbsolutePath,
     "--if-none-match","*",
-    "--region", region,
+    "--region", "us-east-1",
     "--acl","public-read" // TODO: remove after switching bucket to "Bucket owner enforced"
   )
 

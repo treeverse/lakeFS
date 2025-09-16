@@ -300,7 +300,7 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 	go run github.com/bufbuild/buf/cmd/buf@$(BUF_CLI_VERSION) generate
 
 .PHONY: publish-scala
-publish-scala:
+publish-scala: ## sbt publish spark client jars to Maven Central and to s3 bucket
 	cd clients/spark && sbt 'assembly; publishSigned; s3Upload; sonaRelease'
 
 .PHONY: publish-lakefsfs-test
