@@ -53,6 +53,7 @@ jobs:
       - name: SBT release (Maven Central, AWS)
         run: make publish-scala
         env:                    # Some credentials required in this step, some in previous.
+          S3_PUBLISH_BUCKET: treeverse-clients-us-east
           AWS_REGION: us-east-1
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
