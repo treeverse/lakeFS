@@ -92,3 +92,14 @@ body .auth-page .nav-pills .nav-link:hover {
 .auth-page .nav-pills .nav-link.active {
   background-color: var(--success) !important;
 }
+
+.login-card {
+  max-width: 600px;
+  width: 90%;
+  margin: 50px auto auto auto;
+}
+
+.login-logo {
+  width: 269px;
+  height: 62px;
+}
