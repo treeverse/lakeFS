@@ -61,18 +61,23 @@ branch in data repository `my-repo`, will have a corresponding `dev` branch in `
 3. **Maintains a versioned Iceberg object metadata table** on each matching branch in the metadata repository.
 4. **Continuously syncs metadata** via a background processing pipeline that keeps the object metadata tables
    [eventually consistent](#consistency) with changes in the corresponding data repository branches.
-5. **Wraps the lakeFS Iceberg REST catalog** to transparently redirect table queries to the correct physical location, so
-that users always query metadata tables through the data repository namespace rather than the underlying metadata repository.
+5. **Wraps the lakeFS Iceberg REST catalog** to translate table queries issued against data repository references (branches,
+commits, or tags) and resolve them to the corresponding tables in the metadata repository. This indirection allows metadata
+queries to be expressed entirely in the data repository namespace, while lakeFS handles the mapping to the underlying metadata 
+storage.
 
 ### Querying Metadata
 
 Metadata queries are always performed through the **data repository namespace**, not the metadata repository that lakeFS
-manages internally. You can query metadata in two ways: 
+manages internally. You can query metadata by: 
 
-* By **branch name**: `<repo>.<branch>.system.object_metadata`, to search the latest metadata state on a given branch.
-* By **commit ID** or **Tag name**: `<repo>.<commit_id>.system.object_metadata` or `<repo>.<tag_name>.system.object_metadata`, 
-to access a specific historical metadata version and ensure [reproducible queries](#writing-reproducible-queries). This lets you retrieve the exact 
-metadata state from any immutable point in time.
+* **Branch name**: `<repo>.<branch>.system.object_metadata`, to search the latest metadata state on a given branch.
+* **Commit ID**: `<repo>.<commit_id>.system.object_metadata`, to retrieve the metadata snapshot at a specific commit.
+* **Tag name**: `<repo>.<tag_name>.system.object_metadata`, to retrieve the metadata snapshot at a tagged commit.
+
+!!! tip
+    Using commit IDs or tags ensures [reproducible queries](#writing-reproducible-queries) , letting you always access the 
+    exact metadata state from an immutable point in time.
 
 Queries are executed through the lakeFS Iceberg REST catalog, which is fully compatible with standard engines like Trino,
 DuckDB, Spark, PyIceberg, and others.
@@ -251,7 +256,7 @@ system metadata fields in powerful, version-aware searches.
 
 !!! note
     This catalog initialization differs from the [classic lakeFS Iceberg catalog](../integrations/iceberg.md#catalog-initialization-example-using-pyiceberg).
-    Notice the additional `mds` path segment in the endpoints, which routes requests through the Metadata Search service.
+    Notice the additional `mds` path segment in the endpoints, which routes requests through the Metadata Search catalog.
 
 ### Writing Reproducible Queries
 
@@ -292,14 +297,14 @@ Both table paths return the metadata for commit `dc3117ec3a727104226c896bf7ab935
 
 #### Using Tag Name
 
-1. Identify the relevant tag from the data repository (e.g., `v_0.2.1` on branch `main` in repo `my-repo`).
+1. Identify the relevant tag from the data repository (e.g., `v0.2.1` on branch `main` in repo `my-repo`).
 2. Query the object metadata table using the following pattern:
 ```
 <repo>.<tag_name>.system.object_metadata
 ```
 Examples:
 ```
-my-repo.v_0.2.1.system.object_metadata
+my-repo.v0.2.1.system.object_metadata
 ```  
 
 !!! tip
