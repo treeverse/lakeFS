@@ -1516,7 +1516,6 @@ const ObjectsBrowser = ({ config }) => {
 };
 
 const RepositoryObjectsPage = () => {
-    const router = useRouter();
     const {repo, loading: repoLoading, error: repoError} = useRefs();
     const {config, loading: configsLoading, error: configsError} = useConfigContext();
 
