@@ -40,7 +40,7 @@ Test / logBuffered := false
 buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion)
 buildInfoPackage := "io.treeverse.clients"
 
-enablePlugins(S3Plugin, BuildInfoPlugin)
+enablePlugins(BuildInfoPlugin)
 
 // Required for scala 2.12.12 compatibility
 dependencyOverrides ++= Seq(
@@ -103,12 +103,36 @@ assembly / assemblyShadeRules := Seq(
   rename("reactor.util.**").inAll
 )
 
-s3Upload / mappings := Seq(
-  (assembly / assemblyOutputPath).value ->
-    s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
-)
-s3Upload / s3Host := "treeverse-clients-us-east.s3.amazonaws.com"
-s3Upload / s3Progress := true
+// Safe upload: put-object with If-None-Match to prevent overwriting an existing key.
+// Fails the build on any error and surfaces the AWS CLI error message.
+lazy val s3Upload = taskKey[Unit]("Upload JAR to S3 without override existing")
+val publishBucket = settingKey[String]("Target S3 bucket for publishing the JAR")
+
+// Overridable via -Dpublish.bucket
+publishBucket := sys.props.get("publish.bucket").filter(_.nonEmpty).getOrElse("treeverse-clients-us-east")
+
+s3Upload := {
+  import sys.process._
+
+  val log = streams.value.log
+  val bucket = publishBucket.value
+  val jarFile = (assembly / assemblyOutputPath).value
+  val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
+
+  val cmd = Seq(
+    "aws","s3api","put-object",
+    "--bucket", bucket,
+    "--key", key,
+    "--body", jarFile.getAbsolutePath,
+    "--if-none-match","*",
+    "--region", "us-east-1",
+    "--acl","public-read" // TODO: remove after switching bucket to "Bucket owner enforced"
+  )
+
+  val pl = ProcessLogger(out => log.info(out), err => log.error(err))
+  Process(cmd).!!(pl)
+  log.info(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
+}
 
 assembly / assemblyMergeStrategy := {
   case PathList("META-INF", xs @ _*) =>

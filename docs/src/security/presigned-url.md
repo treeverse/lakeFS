@@ -16,10 +16,11 @@ It is possible to override the default pre-signed URL endpoint in **AWS** by set
 This is useful, for example, when you wish to define a [VPC endpoint](https://docs.aws.amazon.com/AmazonS3/latest/userguide/privatelink-interface-endpoints.html#accessing-s3-interface-endpoints) access for the pre-signed URL.
 
 ## Using presigned URLs in the UI
-For using presigned URLs in the UI:
-1. Enable the presigned URL support UI in the lakeFS [configuration](../reference/configuration.md) (`blockstore.<blockstore_type>.disable_pre_signed_ui`   ).
+To use presigned URLs in the UI:
+
+1. Enable the presigned URL support UI in the lakeFS [configuration](../reference/configuration.md):  
+set `blockstore.<blockstore_type>.disable_pre_signed_ui=false`.
 2. Add CORS (Cross-Origin Resource Sharing) permissions to the bucket for the UI to fetch objects using a presigned URL (instead of through lakeFS).
-3. The `blockstore.<blockstore_type>.disable_pre_signed` must be false to enable it in the UI.
 
 !!! warning
     Currently DuckDB fetching data from lakeFS does not support fetching data using presigned URL.

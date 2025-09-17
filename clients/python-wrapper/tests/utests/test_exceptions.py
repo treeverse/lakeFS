@@ -17,7 +17,6 @@ def test_http_error_list():
     expected_reason = "my reason"
     body = json.dumps(['foo', {'bar': ('baz', None, 1.0, 2)}])
     resp =  TestException(http.HTTPStatus.FORBIDDEN.value, expected_reason, body)
-    
     try:
         with api_exception_handler():
             raise resp
@@ -27,7 +26,6 @@ def test_http_error_list():
         actual_body = json.dumps(e.body)
         assert actual_body == body
         return
-    
     # make sure exception is not swallowed
     assert False, "Exception not caught"
 
@@ -50,6 +48,5 @@ def test_http_error_xml():
         assert e.body is not None
         assert not e.body # Body should be empty
         return
-    
     # make sure exception is not swallowed
     assert False, "Exception not caught"
