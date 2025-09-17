@@ -122,6 +122,11 @@ type ResolvedRef struct {
 // MergeStrategy changes from dest or source are automatically overridden in case of a conflict
 type MergeStrategy int
 
+type ConflictsResolver interface {
+	// ResolveConflict return the resolved value, or nil if the conflict could not be resolved automatically
+	ResolveConflict(sourceValue *ValueRecord, destValue *ValueRecord) (*ValueRecord, error)
+}
+
 const (
 	MergeStrategyNone MergeStrategy = iota
 	MergeStrategyDest
