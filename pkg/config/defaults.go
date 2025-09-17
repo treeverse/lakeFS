@@ -144,7 +144,10 @@ func setBaseDefaults(cfgType string) {
 	viper.SetDefault("database.dynamodb.table_name", "kvstore")
 	viper.SetDefault("database.dynamodb.scan_limit", 1024)
 	viper.SetDefault("database.dynamodb.max_attempts", 10)
-	viper.SetDefault("database.dynamodb.credentials_cache_expiry_window", 60*time.Second)
+	viper.SetDefault("database.dynamodb.credentials_cache_expiry_window", 200*time.Second) // This default value
+	// was chosen due to the default retry max backoff of the AWS SDK v2 (see retry/exponential_jitter_backoff.go).
+	// The idea is to have the credentials expire before the max backoff is reached, so that
+	// we don't have a situation where a request is retried multiple times with expired credentials.
 	viper.SetDefault("database.dynamodb.credentials_cache_expiry_window_jitter", 0.5)
 
 	viper.SetDefault("database.postgres.max_open_connections", 25)
