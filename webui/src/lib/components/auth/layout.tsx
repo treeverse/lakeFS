@@ -35,9 +35,9 @@ export const AuthLayout = () => {
                     params: {},
                     query: { next: router.route, redirected: 'true' },
                 });
-                return;
+            } else {
+                setIsLogged(true);
             }
-            setIsLogged(true);
         }
     }, [userWithId, loading, error, setIsLogged, router]);
 

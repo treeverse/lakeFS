@@ -7,7 +7,6 @@ import Nav from "react-bootstrap/Nav";
 import Card from "react-bootstrap/Card";
 import {Link} from "../../../../lib/components/nav";
 import {useRefs} from "../../../../lib/hooks/repo";
-import {useRouter} from "../../../../lib/hooks/router";
 import {Loading} from "../../../../lib/components/controls";
 import {RepoError} from "../error";
 
@@ -15,13 +14,12 @@ import {RepoError} from "../error";
 export const SettingsLayout = () => {
     const [activeTab, setActiveTab] = useState("general");
     const { repo, loading, error} = useRefs();
-    const router = useRouter();
     const [setActivePage] = useOutletContext();
     useEffect(() => {
         setActivePage("settings");
     }, [setActivePage]);
     if (loading) return <Loading/>;
-    if (error) return <RepoError error={error} router={router}/>;
+    if (error) return <RepoError error={error}/>;
     const repoId = repo.id
     return (
             <Container fluid="xl">

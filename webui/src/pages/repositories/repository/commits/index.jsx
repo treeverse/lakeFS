@@ -129,7 +129,7 @@ const CommitsContainer = () => {
     const { repo, reference, loading ,error } = useRefs();
 
     if (loading) return <Loading/>;
-    if (error) return <RepoError error={error} router={router}/>;
+    if (error) return <RepoError error={error}/>;
 
     const params = {repoId: repo.id};
 
