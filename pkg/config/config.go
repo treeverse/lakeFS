@@ -125,6 +125,14 @@ type Database struct {
 
 		// Maximum amount of connections to DDB. 0 means no limit.
 		MaxConnections int `mapstructure:"max_connections"`
+
+		// CredentialsCacheExpiryWindow - The expiry window for cached credentials.
+		// Default is 60 seconds.
+		CredentialsCacheExpiryWindow time.Duration `mapstructure:"credentials_cache_expiry_window"`
+
+		// CredentialsCacheExpiryWindowJitter - The jitter fraction for credentials cache expiry.
+		// Default is 0.5 (50% jitter).
+		CredentialsCacheExpiryWindowJitter float64 `mapstructure:"credentials_cache_expiry_window_jitter"`
 	} `mapstructure:"dynamodb"`
 
 	CosmosDB *struct {

@@ -144,6 +144,8 @@ func setBaseDefaults(cfgType string) {
 	viper.SetDefault("database.dynamodb.table_name", "kvstore")
 	viper.SetDefault("database.dynamodb.scan_limit", 1024)
 	viper.SetDefault("database.dynamodb.max_attempts", 10)
+	viper.SetDefault("database.dynamodb.credentials_cache_expiry_window", 60*time.Second)
+	viper.SetDefault("database.dynamodb.credentials_cache_expiry_window_jitter", 0.5)
 
 	viper.SetDefault("database.postgres.max_open_connections", 25)
 	viper.SetDefault("database.postgres.max_idle_connections", 25)
