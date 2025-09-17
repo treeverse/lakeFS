@@ -164,7 +164,7 @@ passing a partial namespace as part of the catalog URL endpoint (commonly, `<rep
 By doing so, all namespaces passed by the user will be relative to the namespaces passed in the URL.
 
 ???+ example "Example: DuckDB"
-    DuckDB allows limited nesting in the form of `<database>.<schema>`. When using the [Iceberg REST Catalog integration](https://duckdb.org/docs/stable/core_extensions/iceberg/iceberg_rest_catalogs.html){ target="_blank"}, the database is replaced by the name given to the catalog.
+    DuckDB allows limited nesting in the form of `<database>.<schema>`. When using the [Iceberg REST Catalog integration](https://duckdb.org/docs/stable/core_extensions/iceberg/overview.html){ target="_blank"}, the database is replaced by the name given to the catalog.
     We can use relative namespaces to allow scoping the catalog connecting to a specific repository and branch:
     ```sql
     LOAD iceberg;
@@ -188,7 +188,7 @@ By doing so, all namespaces passed by the user will be relative to the namespace
     SELECT * FROM books;
     ```
 
-    See the [DuckDB documentation](https://duckdb.org/docs/stable/core_extensions/iceberg/iceberg_rest_catalogs.html){ target="_blank" } for a full reference on how to setup an Iceberg catalog integration.
+    See the [DuckDB documentation](https://duckdb.org/docs/stable/core_extensions/iceberg/overview.html){ target="_blank" } for a full reference on how to setup an Iceberg catalog integration.
 
 #### Namespace Restrictions
 
