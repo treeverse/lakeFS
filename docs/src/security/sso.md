@@ -252,7 +252,10 @@ If you're using an authentication provider that is not listed, please [contact u
             callback_base_url: https://<lakefs.ingress.domain>
             # the claim name that represents the client identifier in the OIDC provider (e.g Okta)
             logout_client_id_query_parameter: client_id
-            # the query parameters that will be used to redirect the user to the OIDC provider (e.g Okta) after logout
+            # query parameters used to redirect the user to the OIDC provider (e.g., Okta) after logout.
+            # If you are using `auth.ui_config.login_url_method: select` and want to redirect
+            # back to the login selection page, set the return address to lakeFS:
+            # ["returnTo", "https://<lakefs.ingress.domain>/"]
             logout_endpoint_query_parameters:
               - returnTo
               - https://<lakefs.ingress.domain>/oidc/login
