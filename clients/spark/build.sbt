@@ -112,7 +112,6 @@ val publishBucket = settingKey[String]("Target S3 bucket for publishing the JAR"
 publishBucket := sys.props.get("publish.bucket").filter(_.nonEmpty).getOrElse("treeverse-clients-us-east")
 
 s3Upload := {
-  import java.nio.file.Paths
   import software.amazon.awssdk.core.sync.RequestBody
   import software.amazon.awssdk.regions.Region
   import software.amazon.awssdk.services.s3.S3Client
@@ -131,7 +130,7 @@ s3Upload := {
       .ifNoneMatch("*")
       .build()
 
-    s3.putObject(req, RequestBody.fromFile(jarFile.toPath))
+    s3.putObject(req, RequestBody.fromFile(jarFile))
     log.info(s"Uploaded to S3 successfully: s3://$bucket/$key")
   } catch {
     case e: S3Exception if e.statusCode() == 412 =>
