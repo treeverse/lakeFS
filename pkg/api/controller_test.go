@@ -184,6 +184,17 @@ func TestController_GetRepoHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("get repo with invalid name", func(t *testing.T) {
+		resp, err := clt.GetRepositoryWithResponse(ctx, "invalid/name")
+		testutil.Must(t, err)
+		if resp == nil {
+			t.Fatal("GetRepository repository with invalid name missing response")
+		}
+		if resp.JSON400 == nil {
+			t.Fatal("get invalid repository name should return 400, got:", resp.HTTPResponse)
+		}
+	})
+
 	t.Run("get existing repo", func(t *testing.T) {
 		const testBranchName = "non-default"
 		_, err := deps.catalog.CreateRepository(context.Background(), "foo1", "", onBlock(deps, "foo1"), testBranchName, false)
