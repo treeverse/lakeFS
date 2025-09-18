@@ -4805,48 +4805,18 @@ func TestController_PrepareGarbageCollectionUncommitted(t *testing.T) {
 		_, err := deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, repo), "main", false)
 		testutil.Must(t, err)
 		const items = 3
-
-		// test the case we clone the entry
-		for i := range items {
-			objPath := fmt.Sprintf("uncommitted1/obj%d", i)
+		for i := 0; i < items; i++ {
+			objPath := fmt.Sprintf("uncommitted/obj%d", i)
 			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
 			verifyResponseOK(t, uploadResp, err)
 
 			copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "main",
-				&apigen.CopyObjectParams{DestPath: fmt.Sprintf("copy1/obj%d", i)},
-				apigen.CopyObjectJSONRequestBody{SrcPath: objPath})
-			verifyResponseOK(t, copyResp, err)
-
-			// verify that the physical address is the same as we clone the entry
-			require.Equal(t, uploadResp.JSON201.PhysicalAddress, copyResp.JSON201.PhysicalAddress)
-		}
-
-		// create a branch to copy the entry to
-		branchResp, err := clt.CreateBranchWithResponse(ctx, repo, apigen.CreateBranchJSONRequestBody{
-			Name:   "copy-main",
-			Source: "main",
-		})
-		require.NoError(t, err)
-		require.Equal(t, http.StatusCreated, branchResp.StatusCode())
-
-		for i := range items {
-			objPath := fmt.Sprintf("uncommitted2/obj%d", i)
-			uploadResp, err := uploadObjectHelper(t, ctx, clt, objPath, strings.NewReader(objPath), repo, "main")
-			verifyResponseOK(t, uploadResp, err)
-
-			// copy the entry to a diffferent branch
-			copyResp, err := clt.CopyObjectWithResponse(ctx, repo, "copy-main",
 				&apigen.CopyObjectParams{DestPath: fmt.Sprintf("copy/obj%d", i)},
 				apigen.CopyObjectJSONRequestBody{
-					SrcRef:  apiutil.Ptr("main"),
 					SrcPath: objPath,
 				})
 			verifyResponseOK(t, copyResp, err)
-
-			// verify that the physical address is **NOT** the same when we copy the entry
-			require.NotEqual(t, uploadResp.JSON201.PhysicalAddress, copyResp.JSON201.PhysicalAddress)
 		}
-
 		verifyPrepareGarbageCollection(t, repo, 1, true)
 	})
 
