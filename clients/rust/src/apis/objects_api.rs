@@ -142,7 +142,7 @@ pub enum UploadObjectError {
 }
 
 
-pub async fn copy_object(configuration: &configuration::Configuration, repository: &str, branch: &str, dest_path: &str, object_copy_creation: models::ObjectCopyCreation, mode: Option<&str>) -> Result<models::ObjectStats, Error<CopyObjectError>> {
+pub async fn copy_object(configuration: &configuration::Configuration, repository: &str, branch: &str, dest_path: &str, object_copy_creation: models::ObjectCopyCreation) -> Result<models::ObjectStats, Error<CopyObjectError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -151,9 +151,6 @@ pub async fn copy_object(configuration: &configuration::Configuration, repositor
     let mut local_var_req_builder = local_var_client.request(reqwest::Method::POST, local_var_uri_str.as_str());
 
     local_var_req_builder = local_var_req_builder.query(&[("dest_path", &dest_path.to_string())]);
-    if let Some(ref local_var_str) = mode {
-        local_var_req_builder = local_var_req_builder.query(&[("mode", &local_var_str.to_string())]);
-    }
     if let Some(ref local_var_user_agent) = local_var_configuration.user_agent {
         local_var_req_builder = local_var_req_builder.header(reqwest::header::USER_AGENT, local_var_user_agent.clone());
     }

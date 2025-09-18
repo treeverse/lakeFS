@@ -5242,18 +5242,6 @@ paths:
         required: true
         schema:
           type: string
-      - in: query
-        name: mode
-        description: |
-          physical - Default. Uses copy of new object's physical address.
-          logical - Creates an entry point to the same physical address.
-          *EXPERIMENTAL*
-        required: false
-        schema:
-          type: string
-          enum:
-            - physical
-            - logical
     post:
       tags:
         - objects

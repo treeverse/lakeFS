@@ -80,7 +80,7 @@ public class ObjectsApi {
         this.localCustomBaseUrl = customBaseUrl;
     }
 
-    private okhttp3.Call copyObjectCall(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, String mode, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call copyObjectCall(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -111,10 +111,6 @@ public class ObjectsApi {
             localVarQueryParams.addAll(localVarApiClient.parameterToPair("dest_path", destPath));
         }
 
-        if (mode != null) {
-            localVarQueryParams.addAll(localVarApiClient.parameterToPair("mode", mode));
-        }
-
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -136,7 +132,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call copyObjectValidateBeforeCall(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, String mode, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call copyObjectValidateBeforeCall(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling copyObject(Async)");
@@ -157,20 +153,20 @@ public class ObjectsApi {
             throw new ApiException("Missing the required parameter 'objectCopyCreation' when calling copyObject(Async)");
         }
 
-        return copyObjectCall(repository, branch, destPath, objectCopyCreation, mode, _callback);
+        return copyObjectCall(repository, branch, destPath, objectCopyCreation, _callback);
 
     }
 
 
-    private ApiResponse<ObjectStats> copyObjectWithHttpInfo(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, String mode) throws ApiException {
-        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, branch, destPath, objectCopyCreation, mode, null);
+    private ApiResponse<ObjectStats> copyObjectWithHttpInfo(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation) throws ApiException {
+        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, branch, destPath, objectCopyCreation, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call copyObjectAsync(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, String mode, final ApiCallback<ObjectStats> _callback) throws ApiException {
+    private okhttp3.Call copyObjectAsync(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, branch, destPath, objectCopyCreation, mode, _callback);
+        okhttp3.Call localVarCall = copyObjectValidateBeforeCall(repository, branch, destPath, objectCopyCreation, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -181,23 +177,12 @@ public class ObjectsApi {
         private final String branch;
         private final String destPath;
         private final ObjectCopyCreation objectCopyCreation;
-        private String mode;
 
         private APIcopyObjectRequest(String repository, String branch, String destPath, ObjectCopyCreation objectCopyCreation) {
             this.repository = repository;
             this.branch = branch;
             this.destPath = destPath;
             this.objectCopyCreation = objectCopyCreation;
-        }
-
-        /**
-         * Set mode
-         * @param mode physical - Default. Uses copy of new object&#39;s physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL*  (optional)
-         * @return APIcopyObjectRequest
-         */
-        public APIcopyObjectRequest mode(String mode) {
-            this.mode = mode;
-            return this;
         }
 
         /**
@@ -218,7 +203,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return copyObjectCall(repository, branch, destPath, objectCopyCreation, mode, _callback);
+            return copyObjectCall(repository, branch, destPath, objectCopyCreation, _callback);
         }
 
         /**
@@ -238,7 +223,7 @@ public class ObjectsApi {
          </table>
          */
         public ObjectStats execute() throws ApiException {
-            ApiResponse<ObjectStats> localVarResp = copyObjectWithHttpInfo(repository, branch, destPath, objectCopyCreation, mode);
+            ApiResponse<ObjectStats> localVarResp = copyObjectWithHttpInfo(repository, branch, destPath, objectCopyCreation);
             return localVarResp.getData();
         }
 
@@ -259,7 +244,7 @@ public class ObjectsApi {
          </table>
          */
         public ApiResponse<ObjectStats> executeWithHttpInfo() throws ApiException {
-            return copyObjectWithHttpInfo(repository, branch, destPath, objectCopyCreation, mode);
+            return copyObjectWithHttpInfo(repository, branch, destPath, objectCopyCreation);
         }
 
         /**
@@ -280,7 +265,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<ObjectStats> _callback) throws ApiException {
-            return copyObjectAsync(repository, branch, destPath, objectCopyCreation, mode, _callback);
+            return copyObjectAsync(repository, branch, destPath, objectCopyCreation, _callback);
         }
     }
 
