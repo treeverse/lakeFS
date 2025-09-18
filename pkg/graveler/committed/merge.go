@@ -4,16 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-
-	gravelerfactory "github.com/treeverse/lakefs/modules/graveler/factory"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 type merger struct {
-	ctx               context.Context
-	logger            logging.Logger
-	conflictsResolver graveler.ConflictsResolver
+	ctx      context.Context
+	logger   logging.Logger
+	resolver graveler.ConflictsResolver
 
 	writer               MetaRangeWriter
 	base                 Iterator
@@ -303,8 +301,8 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 
 func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
 	var valueToWrite *graveler.ValueRecord
-	if m.conflictsResolver != nil {
-		resolvedValue, err := m.conflictsResolver.ResolveConflict(sourceValue, destValue)
+	if m.resolver != nil {
+		resolvedValue, err := m.resolver.ResolveConflict(m.ctx, sourceValue, destValue)
 		if err != nil {
 			return err
 		}
@@ -503,16 +501,24 @@ func (m *merger) validWritingRange(it Iterator) bool {
 	}
 }
 
-func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {
+func Merge(
+	ctx context.Context,
+	resolver graveler.ConflictsResolver,
+	writer MetaRangeWriter,
+	base Iterator,
+	source Iterator,
+	destination Iterator,
+	strategy graveler.MergeStrategy,
+) error {
 	m := merger{
-		ctx:               ctx,
-		logger:            logging.FromContext(ctx),
-		conflictsResolver: gravelerfactory.BuildConflictsResolver(ctx, strategy),
-		writer:            writer,
-		base:              base,
-		source:            source,
-		dest:              destination,
-		strategy:          strategy,
+		ctx:      ctx,
+		logger:   logging.FromContext(ctx),
+		resolver: resolver,
+		writer:   writer,
+		base:     base,
+		source:   source,
+		dest:     destination,
+		strategy: strategy,
 	}
 	return m.merge()
 }

@@ -124,7 +124,7 @@ type MergeStrategy int
 
 type ConflictsResolver interface {
 	// ResolveConflict return the resolved value, or nil if the conflict could not be resolved automatically
-	ResolveConflict(sourceValue *ValueRecord, destValue *ValueRecord) (*ValueRecord, error)
+	ResolveConflict(ctx context.Context, sourceValue *ValueRecord, destValue *ValueRecord) (*ValueRecord, error)
 }
 
 const (

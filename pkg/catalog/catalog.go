@@ -24,6 +24,7 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	gravelerfactory "github.com/treeverse/lakefs/modules/graveler/factory"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -339,7 +340,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
 
-	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS)
+	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS, tierFSParams.Adapter)
 	if err != nil {
 		cancelFn()
 		return nil, err
@@ -409,7 +410,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}, nil
 }
 
-func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS) (graveler.CommittedManager, []io.Closer, error) {
+func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS, blockAdapter block.Adapter) (graveler.CommittedManager, []io.Closer, error) {
 	baseCfg := cfg.Config.GetBaseConfig()
 	committedParams := committed.Params{
 		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
@@ -448,7 +449,8 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, committedParams)
+	conflictsResolver := gravelerfactory.BuildConflictsResolver(blockAdapter)
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictsResolver, committedParams)
 	return committedManager, closers, nil
 }
 

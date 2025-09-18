@@ -14,13 +14,15 @@ import (
 type committedManager struct {
 	metaRangeManagers map[graveler.StorageID]MetaRangeManager
 	RangeManagers     map[graveler.StorageID]RangeManager
+	conflictsResolver graveler.ConflictsResolver
 	params            *Params
 }
 
-func NewCommittedManager(m map[graveler.StorageID]MetaRangeManager, r map[graveler.StorageID]RangeManager, p Params) graveler.CommittedManager {
+func NewCommittedManager(m map[graveler.StorageID]MetaRangeManager, r map[graveler.StorageID]RangeManager, cr graveler.ConflictsResolver, p Params) graveler.CommittedManager {
 	return &committedManager{
 		metaRangeManagers: m,
 		RangeManagers:     r,
+		conflictsResolver: cr,
 		params:            &p,
 	}
 }
@@ -309,7 +311,7 @@ func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (gravel
 		}
 	}()
 
-	err = Merge(ctx, mwWriter, baseIt, srcIt, destIt, mctx.strategy)
+	err = Merge(ctx, c.conflictsResolver, mwWriter, baseIt, srcIt, destIt, mctx.strategy)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
 			err = fmt.Errorf("merge ns=%s id=%s: %w", mctx.ns, mctx.destinationID, err)

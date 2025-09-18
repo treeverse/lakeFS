@@ -37,7 +37,7 @@ func (m *MockConflictsResolver) EXPECT() *MockConflictsResolverMockRecorder {
 }
 
 // ResolveConflict mocks base method.
-func (m *MockConflictsResolver) ResolveConflict(sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+func (m *MockConflictsResolver) ResolveConflict(ctx context.Context, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveConflict", sourceValue, destValue)
 	ret0, _ := ret[0].(*graveler.ValueRecord)
@@ -46,7 +46,7 @@ func (m *MockConflictsResolver) ResolveConflict(sourceValue, destValue *graveler
 }
 
 // ResolveConflict indicates an expected call of ResolveConflict.
-func (mr *MockConflictsResolverMockRecorder) ResolveConflict(sourceValue, destValue interface{}) *gomock.Call {
+func (mr *MockConflictsResolverMockRecorder) ResolveConflict(ctx context.Context, sourceValue, destValue interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveConflict", reflect.TypeOf((*MockConflictsResolver)(nil).ResolveConflict), sourceValue, destValue)
 }
