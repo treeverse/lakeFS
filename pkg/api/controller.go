@@ -2411,27 +2411,19 @@ func (c *Controller) GetRepository(w http.ResponseWriter, r *http.Request, repos
 	ctx := r.Context()
 	c.LogAction(ctx, "get_repo", r, repository, "", "")
 	repo, err := c.Catalog.GetRepository(ctx, repository)
-	switch {
-	case err == nil:
-		response := apigen.Repository{
-			CreationDate:     repo.CreationDate.Unix(),
-			DefaultBranch:    repo.DefaultBranch,
-			Id:               repo.Name,
-			StorageId:        swag.String(repo.StorageID),
-			StorageNamespace: repo.StorageNamespace,
-			ReadOnly:         swag.Bool(repo.ReadOnly),
-		}
-		writeResponse(w, r, http.StatusOK, response)
-
-	case errors.Is(err, graveler.ErrNotFound):
-		writeError(w, r, http.StatusNotFound, "repository not found")
-
-	case errors.Is(err, graveler.ErrRepositoryInDeletion):
-		writeError(w, r, http.StatusGone, err)
-
-	default:
-		writeError(w, r, http.StatusInternalServerError, err)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
 	}
+
+	response := apigen.Repository{
+		CreationDate:     repo.CreationDate.Unix(),
+		DefaultBranch:    repo.DefaultBranch,
+		Id:               repo.Name,
+		StorageId:        swag.String(repo.StorageID),
+		StorageNamespace: repo.StorageNamespace,
+		ReadOnly:         swag.Bool(repo.ReadOnly),
+	}
+	writeResponse(w, r, http.StatusOK, response)
 }
 
 func (c *Controller) GetRepositoryMetadata(w http.ResponseWriter, r *http.Request, repository string) {
@@ -3004,6 +2996,9 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, graveler.ErrLockNotAcquired):
 		log.Debug("Lock not acquired")
 		cb(w, r, http.StatusInternalServerError, "branch is currently locked, try again later")
+
+	case errors.Is(err, graveler.ErrRepositoryInDeletion):
+		cb(w, r, http.StatusGone, err)
 
 	case errors.Is(err, block.ErrDataNotFound):
 		log.Debug("No data")
