@@ -112,28 +112,35 @@ val publishBucket = settingKey[String]("Target S3 bucket for publishing the JAR"
 publishBucket := sys.props.get("publish.bucket").filter(_.nonEmpty).getOrElse("treeverse-clients-us-east")
 
 s3Upload := {
-  import sys.process._
+  import java.nio.file.Paths
+  import software.amazon.awssdk.core.sync.RequestBody
+  import software.amazon.awssdk.regions.Region
+  import software.amazon.awssdk.services.s3.S3Client
+  import software.amazon.awssdk.services.s3.model.{PutObjectRequest, S3Exception}
 
   val log = streams.value.log
   val bucket = publishBucket.value
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
 
-  val cmd = Seq(
-    "aws","s3api","put-object",
-    "--bucket", bucket,
-    "--key", key,
-    "--body", jarFile.getAbsolutePath,
-    "--if-none-match","*",
-    "--region", "us-east-1"
-  )
+  val s3 = S3Client.builder().region(Region.of("us-east-1")).build()
+  try {
+    val req = PutObjectRequest.builder()
+      .bucket(bucket)
+      .key(key)
+      .ifNoneMatch("*")
+      .build()
 
-  val pl = ProcessLogger(out => log.info(out), err => log.error(err))
-  val exit = Process(cmd).!(pl)
-  if (exit != 0)
-    sys.error(s"S3 upload failed (exit=$exit). bucket=$bucket key=$key")
-  else
+    s3.putObject(req, RequestBody.fromFile(jarFile.toPath))
     log.info(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
+  } catch {
+    case e: S3Exception if e.statusCode() == 412 =>
+      sys.error(s"Artifact already exists: https://$bucket.s3.amazonaws.com/$key")
+    case e: S3Exception =>
+      sys.error(s"S3 upload failed: ${e.awsErrorDetails().errorMessage()} (status=${e.statusCode()})")
+  } finally {
+    s3.close()
+  }
 }
 
 assembly / assemblyMergeStrategy := {
