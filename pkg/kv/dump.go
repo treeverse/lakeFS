@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 )
 
@@ -98,7 +100,7 @@ func (l *Loader) LoadEntries(ctx context.Context, entries []RawEntry, strategy L
 		partitionKey := []byte(entry.Partition)
 		key := []byte(entry.Key)
 
-		// Check if key exists when using override or skip strategy
+		// Check if key exists when skip strategy
 		if strategy == LoadStrategySkip {
 			_, err := l.store.Get(ctx, partitionKey, key)
 			if err != nil {
@@ -134,16 +136,16 @@ const (
 
 // SectionMapping defines which partitions and key prefixes belong to each section
 var SectionMapping = map[string][]string{
-	"auth":     {"auth", "basicAuth", "aclauth"}, // auth section maps to all auth-related partitions
-	"pulls":    {"pulls"},                        // pull requests section
-	"metadata": {"kv-internal-metadata"},         // internal metadata section
+	"auth":  {"auth", "basicAuth", "aclauth"}, // auth section maps to all auth-related partitions
+	"pulls": {"pulls"},                        // pull requests section
+	"kv":    {"kv-internal-metadata"},         // kv internal metadata
 }
 
 // CreateDump creates a complete dump with the specified sections
 func CreateDump(ctx context.Context, store Store, sections []string) (*DumpFormat, error) {
-	// Default to auth section if no sections specified
+	// If no sections specified, dump all partitions
 	if len(sections) == 0 {
-		sections = []string{"auth"}
+		sections = slices.Collect(maps.Keys(SectionMapping))
 	}
 
 	// Map sections to partitions
@@ -159,10 +161,7 @@ func CreateDump(ctx context.Context, store Store, sections []string) (*DumpForma
 	}
 
 	// Convert set to slice
-	var partitions []string
-	for partition := range partitionSet {
-		partitions = append(partitions, partition)
-	}
+	partitions := slices.Collect(maps.Keys(partitionSet))
 
 	dumper := NewDumper(store)
 	entries, err := dumper.DumpPartitions(ctx, partitions)

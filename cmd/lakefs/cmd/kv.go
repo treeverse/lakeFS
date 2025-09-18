@@ -162,8 +162,21 @@ var kvScanCmd = &cobra.Command{
 }
 
 var kvDumpCmd = &cobra.Command{
-	Use:   "dump",
+	Use:   "dump [--output FILE] [--sections SECTIONS] [--pretty]",
 	Short: "Dump KV store data to JSON format",
+	Long: `Dump KV store data to JSON format.
+
+Usage:
+  lakefs kv dump                          # dump all sections to stdout
+  lakefs kv dump --output dump.json       # dump to file
+  lakefs kv dump --sections auth,pulls    # dump specific sections
+
+Sections:
+  auth      - authentication data
+  pulls     - pull request data
+  kv        - kv internal metadata
+
+Default: all supported sections (auth, pulls, kv)`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := LoadConfig().GetBaseConfig()
 
@@ -204,13 +217,7 @@ var kvDumpCmd = &cobra.Command{
 		}
 		defer kvStore.Close()
 
-		// Create dump
-		dump, err := kv.CreateDump(ctx, kvStore, sections)
-		if err != nil {
-			return fmt.Errorf("failed to create dump: %w", err)
-		}
-
-		// Encode to JSON
+		// Open output file
 		var output *os.File
 		if outputFile == "" || outputFile == "-" {
 			output = os.Stdout
@@ -226,6 +233,13 @@ var kvDumpCmd = &cobra.Command{
 			}()
 		}
 
+		// Create dump
+		dump, err := kv.CreateDump(ctx, kvStore, sections)
+		if err != nil {
+			return fmt.Errorf("failed to create dump: %w", err)
+		}
+
+		// Encode to JSON
 		encoder := json.NewEncoder(output)
 		if pretty {
 			encoder.SetIndent("", "  ")
@@ -244,8 +258,25 @@ var kvDumpCmd = &cobra.Command{
 }
 
 var kvLoadCmd = &cobra.Command{
-	Use:   "load",
+	Use:   "load --input FILE [--sections SECTIONS] [--strategy STRATEGY]",
 	Short: "Load KV store data from JSON dump",
+	Long: `Load KV store data from JSON dump file.
+
+Usage:
+  lakefs kv load --input dump.json                    # load all sections from dump
+  lakefs kv load --input dump.json --sections auth    # load specific sections
+  lakefs kv load --input - --strategy overwrite       # load from stdin, overwrite existing
+
+Sections:
+  auth      - authentication data
+  pulls     - pull request data
+  kv        - kv internal metadata
+
+Default: all sections found in the dump file
+
+Strategies:
+  skip      - skip existing keys (default)
+  overwrite - overwrite existing keys`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := LoadConfig().GetBaseConfig()
 
@@ -333,8 +364,10 @@ var kvLoadCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(kvCmd)
+
 	kvCmd.AddCommand(kvGetCmd)
 	kvGetCmd.Flags().Bool("pretty", false, "print indented output")
+
 	kvCmd.AddCommand(kvScanCmd)
 	kvScanCmd.Flags().Int("limit", 0, "maximal number of results to return. By default, all results are returned")
 	kvScanCmd.Flags().String("until", "", "last prefix to scan. If this prefix is reached or exceeded, scan will stop")
@@ -342,12 +375,12 @@ func init() {
 
 	kvCmd.AddCommand(kvDumpCmd)
 	kvDumpCmd.Flags().String("output", "", "output file (default: stdout)")
-	kvDumpCmd.Flags().String("sections", "", "comma-separated list of sections to dump (default: all supported sections - auth, pulls, metadata)")
-	kvDumpCmd.Flags().Bool("pretty", true, "print indented output (default: true)")
+	kvDumpCmd.Flags().String("sections", "", "comma-separated list of sections to dump (empty dumps all)")
+	kvDumpCmd.Flags().Bool("pretty", false, "print indented output")
 
 	kvCmd.AddCommand(kvLoadCmd)
-	kvLoadCmd.Flags().String("input", "", "input file (required)")
-	kvLoadCmd.Flags().String("sections", "", "comma-separated list of sections to load (default: all sections in dump)")
-	kvLoadCmd.Flags().String("strategy", "overwrite", "load strategy: overwrite or skip (default: overwrite)")
+	kvLoadCmd.Flags().String("input", "", "dump input file (produced by 'kv dump')")
+	kvLoadCmd.Flags().String("sections", "", "comma-separated list of sections to load (empty dumps all)")
+	kvLoadCmd.Flags().String("strategy", "skip", "skip or overwrite existing keys")
 	_ = kvLoadCmd.MarkFlagRequired("input")
 }
