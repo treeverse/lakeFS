@@ -41,6 +41,7 @@ var (
 	ErrUnknownDriver       = errors.New("unknown driver")
 	ErrTableNotActive      = errors.New("table not active")
 	ErrSlowDown            = errors.New("slow down")
+	ErrUnsupported         = errors.New("unsupported")
 )
 
 // Precond Type for special conditionals provided as predicates for the SetIf method
