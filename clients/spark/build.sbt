@@ -128,7 +128,7 @@ s3Upload := {
     "--region", "us-east-1"
   )
 
-  val pl   = ProcessLogger(out => log.info(out), err => log.error(err))
+  val pl = ProcessLogger(out => log.info(out), err => log.error(err))
   val exit = Process(cmd).!(pl)
   if (exit != 0)
     sys.error(s"S3 upload failed (exit=$exit). bucket=$bucket key=$key")
