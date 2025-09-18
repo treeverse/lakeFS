@@ -192,7 +192,7 @@ public class ObjectsApi {
 
         /**
          * Set mode
-         * @param mode Determines how the object is copied: - physical (default): Creates a new copy of the object in both lakeFS and the underlying storage (e.g., S3). Results in two independent objects. - logical: Creates a new lakeFS entry that points to the same underlying storage object. Both lakeFS objects share the same physical data in storage (e.g., same S3 object). *EXPERIMENTAL*  (optional)
+         * @param mode physical - Default. Uses copy of new object&#39;s physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL*  (optional)
          * @return APIcopyObjectRequest
          */
         public APIcopyObjectRequest mode(String mode) {

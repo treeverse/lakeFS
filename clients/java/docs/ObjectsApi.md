@@ -69,7 +69,7 @@ public class Example {
     String branch = "branch_example"; // String | destination branch for the copy
     String destPath = "destPath_example"; // String | destination path relative to the branch
     ObjectCopyCreation objectCopyCreation = new ObjectCopyCreation(); // ObjectCopyCreation | 
-    String mode = "physical"; // String | Determines how the object is copied: - physical (default): Creates a new copy of the object in both lakeFS and the underlying storage (e.g., S3). Results in two independent objects. - logical: Creates a new lakeFS entry that points to the same underlying storage object. Both lakeFS objects share the same physical data in storage (e.g., same S3 object). *EXPERIMENTAL* 
+    String mode = "physical"; // String | physical - Default. Uses copy of new object's physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL* 
     try {
       ObjectStats result = apiInstance.copyObject(repository, branch, destPath, objectCopyCreation)
             .mode(mode)
@@ -94,7 +94,7 @@ public class Example {
 | **branch** | **String**| destination branch for the copy | |
 | **destPath** | **String**| destination path relative to the branch | |
 | **objectCopyCreation** | [**ObjectCopyCreation**](ObjectCopyCreation.md)|  | |
-| **mode** | **String**| Determines how the object is copied: - physical (default): Creates a new copy of the object in both lakeFS and the underlying storage (e.g., S3). Results in two independent objects. - logical: Creates a new lakeFS entry that points to the same underlying storage object. Both lakeFS objects share the same physical data in storage (e.g., same S3 object). *EXPERIMENTAL*  | [optional] [enum: physical, logical] |
+| **mode** | **String**| physical - Default. Uses copy of new object&#39;s physical address. logical - Creates an entry point to the same physical address. *EXPERIMENTAL*  | [optional] [enum: physical, logical] |
 
 ### Return type
 
