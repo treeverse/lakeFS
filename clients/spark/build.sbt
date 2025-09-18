@@ -113,11 +113,10 @@ publishBucket := sys.props.get("publish.bucket").filter(_.nonEmpty).getOrElse("t
 
 s3Upload := {
   import java.nio.file.Paths
+  import software.amazon.awssdk.core.sync.RequestBody
   import software.amazon.awssdk.regions.Region
   import software.amazon.awssdk.services.s3.S3Client
   import software.amazon.awssdk.services.s3.model.{PutObjectRequest, S3Exception}
-  import software.amazon.awssdk.core.sync.RequestBody
-  import software.amazon.awssdk.awscore.AwsRequestOverrideConfig
 
   val log = streams.value.log
   val bucket = publishBucket.value
@@ -130,11 +129,7 @@ s3Upload := {
     val req = PutObjectRequest.builder()
       .bucket(bucket)
       .key(key)
-      .overrideConfiguration(
-        AwsRequestOverrideConfig.builder()
-          .putHeader("If-None-Match", "*")
-          .build()
-      )
+      .ifNoneMatch("*")
       .build()
 
     s3.putObject(req, RequestBody.fromFile(jarFile.toPath))
