@@ -5,6 +5,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/graveler"
 )
 
-func BuildConflictsResolver(blockAdapter block.Adapter) graveler.ConflictsResolver {
+func BuildConflictsResolver(blockAdapter block.Adapter, valueToPath graveler.ValueToPathFunc) graveler.ConflictsResolver {
 	return nil
 }

@@ -122,9 +122,19 @@ type ResolvedRef struct {
 // MergeStrategy changes from dest or source are automatically overridden in case of a conflict
 type MergeStrategy int
 
+// ConflictsResolver is used to resolve conflicts during a merge operation
 type ConflictsResolver interface {
 	// ResolveConflict return the resolved value, or nil if the conflict could not be resolved automatically
-	ResolveConflict(ctx context.Context, sourceValue *ValueRecord, destValue *ValueRecord) (*ValueRecord, error)
+	ResolveConflict(ctx context.Context, crCtx ConflictsResolverContext, sourceValue *ValueRecord, destValue *ValueRecord) (*ValueRecord, error)
+}
+
+// ValueToPathFunc used for conflicts resolution
+type ValueToPathFunc func(value *ValueRecord) (*string, error)
+
+// ConflictsResolverContext holds context information for the ConflictsResolver
+type ConflictsResolverContext struct {
+	StorageID        string
+	StorageNamespace string
 }
 
 const (

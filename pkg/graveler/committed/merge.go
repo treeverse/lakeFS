@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	
+
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
 )
@@ -14,6 +14,7 @@ type merger struct {
 	logger   logging.Logger
 	resolver graveler.ConflictsResolver
 
+	resolverCtx          graveler.ConflictsResolverContext
 	writer               MetaRangeWriter
 	base                 Iterator
 	source               Iterator
@@ -303,7 +304,7 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
 	var valueToWrite *graveler.ValueRecord
 	if m.resolver != nil {
-		resolvedValue, err := m.resolver.ResolveConflict(m.ctx, sourceValue, destValue)
+		resolvedValue, err := m.resolver.ResolveConflict(m.ctx, m.resolverCtx, sourceValue, destValue)
 		if err != nil {
 			return err
 		}
@@ -505,6 +506,7 @@ func (m *merger) validWritingRange(it Iterator) bool {
 func Merge(
 	ctx context.Context,
 	resolver graveler.ConflictsResolver,
+	resolverCtx graveler.ConflictsResolverContext,
 	writer MetaRangeWriter,
 	base Iterator,
 	source Iterator,
@@ -512,14 +514,15 @@ func Merge(
 	strategy graveler.MergeStrategy,
 ) error {
 	m := merger{
-		ctx:      ctx,
-		logger:   logging.FromContext(ctx),
-		resolver: resolver,
-		writer:   writer,
-		base:     base,
-		source:   source,
-		dest:     destination,
-		strategy: strategy,
+		ctx:         ctx,
+		logger:      logging.FromContext(ctx),
+		resolver:    resolver,
+		resolverCtx: resolverCtx,
+		writer:      writer,
+		base:        base,
+		source:      source,
+		dest:        destination,
+		strategy:    strategy,
 	}
 	return m.merge()
 }

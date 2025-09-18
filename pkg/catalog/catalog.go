@@ -449,7 +449,7 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	conflictsResolver := gravelerfactory.BuildConflictsResolver(blockAdapter)
+	conflictsResolver := gravelerfactory.BuildConflictsResolver(blockAdapter, ValueToPath)
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictsResolver, committedParams)
 	return committedManager, closers, nil
 }
@@ -3177,6 +3177,16 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntr
 		b.ContentType(ContentTypeOrDefault(ent.ContentType))
 	}
 	return b.Build()
+}
+
+func ValueToPath(sourceValue *graveler.ValueRecord) (*string, error) {
+	ent, err := ValueToEntry(sourceValue.Value)
+	if err != nil {
+		return nil, err
+	}
+	catalogEntry := newCatalogEntryFromEntry(false, string(sourceValue.Key), ent)
+	path := catalogEntry.PhysicalAddress
+	return &path, nil
 }
 
 func catalogDiffType(typ graveler.DiffType) (DifferenceType, error) {
