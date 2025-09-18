@@ -233,6 +233,7 @@ type Catalog struct {
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 	signingKey            config.SecureString
+	CloneGracePeriod      time.Duration
 }
 
 const (
@@ -406,6 +407,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
 		signingKey:            cfg.Config.StorageConfig().SigningKey(),
+		CloneGracePeriod:      cfg.Config.GetBaseConfig().Graveler.CloneGracePeriod,
 	}, nil
 }
 
@@ -2765,24 +2767,26 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
-func (c *Catalog) CloneEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
+// cloneEntry clone entry information without using the block adapter, so the physical address remains the same.
+// clone can only clone within the same repository and branch.
+// It is limited to our grace-time from the object creation, in order to prevent from GC to delete the object.
+// ErrCannotClone error returned if clone conditions are not met.
+func (c *Catalog) cloneEntry(ctx context.Context, srcRepository, srcRef string, srcEntry *DBEntry, destRepository, destBranch, destPath string, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
+	// validate clone conditions in case we
 	if srcRepository != destRepository {
-		return nil, fmt.Errorf("%w: clone must be between the same repository", graveler.ErrInvalid)
+		return nil, fmt.Errorf("%w: not on the same repository", graveler.ErrCannotClone)
 	}
 	if srcRef != destBranch {
-		return nil, fmt.Errorf("%w: clone must be between the same branch", graveler.ErrInvalid)
+		return nil, fmt.Errorf("%w: not on the same branch", graveler.ErrCannotClone)
 	}
-	srcEntry, err := c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
-	if err != nil {
-		return nil, err
+	if time.Since(srcEntry.CreationDate) > c.CloneGracePeriod {
+		return nil, fmt.Errorf("%w: object creation beyond grace period", graveler.ErrCannotClone)
 	}
 
 	// copy the metadata into a new entry
 	dstEntry := *srcEntry
 	dstEntry.Path = destPath
-	dstEntry.CreationDate = time.Now()
-	err = c.CreateEntry(ctx, destRepository, destBranch, dstEntry, opts...)
-	if err != nil {
+	if err := c.CreateEntry(ctx, destRepository, destBranch, dstEntry, opts...); err != nil {
 		return nil, err
 	}
 	return &dstEntry, nil
@@ -2796,6 +2800,15 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	// fetch src entry if needed - optimization in case we already have the entry
 	srcEntry, err := c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
 	if err != nil {
+		return nil, err
+	}
+
+	// Clone entry if possible, fallthrough to copy otherwise
+	clonedEntry, err := c.cloneEntry(ctx, srcRepository, srcRef, srcEntry, destRepository, destBranch, destPath, opts...)
+	if err == nil {
+		return clonedEntry, nil
+	}
+	if !errors.Is(err, graveler.ErrCannotClone) {
 		return nil, err
 	}
 
