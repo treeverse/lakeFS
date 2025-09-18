@@ -99,6 +99,7 @@ pub enum GetGcRulesError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GetRepositoryError {
+    Status400(models::Error),
     Status401(models::Error),
     Status404(models::Error),
     Status429(),
