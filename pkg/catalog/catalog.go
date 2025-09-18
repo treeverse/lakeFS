@@ -2792,7 +2792,8 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepository, srcRef string, 
 	return &dstEntry, nil
 }
 
-// CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address.
+// CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address or clone the entry if possible.
+// if clone is possible, the entry will be cloned with the same physical address and metadata.
 // if replaceSrcMetadata is true, the metadata will be replaced with the provided metadata.
 // if replaceSrcMetadata is false, the metadata will be copied from the source entry.
 func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
@@ -2804,12 +2805,14 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	}
 
 	// Clone entry if possible, fallthrough to copy otherwise
-	clonedEntry, err := c.cloneEntry(ctx, srcRepository, srcRef, srcEntry, destRepository, destBranch, destPath, opts...)
-	if err == nil {
-		return clonedEntry, nil
-	}
-	if !errors.Is(err, graveler.ErrCannotClone) {
-		return nil, err
+	if !replaceSrcMetadata {
+		clonedEntry, err := c.cloneEntry(ctx, srcRepository, srcRef, srcEntry, destRepository, destBranch, destPath, opts...)
+		if err == nil {
+			return clonedEntry, nil
+		}
+		if !errors.Is(err, graveler.ErrCannotClone) {
+			return nil, err
+		}
 	}
 
 	// load repositories information for storage namespace
