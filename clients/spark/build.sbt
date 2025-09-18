@@ -125,8 +125,7 @@ s3Upload := {
     "--key", key,
     "--body", jarFile.getAbsolutePath,
     "--if-none-match","*",
-    "--region", "us-east-1",
-    "--acl","public-read" // TODO: remove after switching bucket to "Bucket owner enforced"
+    "--region", "us-east-1"
   )
 
   val pl = ProcessLogger(out => log.info(out), err => log.error(err))
