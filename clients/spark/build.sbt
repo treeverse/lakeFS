@@ -132,10 +132,10 @@ s3Upload := {
       .build()
 
     s3.putObject(req, RequestBody.fromFile(jarFile.toPath))
-    log.info(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
+    log.info(s"Uploaded to S3 successfully: s3://$bucket/$key")
   } catch {
     case e: S3Exception if e.statusCode() == 412 =>
-      sys.error(s"Artifact already exists: https://$bucket.s3.amazonaws.com/$key")
+      sys.error(s"Artifact already exists: s3://$bucket/$key")
     case e: S3Exception =>
       sys.error(s"S3 upload failed: ${e.awsErrorDetails().errorMessage()} (status=${e.statusCode()})")
   } finally {
