@@ -1189,6 +1189,7 @@ class RepositoriesApi:
 
         _response_types_map = {
             '200': "Repository",
+            '400': "Error",
             '401': "Error",
             '404': "Error",
             '429': None,
