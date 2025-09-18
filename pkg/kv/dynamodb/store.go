@@ -102,7 +102,7 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 		}),
 		config.WithCredentialsCacheOptions(func(options *aws.CredentialsCacheOptions) {
 			options.ExpiryWindow = params.CredentialsCacheExpiryWindow
-			options.ExpiryWindowJitterFrac = params.CredentialsCacheExpiryWindowJitter
+			options.ExpiryWindowJitterFrac = params.CredentialsCacheExpiryWindowJitterFraction
 		}),
 	)
 

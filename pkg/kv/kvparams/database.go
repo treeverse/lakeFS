@@ -59,14 +59,14 @@ type DynamoDB struct {
 	// in case there are no credentials configured in the system
 	// This is a client requirement as described in section 4 in
 	// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html
-	AwsRegion                          string
-	AwsProfile                         string
-	AwsAccessKeyID                     string
-	AwsSecretAccessKey                 string
-	HealthCheckInterval                time.Duration
-	MaxConnectionsPerHost              int
-	CredentialsCacheExpiryWindow       time.Duration
-	CredentialsCacheExpiryWindowJitter float64
+	AwsRegion                                  string
+	AwsProfile                                 string
+	AwsAccessKeyID                             string
+	AwsSecretAccessKey                         string
+	HealthCheckInterval                        time.Duration
+	MaxConnectionsPerHost                      int
+	CredentialsCacheExpiryWindow               time.Duration
+	CredentialsCacheExpiryWindowJitterFraction float64
 }
 
 type CosmosDB struct {
@@ -123,18 +123,18 @@ func NewConfig(cfg *config.Database) (Config, error) {
 
 	if cfg.DynamoDB != nil {
 		p.DynamoDB = &DynamoDB{
-			TableName:                          cfg.DynamoDB.TableName,
-			ScanLimit:                          cfg.DynamoDB.ScanLimit,
-			Endpoint:                           cfg.DynamoDB.Endpoint,
-			AwsRegion:                          cfg.DynamoDB.AwsRegion,
-			AwsProfile:                         cfg.DynamoDB.AwsProfile,
-			AwsAccessKeyID:                     cfg.DynamoDB.AwsAccessKeyID.SecureValue(),
-			AwsSecretAccessKey:                 cfg.DynamoDB.AwsSecretAccessKey.SecureValue(),
-			HealthCheckInterval:                cfg.DynamoDB.HealthCheckInterval,
-			MaxAttempts:                        cfg.DynamoDB.MaxAttempts,
-			MaxConnectionsPerHost:              cfg.DynamoDB.MaxConnections,
-			CredentialsCacheExpiryWindow:       cfg.DynamoDB.CredentialsCacheExpiryWindow,
-			CredentialsCacheExpiryWindowJitter: cfg.DynamoDB.CredentialsCacheExpiryWindowJitter,
+			TableName:                    cfg.DynamoDB.TableName,
+			ScanLimit:                    cfg.DynamoDB.ScanLimit,
+			Endpoint:                     cfg.DynamoDB.Endpoint,
+			AwsRegion:                    cfg.DynamoDB.AwsRegion,
+			AwsProfile:                   cfg.DynamoDB.AwsProfile,
+			AwsAccessKeyID:               cfg.DynamoDB.AwsAccessKeyID.SecureValue(),
+			AwsSecretAccessKey:           cfg.DynamoDB.AwsSecretAccessKey.SecureValue(),
+			HealthCheckInterval:          cfg.DynamoDB.HealthCheckInterval,
+			MaxAttempts:                  cfg.DynamoDB.MaxAttempts,
+			MaxConnectionsPerHost:        cfg.DynamoDB.MaxConnections,
+			CredentialsCacheExpiryWindow: cfg.DynamoDB.CredentialsCacheExpiryWindow,
+			CredentialsCacheExpiryWindowJitterFraction: cfg.DynamoDB.CredentialsCacheExpiryWindowJitterFraction,
 		}
 	}
 

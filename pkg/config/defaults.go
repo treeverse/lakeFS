@@ -149,7 +149,7 @@ func setBaseDefaults(cfgType string) {
 	// The idea is to have the credentials expire before the max backoff is reached, so that
 	// we don't have a situation where a request is retried multiple times with expired credentials.
 	// Related issue: https://github.com/aws/aws-sdk-go-v2/issues/3192
-	viper.SetDefault("database.dynamodb.credentials_cache_expiry_window_jitter", 0.5)
+	viper.SetDefault("database.dynamodb.credentials_cache_expiry_window_jitter_fraction", 0.5)
 
 	viper.SetDefault("database.postgres.max_open_connections", 25)
 	viper.SetDefault("database.postgres.max_idle_connections", 25)
