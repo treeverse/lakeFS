@@ -8,6 +8,7 @@ use (
 	./modules/block/factory
 	./modules/config/factory
 	./modules/gateway/factory
+	./modules/graveler/factory
 	./modules/license/factory
 	./webui
 )

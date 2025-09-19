@@ -10,9 +10,11 @@ import (
 )
 
 type merger struct {
-	ctx    context.Context
-	logger logging.Logger
+	ctx      context.Context
+	logger   logging.Logger
+	resolver graveler.ConflictsResolver
 
+	resolverCtx          graveler.ConflictsResolverContext
 	writer               MetaRangeWriter
 	base                 Iterator
 	source               Iterator
@@ -300,20 +302,31 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 }
 
 func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
-	switch m.strategy {
-	case graveler.MergeStrategyDest:
-		err := m.writeRecord(destValue)
+	var valueToWrite *graveler.ValueRecord
+	if m.resolver != nil {
+		resolvedValue, err := m.resolver.ResolveConflict(m.ctx, m.resolverCtx, sourceValue, destValue)
 		if err != nil {
-			return fmt.Errorf("write record: %w", err)
+			return err
 		}
-	case graveler.MergeStrategySrc:
-		err := m.writeRecord(sourceValue)
-		if err != nil {
-			return fmt.Errorf("write record: %w", err)
-		}
-	default: // graveler.MergeStrategyNone
-		return graveler.ErrConflictFound
+		valueToWrite = resolvedValue // can be nil
 	}
+
+	if valueToWrite == nil {
+		// The conflict wasn't resolved by the resolver - use the configured strategy
+		switch m.strategy {
+		case graveler.MergeStrategyDest:
+			valueToWrite = destValue
+		case graveler.MergeStrategySrc:
+			valueToWrite = sourceValue
+		default: // graveler.MergeStrategyNone
+			return graveler.ErrConflictFound
+		}
+	}
+
+	if err := m.writeRecord(valueToWrite); err != nil {
+		return fmt.Errorf("write record: %w", err)
+	}
+
 	m.haveSource = m.source.Next()
 	m.haveDest = m.dest.Next()
 	return nil
@@ -490,15 +503,26 @@ func (m *merger) validWritingRange(it Iterator) bool {
 	}
 }
 
-func Merge(ctx context.Context, writer MetaRangeWriter, base Iterator, source Iterator, destination Iterator, strategy graveler.MergeStrategy) error {
+func Merge(
+	ctx context.Context,
+	resolver graveler.ConflictsResolver,
+	resolverCtx graveler.ConflictsResolverContext,
+	writer MetaRangeWriter,
+	base Iterator,
+	source Iterator,
+	destination Iterator,
+	strategy graveler.MergeStrategy,
+) error {
 	m := merger{
-		ctx:      ctx,
-		logger:   logging.FromContext(ctx),
-		writer:   writer,
-		base:     base,
-		source:   source,
-		dest:     destination,
-		strategy: strategy,
+		ctx:         ctx,
+		logger:      logging.FromContext(ctx),
+		resolver:    resolver,
+		resolverCtx: resolverCtx,
+		writer:      writer,
+		base:        base,
+		source:      source,
+		dest:        destination,
+		strategy:    strategy,
 	}
 	return m.merge()
 }
