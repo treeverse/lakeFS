@@ -82,6 +82,8 @@ Configuration section for the lakeFS key-value store database.
     * `database.dynamodb.health_check_interval` `(duration : 0s)` - Interval to run health check for the DynamoDB instance (won't run if equal to 0).
     * `database.dynamodb.max_attempts` `(int : 10)` - The maximum number of attempts to perform on a DynamoDB request
     * `database.dynamodb.max_connections` `(int : 0)` - The maximum number of connections to DynamoDB. 0 means no limit.
+    * `database.dynamodb.credentials_cache_expiry_window` `(duration : 200s)` - The expiry window for cached AWS credentials. This controls how long before credentials expire that the SDK will attempt to refresh them.
+    * `database.dynamodb.credentials_cache_expiry_window_jitter_fraction` `(float : 0.5)` - The jitter fraction (0.0-1.0) for credentials cache expiry. This adds randomness to prevent thundering herd effects when refreshing credentials. A value of 0.5 means up to 50% jitter.
 
 === "`database.cosmosdb`"
 
