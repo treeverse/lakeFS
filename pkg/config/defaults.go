@@ -186,6 +186,11 @@ func setBaseDefaults(cfgType string) {
 	viper.SetDefault("graveler.branch_ownership.refresh", 400*time.Millisecond)
 	viper.SetDefault("graveler.branch_ownership.acquire", 150*time.Millisecond)
 
+	// Grace period during which we allow clone metadata as part of the object copy operation.
+	// This value should be less than the grace period configured by the garbage collector
+	// to prevent the GC from collecting uncommitted physical addresses that were not found while scanning uncommitted data.
+	viper.SetDefault("graveler.clone_grace_period", 5*time.Hour)
+
 	viper.SetDefault("ugc.prepare_interval", time.Minute)
 	viper.SetDefault("ugc.prepare_max_file_size", 20*1024*1024)
 

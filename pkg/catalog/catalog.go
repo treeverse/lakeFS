@@ -233,6 +233,7 @@ type Catalog struct {
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 	signingKey            config.SecureString
+	CloneGracePeriod      time.Duration
 }
 
 const (
@@ -406,6 +407,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
 		signingKey:            cfg.Config.StorageConfig().SigningKey(),
+		CloneGracePeriod:      cfg.Config.GetBaseConfig().Graveler.CloneGracePeriod,
 	}, nil
 }
 
@@ -2765,7 +2767,33 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
-// CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address.
+// cloneEntry clone entry information without using the block adapter, so the physical address remains the same.
+// clone can only clone within the same repository and branch.
+// It is limited to our grace-time from the object creation, in order to prevent from GC to delete the object.
+// ErrCannotClone error returned if clone conditions are not met.
+func (c *Catalog) cloneEntry(ctx context.Context, srcRepository, srcRef string, srcEntry *DBEntry, destRepository, destBranch, destPath string, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
+	// validate clone conditions in case we
+	if srcRepository != destRepository {
+		return nil, fmt.Errorf("%w: not on the same repository", graveler.ErrCannotClone)
+	}
+	if srcRef != destBranch {
+		return nil, fmt.Errorf("%w: not on the same branch", graveler.ErrCannotClone)
+	}
+	if time.Since(srcEntry.CreationDate) > c.CloneGracePeriod {
+		return nil, fmt.Errorf("%w: object creation beyond grace period", graveler.ErrCannotClone)
+	}
+
+	// copy the metadata into a new entry
+	dstEntry := *srcEntry
+	dstEntry.Path = destPath
+	if err := c.CreateEntry(ctx, destRepository, destBranch, dstEntry, opts...); err != nil {
+		return nil, err
+	}
+	return &dstEntry, nil
+}
+
+// CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address or clone the entry if possible.
+// if clone is possible, the entry will be cloned with the same physical address and metadata.
 // if replaceSrcMetadata is true, the metadata will be replaced with the provided metadata.
 // if replaceSrcMetadata is false, the metadata will be copied from the source entry.
 func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
@@ -2774,6 +2802,17 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	srcEntry, err := c.GetEntry(ctx, srcRepository, srcRef, srcPath, GetEntryParams{})
 	if err != nil {
 		return nil, err
+	}
+
+	// Clone entry if possible, fallthrough to copy otherwise
+	if !replaceSrcMetadata {
+		clonedEntry, err := c.cloneEntry(ctx, srcRepository, srcRef, srcEntry, destRepository, destBranch, destPath, opts...)
+		if err == nil {
+			return clonedEntry, nil
+		}
+		if !errors.Is(err, graveler.ErrCannotClone) {
+			return nil, err
+		}
 	}
 
 	// load repositories information for storage namespace

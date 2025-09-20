@@ -66,6 +66,7 @@ var (
 	ErrPullRequestExists            = fmt.Errorf("pull request already exists: %w", ErrNotUnique)
 	ErrInvalidPullRequestStatus     = fmt.Errorf("invalid pull request status: %w", ErrInvalid)
 	ErrInvalidPullRequestID         = fmt.Errorf("pull request id: %w", ErrInvalidValue)
+	ErrCannotClone                  = fmt.Errorf("cannot clone: %w", ErrInvalid)
 )
 
 // wrappedError is an error for wrapping another error while ignoring its message.

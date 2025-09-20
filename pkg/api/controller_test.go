@@ -5162,7 +5162,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		return *uploadResp.JSON201
 	}
 
-	t.Run("same_branch", func(t *testing.T) {
+	t.Run("same_branch_clone", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar"
 			destPath = "foo/bar-shallow-copy"
@@ -5175,11 +5175,11 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify the creation path, date and physical address are different
+		// Verify the creation path, date and physical address are the same
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
-		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
-		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
+		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.Equal(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
 
 		// get back info
@@ -5188,7 +5188,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	t.Run("different_branch", func(t *testing.T) {
+	t.Run("different_branch_copy", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar2"
 			destPath = "foo/bar-full-from-branch"
@@ -5222,7 +5222,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	t.Run("committed", func(t *testing.T) {
+	t.Run("committed_clone", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar3"
 			destPath = "foo/bar-full-committed"
@@ -5242,12 +5242,12 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify the creation path, date and physical address are different
+		// Verify the creation path, date and physical address are the same
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
 		require.NotEmpty(t, copyStat.PhysicalAddress)
-		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
-		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
+		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.Equal(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
 
 		// Verify all else is equal
@@ -5319,7 +5319,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 				t.Fatal("Close multipart writer:", err)
 			}
 
-			uploadResp, err := clt.UploadObjectWithBodyWithResponse(ctx, readOnlyRepository, branch, &apigen.UploadObjectParams{
+			uploadResp, err := clt.UploadObjectWithBodyWithResponse(ctx, repository, branch, &apigen.UploadObjectParams{
 				Path:  objPath,
 				Force: swag.Bool(true),
 			}, w.FormDataContentType(), &b)
@@ -5329,15 +5329,18 @@ func TestController_CopyObjectHandler(t *testing.T) {
 			return *uploadResp.JSON201
 		}
 		objStat := uploadContentForce(t, readOnlyRepository, "main", srcPath)
+
+		// A copy without force should be forbidden
 		copyResp, err := clt.CopyObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.CopyObjectParams{
 			DestPath: destPath,
 		}, apigen.CopyObjectJSONRequestBody{
 			SrcPath: srcPath,
 		})
-		testutil.Must(t, err)
-		if copyResp.StatusCode() != http.StatusForbidden {
-			t.Fatalf("expected 403 forbidden for CopyObject on read-only repository, got %d instead", copyResp.StatusCode())
-		}
+		require.NoError(t, err)
+		require.Equalf(t, http.StatusForbidden, copyResp.StatusCode(),
+			"expected 403 forbidden for CopyObject on read-only repository, got %s", copyResp.Status())
+
+		// A copy with force should succeed
 		copyResp, err = clt.CopyObjectWithResponse(ctx, readOnlyRepository, "main", &apigen.CopyObjectParams{
 			DestPath: destPath,
 		}, apigen.CopyObjectJSONRequestBody{
@@ -5346,11 +5349,11 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify the creation path, date and physical address are different
+		// Verify the creation path, date and physical address are the same (clone)
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
-		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
-		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
+		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.Equal(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
 
 		// get back info
