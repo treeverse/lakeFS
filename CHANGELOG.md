@@ -1,10 +1,20 @@
 # Changelog
 
-# v1.67.0
+# v1.70.0
+
+:new: What's new:
+- Updated login page appearance (#9425)
+:bug: Bugs fixed:
+- Fix error handling in GetRepository to return 400 instead of 500 when invalid repo name (#9535)
+- DynamoDB: Make credentials expiry window + jitter configurable (#9527)
+- Use internal errors status codes during authentication flow (#9540)
+
+# v1.69.0
 
 🏢 Includes only changes for Enterprise.
 
 # v1.68.0
+
 :new: What's new:
 - GS: Dual Adapter (Experimental) (#9508)
 :bug: Bugs fixed:
