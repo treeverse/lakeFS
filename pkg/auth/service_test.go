@@ -531,8 +531,17 @@ func TestAPIAuthService_GetUser(t *testing.T) {
 			email:              "",
 			encryptedPassword:  nil,
 			source:             "",
-			responseStatusCode: http.StatusInternalServerError,
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:               "internal_error",
+			userName:           "user",
+			email:              "",
+			encryptedPassword:  nil,
+			source:             "",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
@@ -1228,8 +1237,17 @@ func TestAPIAuthService_WritePolicy(t *testing.T) {
 			firstStatementEffect:   "effect",
 			firstStatementResource: "resource",
 			policyName:             "policy",
-			responseStatusCode:     http.StatusInternalServerError,
+			responseStatusCode:     http.StatusHTTPVersionNotSupported,
 			expectedErr:            auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:                   "internal_error",
+			firstStatementAction:   []string{"action"},
+			firstStatementEffect:   "effect",
+			firstStatementResource: "resource",
+			policyName:             "policy",
+			responseStatusCode:     http.StatusInternalServerError,
+			expectedErr:            auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
@@ -1781,8 +1799,14 @@ func TestAPIAuthService_CreateGroup(t *testing.T) {
 		{
 			name:               "internal_error",
 			groupName:          "group",
-			responseStatusCode: http.StatusInternalServerError,
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:               "internal_error",
+			groupName:          "group",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
@@ -1855,8 +1879,18 @@ func TestAPIAuthService_CreateCredentials(t *testing.T) {
 			returnedSecretKey:  "AKIASECRET",
 			email:              "foo@gmail.com",
 			source:             "internal",
-			responseStatusCode: http.StatusInternalServerError,
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:               "internal_error",
+			username:           "credentials",
+			returnedAccessKey:  "AKIA",
+			returnedSecretKey:  "AKIASECRET",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
@@ -1955,8 +1989,20 @@ func TestAPIAuthService_AddCredentials(t *testing.T) {
 			secretKey:          "AKIASECRET",
 			email:              "foo@gmail.com",
 			source:             "internal",
-			responseStatusCode: http.StatusInternalServerError,
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
+		},
+		{
+			name:               "internal_error",
+			username:           "credentials",
+			returnedAccessKey:  "",
+			returnedSecretKey:  "",
+			accessKey:          "AKIA",
+			secretKey:          "AKIASECRET",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusInternalServerError,
+			expectedErr:        auth.ErrInternalServerError,
 		},
 	}
 	for _, tt := range tests {
