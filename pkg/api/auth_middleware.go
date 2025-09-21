@@ -70,7 +70,7 @@ func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticat
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
-				writeAuthError(w, r, err, http.StatusUnauthorized)
+				writeAuthError(w, r, err, http.StatusUnauthorized, ErrAuthenticatingRequest.Error())
 				return
 			}
 			if user != nil {
@@ -96,12 +96,12 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.T, authenticator au
 			}
 			securityRequirements, err := extractSecurityRequirements(router, r)
 			if err != nil {
-				writeAuthError(w, r, err, http.StatusBadRequest)
+				writeAuthError(w, r, err, http.StatusBadRequest, err.Error())
 				return
 			}
 			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
-				writeAuthError(w, r, err, http.StatusUnauthorized)
+				writeAuthError(w, r, err, http.StatusUnauthorized, ErrAuthenticatingRequest.Error())
 				return
 			}
 			if user != nil {
@@ -464,12 +464,12 @@ func initialGroupsFromClaims(groupsClaim any, defaultInitialGroups []string) ([]
 }
 
 // writeAuthError centralizes error handling logic and avoids duplication
-func writeAuthError(w http.ResponseWriter, r *http.Request, err error, defaultStatus int) {
+func writeAuthError(w http.ResponseWriter, r *http.Request, err error, defaultStatus int, defaultMsg string) {
 	// Only internal server errors are returned to the client to allow retries.
 	// Other errors are masked to avoid exposing sensitive information.
 	if errors.Is(err, auth.ErrInternalServerError) {
 		writeError(w, r, http.StatusInternalServerError, auth.ErrInternalServerError)
 	} else {
-		writeError(w, r, defaultStatus, err)
+		writeError(w, r, defaultStatus, defaultMsg)
 	}
 }
