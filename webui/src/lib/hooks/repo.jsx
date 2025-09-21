@@ -54,8 +54,8 @@ export const RefContextProvider = ({ children }) => {
     const { response, error, loading } = useAPI(async () => {
         if (!repoId) return null;
         const repo = await repositories.get(repoId);
-        const reference = await resolveRef(repoId, (ref) ? ref : repo.default_branch);
-        const comparedRef = await resolveRef(repoId, (compare)? compare : repo.default_branch);
+        const reference = await resolveRef(repoId, ref || repo.default_branch);
+        const comparedRef = await resolveRef(repoId, compare || repo.default_branch);
         return { repo, reference, compare: comparedRef };
     }, [repoId, ref, compare]);
 
