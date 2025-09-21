@@ -134,9 +134,9 @@ s3Upload := {
     log.info(s"Uploaded to S3 successfully: s3://$bucket/$key")
   } catch {
     case e: S3Exception if e.statusCode() == 412 =>
-      sys.error(s"Artifact already exists: s3://$bucket/$key")
+      throw new RuntimeException(s"Artifact already exists: s3://$bucket/$key", e)
     case e: S3Exception =>
-      sys.error(s"S3 upload failed: ${e.awsErrorDetails().errorMessage()} (status=${e.statusCode()})")
+      throw new RuntimeException(s"S3 upload failed: ${e.awsErrorDetails().errorMessage()} (status=${e.statusCode()})", e)
   } finally {
     s3.close()
   }
