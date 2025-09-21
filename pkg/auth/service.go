@@ -288,7 +288,7 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
 			a.logger.WithError(err).WithField("username", username).Error("failed to get user")
-			return nil, err
+			return nil, fmt.Errorf("%v: %w", err, ErrInternalServerError)
 		}
 		if err := a.validateResponse(resp, http.StatusOK); err != nil {
 			return nil, err
