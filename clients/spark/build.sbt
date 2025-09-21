@@ -113,7 +113,6 @@ publishBucket := sys.props.get("publish.bucket").filter(_.nonEmpty).getOrElse("t
 
 s3Upload := {
   import software.amazon.awssdk.core.sync.RequestBody
-  import software.amazon.awssdk.regions.Region
   import software.amazon.awssdk.services.s3.S3Client
   import software.amazon.awssdk.services.s3.model.{PutObjectRequest, S3Exception}
 
