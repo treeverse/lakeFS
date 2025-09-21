@@ -104,12 +104,15 @@ assembly / assemblyShadeRules := Seq(
 )
 
 // Safe upload: put-object with If-None-Match to prevent overwriting an existing key.
-// Fails the build on any error and surfaces the AWS CLI error message.
+// Using AWS SDK v2, fails the build on any error.
 lazy val s3Upload = taskKey[Unit]("Upload JAR to S3 without override existing")
 val publishBucket = settingKey[String]("Target S3 bucket for publishing the JAR")
+val publishRegion = settingKey[String]("AWS region for publishing the JAR")
 
 // Overridable via -Dpublish.bucket
 publishBucket := sys.props.get("publish.bucket").filter(_.nonEmpty).getOrElse("treeverse-clients-us-east")
+// Overridable via -Dpublish.region
+publishRegion := sys.props.get("publish.region").filter(_.nonEmpty).getOrElse("us-east-1")
 
 s3Upload := {
   import software.amazon.awssdk.core.sync.RequestBody
@@ -122,7 +125,7 @@ s3Upload := {
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
 
-  val s3 = S3Client.builder().region(Region.of("us-east-1")).build()
+  val s3 = S3Client.builder().region(Region.of(publishRegion.value)).build()
   try {
     val req = PutObjectRequest.builder()
       .bucket(bucket)
@@ -134,9 +137,9 @@ s3Upload := {
     log.info(s"Uploaded to S3 successfully: s3://$bucket/$key")
   } catch {
     case e: S3Exception if e.statusCode() == 412 =>
-      sys.error(s"Artifact already exists: s3://$bucket/$key")
+      throw new RuntimeException(s"Artifact already exists: s3://$bucket/$key", e)
     case e: S3Exception =>
-      sys.error(s"S3 upload failed: ${e.awsErrorDetails().errorMessage()} (status=${e.statusCode()})")
+      throw new RuntimeException(s"S3 upload failed: ${e.awsErrorDetails().errorMessage()} (status=${e.statusCode()})", e)
   } finally {
     s3.close()
   }
