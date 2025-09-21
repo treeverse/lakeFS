@@ -309,6 +309,15 @@ func TestAPIAuthService_CreateUser(t *testing.T) {
 			source:             "internal",
 			responseStatusCode: http.StatusInternalServerError,
 			expectedResponseID: auth.InvalidUserID,
+			expectedErr:        auth.ErrInternalServerError,
+		},
+		{
+			name:               "unknown_error",
+			userName:           "user",
+			email:              "foo@gmail.com",
+			source:             "internal",
+			responseStatusCode: http.StatusHTTPVersionNotSupported,
+			expectedResponseID: auth.InvalidUserID,
 			expectedErr:        auth.ErrUnexpectedStatusCode,
 		},
 	}
