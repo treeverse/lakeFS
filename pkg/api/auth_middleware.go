@@ -70,7 +70,7 @@ func GenericAuthMiddleware(logger logging.Logger, authenticator auth.Authenticat
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, err := checkSecurityRequirements(r, swagger.Security, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
-				writeError(w, r, http.StatusUnauthorized, err)
+				writeAuthError(w, r, err, http.StatusUnauthorized, ErrAuthenticatingRequest.Error())
 				return
 			}
 			if user != nil {
@@ -96,12 +96,12 @@ func AuthMiddleware(logger logging.Logger, swagger *openapi3.T, authenticator au
 			}
 			securityRequirements, err := extractSecurityRequirements(router, r)
 			if err != nil {
-				writeError(w, r, http.StatusBadRequest, err)
+				writeAuthError(w, r, err, http.StatusBadRequest, err.Error())
 				return
 			}
 			user, err := checkSecurityRequirements(r, securityRequirements, logger, authenticator, authService, sessionStore, oidcConfig, cookieAuthConfig)
 			if err != nil {
-				writeError(w, r, http.StatusUnauthorized, err)
+				writeAuthError(w, r, err, http.StatusUnauthorized, ErrAuthenticatingRequest.Error())
 				return
 			}
 			if user != nil {
@@ -262,7 +262,7 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
 		log.WithError(err).Error("Failed while searching if user exists in database")
-		return nil, ErrAuthenticatingRequest
+		return nil, fmt.Errorf("get user by external ID: %w", err)
 	}
 	log.Info("User not found; creating them")
 
@@ -279,13 +279,13 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 	if err != nil {
 		if !errors.Is(err, auth.ErrAlreadyExists) {
 			log.WithError(err).Error("Failed to create external user in database")
-			return nil, ErrAuthenticatingRequest
+			return nil, fmt.Errorf("create user: %w", err)
 		}
 		// user already exists - get it:
 		user, err = authService.GetUserByExternalID(ctx, externalID)
 		if err != nil {
 			log.WithError(err).Error("Failed to get external user from database")
-			return nil, ErrAuthenticatingRequest
+			return nil, fmt.Errorf("get user by external ID: %w", err)
 		}
 		return enhanceWithFriendlyName(ctx, user, friendlyName, cookieAuthConfig.PersistFriendlyName, authService, logger), nil
 	}
@@ -305,6 +305,9 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 				"group": groupName,
 				"user":  u.Username,
 			}).Error("Failed to add external user to group")
+			// At this point in the code the user is already created. Re-running this after an error will not re-attach the user.
+			// We don't return failure since one of the groups may not always exist at first or may even be deleted in the future.
+			// If we with an error here, enhanceWithFriendlyName will not run and the call will result in an error.
 		}
 	}
 
@@ -351,7 +354,7 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	}
 	if !errors.Is(err, auth.ErrNotFound) {
 		logger.WithError(err).Error("Failed to get external user from database")
-		return nil, ErrAuthenticatingRequest
+		return nil, fmt.Errorf("get user by external ID: %w", err)
 	}
 	u := model.User{
 		CreatedAt:  time.Now().UTC(),
@@ -366,13 +369,13 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 	if err != nil {
 		if !errors.Is(err, auth.ErrAlreadyExists) {
 			logger.WithError(err).Error("Failed to create external user in database")
-			return nil, ErrAuthenticatingRequest
+			return nil, fmt.Errorf("create user: %w", err)
 		}
 		// user already exists - get it:
 		user, err = authService.GetUserByExternalID(ctx, externalID)
 		if err != nil {
 			logger.WithError(err).Error("Failed to get external user from database")
-			return nil, ErrAuthenticatingRequest
+			return nil, fmt.Errorf("get user by external ID: %w", err)
 		}
 		return enhanceWithFriendlyName(ctx, user, friendlyName, oidcConfig.PersistFriendlyName, authService, logger), nil
 	}
@@ -389,6 +392,9 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 				"group": groupName,
 				"user":  u.Username,
 			}).Error("Failed to add external user to group")
+			// At this point in the code the user is already created. Re-running this after an error will not re-attach the user.
+			// We don't return failure since one of the groups may not always exist at first or may even be deleted in the future.
+			// If we with an error here, enhanceWithFriendlyName will not run and the call will result in an error.
 		}
 	}
 
@@ -412,7 +418,7 @@ func userByToken(ctx context.Context, logger logging.Logger, authService auth.Se
 			"username": username,
 			"subject":  username,
 		}).Debug("could not find user id by credentials")
-		return nil, ErrAuthenticatingRequest
+		return nil, fmt.Errorf("get user: %w", err)
 	}
 	return userData, nil
 }
@@ -422,12 +428,12 @@ func userByAuth(ctx context.Context, logger logging.Logger, authenticator auth.A
 	username, err := authenticator.AuthenticateUser(ctx, accessKey, secretKey)
 	if err != nil {
 		logger.WithError(err).WithField("user", accessKey).Error("authenticate")
-		return nil, ErrAuthenticatingRequest
+		return nil, err
 	}
 	user, err := authService.GetUser(ctx, username)
 	if err != nil {
 		logger.WithError(err).WithFields(logging.Fields{"user_name": username}).Debug("could not find user id by credentials")
-		return nil, ErrAuthenticatingRequest
+		return nil, err
 	}
 	return user, nil
 }
@@ -459,4 +465,15 @@ func initialGroupsFromClaims(groupsClaim any, defaultInitialGroups []string) ([]
 		}
 	}
 	return groups, nil
+}
+
+// writeAuthError centralizes error handling logic and avoids duplication
+func writeAuthError(w http.ResponseWriter, r *http.Request, err error, defaultStatus int, defaultMsg string) {
+	// Only internal server errors are returned to the client to allow retries.
+	// Other errors are masked to avoid exposing sensitive information.
+	if errors.Is(err, auth.ErrInternalServerError) {
+		writeError(w, r, http.StatusInternalServerError, auth.ErrInternalServerError)
+	} else {
+		writeError(w, r, defaultStatus, defaultMsg)
+	}
 }
