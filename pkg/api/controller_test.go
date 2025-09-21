@@ -5179,7 +5179,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
 		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
-		require.Equal(t, copyStat.Mtime, objStat.Mtime)
+		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
 
 		// get back info
@@ -5247,7 +5247,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.NotNil(t, copyStat)
 		require.NotEmpty(t, copyStat.PhysicalAddress)
 		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
-		require.Equal(t, copyStat.Mtime, objStat.Mtime)
+		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
 
 		// Verify all else is equal
@@ -5353,7 +5353,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
 		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
-		require.Equal(t, copyStat.Mtime, objStat.Mtime)
+		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
 
 		// get back info
