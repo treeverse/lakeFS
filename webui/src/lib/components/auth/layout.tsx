@@ -29,7 +29,7 @@ export const AuthLayout = () => {
             router.push({
                 pathname: '/auth/login',
                 params: {},
-                query: { next: router.route, redirected: 'true' },
+                query: { next: '/', redirected: 'true' },
             });
         }
     }, [isLogged, router]);
