@@ -314,6 +314,9 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 		return props, err
 	}
 	attrs, err := a.client.Bucket(bucket).Object(key).Attrs(ctx)
+	if isErrNotFound(err) {
+		return props, block.ErrDataNotFound
+	}
 	if err != nil {
 		return props, err
 	}

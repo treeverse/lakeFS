@@ -362,6 +362,9 @@ func (l *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 	}
 	stat, err := os.Stat(p)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return block.Properties{}, block.ErrDataNotFound
+		}
 		return block.Properties{}, err
 	}
 	// No properties, just return that it exists

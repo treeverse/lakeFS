@@ -392,7 +392,6 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 
 	_, err = blobURL.GetProperties(ctx, nil)
-
 	if bloberror.HasCode(err, bloberror.BlobNotFound) {
 		return false, nil
 	}
@@ -418,6 +417,9 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 
 	props, err := blobURL.GetProperties(ctx, nil)
+	if bloberror.HasCode(err, bloberror.BlobNotFound) {
+		return block.Properties{}, block.ErrDataNotFound
+	}
 	if err != nil {
 		return block.Properties{}, err
 	}

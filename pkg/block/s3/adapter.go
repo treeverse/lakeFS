@@ -575,6 +575,9 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	}
 	client := a.clients.Get(ctx, bucket)
 	s3Props, err := client.HeadObject(ctx, headObjectParams)
+	if isErrNotFound(err) {
+		return block.Properties{}, block.ErrDataNotFound
+	}
 	if err != nil {
 		return block.Properties{}, err
 	}
