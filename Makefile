@@ -302,7 +302,7 @@ gen-proto: ## Build Protocol Buffers (proto) files using Buf CLI
 .PHONY: publish-scala
 publish-scala: ## sbt publish spark client jars to Maven Central and to s3 bucket
 	cd clients/spark && \
-	sbt -Dpublish.bucket=$(S3_PUBLISH_BUCKET) -Dpublish.region=$(AWS_REGION) 'assembly; publishSigned; s3Upload; sonaRelease'
+	sbt -Dpublish.bucket=$(S3_PUBLISH_BUCKET) 'assembly; publishSigned; s3Upload; sonaRelease'
 
 .PHONY: publish-lakefsfs-test
 publish-lakefsfs-test: ## sbt publish spark lakefsfs test jars to s3 bucket
