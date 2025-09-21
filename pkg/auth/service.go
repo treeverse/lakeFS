@@ -404,6 +404,8 @@ func (a *APIAuthService) validateResponse(resp openapi3filter.StatusCoder, expec
 		return ErrAlreadyExists
 	case http.StatusUnauthorized:
 		return ErrInsufficientPermissions
+	case http.StatusInternalServerError:
+		return ErrInternalServerError
 	default:
 		return fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, statusCode, expectedStatusCode)
 	}

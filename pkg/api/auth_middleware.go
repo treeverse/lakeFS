@@ -305,7 +305,9 @@ func userFromSAML(ctx context.Context, logger logging.Logger, authService auth.S
 				"group": groupName,
 				"user":  u.Username,
 			}).Error("Failed to add external user to group")
-			return nil, fmt.Errorf("add user to group: %w", err)
+			// At this point in the code the user is already created. Re-running this after an error will not re-attach the user.
+			// We don't return failure since one of the groups may not always exist at first or may even be deleted in the future.
+			// If we with an error here, enhanceWithFriendlyName will not run and the call will result in an error.
 		}
 	}
 
@@ -390,7 +392,9 @@ func userFromOIDC(ctx context.Context, logger logging.Logger, authService auth.S
 				"group": groupName,
 				"user":  u.Username,
 			}).Error("Failed to add external user to group")
-			return nil, fmt.Errorf("add user to group: %w", err)
+			// At this point in the code the user is already created. Re-running this after an error will not re-attach the user.
+			// We don't return failure since one of the groups may not always exist at first or may even be deleted in the future.
+			// If we with an error here, enhanceWithFriendlyName will not run and the call will result in an error.
 		}
 	}
 
