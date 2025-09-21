@@ -313,10 +313,11 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	if err != nil {
 		return props, err
 	}
-	_, err = a.client.Bucket(bucket).Object(key).Attrs(ctx)
+	attrs, err := a.client.Bucket(bucket).Object(key).Attrs(ctx)
 	if err != nil {
 		return props, err
 	}
+	props.LastModified = attrs.Updated
 	return props, nil
 }
 
