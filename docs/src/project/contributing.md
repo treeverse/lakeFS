@@ -36,7 +36,7 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
     1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as [apt](https://en.wikipedia.org/wiki/APT_(software)) or [brew](https://brew.sh/))
     1. [Docker](https://docs.docker.com/get-docker/)
     1. [Go](https://golang.org/doc/install)
-    1. [Node.js & npm](https://www.npmjs.com/get-npm)
+    1. [Node.js & npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
     1. Java 8
         * Apple M1 users can install this from [Azul Zulu Builds for Java JDK](https://www.azul.com/downloads/?package=jdk). Builds for Intel-based Macs are available from [java.com](https://www.java.com/en/download/help/mac_install.html).
     1. [Maven](https://maven.apache.org/) 
