@@ -104,7 +104,7 @@ assembly / assemblyShadeRules := Seq(
 )
 
 // Safe upload: put-object with If-None-Match to prevent overwriting an existing key.
-// Fails the build on any error and surfaces the AWS CLI error message.
+// Using AWS SDK v2, fails the build on any error.
 lazy val s3Upload = taskKey[Unit]("Upload JAR to S3 without override existing")
 val publishBucket = settingKey[String]("Target S3 bucket for publishing the JAR")
 val publishRegion = settingKey[String]("AWS region for publishing the JAR")
