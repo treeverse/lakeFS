@@ -12,7 +12,6 @@ import {useLayoutOutletContext} from "../layout";
 import {useRouter} from "../../hooks/router";
 import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
-import {Loading} from "../controls";
 
 type AuthOutletContext = [(tab: string) => void];
 
@@ -21,7 +20,7 @@ export const AuthLayout = () => {
     const [showRBACAlert, setShowRBACAlert] = useState(!window.localStorage.getItem(rbacDismissedKey));
     const [activeTab, setActiveTab] = useState("credentials");
     const {RBAC: rbac} = useLoginConfigContext();
-    const [loading, isLogged] = useLayoutOutletContext();
+    const [isLogged] = useLayoutOutletContext();
     const router = useRouter();
 
     useEffect(() => {
@@ -34,7 +33,6 @@ export const AuthLayout = () => {
         }
     }, [isLogged, router]);
 
-    if (loading) return <Loading/>;
     if (!isLogged) return null;
 
     return (
