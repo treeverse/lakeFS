@@ -25,6 +25,8 @@ export const AuthLayout = () => {
 
     useEffect(() => {
         if (!isLogged) {
+            // Redirect to the login page here, instead of in Layout where isLogged is set, because Layout also wraps
+            // routes that don't require authentication, and redirecting would be incorrect.
             router.push({
                 pathname: '/auth/login',
                 params: {},

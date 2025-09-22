@@ -16,7 +16,7 @@ const Layout: FC<{logged: boolean}> = ({logged}) => {
     useEffect(() => {
         if (!loading) {
             // If there's a user and no error, show authenticated (full) navbar
-            setIsLogged(!!(userWithId && userWithId.id !== "" && !error));
+            setIsLogged(!!userWithId?.id && !error);
         }
     }, [userWithId, loading, error]);
 
