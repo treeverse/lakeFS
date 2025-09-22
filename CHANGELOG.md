@@ -4,9 +4,10 @@
 
 :new: What's new:
 - Updated login page appearance (#9425)
+- DynamoDB: Make credentials expiry window + jitter configurable (#9527)
+
 :bug: Bugs fixed:
 - Fix GetRepository "invalid repo name" error code to 400 (#9535)
-- DynamoDB: Make credentials expiry window + jitter configurable (#9527)
 - Use internal errors status codes during authentication flow (#9540)
 
 # v1.69.0
