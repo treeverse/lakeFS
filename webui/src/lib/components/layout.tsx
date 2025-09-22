@@ -5,7 +5,7 @@ import TopNav from './navbar';
 import { AppContext } from "../hooks/appContext";
 import useUser from "../hooks/user";
 
-type LayoutOutletContext = [boolean, (isLoggedIn: boolean) => void];
+type LayoutOutletContext = [boolean];
 
 const Layout: FC<{logged: boolean}> = ({logged}) => {
     const [isLogged, setIsLogged] = useState(logged ?? true);
@@ -28,7 +28,7 @@ const Layout: FC<{logged: boolean}> = ({logged}) => {
         <ConfigProvider>
             {!loading && <TopNav logged={isLogged}/>}
             <div className="main-app">
-                <Outlet context={[isLogged, setIsLogged] satisfies LayoutOutletContext}/>
+                <Outlet context={[isLogged] satisfies LayoutOutletContext}/>
             </div>
         </ConfigProvider>
     );
