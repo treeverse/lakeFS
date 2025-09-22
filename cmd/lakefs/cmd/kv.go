@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	_ "github.com/treeverse/lakefs/pkg/actions"
 	_ "github.com/treeverse/lakefs/pkg/auth"
@@ -22,7 +23,11 @@ const (
 	GetCmdNumArgs  = 2
 )
 
-var errInvalidParamValue = errors.New("invalid parameter value")
+var (
+	errInvalidParamValue = errors.New("invalid parameter value")
+	errNoInputFile       = errors.New("no input file provided")
+	errInvalidStrategy   = errors.New("invalid strategy")
+)
 
 var kvCmd = &cobra.Command{
 	Use:    "kv",
@@ -156,13 +161,226 @@ var kvScanCmd = &cobra.Command{
 	},
 }
 
+var kvDumpCmd = &cobra.Command{
+	Use:   "dump [--output FILE] [--sections SECTIONS] [--pretty]",
+	Short: "Dump KV store data to JSON format",
+	Long: `Dump KV store data to JSON format.
+
+Usage:
+  lakefs kv dump                          # dump all sections to stdout
+  lakefs kv dump --output dump.json       # dump to file
+  lakefs kv dump --sections auth,pulls    # dump specific sections
+
+Sections:
+  auth      - authentication data
+  pulls     - pull request data
+  kv        - kv internal metadata
+
+Default: all supported sections (auth, pulls, kv)`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg := LoadConfig().GetBaseConfig()
+
+		outputFile, err := cmd.Flags().GetString("output")
+		if err != nil {
+			return err
+		}
+
+		sectionsFlag, err := cmd.Flags().GetString("sections")
+		if err != nil {
+			return err
+		}
+
+		pretty, err := cmd.Flags().GetBool("pretty")
+		if err != nil {
+			return err
+		}
+
+		// Parse sections (comma-separated)
+		var sections []string
+		if sectionsFlag != "" {
+			sections = strings.Split(sectionsFlag, ",")
+			for i, s := range sections {
+				sections[i] = strings.TrimSpace(s)
+			}
+		}
+		// Empty default means all supported sections
+
+		ctx := cmd.Context()
+		kvParams, err := kvparams.NewConfig(&cfg.Database)
+		if err != nil {
+			return fmt.Errorf("KV params: %w", err)
+		}
+
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			return fmt.Errorf("failed to open KV store: %w", err)
+		}
+		defer kvStore.Close()
+
+		// Open output file
+		var output *os.File
+		if outputFile == "" || outputFile == "-" {
+			output = os.Stdout
+		} else {
+			output, err = os.Create(outputFile)
+			if err != nil {
+				return fmt.Errorf("failed to create output file: %w", err)
+			}
+			defer func() {
+				if err := output.Close(); err != nil {
+					_, _ = fmt.Fprintf(os.Stderr, "warning: failed to close output file: %v\n", err)
+				}
+			}()
+		}
+
+		// Create dump
+		dump, err := kv.CreateDump(ctx, kvStore, sections)
+		if err != nil {
+			return fmt.Errorf("failed to create dump: %w", err)
+		}
+
+		// Encode to JSON
+		encoder := json.NewEncoder(output)
+		if pretty {
+			encoder.SetIndent("", "  ")
+		}
+
+		if err := encoder.Encode(dump); err != nil {
+			return fmt.Errorf("failed to encode dump: %w", err)
+		}
+
+		if outputFile != "" && outputFile != "-" {
+			_, _ = fmt.Fprintf(os.Stderr, "Dump written to %s\n", outputFile)
+		}
+
+		return nil
+	},
+}
+
+var kvLoadCmd = &cobra.Command{
+	Use:   "load --input FILE [--sections SECTIONS] [--strategy STRATEGY]",
+	Short: "Load KV store data from JSON dump",
+	Long: `Load KV store data from JSON dump file.
+
+Usage:
+  lakefs kv load --input dump.json                    # load all sections from dump
+  lakefs kv load --input dump.json --sections auth    # load specific sections
+  lakefs kv load --input - --strategy overwrite       # load from stdin, overwrite existing
+
+Sections:
+  auth      - authentication data
+  pulls     - pull request data
+  kv        - kv internal metadata
+
+Default: all sections found in the dump file
+
+Strategies:
+  skip      - skip existing keys (default)
+  overwrite - overwrite existing keys`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg := LoadConfig().GetBaseConfig()
+
+		inputFile, err := cmd.Flags().GetString("input")
+		if err != nil {
+			return err
+		}
+
+		sectionsFlag, err := cmd.Flags().GetString("sections")
+		if err != nil {
+			return err
+		}
+
+		strategyFlag, err := cmd.Flags().GetString("strategy")
+		if err != nil {
+			return err
+		}
+
+		if inputFile == "" {
+			return errNoInputFile
+		}
+
+		// Parse sections (comma-separated)
+		var sections []string
+		if sectionsFlag != "" {
+			sections = strings.Split(sectionsFlag, ",")
+			for i, s := range sections {
+				sections[i] = strings.TrimSpace(s)
+			}
+		}
+		// Empty default means all sections in the dump
+
+		// Parse strategy
+		strategy := kv.LoadStrategy(strategyFlag)
+		switch strategy {
+		case kv.LoadStrategyOverwrite, kv.LoadStrategySkip:
+		default:
+			return fmt.Errorf("%w: %s (must be one of: overwrite or skip)", errInvalidStrategy, strategyFlag)
+		}
+
+		ctx := cmd.Context()
+		kvParams, err := kvparams.NewConfig(&cfg.Database)
+		if err != nil {
+			return fmt.Errorf("KV params: %w", err)
+		}
+
+		kvStore, err := kv.Open(ctx, kvParams)
+		if err != nil {
+			return fmt.Errorf("failed to open KV store: %w", err)
+		}
+		defer kvStore.Close()
+
+		// Read dump file
+		var input *os.File
+		if inputFile == "-" {
+			input = os.Stdin
+		} else {
+			input, err = os.Open(inputFile)
+			if err != nil {
+				return fmt.Errorf("failed to open input file: %w", err)
+			}
+			defer func() {
+				if err := input.Close(); err != nil {
+					_, _ = fmt.Fprintf(os.Stderr, "warning: failed to close input file: %v\n", err)
+				}
+			}()
+		}
+
+		var dump kv.DumpFormat
+		decoder := json.NewDecoder(input)
+		if err := decoder.Decode(&dump); err != nil {
+			return fmt.Errorf("failed to decode dump: %w", err)
+		}
+
+		// Load dump
+		if err := kv.LoadDump(ctx, kvStore, &dump, sections, strategy); err != nil {
+			return fmt.Errorf("failed to load dump: %w", err)
+		}
+
+		_, _ = fmt.Fprintf(os.Stderr, "Successfully loaded dump\n")
+		return nil
+	},
+}
+
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(kvCmd)
+
 	kvCmd.AddCommand(kvGetCmd)
 	kvGetCmd.Flags().Bool("pretty", false, "print indented output")
+
 	kvCmd.AddCommand(kvScanCmd)
 	kvScanCmd.Flags().Int("limit", 0, "maximal number of results to return. By default, all results are returned")
 	kvScanCmd.Flags().String("until", "", "last prefix to scan. If this prefix is reached or exceeded, scan will stop")
 	kvScanCmd.Flags().Bool("pretty", false, "print indented output")
+
+	kvCmd.AddCommand(kvDumpCmd)
+	kvDumpCmd.Flags().String("output", "", "output file (default: stdout)")
+	kvDumpCmd.Flags().String("sections", "", "comma-separated list of sections to dump (empty dumps all)")
+	kvDumpCmd.Flags().Bool("pretty", false, "print indented output")
+
+	kvCmd.AddCommand(kvLoadCmd)
+	kvLoadCmd.Flags().String("input", "", "dump input file (produced by 'kv dump')")
+	kvLoadCmd.Flags().String("sections", "", "comma-separated list of sections to load (empty dumps all)")
+	kvLoadCmd.Flags().String("strategy", "skip", "skip or overwrite existing keys")
+	_ = kvLoadCmd.MarkFlagRequired("input")
 }

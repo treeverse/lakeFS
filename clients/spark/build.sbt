@@ -104,7 +104,7 @@ assembly / assemblyShadeRules := Seq(
 )
 
 // Safe upload: put-object with If-None-Match to prevent overwriting an existing key.
-// Fails the build on any error and surfaces the AWS CLI error message.
+// Using AWS SDK v2, fails the build on any error.
 lazy val s3Upload = taskKey[Unit]("Upload JAR to S3 without override existing")
 val publishBucket = settingKey[String]("Target S3 bucket for publishing the JAR")
 
@@ -112,26 +112,33 @@ val publishBucket = settingKey[String]("Target S3 bucket for publishing the JAR"
 publishBucket := sys.props.get("publish.bucket").filter(_.nonEmpty).getOrElse("treeverse-clients-us-east")
 
 s3Upload := {
-  import sys.process._
+  import software.amazon.awssdk.core.sync.RequestBody
+  import software.amazon.awssdk.services.s3.S3Client
+  import software.amazon.awssdk.services.s3.model.{PutObjectRequest, S3Exception}
 
   val log = streams.value.log
   val bucket = publishBucket.value
   val jarFile = (assembly / assemblyOutputPath).value
   val key = s"${name.value}/${version.value}/${(assembly / assemblyJarName).value}"
 
-  val cmd = Seq(
-    "aws","s3api","put-object",
-    "--bucket", bucket,
-    "--key", key,
-    "--body", jarFile.getAbsolutePath,
-    "--if-none-match","*",
-    "--region", "us-east-1",
-    "--acl","public-read" // TODO: remove after switching bucket to "Bucket owner enforced"
-  )
+  val s3 = S3Client.builder().build()
+  try {
+    val req = PutObjectRequest.builder()
+      .bucket(bucket)
+      .key(key)
+      .ifNoneMatch("*")
+      .build()
 
-  val pl = ProcessLogger(out => log.info(out), err => log.error(err))
-  Process(cmd).!!(pl)
-  log.info(s"Uploaded to S3 successfully: https://$bucket.s3.amazonaws.com/$key")
+    s3.putObject(req, RequestBody.fromFile(jarFile))
+    log.info(s"Uploaded to S3 successfully: s3://$bucket/$key")
+  } catch {
+    case e: S3Exception if e.statusCode() == 412 =>
+      throw new RuntimeException(s"Artifact already exists: s3://$bucket/$key", e)
+    case e: S3Exception =>
+      throw new RuntimeException(s"S3 upload failed: ${e.awsErrorDetails().errorMessage()} (status=${e.statusCode()})", e)
+  } finally {
+    s3.close()
+  }
 }
 
 assembly / assemblyMergeStrategy := {
