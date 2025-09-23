@@ -145,7 +145,7 @@ func LoadConfig(ctx context.Context, params params.S3) (aws.Config, error) {
 		config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired),
 		config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
 	)
-	
+
 	opts = append(opts, config.WithLogger(&logging.AWSAdapter{
 		// AWS do not transfer execution context to their logger;
 		// pass the adapter base logger, which has a few static
