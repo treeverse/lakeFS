@@ -1,13 +1,24 @@
-import React, { FC, useContext, useState } from "react";
+import React, { FC, useContext, useState, useEffect } from "react";
 import { Outlet, useOutletContext } from "react-router-dom";
 import { ConfigProvider } from "../hooks/configProvider";
 import TopNav from './navbar';
 import { AppContext } from "../hooks/appContext";
+import useUser from "../hooks/user";
 
-type LayoutOutletContext = [(isLoggedIn: boolean) => void];
+type LayoutOutletContext = [boolean];
 
 const Layout: FC<{logged: boolean}> = ({logged}) => {
     const [isLogged, setIsLogged] = useState(logged ?? true);
+    const { user, loading, error } = useUser();
+    const userWithId = user as { id?: string } | null;
+
+    // Update isLogged state based on actual authentication status
+    useEffect(() => {
+        if (!loading) {
+            // If there's a user and no error, show authenticated (full) navbar
+            setIsLogged(!!userWithId?.id && !error);
+        }
+    }, [userWithId, loading, error]);
 
     // handle global dark mode here
     const {state} = useContext(AppContext);
@@ -15,9 +26,9 @@ const Layout: FC<{logged: boolean}> = ({logged}) => {
 
     return (
         <ConfigProvider>
-            <TopNav logged={isLogged}/>
+            {!loading && <TopNav logged={isLogged}/>}
             <div className="main-app">
-                <Outlet context={[setIsLogged] satisfies LayoutOutletContext}/>
+                <Outlet context={[isLogged] satisfies LayoutOutletContext}/>
             </div>
         </ConfigProvider>
     );

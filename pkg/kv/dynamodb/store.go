@@ -90,8 +90,6 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 			"",
 		)))
 	}
-	const credsCacheExpiryWindow = 30 * time.Second
-	const credsCacheExpiryWindowJitterFrac = 0.5
 	opts = append(opts, config.WithHTTPClient(
 		awshttp.NewBuildableClient().WithTransportOptions(func(transport *http.Transport) {
 			transport.MaxConnsPerHost = params.MaxConnectionsPerHost
@@ -103,8 +101,8 @@ func (d *Driver) Open(ctx context.Context, kvParams kvparams.Config) (kv.Store, 
 			})
 		}),
 		config.WithCredentialsCacheOptions(func(options *aws.CredentialsCacheOptions) {
-			options.ExpiryWindow = credsCacheExpiryWindow
-			options.ExpiryWindowJitterFrac = credsCacheExpiryWindowJitterFrac
+			options.ExpiryWindow = params.CredentialsCacheExpiryWindow
+			options.ExpiryWindowJitterFrac = params.CredentialsCacheExpiryWindowJitterFraction
 		}),
 	)
 

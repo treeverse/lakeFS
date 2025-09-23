@@ -288,7 +288,7 @@ func (a *APIAuthService) GetUser(ctx context.Context, username string) (*model.U
 		resp, err := a.apiClient.GetUserWithResponse(ctx, username)
 		if err != nil {
 			a.logger.WithError(err).WithField("username", username).Error("failed to get user")
-			return nil, err
+			return nil, fmt.Errorf("%v: %w", err, ErrInternalServerError)
 		}
 		if err := a.validateResponse(resp, http.StatusOK); err != nil {
 			return nil, err
@@ -404,6 +404,8 @@ func (a *APIAuthService) validateResponse(resp openapi3filter.StatusCoder, expec
 		return ErrAlreadyExists
 	case http.StatusUnauthorized:
 		return ErrInsufficientPermissions
+	case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		return ErrInternalServerError
 	default:
 		return fmt.Errorf("%w - got %d expected %d", ErrUnexpectedStatusCode, statusCode, expectedStatusCode)
 	}
