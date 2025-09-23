@@ -141,6 +141,10 @@ func NewAdapter(ctx context.Context, params params.S3, opts ...AdapterOption) (*
 
 func LoadConfig(ctx context.Context, params params.S3) (aws.Config, error) {
 	var opts []func(*config.LoadOptions) error
+	opts = append(opts,
+		config.WithRequestChecksumCalculation(aws.RequestChecksumCalculationWhenRequired),
+		config.WithResponseChecksumValidation(aws.ResponseChecksumValidationWhenRequired),
+	)
 
 	opts = append(opts, config.WithLogger(&logging.AWSAdapter{
 		// AWS do not transfer execution context to their logger;
