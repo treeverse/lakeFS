@@ -1252,7 +1252,7 @@ const ObjectsBrowser = ({ config }) => {
   };
 
   if (loading) return <Loading />;
-  if (error) return <RepoError error={error} />;
+  if (error) return <RepoError error={error}/>;
 
   return (
     <>
