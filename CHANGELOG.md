@@ -1,6 +1,6 @@
 # Changelog
 
-# v1.67.0
+# v1.69.0
 
 🏢 Includes only changes for Enterprise.
 
