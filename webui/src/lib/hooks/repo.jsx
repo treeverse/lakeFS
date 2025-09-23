@@ -42,8 +42,8 @@ export const resolveRef = async (repoId, refId) => {
 const RefContext =  createContext(null);
 
 export const useRefs = () => {
-    const [ refs ] = useContext(RefContext);
-    return refs;
+    const [ refsState ] = useContext(RefContext);
+    return refsState;
 }
 
 export const RefContextProvider = ({ children }) => {
@@ -59,7 +59,7 @@ export const RefContextProvider = ({ children }) => {
         return { repo, reference, compare: comparedRef };
     }, [repoId, ref, compare]);
 
-    const refState = {
+    const refsState = {
         loading,
         error,
         repo: response?.repo || null,
@@ -68,7 +68,7 @@ export const RefContextProvider = ({ children }) => {
     };
 
     return (
-        <RefContext.Provider value={[refState]}>
+        <RefContext.Provider value={[refsState]}>
             {children}
         </RefContext.Provider>
     );
