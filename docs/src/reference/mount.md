@@ -93,12 +93,11 @@ For example, setting the provider type using env vars:
 ### File System Consistency
 
 Everest mount provides a strong read-after-write consistency model within a single mount point.
-This means that once a write operation is done, the data is guaranteed to be available for subsequent read operations.
+Once a write operation is done, the data is guaranteed to be available for subsequent read operations.
 
 ### lakeFS Consistency
 
-Local changes are reflected in lakeFS only after the changes are **committed**.
-That means that the data is not available for other users until the changes are committed.
+Local changes are reflected in lakeFS only after the changes are **committed**. Until then, the data is not visible to other users.
 If, for example, two users mount the same branch, they will not see each other's changes until they are committed.
 
 ### Sync local changes to lakeFS

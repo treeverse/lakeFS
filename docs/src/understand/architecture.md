@@ -125,7 +125,7 @@ and all data operations directly through the same underlying object store that l
 
 ## How lakeFS Clients and Gateway Handle Metadata and Data Access
 
-When using any of the native integrations such as the Python SDK, lakectl, Everest or the lakeFS Spark client - these clients communicate with the lakeFS server to retrieve metadata information. 
+When using any of the native integrations such as the Python SDK, lakectl, Everest or the lakeFS Spark client - these clients communicate with the lakeFS server to retrieve metadata. 
 
 For example, they may query lakeFS to understand which version of a file is needed or to track changes in branches and commits. 
 This communication does not include the actual data transfer, but instead involves passing only metadata about data locations and versions.
