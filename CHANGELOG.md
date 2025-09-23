@@ -4,6 +4,7 @@
 
 :bug: Bugs fixed:
 
+- Fix MinIO repository creation (#9546)
 - Fix login flow issues (#9506)
 
 # v1.70.0
