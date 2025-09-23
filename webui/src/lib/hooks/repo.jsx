@@ -1,7 +1,8 @@
-import React, {useContext, useState, createContext, useEffect} from "react";
+import React, {useContext, createContext} from "react";
 
 import {repositories, branches, commits, NotFoundError, tags, BadRequestError} from "../api";
 import {useRouter} from "./router";
+import {useAPI} from "./api";
 import {RefTypeBranch, RefTypeCommit, RefTypeTag} from "../../constants";
 
 
@@ -41,43 +42,33 @@ export const resolveRef = async (repoId, refId) => {
 const RefContext =  createContext(null);
 
 export const useRefs = () => {
-    const [ refs ] = useContext(RefContext);
-    return refs;
+    const [ refsState ] = useContext(RefContext);
+    return refsState;
 }
-
-const refContextInitialState = {
-    loading: true,
-    error: null,
-    repo: null,
-    reference: null,
-    compare: null
-};
 
 export const RefContextProvider = ({ children }) => {
     const router = useRouter();
     const { repoId } = router.params;
     const {ref, compare} = router.query;
 
-    const [refState, setRefState] = useState(refContextInitialState);
-
-    useEffect(() => {
-        const fetch = async () => {
-            setRefState(refContextInitialState);
-            if (!repoId) return;
-            try {
-                const repo = await repositories.get(repoId);
-                const reference = await resolveRef(repoId, (ref) ? ref : repo.default_branch);
-                const comparedRef = await resolveRef(repoId, (compare)? compare : repo.default_branch);
-                setRefState({...refContextInitialState, loading: false, repo, reference, compare: comparedRef});
-            } catch (err) {
-                setRefState({...refContextInitialState, loading: false, error: err});
-            }
-        };
-        fetch();
+    const { response, error, loading } = useAPI(async () => {
+        if (!repoId) return null;
+        const repo = await repositories.get(repoId);
+        const reference = await resolveRef(repoId, ref || repo.default_branch);
+        const comparedRef = await resolveRef(repoId, compare || repo.default_branch);
+        return { repo, reference, compare: comparedRef };
     }, [repoId, ref, compare]);
 
+    const refsState = {
+        loading,
+        error,
+        repo: response?.repo || null,
+        reference: response?.reference || null,
+        compare: response?.compare || null
+    };
+
     return (
-        <RefContext.Provider value={[refState, fetch]}>
+        <RefContext.Provider value={[refsState]}>
             {children}
         </RefContext.Provider>
     );
