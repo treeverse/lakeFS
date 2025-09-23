@@ -51,6 +51,7 @@ type S3 struct {
 	DisablePreSignedMultipart     bool
 	ClientLogRetries              bool
 	ClientLogRequest              bool
+	DisableChecksumCalculation    bool
 	WebIdentity                   *S3WebIdentity
 }
 

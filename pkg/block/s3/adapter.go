@@ -47,6 +47,7 @@ type Adapter struct {
 	disablePreSigned             bool
 	disablePreSignedUI           bool
 	disablePreSignedMultipart    bool
+	disableChecksumCalculation   bool
 	nowFactory                   func() time.Time
 }
 
@@ -113,6 +114,12 @@ func WithServerSideEncryptionKmsKeyID(s string) func(a *Adapter) {
 func WithNowFactory(f func() time.Time) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.nowFactory = f
+	}
+}
+
+func WithDisableChecksumCalculation(b bool) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.disableChecksumCalculation = b
 	}
 }
 
@@ -271,6 +278,7 @@ func (a *Adapter) Put(ctx context.Context, obj block.ObjectPointer, sizeBytes in
 		retryMaxAttemptsByReader(reader),
 		s3.WithAPIOptions(v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware),
 		a.registerCaptureServerMiddleware(),
+		a.registerDisableChecksumMiddleware(),
 	)
 	if err != nil {
 		return nil, err
@@ -336,6 +344,7 @@ func (a *Adapter) UploadPart(ctx context.Context, obj block.ObjectPointer, sizeB
 		retryMaxAttemptsByReader(reader),
 		s3.WithAPIOptions(v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware),
 		a.registerCaptureServerMiddleware(),
+		a.registerDisableChecksumMiddleware(),
 	)
 	if err != nil {
 		return nil, err
@@ -1010,6 +1019,29 @@ func (a *Adapter) registerCaptureServerMiddleware() func(*s3.Options) {
 	fn := middleware.DeserializeMiddlewareFunc("ResponseServerValue", a.captureServerDeserializeMiddleware)
 	return s3.WithAPIOptions(func(stack *middleware.Stack) error {
 		return stack.Deserialize.Add(fn, middleware.After)
+	})
+}
+
+func (a *Adapter) registerDisableChecksumMiddleware() func(*s3.Options) {
+	if !a.disableChecksumCalculation {
+		// Return a no-op function if checksum calculation is not disabled
+		return func(o *s3.Options) {}
+	}
+
+	fn := middleware.BuildMiddlewareFunc("DisableChecksumCalculation", func(
+		ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler,
+	) (middleware.BuildOutput, middleware.Metadata, error) {
+		// This middleware disables automatic checksum calculation for MinIO compatibility
+		if req, ok := in.Request.(*smithyhttp.Request); ok {
+			// Remove any checksum-related headers that might cause issues with MinIO
+			req.Header.Del("x-amz-checksum-algorithm")
+			req.Header.Del("x-amz-sdk-checksum-algorithm")
+		}
+		return next.HandleBuild(ctx, in)
+	})
+
+	return s3.WithAPIOptions(func(stack *middleware.Stack) error {
+		return stack.Build.Add(fn, middleware.Before)
 	})
 }
 

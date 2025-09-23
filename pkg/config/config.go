@@ -216,6 +216,7 @@ type BlockstoreS3 struct {
 	DisablePreSignedMultipart bool                     `mapstructure:"disable_pre_signed_multipart"`
 	ClientLogRetries          bool                     `mapstructure:"client_log_retries"`
 	ClientLogRequest          bool                     `mapstructure:"client_log_request"`
+	DisableChecksumCalculation bool                    `mapstructure:"disable_checksum_calculation"`
 	WebIdentity               *BlockstoreS3WebIdentity `mapstructure:"web_identity"`
 }
 
@@ -312,6 +313,7 @@ func (b *Blockstore) BlockstoreS3Params() (blockparams.S3, error) {
 		DisablePreSignedMultipart:     b.S3.DisablePreSignedMultipart,
 		ClientLogRetries:              b.S3.ClientLogRetries,
 		ClientLogRequest:              b.S3.ClientLogRequest,
+		DisableChecksumCalculation:    b.S3.DisableChecksumCalculation,
 		WebIdentity:                   webIdentity,
 	}, nil
 }

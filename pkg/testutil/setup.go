@@ -157,7 +157,6 @@ func SetupTestS3Client(endpoint, key, secret string, forcePathStyle bool, opts .
 	}
 	svc := s3.NewFromConfig(cfg, append(opts, func(options *s3.Options) {
 		options.BaseEndpoint = aws.String(endpoint)
-		options.Region = "us-east-1"
 		options.UsePathStyle = forcePathStyle
 	})...)
 	return svc, nil
