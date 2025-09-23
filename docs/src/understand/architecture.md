@@ -27,9 +27,17 @@ to manage data across multiple storage locations, including on-prem, hybrid, and
 
 ### Metadata Storage
 
-In additional a Key Value storage is used for storing metadata, with supported databases including PostgreSQL, DynamoDB, and CosmosDB Instructions of how to deploy such database on AWS can be found [here][dynamodb-permissions].
+An auxiliary Key Value storage is used for storing metadata, with supported databases including:
 
-Additional information on the data format can be found in [Versioning internals](./how/versioning-internals.md) and [Internal database structure](./how/kv.md)
+- PostgreSQL
+- DynamoDB
+- CosmosDB
+- MemoryDB (or other Redis-compatible options) <span title="lakeFS Enterprise">🚀</span>
+
+See the [installation guide](../howto/deploy/index.md) and [configuration reference](../reference/configuration.md#database) on how to setup lakeFS with any of the above options
+
+!!! abstract "Learn More"
+    More information about how lakeFS manages its versioning metadata is available in [Versioning internals](./how/versioning-internals.md) and [Internal database structure](./how/kv.md)
 
 ### Load Balancing
 
@@ -38,9 +46,12 @@ lakeFS exposes a frontend UI, an [OpenAPI server](#openapi-server), as well as a
 lakeFS uses a single port that serves all three endpoints, so for most use cases a single load balancer pointing
 to lakeFS server(s) would do.
 
-<iframe width="420" height="315" src="https://www.youtube.com/embed/1vNQXFceFx4"></iframe>
-
 ## lakeFS Components
+
+Internally, the lakeFS server is composed of a few key pieces that make up the single binary that lakeFS is distributed as:
+
+
+![Server Components](../assets/img/server-components.png)
 
 ### S3 Gateway
 
@@ -80,10 +91,6 @@ The Hooks Engine enables CI/CD for data by triggering user defined [Actions][dat
 
 The UI layer is a simple browser-based client that uses the OpenAPI server. It allows management, exploration, and data access to repositories, branches, commits and objects in the system.
 
-## Applications
-
-As a rule of thumb, lakeFS supports any S3-compatible application. This means that many common data applications work with lakeFS out-of-the-box.
-
 ## lakeFS Clients
 
 Some data applications benefit from deeper integrations with lakeFS to support different use cases or enhanced functionality provided by lakeFS clients.
@@ -96,6 +103,13 @@ For example, the [Python lakefs-sdk](https://pypi.org/project/lakefs-sdk/) or th
 ### lakectl
 
 [lakectl](../reference/cli.md) is a CLI tool that enables lakeFS operations using the lakeFS API from your preferred terminal.
+
+### lakeFS Mount (Everest)
+
+!!! info
+    lakeFS Mount is available in **lakeFS Cloud** and **lakeFS Enterprise**
+
+[lakeFS Mount](../reference/mount.md) allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
 
 ### Spark Metadata Client
 
@@ -111,10 +125,19 @@ and all data operations directly through the same underlying object store that l
 
 ## How lakeFS Clients and Gateway Handle Metadata and Data Access
 
-When using the Python client, lakeCTL, or the lakeFS Spark client, these clients communicate with the lakeFS server to retrieve metadata information. For example, they may query lakeFS to understand which version of a file is needed or to track changes in branches and commits. This communication does not include the actual data transfer, but instead involves passing only metadata about data locations and versions.
-Once the client knows the exact data location from the lakeFS metadata, it directly accesses the data in the underlying object storage (potentially using presigned URLs) without routing through lakeFS. For instance, if data is stored in S3, the Spark client will retrieve the S3 paths from lakeFS, then directly read and write to those paths in S3 without involving lakeFS in the data transfer.
+When using any of the native integrations such as the Python SDK, lakectl, Everest or the lakeFS Spark client - these clients communicate with the lakeFS server to retrieve metadata information. 
 
-![lakeFS Clients vs Gateway Data Flow](../assets/img/s3gatewayvsclientdataflow.png)
+For example, they may query lakeFS to understand which version of a file is needed or to track changes in branches and commits. 
+This communication does not include the actual data transfer, but instead involves passing only metadata about data locations and versions.
+
+Once the client knows the exact data location from the lakeFS metadata, it **directly accesses the data in the underlying object storage** (potentially using [presigned URLs](../security/presigned-url.md)) without routing through lakeFS. 
+
+
+!!! example 
+    if data is stored in S3, the Spark client will retrieve the S3 paths as pre-signed URLs from lakeFS, then directly read and/or write to those URLs in S3 without involving lakeFS in the data transfer.
+
+
+![lakeFS Clients vs Gateway Data Flow](../assets/img/native-vs-gw-integrations.png)
 
 [data-quality-gates]:  use_cases/cicd_for_data.md#using-hooks-as-data-quality-gates
 [dynamodb-permissions]:  ../howto/deploy/aws.md#grant-lakefs-permissions-to-dynamodb

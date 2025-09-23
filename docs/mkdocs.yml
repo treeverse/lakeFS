@@ -224,7 +224,6 @@ nav:
     - Model: understand/model.md
     - Data Structure: understand/data-structure.md
     - Performance Best Practices: understand/performance-best-practices.md
-    - Mount Write Mode Semantics: reference/mount-write-mode-semantics.md
     - Internals:
       - Versioning Internals: understand/how/versioning-internals.md
       - Database structure: understand/how/kv.md
