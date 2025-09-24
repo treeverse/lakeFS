@@ -3232,7 +3232,7 @@ type ObjectReaderImpl struct {
 	BlockAdapter block.Adapter
 }
 
-func (or *ObjectReaderImpl) ReadObject(ctx context.Context, crCtx graveler.ConflictsResolverContext, value *graveler.ValueRecord) (io.ReadCloser, error) {
+func (or *ObjectReaderImpl) ReadObject(ctx context.Context, oCtx graveler.ObjectContext, value *graveler.ValueRecord) (io.ReadCloser, error) {
 	ent, err := ValueToEntry(value.Value)
 	if err != nil {
 		return nil, err
@@ -3240,8 +3240,8 @@ func (or *ObjectReaderImpl) ReadObject(ctx context.Context, crCtx graveler.Confl
 	catalogEntry := newCatalogEntryFromEntry(false, string(value.Key), ent)
 
 	objectPointer := block.ObjectPointer{
-		StorageID:        crCtx.StorageID,
-		StorageNamespace: crCtx.StorageNamespace,
+		StorageID:        oCtx.StorageID,
+		StorageNamespace: oCtx.StorageNamespace,
 		IdentifierType:   catalogEntry.AddressType.ToIdentifierType(),
 		Identifier:       catalogEntry.PhysicalAddress,
 	}

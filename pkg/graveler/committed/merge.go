@@ -14,7 +14,7 @@ type merger struct {
 	logger   logging.Logger
 	resolver graveler.ConflictsResolver
 
-	resolverCtx          graveler.ConflictsResolverContext
+	resolverCtx          graveler.ObjectContext
 	writer               MetaRangeWriter
 	base                 Iterator
 	source               Iterator
@@ -506,7 +506,7 @@ func (m *merger) validWritingRange(it Iterator) bool {
 func Merge(
 	ctx context.Context,
 	resolver graveler.ConflictsResolver,
-	resolverCtx graveler.ConflictsResolverContext,
+	resolverCtx graveler.ObjectContext,
 	writer MetaRangeWriter,
 	base Iterator,
 	source Iterator,

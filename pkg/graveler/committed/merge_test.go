@@ -354,8 +354,8 @@ func Test_merge(t *testing.T) {
 				}},
 				{
 					rng: committed.Range{ID: "base:k4-k6", MinKey: committed.Key("k4"), MaxKey: committed.Key("k6")}, records: []testValueRecord{
-						{"k4", "base:k4"}, {"k6", "base:k6"},
-					},
+					{"k4", "base:k4"}, {"k6", "base:k6"},
+				},
 				},
 				{rng: committed.Range{ID: "base:k11-k12", MinKey: committed.Key("k11"), MaxKey: committed.Key("k12"), Count: 2, EstimatedSize: 4444}, records: []testValueRecord{
 					{"k11", "base:k11"}, {"k12", "base:k12"},
@@ -372,8 +372,8 @@ func Test_merge(t *testing.T) {
 				}},
 				{
 					rng: committed.Range{ID: "base:k4-k6", MinKey: committed.Key("k4"), MaxKey: committed.Key("k6")}, records: []testValueRecord{
-						{"k4", "base:k4"}, {"k6", "base:k6"},
-					},
+					{"k4", "base:k4"}, {"k6", "base:k6"},
+				},
 				},
 			}),
 			expectedResult: []testRunResult{{
@@ -1736,7 +1736,7 @@ type MockConflictsResolver struct {
 	resolveConflictsFn func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error)
 }
 
-func (r *MockConflictsResolver) ResolveConflict(ctx context.Context, crCtx graveler.ConflictsResolverContext, sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+func (r *MockConflictsResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 	return r.resolveConflictsFn(sourceValue, destValue)
 }
 
@@ -1887,7 +1887,7 @@ func TestMergeCancelContext(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	crCtx := graveler.ConflictsResolverContext{}
+	oCtx := graveler.ObjectContext{}
 
 	t.Run("source", func(t *testing.T) {
 		base := testutil.NewFakeIterator().
@@ -1900,7 +1900,7 @@ func TestMergeCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		err := committed.Merge(ctx, nil, crCtx, writer, base, source, destination, graveler.MergeStrategyNone)
+		err := committed.Merge(ctx, nil, oCtx, writer, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 
@@ -1915,7 +1915,7 @@ func TestMergeCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		err := committed.Merge(ctx, nil, crCtx, writer, base, source, destination, graveler.MergeStrategyNone)
+		err := committed.Merge(ctx, nil, oCtx, writer, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 
@@ -1932,7 +1932,7 @@ func TestMergeCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		err := committed.Merge(ctx, nil, crCtx, writer, base, source, destination, graveler.MergeStrategyNone)
+		err := committed.Merge(ctx, nil, oCtx, writer, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 
@@ -1947,7 +1947,7 @@ func TestMergeCancelContext(t *testing.T) {
 		writer := mock.NewMockMetaRangeWriter(ctrl)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		err := committed.Merge(ctx, nil, crCtx, writer, base, source, destination, graveler.MergeStrategyNone)
+		err := committed.Merge(ctx, nil, oCtx, writer, base, source, destination, graveler.MergeStrategyNone)
 		assert.True(t, errors.Is(err, context.Canceled), "context canceled error")
 	})
 }
