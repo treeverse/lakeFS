@@ -984,6 +984,7 @@ func TestS3CopyObjectErrors(t *testing.T) {
 		require.NotNil(t, err)
 		resp := minio.ToErrorResponse(err)
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+		require.ErrorContains(t, err, "NoSuchKey")
 	})
 
 	t.Run("readonly repo from non-existing source", func(t *testing.T) {
