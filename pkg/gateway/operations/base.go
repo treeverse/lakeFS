@@ -223,9 +223,6 @@ func (o *PathOperation) EncodeError(w http.ResponseWriter, req *http.Request, or
 	if errors.Is(originalError, kv.ErrSlowDown) {
 		err = gwerrors.ErrSlowDown.ToAPIErr()
 	}
-	if errors.Is(originalError, block.ErrDataNotFound) {
-		err = gwerrors.ErrNoSuchKey.ToAPIErr()
-	}
 	req, rid := httputil.RequestID(req)
 	writeErr := EncodeResponse(w, gwerrors.APIErrorResponse{
 		Code:       err.Code,
