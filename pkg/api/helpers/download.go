@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/go-openapi/swag"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -21,6 +24,13 @@ const (
 	DefaultDownloadPartSize    int64 = 1024 * 1024 * 8 // 8MB
 	DefaultDownloadConcurrency       = 10
 )
+
+// Buffer pool for reusing download buffers to reduce memory allocations
+var bufferPool = sync.Pool{
+	New: func() any {
+		return make([]byte, DefaultDownloadPartSize)
+	},
+}
 
 type Downloader struct {
 	Client              *apigen.ClientWithResponses
@@ -47,10 +57,12 @@ type DownloadFileInfo struct {
 func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader {
 	// setup http client
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxIdleConnsPerHost = 10
-	httpClient := &http.Client{
-		Transport: transport,
-	}
+	transport.MaxIdleConnsPerHost = 50 // default is 2
+
+	retryClient := retryablehttp.NewClient()
+	retryClient.HTTPClient.Transport = transport
+	retryClient.Logger = nil
+	httpClient := retryClient.StandardClient()
 
 	return &Downloader{
 		Client:              client,
@@ -202,9 +214,17 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	ch := make(chan downloadPart, DefaultDownloadConcurrency)
 	// start download workers
 	g, grpCtx := errgroup.WithContext(context.Background())
-	for i := 0; i < DefaultDownloadConcurrency; i++ {
+	for range DefaultDownloadConcurrency {
 		g.Go(func() error {
-			buf := make([]byte, d.PartSize)
+			// Use buffer pool to reduce memory allocations
+			buf := bufferPool.Get().([]byte)
+			defer bufferPool.Put(buf)
+
+			// Ensure buffer is correctly sized for this downloader
+			if int64(len(buf)) != d.PartSize {
+				buf = make([]byte, d.PartSize)
+			}
+
 			for part := range ch {
 				err := d.downloadPresignedPart(grpCtx, physicalAddress, part.RangeStart, part.PartSize, part.Number, f, buf)
 				if err != nil {
@@ -246,6 +266,8 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 		return err
 	}
 	req.Header.Set("Range", rangeHeader)
+	req.Header.Set("Connection", "keep-alive")
+
 	resp, err := d.HTTPClient.Do(req)
 	if err != nil {
 		return err
@@ -259,8 +281,8 @@ func (d *Downloader) downloadPresignedPart(ctx context.Context, physicalAddress 
 		return fmt.Errorf("%w: part %d expected %d bytes, got %d", ErrRequestFailed, partNumber, partSize, resp.ContentLength)
 	}
 
-	// reuse buffer if possible
-	if buf == nil {
+	// Ensure buffer is correctly sized
+	if int64(len(buf)) < partSize {
 		buf = make([]byte, partSize)
 	} else {
 		buf = buf[:partSize]

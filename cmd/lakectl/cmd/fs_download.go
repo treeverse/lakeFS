@@ -14,6 +14,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/api/helpers"
 	"github.com/treeverse/lakefs/pkg/uri"
 )
@@ -67,7 +68,7 @@ var fsDownloadCmd = &cobra.Command{
 		// ProgressRender start render progress and return callback waiting for the progress to finish.
 		go pw.Render()
 
-		ch := make(chan *helpers.DownloadFileInfo, filesChanSize)
+		ch := make(chan *helpers.DownloadFileInfo, syncFlags.Parallelism*2)
 		if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
 			*remote.Path += uri.PathSeparator
 		}
@@ -78,8 +79,8 @@ var fsDownloadCmd = &cobra.Command{
 				listResp, err := client.ListObjectsWithResponse(ctx, remote.Repository, remote.Ref, &apigen.ListObjectsParams{
 					After:        (*apigen.PaginationAfter)(swag.String(after)),
 					Prefix:       (*apigen.PaginationPrefix)(remote.Path),
-					UserMetadata: swag.Bool(true),
-					Presign:      swag.Bool(syncFlags.Presign),
+					UserMetadata: apiutil.Ptr(true),
+					Presign:      apiutil.Ptr(syncFlags.Presign),
 				})
 				DieOnErrorOrUnexpectedStatusCode(listResp, err, http.StatusOK)
 				if listResp.JSON200 == nil {
