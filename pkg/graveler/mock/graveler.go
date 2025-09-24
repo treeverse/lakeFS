@@ -6,6 +6,7 @@ package mock
 
 import (
 	context "context"
+	io "io"
 	reflect "reflect"
 	time "time"
 
@@ -49,6 +50,44 @@ func (m *MockConflictsResolver) ResolveConflict(ctx context.Context, oCtx gravel
 func (mr *MockConflictsResolverMockRecorder) ResolveConflict(ctx, oCtx, sourceValue, destValue interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveConflict", reflect.TypeOf((*MockConflictsResolver)(nil).ResolveConflict), ctx, oCtx, sourceValue, destValue)
+}
+
+// MockObjectReader is a mock of ObjectReader interface.
+type MockObjectReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockObjectReaderMockRecorder
+}
+
+// MockObjectReaderMockRecorder is the mock recorder for MockObjectReader.
+type MockObjectReaderMockRecorder struct {
+	mock *MockObjectReader
+}
+
+// NewMockObjectReader creates a new mock instance.
+func NewMockObjectReader(ctrl *gomock.Controller) *MockObjectReader {
+	mock := &MockObjectReader{ctrl: ctrl}
+	mock.recorder = &MockObjectReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockObjectReader) EXPECT() *MockObjectReaderMockRecorder {
+	return m.recorder
+}
+
+// ReadObject mocks base method.
+func (m *MockObjectReader) ReadObject(ctx context.Context, oCtx graveler.ObjectContext, value *graveler.ValueRecord) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadObject", ctx, oCtx, value)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadObject indicates an expected call of ReadObject.
+func (mr *MockObjectReaderMockRecorder) ReadObject(ctx, oCtx, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadObject", reflect.TypeOf((*MockObjectReader)(nil).ReadObject), ctx, oCtx, value)
 }
 
 // MockKeyValueStore is a mock of KeyValueStore interface.
