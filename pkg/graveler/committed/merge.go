@@ -308,7 +308,7 @@ func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *gr
 		if err != nil {
 			return err
 		}
-		
+
 		if valueToWrite != nil {
 			// resolved by the resolver - write the resolved value
 			if err = m.writeRecord(valueToWrite); err != nil {
