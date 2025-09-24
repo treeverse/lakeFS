@@ -449,12 +449,18 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	conflictsResolvers := []graveler.ConflictsResolver{
-		catalogfactory.BuildConflictsResolver(&BlockObjectReader{BlockAdapter: blockAdapter}),
-		&committed.StrategyConflictsResolver{},
-	}
+	conflictsResolvers := initConflictResolvers(blockAdapter)
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictsResolvers, committedParams)
 	return committedManager, closers, nil
+}
+
+func initConflictResolvers(blockAdapter block.Adapter) []graveler.ConflictsResolver {
+	var resolvers []graveler.ConflictsResolver
+	if r := catalogfactory.BuildConflictsResolver(&BlockObjectReader{BlockAdapter: blockAdapter}); r != nil {
+		resolvers = append(resolvers, r)
+	}
+	resolvers = append(resolvers, &committed.StrategyConflictsResolver{})
+	return resolvers
 }
 
 func newLimiter(rateLimit int) ratelimit.Limiter {
