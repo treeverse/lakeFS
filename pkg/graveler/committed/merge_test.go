@@ -354,8 +354,8 @@ func Test_merge(t *testing.T) {
 				}},
 				{
 					rng: committed.Range{ID: "base:k4-k6", MinKey: committed.Key("k4"), MaxKey: committed.Key("k6")}, records: []testValueRecord{
-					{"k4", "base:k4"}, {"k6", "base:k6"},
-				},
+						{"k4", "base:k4"}, {"k6", "base:k6"},
+					},
 				},
 				{rng: committed.Range{ID: "base:k11-k12", MinKey: committed.Key("k11"), MaxKey: committed.Key("k12"), Count: 2, EstimatedSize: 4444}, records: []testValueRecord{
 					{"k11", "base:k11"}, {"k12", "base:k12"},
@@ -372,8 +372,8 @@ func Test_merge(t *testing.T) {
 				}},
 				{
 					rng: committed.Range{ID: "base:k4-k6", MinKey: committed.Key("k4"), MaxKey: committed.Key("k6")}, records: []testValueRecord{
-					{"k4", "base:k4"}, {"k6", "base:k6"},
-				},
+						{"k4", "base:k4"}, {"k6", "base:k6"},
+					},
 				},
 			}),
 			expectedResult: []testRunResult{{
