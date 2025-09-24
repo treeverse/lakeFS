@@ -24,7 +24,7 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
-	gravelerfactory "github.com/treeverse/lakefs/modules/graveler/factory"
+	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -449,7 +449,7 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	conflictsResolver := gravelerfactory.BuildConflictsResolver(blockAdapter, ValueToPath)
+	conflictsResolver := catalogfactory.BuildConflictsResolver(blockAdapter, ValueToPath)
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictsResolver, committedParams)
 	return committedManager, closers, nil
 }

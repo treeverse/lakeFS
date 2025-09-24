@@ -6,9 +6,9 @@ use (
 	./modules/auth/factory
 	./modules/authentication/factory
 	./modules/block/factory
+	./modules/catalog/factory
 	./modules/config/factory
 	./modules/gateway/factory
-	./modules/graveler/factory
 	./modules/license/factory
 	./webui
 )
