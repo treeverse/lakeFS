@@ -449,7 +449,8 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	conflictsResolver := catalogfactory.BuildConflictsResolver(blockAdapter, ValueToPath)
+	objectReader := ObjectReaderImpl{BlockAdapter: blockAdapter}
+	conflictsResolver := catalogfactory.BuildConflictsResolver(&objectReader)
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictsResolver, committedParams)
 	return committedManager, closers, nil
 }
@@ -3179,16 +3180,6 @@ func newCatalogEntryFromEntry(commonPrefix bool, path string, ent *Entry) DBEntr
 	return b.Build()
 }
 
-func ValueToPath(sourceValue *graveler.ValueRecord) (*string, error) {
-	ent, err := ValueToEntry(sourceValue.Value)
-	if err != nil {
-		return nil, err
-	}
-	catalogEntry := newCatalogEntryFromEntry(false, string(sourceValue.Key), ent)
-	path := catalogEntry.PhysicalAddress
-	return &path, nil
-}
-
 func catalogDiffType(typ graveler.DiffType) (DifferenceType, error) {
 	switch typ {
 	case graveler.DiffTypeAdded:
@@ -3235,4 +3226,24 @@ func (w *UncommittedWriter) Write(p []byte) (n int, err error) {
 
 func (w *UncommittedWriter) Size() int64 {
 	return w.size
+}
+
+type ObjectReaderImpl struct {
+	BlockAdapter block.Adapter
+}
+
+func (or *ObjectReaderImpl) ReadObject(ctx context.Context, crCtx graveler.ConflictsResolverContext, value *graveler.ValueRecord) (io.ReadCloser, error) {
+	ent, err := ValueToEntry(value.Value)
+	if err != nil {
+		return nil, err
+	}
+	catalogEntry := newCatalogEntryFromEntry(false, string(value.Key), ent)
+
+	objectPointer := block.ObjectPointer{
+		StorageID:        crCtx.StorageID,
+		StorageNamespace: crCtx.StorageNamespace,
+		IdentifierType:   catalogEntry.AddressType.ToIdentifierType(),
+		Identifier:       catalogEntry.PhysicalAddress,
+	}
+	return or.BlockAdapter.Get(ctx, objectPointer)
 }

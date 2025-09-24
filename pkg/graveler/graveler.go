@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"strconv"
 	"strings"
@@ -128,13 +129,15 @@ type ConflictsResolver interface {
 	ResolveConflict(ctx context.Context, crCtx ConflictsResolverContext, sourceValue *ValueRecord, destValue *ValueRecord) (*ValueRecord, error)
 }
 
-// ValueToPathFunc used for conflicts resolution
-type ValueToPathFunc func(value *ValueRecord) (*string, error)
-
 // ConflictsResolverContext holds context information for the ConflictsResolver
 type ConflictsResolverContext struct {
 	StorageID        string
 	StorageNamespace string
+}
+
+// ObjectReader provides object reading functionality for conflicts resolution
+type ObjectReader interface {
+	ReadObject(ctx context.Context, crCtx ConflictsResolverContext, value *ValueRecord) (io.ReadCloser, error)
 }
 
 const (
