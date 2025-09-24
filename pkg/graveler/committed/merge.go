@@ -10,9 +10,9 @@ import (
 )
 
 type merger struct {
-	writer   MetaRangeWriter
-	resolver graveler.ConflictsResolver
-	logger   logging.Logger
+	writer    MetaRangeWriter
+	resolvers []graveler.ConflictsResolver
+	logger    logging.Logger
 
 	ctx                  context.Context
 	oCtx                 graveler.ObjectContext
@@ -302,34 +302,27 @@ func (m *merger) handleBothRanges(sourceRange *Range, destRange *Range) error {
 }
 
 func (m *merger) handleConflict(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) error {
-	var valueToWrite *graveler.ValueRecord
-	if m.resolver != nil {
-		resolvedValue, err := m.resolver.ResolveConflict(m.ctx, m.oCtx, sourceValue, destValue)
+	// try all resolvers in order
+	for _, resolver := range m.resolvers {
+		valueToWrite, err := resolver.ResolveConflict(m.ctx, m.oCtx, m.strategy, sourceValue, destValue)
 		if err != nil {
 			return err
 		}
-		valueToWrite = resolvedValue // can be nil
-	}
+		
+		if valueToWrite != nil {
+			// resolved by the resolver - write the resolved value
+			if err = m.writeRecord(valueToWrite); err != nil {
+				return fmt.Errorf("write record: %w", err)
+			}
 
-	if valueToWrite == nil {
-		// The conflict wasn't resolved by the resolver - use the configured strategy
-		switch m.strategy {
-		case graveler.MergeStrategyDest:
-			valueToWrite = destValue
-		case graveler.MergeStrategySrc:
-			valueToWrite = sourceValue
-		default: // graveler.MergeStrategyNone
-			return graveler.ErrConflictFound
+			m.haveSource = m.source.Next()
+			m.haveDest = m.dest.Next()
+
+			return nil // conflict resolved
 		}
 	}
-
-	if err := m.writeRecord(valueToWrite); err != nil {
-		return fmt.Errorf("write record: %w", err)
-	}
-
-	m.haveSource = m.source.Next()
-	m.haveDest = m.dest.Next()
-	return nil
+	// not resolved by any resolver, it's a conflict
+	return graveler.ErrConflictFound
 }
 
 // handleBothKeys handles the case where both source and dest iterators are inside range
@@ -505,7 +498,7 @@ func (m *merger) validWritingRange(it Iterator) bool {
 
 func Merge(
 	writer MetaRangeWriter,
-	resolver graveler.ConflictsResolver,
+	resolvers []graveler.ConflictsResolver,
 	ctx context.Context,
 	oCtx graveler.ObjectContext,
 	base Iterator,
@@ -514,15 +507,28 @@ func Merge(
 	strategy graveler.MergeStrategy,
 ) error {
 	m := merger{
-		writer:   writer,
-		resolver: resolver,
-		logger:   logging.FromContext(ctx),
-		ctx:      ctx,
-		oCtx:     oCtx,
-		base:     base,
-		source:   source,
-		dest:     destination,
-		strategy: strategy,
+		writer:    writer,
+		resolvers: resolvers,
+		logger:    logging.FromContext(ctx),
+		ctx:       ctx,
+		oCtx:      oCtx,
+		base:      base,
+		source:    source,
+		dest:      destination,
+		strategy:  strategy,
 	}
 	return m.merge()
+}
+
+type StrategyConflictsResolver struct{}
+
+func (r *StrategyConflictsResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+	switch strategy {
+	case graveler.MergeStrategyDest:
+		return destValue, nil
+	case graveler.MergeStrategySrc:
+		return sourceValue, nil
+	default: // graveler.MergeStrategyNone
+		return nil, nil
+	}
 }

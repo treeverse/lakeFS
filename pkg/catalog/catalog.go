@@ -449,8 +449,11 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	conflictsResolver := catalogfactory.BuildConflictsResolver(&BlockObjectReader{BlockAdapter: blockAdapter})
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictsResolver, committedParams)
+	conflictsResolvers := []graveler.ConflictsResolver{
+		catalogfactory.BuildConflictsResolver(&BlockObjectReader{BlockAdapter: blockAdapter}),
+		&committed.StrategyConflictsResolver{},
+	}
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictsResolvers, committedParams)
 	return committedManager, closers, nil
 }
 

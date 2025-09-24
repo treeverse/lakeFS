@@ -1736,7 +1736,7 @@ type MockConflictsResolver struct {
 	resolveConflictsFn func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error)
 }
 
-func (r *MockConflictsResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+func (r *MockConflictsResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 	return r.resolveConflictsFn(sourceValue, destValue)
 }
 
