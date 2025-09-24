@@ -1,6 +1,25 @@
 # Changelog
 
-# v1.67.0
+# v1.70.1
+
+:bug: Bugs fixed:
+
+- Fix MinIO repository creation (#9546)
+- Fix login flow issues (#9506)
+
+# v1.70.0
+
+:new: What's new:
+
+- Updated login page appearance (#9425)
+- DynamoDB: Make credentials expiry window + jitter configurable (#9527)
+
+:bug: Bugs fixed:
+
+- Fix GetRepository "invalid repo name" error code to 400 (#9535)
+- Use internal errors status codes during authentication flow (#9540)
+
+# v1.69.0
 
 🏢 Includes only changes for Enterprise.
 
