@@ -67,7 +67,7 @@ var fsDownloadCmd = &cobra.Command{
 		// ProgressRender start render progress and return callback waiting for the progress to finish.
 		go pw.Render()
 
-		ch := make(chan string, filesChanSize)
+		ch := make(chan *helpers.DownloadFileInfo, filesChanSize)
 		if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
 			*remote.Path += uri.PathSeparator
 		}
@@ -79,6 +79,7 @@ var fsDownloadCmd = &cobra.Command{
 					After:        (*apigen.PaginationAfter)(swag.String(after)),
 					Prefix:       (*apigen.PaginationPrefix)(remote.Path),
 					UserMetadata: swag.Bool(true),
+					Presign:      swag.Bool(syncFlags.Presign),
 				})
 				DieOnErrorOrUnexpectedStatusCode(listResp, err, http.StatusOK)
 				if listResp.JSON200 == nil {
@@ -96,7 +97,27 @@ var fsDownloadCmd = &cobra.Command{
 					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
 						continue
 					}
-					ch <- relPath
+
+					srcPath := remote.GetPath() + relPath
+					src := uri.URI{
+						Repository: remote.Repository,
+						Ref:        remote.Ref,
+						Path:       &srcPath,
+					}
+
+					// Create metadata map from object metadata if available
+					var metadata map[string]string
+					if o.Metadata != nil && o.Metadata.AdditionalProperties != nil {
+						metadata = o.Metadata.AdditionalProperties
+					}
+
+					fileInfo := &helpers.DownloadFileInfo{
+						Src:             src,
+						PhysicalAddress: o.PhysicalAddress,
+						SizeBytes:       o.SizeBytes,
+						Metadata:        metadata,
+					}
+					ch <- fileInfo
 				}
 				if !listResp.JSON200.Pagination.HasMore {
 					break
@@ -112,21 +133,18 @@ var fsDownloadCmd = &cobra.Command{
 		for i := 0; i < syncFlags.Parallelism; i++ {
 			go func() {
 				defer wg.Done()
-				for relPath := range ch {
-					srcPath := remote.GetPath() + relPath
-					src := uri.URI{
-						Repository: remote.Repository,
-						Ref:        remote.Ref,
-						Path:       &srcPath,
-					}
+				for fileInfo := range ch {
+					// Extract relative path from source path
+					relPath := strings.TrimPrefix(*fileInfo.Src.Path, remotePath)
+					relPath = strings.TrimPrefix(relPath, uri.PathSeparator)
 
 					// progress tracker
 					tracker := &progress.Tracker{Message: "download " + relPath, Total: -1}
 					pw.AppendTracker(tracker)
 					tracker.Start()
 
-					dest := filepath.Join(dest, relPath)
-					err := downloader.Download(ctx, src, dest, tracker)
+					destPath := filepath.Join(dest, relPath)
+					err := downloader.DownloadEx(ctx, fileInfo, destPath, tracker)
 					if err != nil {
 						tracker.MarkAsErrored()
 						DieErr(err)

@@ -37,6 +37,13 @@ type downloadPart struct {
 	PartSize   int64
 }
 
+type DownloadFileInfo struct {
+	Src             uri.URI
+	PhysicalAddress string
+	SizeBytes       *int64
+	Metadata        map[string]string
+}
+
 func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader {
 	// setup http client
 	transport := http.DefaultTransport.(*http.Transport).Clone()
@@ -53,6 +60,55 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 		SkipNonRegularFiles: false,
 		SymlinkSupport:      false,
 	}
+}
+
+// DownloadEx downloads an object from lakeFS to a local file using provided file info, create the destination directory if needed.
+func (d *Downloader) DownloadEx(ctx context.Context, srcFileInfo *DownloadFileInfo, dst string, tracker *progress.Tracker) error {
+	// delete destination file if it exists
+	if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove existing destination file '%s': %w", dst, err)
+	}
+
+	// create destination dir if needed
+	dir := filepath.Dir(dst)
+	_ = os.MkdirAll(dir, os.ModePerm)
+
+	// If symlink support is enabled, check if the object is a symlink and create it if so
+	if d.SymlinkSupport && srcFileInfo.Metadata != nil {
+		symlinkTarget, found := srcFileInfo.Metadata[apiutil.SymlinkMetadataKey]
+		if found && symlinkTarget != "" {
+			if tracker != nil {
+				tracker.UpdateTotal(0)
+				tracker.MarkAsDone()
+			}
+			// Skip non-regular files
+			if d.SkipNonRegularFiles {
+				return nil
+			}
+			// Create symlink instead of downloading file content
+			return os.Symlink(symlinkTarget, dst)
+		}
+	}
+
+	// download object
+	var err error
+	if srcFileInfo.PhysicalAddress != "" && srcFileInfo.SizeBytes != nil && *srcFileInfo.SizeBytes >= d.PartSize {
+		// download using presigned multipart download
+		err = d.downloadPresignMultipart(ctx, srcFileInfo.Src, dst, tracker, &apigen.ObjectStats{
+			PhysicalAddress: srcFileInfo.PhysicalAddress,
+			SizeBytes:       srcFileInfo.SizeBytes,
+		})
+	} else if srcFileInfo.PhysicalAddress != "" {
+		// download using presigned single URL
+		err = d.downloadPresigned(ctx, dst, tracker, srcFileInfo.PhysicalAddress, srcFileInfo.SizeBytes)
+	} else {
+		// fallback to regular download
+		err = d.downloadObject(ctx, srcFileInfo.Src, dst, tracker)
+	}
+	if err != nil {
+		return fmt.Errorf("download failed: %w", err)
+	}
+	return nil
 }
 
 // Download downloads an object from lakeFS to a local file, create the destination directory if needed.
@@ -238,6 +294,46 @@ func (d *Downloader) downloadObject(ctx context.Context, src uri.URI, dst string
 
 	if tracker != nil && resp.ContentLength != -1 {
 		tracker.UpdateTotal(resp.ContentLength)
+	}
+
+	// create and copy object content
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = f.Close() }()
+	var w io.Writer = f
+	if tracker != nil {
+		w = NewTrackerWriter(f, tracker)
+	}
+	_, err = io.Copy(w, resp.Body)
+	return err
+}
+
+func (d *Downloader) downloadPresigned(ctx context.Context, dst string, tracker *progress.Tracker, physicalAddress string, sizeBytes *int64) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, physicalAddress, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := d.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("%w: %s", ErrRequestFailed, resp.Status)
+	}
+
+	// Use provided size or response content length
+	contentLength := resp.ContentLength
+	if sizeBytes != nil {
+		contentLength = *sizeBytes
+	}
+
+	if tracker != nil && contentLength != -1 {
+		tracker.UpdateTotal(contentLength)
 	}
 
 	// create and copy object content
