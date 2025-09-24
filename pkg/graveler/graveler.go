@@ -135,7 +135,8 @@ type ObjectContext struct {
 	StorageNamespace string
 }
 
-// ObjectReader provides functionality for reading objects from object storage
+// ObjectReader provides functionality for reading objects from object storage.
+// currently used for conflict resolution during merges, hence placed in this package.
 type ObjectReader interface {
 	ReadObject(ctx context.Context, oCtx ObjectContext, value *ValueRecord) (io.ReadCloser, error)
 }

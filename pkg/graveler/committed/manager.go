@@ -316,7 +316,7 @@ func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (gravel
 		StorageNamespace: string(mctx.ns),
 	}
 
-	err = Merge(ctx, c.conflictsResolver, oCtx, mwWriter, baseIt, srcIt, destIt, mctx.strategy)
+	err = Merge(mwWriter, c.conflictsResolver, ctx, oCtx, baseIt, srcIt, destIt, mctx.strategy)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
 			err = fmt.Errorf("merge ns=%s id=%s: %w", mctx.ns, mctx.destinationID, err)

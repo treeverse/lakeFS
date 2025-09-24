@@ -449,8 +449,7 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	objectReader := ObjectReaderImpl{BlockAdapter: blockAdapter}
-	conflictsResolver := catalogfactory.BuildConflictsResolver(&objectReader)
+	conflictsResolver := catalogfactory.BuildConflictsResolver(&BlockObjectReader{BlockAdapter: blockAdapter})
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictsResolver, committedParams)
 	return committedManager, closers, nil
 }
@@ -3228,11 +3227,11 @@ func (w *UncommittedWriter) Size() int64 {
 	return w.size
 }
 
-type ObjectReaderImpl struct {
+type BlockObjectReader struct {
 	BlockAdapter block.Adapter
 }
 
-func (or *ObjectReaderImpl) ReadObject(ctx context.Context, oCtx graveler.ObjectContext, value *graveler.ValueRecord) (io.ReadCloser, error) {
+func (or *BlockObjectReader) ReadObject(ctx context.Context, oCtx graveler.ObjectContext, value *graveler.ValueRecord) (io.ReadCloser, error) {
 	ent, err := ValueToEntry(value.Value)
 	if err != nil {
 		return nil, err
