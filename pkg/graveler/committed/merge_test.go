@@ -85,12 +85,12 @@ func newTestMetaRange(ranges []testRange) *testMetaRange {
 }
 
 type testCase struct {
-	storageID        graveler.StorageID
-	baseRange        *testMetaRange
-	sourceRange      *testMetaRange
-	destRange        *testMetaRange
-	conflictResolver graveler.ConflictsResolver
-	expectedResult   []testRunResult
+	storageID         graveler.StorageID
+	baseRange         *testMetaRange
+	sourceRange       *testMetaRange
+	destRange         *testMetaRange
+	conflictResolvers []graveler.ConflictsResolver
+	expectedResult    []testRunResult
 }
 
 type testCases map[string]testCase
@@ -1764,9 +1764,11 @@ func TestMergeWithConflictResolver(t *testing.T) {
 			baseRange:   baseMetaRange,
 			sourceRange: sourceMetaRange,
 			destRange:   destMetaRange,
-			conflictResolver: &MockConflictsResolver{
-				resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
-					return nil, nil
+			conflictResolvers: []graveler.ConflictsResolver{
+				&MockConflictsResolver{
+					resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+						return nil, nil
+					},
 				},
 			},
 			expectedResult: []testRunResult{{
@@ -1779,9 +1781,11 @@ func TestMergeWithConflictResolver(t *testing.T) {
 			baseRange:   baseMetaRange,
 			sourceRange: sourceMetaRange,
 			destRange:   destMetaRange,
-			conflictResolver: &MockConflictsResolver{
-				resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
-					return sourceValue, nil
+			conflictResolvers: []graveler.ConflictsResolver{
+				&MockConflictsResolver{
+					resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+						return sourceValue, nil
+					},
 				},
 			},
 			expectedResult: []testRunResult{{
@@ -1800,9 +1804,11 @@ func TestMergeWithConflictResolver(t *testing.T) {
 			baseRange:   baseMetaRange,
 			sourceRange: sourceMetaRange,
 			destRange:   destMetaRange,
-			conflictResolver: &MockConflictsResolver{
-				resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
-					return destValue, nil
+			conflictResolvers: []graveler.ConflictsResolver{
+				&MockConflictsResolver{
+					resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+						return destValue, nil
+					},
 				},
 			},
 			expectedResult: []testRunResult{{
@@ -1821,9 +1827,11 @@ func TestMergeWithConflictResolver(t *testing.T) {
 			baseRange:   baseMetaRange,
 			sourceRange: sourceMetaRange,
 			destRange:   destMetaRange,
-			conflictResolver: &MockConflictsResolver{
-				resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
-					return nil, graveler.ErrInvalid
+			conflictResolvers: []graveler.ConflictsResolver{
+				&MockConflictsResolver{
+					resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+						return nil, graveler.ErrInvalid
+					},
 				},
 			},
 			expectedResult: []testRunResult{{
@@ -1872,7 +1880,8 @@ func runMergeTests(tests testCases, t *testing.T) {
 					rangeManagers[tst.storageID] = rangeManager
 					metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 					metaRangeManagers[tst.storageID] = metaRangeManager
-					committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, tst.conflictResolver, params)
+					resolvers := append(tst.conflictResolvers, &committed.StrategyConflictsResolver{})
+					committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, resolvers, params)
 					_, err := committedManager.Merge(ctx, tst.storageID, "ns", destMetaRangeID, sourceMetaRangeID, baseMetaRangeID, mergeStrategy)
 					if !errors.Is(err, expectedResult.expectedErr) {
 						t.Fatalf("Merge error='%v', expected='%v'", err, expectedResult.expectedErr)
