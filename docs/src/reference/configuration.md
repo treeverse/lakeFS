@@ -476,8 +476,8 @@ To set a value into a `map[string]string` type field, use the syntax `key1=value
         endpoint: http://localhost:9000
         discover_bucket_region: false
         credentials:
-        access_key_id: minioadmin
-        secret_access_key: minioadmin
+            access_key_id: minioadmin
+            secret_access_key: minioadmin
 
     ```
 
