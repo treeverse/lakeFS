@@ -94,7 +94,7 @@ func (d *Downloader) DownloadWithObjectInfo(ctx context.Context, src uri.URI, ds
 
 	// download object
 	var err error
-	if d.PreSign && objectStat.SizeBytes != nil {
+	if d.PreSign && swag.Int64Value(objectStat.SizeBytes) >= d.PartSize {
 		// download using presigned multipart download, it will fall back to presign single object download if needed
 		err = d.downloadPresignMultipart(ctx, src, dst, tracker, objectStat)
 	} else {
@@ -166,16 +166,17 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 	return nil
 }
 
+// downloadPresignMultipart downloads a large object, must be larger or equal to PartSize using a presigned URL.
+// It uses multiple concurrent range requests to download the object in parts.
+// If the object is smaller than PartSize, it falls back to a single `downloadObject` call.
 func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker, objectStat *apigen.ObjectStats) (err error) {
-	// Use provided  stat response object metadata for size and physical address (presigned)
-
 	// check if the object is small enough to download in one request
 	size := swag.Int64Value(objectStat.SizeBytes)
-	if tracker != nil {
-		tracker.UpdateTotal(size)
-	}
 	if size < d.PartSize {
 		return d.downloadObject(ctx, src, dst, tracker)
+	}
+	if tracker != nil {
+		tracker.UpdateTotal(size)
 	}
 
 	f, err := os.Create(dst)
