@@ -2771,7 +2771,9 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 // clone can only clone within the same repository and branch.
 // It is limited to our grace-time from the object creation, in order to prevent from GC to delete the object.
 // ErrCannotClone error returned if clone conditions are not met.
-func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef string, srcEntry *DBEntry, destRepository, destBranch, destPath string, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
+func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef string, srcEntry *DBEntry, destRepository, destBranch, destPath string,
+	replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc,
+) (*DBEntry, error) {
 	// validate clone conditions in case we
 	if srcRepo.Name != destRepository {
 		return nil, fmt.Errorf("%w: not on the same repository", graveler.ErrCannotClone)
@@ -2804,6 +2806,9 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef st
 	dstEntry := *srcEntry
 	dstEntry.Path = destPath
 	dstEntry.CreationDate = time.Now()
+	if replaceSrcMetadata {
+		dstEntry.Metadata = metadata
+	}
 	if err := c.CreateEntry(ctx, destRepository, destBranch, dstEntry, opts...); err != nil {
 		return nil, err
 	}
@@ -2842,14 +2847,12 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	}
 
 	// Clone entry if possible, fallthrough to copy otherwise
-	if !replaceSrcMetadata {
-		clonedEntry, err := c.cloneEntry(ctx, srcRepo, srcRef, srcEntry, destRepository, destBranch, destPath, opts...)
-		if err == nil {
-			return clonedEntry, nil
-		}
-		if !errors.Is(err, graveler.ErrCannotClone) {
-			return nil, err
-		}
+	clonedEntry, err := c.cloneEntry(ctx, srcRepo, srcRef, srcEntry, destRepository, destBranch, destPath, replaceSrcMetadata, metadata, opts...)
+	if err == nil {
+		return clonedEntry, nil
+	}
+	if !errors.Is(err, graveler.ErrCannotClone) {
+		return nil, err
 	}
 
 	// copy data to a new physical address
@@ -2860,8 +2863,6 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 
 	if replaceSrcMetadata {
 		dstEntry.Metadata = metadata
-	} else {
-		dstEntry.Metadata = srcEntry.Metadata
 	}
 
 	srcObject := block.ObjectPointer{
