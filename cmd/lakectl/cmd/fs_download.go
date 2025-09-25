@@ -18,6 +18,11 @@ import (
 	"github.com/treeverse/lakefs/pkg/uri"
 )
 
+type objectInfo struct {
+	relPath string
+	object  *apigen.ObjectStats
+}
+
 const (
 	fsDownloadCmdMinArgs = 1
 	fsDownloadCmdMaxArgs = 2
@@ -67,7 +72,7 @@ var fsDownloadCmd = &cobra.Command{
 		// ProgressRender start render progress and return callback waiting for the progress to finish.
 		go pw.Render()
 
-		ch := make(chan string, filesChanSize)
+		ch := make(chan objectInfo, filesChanSize)
 		if remotePath != "" && !strings.HasSuffix(remotePath, uri.PathSeparator) {
 			*remote.Path += uri.PathSeparator
 		}
@@ -79,6 +84,7 @@ var fsDownloadCmd = &cobra.Command{
 					After:        (*apigen.PaginationAfter)(swag.String(after)),
 					Prefix:       (*apigen.PaginationPrefix)(remote.Path),
 					UserMetadata: swag.Bool(true),
+					Presign:      swag.Bool(false), // faster listing without, we use stat object later if we need it
 				})
 				DieOnErrorOrUnexpectedStatusCode(listResp, err, http.StatusOK)
 				if listResp.JSON200 == nil {
@@ -96,7 +102,7 @@ var fsDownloadCmd = &cobra.Command{
 					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
 						continue
 					}
-					ch <- relPath
+					ch <- objectInfo{relPath: relPath, object: &o}
 				}
 				if !listResp.JSON200.Pagination.HasMore {
 					break
@@ -112,8 +118,8 @@ var fsDownloadCmd = &cobra.Command{
 		for i := 0; i < syncFlags.Parallelism; i++ {
 			go func() {
 				defer wg.Done()
-				for relPath := range ch {
-					srcPath := remote.GetPath() + relPath
+				for objInfo := range ch {
+					srcPath := remote.GetPath() + objInfo.relPath
 					src := uri.URI{
 						Repository: remote.Repository,
 						Ref:        remote.Ref,
@@ -121,12 +127,12 @@ var fsDownloadCmd = &cobra.Command{
 					}
 
 					// progress tracker
-					tracker := &progress.Tracker{Message: "download " + relPath, Total: -1}
+					tracker := &progress.Tracker{Message: "download " + objInfo.relPath, Total: -1}
 					pw.AppendTracker(tracker)
 					tracker.Start()
 
-					dest := filepath.Join(dest, relPath)
-					err := downloader.Download(ctx, src, dest, tracker)
+					dest := filepath.Join(dest, objInfo.relPath)
+					err := downloader.DownloadWithObjectInfo(ctx, src, dest, tracker, objInfo.object)
 					if err != nil {
 						tracker.MarkAsErrored()
 						DieErr(err)

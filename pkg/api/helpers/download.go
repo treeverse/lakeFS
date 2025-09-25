@@ -9,9 +9,12 @@ import (
 	"path/filepath"
 
 	"github.com/go-openapi/swag"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
+	"github.com/treeverse/lakefs/pkg/logging"
+	"github.com/treeverse/lakefs/pkg/stats"
 	"github.com/treeverse/lakefs/pkg/uri"
 	"golang.org/x/sync/errgroup"
 )
@@ -40,10 +43,14 @@ type downloadPart struct {
 func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader {
 	// setup http client
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.MaxIdleConnsPerHost = 10
-	httpClient := &http.Client{
-		Transport: transport,
-	}
+	transport.MaxIdleConnsPerHost = 50
+
+	retryClient := retryablehttp.NewClient()
+	retryClient.Logger = &stats.LoggerAdapter{Logger: logging.ContextUnavailable().WithField("component", "downloader")}
+	retryClient.RetryMax = 3
+	retryClient.Backoff = retryablehttp.DefaultBackoff
+	retryClient.HTTPClient.Transport = transport
+	httpClient := retryClient.StandardClient()
 
 	return &Downloader{
 		Client:              client,
@@ -53,6 +60,50 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 		SkipNonRegularFiles: false,
 		SymlinkSupport:      false,
 	}
+}
+
+// DownloadWithObjectInfo downloads an object from lakeFS using pre-fetched object information,
+// avoiding the need for a separate stat call.
+func (d *Downloader) DownloadWithObjectInfo(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker, objectStat *apigen.ObjectStats) error {
+	// delete destination file if it exists
+	if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove existing destination file '%s': %w", dst, err)
+	}
+
+	// create destination dir if needed
+	dir := filepath.Dir(dst)
+	_ = os.MkdirAll(dir, os.ModePerm)
+
+	// If symlink support is enabled, check if the object is a symlink and create it if so
+	if d.SymlinkSupport {
+		symlinkTarget, found := objectStat.Metadata.Get(apiutil.SymlinkMetadataKey)
+		if found && symlinkTarget != "" {
+			if tracker != nil {
+				tracker.UpdateTotal(0)
+				tracker.MarkAsDone()
+			}
+			// Skip non-regular files
+			if d.SkipNonRegularFiles {
+				return nil
+			}
+			// Create symlink instead of downloading file content
+			return os.Symlink(symlinkTarget, dst)
+		}
+		// fallthrough to download the object
+	}
+
+	// download object
+	var err error
+	if d.PreSign && objectStat.SizeBytes != nil {
+		// download using presigned multipart download, it will fall back to presign single object download if needed
+		err = d.downloadPresignMultipart(ctx, src, dst, tracker, objectStat)
+	} else {
+		err = d.downloadObject(ctx, src, dst, tracker)
+	}
+	if err != nil {
+		return fmt.Errorf("download failed: %w", err)
+	}
+	return nil
 }
 
 // Download downloads an object from lakeFS to a local file, create the destination directory if needed.
@@ -84,7 +135,7 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 	}
 
 	// If symlink support is enabled, check if the object is a symlink and create it if so
-	if d.SymlinkSupport {
+	if d.SymlinkSupport && objectStat != nil {
 		symlinkTarget, found := objectStat.Metadata.Get(apiutil.SymlinkMetadataKey)
 		if found && symlinkTarget != "" {
 			if tracker != nil {
@@ -103,7 +154,7 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 
 	// download object
 	var err error
-	if d.PreSign && objectStat.SizeBytes != nil {
+	if d.PreSign && objectStat != nil && objectStat.SizeBytes != nil {
 		// download using presigned multipart download, it will fall back to presign single object download if needed
 		err = d.downloadPresignMultipart(ctx, src, dst, tracker, objectStat)
 	} else {
@@ -140,13 +191,24 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 		return fmt.Errorf("failed to truncate '%s' to size %d: %w", f.Name(), size, err)
 	}
 
-	// download the file using ranges and concurrency
-	physicalAddress := objectStat.PhysicalAddress
+	// download the file using ranges and concurrency with a fresh presigned URL
+	statResp, err := d.Client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
+		Path:         apiutil.Value(src.Path),
+		UserMetadata: swag.Bool(d.SymlinkSupport), // Only request metadata if symlink support is enabled
+		Presign:      swag.Bool(d.PreSign),        // Only presign if needed
+	})
+	if err != nil {
+		return fmt.Errorf("download failed: %w", err)
+	}
+	if statResp.JSON200 == nil {
+		return fmt.Errorf("download failed: %w: %s", ErrRequestFailed, statResp.Status())
+	}
+	physicalAddress := statResp.JSON200.PhysicalAddress
 
-	ch := make(chan downloadPart, DefaultDownloadConcurrency)
 	// start download workers
+	ch := make(chan downloadPart, DefaultDownloadConcurrency)
 	g, grpCtx := errgroup.WithContext(context.Background())
-	for i := 0; i < DefaultDownloadConcurrency; i++ {
+	for range DefaultDownloadConcurrency {
 		g.Go(func() error {
 			buf := make([]byte, d.PartSize)
 			for part := range ch {
