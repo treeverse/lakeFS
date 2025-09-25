@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.14.0
+
+:new: What's new:
+
+- Passing kwargs to underlying SDK request for _request_timeout support (#9509)
+
 ## v0.13.0
 
 :new: What's new:
