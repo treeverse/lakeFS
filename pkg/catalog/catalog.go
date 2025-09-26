@@ -3229,35 +3229,52 @@ func (w *UncommittedWriter) Size() int64 {
 	return w.size
 }
 
+func newCatalogEntryFromValueRecord(valueRecord *graveler.ValueRecord) (*DBEntry, error) {
+	entry, err := ValueToEntry(valueRecord.Value)
+	if err != nil {
+		return nil, fmt.Errorf("decode entry: %w", err)
+	}
+	dbEntry := newCatalogEntryFromEntry(false, string(valueRecord.Key), entry)
+	return &dbEntry, nil
+}
+
 type ConflictResolverWrapper struct {
 	ConflictResolver EntryConflictResolver
 }
 
-func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
-	sourceEntry, err := ValueToEntry(sourceValue.Value)
-	if err != nil {
-		return nil, fmt.Errorf("decode source entry: %w", err)
-	}
-	destEntry, err := ValueToEntry(destValue.Value)
-	if err != nil {
-		return nil, fmt.Errorf("decode dest entry: %w", err)
-	}
-	sourceDBEntry := newCatalogEntryFromEntry(false, string(sourceValue.Key), sourceEntry)
-	destDBEntry := newCatalogEntryFromEntry(false, string(destValue.Key), destEntry)
-	resolvedDBEntry, err := cr.ConflictResolver.ResolveConflict(ctx, oCtx, strategy, &sourceDBEntry, &destDBEntry)
+func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, srcValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+	// Decode values to entries
+	srcDBEntry, err := newCatalogEntryFromValueRecord(srcValue)
 	if err != nil {
 		return nil, err
 	}
-	if resolvedDBEntry == nil {
-		return nil, nil
+	destDBEntry, err := newCatalogEntryFromValueRecord(destValue)
+	if err != nil {
+		return nil, err
 	}
+
+	// Resolve conflict
+	resolvedDBEntry, err := cr.ConflictResolver.ResolveConflict(ctx, oCtx, strategy, srcDBEntry, destDBEntry)
+	if resolvedDBEntry == nil || err != nil {
+		return nil, err
+	}
+
+	// If the resolved entry equals either src or dest, return that value directly (optimization)
+	if resolvedDBEntry == srcDBEntry {
+		return srcValue, nil
+	}
+	if resolvedDBEntry == destDBEntry {
+		return destValue, nil
+	}
+
+	// Encode resolved entry to value
 	resolvedEntry := newEntryFromCatalogEntry(*resolvedDBEntry)
 	value, err := EntryToValue(resolvedEntry)
 	if err != nil {
 		return nil, fmt.Errorf("encode resolved entry: %w", err)
 	}
 	return &graveler.ValueRecord{
-		Key:   sourceValue.Key,
+		Key:   srcValue.Key, // srcValue and destValue keys are the same
 		Value: value,
 	}, nil
 }
