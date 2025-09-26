@@ -522,12 +522,12 @@ func Merge(
 
 type StrategyConflictResolver struct{}
 
-func (r *StrategyConflictResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+func (r *StrategyConflictResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, srcValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 	switch strategy {
 	case graveler.MergeStrategyDest:
 		return destValue, nil
 	case graveler.MergeStrategySrc:
-		return sourceValue, nil
+		return srcValue, nil
 	default: // graveler.MergeStrategyNone
 		return nil, nil
 	}

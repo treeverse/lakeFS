@@ -64,7 +64,6 @@ func TestLocalLoad(t *testing.T) {
 
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 	conflictResolvers := catalogfactory.BuildConflictResolvers(blockAdapter)
-	
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:       cfg,
 		KVStore:      kvStore,
