@@ -135,6 +135,12 @@ type Store interface {
 }
 
 type EntryConflictResolver interface {
+	// FilterByPath returns true if the path should be considered for conflict resolution.
+	FilterByPath(path string) bool
+
+	// ResolveConflict resolves conflicts between two DBEntry values.
+	// It returns the resolved value, or nil if the conflict cannot be resolved automatically.
+	// Assuming the source and dest have the same key (path).
 	ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, srcValue, destValue *DBEntry) (*DBEntry, error)
 }
 
@@ -3243,6 +3249,11 @@ type ConflictResolverWrapper struct {
 }
 
 func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, srcValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+	if !cr.ConflictResolver.FilterByPath(string(srcValue.Key)) {
+		// Not a conflict the catalog should resolve
+		return nil, nil
+	}
+
 	// Decode values to entries
 	srcDBEntry, err := newCatalogEntryFromValueRecord(srcValue)
 	if err != nil {
