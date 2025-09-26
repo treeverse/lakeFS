@@ -10,12 +10,12 @@ import (
 )
 
 type merger struct {
-	writer    MetaRangeWriter
-	resolvers []graveler.ConflictResolver
-	logger    logging.Logger
+	ctx    context.Context
+	oCtx   graveler.ObjectContext
+	logger logging.Logger
 
-	ctx                  context.Context
-	oCtx                 graveler.ObjectContext
+	writer               MetaRangeWriter
+	resolvers            []graveler.ConflictResolver
 	base                 Iterator
 	source               Iterator
 	dest                 Iterator
@@ -497,21 +497,21 @@ func (m *merger) validWritingRange(it Iterator) bool {
 }
 
 func Merge(
-	writer MetaRangeWriter,
-	resolvers []graveler.ConflictResolver,
 	ctx context.Context,
 	oCtx graveler.ObjectContext,
+	writer MetaRangeWriter,
+	resolvers []graveler.ConflictResolver,
 	base Iterator,
 	source Iterator,
 	destination Iterator,
 	strategy graveler.MergeStrategy,
 ) error {
 	m := merger{
-		writer:    writer,
-		resolvers: resolvers,
-		logger:    logging.FromContext(ctx),
 		ctx:       ctx,
 		oCtx:      oCtx,
+		logger:    logging.FromContext(ctx),
+		writer:    writer,
+		resolvers: resolvers,
 		base:      base,
 		source:    source,
 		dest:      destination,
