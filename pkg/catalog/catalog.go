@@ -2767,10 +2767,10 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
-// cloneEntry clone entry information without using the block adapter, so the physical address remains the same.
+// cloneEntry clones entry information without copying the underlying object in the object store, so the physical address remains the same.
 // clone can only clone within the same repository and branch.
-// It is limited to our grace-time from the object creation, in order to prevent from GC to delete the object.
-// ErrCannotClone error returned if clone conditions are not met.
+// It is limited to our grace-time from the object creation, in order to prevent GC from deleting the object.
+// ErrCannotClone error is returned if clone conditions are not met.
 func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef string, srcEntry *DBEntry, destRepository, destBranch, destPath string,
 	replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc,
 ) (*DBEntry, error) {
