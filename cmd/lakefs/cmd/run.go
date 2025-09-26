@@ -22,6 +22,7 @@ import (
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
@@ -34,6 +35,8 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
+	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -151,11 +154,19 @@ var runCmd = &cobra.Command{
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 
-		c, err := catalog.New(ctx, catalog.Config{
+		catalogConfig := catalog.Config{
 			Config:       cfg,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
-		})
+		}
+		// TODO: improve this build
+		conflictResolvers := []graveler.ConflictsResolver{
+			&catalog.ConflictsResolverWrapper{ConflictsResolver: catalogfactory.BuildEntryConflictsResolver(blockStore)},
+			// TODO: wrap this into the catalog
+			&committed.StrategyConflictsResolver{},
+		}
+
+		c, err := catalog.New(ctx, catalogConfig, conflictResolvers)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create catalog")
 		}

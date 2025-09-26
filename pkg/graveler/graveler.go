@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"slices"
 	"strconv"
 	"strings"
@@ -133,12 +132,6 @@ type ConflictsResolver interface {
 type ObjectContext struct {
 	StorageID        string
 	StorageNamespace string
-}
-
-// ObjectReader provides functionality for reading objects from object storage.
-// currently used for conflict resolution during merges, hence placed in this package.
-type ObjectReader interface {
-	ReadObject(ctx context.Context, oCtx ObjectContext, value *ValueRecord) (io.ReadCloser, error)
 }
 
 const (

@@ -24,7 +24,6 @@ import (
 	lru "github.com/hnlq715/golang-lru"
 	"github.com/rs/xid"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
-	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	"github.com/treeverse/lakefs/pkg/batch"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/config"
@@ -133,6 +132,10 @@ type Store interface {
 	graveler.Loader
 	graveler.Plumbing
 	graveler.Collaborator
+}
+
+type EntryConflictsResolver interface {
+	ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *DBEntry) (*DBEntry, error)
 }
 
 const (
@@ -303,7 +306,7 @@ func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnersh
 	}
 }
 
-func New(ctx context.Context, cfg Config) (*Catalog, error) {
+func New(ctx context.Context, cfg Config, conflictResolvers []graveler.ConflictsResolver) (*Catalog, error) {
 	ctx, cancelFn := context.WithCancel(ctx)
 	adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, cfg.Config)
 	if err != nil {
@@ -340,7 +343,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
 
-	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS, tierFSParams.Adapter)
+	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS, conflictResolvers)
 	if err != nil {
 		cancelFn()
 		return nil, err
@@ -410,7 +413,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}, nil
 }
 
-func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS, blockAdapter block.Adapter) (graveler.CommittedManager, []io.Closer, error) {
+func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS, conflictResolvers []graveler.ConflictsResolver) (graveler.CommittedManager, []io.Closer, error) {
 	baseCfg := cfg.Config.GetBaseConfig()
 	committedParams := committed.Params{
 		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
@@ -449,18 +452,12 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	conflictsResolvers := initConflictResolvers(blockAdapter)
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictsResolvers, committedParams)
-	return committedManager, closers, nil
-}
-
-func initConflictResolvers(blockAdapter block.Adapter) []graveler.ConflictsResolver {
-	var resolvers []graveler.ConflictsResolver
-	if r := catalogfactory.BuildConflictsResolver(&BlockObjectReader{BlockAdapter: blockAdapter}); r != nil {
-		resolvers = append(resolvers, r)
+	// TODO: is this fallback needed?
+	if len(conflictResolvers) == 0 {
+		conflictResolvers = []graveler.ConflictsResolver{&committed.StrategyConflictsResolver{}}
 	}
-	resolvers = append(resolvers, &committed.StrategyConflictsResolver{})
-	return resolvers
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictResolvers, committedParams)
+	return committedManager, closers, nil
 }
 
 func newLimiter(rateLimit int) ratelimit.Limiter {
@@ -3236,22 +3233,35 @@ func (w *UncommittedWriter) Size() int64 {
 	return w.size
 }
 
-type BlockObjectReader struct {
-	BlockAdapter block.Adapter
+type ConflictsResolverWrapper struct {
+	ConflictsResolver EntryConflictsResolver
 }
 
-func (or *BlockObjectReader) ReadObject(ctx context.Context, oCtx graveler.ObjectContext, value *graveler.ValueRecord) (io.ReadCloser, error) {
-	ent, err := ValueToEntry(value.Value)
+func (cr *ConflictsResolverWrapper) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+	sourceEntry, err := ValueToEntry(sourceValue.Value)
+	if err != nil {
+		return nil, fmt.Errorf("decode source entry: %w", err)
+	}
+	destEntry, err := ValueToEntry(destValue.Value)
+	if err != nil {
+		return nil, fmt.Errorf("decode dest entry: %w", err)
+	}
+	sourceDBEntry := newCatalogEntryFromEntry(false, string(sourceValue.Key), sourceEntry)
+	destDBEntry := newCatalogEntryFromEntry(false, string(destValue.Key), destEntry)
+	resolvedDBEntry, err := cr.ConflictsResolver.ResolveConflict(ctx, oCtx, strategy, &sourceDBEntry, &destDBEntry)
 	if err != nil {
 		return nil, err
 	}
-	catalogEntry := newCatalogEntryFromEntry(false, string(value.Key), ent)
-
-	objectPointer := block.ObjectPointer{
-		StorageID:        oCtx.StorageID,
-		StorageNamespace: oCtx.StorageNamespace,
-		IdentifierType:   catalogEntry.AddressType.ToIdentifierType(),
-		Identifier:       catalogEntry.PhysicalAddress,
+	if resolvedDBEntry == nil {
+		return nil, nil
 	}
-	return or.BlockAdapter.Get(ctx, objectPointer)
+	resolvedEntry := newEntryFromCatalogEntry(*resolvedDBEntry)
+	value, err := EntryToValue(resolvedEntry)
+	if err != nil {
+		return nil, fmt.Errorf("encode resolved entry: %w", err)
+	}
+	return &graveler.ValueRecord{
+		Key:   sourceValue.Key,
+		Value: value,
+	}, nil
 }
