@@ -89,7 +89,7 @@ type testCase struct {
 	baseRange         *testMetaRange
 	sourceRange       *testMetaRange
 	destRange         *testMetaRange
-	conflictResolvers []graveler.ConflictsResolver
+	conflictResolvers []graveler.ConflictResolver
 	expectedResult    []testRunResult
 }
 
@@ -354,8 +354,8 @@ func Test_merge(t *testing.T) {
 				}},
 				{
 					rng: committed.Range{ID: "base:k4-k6", MinKey: committed.Key("k4"), MaxKey: committed.Key("k6")}, records: []testValueRecord{
-						{"k4", "base:k4"}, {"k6", "base:k6"},
-					},
+					{"k4", "base:k4"}, {"k6", "base:k6"},
+				},
 				},
 				{rng: committed.Range{ID: "base:k11-k12", MinKey: committed.Key("k11"), MaxKey: committed.Key("k12"), Count: 2, EstimatedSize: 4444}, records: []testValueRecord{
 					{"k11", "base:k11"}, {"k12", "base:k12"},
@@ -372,8 +372,8 @@ func Test_merge(t *testing.T) {
 				}},
 				{
 					rng: committed.Range{ID: "base:k4-k6", MinKey: committed.Key("k4"), MaxKey: committed.Key("k6")}, records: []testValueRecord{
-						{"k4", "base:k4"}, {"k6", "base:k6"},
-					},
+					{"k4", "base:k4"}, {"k6", "base:k6"},
+				},
 				},
 			}),
 			expectedResult: []testRunResult{{
@@ -1732,11 +1732,11 @@ func TestMergeStrategies(t *testing.T) {
 	runMergeTests(tests, t)
 }
 
-type MockConflictsResolver struct {
+type MockConflictResolver struct {
 	resolveConflictsFn func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error)
 }
 
-func (r *MockConflictsResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+func (r *MockConflictResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 	return r.resolveConflictsFn(sourceValue, destValue)
 }
 
@@ -1764,8 +1764,8 @@ func TestMergeWithConflictResolver(t *testing.T) {
 			baseRange:   baseMetaRange,
 			sourceRange: sourceMetaRange,
 			destRange:   destMetaRange,
-			conflictResolvers: []graveler.ConflictsResolver{
-				&MockConflictsResolver{
+			conflictResolvers: []graveler.ConflictResolver{
+				&MockConflictResolver{
 					resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 						return nil, nil
 					},
@@ -1781,8 +1781,8 @@ func TestMergeWithConflictResolver(t *testing.T) {
 			baseRange:   baseMetaRange,
 			sourceRange: sourceMetaRange,
 			destRange:   destMetaRange,
-			conflictResolvers: []graveler.ConflictsResolver{
-				&MockConflictsResolver{
+			conflictResolvers: []graveler.ConflictResolver{
+				&MockConflictResolver{
 					resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 						return sourceValue, nil
 					},
@@ -1804,8 +1804,8 @@ func TestMergeWithConflictResolver(t *testing.T) {
 			baseRange:   baseMetaRange,
 			sourceRange: sourceMetaRange,
 			destRange:   destMetaRange,
-			conflictResolvers: []graveler.ConflictsResolver{
-				&MockConflictsResolver{
+			conflictResolvers: []graveler.ConflictResolver{
+				&MockConflictResolver{
 					resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 						return destValue, nil
 					},
@@ -1827,8 +1827,8 @@ func TestMergeWithConflictResolver(t *testing.T) {
 			baseRange:   baseMetaRange,
 			sourceRange: sourceMetaRange,
 			destRange:   destMetaRange,
-			conflictResolvers: []graveler.ConflictsResolver{
-				&MockConflictsResolver{
+			conflictResolvers: []graveler.ConflictResolver{
+				&MockConflictResolver{
 					resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 						return nil, graveler.ErrInvalid
 					},
@@ -1880,7 +1880,7 @@ func runMergeTests(tests testCases, t *testing.T) {
 					rangeManagers[tst.storageID] = rangeManager
 					metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 					metaRangeManagers[tst.storageID] = metaRangeManager
-					resolvers := append(tst.conflictResolvers, &committed.StrategyConflictsResolver{})
+					resolvers := append(tst.conflictResolvers, &committed.StrategyConflictResolver{})
 					committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, resolvers, params)
 					_, err := committedManager.Merge(ctx, tst.storageID, "ns", destMetaRangeID, sourceMetaRangeID, baseMetaRangeID, mergeStrategy)
 					if !errors.Is(err, expectedResult.expectedErr) {

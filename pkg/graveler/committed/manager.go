@@ -14,11 +14,16 @@ import (
 type committedManager struct {
 	metaRangeManagers map[graveler.StorageID]MetaRangeManager
 	RangeManagers     map[graveler.StorageID]RangeManager
-	conflictResolvers []graveler.ConflictsResolver
+	conflictResolvers []graveler.ConflictResolver
 	params            *Params
 }
 
-func NewCommittedManager(m map[graveler.StorageID]MetaRangeManager, r map[graveler.StorageID]RangeManager, crs []graveler.ConflictsResolver, p Params) graveler.CommittedManager {
+func NewCommittedManager(m map[graveler.StorageID]MetaRangeManager, r map[graveler.StorageID]RangeManager, crs []graveler.ConflictResolver, p Params) graveler.CommittedManager {
+	if len(crs) == 0 {
+		// set a default conflict resolver if none was provided
+		crs = []graveler.ConflictResolver{&StrategyConflictResolver{}}
+	}
+
 	return &committedManager{
 		metaRangeManagers: m,
 		RangeManagers:     r,

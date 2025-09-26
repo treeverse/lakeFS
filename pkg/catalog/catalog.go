@@ -134,8 +134,8 @@ type Store interface {
 	graveler.Collaborator
 }
 
-type EntryConflictsResolver interface {
-	ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *DBEntry) (*DBEntry, error)
+type EntryConflictResolver interface {
+	ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, srcValue, destValue *DBEntry) (*DBEntry, error)
 }
 
 const (
@@ -306,7 +306,7 @@ func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnersh
 	}
 }
 
-func New(ctx context.Context, cfg Config, conflictResolvers []graveler.ConflictsResolver) (*Catalog, error) {
+func New(ctx context.Context, cfg Config, conflictResolvers []graveler.ConflictResolver) (*Catalog, error) {
 	ctx, cancelFn := context.WithCancel(ctx)
 	adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, cfg.Config)
 	if err != nil {
@@ -413,7 +413,7 @@ func New(ctx context.Context, cfg Config, conflictResolvers []graveler.Conflicts
 	}, nil
 }
 
-func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS, conflictResolvers []graveler.ConflictsResolver) (graveler.CommittedManager, []io.Closer, error) {
+func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS, conflictResolvers []graveler.ConflictResolver) (graveler.CommittedManager, []io.Closer, error) {
 	baseCfg := cfg.Config.GetBaseConfig()
 	committedParams := committed.Params{
 		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
@@ -451,10 +451,6 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 		if storage.IsBackwardsCompatible() {
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
-	}
-	// TODO: is this fallback needed?
-	if len(conflictResolvers) == 0 {
-		conflictResolvers = []graveler.ConflictsResolver{&committed.StrategyConflictsResolver{}}
 	}
 	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictResolvers, committedParams)
 	return committedManager, closers, nil
@@ -3233,11 +3229,11 @@ func (w *UncommittedWriter) Size() int64 {
 	return w.size
 }
 
-type ConflictsResolverWrapper struct {
-	ConflictsResolver EntryConflictsResolver
+type ConflictResolverWrapper struct {
+	ConflictResolver EntryConflictResolver
 }
 
-func (cr *ConflictsResolverWrapper) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 	sourceEntry, err := ValueToEntry(sourceValue.Value)
 	if err != nil {
 		return nil, fmt.Errorf("decode source entry: %w", err)
@@ -3248,7 +3244,7 @@ func (cr *ConflictsResolverWrapper) ResolveConflict(ctx context.Context, oCtx gr
 	}
 	sourceDBEntry := newCatalogEntryFromEntry(false, string(sourceValue.Key), sourceEntry)
 	destDBEntry := newCatalogEntryFromEntry(false, string(destValue.Key), destEntry)
-	resolvedDBEntry, err := cr.ConflictsResolver.ResolveConflict(ctx, oCtx, strategy, &sourceDBEntry, &destDBEntry)
+	resolvedDBEntry, err := cr.ConflictResolver.ResolveConflict(ctx, oCtx, strategy, &sourceDBEntry, &destDBEntry)
 	if err != nil {
 		return nil, err
 	}

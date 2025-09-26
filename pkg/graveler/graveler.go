@@ -122,8 +122,8 @@ type ResolvedRef struct {
 // MergeStrategy changes from dest or source are automatically overridden in case of a conflict
 type MergeStrategy int
 
-// ConflictsResolver is used to resolve conflicts during a merge operation
-type ConflictsResolver interface {
+// ConflictResolver is used to resolve conflicts during a merge operation
+type ConflictResolver interface {
 	// ResolveConflict return the resolved value, or nil if the conflict could not be resolved automatically
 	ResolveConflict(ctx context.Context, oCtx ObjectContext, strategy MergeStrategy, sourceValue, destValue *ValueRecord) (*ValueRecord, error)
 }

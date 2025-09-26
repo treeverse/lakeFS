@@ -11,7 +11,7 @@ import (
 
 type merger struct {
 	writer    MetaRangeWriter
-	resolvers []graveler.ConflictsResolver
+	resolvers []graveler.ConflictResolver
 	logger    logging.Logger
 
 	ctx                  context.Context
@@ -498,7 +498,7 @@ func (m *merger) validWritingRange(it Iterator) bool {
 
 func Merge(
 	writer MetaRangeWriter,
-	resolvers []graveler.ConflictsResolver,
+	resolvers []graveler.ConflictResolver,
 	ctx context.Context,
 	oCtx graveler.ObjectContext,
 	base Iterator,
@@ -520,9 +520,9 @@ func Merge(
 	return m.merge()
 }
 
-type StrategyConflictsResolver struct{}
+type StrategyConflictResolver struct{}
 
-func (r *StrategyConflictsResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+func (r *StrategyConflictResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 	switch strategy {
 	case graveler.MergeStrategyDest:
 		return destValue, nil

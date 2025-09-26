@@ -35,8 +35,6 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway"
 	"github.com/treeverse/lakefs/pkg/gateway/multipart"
 	"github.com/treeverse/lakefs/pkg/gateway/sig"
-	"github.com/treeverse/lakefs/pkg/graveler"
-	"github.com/treeverse/lakefs/pkg/graveler/committed"
 	"github.com/treeverse/lakefs/pkg/graveler/ref"
 	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/kv"
@@ -159,12 +157,7 @@ var runCmd = &cobra.Command{
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
 		}
-		// TODO: improve this build
-		conflictResolvers := []graveler.ConflictsResolver{
-			&catalog.ConflictsResolverWrapper{ConflictsResolver: catalogfactory.BuildEntryConflictsResolver(blockStore)},
-			// TODO: wrap this into the catalog
-			&committed.StrategyConflictsResolver{},
-		}
+		conflictResolvers := catalogfactory.BuildConflictResolvers(blockStore)
 
 		c, err := catalog.New(ctx, catalogConfig, conflictResolvers)
 		if err != nil {

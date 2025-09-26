@@ -75,7 +75,7 @@ var entryCmd = &cobra.Command{
 			Config:       confInterface,
 			KVStore:      kvStore,
 			PathProvider: upload.DefaultPathProvider,
-		})
+		}, nil)
 		if err != nil {
 			fmt.Printf("Cannot create catalog: %s\n", err)
 			os.Exit(1)
