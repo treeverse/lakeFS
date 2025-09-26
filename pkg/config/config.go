@@ -523,8 +523,7 @@ type BaseConfig struct {
 		// ownership" because this ownership may safely fail.  This
 		// distinction is unimportant during configuration, so use a
 		// shorter name.
-		BranchOwnership  ApproximatelyCorrectOwnership `mapstructure:"branch_ownership"`
-		CloneGracePeriod time.Duration                 `mapstructure:"clone_grace_period"`
+		BranchOwnership ApproximatelyCorrectOwnership `mapstructure:"branch_ownership"`
 	} `mapstructure:"graveler"`
 	Gateways struct {
 		S3 struct {

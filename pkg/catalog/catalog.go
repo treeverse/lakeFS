@@ -76,6 +76,10 @@ const (
 	// LinkAddressTime the time address is valid from get to link
 	LinkAddressTime             = 6 * time.Hour
 	LinkAddressSigningDelimiter = ","
+
+	// CloneGracePeriod period during which we allow clone metadata as part of the object copy operation.
+	// Prevent the GC from collecting physical addresses that were not found while scanning uncommitted data.
+	CloneGracePeriod = 5 * time.Hour
 )
 
 type Path string
@@ -233,7 +237,6 @@ type Catalog struct {
 	UGCPrepareMaxFileSize int64
 	UGCPrepareInterval    time.Duration
 	signingKey            config.SecureString
-	CloneGracePeriod      time.Duration
 }
 
 const (
@@ -407,7 +410,6 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 		addressProvider:       addressProvider,
 		deleteSensor:          deleteSensor,
 		signingKey:            cfg.Config.StorageConfig().SigningKey(),
-		CloneGracePeriod:      cfg.Config.GetBaseConfig().Graveler.CloneGracePeriod,
 	}, nil
 }
 
@@ -2779,15 +2781,16 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef st
 		return nil, fmt.Errorf("not on the same repository: %w", graveler.ErrCannotClone)
 	}
 	if srcRef != destBranch {
-		return nil, fmt.Errorf("%w: not on the same branch", graveler.ErrCannotClone)
+		return nil, fmt.Errorf("not on the same branch: %w", graveler.ErrCannotClone)
 	}
 
 	// we verify the metadata creation date is within the grace period
-	if time.Since(srcEntry.CreationDate) > c.CloneGracePeriod {
-		return nil, fmt.Errorf("%w: object creation beyond grace period", graveler.ErrCannotClone)
+	if time.Since(srcEntry.CreationDate) > CloneGracePeriod {
+		return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
 	}
 
-	// to prevent copy of copy time slide, we verify the period also on the actual object creation time
+	// entry information can be cloned over and over,
+	// so we also need to verify the grace period against the actual object last-modified time
 	srcObject := block.ObjectPointer{
 		StorageID:        srcRepo.StorageID,
 		StorageNamespace: srcRepo.StorageNamespace,
@@ -2798,8 +2801,8 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef st
 	if err != nil {
 		return nil, err
 	}
-	if !props.LastModified.IsZero() && time.Since(props.LastModified) > c.CloneGracePeriod {
-		return nil, fmt.Errorf("%w: object last-modified beyond grace period", graveler.ErrCannotClone)
+	if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
+		return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
 	}
 
 	// copy the metadata into a new entry
@@ -2842,7 +2845,7 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 		}
 		// in case of different repositories, we verify the storage ID is the same
 		if srcRepo.StorageID != destRepo.StorageID {
-			return nil, fmt.Errorf("%w: cannot copy between repos with different StorageIDs", graveler.ErrInvalidStorageID)
+			return nil, fmt.Errorf("cannot copy between repos with different StorageIDs: %w", graveler.ErrInvalidStorageID)
 		}
 	}
 
