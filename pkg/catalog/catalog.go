@@ -2776,7 +2776,7 @@ func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef st
 ) (*DBEntry, error) {
 	// validate clone conditions in case we
 	if srcRepo.Name != destRepository {
-		return nil, fmt.Errorf("%w: not on the same repository", graveler.ErrCannotClone)
+		return nil, fmt.Errorf("not on the same repository: %w", graveler.ErrCannotClone)
 	}
 	if srcRef != destBranch {
 		return nil, fmt.Errorf("%w: not on the same branch", graveler.ErrCannotClone)
