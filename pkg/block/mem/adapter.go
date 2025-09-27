@@ -20,9 +20,8 @@ import (
 )
 
 var (
-	ErrNoDataForKey       = fmt.Errorf("no data for key: %w", block.ErrDataNotFound)
-	ErrMultiPartNotFound  = fmt.Errorf("multipart ID not found")
-	ErrNoPropertiesForKey = fmt.Errorf("no properties for key")
+	ErrNoDataForKey      = fmt.Errorf("no data for key: %w", block.ErrDataNotFound)
+	ErrMultiPartNotFound = fmt.Errorf("multipart ID not found")
 )
 
 type partInfo struct {
@@ -132,7 +131,10 @@ func (a *Adapter) Put(_ context.Context, obj block.ObjectPointer, _ int64, reade
 		a.properties[storageID] = make(map[string]block.Properties)
 	}
 	a.data[storageID][key] = data
-	a.properties[storageID][key] = block.Properties(opts)
+	a.properties[storageID][key] = block.Properties{
+		StorageClass: opts.StorageClass,
+		LastModified: time.Now(),
+	}
 	return &block.PutResponse{}, nil
 }
 
@@ -220,11 +222,11 @@ func (a *Adapter) GetProperties(_ context.Context, obj block.ObjectPointer) (blo
 	key := getKey(obj)
 	propsMap, ok := a.properties[storageID]
 	if !ok {
-		return block.Properties{}, ErrNoPropertiesForKey
+		return block.Properties{}, ErrNoDataForKey
 	}
 	props, ok := propsMap[key]
 	if !ok {
-		return block.Properties{}, ErrNoPropertiesForKey
+		return block.Properties{}, ErrNoDataForKey
 	}
 	return props, nil
 }

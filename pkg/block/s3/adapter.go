@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -578,11 +579,15 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	}
 	client := a.clients.Get(ctx, bucket)
 	s3Props, err := client.HeadObject(ctx, headObjectParams)
+	if isErrNotFound(err) {
+		return block.Properties{}, block.ErrDataNotFound
+	}
 	if err != nil {
 		return block.Properties{}, err
 	}
 	return block.Properties{
 		StorageClass: aws.String(string(s3Props.StorageClass)),
+		LastModified: apiutil.Value(s3Props.LastModified),
 	}, nil
 }
 

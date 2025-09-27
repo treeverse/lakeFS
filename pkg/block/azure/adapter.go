@@ -19,6 +19,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/bloberror"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/sas"
+	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/block/params"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -391,7 +392,6 @@ func (a *Adapter) Exists(ctx context.Context, obj block.ObjectPointer) (bool, er
 	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 
 	_, err = blobURL.GetProperties(ctx, nil)
-
 	if bloberror.HasCode(err, bloberror.BlobNotFound) {
 		return false, nil
 	}
@@ -417,10 +417,16 @@ func (a *Adapter) GetProperties(ctx context.Context, obj block.ObjectPointer) (b
 	blobURL := containerClient.NewBlobClient(qualifiedKey.BlobURL)
 
 	props, err := blobURL.GetProperties(ctx, nil)
+	if bloberror.HasCode(err, bloberror.BlobNotFound) {
+		return block.Properties{}, block.ErrDataNotFound
+	}
 	if err != nil {
 		return block.Properties{}, err
 	}
-	return block.Properties{StorageClass: props.AccessTier}, nil
+	return block.Properties{
+		StorageClass: props.AccessTier,
+		LastModified: apiutil.Value(props.LastModified),
+	}, nil
 }
 
 func (a *Adapter) Remove(ctx context.Context, obj block.ObjectPointer) error {

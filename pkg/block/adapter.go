@@ -161,6 +161,7 @@ type ListMultipartUploadsOpts struct {
 // actually reported.
 type Properties struct {
 	StorageClass *string
+	LastModified time.Time
 }
 
 type BlockstoreMetadata struct {
