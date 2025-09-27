@@ -2773,15 +2773,12 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 // clone can only clone within the same repository and branch.
 // It is limited to our grace-time from the object creation, in order to prevent GC from deleting the object.
 // ErrCannotClone error is returned if clone conditions are not met.
-func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcRef string, srcEntry *DBEntry, destRepository, destBranch, destPath string,
+func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry *DBEntry, destRepository, destBranch, destPath string,
 	replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc,
 ) (*DBEntry, error) {
 	// validate clone conditions in case we
 	if srcRepo.Name != destRepository {
 		return nil, fmt.Errorf("not on the same repository: %w", graveler.ErrCannotClone)
-	}
-	if srcRef != destBranch {
-		return nil, fmt.Errorf("not on the same branch: %w", graveler.ErrCannotClone)
 	}
 
 	// we verify the metadata creation date is within the grace period
@@ -2850,7 +2847,7 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	}
 
 	// Clone entry if possible, fallthrough to copy otherwise
-	clonedEntry, err := c.cloneEntry(ctx, srcRepo, srcRef, srcEntry, destRepository, destBranch, destPath, replaceSrcMetadata, metadata, opts...)
+	clonedEntry, err := c.cloneEntry(ctx, srcRepo, srcEntry, destRepository, destBranch, destPath, replaceSrcMetadata, metadata, opts...)
 	if err == nil {
 		return clonedEntry, nil
 	}

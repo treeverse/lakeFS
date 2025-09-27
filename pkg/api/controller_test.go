@@ -5151,6 +5151,9 @@ func TestController_CopyObjectHandler(t *testing.T) {
 	require.NoError(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "alt", "main")
 	require.NoError(t, err)
+	repo2 := testUniqueRepoName()
+	_, err = deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, "bucket/another"), "main", false)
+	require.NoError(t, err)
 
 	uploadContent := func(t *testing.T, repository, branch, objPath string) apigen.ObjectStats {
 		t.Helper()
@@ -5162,7 +5165,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		return *uploadResp.JSON201
 	}
 
-	t.Run("same_branch_clone", func(t *testing.T) {
+	t.Run("same_branch", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar"
 			destPath = "foo/bar-shallow-copy"
@@ -5188,7 +5191,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	t.Run("different_branch_copy", func(t *testing.T) {
+	t.Run("different_branch", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar2"
 			destPath = "foo/bar-full-from-branch"
@@ -5202,11 +5205,11 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		})
 		verifyResponseOK(t, copyResp, err)
 
-		// Verify the creation path, date and physical address are different
+		// Verify the creation path, date and physical address are the same as we clone it
 		copyStat := copyResp.JSON201
 		require.NotNil(t, copyStat)
 		require.NotEmpty(t, copyStat.PhysicalAddress)
-		require.NotEqual(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
+		require.Equal(t, objStat.PhysicalAddress, copyStat.PhysicalAddress)
 		require.GreaterOrEqual(t, copyStat.Mtime, objStat.Mtime)
 		require.Equal(t, destPath, copyStat.Path)
 
@@ -5222,7 +5225,7 @@ func TestController_CopyObjectHandler(t *testing.T) {
 		require.Nil(t, deep.Equal(statResp.JSON200, copyStat))
 	})
 
-	t.Run("committed_clone", func(t *testing.T) {
+	t.Run("committed", func(t *testing.T) {
 		const (
 			srcPath  = "foo/bar3"
 			destPath = "foo/bar-full-committed"
