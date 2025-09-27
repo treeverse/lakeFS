@@ -5151,9 +5151,6 @@ func TestController_CopyObjectHandler(t *testing.T) {
 	require.NoError(t, err)
 	_, err = deps.catalog.CreateBranch(ctx, repo, "alt", "main")
 	require.NoError(t, err)
-	repo2 := testUniqueRepoName()
-	_, err = deps.catalog.CreateRepository(ctx, repo, config.SingleBlockstoreID, onBlock(deps, "bucket/another"), "main", false)
-	require.NoError(t, err)
 
 	uploadContent := func(t *testing.T, repository, branch, objPath string) apigen.ObjectStats {
 		t.Helper()
