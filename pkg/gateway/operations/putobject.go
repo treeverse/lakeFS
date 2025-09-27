@@ -116,6 +116,10 @@ func handleCopy(w http.ResponseWriter, req *http.Request, o *PathOperation, copy
 	entry, err := o.Catalog.CopyEntry(ctx, srcPath.Repo, srcPath.Reference, srcPath.Path, repository, branch, o.Path, replaceMetadata, metadata)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could create a copy")
+		if errors.Is(err, block.ErrDataNotFound) || errors.Is(err, graveler.ErrNotFound) {
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNoSuchKey))
+			return
+		}
 		apiErr := gatewayErrors.Codes.ToAPIErrWithInternalError(gatewayErrors.ErrInvalidCopyDest, err)
 		_ = o.EncodeError(w, req, err, apiErr)
 		return

@@ -76,6 +76,10 @@ const (
 	// LinkAddressTime the time address is valid from get to link
 	LinkAddressTime             = 6 * time.Hour
 	LinkAddressSigningDelimiter = ","
+
+	// CloneGracePeriod period during which we allow clone metadata as part of the object copy operation.
+	// Prevent the GC from collecting physical addresses that were not found while scanning uncommitted data.
+	CloneGracePeriod = 5 * time.Hour
 )
 
 type Path string
@@ -2765,7 +2769,54 @@ func (c *Catalog) PrepareGCUncommitted(ctx context.Context, repositoryID string,
 	}, nil
 }
 
-// CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address.
+// cloneEntry clones entry information without copying the underlying object in the object store, so the physical address remains the same.
+// clone can only clone within the same repository and branch.
+// It is limited to our grace-time from the object creation, in order to prevent GC from deleting the object.
+// ErrCannotClone error is returned if clone conditions are not met.
+func (c *Catalog) cloneEntry(ctx context.Context, srcRepo *Repository, srcEntry *DBEntry, destRepository, destBranch, destPath string,
+	replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc,
+) (*DBEntry, error) {
+	// validate clone conditions in case we
+	if srcRepo.Name != destRepository {
+		return nil, fmt.Errorf("not on the same repository: %w", graveler.ErrCannotClone)
+	}
+
+	// we verify the metadata creation date is within the grace period
+	if time.Since(srcEntry.CreationDate) > CloneGracePeriod {
+		return nil, fmt.Errorf("object creation beyond grace period: %w", graveler.ErrCannotClone)
+	}
+
+	// entry information can be cloned over and over,
+	// so we also need to verify the grace period against the actual object last-modified time
+	srcObject := block.ObjectPointer{
+		StorageID:        srcRepo.StorageID,
+		StorageNamespace: srcRepo.StorageNamespace,
+		IdentifierType:   srcEntry.AddressType.ToIdentifierType(),
+		Identifier:       srcEntry.PhysicalAddress,
+	}
+	props, err := c.BlockAdapter.GetProperties(ctx, srcObject)
+	if err != nil {
+		return nil, err
+	}
+	if !props.LastModified.IsZero() && time.Since(props.LastModified) > CloneGracePeriod {
+		return nil, fmt.Errorf("object last-modified beyond grace period: %w", graveler.ErrCannotClone)
+	}
+
+	// copy the metadata into a new entry
+	dstEntry := *srcEntry
+	dstEntry.Path = destPath
+	dstEntry.CreationDate = time.Now()
+	if replaceSrcMetadata {
+		dstEntry.Metadata = metadata
+	}
+	if err := c.CreateEntry(ctx, destRepository, destBranch, dstEntry, opts...); err != nil {
+		return nil, err
+	}
+	return &dstEntry, nil
+}
+
+// CopyEntry copy entry information by using the block adapter to make a copy of the data to a new physical address or clone the entry if possible.
+// if clone is possible, the entry will be cloned with the same physical address and metadata.
 // if replaceSrcMetadata is true, the metadata will be replaced with the provided metadata.
 // if replaceSrcMetadata is false, the metadata will be copied from the source entry.
 func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath, destRepository, destBranch, destPath string, replaceSrcMetadata bool, metadata Metadata, opts ...graveler.SetOptionsFunc) (*DBEntry, error) {
@@ -2777,21 +2828,31 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 	}
 
 	// load repositories information for storage namespace
-	destRepo, err := c.GetRepository(ctx, destRepository)
+	srcRepo, err := c.GetRepository(ctx, srcRepository)
 	if err != nil {
 		return nil, err
 	}
 
-	srcRepo := destRepo
+	// load destination repository information, if needed
+	destRepo := srcRepo
 	if srcRepository != destRepository {
-		srcRepo, err = c.GetRepository(ctx, srcRepository)
+		destRepo, err = c.GetRepository(ctx, destRepository)
 		if err != nil {
 			return nil, err
 		}
-
+		// in case of different repositories, we verify the storage ID is the same
 		if srcRepo.StorageID != destRepo.StorageID {
-			return nil, fmt.Errorf("%w: cannot copy between repos with different StorageIDs", graveler.ErrInvalidStorageID)
+			return nil, fmt.Errorf("cannot copy between repos with different StorageIDs: %w", graveler.ErrInvalidStorageID)
 		}
+	}
+
+	// Clone entry if possible, fallthrough to copy otherwise
+	clonedEntry, err := c.cloneEntry(ctx, srcRepo, srcEntry, destRepository, destBranch, destPath, replaceSrcMetadata, metadata, opts...)
+	if err == nil {
+		return clonedEntry, nil
+	}
+	if !errors.Is(err, graveler.ErrCannotClone) {
+		return nil, err
 	}
 
 	// copy data to a new physical address
@@ -2802,8 +2863,6 @@ func (c *Catalog) CopyEntry(ctx context.Context, srcRepository, srcRef, srcPath,
 
 	if replaceSrcMetadata {
 		dstEntry.Metadata = metadata
-	} else {
-		dstEntry.Metadata = srcEntry.Metadata
 	}
 
 	srcObject := block.ObjectPointer{
