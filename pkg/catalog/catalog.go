@@ -138,6 +138,16 @@ type Store interface {
 	graveler.Collaborator
 }
 
+type EntryConflictResolver interface {
+	// FilterByPath returns true if the path should be considered for conflict resolution.
+	FilterByPath(path string) bool
+
+	// ResolveConflict resolves conflicts between two DBEntry values.
+	// It returns the resolved value, or nil if the conflict cannot be resolved automatically.
+	// Assuming the source and dest have the same key (path).
+	ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, srcValue, destValue *DBEntry) (*DBEntry, error)
+}
+
 const (
 	RangeFSName     = "range"
 	MetaRangeFSName = "meta-range"
@@ -306,7 +316,7 @@ func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnersh
 	}
 }
 
-func New(ctx context.Context, cfg Config) (*Catalog, error) {
+func New(ctx context.Context, cfg Config, conflictResolvers []graveler.ConflictResolver) (*Catalog, error) {
 	ctx, cancelFn := context.WithCancel(ctx)
 	adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, cfg.Config)
 	if err != nil {
@@ -343,7 +353,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
 
-	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS)
+	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS, conflictResolvers)
 	if err != nil {
 		cancelFn()
 		return nil, err
@@ -413,7 +423,7 @@ func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	}, nil
 }
 
-func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS) (graveler.CommittedManager, []io.Closer, error) {
+func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS, conflictResolvers []graveler.ConflictResolver) (graveler.CommittedManager, []io.Closer, error) {
 	baseCfg := cfg.Config.GetBaseConfig()
 	committedParams := committed.Params{
 		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
@@ -452,7 +462,7 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, committedParams)
+	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictResolvers, committedParams)
 	return committedManager, closers, nil
 }
 
@@ -3282,4 +3292,59 @@ func (w *UncommittedWriter) Write(p []byte) (n int, err error) {
 
 func (w *UncommittedWriter) Size() int64 {
 	return w.size
+}
+
+func newCatalogEntryFromValueRecord(valueRecord *graveler.ValueRecord) (*DBEntry, error) {
+	entry, err := ValueToEntry(valueRecord.Value)
+	if err != nil {
+		return nil, fmt.Errorf("decode entry: %w", err)
+	}
+	dbEntry := newCatalogEntryFromEntry(false, string(valueRecord.Key), entry)
+	return &dbEntry, nil
+}
+
+type ConflictResolverWrapper struct {
+	ConflictResolver EntryConflictResolver
+}
+
+func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, srcValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+	if !cr.ConflictResolver.FilterByPath(string(srcValue.Key)) {
+		// Not a conflict the catalog should resolve
+		return nil, nil
+	}
+
+	// Decode values to entries
+	srcDBEntry, err := newCatalogEntryFromValueRecord(srcValue)
+	if err != nil {
+		return nil, err
+	}
+	destDBEntry, err := newCatalogEntryFromValueRecord(destValue)
+	if err != nil {
+		return nil, err
+	}
+
+	// Resolve conflict
+	resolvedDBEntry, err := cr.ConflictResolver.ResolveConflict(ctx, oCtx, strategy, srcDBEntry, destDBEntry)
+	if resolvedDBEntry == nil || err != nil {
+		return nil, err
+	}
+
+	// If the resolved entry equals either src or dest, return that value directly (optimization)
+	if resolvedDBEntry == srcDBEntry {
+		return srcValue, nil
+	}
+	if resolvedDBEntry == destDBEntry {
+		return destValue, nil
+	}
+
+	// Encode resolved entry to value
+	resolvedEntry := newEntryFromCatalogEntry(*resolvedDBEntry)
+	value, err := EntryToValue(resolvedEntry)
+	if err != nil {
+		return nil, fmt.Errorf("encode resolved entry: %w", err)
+	}
+	return &graveler.ValueRecord{
+		Key:   srcValue.Key, // srcValue and destValue keys are the same
+		Value: value,
+	}, nil
 }

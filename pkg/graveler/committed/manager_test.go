@@ -108,7 +108,7 @@ func TestManager_WriteRange(t *testing.T) {
 			rangeManagers[tt.initStorageID] = rangeManager
 			metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 			metaRangeManagers[tt.initStorageID] = metarangeManager
-			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
+			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, nil, params)
 
 			times := 0
 			expectedTimes := min(len(tt.records), maxRecords)
@@ -219,7 +219,7 @@ func TestManager_WriteMetaRange(t *testing.T) {
 			rangeManagers[tt.initStorageID] = rangeManager
 			metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 			metaRangeManagers[tt.initStorageID] = metarangeManager
-			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
+			sut := committed.NewCommittedManager(metaRangeManagers, rangeManagers, nil, params)
 
 			actualMetarangeID, err := sut.WriteMetaRange(context.Background(), tt.writeStorageID, ns, tt.records)
 			if tt.errorIs != nil {
