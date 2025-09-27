@@ -19,8 +19,8 @@ import (
 )
 
 type objectInfo struct {
-	relPath string
-	object  *apigen.ObjectStats
+	relPath    string // relative path within the repository, based on the source path
+	objectStat *apigen.ObjectStats
 }
 
 const (
@@ -94,15 +94,15 @@ var fsDownloadCmd = &cobra.Command{
 					DieFmt("No objects in path: %s", remote.String())
 				}
 
-				for _, o := range listResp.JSON200.Results {
-					relPath := strings.TrimPrefix(o.Path, remotePath)
+				for _, listItem := range listResp.JSON200.Results {
+					relPath := strings.TrimPrefix(listItem.Path, remotePath)
 					relPath = strings.TrimPrefix(relPath, uri.PathSeparator)
 
 					// skip directory markers
 					if relPath == "" || strings.HasSuffix(relPath, uri.PathSeparator) {
 						continue
 					}
-					ch <- objectInfo{relPath: relPath, object: &o}
+					ch <- objectInfo{relPath: relPath, objectStat: &listItem}
 				}
 				if !listResp.JSON200.Pagination.HasMore {
 					break
@@ -132,7 +132,7 @@ var fsDownloadCmd = &cobra.Command{
 					tracker.Start()
 
 					dest := filepath.Join(dest, objInfo.relPath)
-					err := downloader.DownloadWithObjectInfo(ctx, src, dest, tracker, objInfo.object)
+					err := downloader.DownloadWithObjectInfo(ctx, src, dest, tracker, objInfo.objectStat)
 					if err != nil {
 						tracker.MarkAsErrored()
 						DieErr(err)
