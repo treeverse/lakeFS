@@ -23,6 +23,8 @@ var (
 	// ErrNotFound is returned when something is not found remotely.
 	ErrNotFound = errors.New("not found")
 	ErrConflict = errors.New("conflict")
+	// ErrValidation is returned when input validation fails.
+	ErrValidation = errors.New("validation error")
 )
 
 const minHTTPErrorStatusCode = 400
