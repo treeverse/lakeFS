@@ -62,9 +62,13 @@ func NewDownloader(client *apigen.ClientWithResponses, preSign bool) *Downloader
 	}
 }
 
-// DownloadWithObjectInfo downloads an object from lakeFS using pre-fetched object information,
-// avoiding the need for a separate stat call.
-func (d *Downloader) DownloadWithObjectInfo(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker, objectStat *apigen.ObjectStats) error {
+// downloadObjectCore handles the common download logic for both Download and DownloadWithObjectInfo
+func (d *Downloader) downloadObjectCore(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker, objectStat *apigen.ObjectStats) error {
+	// Validate that object stats are provided when required
+	if (d.SymlinkSupport || d.PreSign) && objectStat == nil {
+		return fmt.Errorf("object stats are required for symlink support or presign downloads but were not provided: %w", ErrValidation)
+	}
+
 	// delete destination file if it exists
 	if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove existing destination file '%s': %w", dst, err)
@@ -73,66 +77,6 @@ func (d *Downloader) DownloadWithObjectInfo(ctx context.Context, src uri.URI, ds
 	// create destination dir if needed
 	dir := filepath.Dir(dst)
 	_ = os.MkdirAll(dir, os.ModePerm)
-
-	// If symlink support is enabled, check if the object is a symlink and create it if so
-	if d.SymlinkSupport {
-		symlinkTarget, found := objectStat.Metadata.Get(apiutil.SymlinkMetadataKey)
-		if found && symlinkTarget != "" {
-			if tracker != nil {
-				tracker.UpdateTotal(0)
-				tracker.MarkAsDone()
-			}
-			// Skip non-regular files
-			if d.SkipNonRegularFiles {
-				return nil
-			}
-			// Create symlink instead of downloading file content
-			return os.Symlink(symlinkTarget, dst)
-		}
-		// fallthrough to download the object
-	}
-
-	// download object
-	var err error
-	if d.PreSign && swag.Int64Value(objectStat.SizeBytes) >= d.PartSize {
-		// download using presigned multipart download, it will fall back to presign single object download if needed
-		err = d.downloadPresignMultipart(ctx, src, dst, tracker, objectStat)
-	} else {
-		err = d.downloadObject(ctx, src, dst, tracker)
-	}
-	if err != nil {
-		return fmt.Errorf("download failed: %w", err)
-	}
-	return nil
-}
-
-// Download downloads an object from lakeFS to a local file, create the destination directory if needed.
-func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {
-	// delete destination file if it exists
-	if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove existing destination file '%s': %w", dst, err)
-	}
-
-	// create destination dir if needed
-	dir := filepath.Dir(dst)
-	_ = os.MkdirAll(dir, os.ModePerm)
-
-	// Check if we need to call StatObjectWithResponse (for symlinks or presign multipart)
-	var objectStat *apigen.ObjectStats
-	if d.SymlinkSupport || d.PreSign {
-		statResp, err := d.Client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
-			Path:         apiutil.Value(src.Path),
-			UserMetadata: swag.Bool(d.SymlinkSupport), // Only request metadata if symlink support is enabled
-			Presign:      swag.Bool(d.PreSign),        // Only presign if needed
-		})
-		if err != nil {
-			return fmt.Errorf("download failed: %w", err)
-		}
-		if statResp.JSON200 == nil {
-			return fmt.Errorf("download failed: %w: %s", ErrRequestFailed, statResp.Status())
-		}
-		objectStat = statResp.JSON200
-	}
 
 	// If symlink support is enabled, check if the object is a symlink and create it if so
 	if d.SymlinkSupport && objectStat != nil {
@@ -154,7 +98,7 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 
 	// download object
 	var err error
-	if d.PreSign && objectStat != nil && objectStat.SizeBytes != nil {
+	if d.PreSign && objectStat != nil && swag.Int64Value(objectStat.SizeBytes) >= d.PartSize {
 		// download using presigned multipart download, it will fall back to presign single object download if needed
 		err = d.downloadPresignMultipart(ctx, src, dst, tracker, objectStat)
 	} else {
@@ -166,6 +110,34 @@ func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, trac
 	return nil
 }
 
+// DownloadWithObjectInfo downloads an object from lakeFS using pre-fetched object information,
+// avoiding the need for a separate stat call.
+func (d *Downloader) DownloadWithObjectInfo(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker, objectStat *apigen.ObjectStats) error {
+	return d.downloadObjectCore(ctx, src, dst, tracker, objectStat)
+}
+
+// Download downloads an object from lakeFS to a local file, create the destination directory if needed.
+func (d *Downloader) Download(ctx context.Context, src uri.URI, dst string, tracker *progress.Tracker) error {
+	// Check if we need to call StatObjectWithResponse (for symlinks or presign multipart)
+	var objectStat *apigen.ObjectStats
+	if d.SymlinkSupport || d.PreSign {
+		statResp, err := d.Client.StatObjectWithResponse(ctx, src.Repository, src.Ref, &apigen.StatObjectParams{
+			Path:         apiutil.Value(src.Path),
+			UserMetadata: swag.Bool(d.SymlinkSupport), // Only request metadata if symlink support is enabled
+			Presign:      swag.Bool(d.PreSign),        // Only presign if needed
+		})
+		if err != nil {
+			return fmt.Errorf("download failed: %w", err)
+		}
+		if statResp.JSON200 == nil {
+			return fmt.Errorf("download failed: %w: %s", ErrRequestFailed, statResp.Status())
+		}
+		objectStat = statResp.JSON200
+	}
+
+	return d.downloadObjectCore(ctx, src, dst, tracker, objectStat)
+}
+
 // downloadPresignMultipart downloads a large object, must be larger or equal to PartSize using a presigned URL.
 // It uses multiple concurrent range requests to download the object in parts.
 // If the object is smaller than PartSize, it falls back to a single `downloadObject` call.
@@ -173,7 +145,7 @@ func (d *Downloader) downloadPresignMultipart(ctx context.Context, src uri.URI, 
 	// check if the object is small enough to download in one request
 	size := swag.Int64Value(objectStat.SizeBytes)
 	if size < d.PartSize {
-		return d.downloadObject(ctx, src, dst, tracker)
+		return fmt.Errorf("object is smaller than PartSize (%d): %w", d.PartSize, ErrValidation)
 	}
 	if tracker != nil {
 		tracker.UpdateTotal(size)
