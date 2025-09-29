@@ -1840,6 +1840,30 @@ func TestMergeWithConflictResolver(t *testing.T) {
 				expectedErr:     graveler.ErrInvalid,
 			}},
 		},
+		"first resolver decides": {
+			baseRange:   baseMetaRange,
+			sourceRange: sourceMetaRange,
+			destRange:   destMetaRange,
+			conflictResolvers: []graveler.ConflictResolver{
+				&MockConflictResolver{
+					resolveConflictsFn: func(sourceValue *graveler.ValueRecord, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+						return destValue, nil
+					},
+				},
+				&committed.StrategyConflictResolver{},
+			},
+			expectedResult: []testRunResult{{
+				mergeStrategies: []graveler.MergeStrategy{graveler.MergeStrategySrc},
+				expectedActions: []writeAction{
+					{
+						action:   actionTypeWriteRecord,
+						key:      "a",
+						identity: "a2",
+					},
+				},
+				expectedErr: nil,
+			}},
+		},
 	}
 
 	runMergeTests(tests, t)
@@ -1880,7 +1904,13 @@ func runMergeTests(tests testCases, t *testing.T) {
 					rangeManagers[tst.storageID] = rangeManager
 					metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 					metaRangeManagers[tst.storageID] = metaRangeManager
-					committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, tst.conflictResolvers, params)
+
+					resolvers := tst.conflictResolvers
+					if resolvers == nil {
+						resolvers = []graveler.ConflictResolver{&committed.StrategyConflictResolver{}}
+					}
+
+					committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, resolvers, params)
 					_, err := committedManager.Merge(ctx, tst.storageID, "ns", destMetaRangeID, sourceMetaRangeID, baseMetaRangeID, mergeStrategy)
 					if !errors.Is(err, expectedResult.expectedErr) {
 						t.Fatalf("Merge error='%v', expected='%v'", err, expectedResult.expectedErr)
