@@ -227,6 +227,7 @@ type Config struct {
 	KVStore               kv.Store
 	SettingsManagerOption settings.ManagerOption
 	PathProvider          *upload.PathPartitionProvider
+	ConflictResolvers     []graveler.ConflictResolver
 }
 
 type Catalog struct {
@@ -312,7 +313,7 @@ func makeBranchApproximateOwnershipParams(cfg config.ApproximatelyCorrectOwnersh
 	}
 }
 
-func New(ctx context.Context, cfg Config, conflictResolvers []graveler.ConflictResolver) (*Catalog, error) {
+func New(ctx context.Context, cfg Config) (*Catalog, error) {
 	ctx, cancelFn := context.WithCancel(ctx)
 	adapter, err := blockfactory.BuildBlockAdapter(ctx, nil, cfg.Config)
 	if err != nil {
@@ -349,7 +350,7 @@ func New(ctx context.Context, cfg Config, conflictResolvers []graveler.ConflictR
 	pebbleSSTableCache := pebble.NewCache(tierFSParams.PebbleSSTableCacheSizeBytes)
 	defer pebbleSSTableCache.Unref()
 
-	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS, conflictResolvers)
+	committedManager, closers, err := buildCommittedManager(cfg, pebbleSSTableCache, rangeFS, metaRangeFS)
 	if err != nil {
 		cancelFn()
 		return nil, err
@@ -419,7 +420,7 @@ func New(ctx context.Context, cfg Config, conflictResolvers []graveler.ConflictR
 	}, nil
 }
 
-func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS, conflictResolvers []graveler.ConflictResolver) (graveler.CommittedManager, []io.Closer, error) {
+func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS pyramid.FS, metaRangeFS pyramid.FS) (graveler.CommittedManager, []io.Closer, error) {
 	baseCfg := cfg.Config.GetBaseConfig()
 	committedParams := committed.Params{
 		MinRangeSizeBytes:          baseCfg.Committed.Permanent.MinRangeSizeBytes,
@@ -458,7 +459,12 @@ func buildCommittedManager(cfg Config, pebbleSSTableCache *pebble.Cache, rangeFS
 			sstableMetaRangeManagers[config.SingleBlockstoreID] = sstableMetaRangeManager
 		}
 	}
-	committedManager := committed.NewCommittedManager(sstableMetaRangeManagers, sstableManagers, conflictResolvers, committedParams)
+	committedManager := committed.NewCommittedManager(
+		sstableMetaRangeManagers,
+		sstableManagers,
+		cfg.ConflictResolvers,
+		committedParams,
+	)
 	return committedManager, closers, nil
 }
 

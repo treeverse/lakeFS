@@ -130,8 +130,8 @@ type ConflictResolver interface {
 
 // ObjectContext holds context information for reading an object
 type ObjectContext struct {
-	StorageID        string
-	StorageNamespace string
+	StorageID        StorageID
+	StorageNamespace StorageNamespace
 }
 
 const (

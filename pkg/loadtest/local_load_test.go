@@ -63,12 +63,12 @@ func TestLocalLoad(t *testing.T) {
 	}
 
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
-	conflictResolvers := catalogfactory.BuildConflictResolvers(blockAdapter)
 	c, err := catalog.New(ctx, catalog.Config{
-		Config:       cfg,
-		KVStore:      kvStore,
-		PathProvider: upload.DefaultPathProvider,
-	}, conflictResolvers)
+		Config:            cfg,
+		KVStore:           kvStore,
+		PathProvider:      upload.DefaultPathProvider,
+		ConflictResolvers: catalogfactory.BuildConflictResolvers(blockAdapter),
+	})
 	testutil.MustDo(t, "build catalog", err)
 
 	source := catalog.NewActionsSource(c)

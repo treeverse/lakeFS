@@ -317,8 +317,8 @@ func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (gravel
 	}()
 
 	oCtx := graveler.ObjectContext{
-		StorageID:        string(mctx.storageID),
-		StorageNamespace: string(mctx.ns),
+		StorageID:        mctx.storageID,
+		StorageNamespace: mctx.ns,
 	}
 
 	err = Merge(ctx, oCtx, mwWriter, c.conflictResolvers, baseIt, srcIt, destIt, mctx.strategy)

@@ -135,7 +135,7 @@ func setupHandler(t testing.TB) (http.Handler, *dependencies) {
 		KVStore:               kvStore,
 		SettingsManagerOption: settings.WithCache(cache.NoCache),
 		PathProvider:          upload.DefaultPathProvider,
-	}, nil)
+	})
 	testutil.MustDo(t, "build catalog", err)
 
 	// wire actions

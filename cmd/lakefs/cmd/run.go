@@ -153,13 +153,13 @@ var runCmd = &cobra.Command{
 		bufferedCollector.CollectMetadata(metadata)
 
 		catalogConfig := catalog.Config{
-			Config:       cfg,
-			KVStore:      kvStore,
-			PathProvider: upload.DefaultPathProvider,
+			Config:            cfg,
+			KVStore:           kvStore,
+			PathProvider:      upload.DefaultPathProvider,
+			ConflictResolvers: catalogfactory.BuildConflictResolvers(blockStore),
 		}
-		conflictResolvers := catalogfactory.BuildConflictResolvers(blockStore)
 
-		c, err := catalog.New(ctx, catalogConfig, conflictResolvers)
+		c, err := catalog.New(ctx, catalogConfig)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create catalog")
 		}

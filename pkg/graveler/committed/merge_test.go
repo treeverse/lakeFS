@@ -1880,8 +1880,7 @@ func runMergeTests(tests testCases, t *testing.T) {
 					rangeManagers[tst.storageID] = rangeManager
 					metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 					metaRangeManagers[tst.storageID] = metaRangeManager
-					resolvers := append(tst.conflictResolvers, &committed.StrategyConflictResolver{})
-					committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, resolvers, params)
+					committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, tst.conflictResolvers, params)
 					_, err := committedManager.Merge(ctx, tst.storageID, "ns", destMetaRangeID, sourceMetaRangeID, baseMetaRangeID, mergeStrategy)
 					if !errors.Is(err, expectedResult.expectedErr) {
 						t.Fatalf("Merge error='%v', expected='%v'", err, expectedResult.expectedErr)

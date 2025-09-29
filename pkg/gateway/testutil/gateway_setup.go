@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
 	"github.com/treeverse/lakefs/pkg/auth"
@@ -49,13 +48,11 @@ func GetBasicHandler(t *testing.T, authService *FakeAuthService, repoName string
 	_, err = config.NewConfig("", cfg)
 	testutil.MustDo(t, "config", err)
 
-	conflictResolvers := catalogfactory.BuildConflictResolvers(blockAdapter)
-
 	c, err := catalog.New(ctx, catalog.Config{
 		Config:       cfg,
 		KVStore:      store,
 		PathProvider: upload.DefaultPathProvider,
-	}, conflictResolvers)
+	})
 	testutil.MustDo(t, "build catalog", err)
 	t.Cleanup(func() {
 		_ = c.Close()
