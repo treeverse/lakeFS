@@ -156,7 +156,7 @@ var runCmd = &cobra.Command{
 			Config:            cfg,
 			KVStore:           kvStore,
 			PathProvider:      upload.DefaultPathProvider,
-			ConflictResolvers: catalogfactory.BuildConflictResolvers(blockStore),
+			ConflictResolvers: catalogfactory.BuildConflictResolvers(cfg, blockStore),
 		}
 
 		c, err := catalog.New(ctx, catalogConfig)
