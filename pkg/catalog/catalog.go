@@ -3281,26 +3281,32 @@ func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, sCtx gra
 
 	// Resolve conflict
 	resolvedDBEntry, err := cr.ConflictResolver.ResolveConflict(ctx, sCtx, strategy, srcDBEntry, destDBEntry)
-	if resolvedDBEntry == nil || err != nil {
+	if err != nil {
 		return nil, err
 	}
 
-	// If the resolved entry equals either src or dest, return that value directly (optimization)
-	if resolvedDBEntry == srcDBEntry {
-		return srcValue, nil
+	var returnValue *graveler.ValueRecord
+	switch {
+	case resolvedDBEntry == nil:
+		// Conflict wasn't resolved - return nil
+		returnValue = nil
+	case resolvedDBEntry.Path == srcDBEntry.Path:
+		// Resolved to src entry - return src value
+		returnValue = srcValue
+	case resolvedDBEntry.Path == destDBEntry.Path:
+		// Resolved to dest entry - return dest value
+		returnValue = destValue
+	default:
+		// Resolved to a new entry - encode resolved entry to value
+		resolvedEntry := newEntryFromCatalogEntry(*resolvedDBEntry)
+		value, err := EntryToValue(resolvedEntry)
+		if err != nil {
+			return nil, fmt.Errorf("encode resolved entry: %w", err)
+		}
+		returnValue = &graveler.ValueRecord{
+			Key:   srcValue.Key, // srcValue and destValue keys are the same
+			Value: value,
+		}
 	}
-	if resolvedDBEntry == destDBEntry {
-		return destValue, nil
-	}
-
-	// Encode resolved entry to value
-	resolvedEntry := newEntryFromCatalogEntry(*resolvedDBEntry)
-	value, err := EntryToValue(resolvedEntry)
-	if err != nil {
-		return nil, fmt.Errorf("encode resolved entry: %w", err)
-	}
-	return &graveler.ValueRecord{
-		Key:   srcValue.Key, // srcValue and destValue keys are the same
-		Value: value,
-	}, nil
+	return returnValue, nil
 }
