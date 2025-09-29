@@ -37,18 +37,18 @@ func (m *MockConflictResolver) EXPECT() *MockConflictResolverMockRecorder {
 }
 
 // ResolveConflict mocks base method.
-func (m *MockConflictResolver) ResolveConflict(ctx context.Context, oCtx graveler.ObjectContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+func (m *MockConflictResolver) ResolveConflict(ctx context.Context, sCtx graveler.StorageContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResolveConflict", ctx, oCtx, strategy, sourceValue, destValue)
+	ret := m.ctrl.Call(m, "ResolveConflict", ctx, sCtx, strategy, sourceValue, destValue)
 	ret0, _ := ret[0].(*graveler.ValueRecord)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ResolveConflict indicates an expected call of ResolveConflict.
-func (mr *MockConflictResolverMockRecorder) ResolveConflict(ctx, oCtx, strategy, sourceValue, destValue interface{}) *gomock.Call {
+func (mr *MockConflictResolverMockRecorder) ResolveConflict(ctx, sCtx, strategy, sourceValue, destValue interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveConflict", reflect.TypeOf((*MockConflictResolver)(nil).ResolveConflict), ctx, oCtx, strategy, sourceValue, destValue)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveConflict", reflect.TypeOf((*MockConflictResolver)(nil).ResolveConflict), ctx, sCtx, strategy, sourceValue, destValue)
 }
 
 // MockKeyValueStore is a mock of KeyValueStore interface.

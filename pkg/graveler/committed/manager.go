@@ -19,11 +19,6 @@ type committedManager struct {
 }
 
 func NewCommittedManager(m map[graveler.StorageID]MetaRangeManager, r map[graveler.StorageID]RangeManager, crs []graveler.ConflictResolver, p Params) graveler.CommittedManager {
-	if len(crs) == 0 {
-		// set a default conflict resolver if none was provided
-		crs = []graveler.ConflictResolver{&StrategyConflictResolver{}}
-	}
-
 	return &committedManager{
 		metaRangeManagers: m,
 		RangeManagers:     r,
@@ -316,12 +311,12 @@ func (c *committedManager) merge(ctx context.Context, mctx mergeContext) (gravel
 		}
 	}()
 
-	oCtx := graveler.ObjectContext{
+	sCtx := graveler.StorageContext{
 		StorageID:        mctx.storageID,
 		StorageNamespace: mctx.ns,
 	}
 
-	err = Merge(ctx, oCtx, mwWriter, c.conflictResolvers, baseIt, srcIt, destIt, mctx.strategy)
+	err = Merge(ctx, sCtx, mwWriter, c.conflictResolvers, baseIt, srcIt, destIt, mctx.strategy)
 	if err != nil {
 		if !errors.Is(err, graveler.ErrUserVisible) {
 			err = fmt.Errorf("merge ns=%s id=%s: %w", mctx.ns, mctx.destinationID, err)

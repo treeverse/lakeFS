@@ -125,11 +125,11 @@ type MergeStrategy int
 // ConflictResolver is used to resolve conflicts during a merge operation
 type ConflictResolver interface {
 	// ResolveConflict return the resolved value, or nil if the conflict could not be resolved automatically
-	ResolveConflict(ctx context.Context, oCtx ObjectContext, strategy MergeStrategy, sourceValue, destValue *ValueRecord) (*ValueRecord, error)
+	ResolveConflict(ctx context.Context, sCtx StorageContext, strategy MergeStrategy, sourceValue, destValue *ValueRecord) (*ValueRecord, error)
 }
 
-// ObjectContext holds context information for reading an object
-type ObjectContext struct {
+// StorageContext holds context information for reading an object
+type StorageContext struct {
 	StorageID        StorageID
 	StorageNamespace StorageNamespace
 }
