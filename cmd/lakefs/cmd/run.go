@@ -22,6 +22,7 @@ import (
 	authfactory "github.com/treeverse/lakefs/modules/auth/factory"
 	authenticationfactory "github.com/treeverse/lakefs/modules/authentication/factory"
 	blockfactory "github.com/treeverse/lakefs/modules/block/factory"
+	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	gatewayfactory "github.com/treeverse/lakefs/modules/gateway/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
@@ -151,11 +152,14 @@ var runCmd = &cobra.Command{
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
 
-		c, err := catalog.New(ctx, catalog.Config{
-			Config:       cfg,
-			KVStore:      kvStore,
-			PathProvider: upload.DefaultPathProvider,
-		})
+		catalogConfig := catalog.Config{
+			Config:            cfg,
+			KVStore:           kvStore,
+			PathProvider:      upload.DefaultPathProvider,
+			ConflictResolvers: catalogfactory.BuildConflictResolvers(blockStore),
+		}
+
+		c, err := catalog.New(ctx, catalogConfig)
 		if err != nil {
 			logger.WithError(err).Fatal("failed to create catalog")
 		}

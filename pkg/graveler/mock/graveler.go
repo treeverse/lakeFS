@@ -13,6 +13,44 @@ import (
 	graveler "github.com/treeverse/lakefs/pkg/graveler"
 )
 
+// MockConflictResolver is a mock of ConflictResolver interface.
+type MockConflictResolver struct {
+	ctrl     *gomock.Controller
+	recorder *MockConflictResolverMockRecorder
+}
+
+// MockConflictResolverMockRecorder is the mock recorder for MockConflictResolver.
+type MockConflictResolverMockRecorder struct {
+	mock *MockConflictResolver
+}
+
+// NewMockConflictResolver creates a new mock instance.
+func NewMockConflictResolver(ctrl *gomock.Controller) *MockConflictResolver {
+	mock := &MockConflictResolver{ctrl: ctrl}
+	mock.recorder = &MockConflictResolverMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConflictResolver) EXPECT() *MockConflictResolverMockRecorder {
+	return m.recorder
+}
+
+// ResolveConflict mocks base method.
+func (m *MockConflictResolver) ResolveConflict(ctx context.Context, sCtx graveler.StorageContext, strategy graveler.MergeStrategy, sourceValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResolveConflict", ctx, sCtx, strategy, sourceValue, destValue)
+	ret0, _ := ret[0].(*graveler.ValueRecord)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResolveConflict indicates an expected call of ResolveConflict.
+func (mr *MockConflictResolverMockRecorder) ResolveConflict(ctx, sCtx, strategy, sourceValue, destValue interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveConflict", reflect.TypeOf((*MockConflictResolver)(nil).ResolveConflict), ctx, sCtx, strategy, sourceValue, destValue)
+}
+
 // MockKeyValueStore is a mock of KeyValueStore interface.
 type MockKeyValueStore struct {
 	ctrl     *gomock.Controller

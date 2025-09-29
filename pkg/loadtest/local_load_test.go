@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	catalogfactory "github.com/treeverse/lakefs/modules/catalog/factory"
 	configfactory "github.com/treeverse/lakefs/modules/config/factory"
 	licensefactory "github.com/treeverse/lakefs/modules/license/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
@@ -63,9 +64,10 @@ func TestLocalLoad(t *testing.T) {
 
 	blockAdapter := testutil.NewBlockAdapterByType(t, blockstoreType)
 	c, err := catalog.New(ctx, catalog.Config{
-		Config:       cfg,
-		KVStore:      kvStore,
-		PathProvider: upload.DefaultPathProvider,
+		Config:            cfg,
+		KVStore:           kvStore,
+		PathProvider:      upload.DefaultPathProvider,
+		ConflictResolvers: catalogfactory.BuildConflictResolvers(blockAdapter),
 	})
 	testutil.MustDo(t, "build catalog", err)
 

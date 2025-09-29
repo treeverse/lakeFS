@@ -428,7 +428,7 @@ func Test_import(t *testing.T) {
 				rangeManagers[tst.storageID] = rangeManager
 				metaRangeManagers := make(map[graveler.StorageID]committed.MetaRangeManager)
 				metaRangeManagers[tst.storageID] = metaRangeManager
-				committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, params)
+				committedManager := committed.NewCommittedManager(metaRangeManagers, rangeManagers, nil, params)
 				_, err := committedManager.Import(ctx, tst.storageID, "ns", destMetaRangeID, sourceMetaRangeID, tst.prefixes)
 				if !errors.Is(err, expectedResult.expectedErr) {
 					t.Fatalf("Import error = '%v', expected '%v'", err, expectedResult.expectedErr)
