@@ -170,10 +170,10 @@ func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, erro
 
 func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (block.Adapter, error) {
 	if params.DataCredentialsJSON == "" && params.DataCredentialsFile == "" {
-		return buildSingleGSAdapter(ctx, params, adapterOpts...)
+		return BuildSingleGSAdapter(ctx, params, adapterOpts...)
 	}
 
-	metadataAdapter, err := buildSingleGSAdapter(ctx, params, adapterOpts...)
+	metadataAdapter, err := BuildSingleGSAdapter(ctx, params, adapterOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metadata adapter: %w", err)
 	}
@@ -182,7 +182,7 @@ func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.Ada
 	dataParams.CredentialsFile = params.DataCredentialsFile
 	dataParams.CredentialsJSON = params.DataCredentialsJSON
 
-	dataAdapter, err := buildSingleGSAdapter(ctx, dataParams, adapterOpts...)
+	dataAdapter, err := BuildSingleGSAdapter(ctx, dataParams, adapterOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create data adapter: %w", err)
 	}
@@ -193,8 +193,8 @@ func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.Ada
 	return dualAdapter, nil
 }
 
-// buildSingleGSAdapter creates a single GS adapter (extracted from original buildGSAdapter)
-func buildSingleGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (*gs.Adapter, error) {
+// BuildSingleGSAdapter creates a single GS adapter (extracted from original buildGSAdapter)
+func BuildSingleGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (*gs.Adapter, error) {
 	client, err := BuildGSClient(ctx, params)
 	if err != nil {
 		return nil, err
