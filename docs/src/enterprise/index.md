@@ -57,6 +57,7 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 | **[IAM Roles](../security/external-principals-aws.md)**                                  |            | ✅ <small>(AWS)</small>         |
 | **[Mount Capability](../reference/mount.md)**                           |            | ✅         |
 | **[Iceberg REST Catalog](../integrations/iceberg.md)**                           |            | ✅         |
+| **[Metadata Search](../datamanagment/metadata-search.md)**                           |            | ✅         |
 | **[Audit Logs](../reference/auditing.md)**                                 |            | ✅         |
 | **[Transactional Mirroring (cross-region)](../howto/mirroring.md)**     |            | ✅         |
 | **Support SLA**                                |            | ✅         |
