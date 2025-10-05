@@ -90,6 +90,15 @@ components:
       required: false
       schema:
         type: string
+
+    IfMatch:
+      in: header
+      name: If-Match
+      description: Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.
+      example: "2e9ec317e197e02e4264d128c2e7e681"
+      required: false
+      schema:
+        type: string
     
     NoTombstone:
       in: query
@@ -5114,6 +5123,7 @@ paths:
 
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
+        - $ref: "#/components/parameters/IfMatch"
         - in: query
           name: storageClass
           description: Deprecated, this capability will not be supported in future releases.

@@ -563,6 +563,135 @@ func TestGravelerSet_Advanced(t *testing.T) {
 	})
 }
 
+func TestGraveler_SetWithCondition(t *testing.T) {
+	ctx := context.Background()
+	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
+	existingVal := &graveler.Value{Identity: []byte("existingIdentity"), Data: []byte("existingValue")}
+
+	tests := []struct {
+		name                string
+		existingValue       *graveler.Value
+		existingInCommitted bool // If true, put value in committed instead of staging
+		condition           func(*graveler.Value) error
+		expectedErr         error
+		expectedValueResult *graveler.ValueRecord
+	}{
+		{
+			name:          "condition passes with existing value in staging",
+			existingValue: existingVal,
+			condition: func(v *graveler.Value) error {
+				if v != nil && string(v.Identity) == "existingIdentity" {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedValueResult: newSetVal,
+		},
+		{
+			name:          "condition fails with existing value in staging",
+			existingValue: existingVal,
+			condition: func(v *graveler.Value) error {
+				if v != nil && string(v.Identity) == "wrongIdentity" {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedErr: graveler.ErrPreconditionFailed,
+		},
+		{
+			name:          "condition passes with nil value",
+			existingValue: nil,
+			condition: func(v *graveler.Value) error {
+				if v == nil {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedValueResult: newSetVal,
+		},
+		{
+			name:          "condition fails with nil value",
+			existingValue: nil,
+			condition: func(v *graveler.Value) error {
+				if v != nil {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedErr: graveler.ErrPreconditionFailed,
+		},
+		{
+			name:                "condition passes with existing value in committed",
+			existingValue:       existingVal,
+			existingInCommitted: true,
+			condition: func(v *graveler.Value) error {
+				if v != nil && string(v.Identity) == "existingIdentity" {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedValueResult: newSetVal,
+		},
+		{
+			name:                "condition fails with existing value in committed",
+			existingValue:       existingVal,
+			existingInCommitted: true,
+			condition: func(v *graveler.Value) error {
+				if v != nil && string(v.Identity) == "wrongIdentity" {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedErr: graveler.ErrPreconditionFailed,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			committedMgr := &testutil.CommittedFake{}
+			stagingMgr := &testutil.StagingFake{}
+
+			if tt.existingValue != nil {
+				if tt.existingInCommitted {
+					// Populate committed storage
+					committedMgr.ValuesByKey = map[string]*graveler.Value{
+						string(newSetVal.Key): tt.existingValue,
+					}
+				} else {
+					// Populate staging storage
+					stagingMgr.Values = map[string]map[string]*graveler.Value{
+						"st": {string(newSetVal.Key): tt.existingValue},
+					}
+				}
+			}
+
+			refMgr := &testutil.RefsFake{
+				Branch: &graveler.Branch{
+					CommitID:     "commit1",
+					StagingToken: "st",
+				},
+				Commits: map[graveler.CommitID]*graveler.Commit{"commit1": {}},
+			}
+
+			store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
+
+			// Create SetOptionsFunc with condition
+			withCondition := func(opts *graveler.SetOptions) {
+				opts.Condition = tt.condition
+			}
+
+			err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, withCondition)
+			if !errors.Is(err, tt.expectedErr) {
+				t.Fatalf("Set() with condition - error: %v, expected: %v", err, tt.expectedErr)
+			}
+
+			if err == nil {
+				require.Equal(t, tt.expectedValueResult, stagingMgr.LastSetValueRecord)
+			}
+		})
+	}
+}
+
 func TestGravelerGet_Advanced(t *testing.T) {
 	tests := []struct {
 		name                string

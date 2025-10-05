@@ -3,6 +3,7 @@ package catalog_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -941,4 +942,138 @@ func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, c
 		records = append(records, record.PhysicalAddress)
 	}
 	return records
+}
+
+func TestWithEntryCondition(t *testing.T) {
+	// Helper to create a graveler.Value from an Entry
+	createValueFromEntry := func(entry *catalog.Entry) *graveler.Value {
+		value, err := catalog.EntryToValue(entry)
+		require.NoError(t, err)
+		return value
+	}
+
+	tests := []struct {
+		name          string
+		entry         *catalog.Entry
+		conditionFunc func(*catalog.Entry) error
+		expectedErr   error
+	}{
+		{
+			name: "condition passes with valid entry",
+			entry: &catalog.Entry{
+				Address: "s3://bucket/key",
+				Size:    100,
+				ETag:    "abc123",
+			},
+			conditionFunc: func(e *catalog.Entry) error {
+				if e != nil && e.Size == 100 {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "condition fails validation",
+			entry: &catalog.Entry{
+				Address: "s3://bucket/key",
+				Size:    100,
+				ETag:    "abc123",
+			},
+			conditionFunc: func(e *catalog.Entry) error {
+				if e != nil && e.Size == 200 {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedErr: graveler.ErrPreconditionFailed,
+		},
+		{
+			name:  "condition with nil entry - expect nil",
+			entry: nil,
+			conditionFunc: func(e *catalog.Entry) error {
+				if e == nil {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedErr: nil,
+		},
+		{
+			name:  "condition with nil entry - expect non-nil",
+			entry: nil,
+			conditionFunc: func(e *catalog.Entry) error {
+				if e != nil {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedErr: graveler.ErrPreconditionFailed,
+		},
+		{
+			name: "condition validates etag",
+			entry: &catalog.Entry{
+				Address: "s3://bucket/key",
+				Size:    100,
+				ETag:    "expected-etag",
+			},
+			conditionFunc: func(e *catalog.Entry) error {
+				if e == nil {
+					return graveler.ErrPreconditionFailed
+				}
+				if e.ETag != "expected-etag" {
+					return graveler.ErrPreconditionFailed
+				}
+				return nil
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "condition validates etag mismatch",
+			entry: &catalog.Entry{
+				Address: "s3://bucket/key",
+				Size:    100,
+				ETag:    "actual-etag",
+			},
+			conditionFunc: func(e *catalog.Entry) error {
+				if e == nil {
+					return graveler.ErrPreconditionFailed
+				}
+				if e.ETag != "expected-etag" {
+					return graveler.ErrPreconditionFailed
+				}
+				return nil
+			},
+			expectedErr: graveler.ErrPreconditionFailed,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create the ConditionFunc using WithEntryCondition
+			conditionFunc := catalog.EntryCondition(tt.conditionFunc)
+
+			// Apply it to SetOptions using graveler.WithCondition
+			opts := &graveler.SetOptions{}
+			graveler.WithCondition(conditionFunc)(opts)
+
+			// Verify condition was set
+			require.NotNil(t, opts.Condition)
+
+			// Convert entry to value (or nil)
+			var currentValue *graveler.Value
+			if tt.entry != nil {
+				currentValue = createValueFromEntry(tt.entry)
+			}
+
+			// Execute the condition
+			err := opts.Condition(currentValue)
+			if err != nil {
+			}
+			// Verify the result
+			if !errors.Is(err, tt.expectedErr) {
+				t.Errorf("WithEntryCondition() error = %v, expectedErr %v", err, tt.expectedErr)
+			}
+		})
+	}
 }

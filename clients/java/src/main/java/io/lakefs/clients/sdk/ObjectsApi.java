@@ -2133,7 +2133,7 @@ public class ObjectsApi {
     public APIupdateObjectUserMetadataRequest updateObjectUserMetadata(String repository, String branch, String path, UpdateObjectUserMetadata updateObjectUserMetadata) {
         return new APIupdateObjectUserMetadataRequest(repository, branch, path, updateObjectUserMetadata);
     }
-    private okhttp3.Call uploadObjectCall(String repository, String branch, String path, String ifNoneMatch, String storageClass, Boolean force, File content, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call uploadObjectCall(String repository, String branch, String path, String ifNoneMatch, String ifMatch, String storageClass, Boolean force, File content, final ApiCallback _callback) throws ApiException {
         String basePath = null;
         // Operation Servers
         String[] localBasePaths = new String[] {  };
@@ -2180,6 +2180,10 @@ public class ObjectsApi {
             localVarHeaderParams.put("If-None-Match", localVarApiClient.parameterToString(ifNoneMatch));
         }
 
+        if (ifMatch != null) {
+            localVarHeaderParams.put("If-Match", localVarApiClient.parameterToString(ifMatch));
+        }
+
         final String[] localVarAccepts = {
             "application/json"
         };
@@ -2202,7 +2206,7 @@ public class ObjectsApi {
     }
 
     @SuppressWarnings("rawtypes")
-    private okhttp3.Call uploadObjectValidateBeforeCall(String repository, String branch, String path, String ifNoneMatch, String storageClass, Boolean force, File content, final ApiCallback _callback) throws ApiException {
+    private okhttp3.Call uploadObjectValidateBeforeCall(String repository, String branch, String path, String ifNoneMatch, String ifMatch, String storageClass, Boolean force, File content, final ApiCallback _callback) throws ApiException {
         // verify the required parameter 'repository' is set
         if (repository == null) {
             throw new ApiException("Missing the required parameter 'repository' when calling uploadObject(Async)");
@@ -2218,20 +2222,20 @@ public class ObjectsApi {
             throw new ApiException("Missing the required parameter 'path' when calling uploadObject(Async)");
         }
 
-        return uploadObjectCall(repository, branch, path, ifNoneMatch, storageClass, force, content, _callback);
+        return uploadObjectCall(repository, branch, path, ifNoneMatch, ifMatch, storageClass, force, content, _callback);
 
     }
 
 
-    private ApiResponse<ObjectStats> uploadObjectWithHttpInfo(String repository, String branch, String path, String ifNoneMatch, String storageClass, Boolean force, File content) throws ApiException {
-        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, ifNoneMatch, storageClass, force, content, null);
+    private ApiResponse<ObjectStats> uploadObjectWithHttpInfo(String repository, String branch, String path, String ifNoneMatch, String ifMatch, String storageClass, Boolean force, File content) throws ApiException {
+        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, ifNoneMatch, ifMatch, storageClass, force, content, null);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    private okhttp3.Call uploadObjectAsync(String repository, String branch, String path, String ifNoneMatch, String storageClass, Boolean force, File content, final ApiCallback<ObjectStats> _callback) throws ApiException {
+    private okhttp3.Call uploadObjectAsync(String repository, String branch, String path, String ifNoneMatch, String ifMatch, String storageClass, Boolean force, File content, final ApiCallback<ObjectStats> _callback) throws ApiException {
 
-        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, ifNoneMatch, storageClass, force, content, _callback);
+        okhttp3.Call localVarCall = uploadObjectValidateBeforeCall(repository, branch, path, ifNoneMatch, ifMatch, storageClass, force, content, _callback);
         Type localVarReturnType = new TypeToken<ObjectStats>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
@@ -2242,6 +2246,7 @@ public class ObjectsApi {
         private final String branch;
         private final String path;
         private String ifNoneMatch;
+        private String ifMatch;
         private String storageClass;
         private Boolean force;
         private File content;
@@ -2259,6 +2264,16 @@ public class ObjectsApi {
          */
         public APIuploadObjectRequest ifNoneMatch(String ifNoneMatch) {
             this.ifNoneMatch = ifNoneMatch;
+            return this;
+        }
+
+        /**
+         * Set ifMatch
+         * @param ifMatch Set to the object&#39;s ETag to atomically allow operations only if the object&#39;s current ETag matches the provided value. (optional)
+         * @return APIuploadObjectRequest
+         */
+        public APIuploadObjectRequest ifMatch(String ifMatch) {
+            this.ifMatch = ifMatch;
             return this;
         }
 
@@ -2311,7 +2326,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call buildCall(final ApiCallback _callback) throws ApiException {
-            return uploadObjectCall(repository, branch, path, ifNoneMatch, storageClass, force, content, _callback);
+            return uploadObjectCall(repository, branch, path, ifNoneMatch, ifMatch, storageClass, force, content, _callback);
         }
 
         /**
@@ -2332,7 +2347,7 @@ public class ObjectsApi {
          </table>
          */
         public ObjectStats execute() throws ApiException {
-            ApiResponse<ObjectStats> localVarResp = uploadObjectWithHttpInfo(repository, branch, path, ifNoneMatch, storageClass, force, content);
+            ApiResponse<ObjectStats> localVarResp = uploadObjectWithHttpInfo(repository, branch, path, ifNoneMatch, ifMatch, storageClass, force, content);
             return localVarResp.getData();
         }
 
@@ -2354,7 +2369,7 @@ public class ObjectsApi {
          </table>
          */
         public ApiResponse<ObjectStats> executeWithHttpInfo() throws ApiException {
-            return uploadObjectWithHttpInfo(repository, branch, path, ifNoneMatch, storageClass, force, content);
+            return uploadObjectWithHttpInfo(repository, branch, path, ifNoneMatch, ifMatch, storageClass, force, content);
         }
 
         /**
@@ -2376,7 +2391,7 @@ public class ObjectsApi {
          </table>
          */
         public okhttp3.Call executeAsync(final ApiCallback<ObjectStats> _callback) throws ApiException {
-            return uploadObjectAsync(repository, branch, path, ifNoneMatch, storageClass, force, content, _callback);
+            return uploadObjectAsync(repository, branch, path, ifNoneMatch, ifMatch, storageClass, force, content, _callback);
         }
     }
 
