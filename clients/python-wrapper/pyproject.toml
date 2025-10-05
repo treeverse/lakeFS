@@ -8,8 +8,8 @@ version = "0.14.0"
 description = "lakeFS Python SDK Wrapper"
 keywords = ["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"]
 requires-python = ">=3.9"
-readme = { file = "README.md", content-type = "text/markdown" }
-license = { text = "Apache-2.0" }
+readme = "README.md"
+license = "Apache-2.0"
 authors = [
     { name = "Treeverse", email = "services@treeverse.io" },
 ]
@@ -28,9 +28,8 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-aws-iam = [
-    "boto3 >= 1.26.0",
-]
+all = [ "boto3 >= 1.26.0" ]
+aws-iam = [ "boto3 >= 1.26.0" ]
 test = [
     "pytest ~= 7.4.3",
     "pytest-datafiles ~= 3.0.0",
@@ -43,7 +42,6 @@ test = [
 Homepage = "https://github.com/treeverse/lakeFS/tree/master/clients/python-wrapper"
 
 [tool.setuptools.packages.find]
-where = ["."]
 include = ["lakectl", "lakefs"]
 
 [tool.setuptools.package-data]
