@@ -2288,6 +2288,7 @@ func TestController_UploadObjectHandler(t *testing.T) {
 			t.Fatalf("expected 201 for UploadObject, got %d", b.StatusCode())
 		}
 	})
+
 }
 
 func TestController_DeleteBranchHandler(t *testing.T) {

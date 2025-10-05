@@ -497,7 +497,7 @@ pub async fn update_object_user_metadata(configuration: &configuration::Configur
     }
 }
 
-pub async fn upload_object(configuration: &configuration::Configuration, repository: &str, branch: &str, path: &str, if_none_match: Option<&str>, storage_class: Option<&str>, force: Option<bool>, content: Option<std::path::PathBuf>) -> Result<models::ObjectStats, Error<UploadObjectError>> {
+pub async fn upload_object(configuration: &configuration::Configuration, repository: &str, branch: &str, path: &str, if_none_match: Option<&str>, if_match: Option<&str>, storage_class: Option<&str>, force: Option<bool>, content: Option<std::path::PathBuf>) -> Result<models::ObjectStats, Error<UploadObjectError>> {
     let local_var_configuration = configuration;
 
     let local_var_client = &local_var_configuration.client;
@@ -517,6 +517,9 @@ pub async fn upload_object(configuration: &configuration::Configuration, reposit
     }
     if let Some(local_var_param_value) = if_none_match {
         local_var_req_builder = local_var_req_builder.header("If-None-Match", local_var_param_value.to_string());
+    }
+    if let Some(local_var_param_value) = if_match {
+        local_var_req_builder = local_var_req_builder.header("If-Match", local_var_param_value.to_string());
     }
     if let Some(ref local_var_auth_conf) = local_var_configuration.basic_auth {
         local_var_req_builder = local_var_req_builder.basic_auth(local_var_auth_conf.0.to_owned(), local_var_auth_conf.1.to_owned());

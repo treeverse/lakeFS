@@ -198,6 +198,7 @@ func WithStageOnly(v bool) GetOptionsFunc {
 	}
 }
 
+type ConditionFunc func(currentValue *Value) error
 type SetOptions struct {
 	IfAbsent bool
 	// MaxTries set number of times we try to perform the operation before we fail with BranchWriteMaxTries.
@@ -214,6 +215,10 @@ type SetOptions struct {
 	SquashMerge bool
 	// NoTombstone will try to remove entry without setting a tombstone in KV
 	NoTombstone bool
+	// Condition is a function that validates the current value before performing the Set.
+	// If the condition returns an error, the Set operation fails with that error.
+	// If the condition succeeds, the Set is performed using SetIf with the current value.
+	Condition ConditionFunc
 }
 
 type SetOptionsFunc func(opts *SetOptions)
@@ -259,6 +264,12 @@ func WithSquashMerge(v bool) SetOptionsFunc {
 func WithNoTombstone(v bool) SetOptionsFunc {
 	return func(opts *SetOptions) {
 		opts.NoTombstone = v
+	}
+}
+
+func WithCondition(condition ConditionFunc) SetOptionsFunc {
+	return func(opts *SetOptions) {
+		opts.Condition = condition
 	}
 }
 
@@ -1843,25 +1854,46 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
-		if !options.IfAbsent {
+		// Check if Condition is provided
+		hasCondition := options.Condition != nil
+
+		if !options.IfAbsent && !hasCondition {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
 
 		// verify the key not found
-		_, err := g.Get(ctx, repository, Ref(branchID), key)
-		if err == nil { // Entry found, return precondition failed
+		curValue, err := g.Get(ctx, repository, Ref(branchID), key)
+		if err == nil && options.IfAbsent { // Entry found, return precondition failed
 			return ErrPreconditionFailed
 		}
-		if !errors.Is(err, ErrNotFound) {
+		if err != nil && !errors.Is(err, ErrNotFound) {
 			return err
 		}
 
-		// update stage with new value only if key not found or tombstone
-		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(currentValue *Value) (*Value, error) {
-			if currentValue == nil || currentValue.Identity == nil {
-				return &value, nil
+		// update stage with new value respecting the ifAbsent and condition
+		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(stagingValue *Value) (*Value, error) {
+			var valueToCheck *Value
+			noValue := stagingValue == nil || stagingValue.Identity == nil
+
+			switch {
+			case noValue:
+				// Nothing in staging, check against committed value
+				valueToCheck = curValue
+			case options.IfAbsent:
+				// Value exists in staging but IfAbsent is set
+				return nil, ErrSkipValueUpdate
+			default:
+				// Value exists in staging, check against it
+				valueToCheck = stagingValue
 			}
-			return nil, ErrSkipValueUpdate
+
+			// Run condition if provided
+			if hasCondition {
+				if err := options.Condition(valueToCheck); err != nil {
+					return nil, err
+				}
+			}
+			return &value, nil
 		})
 	}, "set")
 	return err

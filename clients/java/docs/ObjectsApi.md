@@ -955,7 +955,7 @@ null (empty response body)
 
 <a id="uploadObject"></a>
 # **uploadObject**
-> ObjectStats uploadObject(repository, branch, path).ifNoneMatch(ifNoneMatch).storageClass(storageClass).force(force).content(content).execute();
+> ObjectStats uploadObject(repository, branch, path).ifNoneMatch(ifNoneMatch).ifMatch(ifMatch).storageClass(storageClass).force(force).content(content).execute();
 
 
 
@@ -1006,12 +1006,14 @@ public class Example {
     String branch = "branch_example"; // String | 
     String path = "path_example"; // String | relative to the branch
     String ifNoneMatch = "*"; // String | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+    String ifMatch = "2e9ec317e197e02e4264d128c2e7e681"; // String | Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.
     String storageClass = "storageClass_example"; // String | Deprecated, this capability will not be supported in future releases.
     Boolean force = false; // Boolean | 
     File content = new File("/path/to/file"); // File | Only a single file per upload which must be named \\\"content\\\".
     try {
       ObjectStats result = apiInstance.uploadObject(repository, branch, path)
             .ifNoneMatch(ifNoneMatch)
+            .ifMatch(ifMatch)
             .storageClass(storageClass)
             .force(force)
             .content(content)
@@ -1036,6 +1038,7 @@ public class Example {
 | **branch** | **String**|  | |
 | **path** | **String**| relative to the branch | |
 | **ifNoneMatch** | **String**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] |
+| **ifMatch** | **String**| Set to the object&#39;s ETag to atomically allow operations only if the object&#39;s current ETag matches the provided value. | [optional] |
 | **storageClass** | **String**| Deprecated, this capability will not be supported in future releases. | [optional] |
 | **force** | **Boolean**|  | [optional] [default to false] |
 | **content** | **File**| Only a single file per upload which must be named \\\&quot;content\\\&quot;. | [optional] |

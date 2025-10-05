@@ -25,6 +25,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
+	"github.com/treeverse/lakefs/modules/api/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -3436,6 +3437,8 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	// once before uploading the body to save resources and time,
 	//	and then graveler will check again when passed a SetOptions.
 	allowOverwrite := true
+	var setOpts []graveler.SetOptionsFunc
+
 	if params.IfNoneMatch != nil {
 		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
 			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
@@ -3452,6 +3455,11 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 			return
 		}
 		allowOverwrite = false
+	}
+
+	// Handle If-Match precondition
+	if condition := factory.BuildConditionFromParams(params); condition != nil {
+		setOpts = append(setOpts, graveler.WithCondition(*condition))
 	}
 
 	// read request body parse multipart for "content" and upload the data
@@ -3542,7 +3550,9 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	entry := entryBuilder.Build()
 
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithIfAbsent(!allowOverwrite), graveler.WithForce(swag.BoolValue(params.Force)))
+	// Combine all set options
+	setOpts = append(setOpts, graveler.WithIfAbsent(!allowOverwrite), graveler.WithForce(swag.BoolValue(params.Force)))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, setOpts...)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")
 		return
