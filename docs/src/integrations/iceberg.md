@@ -277,15 +277,46 @@ The authorization requirements are managed at the lakeFS level, meaning:
 
 ### Table Maintenance
 
+#### Compact Data Files
+
+Using the lakeFS catalog, data integrity is kept after data file compaction operations (such as RewriteDataFiles),
+since data files are not deleted by such operation (only new snapshot and manifest files are created).
+
+However, to avoid unnecessary merge conflicts, we recommend marking compaction operations using `snapshotProperty()`, 
+so that lakeFS can automatically resolve conflicts when merging branches with compaction commits.
+
+**Requirements:**
+
+- lakeFS server should run the Iceberg catalog
+- The `iceberg.ignore_compaction_commits` configuration flag to be enabled (default: `true`)
+- Use the Spark Java API (not SQL procedures) with Iceberg v1.5 or newer
+- Mark compaction operations with the following property and value using `snapshotProperty()`:
+
+```scala
+SparkActions.get(spark)
+    .rewriteDataFiles(table)
+    .snapshotProperty("lakefs.compaction.operation-id", "rewrite-data-files")
+    .execute();
+```
+
+**Conflict Resolution:**
+
+When merging branches, lakeFS automatically resolves conflicts if both branches have compaction commits for the same
+table and at most one branch has non-compaction data changes. This allows safe merging of compacted branches without
+losing work.
+
+!!! tip
+    Frequently merge compacted branches to minimize merge conflicts.
+
+#### Unsupported Operations
+
 The following table maintenance operations are not supported in the current version:
 
 - [Drop table with purge](https://iceberg.apache.org/docs/latest/spark-ddl/#drop-table-purge)
-- [Compact data files](https://iceberg.apache.org/docs/latest/maintenance/#compact-data-files)
 - [Rewrite manifests](https://iceberg.apache.org/docs/latest/maintenance/#rewrite-manifests)
 - [Expire snapshots](https://iceberg.apache.org/docs/latest/maintenance/#expire-snapshots)
 - [Remove old metadata files](https://iceberg.apache.org/docs/latest/maintenance/#remove-old-metadata-files)
 - [Delete orphan files](https://iceberg.apache.org/docs/latest/maintenance/#delete-orphan-files)
-
 
 !!! danger
     **To prevent data loss, clients should disable their own cleanup operations by:**
@@ -294,7 +325,6 @@ The following table maintenance operations are not supported in the current vers
     - Setting `remove-dangling-deletes` to false when rewriting.
     - Disabling snapshot expiration.
     - Setting a very high value for `min-snapshots-to-keep` parameter.
-
 
 ### Roadmap
 
