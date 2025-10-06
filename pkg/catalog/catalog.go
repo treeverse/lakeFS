@@ -146,7 +146,7 @@ type EntryConflictResolver interface {
 	// ResolveConflict resolves conflicts between two DBEntry values.
 	// It returns the resolved value, or nil if the conflict cannot be resolved automatically.
 	// Assuming the source and dest have the same key (path).
-	ResolveConflict(ctx context.Context, sCtx graveler.StorageContext, strategy graveler.MergeStrategy, srcValue, destValue *DBEntry) (*DBEntry, error)
+	ResolveConflict(ctx context.Context, sCtx graveler.StorageContext, srcValue, destValue *DBEntry) (*DBEntry, error)
 }
 
 const (
@@ -3322,7 +3322,7 @@ type ConflictResolverWrapper struct {
 	ConflictResolver EntryConflictResolver
 }
 
-func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, sCtx graveler.StorageContext, strategy graveler.MergeStrategy, srcValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
+func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, sCtx graveler.StorageContext, _ graveler.MergeStrategy, srcValue, destValue *graveler.ValueRecord) (*graveler.ValueRecord, error) {
 	if !cr.ConflictResolver.FilterByPath(string(srcValue.Key)) {
 		// Not a conflict the catalog should resolve
 		return nil, nil
@@ -3339,7 +3339,7 @@ func (cr *ConflictResolverWrapper) ResolveConflict(ctx context.Context, sCtx gra
 	}
 
 	// Resolve conflict
-	resolvedDBEntry, err := cr.ConflictResolver.ResolveConflict(ctx, sCtx, strategy, srcDBEntry, destDBEntry)
+	resolvedDBEntry, err := cr.ConflictResolver.ResolveConflict(ctx, sCtx, srcDBEntry, destDBEntry)
 	if err != nil {
 		return nil, err
 	}
