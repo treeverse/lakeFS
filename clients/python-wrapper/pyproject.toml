@@ -27,9 +27,11 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-[dependency-groups]
+[project.optional-dependencies]
 all = [ "boto3 >= 1.26.0" ]
 aws-iam = [ "boto3 >= 1.26.0" ]
+
+[dependency-groups]
 test = [
     "pytest ~= 7.4.3",
     "pytest-datafiles ~= 3.0.0",
