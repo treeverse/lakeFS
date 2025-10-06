@@ -27,7 +27,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 all = [ "boto3 >= 1.26.0" ]
 aws-iam = [ "boto3 >= 1.26.0" ]
 test = [
