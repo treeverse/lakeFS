@@ -305,8 +305,15 @@ When merging branches, lakeFS automatically resolves conflicts if both branches 
 table and at most one branch has non-compaction data changes. This allows safe merging of compacted branches without
 losing work.
 
+!!! info
+    Expired or deleted snapshots will very likely lead to merge conflicts, as lakeFS cannot determine which snapshots to keep.
+
 !!! tip
     Frequently merge compacted branches to minimize merge conflicts.
+
+!!! tip
+    Data changes are ignored in non-"main" _Iceberg_ branches ("Refs"), 
+    so it's advised to avoid branching in Iceberg when branching in lakeFS.
 
 #### Unsupported Operations
 
