@@ -664,13 +664,15 @@ func TestGraveler_SetWithCondition(t *testing.T) {
 					}
 				}
 			}
-
+			// RefManager mock setup - returns a random commit for the branch just to get to the committed manager and get the existing value
+			randomCommit := &graveler.Commit{}
 			refMgr := &testutil.RefsFake{
 				Branch: &graveler.Branch{
 					CommitID:     "commit1",
 					StagingToken: "st",
 				},
-				Commits: map[graveler.CommitID]*graveler.Commit{"commit1": {}},
+				CommitID: "commit1",
+				Commits:  map[graveler.CommitID]*graveler.Commit{"commit1": randomCommit},
 			}
 
 			store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())

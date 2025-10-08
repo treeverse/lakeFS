@@ -944,7 +944,7 @@ func readPhysicalAddressesFromParquetObject(t *testing.T, repositoryID string, c
 	return records
 }
 
-func TestWithEntryCondition(t *testing.T) {
+func TestEntryCondition(t *testing.T) {
 	// Helper to create a graveler.Value from an Entry
 	createValueFromEntry := func(entry *catalog.Entry) *graveler.Value {
 		value, err := catalog.EntryToValue(entry)
@@ -1068,8 +1068,6 @@ func TestWithEntryCondition(t *testing.T) {
 
 			// Execute the condition
 			err := opts.Condition(currentValue)
-			if err != nil {
-			}
 			// Verify the result
 			if !errors.Is(err, tt.expectedErr) {
 				t.Errorf("WithEntryCondition() error = %v, expectedErr %v", err, tt.expectedErr)

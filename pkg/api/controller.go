@@ -3437,7 +3437,6 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	// once before uploading the body to save resources and time,
 	//	and then graveler will check again when passed a SetOptions.
 	allowOverwrite := true
-	var setOpts []graveler.SetOptionsFunc
 
 	if params.IfNoneMatch != nil {
 		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
@@ -3457,6 +3456,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		allowOverwrite = false
 	}
 
+	var setOpts []graveler.SetOptionsFunc
 	// Handle If-Match precondition
 	if condition := factory.BuildConditionFromParams(params); condition != nil {
 		setOpts = append(setOpts, graveler.WithCondition(*condition))
