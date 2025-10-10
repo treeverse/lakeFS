@@ -61,3 +61,44 @@ func PolicyArn(policyID string) string {
 func ExternalPrincipalArn(principalID string) string {
 	return authArnPrefix + "externalPrincipal/" + principalID
 }
+
+type PermissionParams struct {
+	Repository *string
+	Path       *string
+}
+
+type PermissionDescriptor interface {
+	Permission(PermissionParams) Node
+}
+
+type ObjectPermission struct {
+	Action string
+}
+
+func (o *ObjectPermission) Permission(params PermissionParams) Node {
+	return Node{
+		Permission: Permission{
+			Action:   o.Action,
+			Resource: ObjectArn(*params.Repository, *params.Path),
+		},
+	}
+}
+
+var readObjectPermission = ObjectPermission{Action: ReadObjectAction}
+var writeObjectPermission = ObjectPermission{Action: WriteObjectAction}
+
+var permissionByOp = map[string]PermissionDescriptor{
+	"HeadObject":               &readObjectPermission,
+	"GetObject":                &readObjectPermission,
+	"StatObject":               &readObjectPermission,
+	"GetUnderlyingProperties":  &readObjectPermission,
+	"StageObject":              &writeObjectPermission,
+	"CreateSymlinkFile":        &writeObjectPermission,
+	"UpdateObjectUserMetadata": &writeObjectPermission,
+	"UploadObject":             &writeObjectPermission,
+	"UploadObjectPreflight":    &writeObjectPermission,
+}
+
+func GetPermissionDescriptor(operationId string) PermissionDescriptor {
+	return permissionByOp[operationId]
+}
