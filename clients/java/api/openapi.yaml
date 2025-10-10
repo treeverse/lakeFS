@@ -5507,6 +5507,16 @@ paths:
         schema:
           type: string
         style: simple
+      - description: Set to the object's ETag to atomically allow operations only
+          if the object's current ETag matches the provided value.
+        example: 2e9ec317e197e02e4264d128c2e7e681
+        explode: false
+        in: header
+        name: If-Match
+        required: false
+        schema:
+          type: string
+        style: simple
       - deprecated: true
         description: "Deprecated, this capability will not be supported in future\
           \ releases."
@@ -7715,6 +7725,17 @@ components:
       explode: false
       in: header
       name: If-None-Match
+      required: false
+      schema:
+        type: string
+      style: simple
+    IfMatch:
+      description: Set to the object's ETag to atomically allow operations only if
+        the object's current ETag matches the provided value.
+      example: 2e9ec317e197e02e4264d128c2e7e681
+      explode: false
+      in: header
+      name: If-Match
       required: false
       schema:
         type: string
