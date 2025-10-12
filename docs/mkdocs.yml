@@ -111,6 +111,7 @@ plugins:
   - redirects:
       redirect_maps:
         reference/mount-csi-driver.md: reference/mount.md#mount-csi-driver-everest-on-kubernetes
+        howto/unity-delta-sharing.md: integrations/unity-catalog.md
 
 
 
