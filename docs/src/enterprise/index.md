@@ -33,7 +33,6 @@ With lakeFS Enterprise you’ll receive access to the security package containin
 ## What additional functionality does lakeFS Enterprise provide?
 
 1. [lakeFS Mount](../reference/mount.md) - allows users to virtually mount a remote lakeFS repository onto a local directory. Once mounted, users can access the data as if it resides on their local filesystem, using any tool, library, or framework that reads from a local filesystem.
-1. [lakeFS Metadata Search](https://info.lakefs.io/metadata-search) - Allows a granular search API to filter and query versioned objects based on attached metadata. This is especially useful for machine learning environments to filter by labels and file attributes
 1. [Iceberg REST Catalog](../integrations/iceberg.md) - Provides full support for managing Iceberg tables alongside other data formats in the same lakeFS repository. Built using open standards and works with any Iceberg client.
 1. [lakeFS for Snowflake](https://info.lakefs.io/lakefs-for-snowflake) - Provides full integration into the Snowflake ecosystem, including full support for Iceberg managed tables.
 1. [Transactional Mirroring](../howto/mirroring.md) - Allows replicating lakeFS repositories into consistent read-only copies in remote locations.
