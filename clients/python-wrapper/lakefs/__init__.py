@@ -18,6 +18,7 @@ from lakefs.branch import Branch
 from lakefs.object import StoredObject, WriteableObject, ObjectReader
 from lakefs.branch import LakeFSDeprecationWarning
 
+__version__ = "0.14.0"
 
 def repository(repository_id: str, *args, **kwargs) -> Repository:
     """

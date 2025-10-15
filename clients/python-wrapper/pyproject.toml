@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lakefs"
-version = "0.14.0"
 description = "lakeFS Python SDK Wrapper"
 keywords = ["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"]
 requires-python = ">=3.9"
@@ -26,6 +25,7 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 all = [ "boto3 >= 1.26.0" ]
@@ -42,6 +42,9 @@ test = [
 
 [project.urls]
 Homepage = "https://github.com/treeverse/lakeFS/tree/master/clients/python-wrapper"
+
+[tool.setuptools.dynamic]
+version = { attr = "lakefs.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["lakectl", "lakefs"]

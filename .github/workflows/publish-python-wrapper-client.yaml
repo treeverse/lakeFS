@@ -14,7 +14,7 @@ jobs:
       working-directory: ./clients/python-wrapper/
       shell: bash
       run: |
-        echo "tag=$(python setup.py --version)" >> $GITHUB_OUTPUT
+        echo "tag=$(python -c 'import lakefs; print(lakefs.__version__)')" >> $GITHUB_OUTPUT
       id: docver
 
     - name: Set up Python 3.9
@@ -50,4 +50,3 @@ jobs:
         password: ${{ secrets.PYPI_API_TOKEN }}
         packages-dir: clients/python-wrapper/dist/
         verbose: true
-  

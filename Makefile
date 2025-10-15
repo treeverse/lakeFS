@@ -288,7 +288,7 @@ python-wrapper-lint:
 
 python-wrapper-gen-docs:
 	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/
-	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/$$(python clients/python-wrapper/setup.py --version)
+	sphinx-build -b html -W clients/python-wrapper/docs clients/python-wrapper/_site/$$(PYTHONPATH=clients/python-wrapper python -c "import lakefs; print(lakefs.__version__)")
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
