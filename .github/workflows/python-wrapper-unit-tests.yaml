@@ -44,7 +44,18 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+
+      # Use Python 3.11 for documentation generation and validation
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Generate Documentation
+        run: make python-wrapper-gen-docs
         
+      - name: Validate Documentation
+        run: make validate-python-wrapper
+
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
@@ -58,12 +69,6 @@ jobs:
       - name: Install dependencies
         working-directory: ./clients/python-wrapper
         run: pip install -r requirements.txt pylint pytest pytest-md pytest-emoji
-
-      - name: Generate Documentation
-        run: make python-wrapper-gen-docs
-        
-      - name: Validate Documentation
-        run: make validate-python-wrapper
 
       - name: Run Pylint
         run: make python-wrapper-lint

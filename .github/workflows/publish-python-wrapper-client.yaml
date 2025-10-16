@@ -11,17 +11,21 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    # Use Python 3.11 for documentation generation
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Generate and Build Documentation
+      run: make python-wrapper-gen-docs
+
     - name: Set up Python 3.9
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
         cache: 'pip'
         cache-dependency-path: 'clients/python-wrapper/requirements.txt'
-
-    - name: Generate and Build Documentation
-      run: |
-        pip install -r clients/python-wrapper/requirements.txt
-        make python-wrapper-gen-docs
 
     - name: Publish to Docs Repository
       uses: dmnemec/copy_file_to_another_repo_action@v1.1.1
