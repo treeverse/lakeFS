@@ -45,8 +45,9 @@ func tryOnce() kv.TransactionOpts {
 }
 
 func tryMany() kv.TransactionOpts {
+	const maxDuration = 5 * time.Second
 	return kv.TransactionOpts{
-		Backoff: backoff.NewExponentialBackOff(backoff.WithMaxElapsedTime(5 * time.Second)),
+		Backoff: backoff.NewExponentialBackOff(backoff.WithMaxElapsedTime(maxDuration)),
 	}
 }
 
@@ -89,6 +90,9 @@ func testSimpleTransaction(t testing.TB, ctx context.Context, tx kv.Transactione
 }
 
 func testRaceRetry(t testing.TB, ctx context.Context, tx kv.Transactioner) {
+	const (
+		expectedIterations = 2
+	)
 	var (
 		ch1 = make(chan struct{})
 		ch2 = make(chan struct{})
@@ -141,7 +145,7 @@ func testRaceRetry(t testing.TB, ctx context.Context, tx kv.Transactioner) {
 	if err != nil {
 		t.Error(err)
 	}
-	if iteration != 2 {
+	if iteration != expectedIterations {
 		t.Errorf("Main transaction ran %d != 2 times", iteration)
 	}
 }
