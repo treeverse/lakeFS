@@ -279,16 +279,14 @@ The authorization requirements are managed at the lakeFS level, meaning:
 
 #### Compact Data Files
 
-Using the lakeFS catalog, data integrity is kept after data file compaction operations (such as RewriteDataFiles),
-since data files are not deleted by such operation (only new snapshot and manifest files are created).
+In the lakeFS catalog, data integrity is maintained after data file compaction operations (such as RewriteDataFiles),
+since data files are not deleted by such operations (only new snapshot and manifest files are created).
 
 However, to avoid unnecessary merge conflicts, we recommend marking compaction operations using `snapshotProperty()`, 
 so that lakeFS can automatically resolve conflicts when merging branches with compaction commits.
 
 **Requirements:**
 
-- lakeFS server should run the Iceberg catalog
-- The `iceberg.ignore_compaction_commits` configuration flag to be enabled (default: `true`)
 - Use the Spark Java API (not SQL procedures) with Iceberg v1.5 or newer
 - Mark compaction operations with the following property and value using `snapshotProperty()`:
 
@@ -314,6 +312,9 @@ losing work.
 !!! tip
     Data changes are ignored in non-"main" _Iceberg_ branches ("Refs"), 
     so it's advised to avoid branching in Iceberg when branching in lakeFS.
+
+For disabling the automatic conflict resolution, 
+set the `iceberg.ignore_compaction_commits` configuration flag to `false` (it defaults to `true`).
 
 #### Unsupported Operations
 
