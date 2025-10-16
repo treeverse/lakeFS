@@ -6,16 +6,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-22.04
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-
-    - name: Extract docs version
-      working-directory: ./clients/python-wrapper/
-      shell: bash
-      run: |
-        echo "tag=$(python setup.py --version)" >> $GITHUB_OUTPUT
-      id: docver
 
     - name: Set up Python 3.9
       uses: actions/setup-python@v4
