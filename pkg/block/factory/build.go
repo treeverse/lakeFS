@@ -169,28 +169,7 @@ func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, erro
 }
 
 func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (block.Adapter, error) {
-	if params.DataCredentialsJSON == "" && params.DataCredentialsFile == "" {
-		return BuildSingleGSAdapter(ctx, params, adapterOpts...)
-	}
-
-	metadataAdapter, err := BuildSingleGSAdapter(ctx, params, adapterOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create metadata adapter: %w", err)
-	}
-
-	dataParams := params
-	dataParams.CredentialsFile = params.DataCredentialsFile
-	dataParams.CredentialsJSON = params.DataCredentialsJSON
-
-	dataAdapter, err := BuildSingleGSAdapter(ctx, dataParams, adapterOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create data adapter: %w", err)
-	}
-
-	dualAdapter := gs.NewDualAdapter(metadataAdapter, dataAdapter)
-	logging.FromContext(ctx).WithField("type", "gs").Info("initialized dual blockstore adapter")
-
-	return dualAdapter, nil
+	return BuildSingleGSAdapter(ctx, params, adapterOpts...)
 }
 
 // BuildSingleGSAdapter creates a single GS adapter (extracted from original buildGSAdapter)
