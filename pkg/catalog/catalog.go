@@ -1095,7 +1095,7 @@ func (c *Catalog) UpdateEntryUserMetadata(ctx context.Context, repositoryID, bra
 	}
 
 	key := graveler.Key(path)
-	updater := graveler.ValueUpdateFunc(func(value *graveler.Value) (*graveler.Value, error) {
+	updater := graveler.ValueUpdateFunc(func(exists bool, value *graveler.Value) (*graveler.Value, error) {
 		if value == nil {
 			return nil, fmt.Errorf("update user metadata on %s/%s/%s: %w",
 				repositoryID, branchID, path, graveler.ErrNotFound)

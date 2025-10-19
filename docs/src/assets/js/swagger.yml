@@ -4886,6 +4886,7 @@ paths:
 
       parameters:
         - $ref: "#/components/parameters/IfNoneMatch"
+        - $ref: "#/components/parameters/IfMatch"
 
       responses:
         200:
@@ -4915,6 +4916,8 @@ paths:
           $ref: "#/components/responses/PreconditionFailed"
         429:
           description: too many requests
+        501:
+          description: Not implemented
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5156,6 +5159,8 @@ paths:
           $ref: "#/components/responses/PreconditionFailed"
         429:
           description: too many requests
+        501:
+          description: Not implemented
         default:
           $ref: "#/components/responses/ServerError"
     delete:

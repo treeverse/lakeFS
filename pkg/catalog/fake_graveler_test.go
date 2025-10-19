@@ -121,7 +121,7 @@ func (g *FakeGraveler) Update(ctx context.Context, repository *graveler.Reposito
 		return g.Err
 	}
 	k := fakeGravelerBuildKey(repository.RepositoryID, graveler.Ref(branchID.String()), key)
-	value, err := update(g.KeyValue[k])
+	value, err := update(true, g.KeyValue[k])
 	if err != nil {
 		return err
 	}

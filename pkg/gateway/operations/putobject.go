@@ -325,14 +325,14 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
 	// once here, before uploading the body to save resources and time,
 	// and then graveler will check again when passed a SetOptions.
-	if !allowOverwrite {
-		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
-		if err == nil {
-			// In case object exists in catalog, no error returns
-			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
-			return
-		}
-	}
+	//if !allowOverwrite {
+	//	_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+	//	if err == nil {
+	//		// In case object exists in catalog, no error returns
+	//		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+	//		return
+	//	}
+	//}
 	objectPointer := block.ObjectPointer{
 		StorageID:        o.Repository.StorageID,
 		StorageNamespace: o.Repository.StorageNamespace,

@@ -137,6 +137,7 @@ pub enum UploadObjectError {
     Status404(models::Error),
     Status412(models::Error),
     Status429(),
+    Status501(),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }
