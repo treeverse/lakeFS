@@ -200,7 +200,6 @@ func WithStageOnly(v bool) GetOptionsFunc {
 
 type ConditionFunc func(currentValue *Value) error
 type SetOptions struct {
-	IfAbsent bool
 	// MaxTries set number of times we try to perform the operation before we fail with BranchWriteMaxTries.
 	// By default, 0 - we try BranchWriteMaxTries
 	MaxTries int
@@ -229,12 +228,6 @@ func NewSetOptions(opts []SetOptionsFunc) *SetOptions {
 		opt(options)
 	}
 	return options
-}
-
-func WithIfAbsent(v bool) SetOptionsFunc {
-	return func(opts *SetOptions) {
-		opts.IfAbsent = v
-	}
 }
 
 func WithForce(v bool) SetOptionsFunc {
@@ -557,7 +550,9 @@ type BranchRecord struct {
 type BranchUpdateFunc func(*Branch) (*Branch, error)
 
 // ValueUpdateFunc Used to pass validation call back to staging manager for UpdateValue flow
-type ValueUpdateFunc func(*Value) (*Value, error)
+// exists - indicates whether the value exists or not
+// val - current value, nil if tombstone
+type ValueUpdateFunc func(exists bool, val *Value) (*Value, error)
 
 // TagRecord holds TagID with the associated Tag data
 type TagRecord struct {
@@ -1857,46 +1852,44 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		// Check if Condition is provided
 		hasCondition := options.Condition != nil
 
-		if !options.IfAbsent && !hasCondition {
+		if !hasCondition {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
 
-		// verify the key not found
-		curValue, err := g.Get(ctx, repository, Ref(branchID), key)
-		if err == nil && options.IfAbsent { // Entry found, return precondition failed
-			return ErrPreconditionFailed
-		}
-		if err != nil && !errors.Is(err, ErrNotFound) {
-			return err
-		}
-
 		// update stage with new value respecting the ifAbsent and condition
-		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(stagingValue *Value) (*Value, error) {
-			var valueToCheck *Value
-			noValue := stagingValue == nil || stagingValue.Identity == nil
-
-			switch {
-			case noValue:
-				// Nothing in staging, check against committed value
-				valueToCheck = curValue
-			case options.IfAbsent:
-				// Value exists in staging but IfAbsent is set
-				return nil, ErrSkipValueUpdate
-			default:
-				// Value exists in staging, check against it
-				valueToCheck = stagingValue
-			}
-
-			// Run condition if provided
-			if hasCondition {
-				if err := options.Condition(valueToCheck); err != nil {
-					return nil, err
-				}
-			}
+		updateFunc := func(exists bool, currentValue *Value) (*Value, error) {
 			return &value, nil
-		})
+		}
+		return g.handleUpdate(ctx, repository, branchID, branch, key, updateFunc, options.Condition)
 	}, "set")
 	return err
+}
+
+// handleUpdate while providing the callback functions (condition and update) the current value considering both committed and staging
+func (g *Graveler) handleUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch *Branch, key Key, updateFunc ValueUpdateFunc, condition ConditionFunc) error {
+	curValue, err := g.Get(ctx, repository, Ref(branchID), key)
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+
+	return g.StagingManager.Update(ctx, branch.StagingToken, key, func(exists bool, stagingValue *Value) (*Value, error) {
+		valueToCheck := curValue
+
+		if exists {
+			valueToCheck = stagingValue
+		}
+		// Run condition if provided
+		// // TODO(Guys): Change condition to conditions array to support multiple conditions
+		if condition != nil {
+			if err := condition(valueToCheck); err != nil {
+				return nil, err
+			}
+		}
+		if updateFunc != nil {
+			return updateFunc(true, valueToCheck)
+		}
+		return curValue, nil
+	})
 }
 
 // safeBranchWrite repeatedly attempts to perform stagingOperation, retrying
@@ -1963,27 +1956,8 @@ func (g *Graveler) Update(ctx context.Context, repository *RepositoryRecord, bra
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "update_user_metadata"})
 
-	// committedValue, if non-nil is a value read from either uncommitted or committed.  Usually
-	// it is read from committed.  If there is a value on staging, that entry will be modified
-	// and committedValue will never be read.
-	var committedValue *Value
-
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
-		return g.StagingManager.Update(ctx, branch.StagingToken, key, func(currentValue *Value) (*Value, error) {
-			if currentValue == nil {
-				// Object not on staging: need to update committed value.
-				if committedValue == nil {
-					committedValue, err = g.Get(ctx, repository, Ref(branchID), key)
-					if err != nil {
-						// (Includes ErrNotFound)
-						return nil, fmt.Errorf("read from committed: %w", err)
-					}
-				}
-				// Get always returns a non-nil value or an error.
-				currentValue = committedValue
-			}
-			return update(currentValue)
-		})
+		return g.handleUpdate(ctx, repository, branchID, branch, key, update, options.Condition)
 	}, "update_metadata")
 	return err
 }

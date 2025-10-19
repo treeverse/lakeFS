@@ -2,10 +2,10 @@ package factory
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
@@ -44,10 +44,25 @@ func NotImplementedIcebergCatalogHandler(w http.ResponseWriter, r *http.Request)
 
 // BuildConditionFromParams creates a graveler.ConditionFunc from upload params.
 // Returns nil if no precondition is specified in the params.
-// Returns an error if IfMatch is provided (not yet supported).
-func BuildConditionFromParams(params apigen.UploadObjectParams) (*graveler.ConditionFunc, error) {
-	if params.IfMatch != nil {
+// Handles IfNoneMatch (must be "*") and IfMatch (ETag validation).
+func BuildConditionFromParams(ifMatch, ifNoneMatch *string) (*graveler.ConditionFunc, error) {
+	var condition graveler.ConditionFunc
+	switch {
+	case ifMatch != nil && ifNoneMatch != nil:
+		return nil, fmt.Errorf("cannot specify both If-Match and If-None-Match: %w", graveler.ErrInvalidValue)
+	case ifMatch != nil:
+		// Handle IfMatch: not yet supported
 		return nil, catalog.ErrFeatureNotSupported
+	case ifNoneMatch != nil && *ifNoneMatch != "*":
+		// Handle IfNoneMatch with ETag value: not yet supported
+		return nil, fmt.Errorf("If-None-Match only supports '*': %w", graveler.ErrInvalidValue)
+	case ifNoneMatch != nil:
+		condition = func(currentValue *graveler.Value) error {
+			if currentValue != nil {
+				return graveler.ErrPreconditionFailed
+			}
+			return nil
+		}
 	}
-	return nil, nil
+	return &condition, nil
 }

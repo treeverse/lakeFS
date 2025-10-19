@@ -5086,6 +5086,16 @@ paths:
         schema:
           type: string
         style: simple
+      - description: Set to the object's ETag to atomically allow operations only
+          if the object's current ETag matches the provided value.
+        example: 2e9ec317e197e02e4264d128c2e7e681
+        explode: false
+        in: header
+        name: If-Match
+        required: false
+        schema:
+          type: string
+        style: simple
       requestBody:
         content:
           application/json:
@@ -5137,6 +5147,8 @@ paths:
           description: Precondition Failed
         "429":
           description: too many requests
+        "501":
+          description: Not implemented
         default:
           content:
             application/json:
@@ -5583,6 +5595,8 @@ paths:
           description: Precondition Failed
         "429":
           description: too many requests
+        "501":
+          description: Not implemented
         default:
           content:
             application/json:

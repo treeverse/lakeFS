@@ -1808,6 +1808,7 @@ class ObjectsApi:
             '404': "Error",
             '412': "Error",
             '429': None,
+            '501': None,
         }
 
         return self.api_client.call_api(

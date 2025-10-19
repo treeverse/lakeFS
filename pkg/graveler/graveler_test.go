@@ -32,8 +32,6 @@ type Hooks struct {
 	TagID            graveler.TagID
 }
 
-var ErrGravelerUpdate = errors.New("test update error")
-
 func (h *Hooks) PrepareCommitHook(_ context.Context, record graveler.HookRecord) error {
 	h.Called = append(h.Called, "PrepareCommitHook")
 	h.RepositoryID = record.Repository.RepositoryID
@@ -383,10 +381,8 @@ func TestGraveler_Get(t *testing.T) {
 
 func TestGraveler_Set(t *testing.T) {
 	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
-	sampleVal := &graveler.Value{Identity: []byte("sampleIdentity"), Data: []byte("sampleValue")}
 	tests := []struct {
 		name                string
-		ifAbsent            bool
 		expectedValueResult *graveler.ValueRecord
 		expectedErr         error
 		committedMgr        *testutil.CommittedFake
@@ -407,46 +403,12 @@ func TestGraveler_Set(t *testing.T) {
 			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "commit1"}},
 			expectedValueResult: newSetVal,
 		},
-		{
-			name:                "overwrite no prior value",
-			committedMgr:        &testutil.CommittedFake{Err: graveler.ErrNotFound},
-			stagingMgr:          &testutil.StagingFake{},
-			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
-			expectedValueResult: newSetVal,
-			ifAbsent:            true,
-		},
-		{
-			name:                "overwrite with prior committed value",
-			committedMgr:        &testutil.CommittedFake{},
-			stagingMgr:          &testutil.StagingFake{},
-			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
-			expectedValueResult: nil,
-			expectedErr:         graveler.ErrPreconditionFailed,
-			ifAbsent:            true,
-		},
-		{
-			name:                "overwrite with prior staging value",
-			committedMgr:        &testutil.CommittedFake{},
-			stagingMgr:          &testutil.StagingFake{Values: map[string]map[string]*graveler.Value{"st": {"key": sampleVal}}, LastSetValueRecord: &graveler.ValueRecord{Key: []byte("key"), Value: sampleVal}},
-			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla", StagingToken: "st"}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
-			expectedValueResult: &graveler.ValueRecord{Key: []byte("key"), Value: sampleVal},
-			expectedErr:         graveler.ErrPreconditionFailed,
-			ifAbsent:            true,
-		},
-		{
-			name:                "overwrite with prior staging tombstone",
-			committedMgr:        &testutil.CommittedFake{Err: graveler.ErrNotFound},
-			stagingMgr:          &testutil.StagingFake{Values: map[string]map[string]*graveler.Value{"st1": {"key": nil}, "st2": {"key": sampleVal}}, LastSetValueRecord: &graveler.ValueRecord{Key: []byte("key"), Value: sampleVal}},
-			refMgr:              &testutil.RefsFake{Branch: &graveler.Branch{CommitID: "bla", StagingToken: "st1", SealedTokens: []graveler.StagingToken{"st2"}}, Commits: map[graveler.CommitID]*graveler.Commit{"": {}}},
-			expectedValueResult: newSetVal,
-			ifAbsent:            true,
-		},
 	}
 	ctx := context.Background()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			store := newGraveler(t, tt.committedMgr, tt.stagingMgr, tt.refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-			err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(tt.ifAbsent))
+			err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value)
 			if !errors.Is(err, tt.expectedErr) {
 				t.Fatalf("Set() - error: %v, expected: %v", err, tt.expectedErr)
 			}
@@ -467,36 +429,13 @@ func TestGravelerSet_Advanced(t *testing.T) {
 	newSetVal := &graveler.ValueRecord{Key: []byte("key"), Value: &graveler.Value{Data: []byte("newValue"), Identity: []byte("newIdentity")}}
 	// RefManager mock base setup
 	refMgr := mock.NewMockRefManager(ctrl)
-	refExpect := refMgr.EXPECT()
-	refExpectCommitNotFound := func() {
-		refExpect.ParseRef(gomock.Any()).Times(1).Return(graveler.RawRef{BaseRef: ""}, nil)
-		refExpect.ResolveRawRef(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.ResolvedRef{
-			BranchRecord: graveler.BranchRecord{
-				Branch: &graveler.Branch{},
-			},
-		}, nil)
-		refExpect.GetCommit(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrCommitNotFound)
-	}
-
-	t.Run("update failure", func(t *testing.T) {
-		stagingMgr := &testutil.StagingFake{
-			UpdateErr: ErrGravelerUpdate,
-		}
-		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
-		refExpectCommitNotFound()
-		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
-		require.ErrorIs(t, err, ErrGravelerUpdate)
-		require.Nil(t, stagingMgr.LastSetValueRecord)
-	})
 
 	t.Run("branch deleted after update", func(t *testing.T) {
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
-		refExpectCommitNotFound()
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrNotFound)
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value)
 		require.ErrorIs(t, err, graveler.ErrNotFound)
 		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})
@@ -504,17 +443,15 @@ func TestGravelerSet_Advanced(t *testing.T) {
 	t.Run("branch token changed after update - one retry", func(t *testing.T) {
 		// Test safeBranchWrite retries when token changed after update a single time and then succeeds
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
-		refExpectCommitNotFound()
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(&graveler.Branch{
 			StagingToken: "new_token",
 		}, nil)
-		refExpectCommitNotFound()
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 			StagingToken: "new_token",
 		}, nil)
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value)
 		require.Nil(t, err)
 		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})
@@ -525,7 +462,6 @@ func TestGravelerSet_Advanced(t *testing.T) {
 			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
 			}, nil)
-			refExpectCommitNotFound()
 			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i+1)),
 			}, nil)
@@ -533,13 +469,12 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 			StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(graveler.BranchWriteMaxTries)),
 		}, nil)
-		refExpectCommitNotFound()
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 			StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(graveler.BranchWriteMaxTries)),
 		}, nil)
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value)
 		require.Nil(t, err)
 		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})
@@ -550,14 +485,13 @@ func TestGravelerSet_Advanced(t *testing.T) {
 			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i)),
 			}, nil)
-			refExpectCommitNotFound()
 			refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{
 				StagingToken: graveler.StagingToken("new_token_" + strconv.Itoa(i+1)),
 			}, nil)
 		}
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithIfAbsent(true))
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value)
 		require.ErrorIs(t, err, graveler.ErrTooManyTries)
 		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})
@@ -572,6 +506,7 @@ func TestGraveler_SetWithCondition(t *testing.T) {
 		name                string
 		existingValue       *graveler.Value
 		existingInCommitted bool // If true, put value in committed instead of staging
+		isTombstone         bool // If true, set an explicit nil in staging (tombstone)
 		condition           func(*graveler.Value) error
 		expectedErr         error
 		expectedValueResult *graveler.ValueRecord
@@ -644,6 +579,32 @@ func TestGraveler_SetWithCondition(t *testing.T) {
 			},
 			expectedErr: graveler.ErrPreconditionFailed,
 		},
+		{
+			name:                "condition passes with tombstone in staging",
+			existingValue:       existingVal,
+			existingInCommitted: true,
+			isTombstone:         true,
+			condition: func(v *graveler.Value) error {
+				if v == nil {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedValueResult: newSetVal,
+		},
+		{
+			name:                "condition fails with tombstone in staging",
+			existingValue:       existingVal,
+			existingInCommitted: true,
+			isTombstone:         true,
+			condition: func(v *graveler.Value) error {
+				if v != nil {
+					return nil
+				}
+				return graveler.ErrPreconditionFailed
+			},
+			expectedErr: graveler.ErrPreconditionFailed,
+		},
 	}
 
 	for _, tt := range tests {
@@ -662,6 +623,13 @@ func TestGraveler_SetWithCondition(t *testing.T) {
 					stagingMgr.Values = map[string]map[string]*graveler.Value{
 						"st": {string(newSetVal.Key): tt.existingValue},
 					}
+				}
+			}
+
+			// Set up tombstone if requested
+			if tt.isTombstone {
+				stagingMgr.Values = map[string]map[string]*graveler.Value{
+					"st": {string(newSetVal.Key): nil},
 				}
 			}
 			// RefManager mock setup - returns a random commit for the branch just to get to the committed manager and get the existing value

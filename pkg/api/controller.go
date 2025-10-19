@@ -937,15 +937,6 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	ifAbsent := false
-	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
-			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
-			return
-		}
-		ifAbsent = true
-	}
-
 	storage := c.Config.StorageConfig().GetStorageByID(repo.StorageID)
 	if storage == nil {
 		c.handleAPIError(ctx, w, r, fmt.Errorf("no storage config found for id: %s: %w", repo.StorageID, block.ErrInvalidAddress))
@@ -999,8 +990,18 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
+	condition, err := factory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	opts := []graveler.SetOptionsFunc{
+		graveler.WithForce(swag.BoolValue(body.Force)),
+	}
+	if condition != nil {
+		opts = append(opts, graveler.WithCondition(*condition))
+	}
 	entry := entryBuilder.Build()
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)), graveler.WithIfAbsent(ifAbsent))
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, opts...)
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3434,32 +3435,9 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
-	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
-	// once before uploading the body to save resources and time,
-	//	and then graveler will check again when passed a SetOptions.
-	allowOverwrite := true
-
-	if params.IfNoneMatch != nil {
-		if swag.StringValue((*string)(params.IfNoneMatch)) != "*" {
-			writeError(w, r, http.StatusBadRequest, "Unsupported value for If-None-Match - Only \"*\" is supported")
-			return
-		}
-		// check if exists
-		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{})
-		if err == nil {
-			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
-			return
-		}
-		if !errors.Is(err, graveler.ErrNotFound) {
-			writeError(w, r, http.StatusInternalServerError, err)
-			return
-		}
-		allowOverwrite = false
-	}
-
 	var setOpts []graveler.SetOptionsFunc
-	// Handle If-Match precondition
-	condition, err := factory.BuildConditionFromParams(params)
+	// Handle preconditions
+	condition, err := factory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3556,7 +3534,7 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	entry := entryBuilder.Build()
 
 	// Combine all set options
-	setOpts = append(setOpts, graveler.WithIfAbsent(!allowOverwrite), graveler.WithForce(swag.BoolValue(params.Force)))
+	setOpts = append(setOpts, graveler.WithForce(swag.BoolValue(params.Force)))
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, setOpts...)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		writeError(w, r, http.StatusPreconditionFailed, "path already exists")

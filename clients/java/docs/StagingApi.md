@@ -110,7 +110,7 @@ public class Example {
 
 <a id="linkPhysicalAddress"></a>
 # **linkPhysicalAddress**
-> ObjectStats linkPhysicalAddress(repository, branch, path, stagingMetadata).ifNoneMatch(ifNoneMatch).execute();
+> ObjectStats linkPhysicalAddress(repository, branch, path, stagingMetadata).ifNoneMatch(ifNoneMatch).ifMatch(ifMatch).execute();
 
 associate staging on this physical address with a path
 
@@ -164,9 +164,11 @@ public class Example {
     String path = "path_example"; // String | relative to the branch
     StagingMetadata stagingMetadata = new StagingMetadata(); // StagingMetadata | 
     String ifNoneMatch = "*"; // String | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported.
+    String ifMatch = "2e9ec317e197e02e4264d128c2e7e681"; // String | Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value.
     try {
       ObjectStats result = apiInstance.linkPhysicalAddress(repository, branch, path, stagingMetadata)
             .ifNoneMatch(ifNoneMatch)
+            .ifMatch(ifMatch)
             .execute();
       System.out.println(result);
     } catch (ApiException e) {
@@ -189,6 +191,7 @@ public class Example {
 | **path** | **String**| relative to the branch | |
 | **stagingMetadata** | [**StagingMetadata**](StagingMetadata.md)|  | |
 | **ifNoneMatch** | **String**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] |
+| **ifMatch** | **String**| Set to the object&#39;s ETag to atomically allow operations only if the object&#39;s current ETag matches the provided value. | [optional] |
 
 ### Return type
 
@@ -214,5 +217,6 @@ public class Example {
 | **409** | conflict with a commit, try here |  -  |
 | **412** | Precondition Failed |  -  |
 | **429** | too many requests |  -  |
+| **501** | Not implemented |  -  |
 | **0** | Internal Server Error |  -  |
 
