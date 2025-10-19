@@ -7,7 +7,6 @@ import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
 import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
 
 
-
 const MANUAL_BUNDLES: duckdb.DuckDBBundles = {
     mvp: {
         mainModule: duckdb_wasm,
@@ -108,17 +107,12 @@ export async function runDuckDBQuery(sql: string): Promise<arrow.Table<any>> {
             fileName => db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true)
         ))
 
-        // execute the query with retry logic for extension errors
+        // execute the query with retry logic for extension loading errors
         try {
             result = await conn.query(sql);
         } catch (queryError) {
-            // Check if the error is extension-related
-            if (!queryError.toString().includes('Error: An error occurred while trying to automatically install the required extension')) {
-                throw queryError;
-            }
-            // Retry with lakefs extension source if it wasn't already enabled
-            if (useLakeFSExtensionSource) {
-                // Already using lakefs extension source, so don't retry
+            // In case we already using lakefs as source or if the error is extension-related, don't retry
+            if (useLakeFSExtensionSource || !queryError.toString().includes('Error: An error occurred while trying to automatically install the required extension')) {
                 throw queryError;
             }
             await conn.query(`SET custom_extension_repository = '${document.location.protocol}//${document.location.host}/duckdb-wasm';`);
