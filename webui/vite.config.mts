@@ -12,11 +12,11 @@ export default ({ command }) => {
     },
     plugins: [
       replace({
-          preventAssignment: true,
-          include: ['src/**/*.jsx', 'src/**/*.js'],
-          values: {
-            __buildVersion: process.env.VERSION || 'dev',
-          }
+        preventAssignment: true,
+        include: ['src/**/*.jsx', 'src/**/*.js'],
+        values: {
+          __buildVersion: process.env.VERSION || 'dev',
+        }
       }),
       react(),
       eslintPlugin({
@@ -52,7 +52,7 @@ export default ({ command }) => {
             target: 'http://localhost:8000',
             changeOrigin: false,
             secure: false,
-            bypass: (req: http.IncomingMessage) : void | null | undefined | false | string => {
+            bypass: (req: http.IncomingMessage): void | null | undefined | false | string => {
               if ("x-amz-date" in req.headers) {
                 return null;
               }
@@ -65,7 +65,7 @@ export default ({ command }) => {
         sourcemap: 'inline',
       },
     };
-  } 
+  }
   // while building
   return baseConfig;
 };

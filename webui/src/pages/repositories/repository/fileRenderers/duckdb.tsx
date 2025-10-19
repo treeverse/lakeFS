@@ -1,6 +1,6 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
 import * as arrow from 'apache-arrow';
-import {AsyncDuckDB, AsyncDuckDBConnection, DuckDBDataProtocol} from '@duckdb/duckdb-wasm';
+import { AsyncDuckDB, AsyncDuckDBConnection, DuckDBDataProtocol } from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
 import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
@@ -54,7 +54,7 @@ async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{
     tokenized.offsets.forEach((offset, i) => {
         let currentToken = sql.length;
         if (i < tokenized.offsets.length - 1) {
-            currentToken = tokenized.offsets[i+1];
+            currentToken = tokenized.offsets[i + 1];
         }
         const part = sql.substring(prev, currentToken);
         prev = currentToken;
@@ -69,12 +69,14 @@ async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{
 }
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
-export async function runDuckDBQuery(sql: string):  Promise<arrow.Table<any>> {
+export async function runDuckDBQuery(sql: string): Promise<arrow.Table<any>> {
     const db = await getDuckDB()
-    /* eslint-disable  @typescript-eslint/no-explicit-any */
-    let result: arrow.Table<any>
-    const conn  = await db.connect()
+
+    let result: arrow.Table<any> | undefined;
+    const conn = await db.connect()
+
     try {
+        await conn.query(`SET allow_community_extensions = false;`);
         // TODO (ozk): read this from the server's configuration?
         await conn.query(`SET s3_region='us-east-1';`)
         // set the example values (used to make sure the S3 gateway picks up the request)
@@ -89,11 +91,27 @@ export async function runDuckDBQuery(sql: string):  Promise<arrow.Table<any>> {
         await Promise.all(fileNames.map(
             fileName => db.registerFileURL(fileName, fileMap[fileName], DuckDBDataProtocol.S3, true)
         ))
-        // execute the query
-        result = await conn.query(sql)
+
+        // execute the query with retry logic for extension errors
+        try {
+            result = await conn.query(sql);
+        } catch (queryError) {
+            // Check if the error is extension-related
+            if (!queryError.toString().includes('Error: An error occurred while trying to automatically install the required extension')) {
+                throw queryError;
+            }
+            // Set custom extension repository for retry
+            await conn.query(`SET custom_extension_repository = '/duckdb-wasm';`);
+            console.log('Custom extension repository set to /duckdb-wasm, retrying query...');
+            // Retry the query once
+            result = await conn.query(sql);
+        }
 
         // remove registrations
-        await Promise.all(fileNames.map(fileName => db.dropFile(fileName)))
+        await Promise.all(fileNames.map(fileName => db.dropFile(fileName)));
+    } catch (error) {
+        console.error('Failed to execute query:', error);
+        throw error;
     } finally {
         await conn.close()
     }
