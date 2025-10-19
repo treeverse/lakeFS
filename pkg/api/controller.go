@@ -3020,7 +3020,8 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 		cb(w, r, http.StatusPreconditionFailed, "Precondition failed")
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),
-		errors.Is(err, license.ErrNotImplemented):
+		errors.Is(err, license.ErrNotImplemented),
+		errors.Is(err, catalog.ErrFeatureNotSupported):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")
@@ -3458,7 +3459,11 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 
 	var setOpts []graveler.SetOptionsFunc
 	// Handle If-Match precondition
-	if condition := factory.BuildConditionFromParams(params); condition != nil {
+	condition, err := factory.BuildConditionFromParams(params)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	if condition != nil {
 		setOpts = append(setOpts, graveler.WithCondition(*condition))
 	}
 

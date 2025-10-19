@@ -9,6 +9,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/auth"
 	"github.com/treeverse/lakefs/pkg/authentication"
 	"github.com/treeverse/lakefs/pkg/block"
+	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/config"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/license"
@@ -43,6 +44,10 @@ func NotImplementedIcebergCatalogHandler(w http.ResponseWriter, r *http.Request)
 
 // BuildConditionFromParams creates a graveler.ConditionFunc from upload params.
 // Returns nil if no precondition is specified in the params.
-func BuildConditionFromParams(params apigen.UploadObjectParams) *graveler.ConditionFunc {
-	return nil
+// Returns an error if IfMatch is provided (not yet supported).
+func BuildConditionFromParams(params apigen.UploadObjectParams) (*graveler.ConditionFunc, error) {
+	if params.IfMatch != nil {
+		return nil, catalog.ErrFeatureNotSupported
+	}
+	return nil, nil
 }
