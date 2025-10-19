@@ -73,7 +73,7 @@ export default function duckdbExtensionsPlugin() {
       const wasmPackageVersion = getWasmPackageVersion();
       if (wasmPackageVersion !== WASM_PACKAGE_VERSION) {
         throw new Error(
-          `DuckDB WASM package version mismatch. Please update the WASM_TO_DUCKDB_VERSION with the relevant DuckDB version.`,
+          `DuckDB WASM package version mismatch. Please update the WASM_PACKAGE_VERSION and the relevant DUCKDB_VERSION.`,
         );
       }
       const baseUrl = "https://extensions.duckdb.org";
@@ -83,7 +83,10 @@ export default function duckdbExtensionsPlugin() {
       console.log(`  DuckDB version: ${DUCKDB_VERSION}`);
 
       // Create output directory structure
-      const outDir = path.join(__dirname, "../dist/duckdb-wasm");
+      const outDir = path.join(
+        __dirname,
+        `../dist/duckdb-wasm/v${DUCKDB_VERSION}`,
+      );
       if (!fs.existsSync(outDir)) {
         fs.mkdirSync(outDir, { recursive: true });
       }

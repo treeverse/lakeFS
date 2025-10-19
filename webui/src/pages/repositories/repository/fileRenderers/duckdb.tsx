@@ -44,6 +44,17 @@ async function getDuckDB(): Promise<duckdb.AsyncDuckDB> {
 // which, unfortunately, we cannot import.
 const DUCKDB_STRING_CONSTANT = 2;
 const LAKEFS_URI_PATTERN = /^(['"]?)(lakefs:\/\/(.*))(['"])\s*$/;
+const LAKEFS_DUCKDB_EXTENSIONS_SOURCE_KEY = 'lakefs_duckdb_extensions_source_enabled';
+
+// Check if lakefs extension source is enabled via local storage
+function isLakeFSExtensionSourceEnabled(): boolean {
+    try {
+        return localStorage.getItem(LAKEFS_DUCKDB_EXTENSIONS_SOURCE_KEY) === 'true';
+    } catch (e) {
+        // If localStorage is not available, return false
+        return false;
+    }
+}
 
 // returns a mapping of `lakefs://..` URIs to their `s3://...` equivalent
 async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{ [name: string]: string }> {
@@ -72,11 +83,11 @@ async function extractFiles(conn: AsyncDuckDBConnection, sql: string): Promise<{
 export async function runDuckDBQuery(sql: string): Promise<arrow.Table<any>> {
     const db = await getDuckDB()
 
-    let result: arrow.Table<any> | undefined;
+    let result: arrow.Table<any>;
     const conn = await db.connect()
+    const useLakeFSExtensionSource = isLakeFSExtensionSourceEnabled();
 
     try {
-        await conn.query(`SET allow_community_extensions = false;`);
         // TODO (ozk): read this from the server's configuration?
         await conn.query(`SET s3_region='us-east-1';`)
         // set the example values (used to make sure the S3 gateway picks up the request)
@@ -84,6 +95,11 @@ export async function runDuckDBQuery(sql: string): Promise<arrow.Table<any>> {
         await conn.query(`SET s3_access_key_id='use_swagger_credentials';`)
         await conn.query(`SET s3_secret_access_key='these_are_meaningless_but_must_be_set';`)
         await conn.query(`SET s3_endpoint='${document.location.protocol}//${document.location.host}';`)
+
+        // If enabled via local storage, set lakefs as custom extension repository
+        if (useLakeFSExtensionSource) {
+            await conn.query(`SET custom_extension_repository = '${document.location.protocol}//${document.location.host}/duckdb-wasm';`);
+        }
 
         // register lakefs uri-ed files as s3 files
         const fileMap = await extractFiles(conn, sql)
@@ -100,18 +116,18 @@ export async function runDuckDBQuery(sql: string): Promise<arrow.Table<any>> {
             if (!queryError.toString().includes('Error: An error occurred while trying to automatically install the required extension')) {
                 throw queryError;
             }
-            // Set custom extension repository for retry
-            await conn.query(`SET custom_extension_repository = '/duckdb-wasm';`);
-            console.log('Custom extension repository set to /duckdb-wasm, retrying query...');
+            // Retry with lakefs extension source if it wasn't already enabled
+            if (useLakeFSExtensionSource) {
+                // Already using lakefs extension source, so don't retry
+                throw queryError;
+            }
+            await conn.query(`SET custom_extension_repository = '${document.location.protocol}//${document.location.host}/duckdb-wasm';`);
             // Retry the query once
             result = await conn.query(sql);
         }
 
         // remove registrations
         await Promise.all(fileNames.map(fileName => db.dropFile(fileName)));
-    } catch (error) {
-        console.error('Failed to execute query:', error);
-        throw error;
     } finally {
         await conn.close()
     }
