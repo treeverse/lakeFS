@@ -85,7 +85,7 @@ func BuildBlockAdapter(ctx context.Context, statsCollector stats.Collector, c co
 		if err != nil {
 			return nil, err
 		}
-		return buildGSAdapter(ctx, p, options.GS...)
+		return BuildSingleGSAdapter(ctx, p, options.GS...)
 	case block.BlockstoreTypeAzure:
 		p, err := c.BlockstoreAzureParams()
 		if err != nil {
@@ -168,11 +168,7 @@ func BuildGSClient(ctx context.Context, params params.GS) (*storage.Client, erro
 	return storage.NewClient(ctx, opts...)
 }
 
-func buildGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (block.Adapter, error) {
-	return BuildSingleGSAdapter(ctx, params, adapterOpts...)
-}
-
-// BuildSingleGSAdapter creates a single GS adapter (extracted from original buildGSAdapter)
+// BuildSingleGSAdapter creates a single GS adapter
 func BuildSingleGSAdapter(ctx context.Context, params params.GS, adapterOpts ...gs.AdapterOption) (*gs.Adapter, error) {
 	client, err := BuildGSClient(ctx, params)
 	if err != nil {
