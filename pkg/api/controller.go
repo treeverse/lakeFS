@@ -3544,7 +3544,6 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 	}
 	entry := entryBuilder.Build()
 
-	// Combine all set options
 	setOpts = append(setOpts, graveler.WithForce(swag.BoolValue(params.Force)))
 	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, setOpts...)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {

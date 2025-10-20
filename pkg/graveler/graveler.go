@@ -1851,44 +1851,43 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
-		// Check if Condition is provided
-		hasCondition := options.Condition != nil
-
-		if !hasCondition {
+		if options.Condition != nil {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
 
-		// update stage with new value respecting the ifAbsent and condition
-		updateFunc := func(currentValue *Value) (*Value, error) {
+		// setFunc is a update function that sets the value regardless of the current value
+		setFunc := func(_ *Value) (*Value, error) {
 			return &value, nil
 		}
-		return g.handleUpdate(ctx, repository, branchID, branch, key, updateFunc, options.Condition)
+		return g.handleUpdate(ctx, repository, branchID, branch, key, setFunc, options.Condition)
 	}, "set")
 	return err
 }
 
-// handleUpdate while providing the callback functions (condition and update) the current value considering both committed and staging
+// handleUpdate applies the provided condition and update callback functions to the current value of the given key,
+// considering both committed and staging values. The condition is checked before applying the update.
 func (g *Graveler) handleUpdate(ctx context.Context, repository *RepositoryRecord, branchID BranchID, branch *Branch, key Key, updateFunc ValueUpdateFunc, condition ConditionFunc) error {
+	// Get current value considering committed and sealed tokens
 	curValue, err := g.Get(ctx, repository, Ref(branchID), key)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
 
 	return g.StagingManager.Update(ctx, branch.StagingToken, key, func(exists bool, stagingValue *Value) (*Value, error) {
-		valueToCheck := curValue
+		latestValue := curValue
 
 		if exists {
-			valueToCheck = stagingValue
+			latestValue = stagingValue
 		}
-		// Run condition if provided
-		// // TODO(Guys): Change condition to conditions array to support multiple conditions
+
 		if condition != nil {
-			if err := condition(valueToCheck); err != nil {
+			if err := condition(latestValue); err != nil {
 				return nil, err
 			}
 		}
+
 		if updateFunc != nil {
-			return updateFunc(valueToCheck)
+			return updateFunc(latestValue)
 		}
 		return curValue, nil
 	})

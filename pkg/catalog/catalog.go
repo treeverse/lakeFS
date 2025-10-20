@@ -1152,10 +1152,10 @@ func addressTypeToCatalog(t Entry_AddressType) AddressType {
 // EntryCondition adapts an Entry-level condition function to a graveler.ConditionFunc.
 // It converts graveler Values to Entries before applying the condition, enabling Entry-based
 // validation logic (e.g., Object metadata checks) to work with graveler's conditional operations.
-func EntryCondition(conditionFunc func(*Entry) error) graveler.ConditionFunc {
+func EntryCondition(condition func(*Entry) error) graveler.ConditionFunc {
 	return func(currentValue *graveler.Value) error {
 		if currentValue == nil {
-			return conditionFunc(nil)
+			return condition(nil)
 		}
 
 		currentEntry, err := ValueToEntry(currentValue)
@@ -1163,7 +1163,7 @@ func EntryCondition(conditionFunc func(*Entry) error) graveler.ConditionFunc {
 			return err
 		}
 
-		return conditionFunc(currentEntry)
+		return condition(currentEntry)
 	}
 }
 
