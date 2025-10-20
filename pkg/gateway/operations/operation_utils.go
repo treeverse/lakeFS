@@ -1,13 +1,10 @@
 package operations
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/modules/api/factory"
-	"github.com/treeverse/lakefs/pkg/api/apiutil"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	"github.com/treeverse/lakefs/pkg/graveler"
 	"github.com/treeverse/lakefs/pkg/logging"
@@ -44,7 +41,7 @@ func shouldReplaceMetadata(req *http.Request) bool {
 	return req.Header.Get(amzMetadataDirectiveHeaderPrefix) == "REPLACE"
 }
 
-func (o *PathOperation) finishUpload(req *http.Request, mTime *time.Time, checksum, physicalAddress string, size int64, relative bool, metadata map[string]string, contentType string, allowOverwrite bool) error {
+func (o *PathOperation) finishUpload(req *http.Request, mTime *time.Time, checksum, physicalAddress string, size int64, relative bool, metadata map[string]string, contentType string, opts ...graveler.SetOptionsFunc) error {
 	var writeTime time.Time
 	if mTime == nil {
 		writeTime = time.Now()
@@ -62,23 +59,8 @@ func (o *PathOperation) finishUpload(req *http.Request, mTime *time.Time, checks
 		CreationDate(writeTime).
 		ContentType(contentType).
 		Build()
-	// TODO(Guys): change to support If-Match as well
-	// TODO(Guys): provide if-none-match from request headers instead of allowOverwrite
-	var ifNoneMatch *string
-	if !allowOverwrite {
-		ifNoneMatch = apiutil.Ptr("*")
-	}
-	condition, err := factory.BuildConditionFromParams(nil, ifNoneMatch)
-	if err != nil {
-		o.Log(req).WithError(err).Error("could not build condition for metadata update")
-		return err
-	}
-	var opts []graveler.SetOptionsFunc
-	if condition != nil {
-		opts = []graveler.SetOptionsFunc{graveler.WithCondition(*condition)}
-	}
-	fmt.Println("condition and opts:", condition, opts)
-	err = o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry, opts...)
+
+	err := o.Catalog.CreateEntry(req.Context(), o.Repository.Name, o.Reference, entry, opts...)
 	if err != nil {
 		o.Log(req).WithError(err).Error("could not update metadata")
 		return err

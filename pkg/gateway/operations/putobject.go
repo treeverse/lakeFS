@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	"github.com/treeverse/lakefs/pkg/block"
 	"github.com/treeverse/lakefs/pkg/catalog"
 	gatewayErrors "github.com/treeverse/lakefs/pkg/gateway/errors"
@@ -20,6 +21,7 @@ import (
 )
 
 const (
+	IfMatchHeader         = "If-Match"
 	IfNoneMatchHeader     = "If-None-Match"
 	CopySourceHeader      = "x-amz-copy-source"
 	CopySourceRangeHeader = "x-amz-copy-source-range"
@@ -316,23 +318,34 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	o.Incr("put_object", o.Principal, o.Repository.Name, o.Reference)
 	storageClass := StorageClassFromHeader(req.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
-	// check and validate whether if-none-match header provided
-	allowOverwrite, err := o.checkIfAbsent(req)
-	if err != nil {
-		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
-		return
-	}
+	ifNoneMatch := o.ifNoneMatchHeader(req)
 	// before writing body, ensure preconditions - this means we essentially check for object existence twice:
 	// once here, before uploading the body to save resources and time,
 	// and then graveler will check again when passed a SetOptions.
-	//if !allowOverwrite {
-	//	_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
-	//	if err == nil {
-	//		// In case object exists in catalog, no error returns
-	//		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
-	//		return
-	//	}
-	//}
+	if ifNoneMatch != nil && *ifNoneMatch == "*" {
+		_, err := o.Catalog.GetEntry(req.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
+		if err == nil {
+			// In case object exists in catalog, no error returns
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
+			return
+		}
+	}
+	ifMatch := o.ifMatchHeader(req)
+	condition, err := apifactory.BuildConditionFromParams(ifMatch, ifNoneMatch)
+	if err != nil {
+		if errors.Is(err, graveler.ErrInvalidValue) {
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrBadRequest))
+			return
+		}
+		if errors.Is(err, catalog.ErrFeatureNotSupported) {
+			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
+			return
+		}
+		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrInternalError))
+		return
+	}
+	gravelerOpts := graveler.WithCondition(*condition)
+
 	objectPointer := block.ObjectPointer{
 		StorageID:        o.Repository.StorageID,
 		StorageNamespace: o.Repository.StorageNamespace,
@@ -349,7 +362,7 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	// write metadata
 	metadata := amzMetaAsMetadata(req)
 	contentType := req.Header.Get("Content-Type")
-	err = o.finishUpload(req, &blob.CreationDate, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType, allowOverwrite)
+	err = o.finishUpload(req, &blob.CreationDate, blob.Checksum, blob.PhysicalAddress, blob.Size, true, metadata, contentType, gravelerOpts)
 	if errors.Is(err, graveler.ErrPreconditionFailed) {
 		_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrPreconditionFailed))
 		return
@@ -370,13 +383,18 @@ func handlePut(w http.ResponseWriter, req *http.Request, o *PathOperation) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (o *PathOperation) checkIfAbsent(req *http.Request) (bool, error) {
-	headerValue := req.Header.Get(IfNoneMatchHeader)
-	if headerValue == "" {
-		return true, nil
+func (o *PathOperation) ifNoneMatchHeader(req *http.Request) *string {
+	h := req.Header.Get(IfNoneMatchHeader)
+	if h == "" {
+		return nil
 	}
-	if headerValue == "*" {
-		return false, nil
+	return &h
+}
+
+func (o *PathOperation) ifMatchHeader(req *http.Request) *string {
+	h := req.Header.Get(IfMatchHeader)
+	if h == "" {
+		return nil
 	}
-	return false, gatewayErrors.ErrNotImplemented
+	return &h
 }

@@ -25,7 +25,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/gorilla/sessions"
 	authacl "github.com/treeverse/lakefs/contrib/auth/acl"
-	"github.com/treeverse/lakefs/modules/api/factory"
+	apifactory "github.com/treeverse/lakefs/modules/api/factory"
 	"github.com/treeverse/lakefs/pkg/actions"
 	"github.com/treeverse/lakefs/pkg/api/apigen"
 	"github.com/treeverse/lakefs/pkg/api/apiutil"
@@ -990,7 +990,7 @@ func (c *Controller) LinkPhysicalAddress(w http.ResponseWriter, r *http.Request,
 	if body.UserMetadata != nil {
 		entryBuilder.Metadata(body.UserMetadata.AdditionalProperties)
 	}
-	condition, err := factory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
@@ -3435,9 +3435,20 @@ func (c *Controller) UploadObject(w http.ResponseWriter, r *http.Request, reposi
 		return
 	}
 
+	if params.IfNoneMatch != nil && *params.IfNoneMatch == "*" {
+		_, err := c.Catalog.GetEntry(ctx, repo.Name, branch, params.Path, catalog.GetEntryParams{})
+		if err == nil {
+			writeError(w, r, http.StatusPreconditionFailed, "path already exists")
+			return
+		}
+		if !errors.Is(err, graveler.ErrNotFound) {
+			writeError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+	}
 	var setOpts []graveler.SetOptionsFunc
 	// Handle preconditions
-	condition, err := factory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
+	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}

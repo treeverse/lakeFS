@@ -51,10 +51,10 @@ func BuildConditionFromParams(ifMatch, ifNoneMatch *string) (*graveler.Condition
 	case ifMatch != nil && ifNoneMatch != nil:
 		return nil, fmt.Errorf("cannot specify both If-Match and If-None-Match: %w", graveler.ErrInvalidValue)
 	case ifMatch != nil:
-		// Handle IfMatch: not yet supported
+		// Handle IfMatch: not supported
 		return nil, catalog.ErrFeatureNotSupported
 	case ifNoneMatch != nil && *ifNoneMatch != "*":
-		// Handle IfNoneMatch with ETag value: not yet supported
+		// If-None-Match only supports "*"
 		return nil, fmt.Errorf("If-None-Match only supports '*': %w", graveler.ErrInvalidValue)
 	case ifNoneMatch != nil:
 		condition = func(currentValue *graveler.Value) error {

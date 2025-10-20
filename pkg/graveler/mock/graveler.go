@@ -197,7 +197,7 @@ func (mr *MockKeyValueStoreMockRecorder) Set(ctx, repository, branchID, key, val
 }
 
 // Update mocks base method.
-func (m *MockKeyValueStore) Update(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, update graveler.ValueUpdateFunc, opts ...graveler.SetOptionsFunc) error {
+func (m *MockKeyValueStore) Update(ctx context.Context, repository *graveler.RepositoryRecord, branchID graveler.BranchID, key graveler.Key, update graveler.StagingUpdateFunc, opts ...graveler.SetOptionsFunc) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, repository, branchID, key, update}
 	for _, a := range opts {
@@ -2988,7 +2988,7 @@ func (mr *MockStagingManagerMockRecorder) Set(ctx, st, key, value, requireExists
 }
 
 // Update mocks base method.
-func (m *MockStagingManager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
+func (m *MockStagingManager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.StagingUpdateFunc) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, st, key, updateFunc)
 	ret0, _ := ret[0].(error)
