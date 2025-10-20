@@ -549,10 +549,12 @@ type BranchRecord struct {
 // BranchUpdateFunc Used to pass validation call back to ref manager for UpdateBranch flow
 type BranchUpdateFunc func(*Branch) (*Branch, error)
 
-// ValueUpdateFunc Used to pass validation call back to staging manager for UpdateValue flow
+// StagingUpdateFunc Used to pass validation call back to staging manager for UpdateValue flow
 // exists - indicates whether the value exists or not
 // val - current value, nil if tombstone
-type ValueUpdateFunc func(exists bool, val *Value) (*Value, error)
+type StagingUpdateFunc func(exists bool, val *Value) (*Value, error)
+
+type ValueUpdateFunc func(val *Value) (*Value, error)
 
 // TagRecord holds TagID with the associated Tag data
 type TagRecord struct {
@@ -1108,7 +1110,7 @@ type StagingManager interface {
 
 	// Update updates a (possibly nil) value under the given staging token and key.
 	// Skip update in case 'ErrSkipUpdateValue' is returned from 'updateFunc'.
-	Update(ctx context.Context, st StagingToken, key Key, updateFunc ValueUpdateFunc) error
+	Update(ctx context.Context, st StagingToken, key Key, updateFunc StagingUpdateFunc) error
 
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken, batchSize int) ValueIterator
@@ -1857,7 +1859,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 		}
 
 		// update stage with new value respecting the ifAbsent and condition
-		updateFunc := func(exists bool, currentValue *Value) (*Value, error) {
+		updateFunc := func(currentValue *Value) (*Value, error) {
 			return &value, nil
 		}
 		return g.handleUpdate(ctx, repository, branchID, branch, key, updateFunc, options.Condition)
@@ -1886,7 +1888,7 @@ func (g *Graveler) handleUpdate(ctx context.Context, repository *RepositoryRecor
 			}
 		}
 		if updateFunc != nil {
-			return updateFunc(true, valueToCheck)
+			return updateFunc(valueToCheck)
 		}
 		return curValue, nil
 	})
