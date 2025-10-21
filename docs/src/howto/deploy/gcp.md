@@ -148,16 +148,16 @@ If required, lakeFS can operate without accessing the data itself. This permissi
 
 This setup uses two service accounts:
 
-1. **Metadata Service Account (SA_OPEN)**: Accesses only `_lakefs/**` prefix from anywhere.
-2. **Data Service Account (SA_RESTRICTED)**: Accesses all data except `_lakefs/*`, restricted by network using VPC Service Controls.
+1. **Metadata Service Account (SA_OPEN)**: Accesses bucket prefixes that include `_lakefs/*` from anywhere.
+2. **Data Service Account (SA_RESTRICTED)**: Accesses all data except bucket prefixes that include `_lakefs/`, restricted by network using VPC Service Controls.
 
-lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, where metadata is stored ([learn more][understand-commits]).
+lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, where metadata is stored.
 
 ### Limitations
 
-By setting this configuration **without** presign mode, you'll be able to perform only metadata operations through lakeFS, meaning you **will not** be able to:
+This configuration supports only presign mode. This means that you won't be able to:
 
-* Upload objects using the lakeFS GUI (**Works with presign mode**)
+* Upload objects using the lakeFS Web UI (presign mode is disabled by default)
 * Upload objects through Spark using the S3 gateway
 * Run `lakectl fs` commands (unless using **presign mode** with `--pre-sign` flag)
 * Use [Actions and Hooks](../hooks/index.md)
@@ -194,8 +194,8 @@ gcloud iam service-accounts create "$SA_RESTRICTED_ID" \
 Get the full service account emails:
 
 ```bash
-export SA_OPEN="$SA_OPEN_ID@$PROJECT_ID.iam.gserviceaccount.com"
-export SA_RESTRICTED="$SA_RESTRICTED_ID@$PROJECT_ID.iam.gserviceaccount.com"
+export SA_OPEN="${SA_OPEN_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
+export SA_RESTRICTED="${SA_RESTRICTED_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 ```
 
 #### 2. Configure Bucket IAM Policies
