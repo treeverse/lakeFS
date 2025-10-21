@@ -81,7 +81,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
         blockstore:
             type: s3
         ```
-    1. [Download the binary][downloads] to run on the EC2 instance.
+    1. [Download the binary](https://github.com/treeverse/lakeFS/releases) to run on the EC2 instance.
     1. Run the `lakefs` binary on the EC2 instance:
         ```sh
         lakefs --config config.yaml run
@@ -113,9 +113,11 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
                 type: s3
         ```
     1. Fill in the missing values and save the file as `conf-values.yaml`. For more configuration options, see our Helm chart [README](https://github.com/treeverse/charts/blob/master/charts/lakefs/README.md#custom-configuration).
+
         !!! note
             The `lakefsConfig` parameter is the lakeFS configuration documented [here](../../reference/configuration.md) but without sensitive information.
             Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject it into Kubernetes secrets.
+
     1. In the directory where you created `conf-values.yaml`, run the following commands:
         ```bash
         # Add the lakeFS repository
