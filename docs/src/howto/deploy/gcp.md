@@ -178,14 +178,14 @@ Create the service accounts:
 
 ```bash
 # Metadata service account (accesses _lakefs/** from anywhere)
-gcloud iam service-accounts create "$SA_OPEN_ID" \
-  --project="$PROJECT_ID" \
+gcloud iam service-accounts create "${SA_OPEN_ID}" \
+  --project="${PROJECT_ID}" \
   --description="lakeFS metadata - RW only under /_lakefs/** (from anywhere)" \
   --display-name="lakeFS Metadata Service Account"
 
 # Data service account (accesses everything except _lakefs/**, network-restricted)
-gcloud iam service-accounts create "$SA_RESTRICTED_ID" \
-  --project="$PROJECT_ID" \
+gcloud iam service-accounts create "${SA_RESTRICTED_ID}" \
+  --project="${PROJECT_ID}" \
   --description="lakeFS data - RW everywhere except /_lakefs/** (network-restricted)" \
   --display-name="lakeFS Data Service Account"
 ```
@@ -202,8 +202,8 @@ export SA_RESTRICTED="${SA_RESTRICTED_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 Grant the metadata service account access to `gs://<bucket-name>/<prefix>/_lakefs/` prefix only:
 
 ```bash
-gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" \
-  --member="serviceAccount:$SA_OPEN" \
+gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
+  --member="serviceAccount:${SA_OPEN}" \
   --role="roles/storage.objectAdmin" \
   --condition='title=lakefs-metadata-only,description=Access_only_to_lakefs_prefix,expression=resource.type == "storage.googleapis.com/Object" && resource.name.extract("/objects/{prefix}/_lakefs/") != ""'
 ```
@@ -212,8 +212,8 @@ Grant the data service account access to everything except `gs://<bucket-name>/<
 
 ```bash
 # Object access (read/write) for non-_lakefs paths
-gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" \
-  --member="serviceAccount:$SA_RESTRICTED" \
+gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
+  --member="serviceAccount:${SA_RESTRICTED}" \
   --role="roles/storage.objectAdmin" \
   --condition='title=lakefs-data-only,description=Access_except_lakefs_prefix,expression=resource.type == "storage.googleapis.com/Object" && resource.name.extract("/objects/{prefix}/_lakefs/") == ""'
 ```
@@ -223,14 +223,14 @@ Create a custom IAM role for listing objects and grant it to the data service ac
 ```bash
 # Create custom role for listing objects only
 gcloud iam roles create lakefsDataListOnly \
-  --project="$PROJECT_ID" \
+  --project="${PROJECT_ID}" \
   --title="lakeFS Data List Only" \
   --description="Custom role for lakeFS data service account to list objects" \
   --permissions="storage.objects.list"
 
 # Grant the custom role to the data service account
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:$SA_RESTRICTED" \
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${SA_RESTRICTED}" \
   --role="projects/${PROJECT_ID}/roles/lakefsDataListOnly"
 ```
 
@@ -242,7 +242,7 @@ Create an access level that defines your allowed networks (adjust IP ranges and 
 # Get your organization's access policy ID
 export ORG_ID="[YOUR_ORG_ID]"
 export POLICY_ID=$(gcloud access-context-manager policies list \
-  --organization="$ORG_ID" \
+  --organization="${ORG_ID}" \
   --format="value(name)")
 
 # Create an access level for your allowed networks
@@ -255,7 +255,7 @@ cat > access-level.yaml <<EOF
 EOF
 
 gcloud access-context-manager levels create Restrict_Network_Access \
-  --policy="$POLICY_ID" \
+  --policy="${POLICY_ID}" \
   --title="Restrict Network Access to Approved IPs and VPCs" \
   --combine-function=OR \
   --basic-level-spec=access-level.yaml
@@ -266,14 +266,14 @@ gcloud access-context-manager levels create Restrict_Network_Access \
 Define the ingress policy for the restricted service account:
 
 ```bash
-export ACCESS_LEVEL="accessPolicies/$POLICY_ID/accessLevels/Restrict_Network_Access"
+export ACCESS_LEVEL="accessPolicies/${POLICY_ID}/accessLevels/Restrict_Network_Access"
 
 cat > ingress-policy.yaml <<EOF
 - ingressFrom:
     identities:
-    - serviceAccount:$SA_RESTRICTED
+    - serviceAccount:${SA_RESTRICTED}
     sources:
-    - accessLevel: $ACCESS_LEVEL
+    - accessLevel: ${ACCESS_LEVEL}
   ingressTo:
     operations:
     - serviceName: storage.googleapis.com
@@ -287,9 +287,9 @@ EOF
 
 ```bash
 gcloud access-context-manager perimeters create lakefs_perimeter \
-  --policy="$POLICY_ID" \
+  --policy="${POLICY_ID}" \
   --title="lakeFS Security Perimeter" \
-  --resources="projects/$PROJECT_ID" \
+  --resources="projects/${PROJECT_ID}" \
   --restricted-services="storage.googleapis.com" \
   --ingress-policies=ingress-policy.yaml
 ```
@@ -303,8 +303,8 @@ blockstore:
   type: gs
   gs:
     credentials_json: [SA_OPEN_SERVICE_ACCOUNT_JSON]
-    data_credentials_json: [SA_RESTRICTED_SERVICE_ACCOUNT_JSON]
-    # data_credentials_file: [SA_RESTRICTED_SERVICE_ACCOUNT_FILE] # alternatively, if you prefer to use a file path
+    # Alternatively, you can use a file path:
+    # data_credentials_file: /path/to/sa_restricted_service_account.json
 ```
 
 For data operations, your clients should use the data service account (SA_RESTRICTED) credentials and must access from within the allowed networks and VPCs defined in your VPC Service Controls.
