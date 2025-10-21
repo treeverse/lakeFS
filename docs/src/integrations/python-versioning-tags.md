@@ -257,9 +257,9 @@ for change in tag_v1.diff(other_ref=tag_v2):
 changes = list(tag_v1.diff(other_ref=tag_v2))
 added = len([c for c in changes if c.type == "added"])
 removed = len([c for c in changes if c.type == "removed"])
-modified = len([c for c in changes if c.type == "modified"])
+changed = len([c for c in changes if c.type == "changed"])
 
-print(f"\nSummary: +{added} -{removed} ~{modified}")
+print(f"\nSummary: +{added} -{removed} ~{changed}")
 ```
 
 ## Deleting Tags
