@@ -695,14 +695,3 @@ try:
 except NotFoundException:
     print("Reference expression invalid or out of range")
 ```
-
-## Best Practices
-
-- **Use meaningful commit messages**: Include context about what changed and why
-- **Add metadata to commits**: Include author, type, source, and business context
-- **Commit frequently**: Small, logical commits are easier to track and audit
-- **Document lineage**: Record data transformation stages for compliance
-- **Maintain audit trails**: Log all significant changes for regulatory compliance
-- **Use consistent metadata schema**: Standardize metadata keys across your organization
-- **Regular cleanup**: Archive old commits if needed for storage management
-- **Automated tracking**: Use scripts to record metadata for automated processes

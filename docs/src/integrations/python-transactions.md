@@ -709,9 +709,7 @@ def transact_with_retry(repo_name, branch_name, max_retries=3):
                 return False
 ```
 
-## Error Handling Best Practices
-
-### Comprehensive Error Handling
+## Error Handling
 
 ```python
 import lakefs
@@ -733,15 +731,3 @@ except ServerException as e:
 except Exception as e:
     print(f"Unexpected error: {e}")
 ```
-
-## Best Practices
-
-- **Keep transactions short**: Don't hold transactions open longer than necessary
-- **Handle errors gracefully**: Always have try-except blocks around transactions
-- **Use meaningful commit messages**: Describe what the transaction does
-- **Include metadata**: Add context to the commit for tracking
-- **Test transaction logic**: Test error conditions before production use
-- **Monitor transaction duration**: Very long transactions indicate potential problems
-- **Validate before committing**: Perform validation within the transaction context
-- **Use appropriate granularity**: Transaction scope should match logical operation units
-- **Document side effects**: Note anything that can't be rolled back (e.g., external API calls)

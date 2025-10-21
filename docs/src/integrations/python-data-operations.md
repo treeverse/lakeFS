@@ -771,15 +771,3 @@ try:
 except Exception as e:
     print(f"Upload failed: {e}")
 ```
-
-## Best Practices
-
-- **Use batch operations**: Delete multiple objects at once instead of individually
-- **Limit listing results**: Use `max_amount` to avoid loading too many objects
-- **Handle large files**: Use streaming/chunked reads for large objects
-- **Include metadata**: Add meaningful metadata to objects for tracking
-- **Validate before deleting**: Double-check objects before batch deletion
-- **Use prefixes**: Organize data with clear prefixes for easy access
-- **Verify operations**: Check results of batch operations
-- **Clean up regularly**: Remove temporary and old files to save storage
-- **Monitor object sizes**: Watch for unexpectedly large objects

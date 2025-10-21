@@ -15,7 +15,6 @@ Use the generated SDK when you:
 - Want to use **features not available** in the High-Level SDK
 - Prefer **direct API interaction** patterns
 - Need to **access all API endpoints** programmatically
-- Work with **API-first architectures**
 
 For most common lakeFS operations (branches, tags, commits, objects), the **[High-Level SDK](./python.md)** is recommended as it provides a more Pythonic interface.
 
@@ -209,44 +208,9 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
             print(f"API Error: {e.reason}")
 ```
 
-## Available APIs
-
-The generated SDK includes APIs for:
-
-- **Repositories** - Create, delete, list repositories
-- **Branches** - Create, delete, merge, diff branches
-- **Commits** - Create, get, list commits
-- **Tags** - Create, delete, list tags
-- **Objects** - Upload, download, delete objects
-- **References** - Work with references and commits
-- **Auth** - User and group management
-- **Actions** - Manage actions and hooks
-- And many more...
-
 ## Full API Reference
 
 For complete API documentation and method signatures, see:
 
 - **[Full SDK API Reference](https://pydocs-sdk.lakefs.io)** - Complete documentation for all API classes and methods
-- **[OpenAPI Specification](https://docs.lakefs.io/reference/api.md)** - Detailed API specification
 
-## Comparison with High-Level SDK
-
-| Aspect | Generated SDK | High-Level SDK |
-|--------|---------------|----------------|
-| Abstraction Level | Low (direct API) | High (Pythonic) |
-| Ease of Use | Medium | Easy |
-| Learning Curve | Steeper | Gentle |
-| Feature Coverage | Complete | Most common operations |
-| Code Verbosity | More | Less |
-| Use Case | Advanced/API-first | Most users |
-
-For most use cases, start with the [High-Level SDK](./python.md). Use the generated SDK when you need advanced features or direct API control.
-
-## Best Practices
-
-- **Use context managers** - Always use `with` statements for API clients to ensure proper cleanup
-- **Handle exceptions** - Always catch `ApiException` to handle API errors gracefully
-- **Configure properly** - Set the correct host, credentials, and optional parameters
-- **Use pagination** - For large result sets, implement pagination using response pagination tokens
-- **Refer to documentation** - Check the [full API reference](https://pydocs-sdk.lakefs.io) for method signatures

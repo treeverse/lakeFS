@@ -371,27 +371,7 @@ save_model_version(
 )
 ```
 
-## Comparison with Other Options
-
-| Feature | lakefs-spec | High-Level SDK | Boto |
-|---------|------------|----------------|------|
-| File System API | ✅ Yes | No | No |
-| Pandas Integration | ✅ Yes | No | No |
-| Versioning Operations | Limited | ✅ Full | No |
-| S3 Compatibility | Partial | No | ✅ Full |
-| Learning Curve | Gentle | Gentle | Gentle |
-| Use Case | Data Science | Versioning | S3 Workflows |
-
-## Best Practices
-
-- **Use context managers** - Always use `with` for transactions to ensure proper rollback on errors
-- **Handle large files** - Use chunked reading for files larger than available memory
-- **Version your data** - Use branches or tags to track data versions with transformations
-- **Error handling** - Wrap transactions in try-except to handle failures gracefully
-- **Credentials** - Use environment variables or lakectl config for secure credential management
-
 ## Further Resources
 
 - **[lakefs-spec Project](https://lakefs-spec.org/)** - Official project documentation
 - **[fsspec Documentation](https://filesystem-spec.readthedocs.io/)** - Filesystem spec reference
-- **[Data Science Integrations](https://lakefs-spec.org/latest/guides/integrations/)** - pandas, dask, polars examples

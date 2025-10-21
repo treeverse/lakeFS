@@ -50,7 +50,7 @@ You can use TLS with a CA that is not trusted on the host by configuring the cli
 
 ```python
 clt = Client(
-    host="http://localhost:8000",
+    host="https://lakefs.example.io",
     username="AKIAIOSFODNN7EXAMPLE",
     password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
     # Customize the CA certificates used to verify the peer.
@@ -58,11 +58,11 @@ clt = Client(
 )
 ```
 
-For testing SSL endpoints with self-signed certificates, if you receive an `SSL: CERTIFICATE_VERIFY_FAILED` error:
+For connecting to a secure endpoint without verification (for test environments):
 
 ```python
 clt = Client(
-    host="http://localhost:8000",
+    host="https://lakefs.example.io",
     username="AKIAIOSFODNN7EXAMPLE",
     password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
     verify_ssl=False,
@@ -78,7 +78,7 @@ To enable communication via proxies, add a proxy configuration:
 
 ```python
 clt = Client(
-    host="http://localhost:8000",
+    host="https://lakefs.example.io",
     username="AKIAIOSFODNN7EXAMPLE",
     password="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
     ssl_ca_cert="(if needed)",

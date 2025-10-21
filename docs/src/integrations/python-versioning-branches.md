@@ -637,13 +637,3 @@ try:
 except NotFoundException:
     print("Source reference does not exist")
 ```
-
-## Best Practices
-
-- **Use descriptive branch names**: `feature-add-ml-models`, `bugfix-data-validation`
-- **Create from appropriate sources**: Create release branches from `main`, feature branches from `develop`
-- **Commit frequently**: Smaller commits are easier to understand and revert if needed
-- **Review diffs before merging**: Always check what changes will be merged
-- **Clean up old branches**: Delete branches after merging to keep the repository clean
-- **Use commit metadata**: Add context to commits for better tracking and auditing
-- **Protect important branches**: Mark `main` and `release` branches as protected if possible

@@ -63,7 +63,7 @@ import boto3
 # For HTTPS endpoints
 s3 = boto3.client(
     's3',
-    endpoint_url='https://lakeFS.example.com',
+    endpoint_url='https://lakefs.example.io',
     aws_access_key_id='your-access-key',
     aws_secret_access_key='your-secret-key',
     verify=True  # or provide path to CA bundle
@@ -88,7 +88,7 @@ config = Config(
 
 s3 = boto3.client(
     's3',
-    endpoint_url='https://lakeFS.example.com',
+    endpoint_url='https://lakefs.example.io',
     aws_access_key_id='your-access-key',
     aws_secret_access_key='your-secret-key',
     config=config
@@ -455,29 +455,7 @@ except ClientError as e:
         print(f"Error: {error_code}")
 ```
 
-## Comparison with Other Options
-
-| Feature | Boto | High-Level SDK | lakefs-spec |
-|---------|------|----------------|------------|
-| S3 Compatibility | ✅ Full | No | Partial |
-| Existing S3 Code | ✅ Works | No | No |
-| Versioning | Limited | ✅ Full | Limited |
-| Branch Management | No | ✅ Yes | Partial |
-| Learning Curve | Familiar to S3 users | Gentle | Gentle |
-| Use Case | S3 Workflows | Versioning | Data Science |
-
-## Best Practices
-
-- **Use checksum configuration** - For HTTPS connections, always set checksum settings
-- **Error handling** - Always catch `ClientError` for proper error handling
-- **Connection pooling** - Reuse S3 client instances for better performance
-- **Pagination** - Use paginators for listing large numbers of objects
-- **Credentials** - Use environment variables or AWS credential files
-- **Branch naming** - Remember that the key prefix is `branch/path/to/object`
-- **Commit reference** - Access specific versions using `commit-id/path/to/object`
-
 ## Further Resources
 
-- **[Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)** - Official Boto3 reference
 - **[lakeFS S3 Gateway](../reference/s3.md)** - S3 Gateway API documentation
-- **[Boto S3 Router](https://github.com/treeverse/boto-s3-router)** - Route to S3 or lakeFS automatically
+- **[Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)** - Official Boto3 reference

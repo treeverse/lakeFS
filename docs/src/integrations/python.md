@@ -29,11 +29,11 @@ New to lakeFS Python SDK? Start with the **[Getting Started Guide](./python-gett
 Choose the integration that best fits your needs:
 
 - **[High-Level SDK](./python-getting-started.md)** - Recommended for most use cases
-  - [Branches & Merging](./python-versioning-branches.md) - Feature branch workflows
-  - [Tags & Snapshots](./python-versioning-tags.md) - Version management and releases
-  - [References & Commits](./python-references-commits.md) - Commit history and lineage
-  - [Transactions](./python-transactions.md) - Atomic operations
-  - [Data Operations](./python-data-operations.md) - Batch operations and cleanup
+    - [Branches & Merging](./python-versioning-branches.md) - Feature branch workflows
+    - [Tags & Snapshots](./python-versioning-tags.md) - Version management and releases
+    - [References & Commits](./python-references-commits.md) - Commit history and lineage
+    - [Transactions](./python-transactions.md) - Atomic operations
+    - [Data Operations](./python-data-operations.md) - Batch operations and cleanup
 
 - **[Generated SDK](./python-sdk.md)** - For direct API access based on OpenAPI specification
 
