@@ -81,7 +81,7 @@ By default, lakeFS will create the required DynamoDB table if it does not alread
         blockstore:
             type: s3
         ```
-    1. [Download the binary][downloads] to run on the EC2 instance.
+    1. [Download the binary](https://github.com/treeverse/lakeFS/releases) to run on the EC2 instance.
     1. Run the `lakefs` binary on the EC2 instance:
         ```sh
         lakefs --config config.yaml run
