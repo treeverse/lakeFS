@@ -142,14 +142,14 @@ When you first open the lakeFS UI, you will be asked to create an initial admin 
 If required, lakeFS can operate without accessing the data itself. This permission model is useful if you are running a zero trust architecture, using [presigned URLs mode][presigned-url], or the [lakeFS Hadoop FileSystem Spark integration][integration-hadoopfs].
 
 !!! warning "Dedicated GCP Project Recommended"
-    Due to the nature of VPC Service Controls placing a perimeter around the entire GCS service, it's strongly recommended to use a dedicated GCP project for your lakeFS bucket. This simplifies permission and access management significantly.
+    Due to the nature of VPC Service Controls which place a perimeter around the entire GCS service, it's strongly recommended to use a dedicated GCP project for your lakeFS bucket. This simplifies permission and access management significantly.
 
 ### Architecture Overview
 
 This setup uses two service accounts:
 
-1. **Metadata Service Account (SA_OPEN)**: Accesses bucket prefixes that include `_lakefs/*` from anywhere.
-2. **Data Service Account (SA_RESTRICTED)**: Accesses all data except bucket prefixes that include `_lakefs/`, restricted by network using VPC Service Controls.
+1. **Metadata Service Account (SA_OPEN)**: Accesses bucket prefixes in the form of  `gs://<bucket-name>/<prefix>/_lakefs/*` from anywhere.
+2. **Data Service Account (SA_RESTRICTED)**: Accesses all data except bucket prefixes in the form of `gs://<bucket-name>/<prefix>/_lakefs/*`, restricted by network using VPC Service Controls.
 
 lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, where metadata is stored.
 
@@ -157,10 +157,9 @@ lakeFS always requires permissions to access the `_lakefs` prefix under your sto
 
 This configuration supports only presign mode. This means that you won't be able to:
 
-* Upload objects using the lakeFS Web UI (presign mode is disabled by default)
-* Upload objects through Spark using the S3 gateway
-* Run `lakectl fs` commands (unless using **presign mode** with `--pre-sign` flag)
-* Use [Actions and Hooks](../hooks/index.md)
+* Upload objects using the lakeFS Web UI (presign mode is configurable)
+* Upload objects through lakeFS S3 Gateway
+* Run `lakectl fs` commands
 
 ### Setup Steps
 
@@ -200,27 +199,40 @@ export SA_RESTRICTED="${SA_RESTRICTED_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 #### 2. Configure Bucket IAM Policies
 
-Grant the metadata service account access to `_lakefs/**` prefix only:
+Grant the metadata service account access to `gs://<bucket-name>/<prefix>/_lakefs/*` prefix only:
 
 ```bash
 gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" \
   --member="serviceAccount:$SA_OPEN" \
   --role="roles/storage.objectAdmin" \
-  --condition='title=lakefs-metadata-only,description=Access_only_to_lakefs_prefix,expression=resource.type == "storage.googleapis.com/Object" && resource.name.extract("/objects/{before}/_lakefs/") != ""'
+  --condition='title=lakefs-metadata-only,description=Access_only_to_lakefs_prefix,expression=resource.type == "storage.googleapis.com/Object" && resource.name.extract("/objects/{prefix}/_lakefs/") != ""'
 ```
 
-Grant the data service account access to everything except `_lakefs/**`:
+Grant the data service account access to everything except `gs://<bucket-name>/<prefix>/_lakefs/*` prefix:
 
 ```bash
 # Object access (read/write) for non-_lakefs paths
 gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" \
   --member="serviceAccount:$SA_RESTRICTED" \
   --role="roles/storage.objectAdmin" \
-  --condition='title=lakefs-data-only,description=Access_except_lakefs_prefix,expression=resource.type == "storage.googleapis.com/Object" && resource.name.extract("/objects/{before}/_lakefs/") == ""'
+  --condition='title=lakefs-data-only,description=Access_except_lakefs_prefix,expression=resource.type == "storage.googleapis.com/Object" && resource.name.extract("/objects/{prefix}/_lakefs/") == ""'
 ```
 
-!!! warning "storage.objects.list Permission Required"
-    The data service account also needs the `storage.objects.list` permission without conditionals to perform listing operations. Since standard GCP roles also include `storage.objects.get` (which would allow reading `_lakefs/**` data), you'll need to create a custom IAM role that includes only the `storage.objects.list` permission, then grant it to the data service account without conditions.
+Create a custom IAM role for listing objects and grant it to the data service account:
+
+```bash
+# Create custom role for listing objects only
+gcloud iam roles create lakefsDataListOnly \
+  --project="$PROJECT_ID" \
+  --title="lakeFS Data List Only" \
+  --description="Custom role for lakeFS data service account to list objects" \
+  --permissions="storage.objects.list"
+
+# Grant the custom role to the data service account
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:$SA_RESTRICTED" \
+  --role="projects/${PROJECT_ID}/roles/lakefsDataListOnly"
+```
 
 #### 3. Set Up VPC Service Controls
 
@@ -282,7 +294,7 @@ gcloud access-context-manager perimeters create lakefs_perimeter \
   --ingress-policies=ingress-policy.yaml
 ```
 
-#### 6. Configure lakeFS
+#### 6. Update lakeFS configuration
 
 In your lakeFS configuration, update the credentials for the blockstore to use the metadata and data service accounts:
 
@@ -292,15 +304,16 @@ blockstore:
   gs:
     credentials_json: [SA_OPEN_SERVICE_ACCOUNT_JSON]
     data_credentials_json: [SA_RESTRICTED_SERVICE_ACCOUNT_JSON]
+    # data_credentials_file: [SA_RESTRICTED_SERVICE_ACCOUNT_FILE] # alternatively, if you prefer to use a file path
 ```
 
-For data operations, your clients should use the data service account (SA_RESTRICTED) credentials and must access from within the allowed networks defined in your VPC Service Controls.
+For data operations, your clients should use the data service account (SA_RESTRICTED) credentials and must access from within the allowed networks and VPCs defined in your VPC Service Controls.
 
 ### Network Access Control
 
 With this setup:
 
-- **lakeFS server** uses SA_OPEN to access metadata (`_lakefs/**`) from any network
+- **lakeFS server** uses SA_OPEN to access metadata (`_lakefs/*`) from any network
 - **Data access** through SA_RESTRICTED is only permitted from approved IP addresses and VPCs defined in the VPC Service Controls access level
 - Clients accessing data must be within the allowed network perimeter
 
