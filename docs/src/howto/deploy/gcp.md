@@ -148,8 +148,8 @@ If required, lakeFS can operate without accessing the data itself. This permissi
 
 This setup uses two service accounts:
 
-1. **Metadata Service Account (SA_OPEN)**: Accesses bucket prefixes in the form of  `gs://<bucket-name>/<prefix>/_lakefs/*` from anywhere.
-2. **Data Service Account (SA_RESTRICTED)**: Accesses all data except bucket prefixes in the form of `gs://<bucket-name>/<prefix>/_lakefs/*`, restricted by network using VPC Service Controls.
+1. **Metadata Service Account (SA_OPEN)**: Accesses bucket prefixes in the form of  `gs://<bucket-name>/<prefix>/_lakefs/` from anywhere.
+2. **Data Service Account (SA_RESTRICTED)**: Accesses all data except bucket prefixes in the form of `gs://<bucket-name>/<prefix>/_lakefs/`, restricted by network using VPC Service Controls.
 
 lakeFS always requires permissions to access the `_lakefs` prefix under your storage namespace, where metadata is stored.
 
@@ -199,7 +199,7 @@ export SA_RESTRICTED="${SA_RESTRICTED_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 #### 2. Configure Bucket IAM Policies
 
-Grant the metadata service account access to `gs://<bucket-name>/<prefix>/_lakefs/*` prefix only:
+Grant the metadata service account access to `gs://<bucket-name>/<prefix>/_lakefs/` prefix only:
 
 ```bash
 gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" \
@@ -208,7 +208,7 @@ gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" \
   --condition='title=lakefs-metadata-only,description=Access_only_to_lakefs_prefix,expression=resource.type == "storage.googleapis.com/Object" && resource.name.extract("/objects/{prefix}/_lakefs/") != ""'
 ```
 
-Grant the data service account access to everything except `gs://<bucket-name>/<prefix>/_lakefs/*` prefix:
+Grant the data service account access to everything except `gs://<bucket-name>/<prefix>/_lakefs/` prefix:
 
 ```bash
 # Object access (read/write) for non-_lakefs paths
@@ -313,7 +313,7 @@ For data operations, your clients should use the data service account (SA_RESTRI
 
 With this setup:
 
-- **lakeFS server** uses SA_OPEN to access metadata (`_lakefs/*`) from any network
+- **lakeFS server** uses SA_OPEN to access metadata (`_lakefs/`) from any network
 - **Data access** through SA_RESTRICTED is only permitted from approved IP addresses and VPCs defined in the VPC Service Controls access level
 - Clients accessing data must be within the allowed network perimeter
 
