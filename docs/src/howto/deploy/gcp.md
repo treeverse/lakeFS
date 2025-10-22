@@ -199,6 +199,8 @@ export SA_RESTRICTED="${SA_RESTRICTED_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 #### 2. Configure Bucket IAM Policies
 
+In this step, we will configure the IAM policies on the bucket level to grant the necessary permissions for the service accounts.
+
 Grant the metadata service account access to `gs://<bucket-name>/<prefix>/_lakefs/` prefix only:
 
 ```bash
