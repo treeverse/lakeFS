@@ -1851,7 +1851,7 @@ func (g *Graveler) Set(ctx context.Context, repository *RepositoryRecord, branch
 
 	log := g.log(ctx).WithFields(logging.Fields{"key": key, "operation": "set"})
 	err = g.safeBranchWrite(ctx, log, repository, branchID, safeBranchWriteOptions{MaxTries: options.MaxTries}, func(branch *Branch) error {
-		if options.Condition != nil {
+		if options.Condition == nil {
 			return g.StagingManager.Set(ctx, branch.StagingToken, key, &value, false)
 		}
 
