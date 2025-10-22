@@ -37,7 +37,7 @@ pub enum LinkPhysicalAddressError {
     Status409(models::StagingLocation),
     Status412(models::Error),
     Status429(),
-    Status501(),
+    Status501(models::Error),
     DefaultResponse(models::Error),
     UnknownValue(serde_json::Value),
 }

@@ -5148,7 +5148,11 @@ paths:
         "429":
           description: too many requests
         "501":
-          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
         default:
           content:
             application/json:
@@ -5596,7 +5600,11 @@ paths:
         "429":
           description: too many requests
         "501":
-          description: Not implemented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not Implemented
         default:
           content:
             application/json:

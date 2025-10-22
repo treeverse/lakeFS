@@ -4917,7 +4917,7 @@ paths:
         429:
           description: too many requests
         501:
-          description: Not implemented
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
 
@@ -5160,7 +5160,7 @@ paths:
         429:
           description: too many requests
         501:
-          description: Not implemented
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
     delete:
