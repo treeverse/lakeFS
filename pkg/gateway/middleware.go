@@ -200,7 +200,7 @@ func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.Gateway
 				},
 			})
 			if authErr != nil || authResp.Error != nil || !authResp.Allowed {
-				_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())
+				_ = o.EncodeError(w, req, authErr, gatewayerrors.ErrAccessDenied.ToAPIErr())
 				return
 			}
 			if fallbackProxy != nil {
