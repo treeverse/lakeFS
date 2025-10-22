@@ -3022,7 +3022,7 @@ func (c *Controller) handleAPIErrorCallback(ctx context.Context, w http.Response
 	case errors.Is(err, authentication.ErrNotImplemented),
 		errors.Is(err, auth.ErrNotImplemented),
 		errors.Is(err, license.ErrNotImplemented),
-		errors.Is(err, catalog.ErrFeatureNotSupported):
+		errors.Is(err, catalog.ErrNotImplemented):
 		cb(w, r, http.StatusNotImplemented, "Not implemented")
 	case errors.Is(err, authentication.ErrInsufficientPermissions):
 		c.Logger.WithContext(ctx).WithError(err).Info("User verification failed - insufficient permissions")

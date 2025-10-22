@@ -435,7 +435,14 @@ func TestGravelerSet_Advanced(t *testing.T) {
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrNotFound)
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
-		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value)
+		// condition equivalent to "if-absent"
+		condition := func(currentValue *graveler.Value) error {
+			if currentValue != nil {
+				return graveler.ErrPreconditionFailed
+			}
+			return nil
+		}
+		err := store.Set(ctx, repository, "branch-1", newSetVal.Key, *newSetVal.Value, graveler.WithCondition(condition))
 		require.ErrorIs(t, err, graveler.ErrNotFound)
 		require.Equal(t, newSetVal, stagingMgr.LastSetValueRecord)
 	})
