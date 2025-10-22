@@ -117,7 +117,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(w http.ResponseWrite
 			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrBadRequest))
 			return
 		}
-		if errors.Is(err, catalog.ErrFeatureNotSupported) {
+		if errors.Is(err, catalog.ErrNotImplemented) {
 			_ = o.EncodeError(w, req, err, gatewayErrors.Codes.ToAPIErr(gatewayErrors.ErrNotImplemented))
 			return
 		}
