@@ -1,8 +1,10 @@
-import React, { createContext, FC, useContext, useEffect, useState, } from "react";
+import React, { createContext, FC, useContext, useEffect } from "react";
 
 import { config } from "../api";
 import useUser from "./user";
 import { usePluginManager } from "../../extendable/plugins/pluginsContext";
+import {useAPI} from "./api";
+import {useLocation} from "react-router-dom";
 
 type ConfigContextType = {
     error: Error | null;
@@ -58,20 +60,16 @@ const useConfigContext = () => useContext(configContext);
 const ConfigProvider: FC<{children: React.ReactNode}> = ({children}) => {
     const pluginManager = usePluginManager();
     const {user} = useUser();
-    const [storageConfig, setConfig] = useState<ConfigContextType>(configInitialState);
-
+    const location = useLocation();
+    const { response, loading, error } = useAPI(() => config.getConfig(), [user, location.pathname, location.search]);
     useEffect(() => {
-        config.getConfig()
-            .then(configData => {
-                pluginManager.customObjectRenderers?.init(configData);
-                setConfig({config: configData, loading: false, error: null});
-            })
-            .catch((error) =>
-                setConfig({config: null, loading: false, error}));
-    }, [user]);
+        if (response) {
+            pluginManager.customObjectRenderers?.init(response);
+        }
+    }, [response, pluginManager]);
 
     return (
-        <configContext.Provider value={storageConfig}>
+        <configContext.Provider value={{ config: response ?? null, loading, error }}>
             {children}
         </configContext.Provider>
     );

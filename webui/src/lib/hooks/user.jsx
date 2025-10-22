@@ -2,12 +2,16 @@ import {useAPI} from "./api";
 import {auth} from "../api";
 import {useAuth} from "../auth/authContext";
 import {AUTH_STATUS} from "../auth/status";
+import {useCallback} from "react";
 
 const useUser = () => {
-     const { status } = useAuth();
-     const fetcher = status === AUTH_STATUS.AUTHENTICATED
-         ? () => auth.getCurrentUserWithCache()
-         : async () => null;
+    const { status } = useAuth();
+
+    const fetcher = useCallback(() => {
+        return status === AUTH_STATUS.AUTHENTICATED
+            ? auth.getCurrentUser()
+            : Promise.resolve(null);
+    }, [status]);
 
      const { response, loading, error } = useAPI(fetcher, [status]);
      const user = status === AUTH_STATUS.AUTHENTICATED ? response : null;
