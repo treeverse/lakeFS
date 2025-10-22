@@ -217,6 +217,6 @@ public class Example {
 | **409** | conflict with a commit, try here |  -  |
 | **412** | Precondition Failed |  -  |
 | **429** | too many requests |  -  |
-| **501** | Not implemented |  -  |
+| **501** | Not Implemented |  -  |
 | **0** | Internal Server Error |  -  |
 

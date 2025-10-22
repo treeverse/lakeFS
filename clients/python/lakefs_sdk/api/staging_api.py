@@ -394,7 +394,7 @@ class StagingApi:
             '409': "StagingLocation",
             '412': "Error",
             '429': None,
-            '501': None,
+            '501': "Error",
         }
 
         return self.api_client.call_api(

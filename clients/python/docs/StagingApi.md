@@ -247,7 +247,7 @@ Name | Type | Description  | Notes
 **409** | conflict with a commit, try here |  -  |
 **412** | Precondition Failed |  -  |
 **429** | too many requests |  -  |
-**501** | Not implemented |  -  |
+**501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
