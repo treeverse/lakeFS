@@ -5084,6 +5084,9 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ObjectStageCreation"
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+        - $ref: "#/components/parameters/IfMatch"
       responses:
         201:
           description: object metadata
@@ -5099,6 +5102,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         404:
           $ref: "#/components/responses/NotFound"
+        412:
+          $ref: "#/components/responses/PreconditionFailed"
         429:
           description: too many requests
         default:

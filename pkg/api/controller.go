@@ -3636,12 +3636,22 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 	if body.Metadata != nil {
 		entryBuilder.Metadata(body.Metadata.AdditionalProperties)
 	}
-	entry := entryBuilder.Build()
-
-	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, graveler.WithForce(swag.BoolValue(body.Force)))
+	condition, err := apifactory.BuildConditionFromParams((*string)(params.IfMatch), (*string)(params.IfNoneMatch))
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
+	opts := []graveler.SetOptionsFunc{
+		graveler.WithForce(swag.BoolValue(body.Force)),
+	}
+	if condition != nil {
+		opts = append(opts, graveler.WithCondition(*condition))
+	}
+	entry := entryBuilder.Build()
+	err = c.Catalog.CreateEntry(ctx, repo.Name, branch, entry, opts...)
+	if c.handleAPIError(ctx, w, r, err) {
+		return
+	}
+	
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
