@@ -44,11 +44,12 @@ const NavUserInfo = () => {
                     auth.clearCurrentUser();
                     markUnauthenticated();
                     if (logoutUrl !== "/logout") {
+                        //For SSO: external IdP logout must be a full navigation and replace history
                         window.location.replace(logoutUrl);
                         return;
                     }
 
-                    router.navigate("/auth/login", { replace: true });
+                    router.navigate("/", { replace: true });
                 }}>
                 Logout
             </NavDropdown.Item>

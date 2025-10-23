@@ -1,9 +1,8 @@
 import React from "react";
 import {Navigate, Outlet, useLocation} from "react-router-dom";
-import {useAuth} from "../auth/authContext";
-import {AUTH_STATUS} from "../auth/status";
+import {AUTH_STATUS, useAuth} from "../auth/authContext";
 
-export default function RequireAuth() {
+export default function RequiresAuth() {
     const {status} = useAuth();
     const location = useLocation();
 

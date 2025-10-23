@@ -46,7 +46,7 @@ import {AuthLayout} from "../lib/components/auth/layout";
 import RepositoryActionPage from "./repositories/repository/actions/run";
 import {WithAppContext} from "../lib/hooks/appContext";
 import {AuthProvider} from "../lib/auth/authContext";
-import RequireAuth from "../lib/components/requireAuth";
+import RequiresAuth from "../lib/components/requiresAuth";
 
 export const IndexPage = () => {
     return (
@@ -56,7 +56,7 @@ export const IndexPage = () => {
                     <WithLoginConfigContext>
                         <Routes>
                             <Route index element={<Navigate to="/repositories"/>}/>
-                            <Route element={<RequireAuth/>}>
+                            <Route element={<RequiresAuth/>}>
                                 <Route path="repositories" element={<Layout logged={true}/>}>
                                     <Route index element={<RepositoriesPage/>}/>
                                     <Route path=":repoId" element={<RepositoryPageLayout/>}>

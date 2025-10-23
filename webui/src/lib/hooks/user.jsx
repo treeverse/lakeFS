@@ -1,7 +1,6 @@
 import {useAPI} from "./api";
 import {auth} from "../api";
-import {useAuth} from "../auth/authContext";
-import {AUTH_STATUS} from "../auth/status";
+import {AUTH_STATUS, useAuth} from "../auth/authContext";
 import {useCallback} from "react";
 
 const useUser = () => {

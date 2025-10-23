@@ -7,9 +7,8 @@ import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
-import {useAuth} from "../../lib/auth/authContext";
+import {AUTH_STATUS, useAuth} from "../../lib/auth/authContext";
 import {useLocation} from "react-router-dom";
-import {AUTH_STATUS} from "../../lib/auth/status";
 
 interface SetupResponse {
     state: string;
