@@ -2,8 +2,8 @@ import React from "react";
 import {Navigate, Outlet, useLocation} from "react-router-dom";
 import {AUTH_STATUS, useAuth} from "../auth/authContext";
 
-export default function RequiresAuth() {
-    const {status} = useAuth();
+const RequiresAuth: React.FC = () => {
+    const { status } = useAuth();
     const location = useLocation();
 
     if (status === AUTH_STATUS.UNAUTHENTICATED) {
@@ -12,6 +12,8 @@ export default function RequiresAuth() {
         return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
     }
 
-    // Here the user is authenticated
-    return <Outlet/>;
-}
+    // User is authenticated
+    return <Outlet />;
+};
+
+export default RequiresAuth;
