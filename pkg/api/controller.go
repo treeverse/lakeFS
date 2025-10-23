@@ -3651,7 +3651,7 @@ func (c *Controller) StageObject(w http.ResponseWriter, r *http.Request, body ap
 	if c.handleAPIError(ctx, w, r, err) {
 		return
 	}
-	
+
 	response := apigen.ObjectStats{
 		Checksum:        entry.Checksum,
 		Mtime:           entry.CreationDate.Unix(),
