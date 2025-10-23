@@ -48,7 +48,7 @@ import {WithAppContext} from "../lib/hooks/appContext";
 import {AUTH_STATUS, AuthProvider, useAuth} from "../lib/auth/authContext";
 import RequiresAuth from "../lib/components/requiresAuth";
 
-function RedirectIfAuthenticated({ children }) {
+const RedirectIfAuthenticated = ({ children }) => {
     const { status } = useAuth();
     const location = useLocation();
 
@@ -57,8 +57,8 @@ function RedirectIfAuthenticated({ children }) {
         return <Navigate to={next} replace />;
     }
 
-    return children;
-}
+    return <>{children}</>;
+};
 
 export const IndexPage = () => {
     return (
