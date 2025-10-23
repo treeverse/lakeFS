@@ -2241,8 +2241,8 @@ func TestController_UploadObjectHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("UploadObject err=%s, expected no error", err)
 		}
-		if resp.JSON400 == nil {
-			t.Fatalf("UploadObject status code=%d, expected 400", resp.StatusCode())
+		if resp.JSON501 == nil {
+			t.Fatalf("UploadObject status code=%d, expected 501", resp.StatusCode())
 		}
 	})
 

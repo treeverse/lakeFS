@@ -125,7 +125,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **link_physical_address**
-> ObjectStats link_physical_address(repository, branch, path, staging_metadata, if_none_match=if_none_match)
+> ObjectStats link_physical_address(repository, branch, path, staging_metadata, if_none_match=if_none_match, if_match=if_match)
 
 associate staging on this physical address with a path
 
@@ -197,10 +197,11 @@ with lakefs_sdk.ApiClient(configuration) as api_client:
     path = 'path_example' # str | relative to the branch
     staging_metadata = lakefs_sdk.StagingMetadata() # StagingMetadata | 
     if_none_match = '*' # str | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported. (optional)
+    if_match = '2e9ec317e197e02e4264d128c2e7e681' # str | Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value. (optional)
 
     try:
         # associate staging on this physical address with a path
-        api_response = api_instance.link_physical_address(repository, branch, path, staging_metadata, if_none_match=if_none_match)
+        api_response = api_instance.link_physical_address(repository, branch, path, staging_metadata, if_none_match=if_none_match, if_match=if_match)
         print("The response of StagingApi->link_physical_address:\n")
         pprint(api_response)
     except Exception as e:
@@ -219,6 +220,7 @@ Name | Type | Description  | Notes
  **path** | **str**| relative to the branch | 
  **staging_metadata** | [**StagingMetadata**](StagingMetadata.md)|  | 
  **if_none_match** | **str**| Set to \&quot;*\&quot; to atomically allow the upload only if the key has no object yet. Other values are not supported. | [optional] 
+ **if_match** | **str**| Set to the object&#39;s ETag to atomically allow operations only if the object&#39;s current ETag matches the provided value. | [optional] 
 
 ### Return type
 
@@ -245,6 +247,7 @@ Name | Type | Description  | Notes
 **409** | conflict with a commit, try here |  -  |
 **412** | Precondition Failed |  -  |
 **429** | too many requests |  -  |
+**501** | Not Implemented |  -  |
 **0** | Internal Server Error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

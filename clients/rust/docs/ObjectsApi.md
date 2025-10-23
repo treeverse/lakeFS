@@ -306,7 +306,7 @@ Name | Type | Description  | Required | Notes
 
 ## upload_object
 
-> models::ObjectStats upload_object(repository, branch, path, if_none_match, storage_class, force, content)
+> models::ObjectStats upload_object(repository, branch, path, if_none_match, if_match, storage_class, force, content)
 
 
 ### Parameters
@@ -318,6 +318,7 @@ Name | Type | Description  | Required | Notes
 **branch** | **String** |  | [required] |
 **path** | **String** | relative to the branch | [required] |
 **if_none_match** | Option<**String**> | Set to \"*\" to atomically allow the upload only if the key has no object yet. Other values are not supported. |  |
+**if_match** | Option<**String**> | Set to the object's ETag to atomically allow operations only if the object's current ETag matches the provided value. |  |
 **storage_class** | Option<**String**> | Deprecated, this capability will not be supported in future releases. |  |
 **force** | Option<**bool**> |  |  |[default to false]
 **content** | Option<**std::path::PathBuf**> | Only a single file per upload which must be named \\\"content\\\". |  |
