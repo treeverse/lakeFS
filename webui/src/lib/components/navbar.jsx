@@ -9,10 +9,10 @@ import Container from "react-bootstrap/Container";
 import {useLoginConfigContext} from "../hooks/conf";
 import {FeedPersonIcon} from "@primer/octicons-react";
 import {useConfigContext} from "../hooks/configProvider";
-import {useAuth} from "../auth/authContext";
+import {AUTH_STATUS, useAuth} from "../auth/authContext";
 
 const NavUserInfo = () => {
-    const {  markUnauthenticated } = useAuth();
+    const {  setAuthStatus } = useAuth();
     const { user, loading: userLoading, error } = useUser();
     const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
     const {config, error: versionError, loading: versionLoading} = useConfigContext();
@@ -42,7 +42,7 @@ const NavUserInfo = () => {
             <NavDropdown.Item
                 onClick={()=> {
                     auth.clearCurrentUser();
-                    markUnauthenticated();
+                    setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
                     if (logoutUrl !== "/logout") {
                         //For SSO: external IdP logout must be a full navigation and replace history
                         window.location.replace(logoutUrl);

@@ -31,7 +31,7 @@ export interface LoginConfig {
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
     const location = useLocation();
-    const { markAuthenticated } = useAuth();
+    const { setAuthStatus } = useAuth();
     const [loginError, setLoginError] = useState<React.ReactNode>(null);
     const state = location.state as { next?: string; redirected?: boolean } | null;
     const next = (state?.next ?? (router.query as { next?: string })?.next) || "/";
@@ -56,7 +56,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             const username = formData.get('username');
                             const password = formData.get('password');
                             await auth.login(username, password);
-                            markAuthenticated();
+                            setAuthStatus(AUTH_STATUS.AUTHENTICATED);
                             router.navigate(next || "/", { replace: true });
                         } catch(err) {
                             if (err instanceof AuthenticationError && err.status === 401) {

@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {AuthenticationError} from "../api";
-import {useAuth} from "../auth/authContext";
+import {AUTH_STATUS, useAuth} from "../auth/authContext";
 
 const initialPaginationState = {
     loading: true,
@@ -51,7 +51,7 @@ const initialAPIState = {
 
 export const useAPI = (promise, deps = []) => {
     const [request, setRequest] = useState(initialAPIState);
-    const { markUnauthenticated } = useAuth();
+    const { setAuthStatus } = useAuth();
 
     useEffect(() => {
         let isMounted = true;
@@ -67,7 +67,7 @@ export const useAPI = (promise, deps = []) => {
             } catch (error) {
                 if (error instanceof AuthenticationError) {
                     if (isMounted) {
-                        markUnauthenticated();
+                        setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
                     }
                     return;
                 }

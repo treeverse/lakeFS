@@ -2,8 +2,7 @@ import React, { createContext, useContext, useMemo, useState, ReactNode } from "
 
 type AuthContextType = {
     status: AuthStatus;
-    markAuthenticated: () => void;
-    markUnauthenticated: () => void;
+    setAuthStatus: (s: AuthStatus) => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -15,40 +14,16 @@ export const AUTH_STATUS = {
 
 export type AuthStatus = typeof AUTH_STATUS[keyof typeof AUTH_STATUS];
 
-const STORAGE_KEY = "lakefs:ui:auth:status";
-
-function readPersistedStatus(): AuthStatus {
-    try {
-        const v = window.localStorage.getItem(STORAGE_KEY);
-        return v === AUTH_STATUS.AUTHENTICATED ? AUTH_STATUS.AUTHENTICATED : AUTH_STATUS.UNAUTHENTICATED;
-    } catch {
-        return AUTH_STATUS.UNAUTHENTICATED;
-    }
+function readInitialStatus(): AuthStatus {
+    return window.localStorage.getItem('user') ? AUTH_STATUS.AUTHENTICATED : AUTH_STATUS.UNAUTHENTICATED;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [status, setStatus] = useState<AuthStatus>(() => readPersistedStatus());
+    const [status, setStatus] = useState<AuthStatus>(() => readInitialStatus());
 
     const value = useMemo<AuthContextType>(() => ({
         status,
-        markAuthenticated: () => {
-            setStatus(AUTH_STATUS.AUTHENTICATED);
-            try {
-                window.localStorage.setItem(STORAGE_KEY, AUTH_STATUS.AUTHENTICATED);
-            }
-            catch (e) {
-                console.error("[Auth] Failed to persist auth status to localStorage:", e);
-            }
-        },
-        markUnauthenticated: () => {
-            setStatus(AUTH_STATUS.UNAUTHENTICATED);
-            try {
-                window.localStorage.removeItem(STORAGE_KEY);
-            }
-            catch (e) {
-                console.error("[Auth] Failed to clear auth status from localStorage:", e);
-            }
-        },
+        setAuthStatus: setStatus,
     }), [status]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
