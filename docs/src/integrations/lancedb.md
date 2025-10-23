@@ -16,11 +16,16 @@ To configure LanceDB to work with lakeFS, configure it to use the lakeFS [S3 Gat
 
 
 ```python
+import lancedb  # pip install lancedb
 
 db = lancedb.connect(
+    # structure: s3://<repository ID>/<branch>/<path>
     uri="s3://example-repo/example-branch/path/to/lancedb",
     storage_options={
+        # Your lakeFS S3 Gateway
         "endpoint": "https://example.lakefs.io",
+        # Access key and secret of a lakeFS user with permissions 
+        #  to read and write data from that path
         "access_key_id": "AKIAIOSFODNN7EXAMPLE",
         "secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
     }
@@ -43,7 +48,7 @@ Running LanceDB on top of lakeFS has a few major benefits:
 
 ### Multimodal data storage
 
-In many cases, lanceDB stores embeddings of data that exists elsewhere: documents, images, text files etc. These "raw" data files are processed to extract embeddings, which are then stored in lanceDB - but they are also stored in their raw form for retrieval, and in some cases metadata about them is stored in other formats for use in a data warehouse or data lake.
+In many cases, LanceDB stores embeddings of data that exists elsewhere: documents, images, text files etc. These "raw" data files are processed to extract embeddings, which are then stored in LanceDB - but they are also stored in their raw form for retrieval, and in some cases metadata about them is stored in other formats for use in a data warehouse or data lake.
 
 By co-locating these embeddings together with the other modalities, you can perform more complex queries and analysis without giving up on consistency: a commit will capture both the vector embeddings, raw data, and metadata as one atomic unit.
 
@@ -54,7 +59,7 @@ By co-locating these embeddings together with the other modalities, you can perf
 
 lakeFS provides a highly performant and scalable way understand how data changes over time. For example, say we store raw image data in `images/` - we can update the raw data by adding, removing or updating images in the `images/` directory - and lakeFS will capture the changes as a commit.
 
-This allows you to perform differential processing of new data: If we have an `images` table in lanceDB we can keep track of the latest commit represented in that table. As new data arrives, we can update our embeddings with the latest commit by diffing the previous commit and the new one, resulting in a minimal set of embeddings to add, remove or update:
+This allows you to perform differential processing of new data: If we have an `images` table in LanceDB we can keep track of the latest commit represented in that table. As new data arrives, we can update our embeddings with the latest commit by diffing the previous commit and the new one, resulting in a minimal set of embeddings to add, remove or update:
 
 
 ![lakeFS image modalities](../assets/img/lancedb-differential-processing.png)
@@ -82,4 +87,4 @@ While this sounds simple, vector databases often change quite frequently over ti
 
 By tying that commit ID to the query, we can even go further and see the raw data as it existed at that point in time, complete with a commit log of who introduced that change, when and why.
 
-![lanceDB reproducible query](../assets/img/lancedb-repro.png)
+![LanceDB reproducible query](../assets/img/lancedb-repro.png)
