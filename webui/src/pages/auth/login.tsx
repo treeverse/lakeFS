@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -121,13 +121,6 @@ const LoginPage = () => {
     const location = useLocation();
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
-    const { status } = useAuth();
-
-    useEffect(() => {
-        if (status === AUTH_STATUS.AUTHENTICATED) {
-            router.navigate("/repositories", { replace: true });
-        }
-    }, [status, router]);
 
     if (loading) {
         return <Loading />;
