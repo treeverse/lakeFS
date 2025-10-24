@@ -74,6 +74,101 @@ func (m *MockPredicate) EXPECT() *MockPredicateMockRecorder {
 	return m.recorder
 }
 
+// MockOperations is a mock of Operations interface.
+type MockOperations struct {
+	ctrl     *gomock.Controller
+	recorder *MockOperationsMockRecorder
+}
+
+// MockOperationsMockRecorder is the mock recorder for MockOperations.
+type MockOperationsMockRecorder struct {
+	mock *MockOperations
+}
+
+// NewMockOperations creates a new mock instance.
+func NewMockOperations(ctrl *gomock.Controller) *MockOperations {
+	mock := &MockOperations{ctrl: ctrl}
+	mock.recorder = &MockOperationsMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOperations) EXPECT() *MockOperationsMockRecorder {
+	return m.recorder
+}
+
+// Delete mocks base method.
+func (m *MockOperations) Delete(ctx context.Context, partitionKey, key []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, partitionKey, key)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockOperationsMockRecorder) Delete(ctx, partitionKey, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockOperations)(nil).Delete), ctx, partitionKey, key)
+}
+
+// Get mocks base method.
+func (m *MockOperations) Get(ctx context.Context, partitionKey, key []byte) (*kv.ValueWithPredicate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, partitionKey, key)
+	ret0, _ := ret[0].(*kv.ValueWithPredicate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockOperationsMockRecorder) Get(ctx, partitionKey, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockOperations)(nil).Get), ctx, partitionKey, key)
+}
+
+// Scan mocks base method.
+func (m *MockOperations) Scan(ctx context.Context, partitionKey []byte, options kv.ScanOptions) (kv.EntriesIterator, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Scan", ctx, partitionKey, options)
+	ret0, _ := ret[0].(kv.EntriesIterator)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Scan indicates an expected call of Scan.
+func (mr *MockOperationsMockRecorder) Scan(ctx, partitionKey, options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Scan", reflect.TypeOf((*MockOperations)(nil).Scan), ctx, partitionKey, options)
+}
+
+// Set mocks base method.
+func (m *MockOperations) Set(ctx context.Context, partitionKey, key, value []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Set", ctx, partitionKey, key, value)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Set indicates an expected call of Set.
+func (mr *MockOperationsMockRecorder) Set(ctx, partitionKey, key, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockOperations)(nil).Set), ctx, partitionKey, key, value)
+}
+
+// SetIf mocks base method.
+func (m *MockOperations) SetIf(ctx context.Context, partitionKey, key, value []byte, valuePredicate kv.Predicate) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetIf", ctx, partitionKey, key, value, valuePredicate)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetIf indicates an expected call of SetIf.
+func (mr *MockOperationsMockRecorder) SetIf(ctx, partitionKey, key, value, valuePredicate interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetIf", reflect.TypeOf((*MockOperations)(nil).SetIf), ctx, partitionKey, key, value, valuePredicate)
+}
+
 // MockStore is a mock of Store interface.
 type MockStore struct {
 	ctrl     *gomock.Controller
@@ -179,6 +274,43 @@ func (m *MockStore) SetIf(ctx context.Context, partitionKey, key, value []byte, 
 func (mr *MockStoreMockRecorder) SetIf(ctx, partitionKey, key, value, valuePredicate interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetIf", reflect.TypeOf((*MockStore)(nil).SetIf), ctx, partitionKey, key, value, valuePredicate)
+}
+
+// MockTransactioner is a mock of Transactioner interface.
+type MockTransactioner struct {
+	ctrl     *gomock.Controller
+	recorder *MockTransactionerMockRecorder
+}
+
+// MockTransactionerMockRecorder is the mock recorder for MockTransactioner.
+type MockTransactionerMockRecorder struct {
+	mock *MockTransactioner
+}
+
+// NewMockTransactioner creates a new mock instance.
+func NewMockTransactioner(ctrl *gomock.Controller) *MockTransactioner {
+	mock := &MockTransactioner{ctrl: ctrl}
+	mock.recorder = &MockTransactionerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockTransactioner) EXPECT() *MockTransactionerMockRecorder {
+	return m.recorder
+}
+
+// Transact mocks base method.
+func (m *MockTransactioner) Transact(ctx context.Context, fn func(kv.Operations) error, opts kv.TransactionOpts) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Transact", ctx, fn, opts)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Transact indicates an expected call of Transact.
+func (mr *MockTransactionerMockRecorder) Transact(ctx, fn, opts interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Transact", reflect.TypeOf((*MockTransactioner)(nil).Transact), ctx, fn, opts)
 }
 
 // MockEntriesIterator is a mock of EntriesIterator interface.
