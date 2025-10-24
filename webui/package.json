@@ -61,7 +61,7 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.23.3",
-    "@playwright/test": "^1.40.1",
+    "@playwright/test": "^1.56.1",
     "@rollup/plugin-replace": "^5.0.5",
     "@stoplight/prism-cli": "^5.14.2",
     "@stoplight/prism-core": "^5.8.0",
@@ -93,7 +93,7 @@
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "mime-types": "^3.0.1",
-    "playwright": "^1.40.1",
+    "playwright": "^1.56.1",
     "sass": "^1.69.5",
     "typescript": "^5.3.3",
     "vite": "^7.1.3",
