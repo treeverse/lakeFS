@@ -5106,6 +5106,8 @@ paths:
           $ref: "#/components/responses/PreconditionFailed"
         429:
           description: too many requests
+        501:
+          $ref: "#/components/responses/NotImplemented"
         default:
           $ref: "#/components/responses/ServerError"
 
