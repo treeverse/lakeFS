@@ -8,8 +8,6 @@ import Card from "react-bootstrap/Card";
 
 import {Link} from "../nav";
 import {useLoginConfigContext} from "../../hooks/conf";
-import {useLayoutOutletContext} from "../layout";
-import {useRouter} from "../../hooks/router";
 import Alert from "react-bootstrap/Alert";
 import {InfoIcon} from "@primer/octicons-react";
 
@@ -20,32 +18,20 @@ export const AuthLayout = () => {
     const [showRBACAlert, setShowRBACAlert] = useState(!window.localStorage.getItem(rbacDismissedKey));
     const [activeTab, setActiveTab] = useState("credentials");
     const {RBAC: rbac} = useLoginConfigContext();
-    const [isLogged] = useLayoutOutletContext();
-    const router = useRouter();
 
     useEffect(() => {
-        if (!isLogged) {
-            // Redirect to the login page here, instead of in Layout where isLogged is set, because Layout also wraps
-            // routes that don't require authentication, and redirecting would be incorrect.
-            router.push({
-                pathname: '/auth/login',
-                params: {},
-                query: { next: '/', redirected: 'true' },
-            });
+        if (!showRBACAlert) {
+            window.localStorage.setItem(rbacDismissedKey, "true");
         }
-    }, [isLogged, router]);
-
-    if (!isLogged) return null;
+    }, [showRBACAlert]);
 
     return (
         <Container fluid="xl">
             <Row className="mt-5" >
                 <div>
                     {rbac === 'simplified' && showRBACAlert &&
-                        <Alert variant="info" title="rbac CTA" dismissible onClose={() => {
-                            window.localStorage.setItem(rbacDismissedKey, "true");
-                            setShowRBACAlert(false);
-                        }}><InfoIcon/>{" "}Enhance Your Security with {" "}<Alert.Link href={"https://docs.lakefs.io/reference/security/rbac.html"}>Role-Based Access Control</Alert.Link>{" "}
+                        <Alert variant="info" title="rbac CTA" dismissible onClose={() => setShowRBACAlert(false)}>
+                            <InfoIcon/>{" "}Enhance Your Security with {" "}<Alert.Link href={"https://docs.lakefs.io/reference/security/rbac.html"}>Role-Based Access Control</Alert.Link>{" "}
                             – Available on <Alert.Link href={"https://lakefs.cloud/register"}>lakeFS Cloud</Alert.Link> and <Alert.Link href={"https://docs.lakefs.io/understand/enterprise/"}>lakeFS Enterprise</Alert.Link>!</Alert>
                     }
                 </div>

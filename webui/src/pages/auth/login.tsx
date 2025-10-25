@@ -6,8 +6,9 @@ import {auth, AuthenticationError, setup, SETUP_STATE_INITIALIZED} from "../../l
 import {AlertError, Loading} from "../../lib/components/controls"
 import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
-import {useNavigate} from "react-router-dom";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
+import {AUTH_STATUS, useAuth} from "../../lib/auth/authContext";
+import {useLocation} from "react-router-dom";
 
 interface SetupResponse {
     state: string;
@@ -29,9 +30,11 @@ export interface LoginConfig {
 
 const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
     const router = useRouter();
-    const navigate = useNavigate();
+    const location = useLocation();
+    const { setAuthStatus } = useAuth();
     const [loginError, setLoginError] = useState<React.ReactNode>(null);
-    const { next } = router.query;
+    const state = location.state as { next?: string; redirected?: boolean } | null;
+    const next = (state?.next ?? (router.query as { next?: string })?.next) || "/";
     const usernamePlaceholder = loginConfig.username_ui_placeholder || "Access Key ID";
     const passwordPlaceholder = loginConfig.password_ui_placeholder || "Secret Access Key";
 
@@ -53,8 +56,8 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
                             const username = formData.get('username');
                             const password = formData.get('password');
                             await auth.login(username, password);
-                            router.push(next || '/');
-                            navigate(0);
+                            setAuthStatus(AUTH_STATUS.AUTHENTICATED);
+                            router.navigate(next || "/", { replace: true });
                         } catch(err) {
                             if (err instanceof AuthenticationError && err.status === 401) {
                                 const contents = {__html: `${loginConfig.login_failed_message}` ||
@@ -115,6 +118,7 @@ const LoginForm = ({loginConfig}: {loginConfig: LoginConfig}) => {
 
 const LoginPage = () => {
     const router = useRouter();
+    const location = useLocation();
     const pluginManager = usePluginManager();
     const { response, error, loading } = useAPI(() => setup.getState());
 
@@ -142,8 +146,8 @@ const LoginPage = () => {
     // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
     // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
     // selection page or the default lakeFS login form, since both share the same endpoint.
-    if (router.query.redirected)  {
-        delete router.query.redirected;
+    const redirected = (location.state)?.redirected || (router.query)?.redirected;
+    if (redirected)  {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
         // Return the element (component or null)
         if (loginStrategy.element !== undefined) {
