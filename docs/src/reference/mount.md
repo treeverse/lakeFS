@@ -46,9 +46,25 @@ Everest uses the same configuration and authentication methods as `lakectl`. It 
 
 Everest will attempt to authenticate in the following order:
 
-1.  **Session Token:** From `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN` or `LAKECTL_CREDENTIALS_SESSION_TOKEN`.
-2.  **lakeFS Key Pair:** Standard access key ID and secret access key.
-3.  **IAM Authentication:** If your lakeFS environment is configured for [AWS IAM Role Login](../security/external-principals-aws.md), Everest (≥ v0.4.0) can authenticate using your AWS environment (e.g., `AWS_PROFILE`). To enable this, [configure your .lakectl.yaml](../security/external-principals-aws.md#lakectl-configuration) with `provider_type: aws_iam`.
+1.  **Session Token:** From `EVEREST_LAKEFS_CREDENTIALS_SESSION_TOKEN` or `LAKECTL_CREDENTIALS_SESSION_TOKEN`. If the token is expired, authentication will fail.
+2.  **lakeFS Key Pair:** Standard access key ID and secret access key (credentials are picked up from lakectl configuration if Everest-specific credentials are not provided).
+3.  **IAM Authentication:** If your lakeFS environment is configured for [AWS IAM Role Login](../security/external-principals-aws.md), Everest (≥ v0.4.0) can authenticate using your AWS environment (e.g., `AWS_PROFILE`). IAM authentication is only attempted when no static credentials are set. To enable this, [configure your .lakectl.yaml](../security/external-principals-aws.md#lakectl-configuration) with `provider_type: aws_iam`. The token is seamlessly refreshed as long as the AWS session remains valid.
+
+    To configure IAM authentication using environment variables, use the `EVEREST_LAKEFS_*` or `LAKECTL_*` prefix:
+    ```bash
+    export EVEREST_LAKEFS_CREDENTIALS_PROVIDER_TYPE=aws_iam
+    # or
+    export LAKECTL_CREDENTIALS_PROVIDER_TYPE=aws_iam
+    ```
+
+!!! warning "lakectl Version Compatibility"
+    If you configure the IAM provider using the same `lakectl.yaml` file that you use for the lakectl CLI, you must upgrade lakectl to version `≥ v1.57.0`. Otherwise, lakectl will raise errors when using it.
+
+!!! tip "Troubleshooting IAM Presign Requests"
+    To troubleshoot presign request issues with IAM authentication, you can enable debug logging for presign requests using the environment variable:
+    ```bash
+    export EVEREST_LAKEFS_CREDENTIALS_PROVIDER_AWS_IAM_CLIENT_LOG_PRE_SIGNING_REQUEST=true
+    ```
 
 ### 3. Your First Mount (Read-Only)
 
@@ -157,6 +173,28 @@ By enabling write mode, you can modify, add, and delete files locally and then c
         ```bash
         everest umount ./pets
         ```
+
+---
+
+## Consistency & Data Behavior
+
+Understanding how Everest handles data consistency is crucial for working effectively with mounted lakeFS repositories.
+
+### File System Consistency
+
+Everest mount provides **strong read-after-write consistency** within a single mount point. Once a write operation completes, the data is guaranteed to be available for subsequent read operations on that same mount.
+
+### lakeFS Consistency
+
+Local changes are reflected in lakeFS only after they are **committed** using the `everest commit` command. Until then:
+
+*   Changes are only visible within your local mount point
+*   Other users or mounts will not see your changes
+*   If two users mount the same branch, they will not see each other's changes until those changes are committed
+
+### Sync Operation
+
+When you run `everest diff` or `everest commit`, Everest performs a **sync operation** that uploads all local changes to a temporary location in lakeFS for processing. This ensures your changes are safely transferred before being committed to the branch.
 
 ---
 
@@ -640,9 +678,26 @@ everest mount-server <remote_mount_uri> [flags]
 
 #### Write Mode Limitations
 
-*   **Unsupported Operations:** `rename`, temporary files, hard/symbolic links, POSIX file locks, and POSIX permissions are not supported.
-*   **Metadata:** Modifying file metadata (`chmod`, `chown`) is a no-op.
-*   **Deletion:** A file's name cannot be reused as a directory after deletion, and vice-versa.
+##### Unsupported Operations
+
+*   **Rename:** File and directory rename operations are not supported.
+*   **Temporary Files:** Temporary files are not supported.
+*   **Hard/Symbolic Links:** Hard links and symbolic links are not supported.
+*   **POSIX File Locks:** POSIX file locks (`lockf`) are not supported.
+*   **POSIX Permissions:** POSIX permissions are not supported. Default permissions are assigned to files and directories.
+
+##### Modified Behavior
+
+*   **Metadata Operations:** Modifying file metadata (`chmod`, `chown`, `chgrp`, time attributes) results in a no-op. The file metadata will not be changed.
+*   **Deletion Implementation:** When calling `remove`, Everest marks a file as a tombstone using [Extended Attributes](https://en.wikipedia.org/wiki/Extended_file_attributes) APIs.
+*   **Deletion Race Conditions:** Removal is not an atomic operation. Calling `remove` and `open` simultaneously on the same file may result in a race condition where the `open` operation might succeed.
+*   **Type Reuse Restriction:** A deleted file's name cannot be reused as a directory, and vice-versa. For example, this sequence is not allowed: `touch foo; rm foo; mkdir foo;`.
+*   **Directory Removal:** Calling `remove` on a directory will fail explicitly with an error. Use appropriate directory removal commands instead.
+
+##### Functionality Limitations
+
+*   **Empty Directories:** Newly created empty directories will not reflect as directory markers in lakeFS.
+*   **Path Conflicts:** lakeFS allows having two path keys where one is a "directory" prefix of the other (e.g., both `animals/cat.png` and `animals` as an empty object are valid in lakeFS). However, since a filesystem cannot contain both a file and a directory with the same name, this will lead to undefined behavior depending on the filesystem type.
 
 ### Integration with Git
 
