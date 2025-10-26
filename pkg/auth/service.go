@@ -1231,8 +1231,12 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 	conditionCtx := &ConditionContext{
 		Fields: make(map[string]string),
 	}
+	log := logging.FromContext(ctx)
 	if reqContext, ok := ctx.Value(contextKeyConditionContext).(*ConditionContext); ok {
 		conditionCtx = reqContext
+		if len(conditionCtx.Fields) > 0 {
+			log = log.WithField("fields", conditionCtx.Fields)
+		}
 	}
 
 	allowed := CheckNeutral
@@ -1246,7 +1250,7 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 				if len(stmt.Condition) > 0 {
 					conditionPassed, err := EvaluateConditions(stmt.Condition, conditionCtx)
 					if err != nil {
-						logging.FromContext(ctx).WithError(err).Warn("Failed to evaluate conditions")
+						log.WithError(err).Warn("Failed to evaluate conditions")
 						return CheckDeny
 					}
 					if !conditionPassed {
@@ -1257,7 +1261,7 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 
 				resources, err := ParsePolicyResourceAsList(stmt.Resource)
 				if err != nil {
-					logging.FromContext(ctx).Error(err)
+					log.Error(err)
 					return CheckDeny
 				}
 				for _, resource := range resources {
@@ -1288,9 +1292,9 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 
 	case permissions.NodeTypeOr:
 		// returns:
-		// Allowed - at least one of the permissions is allowed and no one is denied
-		// Denied - one of the permissions is Deny
-		// Natural - otherwise
+		// Allowed - at least one of the permissions is allowed and no one is denied.
+		// Denied - one of the permissions is Deny.
+		// Natural - otherwise.
 		for _, node := range node.Nodes {
 			result := CheckPermissions(ctx, node, username, policies, permAudit)
 			if result == CheckDeny {
@@ -1315,7 +1319,7 @@ func CheckPermissions(ctx context.Context, node permissions.Node, username strin
 		return CheckAllow
 
 	default:
-		logging.FromContext(ctx).Error("unknown permission node type")
+		log.Error("unknown permission node type")
 		return CheckDeny
 	}
 	return allowed
