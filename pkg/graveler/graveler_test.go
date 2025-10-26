@@ -431,7 +431,16 @@ func TestGravelerSet_Advanced(t *testing.T) {
 	refMgr := mock.NewMockRefManager(ctrl)
 
 	t.Run("branch deleted after update", func(t *testing.T) {
-		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.Branch{}, nil)
+		branch := &graveler.Branch{CommitID: "commit1", StagingToken: "st"}
+		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(branch, nil)
+		refMgr.EXPECT().ParseRef(gomock.Any()).Times(1).Return(graveler.RawRef{BaseRef: "branch-1"}, nil)
+		refMgr.EXPECT().ResolveRawRef(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&graveler.ResolvedRef{
+			Type: graveler.ReferenceTypeBranch,
+			BranchRecord: graveler.BranchRecord{
+				BranchID: "branch-1",
+				Branch:   branch,
+			},
+		}, nil)
 		refMgr.EXPECT().GetBranch(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, graveler.ErrNotFound)
 		stagingMgr := &testutil.StagingFake{}
 		store := newGraveler(t, committedMgr, stagingMgr, refMgr, nil, testutil.NewProtectedBranchesManagerFake())
