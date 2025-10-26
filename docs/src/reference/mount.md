@@ -28,6 +28,9 @@ Everest is a complementary binary to lakeFS that allows you to virtually mount a
 
 This guide will walk you through setting up and using Everest to mount a lakeFS repository on your local machine.
 
+!!! tip "New to Everest?"
+    After completing this getting started guide, we recommend reading the [Core Concepts](#core-concepts) section to understand caching, consistency, and performance characteristics.
+
 ### 1. Prerequisites
 
 *   lakeFS Cloud account or lakeFS Enterprise Version `1.25.0` or higher.
@@ -100,11 +103,98 @@ Let's mount a prefix from a lakeFS repository to a local directory. In read-only
 
 ---
 
+## Core Concepts
+
+Before diving into data operations, it's important to understand how Everest manages performance, consistency, and caching. These concepts apply to both local and Kubernetes deployments.
+
+### Cache Behavior
+
+Everest uses a local cache to improve performance when accessing files from lakeFS. Understanding how the cache works will help you optimize performance for your specific use case.
+
+#### How Caching Works
+
+When you access a file through a mounted lakeFS path, Everest follows this process:
+
+1. **Lazy Fetching**: Files are only downloaded when their content is accessed (e.g., reading a file, not just listing it with `ls`).
+2. **Cache Storage**: When an object is not found in the local cache, Everest fetches the data from the object store and stores it in the cache for subsequent access.
+3. **Cache Reuse**: Subsequent reads of the same file are served directly from the cache, eliminating network requests and improving performance.
+
+#### Default Cache Behavior
+
+By default, Everest creates a temporary cache directory when you run `everest mount`. This directory is automatically cleared when the mount is terminated via `everest umount`.
+
+**Key points:**
+*   Each new mount creates a fresh cache directory.
+*   The cache is ephemeral and does not persist between mount sessions.
+*   The default cache location is managed by Everest and cleaned up automatically.
+
+#### Persistent Cache
+
+To reuse cache data across multiple mount sessions, you can specify a custom cache directory using the `--cache-dir` flag:
+
+```bash
+everest mount lakefs://image-repo/main/datasets/ ./datasets --cache-dir ~/.everest-cache
+```
+
+**Benefits of persistent cache:**
+*   Faster startup times when remounting the same data.
+*   Reduced bandwidth usage by reusing previously downloaded files.
+*   Useful for iterative workflows where you repeatedly mount and unmount the same repository.
+
+#### Cache Management and Commit IDs
+
+Everest manages cached data based on the commit ID of the mounted reference:
+
+*   **Commit-Based Caching**: Each commit ID has its own cache namespace. This ensures that cached data always corresponds to the correct version of your files.
+*   **Cache Invalidation on Commit**: When you commit changes in write mode using `everest commit`, the mount point's source commit ID is updated to the new HEAD of the branch. As a result, the cache associated with the old commit ID is no longer used, and new data will be cached under the new commit ID.
+
+!!! tip "Optimizing Cache Size"
+    Set `--cache-size` to match the amount of data you plan to read or write. A larger cache reduces the need to evict and re-fetch files, improving performance for workloads that access many files.
+
+### Consistency & Data Behavior
+
+Understanding how Everest handles data consistency is crucial for working effectively with mounted lakeFS repositories.
+
+#### File System Consistency
+
+Everest mount provides **strong read-after-write consistency** within a single mount point. Once a write operation completes, the data is guaranteed to be available for subsequent read operations on that same mount.
+
+#### lakeFS Consistency
+
+Local changes are reflected in lakeFS only after they are **committed** using the `everest commit` command. Until then:
+
+*   Changes are only visible within your local mount point
+*   Other users or mounts will not see your changes
+*   If two users mount the same branch, they will not see each other's changes until those changes are committed
+
+#### Sync Operation
+
+When you run `everest diff` or `everest commit`, Everest performs a **sync operation** that uploads all local changes to a temporary location in lakeFS for processing. This ensures your changes are safely transferred before being committed to the branch.
+
+See the [Write-Mode Operations](#write-mode-operations) section for more details on working with writable mounts.
+
+### Performance Considerations
+
+Everest is optimized for high-performance data access, but understanding these characteristics will help you get the best results:
+
+*   **Direct Object Store Access**: By default, Everest uses pre-signed URLs to read and write data directly to and from the underlying object store, bypassing the lakeFS server for data transfer. Only metadata operations go through the lakeFS server.
+*   **Lazy Metadata Loading**: Directory listings are fetched on-demand, allowing you to work with repositories containing billions of files without upfront overhead.
+*   **Partial Reads**: The experimental `--partial-reads` flag enables reading only the accessed portions of large files, which is useful for file formats like Parquet that support column pruning.
+*   **Cache Sizing**: Setting an appropriate `--cache-size` prevents frequent eviction and re-fetching. As a rule of thumb, size your cache to accommodate your working set.
+*   **Network Bandwidth**: Since data is fetched directly from object storage, ensure your network connection has adequate bandwidth for your workload.
+
+!!! tip "Optimizing for ML Workloads"
+    For training jobs, consider using a persistent cache directory (`--cache-dir`) and sizing the cache to fit your entire dataset. This eliminates repeated downloads across training epochs.
+
+---
+
 ## Working with Data (Local Mount)
 
 ### Read-Only Operations
 
 Read-only mode is the default and is ideal for data exploration, analysis, and feeding data into local applications without the risk of accidental changes.
+
+For information about how data is cached and accessed, see the [Cache Behavior](#cache-behavior) section.
 
 !!! example "Working with Data Locally"
     Mount a repository and use your favorite tools directly on the data.
@@ -127,6 +217,9 @@ By enabling write mode, you can modify, add, and delete files locally and then c
 
 !!! warning
     When running in write mode, the lakeFS URI must point to a branch, not a commit ID or a tag.
+
+!!! info "Write Mode Limitations"
+    Write mode has some limitations on supported operations. See [Write Mode Limitations](#write-mode-limitations) for details on unsupported operations and modified behaviors.
 
 !!! example "Changing Data Locally"
     1.  **Mount in write mode:**
@@ -176,34 +269,21 @@ By enabling write mode, you can modify, add, and delete files locally and then c
 
 ---
 
-## Consistency & Data Behavior
-
-Understanding how Everest handles data consistency is crucial for working effectively with mounted lakeFS repositories.
-
-### File System Consistency
-
-Everest mount provides **strong read-after-write consistency** within a single mount point. Once a write operation completes, the data is guaranteed to be available for subsequent read operations on that same mount.
-
-### lakeFS Consistency
-
-Local changes are reflected in lakeFS only after they are **committed** using the `everest commit` command. Until then:
-
-*   Changes are only visible within your local mount point
-*   Other users or mounts will not see your changes
-*   If two users mount the same branch, they will not see each other's changes until those changes are committed
-
-### Sync Operation
-
-When you run `everest diff` or `everest commit`, Everest performs a **sync operation** that uploads all local changes to a temporary location in lakeFS for processing. This ensures your changes are safely transferred before being committed to the branch.
-
----
-
 ## Everest on Kubernetes (CSI Driver)
 
 !!! warning "Private Preview"
     The CSI Driver is in private preview. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
 
 The lakeFS CSI (Container Storage Interface) Driver allows Kubernetes Pods to mount and interact with data in a lakeFS repository as if it were a local filesystem.
+
+**In this section:**
+
+*   [How it Works](#how-it-works) - Understanding the CSI driver architecture
+*   [Status and Limitations](#status-and-limitations) - Supported platforms and current limitations
+*   [Prerequisites](#1-prerequisites) - Requirements for deploying the CSI driver
+*   [Deploy the CSI Driver](#2-deploy-the-csi-driver) - Installation instructions using Helm
+*   [Use in Pods](#3-use-in-pods) - How to mount lakeFS URIs in your Kubernetes workloads
+*   [Troubleshooting](#4-troubleshooting) - Common issues and debugging steps
 
 ### How it Works
 
@@ -594,11 +674,11 @@ The following examples demonstrate how to mount a lakeFS URI in different Kubern
 
 ---
 
-## Reference
+## Command-Line Reference
 
-### Command-Line Interface
+This section provides detailed documentation for all Everest CLI commands. For conceptual information about how Everest works, see the [Core Concepts](#core-concepts) section.
 
-#### `everest mount`
+### `everest mount`
 Mounts a lakeFS URI to a local directory.
 
 ```bash
@@ -670,15 +750,15 @@ everest mount-server <remote_mount_uri> [flags]
 *   `--presign`: Use presign for downloading.
 *   `--write-mode`: Enable write mode (default: false).
 
-### Consistency & File System Behavior
+---
 
-*   **Read-After-Write Consistency:** Within a single mount point, a write operation is guaranteed to be available for subsequent reads.
-*   **lakeFS Consistency:** Local changes are only visible in lakeFS after a `commit`. Other users or mounts will not see changes until they are committed to the branch.
-*   **Sync Operation:** The `commit` and `diff` commands first perform a `sync` operation to upload local changes to a temporary location in lakeFS for processing.
+## Advanced Topics
 
-#### Write Mode Limitations
+### Write Mode Limitations
 
-##### Unsupported Operations
+When using write mode (`--write-mode`), be aware of the following limitations and modified behaviors. For more details on write mode operations, see the [Write-Mode Operations](#write-mode-operations) section.
+
+#### Unsupported Operations
 
 *   **Rename:** File and directory rename operations are not supported.
 *   **Temporary Files:** Temporary files are not supported.
@@ -686,7 +766,7 @@ everest mount-server <remote_mount_uri> [flags]
 *   **POSIX File Locks:** POSIX file locks (`lockf`) are not supported.
 *   **POSIX Permissions:** POSIX permissions are not supported. Default permissions are assigned to files and directories.
 
-##### Modified Behavior
+#### Modified Behavior
 
 *   **Metadata Operations:** Modifying file metadata (`chmod`, `chown`, `chgrp`, time attributes) results in a no-op. The file metadata will not be changed.
 *   **Deletion Implementation:** When calling `remove`, Everest marks a file as a tombstone using [Extended Attributes](https://en.wikipedia.org/wiki/Extended_file_attributes) APIs.
@@ -694,7 +774,7 @@ everest mount-server <remote_mount_uri> [flags]
 *   **Type Reuse Restriction:** A deleted file's name cannot be reused as a directory, and vice-versa. For example, this sequence is not allowed: `touch foo; rm foo; mkdir foo;`.
 *   **Directory Removal:** Calling `remove` on a directory will fail explicitly with an error. Use appropriate directory removal commands instead.
 
-##### Functionality Limitations
+#### Functionality Limitations
 
 *   **Empty Directories:** Newly created empty directories will not reflect as directory markers in lakeFS.
 *   **Path Conflicts:** lakeFS allows having two path keys where one is a "directory" prefix of the other (e.g., both `animals/cat.png` and `animals` as an empty object are valid in lakeFS). However, since a filesystem cannot contain both a file and a directory with the same name, this will lead to undefined behavior depending on the filesystem type.
@@ -705,23 +785,35 @@ It is safe to mount a lakeFS path inside a Git repository. Everest automatically
 
 By committing the `.everest/source` file, which contains the `lakefs://` URI, you ensure that anyone who clones your Git repository and uses Everest will mount the exact same version of the data, making your project fully reproducible.
 
+!!! tip "Reproducible Data Science Projects"
+    This feature is particularly useful for data science projects where you want to version both your code (in Git) and your data (in lakeFS). Team members can clone the repository and automatically mount the correct data version.
+
 ---
 
 ## FAQ
 
-<h3>How does data access work? Does it stream through the lakeFS server?</h3>
+### How does data access work? Does it stream through the lakeFS server?
+
 No. By default (`--presign=true`), Everest uses pre-signed URLs to read and write data directly to and from the underlying object store, ensuring high performance. Metadata operations still go through the lakeFS server.
 
-<h3>What happens if the lakeFS branch is updated after I mount it?</h3>
+For more details, see [Performance Considerations](#performance-considerations).
+
+### What happens if the lakeFS branch is updated after I mount it?
+
 In read-only mode, your mount points to the commit that was at the HEAD of the branch *at the time of mounting*. It will not reflect subsequent commits to that branch unless you unmount and remount. In write mode, after a successful `commit`, the mount is updated to the new HEAD of the branch.
 
-<h3>When are files downloaded?</h3>
+### When are files downloaded?
+
 Everest uses a lazy fetching strategy. Files are only downloaded when their content is accessed (e.g., with `cat`, `open`, or reading in a script). Metadata-only operations like `ls` do not trigger downloads.
 
-<h3>What are the RBAC permissions required for mounting?</h3>
+Downloaded files are cached locally for performance. See [Cache Behavior](#cache-behavior) for details on how caching works and how to configure it.
+
+### What are the RBAC permissions required for mounting?
+
 You can use lakeFS's [Role-Based Access Control](../security/rbac.md) to manage access.
 
 **Minimal Read-Only Permissions:**
+
 ```json
 {
   "id": "MountReadOnlyPolicy",
@@ -742,6 +834,7 @@ You can use lakeFS's [Role-Based Access Control](../security/rbac.md) to manage 
 ```
 
 **Minimal Write-Mode Permissions:**
+
 ```json
 {
   "id": "MountWritePolicy",
@@ -764,5 +857,6 @@ You can use lakeFS's [Role-Based Access Control](../security/rbac.md) to manage 
 }
 ```
 
-<h3>Why use lakeFS Mount instead of `lakectl local`?</h3>
+### Why use lakeFS Mount instead of `lakectl local`?
+
 While both tools work with local data, they serve different needs. Use `lakectl local` for Git-like workflows where you need to pull and push entire directories. Use **lakeFS Mount** for cases where you want immediate, on-demand access to a large repository without downloading it first, making it ideal for exploration, training ML models, or any task that benefits from lazy loading.
