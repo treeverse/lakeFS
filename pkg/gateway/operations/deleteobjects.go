@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/pkg/gateway/path"
 	"github.com/treeverse/lakefs/pkg/gateway/serde"
 	"github.com/treeverse/lakefs/pkg/graveler"
+	"github.com/treeverse/lakefs/pkg/httputil"
 	"github.com/treeverse/lakefs/pkg/logging"
 	"github.com/treeverse/lakefs/pkg/permissions"
 )
@@ -71,7 +72,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		}
 		// authorize this object deletion
 		if clientIP == "" {
-			clientIP = auth.ExtractClientIP(req.Header, req.RemoteAddr)
+			clientIP = httputil.ExtractClientIP(req.Header, req.RemoteAddr)
 		}
 		authResp, err := o.Auth.Authorize(req.Context(), &auth.AuthorizationRequest{
 			Username: o.Principal,

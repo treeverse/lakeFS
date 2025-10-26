@@ -4935,7 +4935,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 			}
 			if swag.BoolValue(params.Presign) {
 				if clientIP == "" {
-					clientIP = auth.ExtractClientIP(r.Header, r.RemoteAddr)
+					clientIP = httputil.ExtractClientIP(r.Header, r.RemoteAddr)
 				}
 				// check if the user has read permissions for this object
 				authResponse, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
@@ -5964,7 +5964,7 @@ func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, p
 		return false
 	}
 
-	clientIP := auth.ExtractClientIP(r.Header, r.RemoteAddr)
+	clientIP := httputil.ExtractClientIP(r.Header, r.RemoteAddr)
 
 	resp, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
 		Username:            user.Username,

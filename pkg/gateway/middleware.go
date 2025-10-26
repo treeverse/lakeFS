@@ -193,7 +193,7 @@ func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.Gateway
 		}
 		repo, err := c.GetRepository(ctx, repoID)
 		if errors.Is(err, graveler.ErrNotFound) {
-			clientIP := auth.ExtractClientIP(req.Header, req.RemoteAddr)
+			clientIP := httputil.ExtractClientIP(req.Header, req.RemoteAddr)
 
 			authResp, authErr := authService.Authorize(ctx, &auth.AuthorizationRequest{
 				Username: username,
