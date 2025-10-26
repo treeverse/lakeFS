@@ -17,7 +17,6 @@ const NavUserInfo = () => {
     const logoutUrl = useLoginConfigContext()?.logout_url || "/logout"
     const {config, error: versionError, loading: versionLoading} = useConfigContext();
     const versionConfig = config?.versionConfig || {};
-    const router = useRouter();
 
     if (userLoading || versionLoading) return <Navbar.Text>Loading...</Navbar.Text>;
     if (!user || !!error) return (<></>);

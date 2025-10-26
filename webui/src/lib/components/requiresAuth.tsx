@@ -7,7 +7,7 @@ const RequiresAuth: React.FC = () => {
     const location = useLocation();
 
     if (status === AUTH_STATUS.UNAUTHENTICATED) {
-        const next = location.pathname + (location.search || "");
+        const next = location.pathname + (location.search || "") + (location.hash || "");
         return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
     }
 
