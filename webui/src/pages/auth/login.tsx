@@ -142,11 +142,6 @@ const LoginPage = () => {
         return null;
     }
 
-    if (status === AUTH_STATUS.AUTHENTICATED) {
-        const next = (location.state && (location.state).next) || (router.query && (router.query).next) || "/repositories";
-        return <Navigate to={next} replace />;
-    }
-
     // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
     // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
     // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
