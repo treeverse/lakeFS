@@ -15,7 +15,8 @@ max-attributes=10
 disable=
     too-few-public-methods,
     too-many-positional-arguments, 
-    fixme
+    fixme,
+    useless-import-alias
 
 [MISCELLANEOUS]
 
