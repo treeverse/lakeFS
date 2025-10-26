@@ -5,4 +5,4 @@ hide:
   toc: true
 ---
 
-!!swagger ../assets/js/authorization.yml!!
+!!swagger ../../../api/authorization.yml!!

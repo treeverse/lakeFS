@@ -1032,7 +1032,7 @@ func (a *APIAuthService) CheckHealth(ctx context.Context, logger logging.Logger,
 		default:
 			return fmt.Errorf("health check returned status %s: %w", healthResp.Status(), ErrInvalidResponse)
 		}
-	}, bo)
+	}, backoff.WithContext(bo, ctx))
 	if err != nil {
 		return err
 	}
