@@ -8,7 +8,7 @@ import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 import {AUTH_STATUS, useAuth} from "../../lib/auth/authContext";
-import {Navigate, useLocation} from "react-router-dom";
+import {useLocation} from "react-router-dom";
 
 interface SetupResponse {
     state: string;
@@ -120,7 +120,6 @@ const LoginPage = () => {
     const router = useRouter();
     const location = useLocation();
     const pluginManager = usePluginManager();
-    const { status } = useAuth();
     const { response, error, loading } = useAPI(() => setup.getState());
 
     if (loading) {
@@ -140,11 +139,6 @@ const LoginPage = () => {
     const loginConfig = setupResponse?.login_config;
     if (!loginConfig) {
         return null;
-    }
-
-    if (status === AUTH_STATUS.AUTHENTICATED) {
-        const next = (location.state && (location.state).next) || (router.query && (router.query).next) || "/repositories";
-        return <Navigate to={next} replace />;
     }
 
     // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
