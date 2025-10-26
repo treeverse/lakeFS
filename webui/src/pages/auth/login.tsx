@@ -8,7 +8,7 @@ import {useRouter} from "../../lib/hooks/router";
 import {useAPI} from "../../lib/hooks/api";
 import {usePluginManager} from "../../extendable/plugins/pluginsContext";
 import {AUTH_STATUS, useAuth} from "../../lib/auth/authContext";
-import {useLocation} from "react-router-dom";
+import {Navigate, useLocation} from "react-router-dom";
 
 interface SetupResponse {
     state: string;
@@ -120,35 +120,8 @@ const LoginPage = () => {
     const router = useRouter();
     const location = useLocation();
     const pluginManager = usePluginManager();
-    const { setAuthStatus } = useAuth();
+    const { status } = useAuth();
     const { response, error, loading } = useAPI(() => setup.getState());
-
-    // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
-    // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
-    // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
-    // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
-    // selection page or the default lakeFS login form, since both share the same endpoint.
-    const redirected = (location.state)?.redirected || (router.query)?.redirected;
-
-    useEffect(() => {
-        if (!redirected) return;
-        let cancelled = false;
-
-        const handleAuth = async () => {
-            const user = await auth.getCurrentUser();
-            if (cancelled || !user) return;
-            window.localStorage.setItem("user", JSON.stringify(user));
-            setAuthStatus(AUTH_STATUS.AUTHENTICATED);
-            const next = (location.state)?.next || (router.query)?.next || "/repositories";
-            router.navigate(next, { replace: true });
-        };
-
-        handleAuth();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [redirected, location, router, setAuthStatus]);
 
     if (loading) {
         return <Loading />;
@@ -168,6 +141,18 @@ const LoginPage = () => {
     if (!loginConfig) {
         return null;
     }
+
+    if (status === AUTH_STATUS.AUTHENTICATED) {
+        const next = (location.state && (location.state as any).next) || (router.query && (router.query as any).next) || "/repositories";
+        return <Navigate to={next} replace />;
+    }
+
+    // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
+    // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
+    // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
+    // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
+    // selection page or the default lakeFS login form, since both share the same endpoint.
+    const redirected = (location.state)?.redirected || (router.query)?.redirected;
 
     if (redirected)  {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
