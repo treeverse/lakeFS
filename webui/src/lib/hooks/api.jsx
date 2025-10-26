@@ -68,6 +68,7 @@ export const useAPI = (promise, deps = []) => {
                 if (error instanceof AuthenticationError) {
                     if (isMounted) {
                         setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
+                        setRequest({ loading: false, error, response: null });
                     }
                     return;
                 }
