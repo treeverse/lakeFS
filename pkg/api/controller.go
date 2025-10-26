@@ -1421,6 +1421,28 @@ func serializePolicy(p *model.Policy) apigen.Policy {
 	}
 }
 
+// apiStatementsToModelStatements converts API statements to model statements, handling condition conversion
+func apiStatementsToModelStatements(apiStatements []apigen.Statement) model.Statements {
+	stmts := make(model.Statements, len(apiStatements))
+	for i, apiStatement := range apiStatements {
+		condition := make(map[string]map[string][]string)
+		if apiStatement.Condition != nil && len(apiStatement.Condition.AdditionalProperties) > 0 {
+			// Convert API structure with AdditionalProperties to model structure
+			// map[string]struct{ AdditionalProperties map[string][]string } -> map[string]map[string][]string
+			for operator, operatorFields := range apiStatement.Condition.AdditionalProperties {
+				condition[operator] = operatorFields.AdditionalProperties
+			}
+		}
+		stmts[i] = model.Statement{
+			Effect:    apiStatement.Effect,
+			Action:    apiStatement.Action,
+			Resource:  apiStatement.Resource,
+			Condition: condition,
+		}
+	}
+	return stmts
+}
+
 func (c *Controller) DetachPolicyFromGroup(w http.ResponseWriter, r *http.Request, groupID, policyID string) {
 	if c.Config.AuthConfig().GetAuthUIConfig().IsAuthUISimplified() {
 		writeError(w, r, http.StatusNotImplemented, "Not implemented")
@@ -1528,23 +1550,7 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 		return
 	}
 
-	stmts := make(model.Statements, len(body.Statement))
-	for i, apiStatement := range body.Statement {
-		condition := make(map[string]map[string][]string)
-		if apiStatement.Condition != nil && len(apiStatement.Condition.AdditionalProperties) > 0 {
-			// Convert API structure with AdditionalProperties to model structure
-			// map[string]struct{ AdditionalProperties map[string][]string } -> map[string]map[string][]string
-			for operator, operatorFields := range apiStatement.Condition.AdditionalProperties {
-				condition[operator] = operatorFields.AdditionalProperties
-			}
-		}
-		stmts[i] = model.Statement{
-			Effect:    apiStatement.Effect,
-			Action:    apiStatement.Action,
-			Resource:  apiStatement.Resource,
-			Condition: condition,
-		}
-	}
+	stmts := apiStatementsToModelStatements(body.Statement)
 
 	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
@@ -1636,23 +1642,7 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body a
 	ctx := r.Context()
 	c.LogAction(ctx, "update_policy", r, "", "", "")
 
-	stmts := make(model.Statements, len(body.Statement))
-	for i, apiStatement := range body.Statement {
-		condition := make(map[string]map[string][]string)
-		if apiStatement.Condition != nil && len(apiStatement.Condition.AdditionalProperties) > 0 {
-			// Convert API structure with AdditionalProperties to model structure
-			// map[string]struct{ AdditionalProperties map[string][]string } -> map[string]map[string][]string
-			for operator, operatorFields := range apiStatement.Condition.AdditionalProperties {
-				condition[operator] = operatorFields.AdditionalProperties
-			}
-		}
-		stmts[i] = model.Statement{
-			Effect:    apiStatement.Effect,
-			Action:    apiStatement.Action,
-			Resource:  apiStatement.Resource,
-			Condition: condition,
-		}
-	}
+	stmts := apiStatementsToModelStatements(body.Statement)
 
 	p := &model.Policy{
 		CreatedAt:   time.Now().UTC(),
