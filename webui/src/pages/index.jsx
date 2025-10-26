@@ -67,8 +67,8 @@ export const IndexPage = () => {
                 <WithAppContext>
                     <WithLoginConfigContext>
                         <Routes>
-                            <Route index element={<Navigate to="/repositories"/>}/>
                             <Route element={<RequiresAuth/>}>
+                                <Route index element={<Navigate to="/repositories"/>}/>
                                 <Route path="repositories" element={<Layout logged={true}/>}>
                                     <Route index element={<RepositoriesPage/>}/>
                                     <Route path=":repoId" element={<RepositoryPageLayout/>}>
