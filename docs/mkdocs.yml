@@ -207,6 +207,8 @@ nav:
       - HuggingFace Datasets: integrations/huggingface_datasets.md
       - MLflow: integrations/mlflow.md
       - Kubeflow: integrations/kubeflow.md
+    - Vector Databases:
+      - LanceDB: integrations/lancedb.md
     - Catalogs & Metadata:
       - Iceberg REST Catalog: integrations/iceberg-rest-catalog.md
       - Glue Data Catalog: integrations/glue_metastore.md
