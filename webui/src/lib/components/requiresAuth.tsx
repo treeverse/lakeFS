@@ -1,19 +1,26 @@
 import React from "react";
 import {Navigate, Outlet, useLocation} from "react-router-dom";
 import {AUTH_STATUS, useAuth} from "../auth/authContext";
+import {auth} from "../api";
+import {useAPI} from "../hooks/api";
 
-const RequiresAuth: React.FC = () => {
-    const { status } = useAuth();
+const RequiresAuth = () => {
     const location = useLocation();
+    const { status, setAuthStatus } = useAuth();
 
-    if (status === AUTH_STATUS.UNAUTHENTICATED) {
-        // Save the location the user was trying to go
-        const next = location.pathname + (location.search || "");
-        return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
+    const { response: user, loading } = useAPI(() => auth.getCurrentUser(), [location.key]);
+
+    if (loading) return null;
+
+    if (user) {
+        if (status === AUTH_STATUS.UNAUTHENTICATED) {
+            setAuthStatus(AUTH_STATUS.AUTHENTICATED);
+        }
+        return <Outlet />;
     }
 
-    // User is authenticated
-    return <Outlet />;
+    const next = location.pathname + (location.search || "");
+    return <Navigate to="/auth/login" replace state={{ next, redirected: true }} />;
 };
 
 export default RequiresAuth;
