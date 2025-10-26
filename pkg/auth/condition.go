@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/treeverse/lakefs/pkg/logging"
 )
 
 const (
@@ -181,22 +183,30 @@ func ExtractClientIP(headers http.Header, remoteAddr string) string {
 		// X-Forwarded-For can contain multiple IPs, use the first one
 		firstIP, _, _ := strings.Cut(xForwardedFor, ",")
 		if firstIP != "" {
-			return strings.TrimSpace(firstIP)
+			clientIP := strings.TrimSpace(firstIP)
+			logging.ContextUnavailable().WithField("client_ip", clientIP).Debug("Client IP extract from X-Forwarded-For")
+			return clientIP
 		}
 	}
 
 	// Try X-Real-IP header as fallback
 	xRealIP := headers.Get("X-Real-IP")
 	if xRealIP != "" {
-		return strings.TrimSpace(xRealIP)
+		clientIP := strings.TrimSpace(xRealIP)
+		logging.ContextUnavailable().WithField("client_ip", clientIP).Debug("Client IP extract from X-Real-IP")
+		return clientIP
 	}
 
 	// Fall back to remote address, strip port if present
 	if remoteAddr != "" {
+		var clientIP string
 		if host, _, err := net.SplitHostPort(remoteAddr); err == nil {
-			return host
+			clientIP = host
+		} else {
+			clientIP = remoteAddr
 		}
-		return remoteAddr
+		logging.ContextUnavailable().WithField("client_ip", clientIP).Debug("Client IP extract from RemoteAddr")
+		return clientIP
 	}
 
 	return ""
