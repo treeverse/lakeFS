@@ -143,7 +143,7 @@ const LoginPage = () => {
     }
 
     if (status === AUTH_STATUS.AUTHENTICATED) {
-        const next = (location.state && (location.state as any).next) || (router.query && (router.query as any).next) || "/repositories";
+        const next = (location.state && (location.state).next) || (router.query && (router.query).next) || "/repositories";
         return <Navigate to={next} replace />;
     }
 
