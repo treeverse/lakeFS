@@ -59,24 +59,16 @@ export const useAPI = (promise, deps = []) => {
         const execute = async () => {
             try {
                 const response = await promise();
-                setRequest({
-                    loading: false,
-                    error: null,
-                    response,
-                });
+                if (!isMounted) return;
+                setRequest({loading: false, error: null, response});
             } catch (error) {
+                if (!isMounted) return;
                 if (error instanceof AuthenticationError) {
-                    if (isMounted) {
-                        setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
-                        setRequest({ loading: false, error, response: null });
-                    }
+                    setAuthStatus(AUTH_STATUS.UNAUTHENTICATED);
+                    setRequest({ loading: false, error, response: null });
                     return;
                 }
-                setRequest({
-                    loading: false,
-                    error,
-                    response: null,
-                });
+                setRequest({loading: false, error, response: null});
             }
         };
         execute();
