@@ -268,9 +268,12 @@ func authorize(w http.ResponseWriter, req *http.Request, authService auth.Gatewa
 		}
 	}
 
+	clientIP := auth.ExtractClientIP(req.Header, req.RemoteAddr)
+
 	authResp, err := authService.Authorize(req.Context(), &auth.AuthorizationRequest{
 		Username:            username,
 		RequiredPermissions: perms,
+		ClientIP:            clientIP,
 	})
 	if err != nil {
 		o.Log(req).WithError(err).Error("failed to authorize")

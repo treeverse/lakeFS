@@ -1395,11 +1395,23 @@ func (c *Controller) ListGroupPolicies(w http.ResponseWriter, r *http.Request, g
 func serializePolicy(p *model.Policy) apigen.Policy {
 	stmts := make([]apigen.Statement, 0, len(p.Statement))
 	for _, s := range p.Statement {
-		stmts = append(stmts, apigen.Statement{
+		st := apigen.Statement{
 			Action:   s.Action,
 			Effect:   s.Effect,
 			Resource: s.Resource,
-		})
+		}
+		if len(s.Condition) > 0 {
+			st.Condition = &apigen.Statement_Condition{
+				AdditionalProperties: map[string]apigen.PolicyCondition{},
+			}
+
+			for operator, fields := range s.Condition {
+				st.Condition.AdditionalProperties[operator] = apigen.PolicyCondition{
+					AdditionalProperties: fields,
+				}
+			}
+		}
+		stmts = append(stmts, st)
 	}
 	createdAt := p.CreatedAt.Unix()
 	return apigen.Policy{
@@ -1518,10 +1530,19 @@ func (c *Controller) CreatePolicy(w http.ResponseWriter, r *http.Request, body a
 
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
+		condition := make(map[string]map[string][]string)
+		if apiStatement.Condition != nil && len(apiStatement.Condition.AdditionalProperties) > 0 {
+			// Convert API structure with AdditionalProperties to model structure
+			// map[string]struct{ AdditionalProperties map[string][]string } -> map[string]map[string][]string
+			for operator, operatorFields := range apiStatement.Condition.AdditionalProperties {
+				condition[operator] = operatorFields.AdditionalProperties
+			}
+		}
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
-			Action:   apiStatement.Action,
-			Resource: apiStatement.Resource,
+			Effect:    apiStatement.Effect,
+			Action:    apiStatement.Action,
+			Resource:  apiStatement.Resource,
+			Condition: condition,
 		}
 	}
 
@@ -1617,10 +1638,19 @@ func (c *Controller) UpdatePolicy(w http.ResponseWriter, r *http.Request, body a
 
 	stmts := make(model.Statements, len(body.Statement))
 	for i, apiStatement := range body.Statement {
+		condition := make(map[string]map[string][]string)
+		if apiStatement.Condition != nil && len(apiStatement.Condition.AdditionalProperties) > 0 {
+			// Convert API structure with AdditionalProperties to model structure
+			// map[string]struct{ AdditionalProperties map[string][]string } -> map[string]map[string][]string
+			for operator, operatorFields := range apiStatement.Condition.AdditionalProperties {
+				condition[operator] = operatorFields.AdditionalProperties
+			}
+		}
 		stmts[i] = model.Statement{
-			Effect:   apiStatement.Effect,
-			Action:   apiStatement.Action,
-			Resource: apiStatement.Resource,
+			Effect:    apiStatement.Effect,
+			Action:    apiStatement.Action,
+			Resource:  apiStatement.Resource,
+			Condition: condition,
 		}
 	}
 
@@ -4882,6 +4912,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 		return
 	}
 
+	var clientIP string
 	objList := make([]apigen.ObjectStats, 0, len(res))
 	for _, entry := range res {
 		qk, err := c.BlockAdapter.ResolveNamespace(repo.StorageID, repo.StorageNamespace, entry.PhysicalAddress, entry.AddressType.ToIdentifierType())
@@ -4913,6 +4944,9 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 				objStat.Metadata = &apigen.ObjectUserMetadata{AdditionalProperties: entry.Metadata}
 			}
 			if swag.BoolValue(params.Presign) {
+				if clientIP == "" {
+					clientIP = auth.ExtractClientIP(r.Header, r.RemoteAddr)
+				}
 				// check if the user has read permissions for this object
 				authResponse, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
 					Username: user.Username,
@@ -4922,6 +4956,7 @@ func (c *Controller) ListObjects(w http.ResponseWriter, r *http.Request, reposit
 							Resource: permissions.ObjectArn(repository, entry.Path),
 						},
 					},
+					ClientIP: clientIP,
 				})
 				if c.handleAPIError(ctx, w, r, err) {
 					return
@@ -5938,9 +5973,13 @@ func (c *Controller) authorizeCallback(w http.ResponseWriter, r *http.Request, p
 		cb(w, r, http.StatusUnauthorized, ErrAuthenticatingRequest)
 		return false
 	}
+
+	clientIP := auth.ExtractClientIP(r.Header, r.RemoteAddr)
+
 	resp, err := c.Auth.Authorize(ctx, &auth.AuthorizationRequest{
 		Username:            user.Username,
 		RequiredPermissions: perms,
+		ClientIP:            clientIP,
 	})
 	if err != nil {
 		cb(w, r, http.StatusInternalServerError, err)

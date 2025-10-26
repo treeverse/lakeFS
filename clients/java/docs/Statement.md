@@ -10,6 +10,7 @@
 |**effect** | [**EffectEnum**](#EffectEnum) |  |  |
 |**resource** | **String** |  |  |
 |**action** | **List&lt;String&gt;** |  |  |
+|**condition** | **Map&lt;String, List&lt;String&gt;&gt;** | Optional conditions for when this statement applies. |  [optional] |
 
 
 

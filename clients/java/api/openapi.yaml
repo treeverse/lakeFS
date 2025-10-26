@@ -9270,6 +9270,10 @@ components:
       type: object
     Statement:
       example:
+        condition:
+          IpAddress:
+          - 10.0.0.0/8
+          - 192.168.1.0/24
         resource: resource
         effect: allow
         action:
@@ -9288,6 +9292,17 @@ components:
             type: string
           minItems: 1
           type: array
+        condition:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          description: Optional conditions for when this statement applies.
+          example:
+            IpAddress:
+            - 10.0.0.0/8
+            - 192.168.1.0/24
+          type: object
       required:
       - action
       - effect
@@ -9296,12 +9311,20 @@ components:
     Policy:
       example:
         statement:
-        - resource: resource
+        - condition:
+            IpAddress:
+            - 10.0.0.0/8
+            - 192.168.1.0/24
+          resource: resource
           effect: allow
           action:
           - action
           - action
-        - resource: resource
+        - condition:
+            IpAddress:
+            - 10.0.0.0/8
+            - 192.168.1.0/24
+          resource: resource
           effect: allow
           action:
           - action
@@ -9333,12 +9356,20 @@ components:
           results: 0
         results:
         - statement:
-          - resource: resource
+          - condition:
+              IpAddress:
+              - 10.0.0.0/8
+              - 192.168.1.0/24
+            resource: resource
             effect: allow
             action:
             - action
             - action
-          - resource: resource
+          - condition:
+              IpAddress:
+              - 10.0.0.0/8
+              - 192.168.1.0/24
+            resource: resource
             effect: allow
             action:
             - action
@@ -9346,12 +9377,20 @@ components:
           id: id
           creation_date: 0
         - statement:
-          - resource: resource
+          - condition:
+              IpAddress:
+              - 10.0.0.0/8
+              - 192.168.1.0/24
+            resource: resource
             effect: allow
             action:
             - action
             - action
-          - resource: resource
+          - condition:
+              IpAddress:
+              - 10.0.0.0/8
+              - 192.168.1.0/24
+            resource: resource
             effect: allow
             action:
             - action

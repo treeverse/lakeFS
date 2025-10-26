@@ -19,7 +19,7 @@ import re  # noqa: F401
 import json
 
 
-from typing import List
+from typing import Dict, List, Optional
 try:
     from pydantic.v1 import BaseModel, Field, StrictStr, conlist, validator
 except ImportError:
@@ -32,7 +32,8 @@ class Statement(BaseModel):
     effect: StrictStr = Field(...)
     resource: StrictStr = Field(...)
     action: conlist(StrictStr, min_items=1) = Field(...)
-    __properties = ["effect", "resource", "action"]
+    condition: Optional[Dict[str, conlist(StrictStr)]] = Field(None, description="Optional conditions for when this statement applies.")
+    __properties = ["effect", "resource", "action", "condition"]
 
     @validator('effect')
     def effect_validate_enum(cls, value):
@@ -65,6 +66,15 @@ class Statement(BaseModel):
                           exclude={
                           },
                           exclude_none=True)
+        # override the default output from pydantic by calling `to_dict()` of each value in condition (dict of array)
+        _field_dict_of_array = {}
+        if self.condition:
+            for _key in self.condition:
+                if self.condition[_key]:
+                    _field_dict_of_array[_key] = [
+                        _item.to_dict() for _item in self.condition[_key]
+                    ]
+            _dict['condition'] = _field_dict_of_array
         return _dict
 
     @classmethod
@@ -79,7 +89,8 @@ class Statement(BaseModel):
         _obj = Statement.parse_obj({
             "effect": obj.get("effect"),
             "resource": obj.get("resource"),
-            "action": obj.get("action")
+            "action": obj.get("action"),
+            "condition": obj.get("condition")
         })
         return _obj
 

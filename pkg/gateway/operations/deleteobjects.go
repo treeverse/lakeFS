@@ -57,6 +57,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 		pathsToDelete []string
 		refsToDelete  []string
 		errs          []serde.DeleteError
+		clientIP      string
 	)
 	for _, obj := range decodedXML.Object {
 		resolvedPath, err := path.ResolvePath(obj.Key)
@@ -69,6 +70,9 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 			continue
 		}
 		// authorize this object deletion
+		if clientIP == "" {
+			clientIP = auth.ExtractClientIP(req.Header, req.RemoteAddr)
+		}
 		authResp, err := o.Auth.Authorize(req.Context(), &auth.AuthorizationRequest{
 			Username: o.Principal,
 			RequiredPermissions: permissions.Node{
@@ -77,6 +81,7 @@ func (controller *DeleteObjects) Handle(w http.ResponseWriter, req *http.Request
 					Resource: permissions.ObjectArn(o.Repository.Name, resolvedPath.Path),
 				},
 			},
+			ClientIP: clientIP,
 		})
 		if err != nil || !authResp.Allowed {
 			errs = append(errs, serde.DeleteError{

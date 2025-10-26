@@ -193,11 +193,14 @@ func EnrichWithRepositoryOrFallback(c *catalog.Catalog, authService auth.Gateway
 		}
 		repo, err := c.GetRepository(ctx, repoID)
 		if errors.Is(err, graveler.ErrNotFound) {
+			clientIP := auth.ExtractClientIP(req.Header, req.RemoteAddr)
+
 			authResp, authErr := authService.Authorize(ctx, &auth.AuthorizationRequest{
 				Username: username,
 				RequiredPermissions: permissions.Node{
 					Permission: permissions.Permission{Action: permissions.ListRepositoriesAction, Resource: "*"},
 				},
+				ClientIP: clientIP,
 			})
 			if authErr != nil || authResp.Error != nil || !authResp.Allowed {
 				_ = o.EncodeError(w, req, err, gatewayerrors.ErrAccessDenied.ToAPIErr())

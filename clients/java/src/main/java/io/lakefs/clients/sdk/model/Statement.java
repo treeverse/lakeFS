@@ -22,7 +22,9 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -112,6 +114,10 @@ public class Statement {
   @SerializedName(SERIALIZED_NAME_ACTION)
   private List<String> action = new ArrayList<>();
 
+  public static final String SERIALIZED_NAME_CONDITION = "condition";
+  @SerializedName(SERIALIZED_NAME_CONDITION)
+  private Map<String, List<String>> condition = new HashMap<>();
+
   public Statement() {
   }
 
@@ -185,6 +191,35 @@ public class Statement {
     this.action = action;
   }
 
+
+  public Statement condition(Map<String, List<String>> condition) {
+    
+    this.condition = condition;
+    return this;
+  }
+
+  public Statement putConditionItem(String key, List<String> conditionItem) {
+    if (this.condition == null) {
+      this.condition = new HashMap<>();
+    }
+    this.condition.put(key, conditionItem);
+    return this;
+  }
+
+   /**
+   * Optional conditions for when this statement applies.
+   * @return condition
+  **/
+  @javax.annotation.Nullable
+  public Map<String, List<String>> getCondition() {
+    return condition;
+  }
+
+
+  public void setCondition(Map<String, List<String>> condition) {
+    this.condition = condition;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -242,13 +277,14 @@ public class Statement {
     Statement statement = (Statement) o;
     return Objects.equals(this.effect, statement.effect) &&
         Objects.equals(this.resource, statement.resource) &&
-        Objects.equals(this.action, statement.action)&&
+        Objects.equals(this.action, statement.action) &&
+        Objects.equals(this.condition, statement.condition)&&
         Objects.equals(this.additionalProperties, statement.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(effect, resource, action, additionalProperties);
+    return Objects.hash(effect, resource, action, condition, additionalProperties);
   }
 
   @Override
@@ -258,6 +294,7 @@ public class Statement {
     sb.append("    effect: ").append(toIndentedString(effect)).append("\n");
     sb.append("    resource: ").append(toIndentedString(resource)).append("\n");
     sb.append("    action: ").append(toIndentedString(action)).append("\n");
+    sb.append("    condition: ").append(toIndentedString(condition)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -284,6 +321,7 @@ public class Statement {
     openapiFields.add("effect");
     openapiFields.add("resource");
     openapiFields.add("action");
+    openapiFields.add("condition");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
