@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -120,6 +120,7 @@ const LoginPage = () => {
     const router = useRouter();
     const location = useLocation();
     const pluginManager = usePluginManager();
+    const { setAuthStatus } = useAuth();
     const { response, error, loading } = useAPI(() => setup.getState());
 
     if (loading) {
@@ -147,6 +148,27 @@ const LoginPage = () => {
     // method-selection page, the '/auth/login' endpoint uses the redirected flag to distinguish between showing the
     // selection page or the default lakeFS login form, since both share the same endpoint.
     const redirected = (location.state)?.redirected || (router.query)?.redirected;
+
+    useEffect(() => {
+        if (!redirected) return;
+        let cancelled = false;
+
+        const handleAuth = async () => {
+            const user = await auth.getCurrentUser();
+            if (cancelled || !user) return;
+            window.localStorage.setItem("user", JSON.stringify(user));
+            setAuthStatus(AUTH_STATUS.AUTHENTICATED);
+            const next = (location.state as any)?.next || (router.query as any)?.next || "/repositories";
+            router.navigate(next, { replace: true });
+        };
+
+        handleAuth();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [redirected, location, router, setAuthStatus]);
+
     if (redirected)  {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
         // Return the element (component or null)
