@@ -158,7 +158,7 @@ const LoginPage = () => {
             if (cancelled || !user) return;
             window.localStorage.setItem("user", JSON.stringify(user));
             setAuthStatus(AUTH_STATUS.AUTHENTICATED);
-            const next = (location.state as any)?.next || (router.query as any)?.next || "/repositories";
+            const next = (location.state)?.next || (router.query)?.next || "/repositories";
             router.navigate(next, { replace: true });
         };
 
