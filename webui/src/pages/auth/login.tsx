@@ -123,25 +123,6 @@ const LoginPage = () => {
     const { setAuthStatus } = useAuth();
     const { response, error, loading } = useAPI(() => setup.getState());
 
-    if (loading) {
-        return <Loading />;
-    }
-
-    if (error) {
-        return <AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()} />;
-    }
-
-    // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
-    const setupResponse = response as SetupResponse | null;
-    if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
-        router.push({pathname: '/setup', params: {}, query: router.query as Record<string, string>})
-        return null;
-    }
-    const loginConfig = setupResponse?.login_config;
-    if (!loginConfig) {
-        return null;
-    }
-
     // SSO handling: A login strategy (e.g., auto-redirect to SSO or showing a login selection page) is applied only
     // when the user is redirected to '/auth/login' (router.query.redirected is true). If the user navigates directly
     // to '/auth/login', they should always see the lakeFS login form. When the login strategy is to show a
@@ -168,6 +149,25 @@ const LoginPage = () => {
             cancelled = true;
         };
     }, [redirected, location, router, setAuthStatus]);
+
+    if (loading) {
+        return <Loading />;
+    }
+
+    if (error) {
+        return <AlertError error={error} className={"mt-1 w-50 m-auto"} onDismiss={() => window.location.reload()} />;
+    }
+
+    // if we are not initialized, or we are not done with comm prefs, redirect to 'setup' page
+    const setupResponse = response as SetupResponse | null;
+    if (setupResponse && (setupResponse.state !== SETUP_STATE_INITIALIZED || setupResponse.comm_prefs_missing)) {
+        router.push({pathname: '/setup', params: {}, query: router.query as Record<string, string>})
+        return null;
+    }
+    const loginConfig = setupResponse?.login_config;
+    if (!loginConfig) {
+        return null;
+    }
 
     if (redirected)  {
         const loginStrategy = pluginManager.loginStrategy.getLoginStrategy(loginConfig, router);
