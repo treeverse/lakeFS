@@ -22,7 +22,7 @@ type ConditionOperator interface {
 	// Evaluate checks if the condition fields and values match the context
 	// fields is a map of field names to arrays of values (e.g., {"SourceIp": ["10.0.0.0/8", "192.168.1.0/24"]})
 	Evaluate(fields map[string][]string, conditionCtx *ConditionContext) (bool, error)
-	// Validate check if the condition fields and values are valid
+	// Validate checks if the condition fields and values are valid
 	Validate(fields map[string][]string) error
 }
 
