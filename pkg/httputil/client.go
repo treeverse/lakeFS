@@ -29,7 +29,7 @@ func ExtractClientIP(headers http.Header, remoteAddr string) string {
 		firstIP, _, _ := strings.Cut(xForwardedFor, ",")
 		if firstIP != "" {
 			clientIP := strings.TrimSpace(firstIP)
-			logging.ContextUnavailable().WithField("client_ip", clientIP).Debug("Client IP extract from X-Forwarded-For")
+			logging.ContextUnavailable().WithField("client_ip", clientIP).Debug("Client IP extracted from X-Forwarded-For")
 			return clientIP
 		}
 	}
@@ -38,7 +38,7 @@ func ExtractClientIP(headers http.Header, remoteAddr string) string {
 	xRealIP := headers.Get("X-Real-IP")
 	if xRealIP != "" {
 		clientIP := strings.TrimSpace(xRealIP)
-		logging.ContextUnavailable().WithField("client_ip", clientIP).Debug("Client IP extract from X-Real-IP")
+		logging.ContextUnavailable().WithField("client_ip", clientIP).Debug("Client IP extracted from X-Real-IP")
 		return clientIP
 	}
 
@@ -50,7 +50,7 @@ func ExtractClientIP(headers http.Header, remoteAddr string) string {
 		} else {
 			clientIP = remoteAddr
 		}
-		logging.ContextUnavailable().WithField("client_ip", clientIP).Debug("Client IP extract from RemoteAddr")
+		logging.ContextUnavailable().WithField("client_ip", clientIP).Debug("Client IP extracted from RemoteAddr")
 		return clientIP
 	}
 
