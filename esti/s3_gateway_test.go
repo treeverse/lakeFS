@@ -20,6 +20,7 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/go-openapi/swag"
+	"github.com/go-test/deep"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/tags"
@@ -900,6 +901,41 @@ func TestS3CopyObject(t *testing.T) {
 		require.NotEqual(t, sourceObjectStats.PhysicalAddress, destObjectStats.PhysicalAddress)
 		require.Equal(t, userMetadataReplace, destObjectStats.Metadata.AdditionalProperties, "dest metadata should be replaced")
 	})
+}
+
+func TestS3PutObjectUserMetadata(t *testing.T) {
+	t.Parallel()
+	ctx, _, repo := setupTest(t)
+	defer tearDownTest(repo)
+
+	const contents = "the quick brown fox jumps over the lazy dog."
+	// metadata are the metadata we want on the object.
+	metadata := map[string]string{
+		"Ascii":     "value",
+		"Non-Ascii": "והארץ היתה תהו ובהו", // "without form and void"
+	}
+	// encodedMetadata are the metadata a conforming client sends, with
+	// values Q-word encoded according to RFC 2047.
+	encodedMetadata := map[string]string{
+		"Ascii":     "value",
+		"Non-Ascii": "=?utf-8?Q?=D7=95=D7=94=D7=90=D7=A8=D7=A5_=D7=94=D7=99=D7=AA=D7=94_=D7=AA=D7=94=D7=95_=D7=95=D7=91=D7=94=D7=95?=",
+	}
+
+	path := gatewayTestPrefix + "file"
+	s3lakefsClient := newMinioClient(t, credentials.NewStaticV4)
+
+	_, err := s3lakefsClient.PutObject(ctx, repo, path, strings.NewReader(contents), int64(len(contents)),
+		minio.PutObjectOptions{
+			UserMetadata: encodedMetadata,
+		})
+	require.NoError(t, err, "putObject")
+
+	info, err := s3lakefsClient.StatObject(ctx, repo, path, minio.StatObjectOptions{})
+	require.NoError(t, err, "statObject")
+
+	if diffs := deep.Equal(info.UserMetadata, minio.StringMap(metadata)); diffs != nil {
+		t.Errorf("Different user metadata: %s", diffs)
+	}
 }
 
 func TestS3PutObjectTagging(t *testing.T) {
