@@ -11,20 +11,17 @@ status: enterprise
 
 Everest is a complementary binary to lakeFS that allows you to virtually mount a remote lakeFS repository onto a local directory or within a Kubernetes environment. Once mounted, you can access data as if it resides on your local filesystem, using any tool, library, or framework.
 
-!!! tip
-    Everest mount supports writing to the file system for both NFS and FUSE protocols starting version **0.2.0**! Read more about [Write Mode Operations](#write-mode-operations).
-
 <iframe width="560" height="315" src="https://www.youtube.com/embed/BgKuoa8LAaU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ## Use Cases
 
-* **Simplified Data Loading**: Use your existing tools to read and write files directly from the filesystem with no need for custom data loaders or SDKs.
-* **Seamless Scalability**: Scale from a few local files to billions without changing your tools or workflow. Use the same code from experimentation to production.
-* **Enhanced Performance**: Everest supports billions of files and offers fast, lazy data fetching, making it ideal for optimizing GPU utilization and other performance-sensitive tasks.
+- **Simplified Data Loading**: Use your existing tools to read and write files directly from the filesystem with no need for custom data loaders or SDKs.
+- **Seamless Scalability**: Scale from a few local files to billions without changing your tools or workflow. Use the same code from experimentation to production.
+- **Enhanced Performance**: Everest supports billions of files and offers fast, lazy data fetching, making it ideal for optimizing GPU utilization and other performance-sensitive tasks.
 
 ---
 
-## Getting Started (Local Mount)
+## Getting Started
 
 This guide will walk you through setting up and using Everest to mount a lakeFS repository on your local machine.
 
@@ -33,9 +30,9 @@ This guide will walk you through setting up and using Everest to mount a lakeFS 
 
 ### 1. Prerequisites
 
-*   lakeFS Cloud account or lakeFS Enterprise Version `1.25.0` or higher.
-*   **Supported OS:** macOS (with NFS V3) or Linux.
-*   **Get the Everest Binary:** Everest is a self-contained binary with no installation required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
+-   lakeFS Cloud account or lakeFS Enterprise Version `1.25.0` or higher.
+-   **Supported OS:** macOS (with NFS V3) or Linux.
+-   **Get the Everest Binary:** Everest is a self-contained binary with no installation required. Please [contact us](http://info.lakefs.io/thanks-lakefs-mounts) to get access.
 
 ### 2. Authentication & Configuration
 
@@ -117,16 +114,17 @@ When you access a file through a mounted lakeFS path, Everest follows this proce
 
 1. **Lazy Fetching**: Files are only downloaded when their content is accessed (e.g., reading a file, not just listing it with `ls`).
 2. **Cache Storage**: When an object is not found in the local cache, Everest fetches the data from the object store and stores it in the cache for subsequent access.
-3. **Cache Reuse**: Subsequent reads of the same file are served directly from the cache, eliminating network requests and improving performance.
+3. **Cache Reuse**: Subsequent reads of the same file are served directly from the cache, eliminating network requests and improving performance. Cached can't be shared between different instances of mount.
 
 #### Default Cache Behavior
 
 By default, Everest creates a temporary cache directory when you run `everest mount`. This directory is automatically cleared when the mount is terminated via `everest umount`.
 
 **Key points:**
-*   Each new mount creates a fresh cache directory.
-*   The cache is ephemeral and does not persist between mount sessions.
-*   The default cache location is managed by Everest and cleaned up automatically.
+
+-   Each new mount creates a fresh cache directory.
+-   By default cache location is managed by Everest and cleaned up automatically.
+-   The cache is ephemeral and does not persist between mount sessions. Unless you specify the cache directory.
 
 #### Persistent Cache
 
@@ -137,16 +135,17 @@ everest mount lakefs://image-repo/main/datasets/ ./datasets --cache-dir ~/.evere
 ```
 
 **Benefits of persistent cache:**
-*   Faster startup times when remounting the same data.
-*   Reduced bandwidth usage by reusing previously downloaded files.
-*   Useful for iterative workflows where you repeatedly mount and unmount the same repository.
 
-#### Cache Management and Commit IDs
+-   Faster startup times when remounting the same data.
+-   Reduced bandwidth usage by reusing previously downloaded files.
+-   Useful for iterative workflows where you repeatedly mount and unmount the same repository.
+
+#### Cache Management
 
 Everest manages cached data based on the commit ID of the mounted reference:
 
-*   **Commit-Based Caching**: Each commit ID has its own cache namespace. This ensures that cached data always corresponds to the correct version of your files.
-*   **Cache Invalidation on Commit**: When you commit changes in write mode using `everest commit`, the mount point's source commit ID is updated to the new HEAD of the branch. As a result, the cache associated with the old commit ID is no longer used, and new data will be cached under the new commit ID.
+-   **Commit-Based Caching**: Each commit ID has its own cache namespace. This ensures that cached data always corresponds to the correct version of your files.
+-   **Cache Invalidation on Commit**: When you commit changes in write mode using `everest commit`, the mount point's source commit ID is updated to the new HEAD of the branch. As a result, the cache associated with the old commit ID is no longer used, and new data will be cached under the new commit ID.
 
 !!! tip "Optimizing Cache Size"
     Set `--cache-size` to match the amount of data you plan to read or write. A larger cache reduces the need to evict and re-fetch files, improving performance for workloads that access many files.
@@ -163,9 +162,9 @@ Everest mount provides **strong read-after-write consistency** within a single m
 
 Local changes are reflected in lakeFS only after they are **committed** using the `everest commit` command. Until then:
 
-*   Changes are only visible within your local mount point
-*   Other users or mounts will not see your changes
-*   If two users mount the same branch, they will not see each other's changes until those changes are committed
+-   Changes are only visible within your local mount point
+-   Other users or mounts will not see your changes
+-   If two users mount the same branch, they will not see each other's changes until those changes are committed
 
 #### Sync Operation
 
@@ -177,11 +176,11 @@ See the [Write-Mode Operations](#write-mode-operations) section for more details
 
 Everest is optimized for high-performance data access, but understanding these characteristics will help you get the best results:
 
-*   **Direct Object Store Access**: By default, Everest uses pre-signed URLs to read and write data directly to and from the underlying object store, bypassing the lakeFS server for data transfer. Only metadata operations go through the lakeFS server.
-*   **Lazy Metadata Loading**: Directory listings are fetched on-demand, allowing you to work with repositories containing billions of files without upfront overhead.
-*   **Partial Reads**: The experimental `--partial-reads` flag enables reading only the accessed portions of large files, which is useful for file formats like Parquet that support column pruning.
-*   **Cache Sizing**: Setting an appropriate `--cache-size` prevents frequent eviction and re-fetching. As a rule of thumb, size your cache to accommodate your working set.
-*   **Network Bandwidth**: Since data is fetched directly from object storage, ensure your network connection has adequate bandwidth for your workload.
+-   **Direct Object Store Access**: By default, Everest uses pre-signed URLs to read and write data directly to and from the underlying object store, bypassing the lakeFS server for data transfer. Only metadata operations go through the lakeFS server.
+-   **Lazy Metadata Loading**: Directory listings are fetched on-demand, allowing you to work with repositories containing billions of files without upfront overhead.
+-   **Partial Reads**: The experimental `--partial-reads` flag enables reading only the accessed portions of large files, which is useful for file formats like Parquet that support column pruning.
+-   **Cache Sizing**: Setting an appropriate `--cache-size` prevents frequent eviction and re-fetching. As a rule of thumb, size your cache to accommodate your working set.
+-   **Network Bandwidth**: Since data is fetched directly from object storage, ensure your network connection has adequate bandwidth for your workload.
 
 !!! tip "Optimizing for ML Workloads"
     For training jobs, consider using a persistent cache directory (`--cache-dir`) and sizing the cache to fit your entire dataset. This eliminates repeated downloads across training epochs.
@@ -213,15 +212,11 @@ For information about how data is cached and accessed, see the [Cache Behavior](
 
 ### Write-Mode Operations
 
-By enabling write mode, you can modify, add, and delete files locally and then commit those changes back to the lakeFS branch.
+By enabling write mode (--write-moed), you can modify, add, and delete files locally and then commit those changes back to the lakeFS branch.
+When running in write mode, the lakeFS URI must point to a branch, not a commit ID or a tag.
 
-!!! warning
-    When running in write mode, the lakeFS URI must point to a branch, not a commit ID or a tag.
+#### Example of changing data locally
 
-!!! info "Write Mode Limitations"
-    Write mode has some limitations on supported operations. See [Write Mode Limitations](#write-mode-limitations) for details on unsupported operations and modified behaviors.
-
-!!! example "Changing Data Locally"
     1.  **Mount in write mode:**
         Use the `--write-mode` flag to enable writes.
 
@@ -267,6 +262,10 @@ By enabling write mode, you can modify, add, and delete files locally and then c
         everest umount ./pets
         ```
 
+!!! info "Write Mode Limitations"
+    Write mode has some limitations on supported operations. See [Write Mode Limitations](#write-mode-limitations) for details on unsupported operations and modified behaviors.
+
+
 ---
 
 ## Everest on Kubernetes (CSI Driver)
@@ -278,12 +277,12 @@ The lakeFS CSI (Container Storage Interface) Driver allows Kubernetes Pods to mo
 
 **In this section:**
 
-*   [How it Works](#how-it-works) - Understanding the CSI driver architecture
-*   [Status and Limitations](#status-and-limitations) - Supported platforms and current limitations
-*   [Prerequisites](#1-prerequisites) - Requirements for deploying the CSI driver
-*   [Deploy the CSI Driver](#2-deploy-the-csi-driver) - Installation instructions using Helm
-*   [Use in Pods](#3-use-in-pods) - How to mount lakeFS URIs in your Kubernetes workloads
-*   [Troubleshooting](#4-troubleshooting) - Common issues and debugging steps
+-   [How it Works](#how-it-works) - Understanding the CSI driver architecture
+-   [Status and Limitations](#status-and-limitations) - Supported platforms and current limitations
+-   [Prerequisites](#1-prerequisites) - Requirements for deploying the CSI driver
+-   [Deploy the CSI Driver](#2-deploy-the-csi-driver) - Installation instructions using Helm
+-   [Use in Pods](#3-use-in-pods) - How to mount lakeFS URIs in your Kubernetes workloads
+-   [Troubleshooting](#4-troubleshooting) - Common issues and debugging steps
 
 ### How it Works
 
@@ -291,11 +290,11 @@ The CSI driver, installed in your cluster, orchestrates mount operations on each
 
 ### Status and Limitations
 
-*   **Tested OS:** BottleRocket-OS, Amazon Linux 2, RHEL 8.
-*   **Kubernetes:** Version `>=1.23.0`.
-*   **Provisioning:** Static provisioning only.
-*   **Access Modes:** `ReadOnlyMany` is supported.
-*   **Security Context:** Setting Pod `securityContext` (e.g., `runAsUser`) is not currently supported.
+-   **Tested OS:** BottleRocket-OS, Amazon Linux 2, RHEL 8.
+-   **Kubernetes:** Version `>=1.23.0`.
+-   **Provisioning:** Static provisioning only.
+-   **Access Modes:** `ReadOnlyMany` is supported.
+-   **Security Context:** Setting Pod `securityContext` (e.g., `runAsUser`) is not currently supported.
 
 ### 1. Prerequisites
 
@@ -361,9 +360,9 @@ The driver is deployed using a Helm chart.
 
 To use the driver, you create a `PersistentVolume` (PV) and a `PersistentVolumeClaim` (PVC) to mount a lakeFS URI into your Pod.
 
-*   **Static Provisioning:** You must set `storageClassName: ""` in your PVC. To ensure a PVC is bound to a specific PV, you can use a `claimRef` in the PV definition to create a one-to-one mapping.
-*   **Mount URI:** The `lakeFSMountUri` is the only required attribute in the PV spec.
-*   **Mount Options:** Additional `everest mount` flags can be passed via `mountOptions` in the PV spec.
+-   **Static Provisioning:** You must set `storageClassName: ""` in your PVC. To ensure a PVC is bound to a specific PV, you can use a `claimRef` in the PV definition to create a one-to-one mapping.
+-   **Mount URI:** The `lakeFSMountUri` is the only required attribute in the PV spec.
+-   **Mount Options:** Additional `everest mount` flags can be passed via `mountOptions` in the PV spec.
 
 #### Examples
 
@@ -654,9 +653,9 @@ The following examples demonstrate how to mount a lakeFS URI in different Kubern
 
 ### 4. Troubleshooting
 
-*   Check logs from the CSI driver pods and the application pod that failed to mount.
-*   Inspect the events and status of the `PV` and `PVC` (`kubectl get pv`, `kubectl get pvc`, `kubectl describe ...`).
-*   **Advanced: SSH into the Kubernetes node** to inspect the `systemd` service logs for the specific mount operation.
+-   Check logs from the CSI driver pods and the application pod that failed to mount.
+-   Inspect the events and status of the `PV` and `PVC` (`kubectl get pv`, `kubectl get pvc`, `kubectl describe ...`).
+-   **Advanced: SSH into the Kubernetes node** to inspect the `systemd` service logs for the specific mount operation-
     1.  Find the failed mount service:
         ```sh
         systemctl list-units --type=service | grep everest-lakefs-mount
@@ -686,24 +685,26 @@ everest mount <lakefs_uri> <mount_directory> [flags]
 ```
 
 **Tips:**
-*   Since the server runs in the background, use `--log-output /path/to/file` to view logs.
-*   The optimal cache size is the size of the data you are going to read/write.
-*   To reuse the cache between restarts of the same mount, set the `--cache-dir` flag.
-*   In read-only mode, if you provide a branch or tag, Everest will resolve and mount the HEAD commit. For a stable mount, use a specific commit ID in the URI.
+
+-   Since the server runs in the background, use `--log-output /path/to/file` to view logs.
+-   The optimal cache size is the size of the data you are going to read/write.
+-   To reuse the cache between restarts of the same mount, set the `--cache-dir` flag.
+-   In read-only mode, if you provide a branch or tag, Everest will resolve and mount the HEAD commit. For a stable mount, use a specific commit ID in the URI.
 
 **Flags:**
-*   `--write-mode`: Enable write mode (default: `false`).
-*   `--cache-dir`: Directory to cache files.
-*   `--cache-size`: Size of the local cache in bytes.
-*   `--cache-create-provided-dir`: If `cache-dir` is provided and does not exist, create it.
-*   `--listen`: Address for the mount server to listen on.
-*   `--no-spawn`: Do not spawn a new server; assume one is already running.
-*   `--protocol`: Protocol to use (default: `nfs`).
-*   `--log-level`: Set logging level.
-*   `--log-format`: Set logging output format.
-*   `--log-output`: Set logging output(s).
-*   `--presign`: Use pre-signed URLs for direct object store access (default: `true`).
-*   `--partial-reads`: (Experimental) Fetch only the accessed parts of large files. This can be useful for streaming workloads or for applications handling file formats such as Parquet, m4a, zip, and tar that do not need to read the entire file.
+
+-   `--write-mode`: Enable write mode (default: `false`).
+-   `--cache-dir`: Directory to cache files.
+-   `--cache-size`: Size of the local cache in bytes.
+-   `--cache-create-provided-dir`: If `cache-dir` is provided and does not exist, create it.
+-   `--listen`: Address for the mount server to listen on.
+-   `--no-spawn`: Do not spawn a new server; assume one is already running.
+-   `--protocol`: Protocol to use (default: `nfs`).
+-   `--log-level`: Set logging level.
+-   `--log-format`: Set logging output format.
+-   `--log-output`: Set logging output(s).
+-   `--presign`: Use pre-signed URLs for direct object store access (default: `true`).
+-   `--partial-reads`: (Experimental) Fetch only the accessed parts of large files. This can be useful for streaming workloads or for applications handling file formats such as Parquet, m4a, zip, and tar that do not need to read the entire file.
 
 #### `everest umount`
 Unmounts a lakeFS directory.
@@ -737,18 +738,19 @@ everest mount-server <remote_mount_uri> [flags]
 ```
 
 **Flags:**
-*   `--cache-dir`: Directory to cache read files and metadata.
-*   `--cache-create-provided-dir`: Create the cache directory if it does not exist.
-*   `--listen`: Address to listen on.
-*   `--protocol`: Protocol to use (nfs | webdav).
-*   `--callback-addr`: Callback address to report back to.
-*   `--log-level`: Set logging level.
-*   `--log-format`: Set logging output format.
-*   `--log-output`: Set logging output(s).
-*   `--cache-size`: Size of the local cache in bytes.
-*   `--parallelism`: Number of parallel downloads for metadata.
-*   `--presign`: Use presign for downloading.
-*   `--write-mode`: Enable write mode (default: false).
+
+-   `--cache-dir`: Directory to cache read files and metadata.
+-   `--cache-create-provided-dir`: Create the cache directory if it does not exist.
+-   `--listen`: Address to listen on.
+-   `--protocol`: Protocol to use (nfs | webdav).
+-   `--callback-addr`: Callback address to report back to.
+-   `--log-level`: Set logging level.
+-   `--log-format`: Set logging output format.
+-   `--log-output`: Set logging output(s).
+-   `--cache-size`: Size of the local cache in bytes.
+-   `--parallelism`: Number of parallel downloads for metadata.
+-   `--presign`: Use presign for downloading.
+-   `--write-mode`: Enable write mode (default: false).
 
 ---
 
@@ -760,24 +762,24 @@ When using write mode (`--write-mode`), be aware of the following limitations an
 
 #### Unsupported Operations
 
-*   **Rename:** File and directory rename operations are not supported.
-*   **Temporary Files:** Temporary files are not supported.
-*   **Hard/Symbolic Links:** Hard links and symbolic links are not supported.
-*   **POSIX File Locks:** POSIX file locks (`lockf`) are not supported.
-*   **POSIX Permissions:** POSIX permissions are not supported. Default permissions are assigned to files and directories.
+-   **Rename:** File and directory rename operations are not supported.
+-   **Temporary Files:** Temporary files are not supported.
+-   **Hard/Symbolic Links:** Hard links and symbolic links are not supported.
+-   **POSIX File Locks:** POSIX file locks (`lockf`) are not supported.
+-   **POSIX Permissions:** POSIX permissions are not supported. Default permissions are assigned to files and directories.
 
 #### Modified Behavior
 
-*   **Metadata Operations:** Modifying file metadata (`chmod`, `chown`, `chgrp`, time attributes) results in a no-op. The file metadata will not be changed.
-*   **Deletion Implementation:** When calling `remove`, Everest marks a file as a tombstone using [Extended Attributes](https://en.wikipedia.org/wiki/Extended_file_attributes) APIs.
-*   **Deletion Race Conditions:** Removal is not an atomic operation. Calling `remove` and `open` simultaneously on the same file may result in a race condition where the `open` operation might succeed.
-*   **Type Reuse Restriction:** A deleted file's name cannot be reused as a directory, and vice-versa. For example, this sequence is not allowed: `touch foo; rm foo; mkdir foo;`.
-*   **Directory Removal:** Calling `remove` on a directory will fail explicitly with an error. Use appropriate directory removal commands instead.
+-   **Metadata Operations:** Modifying file metadata (`chmod`, `chown`, `chgrp`, time attributes) results in a no-op. The file metadata will not be changed.
+-   **Deletion Implementation:** When calling `remove`, Everest marks a file as a tombstone using [Extended Attributes](https://en.wikipedia.org/wiki/Extended_file_attributes) APIs.
+-   **Deletion Race Conditions:** Removal is not an atomic operation. Calling `remove` and `open` simultaneously on the same file may result in a race condition where the `open` operation might succeed.
+-   **Type Reuse Restriction:** A deleted file's name cannot be reused as a directory, and vice-versa. For example, this sequence is not allowed: `touch foo; rm foo; mkdir foo;`.
+-   **Directory Removal:** Calling `remove` on a directory will fail explicitly with an error. Use appropriate directory removal commands instead.
 
 #### Functionality Limitations
 
-*   **Empty Directories:** Newly created empty directories will not reflect as directory markers in lakeFS.
-*   **Path Conflicts:** lakeFS allows having two path keys where one is a "directory" prefix of the other (e.g., both `animals/cat.png` and `animals` as an empty object are valid in lakeFS). However, since a filesystem cannot contain both a file and a directory with the same name, this will lead to undefined behavior depending on the filesystem type.
+-   **Empty Directories:** Newly created empty directories will not reflect as directory markers in lakeFS.
+-   **Path Conflicts:** lakeFS allows having two path keys where one is a "directory" prefix of the other (e.g., both `animals/cat.png` and `animals` as an empty object are valid in lakeFS). However, since a filesystem cannot contain both a file and a directory with the same name, this will lead to undefined behavior depending on the filesystem type.
 
 ### Integration with Git
 
