@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -9,6 +10,14 @@ import (
 
 const (
 	OperatorNameIpAddress = "IpAddress"
+)
+
+var (
+	ErrMissingFieldName             = errors.New("missing field name")
+	ErrInvalidIPCIDRFormat          = errors.New("invalid IP/CIDR format")
+	ErrInvalidConditionContext      = errors.New("invalid condition context")
+	ErrInvalidIPFormat              = errors.New("invalid IP format")
+	ErrUnsupportedConditionOperator = errors.New("unsupported condition operator")
 )
 
 // ConditionContext holds contextual information for condition evaluation
@@ -36,14 +45,14 @@ func (op *IpAddressOperator) Validate(fields map[string][]string) error {
 	for field, values := range fields {
 		// Field name can't be empty
 		if field == "" {
-			return fmt.Errorf("missing field name")
+			return ErrMissingFieldName
 		}
 		// Validate IP/CIDR format
 		for _, value := range values {
 			if _, _, err := net.ParseCIDR(value); err != nil {
 				if net.ParseIP(value) == nil {
-					return fmt.Errorf("invalid IP/CIDR format in %s for '%s': %s",
-						OperatorNameIpAddress, field, value)
+					return fmt.Errorf("%w in %s for '%s': %s",
+						ErrInvalidIPCIDRFormat, OperatorNameIpAddress, field, value)
 				}
 			}
 		}
@@ -59,7 +68,7 @@ func (op *IpAddressOperator) Evaluate(fields map[string][]string, conditionCtx *
 		return true, nil
 	}
 	if conditionCtx == nil {
-		return false, fmt.Errorf("invalid condition context")
+		return false, ErrInvalidConditionContext
 	}
 
 	// Check each field in the condition against context values (AND logic between fields)
@@ -76,7 +85,7 @@ func (op *IpAddressOperator) Evaluate(fields map[string][]string, conditionCtx *
 		// Parse the context value as an IP address
 		contextIP := net.ParseIP(contextValue)
 		if contextIP == nil {
-			return false, fmt.Errorf("invalid IP format in field %s: %s", fieldName, contextValue)
+			return false, fmt.Errorf("%w in field %s: %s", ErrInvalidIPFormat, fieldName, contextValue)
 		}
 
 		// Check if context IP matches any of the condition values for this field (OR logic within field)
@@ -103,7 +112,7 @@ func (op *IpAddressOperator) Evaluate(fields map[string][]string, conditionCtx *
 			}
 
 			// Invalid format
-			return false, fmt.Errorf("invalid IP/CIDR format in field %s: %s", fieldName, value)
+			return false, fmt.Errorf("%w in field %s: %s", ErrInvalidIPCIDRFormat, fieldName, value)
 		}
 
 		// If this field didn't match any values, entire condition fails (AND logic between fields)
@@ -122,7 +131,7 @@ func OperatorFactory(operatorName string) (ConditionOperator, error) {
 	case OperatorNameIpAddress:
 		return &IpAddressOperator{}, nil
 	default:
-		return nil, fmt.Errorf("unsupported condition operator: %s", operatorName)
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedConditionOperator, operatorName)
 	}
 }
 
@@ -138,7 +147,7 @@ func EvaluateConditions(conditions map[string]map[string][]string, conditionCtx 
 
 	// Validate context
 	if conditionCtx == nil {
-		return false, fmt.Errorf("invalid condition context: context is nil")
+		return false, ErrInvalidConditionContext
 	}
 
 	// All conditions must pass (AND logic)
