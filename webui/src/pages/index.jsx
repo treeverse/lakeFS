@@ -127,6 +127,7 @@ export const IndexPage = () => {
                                         </Route>
                                     </Route>
                                 </Route>
+                                <Route path="*" element={<Navigate to="/repositories" replace/>}/>
                             </Route>
                             <Route path="auth" element={<Layout logged={false}/>}>
                                 <Route path="login" element={<RedirectIfAuthenticated><LoginPage/></RedirectIfAuthenticated>}/>
@@ -136,7 +137,6 @@ export const IndexPage = () => {
                                 <Route index element={<Setup />}/>
                                 <Route path="*" element={<Setup />}/>
                             </Route>
-                            <Route path="*" element={<Navigate to="/repositories" replace/>}/>
                         </Routes>
                     </WithLoginConfigContext>
                 </WithAppContext>
