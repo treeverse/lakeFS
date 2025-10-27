@@ -1231,6 +1231,10 @@ components:
         type: array
         items:
           type: string
+      example:
+        IpAddress:
+          - 192.168.0.1/32
+          - 192.168.0.2/32
 
     Statement:
       type: object
