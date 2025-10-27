@@ -182,13 +182,15 @@ func (s *StagingFake) Set(_ context.Context, _ graveler.StagingToken, key gravel
 	return nil
 }
 
-func (s *StagingFake) Update(_ context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.StagingUpdateFunc) error {
+func (s *StagingFake) Update(_ context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
 	if s.UpdateErr != nil {
 		return s.UpdateErr
 	}
 	v, exists := s.Values[st.String()][key.String()]
-
-	val, err := updateFunc(exists, v)
+	if !exists {
+		v = nil
+	}
+	val, err := updateFunc(v)
 	if err != nil {
 		return err
 	}

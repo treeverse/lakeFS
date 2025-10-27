@@ -549,11 +549,8 @@ type BranchRecord struct {
 // BranchUpdateFunc Used to pass validation call back to ref manager for UpdateBranch flow
 type BranchUpdateFunc func(*Branch) (*Branch, error)
 
-// StagingUpdateFunc Used to pass validation call back to staging manager for UpdateValue flow
-// exists - indicates whether the value exists or not
-// val - current value, nil if tombstone
-type StagingUpdateFunc func(exists bool, val *Value) (*Value, error)
-
+// ValueUpdateFunc Used to pass validation call back to staging manager for UpdateValue flow
+// val - current value, nil if not fount, val.Identity == nil indicates tombstone
 type ValueUpdateFunc func(val *Value) (*Value, error)
 
 // TagRecord holds TagID with the associated Tag data
@@ -1110,7 +1107,7 @@ type StagingManager interface {
 
 	// Update updates a (possibly nil) value under the given staging token and key.
 	// Skip update in case 'ErrSkipUpdateValue' is returned from 'updateFunc'.
-	Update(ctx context.Context, st StagingToken, key Key, updateFunc StagingUpdateFunc) error
+	Update(ctx context.Context, st StagingToken, key Key, updateFunc ValueUpdateFunc) error
 
 	// List returns a ValueIterator for the given staging token
 	List(ctx context.Context, st StagingToken, batchSize int) ValueIterator
@@ -1873,16 +1870,18 @@ func (g *Graveler) handleUpdate(ctx context.Context, repository *RepositoryRecor
 		return err
 	}
 
-	return g.StagingManager.Update(ctx, branch.StagingToken, key, func(exists bool, stagingValue *Value) (*Value, error) {
-		latestValue := curValue
-
-		if exists {
-			latestValue = stagingValue
-		}
-		if latestValue != nil && latestValue.Identity == nil {
-			// this case is a tombstone in staging area - treat as not found
+	return g.StagingManager.Update(ctx, branch.StagingToken, key, func(stagingValue *Value) (*Value, error) {
+		var latestValue *Value
+		switch {
+		case stagingValue != nil && stagingValue.Identity == nil:
+			// tombstone in staging
 			latestValue = nil
+		case stagingValue != nil:
+			latestValue = stagingValue
+		default:
+			latestValue = curValue
 		}
+
 		if condition != nil {
 			if err := condition(latestValue); err != nil {
 				return nil, err

@@ -2988,7 +2988,7 @@ func (mr *MockStagingManagerMockRecorder) Set(ctx, st, key, value, requireExists
 }
 
 // Update mocks base method.
-func (m *MockStagingManager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.StagingUpdateFunc) error {
+func (m *MockStagingManager) Update(ctx context.Context, st graveler.StagingToken, key graveler.Key, updateFunc graveler.ValueUpdateFunc) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, st, key, updateFunc)
 	ret0, _ := ret[0].(error)
