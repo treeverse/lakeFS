@@ -58,7 +58,7 @@ func BuildConditionFromParams(ifMatch, ifNoneMatch *string) (*graveler.Condition
 		return nil, fmt.Errorf("If-None-Match only supports '*': %w", catalog.ErrNotImplemented)
 	case ifNoneMatch != nil:
 		condition = func(currentValue *graveler.Value) error {
-			if currentValue != nil && currentValue.Identity != nil {
+			if currentValue != nil {
 				return graveler.ErrPreconditionFailed
 			}
 			return nil

@@ -1879,7 +1879,10 @@ func (g *Graveler) handleUpdate(ctx context.Context, repository *RepositoryRecor
 		if exists {
 			latestValue = stagingValue
 		}
-
+		if latestValue != nil && latestValue.Identity == nil {
+			// this case is a tombstone in staging area - treat as not found
+			latestValue = nil
+		}
 		if condition != nil {
 			if err := condition(latestValue); err != nil {
 				return nil, err
