@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lakefs"
 description = "lakeFS Python SDK Wrapper"
+version = "0.14.0"
 keywords = ["OpenAPI", "OpenAPI-Generator", "lakeFS API", "Python Wrapper"]
 requires-python = ">=3.9"
 readme = "README.md"
@@ -15,6 +16,7 @@ authors = [
 dependencies = [
     "lakefs-sdk>=1.50,< 2",
     "pyyaml~=6.0.1",
+    "tomli ; python_version < '3.11'",
 ]
 classifiers = [
     "Intended Audience :: Developers",
