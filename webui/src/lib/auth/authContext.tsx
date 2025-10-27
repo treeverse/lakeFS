@@ -15,10 +15,8 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const readInitialStatus = (): AuthStatus => AUTH_STATUS.UNKNOWN;
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [status, setStatus] = useState<AuthStatus>(() => readInitialStatus());
+    const [status, setStatus] = useState<AuthStatus>(AUTH_STATUS.UNKNOWN);
 
     const value = useMemo<AuthContextType>(
         () => ({
