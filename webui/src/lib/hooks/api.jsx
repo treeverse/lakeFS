@@ -70,7 +70,11 @@ export const useAPI = (promise, deps = []) => {
                     setRequest({ loading: false, error, response: null });
                     return;
                 }
-                setRequest({ loading: false, error, response: null });
+                setRequest({
+                    loading: false,
+                    error,
+                    response: null,
+                });
             }
         };
         execute();
